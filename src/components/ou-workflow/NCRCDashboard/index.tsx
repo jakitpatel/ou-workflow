@@ -2,88 +2,65 @@ import React, { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from './ActionModal'
+import { Search } from 'lucide-react'
+
+type Task = {
+  name: string;
+  status: string;
+  assignee: string;
+  daysActive: number;
+  required: boolean;
+};
+
+type Stage = {
+  status: string;
+  progress: number;
+  tasks: Task[];
+};
 
 type Applicant = {
-  id: string
-  companyName: string
-  contact: string
-  email: string
-  priority: 'high' | 'medium' | 'low'
-  status: 'in-progress' | 'approved' | 'rejected' | 'pending'
-  currentStage: number
-  totalStages: number
-  lastUpdated: string
-}
+  id: number;
+  company: string;
+  plant: string;
+  region: string;
+  priority: 'high' | 'medium' | 'low';
+  status: string; // e.g. 'contract_sent'
+  assignedRC: string;
+  daysInStage: number;
+  overdue: boolean;
+  lastUpdate: string;
+  nextAction: string;
+  documents: number;
+  notes: number;
+  stages: Record<string, Stage>;
+};
 
 type Props = {
   showIngredientsManager: boolean
   setShowIngredientsManager: (val: boolean) => void
   selectedIngredientApp: any
   setSelectedIngredientApp: (val: any) => void
+  setActiveScreen: (val: any) => void
 }
 
 // ✅ Mock fetch function (replace with real API/Firebase later)
 async function fetchApplicants(): Promise<Applicant[]> {
   // Simulate async fetch
-  await new Promise((res) => setTimeout(res, 500))
-
-  return [
-    {
-      id: '1',
-      companyName: 'Fresh Farms Co.',
-      contact: 'John Doe',
-      email: 'john@freshfarms.com',
-      priority: 'high',
-      status: 'in-progress',
-      currentStage: 2,
-      totalStages: 5,
-      lastUpdated: '2025-08-10',
-    },
-    {
-      id: '2',
-      companyName: 'Organic Valley Ltd.',
-      contact: 'Sarah Smith',
-      email: 'sarah@organicvalley.com',
-      priority: 'medium',
-      status: 'approved',
-      currentStage: 5,
-      totalStages: 5,
-      lastUpdated: '2025-08-05',
-    },
-    {
-      id: '3',
-      companyName: 'Global Foods Inc.',
-      contact: 'Mike Johnson',
-      email: 'mike@globalfoods.com',
-      priority: 'low',
-      status: 'pending',
-      currentStage: 1,
-      totalStages: 5,
-      lastUpdated: '2025-08-15',
-    },
-    {
-      id: '4',
-      companyName: 'Sunrise Dairy',
-      contact: 'Emily Clark',
-      email: 'emily@sunrisedairy.com',
-      priority: 'high',
-      status: 'rejected',
-      currentStage: 3,
-      totalStages: 5,
-      lastUpdated: '2025-08-01',
-    },
-  ]
+  //await new Promise((res) => setTimeout(res, 500)); // simulate delay
+  const response = await fetch('/data/ncrc_dashboard1.json');
+  if (!response.ok) throw new Error('Failed to load applicants');
+  return response.json();
 }
 
 export function NCRCDashboard({
   setShowIngredientsManager,
   setSelectedIngredientApp,
+  setActiveScreen
 }: Props) {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [priorityFilter, setPriorityFilter] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
 
-  // ✅ Load applicants with TanStack Query
   const {
     data: applicants = [],
     isLoading,
@@ -92,63 +69,71 @@ export function NCRCDashboard({
   } = useQuery({
     queryKey: ['applicants'],
     queryFn: fetchApplicants,
-  })
+  });
 
-  // ✅ Filtering logic
   const filteredApplicants = useMemo(() => {
     return applicants.filter((app) => {
       const matchesSearch =
-        app.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.email.toLowerCase().includes(searchTerm.toLowerCase())
+        app.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.plant.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.region.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesStatus = statusFilter === 'all' || app.status === statusFilter
-      const matchesPriority = priorityFilter === 'all' || app.priority === priorityFilter
+      const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
+      const matchesPriority = priorityFilter === 'all' || app.priority === priorityFilter;
 
-      return matchesSearch && matchesStatus && matchesPriority
-    })
-  }, [searchTerm, statusFilter, priorityFilter, applicants])
+      return matchesSearch && matchesStatus && matchesPriority;
+    });
+  }, [searchTerm, statusFilter, priorityFilter, applicants]);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-6">
-      <h2 className="text-2xl font-bold text-gray-900">NCRC Dashboard</h2>
-      <p className="text-gray-600">Executive Overview - Certification Management</p>
-
-      {/* 🔍 Search + Filters */}
-      <div className="flex flex-col md:flex-row md:items-center md:space-x-4 mt-6 mb-6 space-y-3 md:space-y-0">
-        <input
-          type="text"
-          placeholder="Search by company, contact, or email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full md:w-1/3 rounded-md border border-gray-300 p-2 text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500"
-        />
-
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">NCRC Dashboard</h2>
+        <p className="text-gray-600">Executive Overview - Certification Management</p>
+      </div>
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="flex items-center space-x-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search by company, plant, region..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-md border border-gray-300 p-2 text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[140px]"
         >
           <option value="all">All Statuses</option>
-          <option value="in-progress">In Progress</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="pending">Pending</option>
+          <option value="contract_sent">Contract Sent</option>
+          <option value="under_review">Under Review</option>
+          <option value="inspection_scheduled">Inspection Scheduled</option>
+          <option value="payment_pending">Payment Pending</option>
+          <option value="certified">Certified</option>
         </select>
 
         <select
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(e.target.value)}
-          className="rounded-md border border-gray-300 p-2 text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[120px]"
         >
           <option value="all">All Priorities</option>
-          <option value="high">High Priority</option>
-          <option value="medium">Medium Priority</option>
-          <option value="low">Low Priority</option>
+          <option value="urgent">Urgent</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
         </select>
       </div>
+      </div>
 
-      {/* 📦 Applicant List */}
+      {/* List */}
       {isLoading && <div className="text-gray-500">Loading applicants...</div>}
       {isError && <div className="text-red-600">Error: {(error as Error).message}</div>}
 
@@ -160,6 +145,7 @@ export function NCRCDashboard({
               applicant={applicant}
               setShowIngredientsManager={setShowIngredientsManager}
               setSelectedIngredientApp={setSelectedIngredientApp}
+              setActiveScreen={setActiveScreen}
             />
           ))
         ) : (
@@ -167,8 +153,7 @@ export function NCRCDashboard({
         )}
       </div>
 
-      {/* ➕ Action Button */}
       <ActionModal />
     </div>
-  )
+  );
 }

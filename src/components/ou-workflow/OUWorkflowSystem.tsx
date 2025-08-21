@@ -20,6 +20,7 @@ export function OUWorkflowSystem() {
           setShowIngredientsManager={setShowIngredientsManager}
           selectedIngredientApp={selectedIngredientApp}
           setSelectedIngredientApp={setSelectedIngredientApp}
+          setActiveScreen={setActiveScreen}
         />
       )}
 

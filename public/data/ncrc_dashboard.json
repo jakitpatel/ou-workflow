@@ -1,0 +1,46 @@
+[
+  {
+    "id": "1",
+    "companyName": "Fresh Farms Co.",
+    "contact": "John Doe",
+    "email": "john@freshfarms.com",
+    "priority": "high",
+    "status": "in-progress",
+    "currentStage": 2,
+    "totalStages": 5,
+    "lastUpdated": "2025-08-10"
+  },
+  {
+    "id": "2",
+    "companyName": "Organic Valley Ltd.",
+    "contact": "Sarah Smith",
+    "email": "sarah@organicvalley.com",
+    "priority": "medium",
+    "status": "approved",
+    "currentStage": 5,
+    "totalStages": 5,
+    "lastUpdated": "2025-08-05"
+  },
+  {
+    "id": "3",
+    "companyName": "Global Foods Inc.",
+    "contact": "Mike Johnson",
+    "email": "mike@globalfoods.com",
+    "priority": "low",
+    "status": "pending",
+    "currentStage": 1,
+    "totalStages": 5,
+    "lastUpdated": "2025-08-15"
+  },
+  {
+    "id": "4",
+    "companyName": "Sunrise Dairy",
+    "contact": "Emily Clark",
+    "email": "emily@sunrisedairy.com",
+    "priority": "high",
+    "status": "rejected",
+    "currentStage": 3,
+    "totalStages": 5,
+    "lastUpdated": "2025-08-01"
+  }
+]
