@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from './ActionModal'
 import { Search } from 'lucide-react'
+import { fetchApplicants } from './../../../api';
 
 type Task = {
   name: string;
@@ -43,15 +44,6 @@ type Props = {
   setActiveScreen: (val: any) => void
 }
 
-// ✅ Mock fetch function (replace with real API/Firebase later)
-async function fetchApplicants(): Promise<Applicant[]> {
-  // Simulate async fetch
-  //await new Promise((res) => setTimeout(res, 500)); // simulate delay
-  const response = await fetch('/data/ncrc_dashboard1.json');
-  if (!response.ok) throw new Error('Failed to load applicants');
-  return response.json();
-}
-
 export function NCRCDashboard({
   setShowIngredientsManager,
   setSelectedIngredientApp,
@@ -68,7 +60,7 @@ export function NCRCDashboard({
     error,
   } = useQuery({
     queryKey: ['applicants'],
-    queryFn: fetchApplicants,
+    queryFn: fetchApplicants,  // Using API version
   });
 
   const filteredApplicants = useMemo(() => {
@@ -137,6 +129,13 @@ export function NCRCDashboard({
       {isLoading && <div className="text-gray-500">Loading applicants...</div>}
       {isError && <div className="text-red-600">Error: {(error as Error).message}</div>}
 
+      {/* Results Summary */}
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-gray-600">
+          Showing {filteredApplicants.length} of {applicants.length} applications
+        </p>
+      </div>
+
       <div className="space-y-4">
         {filteredApplicants.length > 0 ? (
           filteredApplicants.map((applicant) => (
@@ -149,7 +148,10 @@ export function NCRCDashboard({
             />
           ))
         ) : (
-          !isLoading && <div className="text-gray-500 text-sm">No applicants found.</div>
+          !isLoading && (<div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No applications match your current filters.</p>
+              <p className="text-gray-400 mt-2">Try adjusting your search or filter criteria.</p>
+            </div>)
         )}
       </div>
 

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react'
 import { ApplicantProgressBar } from './ApplicantProgressBar';
-import { Bell, FileText, Clock, Bot, ClipboardList, Package, Mail, ExternalLink } from 'lucide-react'
+import { Bell, FileText, Clock, Bot, ClipboardList, Package, ListTodo, ExternalLink, Sparkles, AlertTriangle } from 'lucide-react'
 
 type Task = {
   name: string;
@@ -36,17 +36,6 @@ type Props = {
 };
 
 export function ApplicantCard({ applicant, setShowIngredientsManager, setSelectedIngredientApp, setActiveScreen }: Props) {
-  const statusColors: Record<string, string> = {
-    contract_sent: 'bg-blue-100 text-blue-800',
-    in_progress: 'bg-yellow-100 text-yellow-800',
-    completed: 'bg-green-100 text-green-800',
-    pending: 'bg-gray-100 text-gray-800',
-  };
-  const priorityColors: Record<string, string> = {
-    high: 'text-red-600 font-semibold',
-    medium: 'text-yellow-600',
-    low: 'text-green-600',
-  };
   const priorityConfig = {
     urgent: { label: 'Urgent', color: 'bg-red-500', textColor: 'text-white' },
     high: { label: 'High', color: 'bg-orange-500', textColor: 'text-white' },
@@ -62,14 +51,7 @@ export function ApplicantCard({ applicant, setShowIngredientsManager, setSelecte
   };
   const priority = priorityConfig[applicant.priority];
   const status = statusConfig[applicant.status];
-
-  // Calculate overall progress
-  const stageKeys = Object.keys(applicant.stages);
-  const totalStages = stageKeys.length;
-  const completedStages = stageKeys.filter(
-    (stage) => applicant.stages[stage].status === 'completed'
-  ).length;
-  const progressPercent = Math.round((completedStages / totalStages) * 100);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   // Cross-navigation handler
   const handleViewTasks = (companyName) => {
@@ -120,7 +102,45 @@ export function ApplicantCard({ applicant, setShowIngredientsManager, setSelecte
 
       
       <ApplicantProgressBar applicant={applicant} showDetails={false} />
-
+      
+      {/* AI Assistant Panel */}
+      {showAIAssistant && (
+        <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center">
+              <Sparkles className="w-4 h-4 text-blue-600 mr-2" />
+              <h4 className="text-sm font-semibold text-blue-900">AI Assistant</h4>
+              <span className="text-xs text-blue-600 ml-2 bg-blue-100 px-2 py-1 rounded">Powered by Gemini</span>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center mb-2">
+                <ListTodo className="w-3 h-3 text-blue-600 mr-1" />
+                <span className="text-xs font-medium text-blue-800">Smart Actions</span>
+              </div>
+              <ul className="text-xs text-gray-700 space-y-1">
+                {applicant.aiSuggestions.todoItems.slice(0, 2).map((item, index) => (
+                  <li key={index} className="flex items-start">
+                    <span className="w-1 h-1 bg-blue-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            <div>
+              <div className="flex items-center mb-2">
+                <AlertTriangle className="w-3 h-3 text-orange-600 mr-1" />
+                <span className="text-xs font-medium text-orange-800">Critical Path</span>
+              </div>
+              <p className="text-xs text-gray-700">{applicant.aiSuggestions.criticalPath}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
         <div className="flex items-center space-x-4">
           <span className="flex items-center">

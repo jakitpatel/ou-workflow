@@ -2,8 +2,7 @@ import React, { useState } from 'react'
 import { Navigation } from './Navigation'
 import { IngredientsManagerPage } from './IngredientsManagerPage'
 import { NCRCDashboard } from './NCRCDashboard'
-import { TasksTab } from './TasksTab'
-import { NotificationsTab } from './NotificationsTab'
+import { TaskDashboard } from './TaskDashboard'
 
 export function OUWorkflowSystem() {
   const [activeScreen, setActiveScreen] = useState<'ncrc-dashboard' | 'tasks-dashboard'>('ncrc-dashboard')
@@ -25,13 +24,7 @@ export function OUWorkflowSystem() {
       )}
 
       {activeScreen === 'tasks-dashboard' && (
-        <>
-        <div className="p-6">
-          <h2 className="text-xl font-semibold text-gray-800">Tasks & Notifications (TODO)</h2>
-        </div>
-        <TasksTab />
-        <NotificationsTab />
-        </>
+        <TaskDashboard setActiveScreen={setActiveScreen} />
       )}
 
       {showIngredientsManager && selectedIngredientApp && (

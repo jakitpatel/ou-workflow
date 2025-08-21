@@ -38,11 +38,9 @@ export function ApplicantProgressBar({
 }: Props) {
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
 
-  const handleStageClick = (stageKey: string) => {
-    if (showDetails) {
-      setExpandedStage(expandedStage === stageKey ? null : stageKey)
-    }
-  }
+    const handleStageClick = (stageName) => {
+        setExpandedStage(expandedStage === stageName ? null : stageName);
+    };
 
   const handleTaskActionLocal = (
     e: React.MouseEvent,
@@ -105,8 +103,7 @@ export function ApplicantProgressBar({
       </div>
 
       {/* Expanded Stage Details */}
-      {showDetails &&
-        expandedStage &&
+      {expandedStage &&
         applicant.stages[expandedStage]?.tasks?.length > 0 && (
           <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex items-center justify-between mb-3">
