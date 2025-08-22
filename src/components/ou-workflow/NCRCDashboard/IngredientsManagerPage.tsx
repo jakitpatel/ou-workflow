@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeft, FileText, ExternalLink, Download, Mail, Package } from 'lucide-react'
+import { ArrowLeft, FileText, ExternalLink, Download, Mail, Package, Bell, Users } from 'lucide-react'
 
 type Props = {
   selectedIngredientApp: any

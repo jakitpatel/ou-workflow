@@ -35,7 +35,7 @@ type Props = {
   setActiveScreen: (val: string) => void;
 };
 
-export function ApplicantCard({ applicant, setShowIngredientsManager, setSelectedIngredientApp, setActiveScreen }: Props) {
+export function ApplicantCard({ applicant, setShowIngredientsManager, setSelectedIngredientApp, setActiveScreen, handleTaskAction }: Props) {
   const priorityConfig = {
     urgent: { label: 'Urgent', color: 'bg-red-500', textColor: 'text-white' },
     high: { label: 'High', color: 'bg-orange-500', textColor: 'text-white' },
@@ -101,7 +101,7 @@ export function ApplicantCard({ applicant, setShowIngredientsManager, setSelecte
       </div>
 
       
-      <ApplicantProgressBar applicant={applicant} showDetails={false} />
+      <ApplicantProgressBar applicant={applicant} showDetails={false} handleTaskAction={handleTaskAction} />
       
       {/* AI Assistant Panel */}
       {showAIAssistant && (

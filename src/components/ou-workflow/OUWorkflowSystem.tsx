@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { Navigation } from './Navigation'
-import { IngredientsManagerPage } from './IngredientsManagerPage'
 import { NCRCDashboard } from './NCRCDashboard'
 import { TaskDashboard } from './TaskDashboard'
 
@@ -25,13 +24,6 @@ export function OUWorkflowSystem() {
 
       {activeScreen === 'tasks-dashboard' && (
         <TaskDashboard setActiveScreen={setActiveScreen} />
-      )}
-
-      {showIngredientsManager && selectedIngredientApp && (
-        <IngredientsManagerPage
-          selectedIngredientApp={selectedIngredientApp}
-          setShowIngredientsManager={setShowIngredientsManager}
-        />
       )}
     </div>
   )

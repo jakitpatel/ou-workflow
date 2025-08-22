@@ -4,6 +4,7 @@ import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from './ActionModal'
 import { Search } from 'lucide-react'
 import { fetchApplicants } from './../../../api';
+import { IngredientsManagerPage } from './IngredientsManagerPage';
 
 type Task = {
   name: string;
@@ -45,7 +46,9 @@ type Props = {
 }
 
 export function NCRCDashboard({
+  showIngredientsManager,
   setShowIngredientsManager,
+  selectedIngredientApp,
   setSelectedIngredientApp,
   setActiveScreen
 }: Props) {
@@ -77,6 +80,31 @@ export function NCRCDashboard({
     });
   }, [searchTerm, statusFilter, priorityFilter, applicants]);
 
+  // ✅ Return conditionally AFTER all hooks
+  if (showIngredientsManager && selectedIngredientApp) {
+    return (
+      <IngredientsManagerPage
+        selectedIngredientApp={selectedIngredientApp}
+        setShowIngredientsManager={setShowIngredientsManager}
+      />
+    );
+  }
+
+  const handleTaskAction = (e, task, action, applicantId) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    if (action === 'manage_ingredients') {
+      const app = applicants.find(a => a.id === applicantId);
+      setSelectedIngredientApp(app);
+      setShowIngredientsManager(true);
+      return;
+    }
+    
+    //setSelectedAction({ task, action, applicantId });
+    //setShowActionModal(action);
+  };
+  
   return (
     <div className="max-w-7xl mx-auto px-6 py-6">
       <div className="mb-6">
@@ -145,6 +173,7 @@ export function NCRCDashboard({
               setShowIngredientsManager={setShowIngredientsManager}
               setSelectedIngredientApp={setSelectedIngredientApp}
               setActiveScreen={setActiveScreen}
+              handleTaskAction={handleTaskAction}
             />
           ))
         ) : (
