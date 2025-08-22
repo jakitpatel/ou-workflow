@@ -1,5 +1,5 @@
  import React, { useState,useEffect, useRef,useMemo } from 'react';
- import { Search, Filter, Bell, Clock, AlertTriangle, CheckCircle, Wrench, ChevronDown, MessageCircle } from 'lucide-react';
+ import { Search, Filter, Bell, Clock, AlertTriangle, CheckCircle, Wrench, ChevronDown, MessageCircle, X, History, Check, User, CheckSquare, Mail, Send, FileText } from 'lucide-react';
  // Tasks Dashboard Component (with full table functionality restored)
 export function TaskDashboard ({setActiveScreen}){
     const [searchTerm, setSearchTerm] = useState('');
@@ -814,7 +814,7 @@ export function TaskDashboard ({setActiveScreen}){
                             >
                               <div className="text-base font-bold group-hover:text-blue-600 transition-colors text-gray-900">
                                 {task.plant}
-                                {/*<History className="w-4 h-4 inline ml-2 opacity-60 group-hover:opacity-100" />*/}
+                                <History className="w-4 h-4 inline ml-2 opacity-60 group-hover:opacity-100" />
                               </div>
                             </button>
                             
