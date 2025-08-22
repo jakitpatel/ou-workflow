@@ -55,6 +55,25 @@ export function NCRCDashboard({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [showActionModal, setShowActionModal] = useState(null);
+  const [selectedAction, setSelectedAction] = useState(null);
+
+  // Lookup tables for assignments
+  const rcLookup = [
+    { id: 'rc1', name: 'R. Gorelik', department: 'NCRC', specialty: 'Dairy Products', workload: 'Light' },
+    { id: 'rc2', name: 'Rabbi Goldstein', department: 'NCRC', specialty: 'Baked Goods', workload: 'Medium' },
+    { id: 'rc3', name: 'Rabbi Stern', department: 'NCRC', specialty: 'General', workload: 'Heavy' },
+    { id: 'rc4', name: 'Rabbi Klein', department: 'NCRC', specialty: 'International', workload: 'Light' },
+    { id: 'rc5', name: 'R. Herbsman', department: 'IAR', specialty: 'Ingredients Review', workload: 'Medium' }
+  ];
+
+  const departmentLookup = [
+    { id: 'products', name: 'Products Department', contact: 'products@ou.org', avgTime: '3-5 days' },
+    { id: 'iar', name: 'Ingredients (IAR)', contact: 'iar@ou.org', avgTime: '5-7 days' },
+    { id: 'legal', name: 'Legal Department', contact: 'legal@ou.org', avgTime: '2-3 days' },
+    { id: 'rfr', name: 'RFR Team', contact: 'inspections@ou.org', avgTime: '1-2 weeks' },
+    { id: 'halachic', name: 'Halachic Review', contact: 'halachic@ou.org', avgTime: '3-5 days' }
+  ];
 
   const {
     data: applicants = [],
@@ -90,6 +109,24 @@ export function NCRCDashboard({
     );
   }
 
+  const executeAction = (assignee) => {
+    if (selectedAction) {
+      const actionLabels = {
+        'assign_rc': `Assigned to RC: ${assignee}`,
+        'assign_department': `Assigned to department: ${assignee}`,
+        'update_status': `Status updated to: ${assignee}`
+      };
+      
+      const actionMessage = actionLabels[selectedAction.action] || `Action completed: ${selectedAction.action}`;
+      
+      handleTaskUpdate(
+        `${selectedAction.applicantId}-${selectedAction.task.name}`,
+        selectedAction.action === 'update_status' ? assignee : 'assigned',
+        selectedAction.action !== 'update_status' ? assignee : null
+      );
+    }
+  };
+
   const handleTaskAction = (e, task, action, applicantId) => {
     e.stopPropagation();
     e.preventDefault();
@@ -104,7 +141,7 @@ export function NCRCDashboard({
     //setSelectedAction({ task, action, applicantId });
     //setShowActionModal(action);
   };
-  
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-6">
       <div className="mb-6">
@@ -184,7 +221,11 @@ export function NCRCDashboard({
         )}
       </div>
 
-      <ActionModal />
+      <ActionModal departmentLookup={departmentLookup} 
+      rcLookup={rcLookup}
+      executeAction={executeAction}
+      setShowActionModal={setShowActionModal} 
+      showActionModal={showActionModal} />
     </div>
   );
 }
