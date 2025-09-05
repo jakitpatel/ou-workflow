@@ -86,11 +86,11 @@ export function NCRCDashboard({
   });
 
   const filteredApplicants = useMemo(() => {
-    return applicants.filter((app) => {
+    return (Array.isArray(applicants) ? applicants : []).filter((app) => {
       const matchesSearch =
-        app.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.plant.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.region.toLowerCase().includes(searchTerm.toLowerCase());
+        app.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.plant?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.region?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
       const matchesPriority = priorityFilter === 'all' || app.priority === priorityFilter;
@@ -138,8 +138,8 @@ export function NCRCDashboard({
       return;
     }
     
-    //setSelectedAction({ task, action, applicantId });
-    //setShowActionModal(action);
+    setSelectedAction({ task, action, applicantId });
+    setShowActionModal(action);
   };
 
   return (
@@ -225,7 +225,8 @@ export function NCRCDashboard({
       rcLookup={rcLookup}
       executeAction={executeAction}
       setShowActionModal={setShowActionModal} 
-      showActionModal={showActionModal} />
+      showActionModal={showActionModal} 
+      selectedAction={selectedAction} />
     </div>
   );
 }

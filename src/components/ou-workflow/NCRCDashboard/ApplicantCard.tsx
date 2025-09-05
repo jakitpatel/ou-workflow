@@ -21,7 +21,7 @@ type Applicant = {
   company: string;
   plant: string;
   region: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW';
   status: string; // e.g., "contract_sent"
   assignedRC: string;
   lastUpdate: string;
@@ -49,7 +49,8 @@ export function ApplicantCard({ applicant, setShowIngredientsManager, setSelecte
     payment_pending: { label: 'Payment Pending', color: 'bg-orange-100 text-orange-800', step: 4 },
     certified: { label: 'Certified', color: 'bg-green-100 text-green-800', step: 5 }
   };
-  const priority = priorityConfig[applicant.priority];
+  //const priority = priorityConfig[applicant.priority];
+  const priority = priorityConfig[applicant.priority?.toLowerCase()] || priorityConfig.low;
   const status = statusConfig[applicant.status];
   const [showAIAssistant, setShowAIAssistant] = useState(false);
 
@@ -73,7 +74,14 @@ export function ApplicantCard({ applicant, setShowIngredientsManager, setSelecte
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${priority.color} ${priority.textColor}`}>
               {priority.label}
             </span>
-            {(applicant.overdue || applicant.stages.inspection.tasks.find(t => t.name === 'KIM Paid')?.status === 'overdue') && (
+            {/*(applicant.overdue || applicant.stages.inspection.tasks.find(t => t.name === 'KIM Paid')?.status === 'overdue') && (
+              <div className="flex items-center text-red-600">
+                <AlertTriangle className="w-4 h-4 mr-1" />
+                <span className="text-xs font-medium">CRITICAL</span>
+              </div>
+            )*/}
+            {(applicant.overdue ||
+            applicant.stages["Inspection Process"]?.tasks?.find(t => t.name === "KIM Paid")?.status === "overdue") && (
               <div className="flex items-center text-red-600">
                 <AlertTriangle className="w-4 h-4 mr-1" />
                 <span className="text-xs font-medium">CRITICAL</span>
