@@ -61,20 +61,19 @@ export function ApplicantProgressBar({
     { key: 'contract', name: 'Contract' },
     { key: 'certification', name: 'Certification' }
   ]
+  // Define colors for task statuses
+  const statusColors: Record<string, string> = {
+    new: '#6366f1',        // indigo-500
+    completed: '#10b981',  // green-500
+    in_progress: '#3b82f6',// blue-500
+    overdue: '#ef4444',    // red-500
+    blocked: '#9ca3af'     // gray-400
+  }
 
   const getStageColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return '#10b981'
-      case 'in_progress':
-        return '#3b82f6'
-      case 'overdue':
-        return '#ef4444'
-      case 'blocked':
-        return '#9ca3af'
-      default:
-        return '#d1d5db'
-    }
+    // normalize: lowercase + trim + replace spaces with underscores
+    const normalized = status?.toLowerCase().trim().replace(/\s+/g, '_')
+    return statusColors[normalized] ?? '#d1d5db' // default gray-300
   }
 
   return (
