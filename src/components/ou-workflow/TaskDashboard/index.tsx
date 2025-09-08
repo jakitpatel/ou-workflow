@@ -1,5 +1,9 @@
  import React, { useState,useEffect, useRef,useMemo } from 'react';
  import { Search, Filter, Bell, Clock, AlertTriangle, CheckCircle, Wrench, ChevronDown, MessageCircle, X, History, Check, User, CheckSquare, Mail, Send, FileText } from 'lucide-react';
+ import { useQuery } from '@tanstack/react-query';
+ import { fetchApplicants } from '../../../api'; // same api.ts
+ //import { useQueryClient } from '@tanstack/react-query';
+
  // Tasks Dashboard Component (with full table functionality restored)
 export function TaskDashboard ({setActiveScreen}){
     const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +20,18 @@ export function TaskDashboard ({setActiveScreen}){
     const currentUser = 'A. Gottesman';
 
     const messageInputRefs = useRef({});
+
+   //const queryClient = useQueryClient()
+   //const applicants = queryClient.getQueryData(['applicants']) || []
+   const {
+      data: tasksplants = [],
+      isLoading,
+      isError,
+      error,
+    } = useQuery({
+      queryKey: ['tasksplants'],
+      queryFn: fetchApplicants,  // same queryFn as NCRCDashboard
+    })
 
     // Cross-navigation handler
     const handleViewNCRCDashboard = (plantName) => {
@@ -167,8 +183,8 @@ export function TaskDashboard ({setActiveScreen}){
 
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
-      let filtered = allTasks.filter(task => {
-        if (task.assignedTo !== currentUser) return false;
+      let filtered = tasksplants.filter(task => {
+        //if (task.assignedTo !== currentUser) return false;
         
         const matchesSearch = !searchTerm || 
           task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -188,7 +204,7 @@ export function TaskDashboard ({setActiveScreen}){
         
         return b.daysActive - a.daysActive;
       });
-    }, [allTasks, currentUser, searchTerm, statusFilter]);
+    }, [tasksplants, currentUser, searchTerm, statusFilter]);
 
     // Helper functions
     const getStatusConfig = (status, daysActive = 0) => {
