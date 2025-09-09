@@ -170,17 +170,31 @@ export function TaskDashboard ({setActiveScreen}){
       ]
     });
 
-    // Calculate task statistics
+    // helper: flatten all tasks from all stages
+    const getAllTasks = (app) => {
+      if (!app?.stages) return [];
+      return Object.values(app.stages).flatMap(stage => stage.tasks || []);
+    };
+
     const taskStats = useMemo(() => {
-      const userTasks = allTasks.filter(task => task.assignedTo === username);
+      const allTasks = tasksplants.flatMap(app => getAllTasks(app))
+
+      // normalize status + filter by user (if needed)
+      const userTasks = allTasks
+        .map(task => ({
+          ...task,
+          status: task.status?.toLowerCase() || ''
+        }))
+        //.filter(task => task.assignedTo === username) // uncomment if you only want current user's tasks
+
       return {
         total: userTasks.length,
         new: userTasks.filter(t => t.status === 'new').length,
         inProgress: userTasks.filter(t => t.status === 'in_progress').length,
         overdue: userTasks.filter(t => t.status === 'overdue').length,
         completed: userTasks.filter(t => t.status === 'completed').length,
-      };
-    }, [username, allTasks]);
+      }
+    }, [username, tasksplants])
 
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
@@ -244,12 +258,6 @@ export function TaskDashboard ({setActiveScreen}){
     const getMessageCount = (taskId) => {
       const messages = taskMessages[taskId] || [];
       return { total: messages.length, unread: 0 };
-    };
-
-    // helper: flatten all tasks from all stages
-    const getAllTasks = (app) => {
-      if (!app?.stages) return [];
-      return Object.values(app.stages).flatMap(stage => stage.tasks || []);
     };
 
     // helper: map each task into an action object
