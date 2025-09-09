@@ -27,7 +27,8 @@
               "daysActive": 0,
               "name": "Send KCM Invoice",
               "required": true,
-              "status": "Pending"
+              "status": "Pending",
+              "assignedTo": "BILLING"
             },
             {
               "TaskId": 31,
@@ -35,7 +36,8 @@
               "daysActive": 0,
               "name": "KCM Paid",
               "required": true,
-              "status": "Pending"
+              "status": "Pending",
+              "assignedTo": "NCRC"
             },
             {
               "TaskId": 32,
@@ -43,7 +45,8 @@
               "daysActive": 0,
               "name": "Issue Certification",
               "required": true,
-              "status": "Pending"
+              "status": "Pending",
+              "assignedTo": "RC"
             }
           ]
         },
@@ -57,7 +60,8 @@
               "daysActive": 0,
               "name": "Assign to RC",
               "required": true,
-              "status": "Pending"
+              "status": "Pending",
+              "assignedTo": "RC"
             },
             {
               "TaskId": 27,
@@ -65,7 +69,8 @@
               "daysActive": 0,
               "name": "Review Completed by RC",
               "required": true,
-              "status": "Pending"
+              "status": "Pending",
+              "assignedTo": "LEGAL"
             },
             {
               "TaskId": 28,
@@ -73,7 +78,8 @@
               "daysActive": 0,
               "name": "Send Certification Contract",
               "required": true,
-              "status": "Pending"
+              "status": "Pending",
+              "assignedTo": "NCRC"
             },
             {
               "TaskId": 29,
@@ -81,7 +87,8 @@
               "daysActive": 0,
               "name": "Contract Completed by Company",
               "required": true,
-              "status": "Pending"
+              "status": "Pending",
+              "assignedTo": "LEGAL"
             }
           ]
         },
@@ -95,7 +102,8 @@
               "daysActive": 0,
               "name": "Assign to RC IAR Review",
               "required": true,
-              "status": "Pending"
+              "status": "Pending",
+              "assignedTo": "RC"
             },
             {
               "TaskId": 17,
@@ -103,7 +111,8 @@
               "daysActive": 0,
               "name": "Schedule A Verification",
               "required": true,
-              "status": "Pending"
+              "status": "Pending",
+              "assignedTo": "LEGAL"
             },
             {
               "TaskId": 18,
@@ -111,7 +120,8 @@
               "daysActive": 0,
               "name": "Kosher Code Verification",
               "required": true,
-              "status": "Pending"
+              "status": "Pending",
+              "assignedTo": "NCRC"
             },
             {
               "TaskId": 19,
@@ -119,7 +129,8 @@
               "daysActive": 0,
               "name": "Supplier Approval Check",
               "required": true,
-              "status": "Pending"
+              "status": "Pending",
+              "assignedTo": "INSP"
             },
             {
               "TaskId": 20,
@@ -127,7 +138,8 @@
               "daysActive": 0,
               "name": "Approved by IAR RC Review",
               "required": true,
-              "status": "Pending"
+              "status": "Pending",
+              "assignedTo": "RC"
             },
             {
               "TaskId": 21,
@@ -135,7 +147,8 @@
               "daysActive": 0,
               "name": "IAR Completed",
               "required": true,
-              "status": "Pending"
+              "status": "Pending",
+              "assignedTo": "NCRC"
             }
           ]
         },

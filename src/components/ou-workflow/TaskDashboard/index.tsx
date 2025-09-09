@@ -260,20 +260,38 @@ export function TaskDashboard ({setActiveScreen}){
       return { total: messages.length, unread: 0 };
     };
 
-    // helper: map each task into an action object
-    const mapTaskToAction = (task) => {
+   const mapTaskToAction = (task) => {
+      let color, icon
+
+      // normalize status
+      const status = task.status?.toLowerCase()
+
+      if (task.assignedTo !== role) {
+        // Not current user's task → disabled
+        color = 'bg-gray-300 cursor-not-allowed'
+        icon = CheckSquare
+      } else if (status === 'completed') {
+        // Completed task → show as done
+        color = 'bg-gray-400'
+        icon = CheckSquare
+      } else {
+        // Active & assigned to current user → normal action
+        color = 'bg-green-600 hover:bg-green-700'
+        icon = Check
+      }
+
       return {
         id: `task_${task.TaskId}`,
         label: task.name,
         status: task.status,
         required: task.required,
         assignee: task.assignee,
-        color: task.status === "Completed"
-          ? "bg-gray-400"
-          : "bg-green-600 hover:bg-green-700",
-        icon: task.status === "Completed" ? CheckSquare : Check
-      };
-    };
+        color,
+        icon,
+        disabled: task.assignedTo !== role || status === 'completed', // 👈 add flag for UI
+      }
+    }
+
 
     // main: get actions for an application
     const getTaskActions = (app) => {
@@ -905,7 +923,8 @@ export function TaskDashboard ({setActiveScreen}){
                                   {getTaskActions(task).map((action) => (
                                     <button
                                       key={action.id}
-                                      onClick={() => handleTaskAction(task.id, action.id)}
+                                      onClick={() => !action.disabled && handleTaskAction(task.id, action.id)}
+                                      disabled={action.disabled}
                                       className={`flex items-center justify-center px-4 py-3 text-white rounded-lg transition-colors text-sm font-medium ${action.color}`}
                                     >
                                       <action.icon className="w-4 h-4 mr-2" />
