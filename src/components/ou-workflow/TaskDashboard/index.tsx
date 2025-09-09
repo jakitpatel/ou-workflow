@@ -3,6 +3,7 @@
  import { useQuery } from '@tanstack/react-query';
  import { fetchApplicants } from '../../../api'; // same api.ts
  //import { useQueryClient } from '@tanstack/react-query';
+ import { useUser } from './../../../context/UserContext'  // 👈 new import
 
  // Tasks Dashboard Component (with full table functionality restored)
 export function TaskDashboard ({setActiveScreen}){
@@ -17,7 +18,7 @@ export function TaskDashboard ({setActiveScreen}){
     const [recentReassignments, setRecentReassignments] = useState([]);
     const [completionFeedback, setCompletionFeedback] = useState([]);
     const [showReassignDropdown, setShowReassignDropdown] = useState({});
-    const currentUser = 'A. Gottesman';
+    const { username, role, setRole } = useUser() // 👈 use context
 
     const messageInputRefs = useRef({});
 
@@ -171,7 +172,7 @@ export function TaskDashboard ({setActiveScreen}){
 
     // Calculate task statistics
     const taskStats = useMemo(() => {
-      const userTasks = allTasks.filter(task => task.assignedTo === currentUser);
+      const userTasks = allTasks.filter(task => task.assignedTo === username);
       return {
         total: userTasks.length,
         new: userTasks.filter(t => t.status === 'new').length,
@@ -179,12 +180,12 @@ export function TaskDashboard ({setActiveScreen}){
         overdue: userTasks.filter(t => t.status === 'overdue').length,
         completed: userTasks.filter(t => t.status === 'completed').length,
       };
-    }, [currentUser, allTasks]);
+    }, [username, allTasks]);
 
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
       let filtered = tasksplants.filter(task => {
-        //if (task.assignedTo !== currentUser) return false;
+        //if (task.assignedTo !== username) return false;
         
         const matchesSearch = !searchTerm || 
           task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -204,7 +205,7 @@ export function TaskDashboard ({setActiveScreen}){
         
         return b.daysActive - a.daysActive;
       });
-    }, [tasksplants, currentUser, searchTerm, statusFilter]);
+    }, [tasksplants, username, searchTerm, statusFilter]);
 
     // Helper functions
     const getStatusConfig = (status, daysActive = 0) => {
@@ -333,7 +334,7 @@ export function TaskDashboard ({setActiveScreen}){
       
       const newMessage = {
         id: Date.now(),
-        sender: currentUser,
+        sender: username,
         text: messageText,
         timestamp: new Date(),
         isSystemMessage: false,
@@ -513,7 +514,7 @@ export function TaskDashboard ({setActiveScreen}){
         ...prev,
         [taskId]: {
           taskText: messageText,
-          assignee: currentUser
+          assignee: username
         }
       }));
     };
@@ -528,7 +529,7 @@ export function TaskDashboard ({setActiveScreen}){
         plant: allTasks.find(t => t.id === taskId)?.plant || 'Unknown Plant',
         workflowStage: 'Application',
         assignedTo: assignmentData.assignee,
-        assignedBy: currentUser,
+        assignedBy: username,
         status: 'new',
         priority: 'medium',
         daysActive: 0,
@@ -658,7 +659,7 @@ export function TaskDashboard ({setActiveScreen}){
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Tasks & Notifications</h1>
-              <p className="text-gray-600 mt-1">Welcome back, {currentUser} • Separated Actions & Messages</p>
+              <p className="text-gray-600 mt-1">Welcome back, {username} • Separated Actions & Messages</p>
             </div>
           </div>
 
@@ -910,7 +911,7 @@ export function TaskDashboard ({setActiveScreen}){
                                   <div className="mt-4 p-4 bg-white rounded-lg border-2 border-blue-300">
                                     <h5 className="text-sm font-semibold text-blue-900 mb-3">Reassign Task</h5>
                                     <div className="space-y-2">
-                                      {staff.filter(s => s.name !== currentUser).map(person => (
+                                      {staff.filter(s => s.name !== username).map(person => (
                                         <button
                                           key={person.id}
                                           onClick={() => handleReassignTask(task.id, person.name)}
@@ -1031,7 +1032,7 @@ export function TaskDashboard ({setActiveScreen}){
                                         </label>
                                         <select 
                                           className="w-full text-sm border-2 border-purple-300 rounded-lg px-3 py-3 focus:ring-2 focus:ring-purple-500 focus:outline-none focus:border-purple-500 bg-white font-medium"
-                                          value={taskAssignmentData[task.id]?.assignee || currentUser}
+                                          value={taskAssignmentData[task.id]?.assignee || username}
                                           onChange={(e) => {
                                             setTaskAssignmentData(prev => ({
                                               ...prev,
@@ -1044,7 +1045,7 @@ export function TaskDashboard ({setActiveScreen}){
                                         >
                                           {staff.map(person => (
                                             <option key={person.id} value={person.name}>
-                                              {person.name === currentUser ? '🫵 You' : '👤'} {person.name} ({person.department})
+                                              {person.name === username ? '🫵 You' : '👤'} {person.name} ({person.department})
                                             </option>
                                           ))}
                                         </select>

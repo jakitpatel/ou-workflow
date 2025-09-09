@@ -18,3 +18,16 @@ export async function fetchApplicants({
   }))
   //return json.data; // <-- return the array only
 }
+
+export async function fetchRoles({
+  page = 0,
+  limit = 20
+}: { page?: number; limit?: number } = {}): Promise<Applicant[]> {
+  //const url = `${API_BASE_URL}/ncrc_dashboard?page[limit]=${limit}&page[offset]=${page}`;
+  const url = `${API_BASE_URL}/ncrc_role.json`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to load roles: ${response.statusText}`);
+  const json = await response.json();
+  // Normalize stage keys for all applicants
+  return json.data; // <-- return the array only
+}

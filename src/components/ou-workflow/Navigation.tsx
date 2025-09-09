@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Bell, User, BarChart3, ClipboardList, LogOut, Settings } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { fetchRoles } from './../../api';
+import { useUser } from './../../context/UserContext'  // 👈 new import
 
 type Props = {
   activeScreen: string
@@ -7,10 +10,20 @@ type Props = {
 }
 
 export function Navigation({ activeScreen, setActiveScreen }: Props) {
-  const currentUser = 'S. Benjamin'
+  const { username, role, setRole } = useUser() // 👈 use context
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-
+  
+  const {
+    data: roles = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['roles'],
+    queryFn: fetchRoles,  // Using API version
+  });
+  
   // close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -71,28 +84,50 @@ export function Navigation({ activeScreen, setActiveScreen }: Props) {
               className="flex items-center space-x-1.5 px-2 py-1 rounded-md hover:bg-gray-100"
             >
               <User className="w-5 h-5 text-gray-500" />
-              <span className="text-sm text-gray-700">{currentUser}</span>
+              <span className="text-sm text-gray-700">{username}</span>
             </button>
 
             {/* Dropdown */}
             {menuOpen && (
-              <div className="absolute right-0 top-10 w-40 bg-white border border-gray-200 shadow-lg rounded-md py-1 z-50">
+              <div className="absolute right-0 top-10 w-48 bg-white border border-gray-200 shadow-lg rounded-md py-2 z-50">
+                
+                {/* Roles Dropdown */}
+                <div className="px-3 pb-2">
+                  {isLoading && <p className="text-xs text-gray-500">Loading roles...</p>}
+                  {isError && <p className="text-xs text-red-500">Error loading roles</p>}
+                  {!isLoading && !isError && roles.length > 0 && (
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md text-sm p-1 focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Role</option>
+                      {roles.map((role: { name: string; value: string }, idx: number) => (
+                        <option key={idx} value={role.value}>
+                          {role.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Profile */}
                 <button
                   className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                   onClick={() => {
                     setMenuOpen(false)
-                    // TODO: navigate to profile page
-                    alert('Profile clicked')
+                    alert(`Profile clicked (role: ${role || "none"})`)
                   }}
                 >
                   <Settings className="w-4 h-4 mr-2 text-gray-500" />
                   Profile
                 </button>
+
+                {/* Sign out */}
                 <button
                   className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
                   onClick={() => {
                     setMenuOpen(false)
-                    // TODO: implement sign out logic
                     alert('Signed out')
                   }}
                 >

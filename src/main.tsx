@@ -8,6 +8,7 @@ import { routeTree } from './routeTree.gen'
 
 import './index.css'
 import reportWebVitals from './reportWebVitals.ts'
+import { UserProvider } from './context/UserContext.tsx' // 👈
 
 // Create a new router instance
 const router = createRouter({
@@ -36,7 +37,9 @@ if (rootElement && !rootElement.innerHTML) {
   root.render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <UserProvider>
+          <RouterProvider router={router} />
+        </UserProvider>
       </QueryClientProvider>
     </StrictMode>,
   )
