@@ -198,7 +198,7 @@ export function TaskDashboard ({setActiveScreen}){
       });
 
       return filtered.sort((a, b) => {
-        const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
+        const priorityOrder = { urgent: 0, high: 1, medium: 2, normal: 2, low: 3 };
         const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
         if (priorityDiff !== 0) return priorityDiff;
         
@@ -245,45 +245,39 @@ export function TaskDashboard ({setActiveScreen}){
       return { total: messages.length, unread: 0 };
     };
 
-    // Get real actions based on specific task and company
-    const getTaskActions = (task) => {
+    // helper: flatten all tasks from all stages
+    const getAllTasks = (app) => {
+      if (!app?.stages) return [];
+      return Object.values(app.stages).flatMap(stage => stage.tasks || []);
+    };
+
+    // helper: map each task into an action object
+    const mapTaskToAction = (task) => {
+      return {
+        id: `task_${task.TaskId}`,
+        label: task.name,
+        status: task.status,
+        required: task.required,
+        assignee: task.assignee,
+        color: task.status === "Completed"
+          ? "bg-gray-400"
+          : "bg-green-600 hover:bg-green-700",
+        icon: task.status === "Completed" ? CheckSquare : Check
+      };
+    };
+
+    // main: get actions for an application
+    const getTaskActions = (app) => {
       const baseActions = [
         { id: 'complete', label: 'Mark Complete', icon: Check, color: 'bg-green-600 hover:bg-green-700' },
         { id: 'reassign', label: 'Reassign', icon: User, color: 'bg-blue-600 hover:bg-blue-700' }
       ];
 
-      
-      switch (task.plant) {
-        case 'Metro Spice Company':
-          return [
-            { id: 'set_fee', label: 'Set Fee', icon: CheckSquare, color: 'bg-purple-600 hover:bg-purple-700' },
-            { id: 'select_rfr', label: 'Select RFR', icon: User, color: 'bg-blue-600 hover:bg-blue-700' },
-            { id: 'schedule_inspection', label: 'Schedule Inspection', icon: Clock, color: 'bg-orange-600 hover:bg-orange-700' },
-            { id: 'contact_company', label: 'Contact Company', icon: Mail, color: 'bg-cyan-600 hover:bg-cyan-700' },
-            ...baseActions
-          ];
-        
-        case 'Brooklyn Bread Co.':
-          return [
-            { id: 'send_to_legal', label: 'Send to Legal', icon: FileText, color: 'bg-purple-600 hover:bg-purple-700' },
-            ...baseActions
-          ];
-        
-        case 'Artisan Bakery':
-          return [
-            { id: 'send_to_iar', label: 'Send to IAR', icon: User, color: 'bg-green-600 hover:bg-green-700' },
-            ...baseActions
-          ];
-        
-        case 'Happy Snacks':
-          return [
-            { id: 'send_contract', label: 'Send Contract to Company', icon: Mail, color: 'bg-blue-600 hover:bg-blue-700' },
-            ...baseActions
-          ];
-        
-        default:
-          return baseActions;
-      }
+      const allTasks = getAllTasks(app);
+      const taskActions = allTasks.map(mapTaskToAction);
+
+      // return flat list of tasks + base actions
+      return [...taskActions, ...baseActions];
     };
 
     // Event handlers
