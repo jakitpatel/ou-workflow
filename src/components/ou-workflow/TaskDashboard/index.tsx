@@ -1,9 +1,10 @@
  import React, { useState,useEffect, useRef,useMemo, use } from 'react';
  import { Search, Filter, Bell, Clock, AlertTriangle, CheckCircle, Wrench, ChevronDown, MessageCircle, X, History, Check, User, CheckSquare, Mail, Send, FileText } from 'lucide-react';
  import { useQuery } from '@tanstack/react-query';
- import { fetchApplicants } from '../../../api'; // same api.ts
+ import { fetchApplicants, fetchRcs } from '../../../api'; // same api.ts
  //import { useQueryClient } from '@tanstack/react-query';
  import { useUser } from './../../../context/UserContext'  // 👈 new import
+ import { ActionModal } from './../modal/ActionModal';
 
  // Tasks Dashboard Component (with full table functionality restored)
 export function TaskDashboard ({setActiveScreen}){
@@ -18,7 +19,10 @@ export function TaskDashboard ({setActiveScreen}){
     const [recentReassignments, setRecentReassignments] = useState([]);
     const [completionFeedback, setCompletionFeedback] = useState([]);
     const [showReassignDropdown, setShowReassignDropdown] = useState({});
+
     const { username, role, setRole } = useUser() // 👈 use context
+    const [showActionModal, setShowActionModal] = useState(null);
+    const [selectedAction, setSelectedAction] = useState(null);
 
     const messageInputRefs = useRef({});
 
@@ -32,6 +36,13 @@ export function TaskDashboard ({setActiveScreen}){
     } = useQuery({
       queryKey: ['tasksplants'],
       queryFn: fetchApplicants,  // same queryFn as NCRCDashboard
+    })
+    // RC Lookup data
+    const {
+      data: rcnames = [],
+    } = useQuery({
+      queryKey: ['rcnames'],
+      queryFn: fetchRcs,  // same queryFn as NCRCDashboard
     })
 
     // Cross-navigation handler
@@ -401,7 +412,23 @@ export function TaskDashboard ({setActiveScreen}){
       }, 50);
     };
 
-    const handleTaskAction = (taskId, actionId) => {
+    const handleTaskAction = (e, application, action) => {
+      e.stopPropagation();
+      e.preventDefault();
+      console.log('Action clicked: handleTaskAction', action, 'for application:', application);
+      /*if (action === 'manage_ingredients') {
+        const app = applicants.find(a => a.id === applicantId);
+        setSelectedIngredientApp(app);
+        setShowIngredientsManager(true);
+        return;
+      }*/
+
+      setSelectedAction({ application, action });
+      setShowActionModal(action);
+    };
+
+    /*const handleTaskAction = (taskId, action) => {
+      const actionId = action.id;
       if (actionId === 'complete') {
         handleTaskComplete(taskId);
       } else if (actionId === 'reassign') {
@@ -426,7 +453,7 @@ export function TaskDashboard ({setActiveScreen}){
         
         handleTaskComplete(taskId);
       }
-    };
+    };*/
 
     const handleTaskComplete = (taskId) => {
       const task = allTasks.find(t => t.id === taskId);
@@ -696,9 +723,34 @@ export function TaskDashboard ({setActiveScreen}){
       );
     };
 
+    const executeAction = (assignee) => {
+      /*if (selectedAction) {
+        const actionLabels = {
+          'assign_rc': `Assigned to RC: ${assignee}`,
+          'assign_department': `Assigned to department: ${assignee}`,
+          'update_status': `Status updated to: ${assignee}`
+        };
+        
+        const actionMessage = actionLabels[selectedAction.action] || `Action completed: ${selectedAction.action}`;
+        
+        handleTaskUpdate(
+          `${selectedAction.applicantId}-${selectedAction.task.name}`,
+          selectedAction.action === 'update_status' ? assignee : 'assigned',
+          selectedAction.action !== 'update_status' ? assignee : null
+        );
+      }*/
+    };
+
     return (
       <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
         <div className="max-w-6xl mx-auto">
+          <ActionModal
+            rcnames={rcnames}
+            setShowActionModal={setShowActionModal} 
+            showActionModal={showActionModal}
+            executeAction={executeAction}
+            selectedAction={selectedAction}
+            />
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
@@ -941,7 +993,7 @@ export function TaskDashboard ({setActiveScreen}){
                                   {getTaskActions(task).map((action) => (
                                     <button
                                       key={action.id}
-                                      onClick={() => !action.disabled && handleTaskAction(task.id, action.id)}
+                                      onClick={(e) => !action.disabled && handleTaskAction(e, task, action)}
                                       disabled={action.disabled}
                                       className={`flex items-center justify-center px-4 py-3 text-white rounded-lg transition-colors text-sm font-medium ${action.color}`}
                                     >
