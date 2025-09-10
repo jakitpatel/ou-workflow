@@ -1,19 +1,10 @@
 {
     "data":[
+        { "name": "DISPATCHER", "value": "DISPATCHER" },
         { "name": "NCRC", "value": "NCRC" },
-        { "name": "LEGAL", "value": "LEGAL" },
-        { "name": "INSP", "value": "INSP" },
-        { "name": "BILLING", "value": "BILLING" },
+        { "name": "NCRC-ADMIN", "value": "NCRC-ADMIN" },
         { "name": "RFR", "value": "RFR" },
-        { "name": "SYSTEM", "value": "SYSTEM" },
-        { "name": "IAR_MANAGER", "value": "IAR_MANAGER" },
+        { "name": "LEGAL", "value": "LEGAL" },
         { "name": "IAR", "value": "IAR" },
-        { "name": "RC", "value": "RC" },
-        { "name": "PROD_MANAGER", "value": "PROD_MANAGER" },
-        { "name": "PROD", "value": "PROD" },
-        { "name": "RC_MANAGER", "value": "RC_MANAGER" },
-        { "name": "CERT", "value": "CERT" },
-        { "name": "NULL", "value": "NULL" }
-        ]
+        { "name": "PRODUCT", "value": "PRODUCT" }        ]
 }
- 

@@ -1,4 +1,4 @@
- import React, { useState,useEffect, useRef,useMemo } from 'react';
+ import React, { useState,useEffect, useRef,useMemo, use } from 'react';
  import { Search, Filter, Bell, Clock, AlertTriangle, CheckCircle, Wrench, ChevronDown, MessageCircle, X, History, Check, User, CheckSquare, Mail, Send, FileText } from 'lucide-react';
  import { useQuery } from '@tanstack/react-query';
  import { fetchApplicants } from '../../../api'; // same api.ts
@@ -260,49 +260,67 @@ export function TaskDashboard ({setActiveScreen}){
       return { total: messages.length, unread: 0 };
     };
 
-   const mapTaskToAction = (task) => {
-      let color, icon
+   const mapTaskToAction = (taskitem, application) => {
+      let color, icon, disabled = false;
 
-      // normalize status
-      const status = task.status?.toLowerCase()
+      // Normalize status
+      const status = taskitem.status?.toLowerCase();
 
-      if (task.assignedTo !== role) {
-        // Not current user's task → disabled
-        color = 'bg-gray-300 cursor-not-allowed'
-        icon = CheckSquare
-      } else if (status === 'completed') {
+      if (status === 'completed' || status === 'done') {
         // Completed task → show as done
-        color = 'bg-gray-400'
-        icon = CheckSquare
+        color = 'bg-green-400';
+        icon = CheckSquare;
+        disabled = true;
+
+      } else if (taskitem.taskRole && taskitem.taskRole !== role) {
+        // Task role doesn't match user's role → disabled
+        color = 'bg-gray-300 cursor-not-allowed';
+        disabled = true;
+
+      } else if (taskitem.taskRole && taskitem.taskRole === role) {
+        console.log('taskitem:', taskitem, 'application:', application);
+        // Role matches → check assignment
+        const roles = Array.isArray(application?.assignedRoles) ? application.assignedRoles : [];
+
+        const isAssigned = roles.some(ar => ar[role] === username);
+        console.log('isAssigned:', isAssigned);
+        if (isAssigned && taskitem.Active) {
+          // Active & assigned to current user → allowed
+          color = 'bg-blue-600 hover:bg-blue-700';
+        } else {
+          // Not assigned or inactive
+          color = 'bg-gray-300 cursor-not-allowed';
+          disabled = true;
+        }
       } else {
-        // Active & assigned to current user → normal action
-        color = 'bg-green-600 hover:bg-green-700'
-        icon = Check
+        // No role defined → disabled
+        color = 'bg-gray-300 cursor-not-allowed';
+        disabled = true;
       }
 
       return {
-        id: `task_${task.TaskId}`,
-        label: task.name,
-        status: task.status,
-        required: task.required,
-        assignee: task.assignee,
+        id: `task_${taskitem.TaskId}`,
+        label: taskitem.name,
+        status: taskitem.status,
+        required: taskitem.required,
+        assignee: taskitem.assignee,
         color,
         icon,
-        disabled: task.assignedTo !== role || status === 'completed', // 👈 add flag for UI
-      }
-    }
+        disabled,
+      };
+    };
+
 
 
     // main: get actions for an application
     const getTaskActions = (app) => {
-      const baseActions = [
+      const baseActions = [];/*[
         { id: 'complete', label: 'Mark Complete', icon: Check, color: 'bg-green-600 hover:bg-green-700' },
         { id: 'reassign', label: 'Reassign', icon: User, color: 'bg-blue-600 hover:bg-blue-700' }
-      ];
+      ];*/
 
       const allTasks = getAllTasks(app);
-      const taskActions = allTasks.map(mapTaskToAction);
-
+      const taskActions = allTasks.map(task => mapTaskToAction(task, app));
       // return flat list of tasks + base actions
       return [...taskActions, ...baseActions];
     };
@@ -927,7 +945,7 @@ export function TaskDashboard ({setActiveScreen}){
                                       disabled={action.disabled}
                                       className={`flex items-center justify-center px-4 py-3 text-white rounded-lg transition-colors text-sm font-medium ${action.color}`}
                                     >
-                                      <action.icon className="w-4 h-4 mr-2" />
+                                      {action.icon && <action.icon className="w-4 h-4 mr-2" />}
                                       {action.label}
                                     </button>
                                   ))}

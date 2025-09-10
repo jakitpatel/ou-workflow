@@ -16,7 +16,272 @@
       "priority": "NORMAL",
       "region": null,
       "relatedTasks": {},
+      "assignedRoles": [{"DISPATCHER": "S.Benjamin"}, 
+                        {"NCRC": "S.Benjamin"},
+                        {"NCRC-ADMIN": "S.Benjamin"},
+                        {"LEGAL": "S.Benjamin"},
+                        {"IAR": "S.Benjamin"},
+                        {"PRODUCT": "S.Benjamin"},
+                        {"RFR": "S.Benjamin"}],
       "stages": {
+        "Initial": {
+          "progress": 100,
+          "status": "NEW",
+          "tasks": [
+            {
+              "TaskId": 2,
+              "taskRole": "DISPATCHER", 
+              "Active": true,
+              "daysActive": 0,
+              "name": "Assign NCRC",
+              "required": true,
+              "status": "New"
+            },
+            {
+              "TaskId": 3,
+              "taskRole": "NCRC-ADMIN",
+              "Active": false,
+              "daysActive": 0,
+              "name": "Verify Company",
+              "required": true,
+              "status": "New"
+            },
+            {
+              "TaskId": 4,
+              "taskRole": "NCRC-ADMIN",
+              "Active": false,
+              "daysActive": 0,
+              "name": "Verify Plant",
+              "required": true,
+              "status": "New"
+            },
+            {
+              "TaskId": 5,
+              "taskRole": "NCRC-ADMIN",
+              "Active": false,
+              "daysActive": 0,
+              "name": "Verify Contact",
+              "required": true,
+              "status": "New"
+            },  
+            {
+              "TaskId": 6,
+              "taskRole": "NCRC-ADMIN",
+              "daysActive": 0,
+              "name": "Verify Products",
+              "required": true,
+              "status": "New"
+            },
+            {
+              "TaskId": 7,
+              "taskRole": "NCRC-ADMIN",
+              "daysActive": 0,
+              "name": "Verify Ingredients",
+              "required": true,
+              "status": "Completed"
+            },
+            {
+              "TaskId": 8,
+              "taskRole": "NCRC",
+              "daysActive": 0,
+              "name": "WITHDRAWN",
+              "required": true,
+              "status": "New"
+            },
+            {
+              "TaskId": 9,
+              "taskRole": "NCRC",
+              "daysActive": 0,
+              "name": "Assign Product",
+              "required": true,
+              "status": "New"
+            },
+            {
+              "TaskId": 10,
+              "taskRole": "NCRC",
+              "daysActive": 0,
+              "name": "Assign Ingredients",
+              "required": true,
+              "status": "New"
+            },
+            {
+              "TaskId": 11,
+              "taskRole": "NCRC",
+              "daysActive": 0,
+              "name": "CONTACT CUSTOMER",
+              "required": true,
+              "status": "Done"
+            }
+          ]
+        },
+        "NDA": {
+          "progress": 100,
+          "status": "NEW",
+          "tasks": [
+            {
+              "TaskId": 15,
+              "taskRole": "NCRC-ADMIN",
+              "daysActive": 0,
+              "name": "RECEIVED NDA",
+              "required": false,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 16,
+              "taskRole": "NCRC-ADMIN",
+              "daysActive": 0,
+              "name": "ACK NDA TO CUSTOMER",
+              "required": false,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 17,
+              "taskRole": "NCRC-ADMIN",
+              "daysActive": 0,
+              "name": "SENT NDA TO LEGAL",
+              "required": false,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 18,
+              "taskRole": "NCRC-ADMIN",
+              "daysActive": 0,
+              "name": "NDA EXECUTED",
+              "required": false,
+              "status": "NEW"
+            }
+          ]
+        },
+        "Products": {
+          "progress": 100,
+          "status": "NEW",
+          "tasks": [
+            {
+              "TaskId": 21,
+              "taskRole": "PRODUCT",
+              "daysActive": 0,
+              "name": "Upload to KASH-DB",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 22,
+              "taskRole": "PRODUCT",
+              "daysActive": 0,
+              "name": "Product in DB",
+              "required": false,
+              "status": "NEW"
+            }
+          ]
+        },
+        "Ingredients": {
+          "progress": 100,
+          "status": "NEW",
+          "tasks": [
+            {
+              "TaskId": 25,
+              "taskRole": "INGREDIENT",
+              "daysActive": 0,
+              "name": "Upload to KASH-DB",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 26,
+              "taskRole": "INGREDIENT",
+              "daysActive": 0,
+              "name": "INGREDIENT in DB",
+              "required": false,
+              "status": "NEW"
+            }
+          ]
+        },
+        "Inspection": {
+          "progress": 100,
+          "status": "NEW",
+          "tasks": [
+            {
+              "TaskId": 29,
+              "taskRole": "NCRC",
+              "daysActive": 0,
+              "name": "INpection n ot Needed",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 30,
+              "taskRole": "NCRC",
+              "daysActive": 0,
+              "name": "Assign Fee Structure",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 31,
+              "taskole": "NCRC",
+              "daysActive": 0,
+              "name": "Select RFR",
+              "required": false,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 32,
+              "taskRole": "NCRC",
+              "daysActive": 0,
+              "name": "Assign Invoice Amount",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 33,
+              "taskRole": "NCRC",
+              "daysActive": 0,
+              "name": "RFR Assigned",
+              "required": true,
+              "status": "Pending"
+            },
+            {
+              "TaskId": 34,
+              "taskRole": "NCRC",
+              "daysActive": 0,
+              "name": "Generate an Invoice",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 35,
+              "taskRole": "NCRC",
+              "daysActive": 0,
+              "name": "Invoice paid ",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 36,
+              "taskRole": "RFR",
+              "daysActive": 0,
+              "name": "Schedule Inspection",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 37,
+              "taskRole": "RFR",
+              "daysActive": 0,
+              "name": "Inspection Report Submitted",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 38,
+              "taskRole": "NCRC",
+              "daysActive": 0,
+              "name": "WITHDRAWN",
+              "required": true,
+              "status": "NEW"
+            }
+          ]
+        },
         "Certification": {
           "progress": 100,
           "status": "NEW",
@@ -27,8 +292,7 @@
               "daysActive": 0,
               "name": "Send KCM Invoice",
               "required": true,
-              "status": "Pending",
-              "assignedTo": "BILLING"
+              "status": "Pending"
             },
             {
               "TaskId": 31,
@@ -36,8 +300,7 @@
               "daysActive": 0,
               "name": "KCM Paid",
               "required": true,
-              "status": "Pending",
-              "assignedTo": "NCRC"
+              "status": "Pending"
             },
             {
               "TaskId": 32,
@@ -45,8 +308,7 @@
               "daysActive": 0,
               "name": "Issue Certification",
               "required": true,
-              "status": "Pending",
-              "assignedTo": "RC"
+              "status": "Pending"
             }
           ]
         },
@@ -60,8 +322,7 @@
               "daysActive": 0,
               "name": "Assign to RC",
               "required": true,
-              "status": "Pending",
-              "assignedTo": "RC"
+              "status": "Pending"
             },
             {
               "TaskId": 27,
@@ -69,8 +330,7 @@
               "daysActive": 0,
               "name": "Review Completed by RC",
               "required": true,
-              "status": "Pending",
-              "assignedTo": "LEGAL"
+              "status": "Pending"
             },
             {
               "TaskId": 28,
@@ -78,251 +338,13 @@
               "daysActive": 0,
               "name": "Send Certification Contract",
               "required": true,
-              "status": "Pending",
-              "assignedTo": "NCRC"
+              "status": "Pending"
             },
             {
               "TaskId": 29,
               "assignee": null,
               "daysActive": 0,
               "name": "Contract Completed by Company",
-              "required": true,
-              "status": "Pending",
-              "assignedTo": "LEGAL"
-            }
-          ]
-        },
-        "Ingredients": {
-          "progress": 100,
-          "status": "NEW",
-          "tasks": [
-            {
-              "TaskId": 16,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Assign to RC IAR Review",
-              "required": true,
-              "status": "Pending",
-              "assignedTo": "RC"
-            },
-            {
-              "TaskId": 17,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Schedule A Verification",
-              "required": true,
-              "status": "Pending",
-              "assignedTo": "LEGAL"
-            },
-            {
-              "TaskId": 18,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Kosher Code Verification",
-              "required": true,
-              "status": "Pending",
-              "assignedTo": "NCRC"
-            },
-            {
-              "TaskId": 19,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Supplier Approval Check",
-              "required": true,
-              "status": "Pending",
-              "assignedTo": "INSP"
-            },
-            {
-              "TaskId": 20,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Approved by IAR RC Review",
-              "required": true,
-              "status": "Pending",
-              "assignedTo": "RC"
-            },
-            {
-              "TaskId": 21,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "IAR Completed",
-              "required": true,
-              "status": "Pending",
-              "assignedTo": "NCRC"
-            }
-          ]
-        },
-        "Initial": {
-          "progress": 100,
-          "status": "NEW",
-          "tasks": [
-            {
-              "TaskId": 2,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Evaluate Application",
-              "required": true,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 33,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Start",
-              "required": true,
-              "status": "Completed"
-            },
-            {
-              "TaskId": 3,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Assign to Products",
-              "required": true,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 4,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Assign to IAR",
-              "required": true,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 5,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Contact Customer",
-              "required": true,
-              "status": "Completed"
-            }
-          ]
-        },
-        "Inspection": {
-          "progress": 100,
-          "status": "NEW",
-          "tasks": [
-            {
-              "TaskId": 9,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Set Inspection Fee",
-              "required": true,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 10,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Send KIM Invoice",
-              "required": true,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 11,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Payment Overdue - Escalation Required",
-              "required": false,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 12,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Assign RFR",
-              "required": true,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 13,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "RFR Assigned",
-              "required": true,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 14,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "EIR Received/Reviewed",
-              "required": true,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 15,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Notify IAR of EIR",
-              "required": true,
-              "status": "Pending"
-            }
-          ]
-        },
-        "NDA": {
-          "progress": 100,
-          "status": "NEW",
-          "tasks": [
-            {
-              "TaskId": 6,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Send NDA",
-              "required": false,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 7,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "NDA Executed by Legal",
-              "required": false,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 8,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "NDA Completed",
-              "required": false,
-              "status": "Pending"
-            }
-          ]
-        },
-        "Products": {
-          "progress": 100,
-          "status": "NEW",
-          "tasks": [
-            {
-              "TaskId": 22,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Assign to Products Dept",
-              "required": true,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 23,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Send PLA Invoice",
-              "required": false,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 24,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "PLA Invoice Paid",
-              "required": false,
-              "status": "Pending"
-            },
-            {
-              "TaskId": 25,
-              "assignee": null,
-              "daysActive": 0,
-              "name": "Products Dept Complete",
               "required": true,
               "status": "Pending"
             }
