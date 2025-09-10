@@ -10,8 +10,8 @@ type UserContextType = {
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [username, setUsername] = useState<string>('S. Benjamin') // default
-  const [role, setRole] = useState<string>('NCRC') // default empty
+  const [username, setUsername] = useState<string>('S.Benjamin') // default
+  const [role, setRole] = useState<string>('DISPATCHER') // default empty
 
   return (
     <UserContext.Provider value={{ username, role, setUsername, setRole }}>
