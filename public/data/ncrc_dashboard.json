@@ -78,7 +78,7 @@
               "daysActive": 0,
               "name": "Verify Ingredients",
               "required": true,
-              "status": "Completed"
+              "status": "NEW"
             },
             {
               "TaskId": 8,
@@ -110,7 +110,7 @@
               "daysActive": 0,
               "name": "CONTACT CUSTOMER",
               "required": true,
-              "status": "Done"
+              "status": "NEW"
             }
           ]
         },
