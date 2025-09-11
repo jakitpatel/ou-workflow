@@ -54,3 +54,24 @@ export async function assignTask({
 
   return response.json();
 }
+
+/** 👇 New: Confirm task mutation */
+export async function confirmTask({
+  appId,
+  taskId
+}: {
+  appId: string;
+  taskId: string;
+}) {
+  const response = await fetch(`${API_BASE_URL}/confirm-task`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ appId, taskId, done:"true" }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to confirm task: ${response.statusText}`);
+  }
+
+  return response.json();
+}

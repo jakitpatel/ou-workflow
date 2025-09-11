@@ -1,7 +1,7 @@
  import React, { useState,useEffect, useRef,useMemo, use } from 'react';
  import { Search, Filter, Bell, Clock, AlertTriangle, CheckCircle, Wrench, ChevronDown, MessageCircle, X, History, Check, User, CheckSquare, Mail, Send, FileText } from 'lucide-react';
  import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
- import { fetchApplicants, fetchRcs, assignTask } from './../../../api'; // same api.ts
+ import { fetchApplicants, fetchRcs, assignTask, confirmTask } from './../../../api'; // same api.ts
  import { useUser } from './../../../context/UserContext'  // 👈 new import
  import { ActionModal } from './../modal/ActionModal';
 
@@ -316,6 +316,7 @@ export function TaskDashboard ({setActiveScreen}){
         status: taskitem.status,
         required: taskitem.required,
         assignee: taskitem.assignee,
+        taskType: taskitem.taskType,
         color,
         icon,
         disabled,
@@ -425,7 +426,12 @@ export function TaskDashboard ({setActiveScreen}){
       }*/
 
       setSelectedAction({ application, action });
-      setShowActionModal(action);
+      if(action.taskType === "confirm"){
+        console.log("TaskType :"+action.taskType);
+        executeAction("Confirmed");
+      } else{
+        setShowActionModal(action);
+      }
     };
 
     /*const handleTaskAction = (taskId, action) => {
@@ -723,6 +729,13 @@ export function TaskDashboard ({setActiveScreen}){
         </div>
       );
     };
+    const confirmTaskMutation = useMutation({
+      mutationFn: confirmTask,
+      onSuccess: () => {
+        // 🔄 Invalidate to refresh data
+        queryClient.invalidateQueries({ queryKey: ["applicants"] });
+      }
+    });
 
     //const assignTaskMutation = useAssignTask();
     const assignTaskMutation = useMutation({
@@ -735,18 +748,26 @@ export function TaskDashboard ({setActiveScreen}){
     const executeAction = (assignee: string) => {
       if (selectedAction) {
         const taskId = selectedAction.action.id;
-        const appId = selectedAction.application.id;
-        const role =
-          selectedAction.action.label === "Assign NCRC"
-            ? "NCRC"
-            : "OtherRole"; // adjust logic
+        const appId  = selectedAction.application.id;
 
-        assignTaskMutation.mutate({
-          appId,
-          taskId,
-          role,
-          assignee
-        });
+        if(selectedAction.action.taskType === "confirm"){
+          confirmTaskMutation.mutate({
+            appId,
+            taskId
+          });
+        } else if(selectedAction.action.taskType === "action"){
+            const role =
+              selectedAction.action.label === "Assign NCRC"
+                ? "NCRC"
+                : "OtherRole"; // adjust logic
+
+            assignTaskMutation.mutate({
+              appId,
+              taskId,
+              role,
+              assignee
+            });
+          }
       }
     };
 
