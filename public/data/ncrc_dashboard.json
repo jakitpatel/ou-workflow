@@ -35,16 +35,18 @@
               "daysActive": 0,
               "name": "Assign NCRC",
               "required": true,
-              "status": "New"
+              "status": "New",
+              "taskType": "action"
             },
             {
               "TaskId": 3,
               "taskRole": "NCRC-ADMIN",
-              "Active": false,
+              "Active": true,
               "daysActive": 0,
               "name": "Verify Company",
               "required": true,
-              "status": "New"
+              "status": "New",
+              "taskType": "confirm"
             },
             {
               "TaskId": 4,
@@ -53,7 +55,8 @@
               "daysActive": 0,
               "name": "Verify Plant",
               "required": true,
-              "status": "New"
+              "status": "New",
+              "taskType": "confirm"
             },
             {
               "TaskId": 5,
