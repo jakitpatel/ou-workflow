@@ -3,14 +3,16 @@ import { Bell, User, BarChart3, ClipboardList, LogOut, Settings } from 'lucide-r
 import { useQuery } from '@tanstack/react-query'
 import { fetchRoles } from './../../api';
 import { useUser } from './../../context/UserContext'  // 👈 new import
+import { Link } from '@tanstack/react-router'
 
 type Props = {
   activeScreen: string
   setActiveScreen: (screen: string) => void
+  hideMenu?: boolean   // 👈 new optional prop
 }
 
-export function Navigation({ activeScreen, setActiveScreen }: Props) {
-  const { username, role, setRole } = useUser() // 👈 use context
+export function Navigation({ activeScreen, setActiveScreen, hideMenu }: Props) {
+  const { username, role, setRole } = useUser()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   
@@ -43,36 +45,44 @@ export function Navigation({ activeScreen, setActiveScreen }: Props) {
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-2">
               <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center">
-                <span className="text-white font-bold text-xs">OU</span>
+                <Link
+                  to="/"
+                  className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 transition"
+                >
+                  <span className="text-white font-bold text-xs">OU</span>
+                </Link>
               </div>
               <span className="text-lg font-semibold text-gray-900">Workflow System</span>
             </div>
 
-            <nav className="flex space-x-1">
-              <button
-                onClick={() => setActiveScreen('ncrc-dashboard')}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeScreen === 'ncrc-dashboard'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <BarChart3 className="w-4 h-4 inline-block mr-1.5" />
-                NCRC Dashboard
-              </button>
+            {/* ✅ Conditionally render top menu */}
+            {!hideMenu && (
+              <nav className="flex space-x-1">
+                <button
+                  onClick={() => setActiveScreen('ncrc-dashboard')}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeScreen === 'ncrc-dashboard'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4 inline-block mr-1.5" />
+                  NCRC Dashboard
+                </button>
 
-              <button
-                onClick={() => setActiveScreen('tasks-dashboard')}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeScreen === 'tasks-dashboard'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <ClipboardList className="w-4 h-4 inline-block mr-1.5" />
-                Tasks & Notifications
-              </button>
-            </nav>
+                <button
+                  onClick={() => setActiveScreen('tasks-dashboard')}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeScreen === 'tasks-dashboard'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <ClipboardList className="w-4 h-4 inline-block mr-1.5" />
+                  Tasks & Notifications
+                </button>
+              </nav>
+            )}
           </div>
 
           {/* Right: Notifications + User */}
@@ -111,18 +121,15 @@ export function Navigation({ activeScreen, setActiveScreen }: Props) {
                   )}
                 </div>
 
-                {/* Profile */}
-                <button
+               {/* Profile */}
+                <Link
+                  to="/profile"
+                  onClick={() => setMenuOpen(false)} // close dropdown on click
                   className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                  onClick={() => {
-                    setMenuOpen(false)
-                    alert(`Profile clicked (role: ${role || "none"})`)
-                  }}
                 >
                   <Settings className="w-4 h-4 mr-2 text-gray-500" />
                   Profile
-                </button>
-
+                </Link>
                 {/* Sign out */}
                 <button
                   className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
