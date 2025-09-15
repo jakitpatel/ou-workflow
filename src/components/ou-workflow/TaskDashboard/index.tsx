@@ -271,9 +271,9 @@ export function TaskDashboard ({setActiveScreen}){
       return colors[stage] || 'bg-gray-100 text-gray-700';
     };
 
-    const getMessageCount = (taskId) => {
-      const messages = taskMessages[taskId] || [];
-      return { total: messages.length, unread: 0 };
+    const getMessageCount = (app) => {
+      const messageCounts = app.task_messages?.length || 0;
+      return { total: messageCounts, unread: 0 };
     };
 
    const mapTaskToAction = (taskitem, application) => {
@@ -947,7 +947,7 @@ export function TaskDashboard ({setActiveScreen}){
                   const statusConfig = getStatusConfig(task.status, task.daysActive);
                   const isActionsExpanded = expandedActions.has(task.id);
                   const isMessagesExpanded = expandedMessages.has(task.id);
-                  const messageCounts = getMessageCount(task.id);
+                  const messageCounts = getMessageCount(task);
                   const plantInfo = plantHistory[task.plant];
 
                   return (
@@ -1031,10 +1031,10 @@ export function TaskDashboard ({setActiveScreen}){
                       {/* Expanded Messages Panel */}
                       {isMessagesExpanded && (
                         <TaskMessagesPanel
-                          task={task}
+                          application={task}
                           username={username}
                           staff={staff}
-                          taskMessages={taskMessages}
+                          taskMessages={task.task_messages || []}
                           messageInputs={messageInputs}
                           messageInputRefs={messageInputRefs}
                           showTaskAssignment={showTaskAssignment}

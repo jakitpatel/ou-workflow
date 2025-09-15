@@ -2,10 +2,10 @@ import React from "react";
 import { MessageCircle, Send, CheckSquare } from "lucide-react";
 
 type TaskMessagesPanelProps = {
-  task: any;
+  application: any;
   username: string;
   staff: { id: string; name: string; department: string }[];
-  taskMessages: Record<string, any[]>;
+  taskMessages: any;
   messageInputs: Record<string, string>;
   messageInputRefs: React.MutableRefObject<Record<string, HTMLInputElement | null>>;
   showTaskAssignment: Record<string, boolean>;
@@ -20,7 +20,7 @@ type TaskMessagesPanelProps = {
 };
 
 export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
-  task,
+  application,
   username,
   staff,
   taskMessages,
@@ -49,10 +49,10 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
 
             {/* Messages List */}
             <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
-              {(taskMessages[task.id] || []).length === 0 ? (
+              {(taskMessages || []).length === 0 ? (
                 <p className="text-gray-500 text-sm italic">No messages yet</p>
               ) : (
-                (taskMessages[task.id] || []).map((msg) => (
+                (taskMessages || []).map((msg) => (
                   <div
                     key={msg.id}
                     className={`p-3 rounded-lg text-sm ${
@@ -63,13 +63,15 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
                   >
                     <div className="flex justify-between items-start mb-1">
                       <span className="font-medium text-gray-900">{msg.sender}</span>
-                      <span className="text-xs text-gray-500">
-                        {msg.timestamp.toLocaleDateString()}{" "}
-                        {msg.timestamp.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
+                      {msg.timestamp && (
+                        <span className="text-xs text-gray-500">
+                          {new Date(msg.timestamp).toLocaleDateString()}{" "}
+                          {new Date(msg.timestamp).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      )}
                     </div>
                     <p className="text-gray-700">{msg.text}</p>
                   </div>
@@ -82,20 +84,20 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
               <div className="flex space-x-2">
                 <input
                   ref={(el) => {
-                    messageInputRefs.current[task.id] = el;
+                    messageInputRefs.current[application.id] = el;
                   }}
                   type="text"
                   placeholder="Type a message..."
                   className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none bg-white"
-                  value={messageInputs[task.id] || ""}
+                  value={messageInputs[application.id] || ""}
                   onChange={(e) =>
-                    handleMessageInputChange(task.id, e.target.value)
+                    handleMessageInputChange(application.id, e.target.value)
                   }
-                  onKeyDown={(e) => handleKeyPress(e, task.id)}
+                  onKeyDown={(e) => handleKeyPress(e, application.id)}
                 />
-                {messageInputs[task.id]?.trim() && (
+                {messageInputs[application.id]?.trim() && (
                   <button
-                    onClick={() => handleCreateTaskFromMessage(task.id)}
+                    onClick={() => handleCreateTaskFromMessage(application.id)}
                     className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm transition-colors"
                     title="Create task from message"
                   >
@@ -103,8 +105,8 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
                   </button>
                 )}
                 <button
-                  onClick={() => handleSendMessage(task.id)}
-                  disabled={!messageInputs[task.id]?.trim()}
+                  onClick={() => handleSendMessage(application.id)}
+                  disabled={!messageInputs[application.id]?.trim()}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                 >
                   <Send className="w-4 h-4" />
@@ -112,13 +114,13 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
               </div>
               <p className="text-xs text-gray-500">
                 Press Enter to send message
-                {messageInputs[task.id]?.trim()
+                {messageInputs[application.id]?.trim()
                   ? ", Ctrl+Enter to create task, or click checkbox to create task"
                   : ", or Ctrl+Enter to create task"}
               </p>
 
               {/* Task Assignment Panel */}
-              {showTaskAssignment[task.id] && (
+              {showTaskAssignment[application.id] && (
                 <div className="task-assignment-panel mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-400 rounded-lg shadow-lg">
                   <div className="flex items-center mb-3">
                     <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">
@@ -134,7 +136,7 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
                       Task Description:
                     </div>
                     <div className="text-sm text-gray-900 italic">
-                      "{taskAssignmentData[task.id]?.taskText}"
+                      "{taskAssignmentData[application.id]?.taskText}"
                     </div>
                   </div>
 
@@ -145,13 +147,13 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
                     <select
                       className="w-full text-sm border-2 border-purple-300 rounded-lg px-3 py-3 focus:ring-2 focus:ring-purple-500 focus:outline-none focus:border-purple-500 bg-white font-medium"
                       value={
-                        taskAssignmentData[task.id]?.assignee || username
+                        taskAssignmentData[application.id]?.assignee || username
                       }
                       onChange={(e) => {
                         setTaskAssignmentData((prev) => ({
                           ...prev,
-                          [task.id]: {
-                            ...prev[task.id],
+                          [application.id]: {
+                            ...prev[application.id],
                             assignee: e.target.value,
                           },
                         }));
@@ -171,11 +173,11 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
                       onClick={() => {
                         setShowTaskAssignment((prev) => ({
                           ...prev,
-                          [task.id]: false,
+                          [application.id]: false,
                         }));
                         setTaskAssignmentData((prev) => ({
                           ...prev,
-                          [task.id]: null,
+                          [application.id]: null,
                         }));
                       }}
                       className="px-4 py-2 text-sm text-purple-700 hover:text-purple-900 border-2 border-purple-300 rounded-lg hover:bg-purple-50 transition-colors font-medium"
@@ -183,7 +185,7 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
                       ❌ Cancel
                     </button>
                     <button
-                      onClick={() => handleConfirmTaskCreation(task.id)}
+                      onClick={() => handleConfirmTaskCreation(application.id)}
                       className="px-6 py-2 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 font-bold transition-all shadow-lg border-2 border-purple-500"
                     >
                       ✨ Create Task
