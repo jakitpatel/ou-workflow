@@ -282,24 +282,34 @@ export function TaskDashboard ({setActiveScreen}){
       // Normalize status
       const status = taskitem.status?.toLowerCase();
 
+      // Always normalize taskRole into array
+      // Normalize taskRoles into array of strings
+      const taskRoles = Array.isArray(taskitem.taskRoles)
+        ? taskitem.taskRoles.map(r => r.taskRole).filter(Boolean)
+        : taskitem.taskRole
+          ? [taskitem.taskRole]
+          : [];
+
       if (status === 'completed' || status === 'done') {
         // Completed task → show as done
         color = 'bg-green-400';
         icon = CheckSquare;
         disabled = true;
 
-      } else if (taskitem.taskRole && taskitem.taskRole !== role) {
-        // Task role doesn't match user's role → disabled
+      } else if (taskRoles.length > 0 && !taskRoles.includes(role)) {
+        // Task roles exist but don't include current user's role → disabled
         color = 'bg-gray-300 cursor-not-allowed';
         disabled = true;
 
-      } else if (taskitem.taskRole && taskitem.taskRole === role) {
+      } else if (taskRoles.includes(role)) {
         console.log('taskitem:', taskitem, 'application:', application);
+
         // Role matches → check assignment
         const roles = Array.isArray(application?.assignedRoles) ? application.assignedRoles : [];
 
         const isAssigned = roles.some(ar => ar[role] === username);
         console.log('isAssigned:', isAssigned);
+
         if (isAssigned && taskitem.Active) {
           // Active & assigned to current user → allowed
           color = 'bg-blue-600 hover:bg-blue-700';
@@ -309,7 +319,7 @@ export function TaskDashboard ({setActiveScreen}){
           disabled = true;
         }
       } else {
-        // No role defined → disabled
+        // No roles defined at all → disabled
         color = 'bg-gray-300 cursor-not-allowed';
         disabled = true;
       }
@@ -326,8 +336,6 @@ export function TaskDashboard ({setActiveScreen}){
         disabled,
       };
     };
-
-
 
     // main: get actions for an application
     const getTaskActions = (app) => {

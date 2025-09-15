@@ -27,20 +27,25 @@
         "Initial": {
           "progress": 100,
           "status": "NEW",
-          "tasks": [
+          "tasks": [ 
             {
               "TaskId": 2,
-              "taskRole": "DISPATCHER", 
-              "Active": true,
+              "taskRoles": [
+                { "taskRole": "DISPATCHER" }
+              ],
+              "Active": false,
               "daysActive": 0,
               "name": "Assign NCRC",
               "required": true,
-              "status": "New",
+              "status": "Done",
               "taskType": "action"
             },
             {
               "TaskId": 3,
-              "taskRole": "NCRC-ADMIN",
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" },
+                { "taskRole": "NCRC" }
+              ],
               "Active": true,
               "daysActive": 0,
               "name": "Verify Company",
@@ -50,8 +55,10 @@
             },
             {
               "TaskId": 4,
-              "taskRole": "NCRC-ADMIN",
-              "Active": false,
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
+              "Active": true,
               "daysActive": 0,
               "name": "Verify Plant",
               "required": true,
@@ -60,24 +67,34 @@
             },
             {
               "TaskId": 5,
-              "taskRole": "NCRC-ADMIN",
-              "Active": false,
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
+              "Active": true,
               "daysActive": 0,
               "name": "Verify Contact",
               "required": true,
-              "status": "New"
-            },  
+              "status": "New",
+              "taskType": "confirm"
+            },
             {
               "TaskId": 6,
-              "taskRole": "NCRC-ADMIN",
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
+              "Active": true,
               "daysActive": 0,
               "name": "Verify Products",
               "required": true,
-              "status": "New"
+              "status": "New",
+              "taskType": "confirm"
             },
             {
               "TaskId": 7,
-              "taskRole": "NCRC-ADMIN",
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
+              "Active": true,
               "daysActive": 0,
               "name": "Verify Ingredients",
               "required": true,
@@ -85,7 +102,9 @@
             },
             {
               "TaskId": 8,
-              "taskRole": "NCRC",
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
               "daysActive": 0,
               "name": "WITHDRAWN",
               "required": true,
@@ -93,7 +112,9 @@
             },
             {
               "TaskId": 9,
-              "taskRole": "NCRC",
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
               "daysActive": 0,
               "name": "Assign Product",
               "required": true,
@@ -101,7 +122,9 @@
             },
             {
               "TaskId": 10,
-              "taskRole": "NCRC",
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
               "daysActive": 0,
               "name": "Assign Ingredients",
               "required": true,
@@ -109,7 +132,9 @@
             },
             {
               "TaskId": 11,
-              "taskRole": "NCRC",
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
               "daysActive": 0,
               "name": "CONTACT CUSTOMER",
               "required": true,
@@ -123,7 +148,9 @@
           "tasks": [
             {
               "TaskId": 15,
-              "taskRole": "NCRC-ADMIN",
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
               "daysActive": 0,
               "name": "RECEIVED NDA",
               "required": false,
@@ -131,7 +158,9 @@
             },
             {
               "TaskId": 16,
-              "taskRole": "NCRC-ADMIN",
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
               "daysActive": 0,
               "name": "ACK NDA TO CUSTOMER",
               "required": false,
@@ -139,7 +168,9 @@
             },
             {
               "TaskId": 17,
-              "taskRole": "NCRC-ADMIN",
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
               "daysActive": 0,
               "name": "SENT NDA TO LEGAL",
               "required": false,
@@ -147,7 +178,9 @@
             },
             {
               "TaskId": 18,
-              "taskRole": "NCRC-ADMIN",
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
               "daysActive": 0,
               "name": "NDA EXECUTED",
               "required": false,
@@ -161,7 +194,7 @@
           "tasks": [
             {
               "TaskId": 21,
-              "taskRole": "PRODUCT",
+              "taskRole": [{ "taskRole": "PRODUCT" }],
               "daysActive": 0,
               "name": "Upload to KASH-DB",
               "required": true,
@@ -169,7 +202,7 @@
             },
             {
               "TaskId": 22,
-              "taskRole": "PRODUCT",
+              "taskRole": [{ "taskRole": "PRODUCT" }],
               "daysActive": 0,
               "name": "Product in DB",
               "required": false,
@@ -183,7 +216,7 @@
           "tasks": [
             {
               "TaskId": 25,
-              "taskRole": "INGREDIENT",
+              "taskRole": [{ "taskRole": "INGREDIENT" }],
               "daysActive": 0,
               "name": "Upload to KASH-DB",
               "required": true,
@@ -191,7 +224,7 @@
             },
             {
               "TaskId": 26,
-              "taskRole": "INGREDIENT",
+              "taskRole": [{ "taskRole": "INGREDIENT" }],
               "daysActive": 0,
               "name": "INGREDIENT in DB",
               "required": false,
@@ -205,15 +238,19 @@
           "tasks": [
             {
               "TaskId": 29,
-              "taskRole": "NCRC",
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
               "daysActive": 0,
-              "name": "INpection n ot Needed",
+              "name": "INpection not Needed",
               "required": true,
               "status": "NEW"
             },
             {
               "TaskId": 30,
-              "taskRole": "NCRC",
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
               "daysActive": 0,
               "name": "Assign Fee Structure",
               "required": true,
@@ -221,7 +258,9 @@
             },
             {
               "TaskId": 31,
-              "taskole": "NCRC",
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
               "daysActive": 0,
               "name": "Select RFR",
               "required": false,
@@ -229,7 +268,9 @@
             },
             {
               "TaskId": 32,
-              "taskRole": "NCRC",
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
               "daysActive": 0,
               "name": "Assign Invoice Amount",
               "required": true,
@@ -237,7 +278,9 @@
             },
             {
               "TaskId": 33,
-              "taskRole": "NCRC",
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
               "daysActive": 0,
               "name": "RFR Assigned",
               "required": true,
@@ -245,7 +288,9 @@
             },
             {
               "TaskId": 34,
-              "taskRole": "NCRC",
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
               "daysActive": 0,
               "name": "Generate an Invoice",
               "required": true,
@@ -253,7 +298,9 @@
             },
             {
               "TaskId": 35,
-              "taskRole": "NCRC",
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
               "daysActive": 0,
               "name": "Invoice paid ",
               "required": true,
@@ -261,7 +308,9 @@
             },
             {
               "TaskId": 36,
-              "taskRole": "RFR",
+              "taskRoles": [
+                { "taskRole": "RFR" }
+              ],
               "daysActive": 0,
               "name": "Schedule Inspection",
               "required": true,
@@ -269,7 +318,9 @@
             },
             {
               "TaskId": 37,
-              "taskRole": "RFR",
+              "taskRoles": [
+                { "taskRole": "RFR" }
+              ],
               "daysActive": 0,
               "name": "Inspection Report Submitted",
               "required": true,
@@ -277,7 +328,9 @@
             },
             {
               "TaskId": 38,
-              "taskRole": "NCRC",
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
               "daysActive": 0,
               "name": "WITHDRAWN",
               "required": true,

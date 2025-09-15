@@ -40,7 +40,8 @@ export function ApplicantCard({ applicant, setShowIngredientsManager, setSelecte
     urgent: { label: 'Urgent', color: 'bg-red-500', textColor: 'text-white' },
     high: { label: 'High', color: 'bg-orange-500', textColor: 'text-white' },
     medium: { label: 'Medium', color: 'bg-blue-500', textColor: 'text-white' },
-    low: { label: 'Low', color: 'bg-gray-500', textColor: 'text-white' }
+    low: { label: 'Low', color: 'bg-gray-500', textColor: 'text-white' },
+    normal: { label: 'Normal', color: 'bg-blue-500', textColor: 'text-white' }
   };
   const statusConfig = {
     contract_sent: { label: 'Contract Sent', color: 'bg-blue-100 text-blue-800', step: 1 },
@@ -81,7 +82,7 @@ export function ApplicantCard({ applicant, setShowIngredientsManager, setSelecte
               </div>
             )*/}
             {(applicant.overdue ||
-            applicant.stages["Inspection Process"]?.tasks?.find(t => t.name === "KIM Paid")?.status === "overdue") && (
+            applicant.stages["Inspection"]?.tasks?.find(t => t.name === "KIM Paid")?.status === "overdue") && (
               <div className="flex items-center text-red-600">
                 <AlertTriangle className="w-4 h-4 mr-1" />
                 <span className="text-xs font-medium">CRITICAL</span>
