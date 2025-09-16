@@ -1,12 +1,15 @@
  import React, { useState,useEffect, useRef,useMemo, use } from 'react';
  import { Search, Filter, Bell, Clock, AlertTriangle, CheckCircle, Wrench, ChevronDown, MessageCircle, X, History, Check, User, CheckSquare, Mail, Send, FileText } from 'lucide-react';
  import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
- import { fetchApplicants, fetchRcs, assignTask, confirmTask } from './../../../api'; // same api.ts
+ import { fetchApplicants, fetchRcs, assignTask, confirmTask, sendMsgTask } from './../../../api'; // same api.ts
  import { useUser } from './../../../context/UserContext'  // 👈 new import
  import { ActionModal } from './../modal/ActionModal';
  import { TaskActionsPanel } from './TaskActionsPanel';
  import { TaskMessagesPanel } from './TaskMessagesPanel';
- 
+ import { PlantHistoryModal } from './PlantHistoryModal';
+ import { TaskStatsCards } from './TaskStatsCards';
+ import { TaskFilters } from './TaskFilters';
+
  // Tasks Dashboard Component (with full table functionality restored)
 export function TaskDashboard (){
     const [searchTerm, setSearchTerm] = useState('');
@@ -217,9 +220,10 @@ export function TaskDashboard (){
       let filtered = tasksplants.filter(task => {
         //if (task.assignedTo !== username) return false;
         
-        const matchesSearch = !searchTerm || 
-          task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          task.plant.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = !searchTerm ||
+        (task.title && task.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (task.plant && task.plant.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (task.company && task.company.toLowerCase().includes(searchTerm.toLowerCase()));
         
         const matchesStatus = statusFilter === 'all' || 
           (statusFilter === 'active' && task.status !== 'completed') ||
@@ -397,22 +401,31 @@ export function TaskDashboard (){
       }));
     };
 
+    const sendMsgTaskMutation = useMutation({
+      mutationFn: sendMsgTask,
+      onSuccess: () => {
+        // 🔄 Invalidate to refresh data
+        queryClient.invalidateQueries({ queryKey: ["applicants"] });
+      }
+    });
+
     const handleSendMessage = (taskId) => {
       const messageText = messageInputs[taskId];
       if (!messageText?.trim()) return;
       
       const newMessage = {
         id: Date.now(),
+        appId: taskId,
         sender: username,
         text: messageText,
         timestamp: new Date(),
         isSystemMessage: false,
       };
-      
-      setTaskMessages(prev => ({
+      sendMsgTaskMutation.mutate(newMessage);
+      /*setTaskMessages(prev => ({
         ...prev,
         [taskId]: [...(prev[taskId] || []), newMessage]
-      }));
+      }));*/
       
       setMessageInputs(prev => ({
         ...prev,
@@ -670,77 +683,6 @@ export function TaskDashboard (){
       }
     };
 
-    // Plant History Modal
-    const PlantHistoryModal = () => {
-      if (!showPlantHistory) return null;
-      
-      const plant = plantHistory[showPlantHistory];
-      if (!plant) return null;
-
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="plant-history-modal bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b bg-gray-50">
-              <div className="flex items-center space-x-3">
-                <History className="w-6 h-6 text-blue-600" />
-                <h3 className="text-xl font-semibold">{showPlantHistory}</h3>
-              </div>
-              <button onClick={() => setShowPlantHistory(null)} className="text-gray-500 hover:text-gray-700">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Application History</h4>
-                  <div className="space-y-2 text-sm">
-                    <p><span className="font-medium">Total Applications:</span> {plant.applications}</p>
-                    <p><span className="font-medium">Last Certified:</span> {plant.lastCertified || 'Never'}</p>
-                    <p><span className="font-medium">Current Stage:</span> {plant.currentStage}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-3">Contact Information</h4>
-                  <div className="text-sm">
-                    <p className="font-medium">{plant.contact}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-900 mb-3">Products</h4>
-                <div className="flex flex-wrap gap-2">
-                  {plant.products.map((product, index) => (
-                    <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                      {product}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-900 mb-3">Notes</h4>
-                <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded">{plant.notes}</p>
-              </div>
-
-              <div className="pt-4 border-t">
-                <button
-                  onClick={() => {
-                    setShowPlantHistory(null);
-                    handleViewNCRCDashboard(showPlantHistory);
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  View in NCRC Dashboard →
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    };
     const confirmTaskMutation = useMutation({
       mutationFn: confirmTask,
       onSuccess: () => {
@@ -802,60 +744,15 @@ export function TaskDashboard (){
           </div>
 
           {/* Stats Cards */}
-          <div className="mt-6 grid grid-cols-5 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <div className="text-2xl font-bold text-blue-600">{taskStats.total}</div>
-              <div className="text-sm text-blue-700">Total Tasks</div>
-            </div>
-            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              <div className="text-2xl font-bold text-yellow-600">{taskStats.new}</div>
-              <div className="text-sm text-yellow-700">New</div>
-            </div>
-            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-              <div className="text-2xl font-bold text-purple-600">{taskStats.inProgress}</div>
-              <div className="text-sm text-purple-700">In Progress</div>
-            </div>
-            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-              <div className="text-2xl font-bold text-red-600">{taskStats.overdue}</div>
-              <div className="text-sm text-red-700">Overdue</div>
-            </div>
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <div className="text-2xl font-bold text-green-600">{taskStats.completed}</div>
-              <div className="text-sm text-green-700">Completed</div>
-            </div>
-          </div>
+          <TaskStatsCards stats={taskStats} />
 
           {/* Filters */}
-          <div className="mt-6 flex flex-wrap items-center gap-4">
-            <div className="flex-1 min-w-64">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search tasks or plants..."
-                  className="w-full pl-10 pr-4 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-400" />
-              <select 
-                value={statusFilter} 
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="text-sm border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active Only</option>
-                <option value="new">New</option>
-                <option value="in_progress">In Progress</option>
-                <option value="overdue">Overdue</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-          </div>
+          <TaskFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+          />
 
           {/* Completion Feedback */}
           <div className="mt-6">
@@ -1063,7 +960,12 @@ export function TaskDashboard (){
           )}
 
           {/* Plant History Modal */}
-          <PlantHistoryModal />
+          <PlantHistoryModal
+            showPlantHistory={showPlantHistory}
+            setShowPlantHistory={setShowPlantHistory}
+            plantHistory={plantHistory}
+            onViewNCRCDashboard={handleViewNCRCDashboard}
+          />
         </div>
       </div>
     );

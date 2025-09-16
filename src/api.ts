@@ -63,7 +63,7 @@ export async function confirmTask({
   appId: string;
   taskId: string;
 }) {
-  const response = await fetch(`${API_BASE_URL}/confirm-task`, {
+  const response = await fetch(`${API_BASE_URL}/TaskInstances`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ appId, taskId, done:"true" }),
@@ -71,6 +71,21 @@ export async function confirmTask({
 
   if (!response.ok) {
     throw new Error(`Failed to confirm task: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/** 👇 New: Send Msg task mutation */
+export async function sendMsgTask(newMessage: any) {
+  const response = await fetch(`${API_BASE_URL}/send-msg`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(newMessage),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to Send Message: ${response.statusText}`);
   }
 
   return response.json();
