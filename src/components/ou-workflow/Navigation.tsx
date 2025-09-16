@@ -6,13 +6,11 @@ import { useUser } from './../../context/UserContext'  // 👈 new import
 import { Link } from '@tanstack/react-router'
 
 type Props = {
-  activeScreen: string
-  setActiveScreen: (screen: string) => void
   hideMenu?: boolean   // 👈 new optional prop
 }
 
-export function Navigation({ activeScreen, setActiveScreen, hideMenu }: Props) {
-  const { username, role, setRole } = useUser()
+export function Navigation({ hideMenu }: Props) {
+  const { username, role, setRole, activeScreen, setActiveScreen } = useUser()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   

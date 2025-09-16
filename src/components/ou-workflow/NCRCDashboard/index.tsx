@@ -5,6 +5,7 @@ import { ActionModal } from './ActionModal'
 import { Search } from 'lucide-react'
 import { fetchApplicants } from './../../../api';
 import { IngredientsManagerPage } from './IngredientsManagerPage';
+import { useUser } from './../../../context/UserContext'  // 👈 new import
 
 type Task = {
   name: string;
@@ -42,22 +43,21 @@ type Props = {
   setShowIngredientsManager: (val: boolean) => void
   selectedIngredientApp: any
   setSelectedIngredientApp: (val: any) => void
-  setActiveScreen: (val: any) => void
 }
 
 export function NCRCDashboard({
   showIngredientsManager,
   setShowIngredientsManager,
   selectedIngredientApp,
-  setSelectedIngredientApp,
-  setActiveScreen
+  setSelectedIngredientApp
 }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [showActionModal, setShowActionModal] = useState(null);
   const [selectedAction, setSelectedAction] = useState(null);
-
+  const { setActiveScreen } = useUser(); // 👈 use context
+  
   // Lookup tables for assignments
   const rcLookup = [
     { id: 'rc1', name: 'R. Gorelik', department: 'NCRC', specialty: 'Dairy Products', workload: 'Light' },

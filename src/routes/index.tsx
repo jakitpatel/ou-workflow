@@ -8,13 +8,13 @@ export const Route = createFileRoute('/')({
 })
 
 function App() {
-  const { username } = useUser()
+  const { username, setActiveScreen } = useUser()
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* ✅ Use Navigation.tsx Main page: hide menu */}
     
-      <Navigation activeScreen="home" setActiveScreen={() => {}} hideMenu />
+      <Navigation hideMenu />
 
       {/* ✅ Main content area */}
       <main className="flex-1 p-8">
@@ -30,6 +30,7 @@ function App() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <Link
               to="/ou-workflow"
+              onClick={() => setActiveScreen('ncrc-dashboard')}
               className="block bg-white rounded-xl shadow hover:shadow-lg p-6 text-left transition"
             >
               <h2 className="text-lg font-semibold text-blue-600 mb-2">
@@ -39,6 +40,7 @@ function App() {
 
             <Link
               to="/ou-workflow"
+              onClick={() => setActiveScreen('tasks-dashboard')}
               className="block bg-white rounded-xl shadow hover:shadow-lg p-6 text-left transition"
             >
               <h2 className="text-lg font-semibold text-blue-600 mb-2">

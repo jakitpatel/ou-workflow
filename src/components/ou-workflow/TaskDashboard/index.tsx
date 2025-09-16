@@ -8,7 +8,7 @@
  import { TaskMessagesPanel } from './TaskMessagesPanel';
  
  // Tasks Dashboard Component (with full table functionality restored)
-export function TaskDashboard ({setActiveScreen}){
+export function TaskDashboard (){
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('active');
     const [expandedActions, setExpandedActions] = useState(new Set());
@@ -21,7 +21,7 @@ export function TaskDashboard ({setActiveScreen}){
     const [completionFeedback, setCompletionFeedback] = useState([]);
     const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
-    const { username, role, setRole } = useUser() // 👈 use context
+    const { username, role, setRole, setActiveScreen } = useUser() // 👈 use context
     const [showActionModal, setShowActionModal] = useState(null);
     const [selectedAction, setSelectedAction] = useState(null);
     const [showAllActions, setShowAllActions] = useState<Record<string, boolean>>({});
@@ -310,7 +310,7 @@ export function TaskDashboard ({setActiveScreen}){
         const isAssigned = roles.some(ar => ar[role] === username);
         console.log('isAssigned:', isAssigned);
 
-        if (isAssigned && taskitem.Active) {
+        if (isAssigned && status==='ready') {
           // Active & assigned to current user → allowed
           color = 'bg-blue-600 hover:bg-blue-700';
         } else {

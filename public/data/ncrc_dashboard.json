@@ -35,7 +35,6 @@
               "taskRoles": [
                 { "taskRole": "DISPATCHER" }
               ],
-              "Active": false,
               "daysActive": 0,
               "name": "Assign NCRC",
               "required": true,
@@ -48,11 +47,10 @@
                 { "taskRole": "NCRC-ADMIN" },
                 { "taskRole": "NCRC" }
               ],
-              "Active": true,
               "daysActive": 0,
               "name": "Verify Company",
               "required": true,
-              "status": "New",
+              "status": "READY",
               "taskType": "confirm"
             },
             {
@@ -60,11 +58,10 @@
               "taskRoles": [
                 { "taskRole": "NCRC-ADMIN" }
               ],
-              "Active": true,
               "daysActive": 0,
               "name": "Verify Plant",
               "required": true,
-              "status": "New",
+              "status": "READY",
               "taskType": "confirm"
             },
             {
@@ -72,11 +69,10 @@
               "taskRoles": [
                 { "taskRole": "NCRC-ADMIN" }
               ],
-              "Active": true,
               "daysActive": 0,
               "name": "Verify Contact",
               "required": true,
-              "status": "New",
+              "status": "READY",
               "taskType": "confirm"
             },
             {
@@ -84,11 +80,10 @@
               "taskRoles": [
                 { "taskRole": "NCRC-ADMIN" }
               ],
-              "Active": true,
               "daysActive": 0,
               "name": "Verify Products",
               "required": true,
-              "status": "New",
+              "status": "READY",
               "taskType": "confirm"
             },
             {
@@ -96,11 +91,10 @@
               "taskRoles": [
                 { "taskRole": "NCRC-ADMIN" }
               ],
-              "Active": true,
               "daysActive": 0,
               "name": "Verify Ingredients",
               "required": true,
-              "status": "NEW"
+              "status": "READY"
             },
             {
               "TaskId": 8,
