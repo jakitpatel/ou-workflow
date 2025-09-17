@@ -420,6 +420,427 @@
           "isSystemMessage": true
         }
       ]
+    },
+    {
+      "aiSuggestions": {},
+      "assignedRC": "R. Gorelik",
+      "company": "Predictive Analysis Inc",
+      "daysInStage": 3,
+      "documents": 5,
+      "id": 2,
+      "lastUpdate": "2025-09-04 09:41:14.501542",
+      "nextAction": "Follow up on contract",
+      "notes": 3,
+      "overdue": false,
+      "plant": "Predictive Analysis Inc",
+      "plantHistory": {},
+      "priority": "NORMAL",
+      "region": null,
+      "daysActive":3,
+      "applicationId": "APP-00001",
+      "relatedTasks": {},
+      "assignedRoles": [{"DISPATCHER": "S.Benjamin"}, 
+                        {"NCRC": "S.Benjamin"},
+                        {"NCRC-ADMIN": "S.Benjamin"},
+                        {"LEGAL": "S.Benjamin"},
+                        {"IAR": "S.Benjamin"},
+                        {"PRODUCT": "S.Benjamin"},
+                        {"RFR": "S.Benjamin"}],
+      "stages": {
+        "Initial": {
+          "progress": 100,
+          "status": "NEW",
+          "tasks": [ 
+            {
+              "TaskId": 2,
+              "taskRoles": [
+                { "taskRole": "DISPATCHER" }
+              ],
+              "daysActive": 0,
+              "name": "Assign NCRC",
+              "required": true,
+              "status": "COMPLETE",
+              "taskType": "action"
+            },
+            {
+              "TaskId": 3,
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" },
+                { "taskRole": "NCRC" }
+              ],
+              "daysActive": 0,
+              "name": "Verify Company",
+              "required": true,
+              "status": "PENDING",
+              "taskType": "confirm"
+            },
+            {
+              "TaskId": 4,
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
+              "daysActive": 0,
+              "name": "Verify Plant",
+              "required": true,
+              "status": "PENDING",
+              "taskType": "confirm"
+            },
+            {
+              "TaskId": 5,
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
+              "daysActive": 0,
+              "name": "Verify Contact",
+              "required": true,
+              "status": "PENDING",
+              "taskType": "confirm"
+            },
+            {
+              "TaskId": 6,
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
+              "daysActive": 0,
+              "name": "Verify Products",
+              "required": true,
+              "status": "PENDING",
+              "taskType": "confirm"
+            },
+            {
+              "TaskId": 7,
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
+              "daysActive": 0,
+              "name": "Verify Ingredients",
+              "required": true,
+              "status": "PENDING"
+            },
+            {
+              "TaskId": 8,
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
+              "daysActive": 0,
+              "name": "WITHDRAWN",
+              "required": true,
+              "status": "New"
+            },
+            {
+              "TaskId": 9,
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
+              "daysActive": 0,
+              "name": "Assign Product",
+              "required": true,
+              "status": "New"
+            },
+            {
+              "TaskId": 10,
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
+              "daysActive": 0,
+              "name": "Assign Ingredients",
+              "required": true,
+              "status": "New"
+            },
+            {
+              "TaskId": 11,
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
+              "daysActive": 0,
+              "name": "CONTACT CUSTOMER",
+              "required": true,
+              "status": "NEW"
+            }
+          ]
+        },
+        "NDA": {
+          "progress": 100,
+          "status": "NEW",
+          "tasks": [
+            {
+              "TaskId": 15,
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
+              "daysActive": 0,
+              "name": "RECEIVED NDA",
+              "required": false,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 16,
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
+              "daysActive": 0,
+              "name": "ACK NDA TO CUSTOMER",
+              "required": false,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 17,
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
+              "daysActive": 0,
+              "name": "SENT NDA TO LEGAL",
+              "required": false,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 18,
+              "taskRoles": [
+                { "taskRole": "NCRC-ADMIN" }
+              ],
+              "daysActive": 0,
+              "name": "NDA EXECUTED",
+              "required": false,
+              "status": "NEW"
+            }
+          ]
+        },
+        "Products": {
+          "progress": 100,
+          "status": "NEW",
+          "tasks": [
+            {
+              "TaskId": 21,
+              "taskRole": [{ "taskRole": "PRODUCT" }],
+              "daysActive": 0,
+              "name": "Upload to KASH-DB",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 22,
+              "taskRole": [{ "taskRole": "PRODUCT" }],
+              "daysActive": 0,
+              "name": "Product in DB",
+              "required": false,
+              "status": "NEW"
+            }
+          ]
+        },
+        "Ingredients": {
+          "progress": 100,
+          "status": "NEW",
+          "tasks": [
+            {
+              "TaskId": 25,
+              "taskRole": [{ "taskRole": "INGREDIENT" }],
+              "daysActive": 0,
+              "name": "Upload to KASH-DB",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 26,
+              "taskRole": [{ "taskRole": "INGREDIENT" }],
+              "daysActive": 0,
+              "name": "INGREDIENT in DB",
+              "required": false,
+              "status": "NEW"
+            }
+          ]
+        },
+        "Inspection": {
+          "progress": 100,
+          "status": "NEW",
+          "tasks": [
+            {
+              "TaskId": 29,
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
+              "daysActive": 0,
+              "name": "INpection not Needed",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 30,
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
+              "daysActive": 0,
+              "name": "Assign Fee Structure",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 31,
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
+              "daysActive": 0,
+              "name": "Select RFR",
+              "required": false,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 32,
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
+              "daysActive": 0,
+              "name": "Assign Invoice Amount",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 33,
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
+              "daysActive": 0,
+              "name": "RFR Assigned",
+              "required": true,
+              "status": "Pending"
+            },
+            {
+              "TaskId": 34,
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
+              "daysActive": 0,
+              "name": "Generate an Invoice",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 35,
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
+              "daysActive": 0,
+              "name": "Invoice paid ",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 36,
+              "taskRoles": [
+                { "taskRole": "RFR" }
+              ],
+              "daysActive": 0,
+              "name": "Schedule Inspection",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 37,
+              "taskRoles": [
+                { "taskRole": "RFR" }
+              ],
+              "daysActive": 0,
+              "name": "Inspection Report Submitted",
+              "required": true,
+              "status": "NEW"
+            },
+            {
+              "TaskId": 38,
+              "taskRoles": [
+                { "taskRole": "NCRC" }
+              ],
+              "daysActive": 0,
+              "name": "WITHDRAWN",
+              "required": true,
+              "status": "NEW"
+            }
+          ]
+        },
+        "Certification": {
+          "progress": 100,
+          "status": "NEW",
+          "tasks": [
+            {
+              "TaskId": 30,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "Send KCM Invoice",
+              "required": true,
+              "status": "Pending"
+            },
+            {
+              "TaskId": 31,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "KCM Paid",
+              "required": true,
+              "status": "Pending"
+            },
+            {
+              "TaskId": 32,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "Issue Certification",
+              "required": true,
+              "status": "Pending"
+            }
+          ]
+        },
+        "Contract": {
+          "progress": 100,
+          "status": "NEW",
+          "tasks": [
+            {
+              "TaskId": 26,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "Assign to RC",
+              "required": true,
+              "status": "Pending"
+            },
+            {
+              "TaskId": 27,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "Review Completed by RC",
+              "required": true,
+              "status": "Pending"
+            },
+            {
+              "TaskId": 28,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "Send Certification Contract",
+              "required": true,
+              "status": "Pending"
+            },
+            {
+              "TaskId": 29,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "Contract Completed by Company",
+              "required": true,
+              "status": "Pending"
+            }
+          ]
+        }
+      },
+      "status": "contract_sent",
+      "task_messages": [
+        {
+          "id": 1,
+          "sender": "R. Gorelik",
+          "text": "NDA received from Brooklyn Bread, needs review",
+          "timestamp": "2025-01-15T10:30:00Z",
+          "isSystemMessage": false
+        },
+        {
+          "id": 2,
+          "sender": "System",
+          "text": "Task overdue - 5 days active",
+          "timestamp": "2025-01-20T09:00:00Z",
+          "isSystemMessage": true
+        }
+      ]
     }
   ],
   "status": "ok"
