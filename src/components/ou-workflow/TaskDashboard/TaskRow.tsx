@@ -1,6 +1,6 @@
 import React from 'react';
 import { getStatusConfig, getPriorityBorderClass, getStageColor, getMessageCount } from './taskHelpers';
-import { History, Wrench, ChevronDown, MessageCircle } from 'lucide-react';
+import { History, Wrench, ChevronDown, MessageCircle, Clock } from 'lucide-react';
 import { TaskActionsPanel } from './TaskActionsPanel';
 import { TaskMessagesPanel } from './TaskMessagesPanel';
 
@@ -34,13 +34,17 @@ export function TaskRow({
                 <div className="text-base font-bold group-hover:text-blue-600 transition-colors text-gray-900">
                 {application.plant}
                 <History className="w-4 h-4 inline ml-2 opacity-60 group-hover:opacity-100" />
+                <span className="text-sm font-medium ml-1">{application.daysInStage} days elapsed</span>
+                {/*<span className="text-sm font-normal ml-1 text-gray-600">
+                  {application.applicationId}
+                </span>*/}
                 </div>
             </button>
             
             {/* Task title with stage label */}
             <div className="flex items-center space-x-2">
                 <span className={`px-2 py-1 text-xs rounded font-medium ${getStageColor(application.workflowStage)}`}>
-                {application.workflowStage}
+                {application.applicationId} {application.workflowStage}
                 </span>
                 <span className="font-medium text-sm text-gray-900">
                 {application.title}

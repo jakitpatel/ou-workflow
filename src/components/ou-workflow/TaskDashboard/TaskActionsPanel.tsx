@@ -121,6 +121,7 @@ export const TaskActionsPanel: React.FC<TaskActionsPanelProps> = ({
             )}
 
             {/* Metadata */}
+            {/*
             <div className="mt-4 p-3 bg-white rounded border text-xs text-gray-600">
               <p>
                 <strong>App ID:</strong> {application.applicationId}
@@ -131,7 +132,7 @@ export const TaskActionsPanel: React.FC<TaskActionsPanelProps> = ({
               <p>
                 <strong>Days Active:</strong> {application.daysActive}
               </p>
-            </div>
+            </div>*/}
           </div>
         </div>
       </td>
