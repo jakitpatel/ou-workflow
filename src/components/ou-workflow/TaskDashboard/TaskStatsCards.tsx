@@ -25,7 +25,7 @@ export const TaskStatsCards: React.FC<TaskStatsCardsProps> = ({ stats }) => {
       </div>
       <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
         <div className="text-2xl font-bold text-purple-600">{stats.inProgress}</div>
-        <div className="text-sm text-purple-700">In Progress</div>
+        <div className="text-sm text-purple-700">Pending</div>
       </div>
       <div className="bg-red-50 p-4 rounded-lg border border-red-200">
         <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>

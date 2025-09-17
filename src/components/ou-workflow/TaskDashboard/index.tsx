@@ -170,9 +170,15 @@ export function TaskDashboard (){
       return {
         total: userTasks.length,
         new: userTasks.filter(t => t.status === 'new').length,
-        inProgress: userTasks.filter(t => t.status === 'in_progress').length,
+        inProgress: userTasks.filter(t => {
+          const s = t.status?.toLowerCase();
+          return s === 'in_progress' || s === 'pending';
+        }).length,
         overdue: userTasks.filter(t => t.status === 'overdue').length,
-        completed: userTasks.filter(t => t.status === 'completed').length,
+        completed: userTasks.filter(t => {
+          const s = t.status?.toLowerCase();
+          return s === 'completed' || s === 'complete';
+        }).length,
       }
     }, [username, tasksplants])
 
