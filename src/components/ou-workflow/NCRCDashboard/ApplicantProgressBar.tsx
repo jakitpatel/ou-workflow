@@ -164,15 +164,19 @@ export function ApplicantProgressBar({
                           : 'bg-yellow-100 text-yellow-800'
                       }`}
                     >
-                      {task.status === 'completed'
-                        ? 'Completed'
-                        : task.status === 'in_progress'
-                        ? 'In Progress'
-                        : task.status === 'overdue'
-                        ? 'Needs Attention'
-                        : task.status === 'blocked'
-                        ? 'Blocked'
-                        : 'Pending'}
+                     {(() => {
+                        const status = (task.status || "").toLowerCase();
+                        return status;
+                        /*return status === "completed"
+                          ? "Completed"
+                          : status === "in_progress"
+                          ? "In Progress"
+                          : status === "overdue"
+                          ? "Needs Attention"
+                          : status === "blocked"
+                          ? "Blocked"
+                          : "Pending";*/
+                      })()}
                     </span>
                   </div>
 
