@@ -153,15 +153,17 @@ export function ApplicantProgressBar({
                   <div className="mb-2">
                     <span
                       className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                        task.status === 'completed'
+                        task.status?.toLowerCase() === 'complete'
                           ? 'bg-green-100 text-green-800'
-                          : task.status === 'in_progress'
+                          : task.status?.toLowerCase() === 'pending'
                           ? 'bg-blue-100 text-blue-800'
-                          : task.status === 'overdue'
+                          : task.status?.toLowerCase() === 'in_progress'
+                          ? 'bg-blue-100 text-blue-800'
+                          : task.status?.toLowerCase() === 'overdue'
                           ? 'bg-red-100 text-red-800'
-                          : task.status === 'blocked'
-                          ? 'bg-gray-100 text-gray-800'
-                          : 'bg-yellow-100 text-yellow-800'
+                          : task.status?.toLowerCase() === 'new'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
                       }`}
                     >
                      {(() => {
