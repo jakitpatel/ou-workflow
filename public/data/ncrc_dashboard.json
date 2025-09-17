@@ -38,7 +38,7 @@
               "daysActive": 0,
               "name": "Assign NCRC",
               "required": true,
-              "status": "Done",
+              "status": "COMPLETE",
               "taskType": "action"
             },
             {
@@ -50,7 +50,7 @@
               "daysActive": 0,
               "name": "Verify Company",
               "required": true,
-              "status": "READY",
+              "status": "PENDING",
               "taskType": "confirm"
             },
             {
@@ -61,7 +61,7 @@
               "daysActive": 0,
               "name": "Verify Plant",
               "required": true,
-              "status": "READY",
+              "status": "PENDING",
               "taskType": "confirm"
             },
             {
@@ -72,7 +72,7 @@
               "daysActive": 0,
               "name": "Verify Contact",
               "required": true,
-              "status": "READY",
+              "status": "PENDING",
               "taskType": "confirm"
             },
             {
@@ -83,7 +83,7 @@
               "daysActive": 0,
               "name": "Verify Products",
               "required": true,
-              "status": "READY",
+              "status": "PENDING",
               "taskType": "confirm"
             },
             {
@@ -94,7 +94,7 @@
               "daysActive": 0,
               "name": "Verify Ingredients",
               "required": true,
-              "status": "READY"
+              "status": "PENDING"
             },
             {
               "TaskId": 8,

@@ -1,7 +1,7 @@
  import React, { useState,useEffect, useRef,useMemo, use } from 'react';
- import { Search, Filter, Bell, Clock, AlertTriangle, CheckCircle, Wrench, ChevronDown, MessageCircle, X, History, Check, User, CheckSquare, Mail, Send, FileText } from 'lucide-react';
+ import { CheckCircle, Wrench, ChevronDown, MessageCircle, X, History, Check, User, CheckSquare, Mail, Send, FileText } from 'lucide-react';
  import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
- import { fetchApplicants, fetchRcs, assignTask, confirmTask, sendMsgTask } from './../../../api'; // same api.ts
+ import { assignTask, confirmTask, sendMsgTask } from './../../../api'; // same api.ts
  import { useUser } from './../../../context/UserContext'  // 👈 new import
  import { ActionModal } from './../modal/ActionModal';
  import { TaskActionsPanel } from './TaskActionsPanel';
@@ -9,6 +9,16 @@
  import { PlantHistoryModal } from './PlantHistoryModal';
  import { TaskStatsCards } from './TaskStatsCards';
  import { TaskFilters } from './TaskFilters';
+ import { TaskRow } from './TaskRow';
+ import {
+  getStatusConfig,
+  getPriorityBorderClass,
+  getStageColor,
+  getMessageCount
+} from './taskHelpers';
+import { useRCNames, useTasks } from './../hooks/useTaskDashboardHooks';
+
+ import { plantHistory, staffList } from './demoData';
 
  // Tasks Dashboard Component (with full table functionality restored)
 export function TaskDashboard (){
@@ -41,17 +51,11 @@ export function TaskDashboard (){
       isLoading,
       isError,
       error,
-    } = useQuery({
-      queryKey: ['tasksplants'],
-      queryFn: fetchApplicants,  // same queryFn as NCRCDashboard
-    })
+    } = useTasks()
     // RC Lookup data
     const {
       data: rcnames = [],
-    } = useQuery({
-      queryKey: ['rcnames'],
-      queryFn: fetchRcs,  // same queryFn as NCRCDashboard
-    })
+    } = useRCNames()
 
     // Cross-navigation handler
     const handleViewNCRCDashboard = (plantName) => {
@@ -77,50 +81,7 @@ export function TaskDashboard (){
     }, []);
 
     // Staff for assignments
-    const staff = [
-      { id: 'a.gottesman', name: 'A. Gottesman', department: 'Admin' },
-      { id: 'd.herbsman', name: 'David Herbsman', department: 'IAR' },
-      { id: 'j.torres', name: 'Jennifer Torres', department: 'RFR' },
-      { id: 'r.gorelik', name: 'R. Gorelik', department: 'NCRC' },
-      { id: 'r.epstein', name: 'R. Epstein', department: 'NCRC' },
-      { id: 'legal.team', name: 'Legal Team', department: 'Legal' }
-    ];
-
-    // Plant history data
-    const plantHistory = {
-      'Brooklyn Bread Co.': {
-        applications: 3,
-        lastCertified: '2023-12-15',
-        currentStage: 'NDA Review',
-        notes: 'Long-standing client, typically smooth process',
-        contact: 'Sarah Mitchell - Operations Manager',
-        products: ['Artisan Breads', 'Pastries', 'Seasonal Items']
-      },
-      'Artisan Bakery': {
-        applications: 1,
-        lastCertified: null,
-        currentStage: 'Contract Processing',
-        notes: 'New client, first-time certification',
-        contact: 'Michael Chen - Owner',
-        products: ['Sourdough Breads', 'Organic Pastries']
-      },
-      'Metro Spice Company': {
-        applications: 5,
-        lastCertified: '2024-08-20',
-        currentStage: 'Payment Follow-up',
-        notes: 'Payment delays in past, requires follow-up',
-        contact: 'Jennifer Rodriguez - Finance',
-        products: ['Spice Blends', 'Seasoning Mixes', 'Organic Herbs']
-      },
-      'Happy Snacks': {
-        applications: 2,
-        lastCertified: '2024-01-10',
-        currentStage: 'Certification Pending',
-        notes: 'Quick turnaround expected',
-        contact: 'David Park - Production Manager',
-        products: ['Snack Bars', 'Dried Fruits', 'Nuts']
-      }
-    };
+    const staff = staffList
 
     // Sample tasks with workflow stages
     const [allTasks, setAllTasks] = useState([
@@ -241,45 +202,6 @@ export function TaskDashboard (){
       });
     }, [tasksplants, username, searchTerm, statusFilter]);
 
-    // Helper functions
-    const getStatusConfig = (status, daysActive = 0) => {
-      const configs = {
-        new: { label: 'New', color: 'bg-blue-100 text-blue-800', icon: Bell },
-        in_progress: { label: 'In Progress', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-        overdue: { label: `Overdue (${daysActive}d)`, color: 'bg-red-100 text-red-800', icon: AlertTriangle },
-        completed: { label: 'Completed', color: 'bg-green-100 text-green-800', icon: CheckCircle }
-      };
-      return configs[status] || configs.new;
-    };
-
-    const getPriorityBorderClass = (priority) => {
-      const classes = {
-        urgent: 'border-l-4 border-red-500',
-        high: 'border-l-4 border-orange-400',
-        medium: 'border-l-4 border-blue-400',
-        low: 'border-l-4 border-gray-400'
-      };
-      return classes[priority] || classes.medium;
-    };
-
-    const getStageColor = (stage) => {
-      const colors = {
-        'Application': 'bg-purple-100 text-purple-700',
-        'NDA': 'bg-blue-100 text-blue-700',
-        'Inspection': 'bg-orange-100 text-orange-700',
-        'Ingredients': 'bg-green-100 text-green-700',
-        'Products': 'bg-indigo-100 text-indigo-700',
-        'Contract': 'bg-yellow-100 text-yellow-700',
-        'Certification': 'bg-emerald-100 text-emerald-700'
-      };
-      return colors[stage] || 'bg-gray-100 text-gray-700';
-    };
-
-    const getMessageCount = (app) => {
-      const messageCounts = app.task_messages?.length || 0;
-      return { total: messageCounts, unread: 0 };
-    };
-
    const mapTaskToAction = (taskitem, application) => {
       let color, icon, disabled = false;
 
@@ -294,7 +216,7 @@ export function TaskDashboard (){
           ? [taskitem.taskRole]
           : [];
 
-      if (status === 'completed' || status === 'done') {
+      if (status === 'complete' || status === 'done') {
         // Completed task → show as done
         color = 'bg-green-400';
         icon = CheckSquare;
@@ -311,10 +233,10 @@ export function TaskDashboard (){
         // Role matches → check assignment
         const roles = Array.isArray(application?.assignedRoles) ? application.assignedRoles : [];
 
-        const isAssigned = roles.some(ar => ar[role] === username);
+        const isAssigned = roles.some((ar: any) => ar[role] === username);
         console.log('isAssigned:', isAssigned);
 
-        if (isAssigned && status==='ready') {
+        if (isAssigned && status==='pending') {
           // Active & assigned to current user → allowed
           color = 'bg-blue-600 hover:bg-blue-700';
         } else {
@@ -840,114 +762,37 @@ export function TaskDashboard (){
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTasks.map((task) => {
-                  const statusConfig = getStatusConfig(task.status, task.daysActive);
-                  const isActionsExpanded = expandedActions.has(task.id);
-                  const isMessagesExpanded = expandedMessages.has(task.id);
-                  const messageCounts = getMessageCount(task);
-                  const plantInfo = plantHistory[task.plant];
-
-                  return (
-                    <React.Fragment key={task.id}>
-                      <tr className={`hover:bg-gray-50 ${getPriorityBorderClass(task.priority)}`}>
-                        {/* Task & Plant Column */}
-                        <td className="px-6 py-4">
-                          <div className="space-y-2">
-                            {/* Plant name - prominent and clickable */}
-                            <button 
-                              onClick={() => handleShowPlantHistory(task.plant)}
-                              className="text-left group"
-                              title={`Click to view ${task.plant} history. ${plantInfo?.applications || 0} applications`}
-                            >
-                              <div className="text-base font-bold group-hover:text-blue-600 transition-colors text-gray-900">
-                                {task.plant}
-                                <History className="w-4 h-4 inline ml-2 opacity-60 group-hover:opacity-100" />
-                              </div>
-                            </button>
-                            
-                            {/* Task title with stage label */}
-                            <div className="flex items-center space-x-2">
-                              <span className={`px-2 py-1 text-xs rounded font-medium ${getStageColor(task.workflowStage)}`}>
-                                {task.workflowStage}
-                              </span>
-                              <span className="font-medium text-sm text-gray-900">
-                                {task.title}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Actions Column */}
-                        <td className="px-6 py-4">
-                          <button
-                            onClick={() => handleActionsExpand(task.id)}
-                            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-                          >
-                            <Wrench className="w-4 h-4" />
-                            <span className="text-sm">Actions</span>
-                            <ChevronDown className={`w-4 h-4 transition-transform ${isActionsExpanded ? 'rotate-180' : ''}`} />
-                          </button>
-                        </td>
-
-                        {/* Messages Column */}
-                        <td className="px-6 py-4">
-                          <button
-                            onClick={() => handleMessagesExpand(task.id)}
-                            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                            <span className="text-sm">
-                              {messageCounts.total} message{messageCounts.total !== 1 ? 's' : ''}
-                            </span>
-                            <ChevronDown className={`w-4 h-4 transition-transform ${isMessagesExpanded ? 'rotate-180' : ''}`} />
-                          </button>
-                        </td>
-
-                        {/* Status Column */}
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}>
-                            <statusConfig.icon className="w-3 h-3 mr-1" />
-                            {statusConfig.label}
-                          </span>
-                        </td>
-                      </tr>
-
-                      {isActionsExpanded && (
-                        <TaskActionsPanel
-                          application={task}
-                          username={username}
-                          staff={staff}
-                          showReassignDropdown={showReassignDropdown}
-                          setShowReassignDropdown={setShowReassignDropdown}
-                          getTaskActions={getTaskActions}
-                          handleTaskAction={handleTaskAction}
-                          handleReassignTask={handleReassignTask}
-                        />
-                      )}
-
-                      {/* Expanded Messages Panel */}
-                      {isMessagesExpanded && (
-                        <TaskMessagesPanel
-                          application={task}
-                          username={username}
-                          staff={staff}
-                          taskMessages={task.task_messages || []}
-                          messageInputs={messageInputs}
-                          messageInputRefs={messageInputRefs}
-                          showTaskAssignment={showTaskAssignment}
-                          setShowTaskAssignment={setShowTaskAssignment}
-                          taskAssignmentData={taskAssignmentData}
-                          setTaskAssignmentData={setTaskAssignmentData}
-                          handleMessageInputChange={handleMessageInputChange}
-                          handleKeyPress={handleKeyPress}
-                          handleSendMessage={handleSendMessage}
-                          handleCreateTaskFromMessage={handleCreateTaskFromMessage}
-                          handleConfirmTaskCreation={handleConfirmTaskCreation}
-                        />
-                      )}
-                    </React.Fragment>
-                  );
-                })}
+                {filteredTasks.map((application) => (
+                  <TaskRow
+                    application={application}
+                    username={username}
+                    plantInfo={plantHistory[application.plant]}
+                    expandedActions={expandedActions}
+                    staff={staff}
+                    showReassignDropdown={showReassignDropdown}
+                    setShowReassignDropdown={setShowReassignDropdown}
+                    getTaskActions={getTaskActions}
+                    handleTaskAction={handleTaskAction}
+                    handleReassignTask={handleReassignTask}
+                    expandedMessages={expandedMessages}
+                    handleShowPlantHistory={handleShowPlantHistory}
+                    handleActionsExpand={handleActionsExpand}
+                    handleMessagesExpand={handleMessagesExpand}
+                    // ...pass other needed props...
+                    taskMessages={application.task_messages || []}
+                    messageInputs={messageInputs}
+                    messageInputRefs={messageInputRefs}
+                    showTaskAssignment={showTaskAssignment}
+                    setShowTaskAssignment={setShowTaskAssignment}
+                    taskAssignmentData={taskAssignmentData}
+                    setTaskAssignmentData={setTaskAssignmentData}
+                    handleMessageInputChange={handleMessageInputChange}
+                    handleKeyPress={handleKeyPress}
+                    handleSendMessage={handleSendMessage}
+                    handleCreateTaskFromMessage={handleCreateTaskFromMessage}
+                    handleConfirmTaskCreation={handleConfirmTaskCreation}
+                  />
+                ))}
               </tbody>
             </table>
           </div>
