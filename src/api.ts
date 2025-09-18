@@ -1,8 +1,10 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_LOCAL_URL = import.meta.env.VITE_API_LOCAL_URL;
 
 export async function fetchApplicants({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<Applicant[]> {
   //const url = `${API_BASE_URL}/ncrc_dashboard?page[limit]=${limit}&page[offset]=${page}`;
-  const url = `${API_BASE_URL}/ncrc_dashboard.json`;
+  const url = `${API_BASE_URL}/get_applications?page[limit]=${limit}&page[offset]=${page}`;
+  //const url = `${API_BASE_URL}/ncrc_dashboard.json`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to load applicants: ${response.statusText}`);
   const json = await response.json();
@@ -15,7 +17,7 @@ export async function fetchApplicants({ page = 0, limit = 20 }: { page?: number;
 }
 
 export async function fetchRoles({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<any[]> {
-  const url = `${API_BASE_URL}/ncrc_role.json`;
+  const url = `${API_LOCAL_URL}/ncrc_role.json`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to load roles: ${response.statusText}`);
   const json = await response.json();
@@ -23,7 +25,7 @@ export async function fetchRoles({ page = 0, limit = 20 }: { page?: number; limi
 }
 
 export async function fetchRcs({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<any[]> {
-  const url = `${API_BASE_URL}/ncrc_rc.json`;
+  const url = `${API_LOCAL_URL}/ncrc_rc.json`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to load Rcs: ${response.statusText}`);
   const json = await response.json();
@@ -42,7 +44,7 @@ export async function assignTask({
   role: string;
   assignee: string;
 }) {
-  const response = await fetch(`${API_BASE_URL}/assign-task`, {
+  const response = await fetch(`${API_BASE_URL}/assignRole`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ appId, taskId, role, assignee }),
@@ -95,7 +97,9 @@ export async function sendMsgTask(newMessage: any) {
 export async function fetchApplicationDetailRaw() {
   const res = await fetch('/data/get_application_detail.json', { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to load application detail');
-  return res.json();
+  //return res.json();
+  const json = await res.json();
+  return json.applicationInfo;
 }
 
 // If your JSON contains multiple applications, add a selector:
