@@ -65,10 +65,15 @@ export async function confirmTask({
   appId: string;
   taskId: string;
 }) {
-  const response = await fetch(`${API_BASE_URL}/TaskInstances`, {
+  /*const response = await fetch(`${API_BASE_URL}/TaskInstances`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ appId, taskId, done:"true" }),
+    body: JSON.stringify({ appId, taskId, done:"COMPLETED" }),
+  });*/
+  const response = await fetch(`${API_BASE_URL}/TaskInstances/${taskId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ done:"COMPLETED" }),
   });
 
   if (!response.ok) {
