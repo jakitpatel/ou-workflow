@@ -1,0 +1,217 @@
+{
+  "applicationInfo": {
+    "address": {
+      "city": "Unknown",
+      "country": "Unknown",
+      "state": "Unknown",
+      "street": "Unknown",
+      "zip": "Unknown"
+    },
+    "applicationId": 4804,
+    "company": {
+      "address": {
+        "city": "Pine Grove ",
+        "country": "USA",
+        "line2": "",
+        "state": "PA",
+        "street": "1250 Industrial Parkway",
+        "zip": "17963"
+      },
+      "category": "Pharmaceutical / Nutraceutical",
+      "currentlyCertified": "N",
+      "everCertified": false,
+      "name": "Roots Farm Inc",
+      "website": "www.happycowmills.com"
+    },
+    "contacts": [
+      {
+        "designated": true,
+        "email": "john@happycowmills.com",
+        "name": "Zach Xu",
+        "phone": "9176966517",
+        "role": "Initial communication and contract negotiations",
+        "type": "Primary Contact"
+      }
+    ],
+    "ingredients": [
+      {
+        "addedBy": "System Import",
+        "addedDate": "2025-07-17",
+        "brand": "Jones Farms Organics",
+        "certification": "OU",
+        "ingredient": "Ryman Rye Grain",
+        "manufacturer": "Jones Farms Organics",
+        "ncrcId": "ING-2025-1001",
+        "packaging": "bulk",
+        "source": "File 1",
+        "status": "Original"
+      },
+      {
+        "addedBy": "System Import",
+        "addedDate": "2025-07-17",
+        "brand": "Jones Farms Organics",
+        "certification": "OU",
+        "ingredient": "Ryman Rye Grain",
+        "manufacturer": "Jones Farms Organics",
+        "ncrcId": "ING-2025-1001",
+        "packaging": "bulk",
+        "source": "File 1",
+        "status": "Original"
+      },
+      {
+        "addedBy": "System Import",
+        "addedDate": "2025-07-17",
+        "brand": "cow & Livestock",
+        "certification": "OU",
+        "ingredient": "Ryman Rye Grain",
+        "manufacturer": "cow & Livestock",
+        "ncrcId": "ING-2025-1001",
+        "packaging": "bulk",
+        "source": "File 2",
+        "status": "Original"
+      },
+      {
+        "addedBy": "System Import",
+        "addedDate": "2025-07-17",
+        "brand": "cow & Livestock",
+        "certification": "OU",
+        "ingredient": "Ryman Rye Grain",
+        "manufacturer": "cow & Livestock",
+        "ncrcId": "ING-2025-1001",
+        "packaging": "bulk",
+        "source": "File 2",
+        "status": "Original"
+      },
+      {
+        "addedBy": "System Import",
+        "addedDate": "2025-07-17",
+        "brand": "cow Farms",
+        "certification": "OU",
+        "ingredient": "Ryman Rye Grain",
+        "manufacturer": "cow Farms",
+        "ncrcId": "ING-2025-1001",
+        "packaging": "bulk",
+        "source": "File 2",
+        "status": "Original"
+      },
+      {
+        "addedBy": "System Import",
+        "addedDate": "2025-07-17",
+        "brand": "cow Farms",
+        "certification": "OU",
+        "ingredient": "Ryman Rye Grain",
+        "manufacturer": "cow Farms",
+        "ncrcId": "ING-2025-1001",
+        "packaging": "bulk",
+        "source": "File 2",
+        "status": "Original"
+      },
+      {
+        "addedBy": "System Import",
+        "addedDate": "2025-07-17",
+        "brand": "cow Farms",
+        "certification": "OU",
+        "ingredient": "Ryman Rye Grain",
+        "manufacturer": "cow Farms",
+        "ncrcId": "ING-2025-1001",
+        "packaging": "bulk",
+        "source": "File 2",
+        "status": "Original"
+      },
+      {
+        "addedBy": "J. Mitchell",
+        "addedDate": "2025-07-18",
+        "brand": "Premium Flavor Co",
+        "certification": "OU",
+        "ingredient": "Ryman Rye Grain",
+        "manufacturer": "Premium Flavor Co",
+        "ncrcId": "ING-2025-1001",
+        "packaging": "Packaged",
+        "source": "Manual Entry",
+        "status": "Recent"
+      },
+      {
+        "addedBy": "G. Magder",
+        "addedDate": "2025-07-18",
+        "brand": "Andean Grains",
+        "certification": "OU",
+        "ingredient": "Ryman Rye Grain",
+        "manufacturer": "Andean Grains Ltd",
+        "ncrcId": "ING-2025-1001",
+        "packaging": "bulk",
+        "source": "Manual Entry",
+        "status": "Recent"
+      },
+      {
+        "addedBy": "Auto-Sync",
+        "addedDate": "2025-07-18",
+        "brand": "TropicalPure",
+        "certification": "OU",
+        "ingredient": "Ryman Rye Grain",
+        "manufacturer": "Tropical Oils Inc",
+        "ncrcId": "ING-2025-1001",
+        "packaging": "Packaged",
+        "source": "Supplier Update",
+        "status": "Recent"
+      }
+    ],
+    "kashrusCompanyId": 1407481,
+    "kashrusStatus": "UNKNOWN",
+    "plants": [
+      {
+        "address": {
+          "city": "Pine Grove",
+          "country": "",
+          "line2": "",
+          "state": "PA",
+          "street": " 46 Pleasant Valley Rd",
+          "type": "Physical",
+          "zip": "17963"
+        },
+        "location": "Unknown",
+        "name": "Roots Farm Garlic -Pine Grove"
+      }
+    ],
+    "primaryContact": "Zach Xu",
+    "products": [
+      {
+        "brandName": "cow Mill",
+        "bulkShipped": true,
+        "certification": "OU",
+        "consumerIndustrial": "Consumer",
+        "labelCompany": "cow Mill",
+        "labelName": "Yecora Rojo Flour",
+        "source": "Brands File 1"
+      },
+      {
+        "brandName": "cow Mill",
+        "bulkShipped": true,
+        "certification": "OU",
+        "consumerIndustrial": "Consumer",
+        "labelCompany": "cow Mill",
+        "labelName": "Yecora Rojo Flour",
+        "source": "Brands File 1"
+      },
+      {
+        "brandName": "cow Mill",
+        "bulkShipped": true,
+        "certification": "OU",
+        "consumerIndustrial": "Consumer",
+        "labelCompany": "cow Mill",
+        "labelName": "Yecora Rojo Flour",
+        "source": "Brands File 1"
+      },
+      {
+        "brandName": "cow Mill",
+        "bulkShipped": true,
+        "certification": "OU",
+        "consumerIndustrial": "Consumer",
+        "labelCompany": "cow Mill",
+        "labelName": "Yecora Rojo Flour",
+        "source": "Brands File 1"
+      }
+    ],
+    "status": "Pending",
+    "submissionDate": "2022-09-30"
+  }
+}

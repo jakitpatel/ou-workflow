@@ -90,3 +90,22 @@ export async function sendMsgTask(newMessage: any) {
 
   return response.json();
 }
+
+// simple wrapper - adjust URL if you host JSON differently
+export async function fetchApplicationDetailRaw() {
+  const res = await fetch('/data/get_application_detail.json', { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to load application detail');
+  return res.json();
+}
+
+// If your JSON contains multiple applications, add a selector:
+export async function fetchApplicationDetailById(applicationId?: string) {
+  const data = await fetchApplicationDetailRaw();
+  // if data is an array:
+  if (Array.isArray(data)) {
+    if (!applicationId) return data;
+    return data.find((a: any)=>a.applicationId === applicationId) || null;
+  }
+  // single object:
+  return data;
+}

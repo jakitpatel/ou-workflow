@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { ApplicantProgressBar } from './ApplicantProgressBar';
 import { Bell, FileText, Clock, Bot, ClipboardList, Package, ListTodo, ExternalLink, Sparkles, AlertTriangle } from 'lucide-react'
 
@@ -168,12 +169,13 @@ export function ApplicantCard({ applicant, setShowIngredientsManager, setSelecte
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm text-gray-700 font-medium">Next: {applicant.nextAction}</p>
           <div className="flex space-x-2">
-            <button 
-              onClick={() => {}}
+            <Link
+              to="/ou-workflow/$applicationId"
+              params={{ applicationId: applicant.id }}
               className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
               View Details
-            </button>
+            </Link>
             <button 
               onClick={() => handleViewTasks(applicant.company)}
               className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
