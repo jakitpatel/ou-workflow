@@ -104,7 +104,8 @@
               "daysActive": 0,
               "name": "WITHDRAWN",
               "required": true,
-              "status": "New"
+              "status": "PENDING",
+              "taskType": "conditional"
             },
             {
               "TaskId": 9,
@@ -525,7 +526,8 @@
               "daysActive": 0,
               "name": "WITHDRAWN",
               "required": true,
-              "status": "New"
+              "status": "PENDING",
+              "taskType": "conditional"
             },
             {
               "TaskId": 9,

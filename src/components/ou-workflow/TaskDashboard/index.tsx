@@ -19,6 +19,7 @@
 import { useRCNames, useTasks } from './../hooks/useTaskDashboardHooks';
 
  import { plantHistory, staffList } from './demoData';
+import { ConditionalModal } from '../modal/ConditionalModal';
 
  // Tasks Dashboard Component (with full table functionality restored)
 export function TaskDashboard (){
@@ -36,6 +37,7 @@ export function TaskDashboard (){
 
     const { username, role, setRole, setActiveScreen } = useUser() // 👈 use context
     const [showActionModal, setShowActionModal] = useState(null);
+    const [showConditionModal, setShowConditionModal] = useState(null);
     const [selectedAction, setSelectedAction] = useState(null);
     const [showAllActions, setShowAllActions] = useState<Record<string, boolean>>({});
     const MAX_ACTIONS_SHOWN = 4; // configurable
@@ -382,6 +384,8 @@ export function TaskDashboard (){
       if(action.taskType === "confirm"){
         console.log("TaskType :"+action.taskType);
         executeAction("Confirmed");
+      } else if(action.taskType === "conditional"){
+        setShowConditionModal(action);
       } else{
         setShowActionModal(action);
       }
@@ -637,6 +641,11 @@ export function TaskDashboard (){
             appId,
             taskId
           });
+        } else if(selectedAction.action.taskType === "conditional"){
+          confirmTaskMutation.mutate({
+            appId,
+            taskId
+          });
         } else if(selectedAction.action.taskType === "action"){
             const role =
               selectedAction.action.label === "Assign NCRC"
@@ -660,6 +669,12 @@ export function TaskDashboard (){
             rcnames={rcnames}
             setShowActionModal={setShowActionModal} 
             showActionModal={showActionModal}
+            executeAction={executeAction}
+            selectedAction={selectedAction}
+            />
+            <ConditionalModal
+            setShowConditionModal={setShowConditionModal} 
+            showConditionModal={showConditionModal}
             executeAction={executeAction}
             selectedAction={selectedAction}
             />
