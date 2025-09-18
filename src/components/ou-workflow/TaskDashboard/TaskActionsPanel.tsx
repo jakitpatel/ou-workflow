@@ -69,7 +69,7 @@ export const TaskActionsPanel: React.FC<TaskActionsPanelProps> = ({
             <div className="grid grid-cols-2 gap-3">
               {visibleActions.map((action) => (
                 <button
-                  key={action.id}
+                  key={action.TaskInstanceId}
                   onClick={(e) =>
                     !action.disabled && handleTaskAction(e, application, action)
                   }

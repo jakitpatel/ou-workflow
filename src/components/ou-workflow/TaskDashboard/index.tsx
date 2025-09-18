@@ -261,7 +261,7 @@ export function TaskDashboard (){
       ? taskitem.taskType.toLowerCase()
       : "unknown";
       return {
-        id: `${taskitem.TaskId}`,
+        TaskInstanceId: `${taskitem.TaskInstanceId}`,
         label: taskitem.name,
         status: taskitem.status,
         required: taskitem.required,
@@ -635,7 +635,7 @@ export function TaskDashboard (){
     });
     const executeAction = (assignee: string) => {
       if (selectedAction) {
-        const taskId = selectedAction.action.id;
+        const taskId = selectedAction.action.TaskInstanceId;
         const appId = selectedAction.application.id;
 
         // normalize taskType safely
@@ -653,7 +653,7 @@ export function TaskDashboard (){
           });
         } else if (taskType === "action") {
           const role =
-            selectedAction.action.label === "Assign NCRC"
+            selectedAction.action.label === "AssignNCRC"
               ? "NCRC"
               : "OtherRole"; // adjust logic
 
