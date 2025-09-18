@@ -257,14 +257,16 @@ export function TaskDashboard (){
         color = 'bg-gray-300 cursor-not-allowed';
         disabled = true;
       }
-
+      const taskTypeval = taskitem.taskType
+      ? taskitem.taskType.toLowerCase()
+      : "unknown";
       return {
         id: `${taskitem.TaskId}`,
         label: taskitem.name,
         status: taskitem.status,
         required: taskitem.required,
         assignee: taskitem.assignee,
-        taskType: taskitem.taskType,
+        taskType: taskTypeval,
         color,
         icon,
         disabled,
@@ -386,7 +388,7 @@ export function TaskDashboard (){
         executeAction("Confirmed");
       } else if(action.taskType === "conditional"){
         setShowConditionModal(action);
-      } else{
+      } else if(action.taskType === "action"){
         setShowActionModal(action);
       }
     };
@@ -634,31 +636,34 @@ export function TaskDashboard (){
     const executeAction = (assignee: string) => {
       if (selectedAction) {
         const taskId = selectedAction.action.id;
-        const appId  = selectedAction.application.id;
+        const appId = selectedAction.application.id;
 
-        if(selectedAction.action.taskType === "confirm"){
+        // normalize taskType safely
+        const taskType = selectedAction.action.taskType?.toLowerCase();
+
+        if (taskType === "confirm") {
           confirmTaskMutation.mutate({
             appId,
-            taskId
+            taskId,
           });
-        } else if(selectedAction.action.taskType === "conditional"){
+        } else if (taskType === "conditional") {
           confirmTaskMutation.mutate({
             appId,
-            taskId
+            taskId,
           });
-        } else if(selectedAction.action.taskType === "action"){
-            const role =
-              selectedAction.action.label === "Assign NCRC"
-                ? "NCRC"
-                : "OtherRole"; // adjust logic
+        } else if (taskType === "action") {
+          const role =
+            selectedAction.action.label === "Assign NCRC"
+              ? "NCRC"
+              : "OtherRole"; // adjust logic
 
-            assignTaskMutation.mutate({
-              appId,
-              taskId,
-              role,
-              assignee
-            });
-          }
+          assignTaskMutation.mutate({
+            appId,
+            taskId,
+            role,
+            assignee,
+          });
+        }
       }
     };
 
