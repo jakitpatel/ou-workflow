@@ -45,11 +45,12 @@ export function ApplicantCard({ applicant, setShowIngredientsManager, setSelecte
     normal: { label: 'Normal', color: 'bg-blue-500', textColor: 'text-white' }
   };
   const statusConfig = {
-    contract_sent: { label: 'Contract Sent', color: 'bg-blue-100 text-blue-800', step: 1 },
-    under_review: { label: 'Under Review', color: 'bg-yellow-100 text-yellow-800', step: 2 },
-    inspection_scheduled: { label: 'Inspection Scheduled', color: 'bg-purple-100 text-purple-800', step: 3 },
-    payment_pending: { label: 'Payment Pending', color: 'bg-orange-100 text-orange-800', step: 4 },
-    certified: { label: 'Certified', color: 'bg-green-100 text-green-800', step: 5 }
+    NEW: { label: 'New', color: 'bg-blue-100 text-blue-800', step: 1 },
+    contract_sent: { label: 'Contract Sent', color: 'bg-blue-100 text-blue-800', step: 2 },
+    under_review: { label: 'Under Review', color: 'bg-yellow-100 text-yellow-800', step: 3 },
+    inspection_scheduled: { label: 'Inspection Scheduled', color: 'bg-purple-100 text-purple-800', step: 4 },
+    payment_pending: { label: 'Payment Pending', color: 'bg-orange-100 text-orange-800', step: 5 },
+    certified: { label: 'Certified', color: 'bg-green-100 text-green-800', step: 6 }
   };
   //const priority = priorityConfig[applicant.priority];
   const priority = priorityConfig[applicant.priority?.toLowerCase()] || priorityConfig.low;
