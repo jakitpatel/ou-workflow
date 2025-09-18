@@ -1,8 +1,8 @@
 {
     "data":[
-        { "name": "DISPATCHER", "value": "DISPATCHER" },
+        { "name": "DISPATCHER", "value": "DISPATCH" },
         { "name": "NCRC", "value": "NCRC" },
-        { "name": "NCRC-ADMIN", "value": "NCRC-ADMIN" },
+        { "name": "NCRC-ADMIN", "value": "NCRCADMIN" },
         { "name": "RFR", "value": "RFR" },
         { "name": "LEGAL", "value": "LEGAL" },
         { "name": "IAR", "value": "IAR" },
