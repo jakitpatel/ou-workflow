@@ -122,8 +122,14 @@ export async function sendMsgTask(newMessage: any) {
 }
 
 // simple wrapper - adjust URL if you host JSON differently
-export async function fetchApplicationDetailRaw() {
-  const res = await fetch(`${API_BASE_URL}/get_application_detail.json`, { cache: 'no-store' });
+export async function fetchApplicationDetailRaw(applicationId?: string) {
+  let url: string;
+  if (API_BUILD === "client") {
+    url = `${API_BASE_URL}/get_application_detail?applicationId=${applicationId}`;
+  } else {
+    url = `${API_LOCAL_URL}/get_application_detail.json`;
+  }
+  const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to load application detail');
   //return res.json();
   const json = await res.json();
