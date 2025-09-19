@@ -35,13 +35,15 @@ export const ActionModal: React.FC<Props> = ({
   rcnames,
 }) => {
   if (!showActionModal || !selectedAction) return null;
+  console.log("ActionModal render:", { showActionModal, selectedAction });
+  //if (!showActionModal) return null;
 
   const { application, action } = selectedAction;
   const [selectedRc, setSelectedRc] = useState<string>("");
 
   const handleSave = () => {
     if (selectedRc) {
-      executeAction(selectedRc);
+      executeAction(selectedRc, action);
       setShowActionModal(null);
     }
   };

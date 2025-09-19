@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { Download, Edit, Upload, Tag, CheckCircle, AlertCircle, FileText, Building, Users, Package, Beaker, Clock, Send, MessageSquare, AlertTriangle, Check, X, Eye, EyeOff, User, Shield } from 'lucide-react';
+import Overview from './Overview';
 
-export const ApplicationManagementInterface = () => {
+type Props = {
+  application: ApplicationDetail;
+};
+
+export const ApplicationManagementInterface = ({ application }: Props) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [editMode, setEditMode] = useState(false);
   const [showRecentOnly, setShowRecentOnly] = useState(false);
@@ -73,15 +78,17 @@ export const ApplicationManagementInterface = () => {
   ];
 
   // Real extracted product data
-  const productData = [
+  const productData = application.products;
+  /*[
     { source: 'Brands File 1', labelName: 'Yecora Rojo Flour', brandName: 'cow Mill', labelCompany: 'cow Mill', consumerIndustrial: 'C', bulkShipped: 'Y', symbol: 'OU' },
     { source: 'Brands File 1', labelName: 'Rye Flour', brandName: 'cow Mill', labelCompany: 'cow Mill', consumerIndustrial: 'C', bulkShipped: 'Y', symbol: 'OU' },
     { source: 'Form Data', labelName: 'cheese man', brandName: 'cheesy', labelCompany: 'Happy Cow Mills', consumerIndustrial: 'C', bulkShipped: 'Y', symbol: 'OU' },
     { source: 'Form Data', labelName: 'cheese chocolate', brandName: 'choccheese', labelCompany: 'Happy Cow Mills', consumerIndustrial: 'C', bulkShipped: 'Y', symbol: 'OU' }
-  ];
+  ];*/
 
   // Application data parsed from the PDF
-  const applicationData = {
+  const applicationData = application;
+  /*{
     status: completionStatus === 'incomplete' ? 'Not Started' : completionStatus === 'complete' ? 'Ready for Dispatch' : 'Dispatched',
     submissionDate: 'July 17, 2025',
     applicationId: 'APP-2025-0717-001',
@@ -158,7 +165,7 @@ export const ApplicationManagementInterface = () => {
       veganCertification: true,
       plantCount: 1
     }
-  };
+  };*/
 
   const uploadedFiles = [
     { name: 'Application for OU Kosher Certification - Test.pdf', type: 'application', size: '245 KB', uploaded: '2025-07-17', tag: 'Application Form', processed: true },
@@ -508,7 +515,8 @@ export const ApplicationManagementInterface = () => {
 
           {/* Main Content Area */}
           <div className="flex-1">
-            {activeTab === 'overview' && (
+            {activeTab === "overview" && <Overview application={applicationData} allValidationsPassed={allValidationsPassed} />}
+            {/*activeTab === 'overview' && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-xl font-semibold mb-6">Application Overview</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -584,7 +592,7 @@ export const ApplicationManagementInterface = () => {
                   </div>
                 </div>
               </div>
-            )}
+            )*/}
 
             {activeTab === 'company' && (
               <div className="bg-white rounded-lg shadow p-6">

@@ -1,0 +1,264 @@
+{
+  "data": [
+    {
+      "aiSuggestions": {},
+      "applicationId": 1,
+      "application_messages": [
+        {
+          "id": 1,
+          "isSystemMessage": true,
+          "sender": "Tyler",
+          "text": "This is a message",
+          "timestamp": "2025-09-17 12:00:00"
+        }
+      ],
+      "assignedRC": "Unassigned",
+      "assignedRoles": [
+        {
+          "DISPATCH": "S.Benjamin"
+        },
+        {
+          "NCRC": "S.Benjamin"
+        },
+        {
+          "NCRCADMIN": "S.Benjamin"
+        },
+        {
+          "LEGAL": "S.Benjamin"
+        },
+        {
+          "IAR": "S.Benjamin"
+        },
+        {
+          "PRODUCT": "S.Benjamin"
+        },
+        {
+          "RFR": "S.Benjamin"
+        }
+      ],
+      "company": "Roots Farm Inc",
+      "daysInStage": 0,
+      "documents": 6,
+      "id": 1,
+      "lastUpdate": "2025-09-18 10:53:16.329330",
+      "nextAction": "Follow up on contract",
+      "notes": 1,
+      "overdue": false,
+      "plant": "Roots Farm Inc ",
+      "plantHistory": {},
+      "priority": "HIGH",
+      "region": null,
+      "relatedTasks": {},
+      "stages": {
+        "Certification": {
+          "progress": 0,
+          "status": "NEW",
+          "tasks": []
+        },
+        "Contract": {
+          "progress": 0,
+          "status": "NEW",
+          "tasks": []
+        },
+        "Ingredients": {
+          "progress": 0,
+          "status": "NEW",
+          "tasks": []
+        },
+        "Initial": {
+          "progress": 0,
+          "status": "NEW",
+          "tasks": [
+            {
+              "PostScript": null,
+              "PreScript": null,
+              "TaskInstanceId": 4,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "AssignNCRC",
+              "required": true,
+              "status": "PENDING",
+              "taskCategory": "ASSIGNMENT",
+              "taskRoles": [
+                {
+                  "taskRole": "DISPATCH"
+                }
+              ],
+              "taskType": "ACTION"
+            },
+            {
+              "PostScript": null,
+              "PreScript": null,
+              "TaskInstanceId": 5,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "verify Company",
+              "required": true,
+              "status": "PENDING",
+              "taskCategory": "CONFIRMATION",
+              "taskRoles": [
+                {
+                  "taskRole": "NCRCADMIN"
+                }
+              ],
+              "taskType": "CONFIRM"
+            },
+            {
+              "PostScript": null,
+              "PreScript": null,
+              "TaskInstanceId": 6,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "verify Plant",
+              "required": true,
+              "status": "PENDING",
+              "taskCategory": "CONFIRMATION",
+              "taskRoles": [
+                {
+                  "taskRole": "NCRCADMIN"
+                }
+              ],
+              "taskType": "CONFIRM"
+            },
+            {
+              "PostScript": null,
+              "PreScript": null,
+              "TaskInstanceId": 7,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "verify Contact",
+              "required": true,
+              "status": "PENDING",
+              "taskCategory": "CONFIRMATION",
+              "taskRoles": [
+                {
+                  "taskRole": "NCRCADMIN"
+                }
+              ],
+              "taskType": "CONFIRM"
+            },
+            {
+              "PostScript": null,
+              "PreScript": null,
+              "TaskInstanceId": 8,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "verify Product",
+              "required": true,
+              "status": "PENDING",
+              "taskCategory": "CONFIRMATION",
+              "taskRoles": [
+                {
+                  "taskRole": "NCRCADMIN"
+                }
+              ],
+              "taskType": "CONFIRM"
+            },
+            {
+              "PostScript": null,
+              "PreScript": null,
+              "TaskInstanceId": 9,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "verify Ingredients",
+              "required": true,
+              "status": "PENDING",
+              "taskCategory": "CONFIRMATION",
+              "taskRoles": [
+                {
+                  "taskRole": "NCRCADMIN"
+                }
+              ],
+              "taskType": "CONFIRM"
+            },
+            {
+              "PostScript": null,
+              "PreScript": null,
+              "TaskInstanceId": 11,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "to Withdrawn Y/N",
+              "required": true,
+              "status": "PENDING",
+              "taskCategory": "APPROVAL",
+              "taskRoles": [
+                {
+                  "taskRole": "NCRC"
+                }
+              ],
+              "taskType": "CONDITION"
+            },
+            {
+              "PostScript": null,
+              "PreScript": null,
+              "TaskInstanceId": 12,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "Assign Product",
+              "required": true,
+              "status": "PENDING",
+              "taskCategory": "ASSIGNMENT",
+              "taskRoles": [
+                {
+                  "taskRole": "NCRC"
+                }
+              ],
+              "taskType": "CONFIRM"
+            },
+            {
+              "PostScript": null,
+              "PreScript": null,
+              "TaskInstanceId": 13,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "Assign Ingredients",
+              "required": true,
+              "status": "PENDING",
+              "taskCategory": "ASSIGNMENT",
+              "taskRoles": [
+                {
+                  "taskRole": "NCRC"
+                }
+              ],
+              "taskType": "CONFIRM"
+            },
+            {
+              "PostScript": null,
+              "PreScript": null,
+              "TaskInstanceId": 14,
+              "assignee": null,
+              "daysActive": 0,
+              "name": "Contact Customer",
+              "required": true,
+              "status": "PENDING",
+              "taskCategory": "COMMUNICATION",
+              "taskRoles": [
+                {
+                  "taskRole": "NCRC"
+                }
+              ],
+              "taskType": "CONFIRM"
+            }
+          ]
+        },
+        "Inspection": {
+          "progress": 0,
+          "status": "NEW",
+          "tasks": []
+        },
+        "NDA": {
+          "progress": 0,
+          "status": "NEW",
+          "tasks": []
+        },
+        "Products": {
+          "progress": 0,
+          "status": "NEW",
+          "tasks": []
+        }
+      },
+      "status": "NEW"
+    }
+  ],
+  "status": "ok"
+}

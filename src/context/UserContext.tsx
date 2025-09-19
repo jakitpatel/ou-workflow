@@ -13,7 +13,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined)
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [username, setUsername] = useState<string>('S.Benjamin') // default
-  const [role, setRole] = useState<string>('DISPATCHER') // default empty
+  const [role, setRole] = useState<string>('DISPATCH') // default empty
   const [activeScreen, setActiveScreen] = useState<'ncrc-dashboard' | 'tasks-dashboard'>('ncrc-dashboard')
 
   return (

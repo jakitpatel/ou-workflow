@@ -84,19 +84,19 @@ export function Navigation({ hideMenu }: Props) {
           </div>
 
           {/* Right: Notifications + User */}
-          <div className="flex items-center space-x-3 relative" ref={menuRef}>
-            <Bell className="w-5 h-5 text-gray-500 cursor-pointer" />
-
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="flex items-center space-x-1.5 px-2 py-1 rounded-md hover:bg-gray-100"
-            >
-              <User className="w-5 h-5 text-gray-500" />
-              <span className="text-sm text-gray-700">{username}</span>
-            </button>
-
-            {/* Dropdown */}
-            {menuOpen && (
+         <div className="flex items-center space-x-3 relative" ref={menuRef}>
+  <Bell className="w-5 h-5 text-gray-500 cursor-pointer" />
+  <button
+    type="button"
+    onClick={() => {
+      setMenuOpen(!menuOpen);
+    }}
+    className="flex items-center space-x-1.5 px-2 py-1 rounded-md hover:bg-gray-100"
+  >
+    <User className="w-5 h-5 text-gray-500" />
+    <span className="text-sm text-gray-700">{username}</span>
+  </button>
+          {menuOpen && (
               <div className="absolute right-0 top-10 w-48 bg-white border border-gray-200 shadow-lg rounded-md py-2 z-50">
                 
                 {/* Roles Dropdown */}
@@ -141,7 +141,7 @@ export function Navigation({ hideMenu }: Props) {
                 </button>
               </div>
             )}
-          </div>
+</div>
         </div>
       </div>
     </div>

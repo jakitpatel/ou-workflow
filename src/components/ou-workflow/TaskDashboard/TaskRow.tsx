@@ -89,12 +89,14 @@ export function TaskRow({
       </tr>
       {isActionsExpanded && (
         <TaskActionsPanel
+          key={`${application.id}-actions`}  // ✅ unique key
           application={application}
           {...props}
         />
       )}
       {isMessagesExpanded && (
         <TaskMessagesPanel
+          key={`${application.id}-messages`} // ✅ unique key
           application={application}
           {...props}
         />

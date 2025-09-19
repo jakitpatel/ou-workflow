@@ -1,10 +1,18 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BUILD = import.meta.env.VITE_API_BUILD;
 const API_LOCAL_URL = import.meta.env.VITE_API_LOCAL_URL;
+const API_CLIENT_URL = import.meta.env.VITE_API_CLIENT_URL;
 
+const API_BASE_URL =
+  API_BUILD === "client" ? API_CLIENT_URL : API_LOCAL_URL;
+    
 export async function fetchApplicants({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<Applicant[]> {
-  //const url = `${API_BASE_URL}/ncrc_dashboard?page[limit]=${limit}&page[offset]=${page}`;
-  const url = `${API_BASE_URL}/get_applications?page[limit]=${limit}&page[offset]=${page}`;
-  //const url = `${API_BASE_URL}/ncrc_dashboard.json`;
+  let url: string;
+
+  if (API_BUILD === "client") {
+    url = `${API_BASE_URL}/get_applications?page[limit]=${limit}&page[offset]=${page}`;
+  } else {
+    url = `${API_LOCAL_URL}/get_applications.json`;
+  }
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to load applicants: ${response.statusText}`);
   const json = await response.json();
@@ -17,7 +25,14 @@ export async function fetchApplicants({ page = 0, limit = 20 }: { page?: number;
 }
 
 export async function fetchRoles({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<any[]> {
-  const url = `${API_LOCAL_URL}/ncrc_role.json`;
+  let url: string;
+
+  if (API_BUILD === "client") {
+    //url = `${API_BASE_URL}/ncrc_role?page[limit]=${limit}&page[offset]=${page}`;
+    url = `${API_LOCAL_URL}/ncrc_role.json`;
+  } else {
+    url = `${API_LOCAL_URL}/ncrc_role.json`;
+  }
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to load roles: ${response.statusText}`);
   const json = await response.json();
@@ -25,7 +40,14 @@ export async function fetchRoles({ page = 0, limit = 20 }: { page?: number; limi
 }
 
 export async function fetchRcs({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<any[]> {
-  const url = `${API_LOCAL_URL}/ncrc_rc.json`;
+  let url: string;
+
+  if (API_BUILD === "client") {
+    //url = `${API_BASE_URL}/ncrc_rc?page[limit]=${limit}&page[offset]=${page}`;
+    url = `${API_LOCAL_URL}/ncrc_rc.json`;
+  } else {
+    url = `${API_LOCAL_URL}/ncrc_rc.json`;
+  }
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to load Rcs: ${response.statusText}`);
   const json = await response.json();
@@ -59,27 +81,28 @@ export async function assignTask({
 
 /** 👇 New: Confirm task mutation */
 export async function confirmTask({
-  appId,
   taskId
 }: {
-  appId: string;
   taskId: string;
 }) {
-  /*const response = await fetch(`${API_BASE_URL}/TaskInstances`, {
-    method: "PUT",
+  const response = await fetch(`${API_BASE_URL}/api/TaskInstance/${taskId}`, {
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ appId, taskId, done:"COMPLETED" }),
-  });*/
-  const response = await fetch(`${API_BASE_URL}/TaskInstances/${taskId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ done:"COMPLETED" }),
+    body: JSON.stringify({ "data": {
+        "attributes": {
+          "TaskInstanceId": taskId,
+          "Status": "COMPLETED"
+        },
+        "type": "TaskInstance",
+        "id": taskId
+      }
+    }),
   });
-
+ 
   if (!response.ok) {
     throw new Error(`Failed to confirm task: ${response.statusText}`);
   }
-
+ 
   return response.json();
 }
 
@@ -100,7 +123,7 @@ export async function sendMsgTask(newMessage: any) {
 
 // simple wrapper - adjust URL if you host JSON differently
 export async function fetchApplicationDetailRaw() {
-  const res = await fetch('/data/get_application_detail.json', { cache: 'no-store' });
+  const res = await fetch(`${API_BASE_URL}/get_application_detail.json`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to load application detail');
   //return res.json();
   const json = await res.json();

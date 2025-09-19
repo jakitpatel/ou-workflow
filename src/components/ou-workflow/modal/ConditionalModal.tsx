@@ -29,7 +29,7 @@ export const ConditionalModal: React.FC<Props> = ({
   const { application, action } = selectedAction;
 
   const handleYes = () => {
-    executeAction(action.id); // pass action id or any identifier
+    executeAction(action.id, action); // pass action id or any identifier
     setShowConditionModal(null);
   };
 

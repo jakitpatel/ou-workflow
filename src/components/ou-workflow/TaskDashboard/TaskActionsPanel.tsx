@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Wrench, ChevronDown, ChevronUp } from "lucide-react";
+import { assignTask, confirmTask } from './../../../api'; // same api.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 type TaskActionsPanelProps = {
   application: any;
@@ -10,7 +12,7 @@ type TaskActionsPanelProps = {
     React.SetStateAction<Record<string, boolean>>
   >;
   getTaskActions: (task: any) => any[];
-  handleTaskAction: (e: React.MouseEvent, task: any, action: any) => void;
+  handleTaskAction: (e: React.MouseEvent, application: any, action: any) => void;
   handleReassignTask: (taskId: string, newAssignee: string) => void;
 };
 
@@ -21,10 +23,12 @@ export const TaskActionsPanel: React.FC<TaskActionsPanelProps> = ({
   showReassignDropdown,
   setShowReassignDropdown,
   getTaskActions,
-  handleTaskAction,
   handleReassignTask,
+  handleTaskAction
 }) => {
   const [showAll, setShowAll] = useState(false);
+  const queryClient = useQueryClient();
+
   const MAX_VISIBLE = 6;
 
   const actions = getTaskActions(application);

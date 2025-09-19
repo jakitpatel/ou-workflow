@@ -4,8 +4,8 @@
  import { assignTask, confirmTask, sendMsgTask } from './../../../api'; // same api.ts
  import { useUser } from './../../../context/UserContext'  // 👈 new import
  import { ActionModal } from './../modal/ActionModal';
- import { TaskActionsPanel } from './TaskActionsPanel';
- import { TaskMessagesPanel } from './TaskMessagesPanel';
+ //import { TaskActionsPanel } from './TaskActionsPanel';
+ //import { TaskMessagesPanel } from './TaskMessagesPanel';
  import { PlantHistoryModal } from './PlantHistoryModal';
  import { TaskStatsCards } from './TaskStatsCards';
  import { TaskFilters } from './TaskFilters';
@@ -18,7 +18,7 @@
 } from './taskHelpers';
 import { useRCNames, useTasks } from './../hooks/useTaskDashboardHooks';
 
- import { plantHistory, staffList } from './demoData';
+import { plantHistory, staffList } from './demoData';
 import { ConditionalModal } from '../modal/ConditionalModal';
 
  // Tasks Dashboard Component (with full table functionality restored)
@@ -38,7 +38,8 @@ export function TaskDashboard (){
     const { username, role, setRole, setActiveScreen } = useUser() // 👈 use context
     const [showActionModal, setShowActionModal] = useState(null);
     const [showConditionModal, setShowConditionModal] = useState(null);
-    const [selectedAction, setSelectedAction] = useState(null);
+    const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+    //const [selectedAction, setSelectedAction] = useState(null);
     const [showAllActions, setShowAllActions] = useState<Record<string, boolean>>({});
     const MAX_ACTIONS_SHOWN = 4; // configurable
 
@@ -54,10 +55,11 @@ export function TaskDashboard (){
       isError,
       error,
     } = useTasks()
+
     // RC Lookup data
     const {
       data: rcnames = [],
-    } = useRCNames()
+    } = useRCNames();
 
     // Cross-navigation handler
     const handleViewNCRCDashboard = (plantName) => {
@@ -371,56 +373,6 @@ export function TaskDashboard (){
       }, 50);
     };
 
-    const handleTaskAction = (e, application, action) => {
-      e.stopPropagation();
-      e.preventDefault();
-      console.log('Action clicked: handleTaskAction', action, 'for application:', application);
-      /*if (action === 'manage_ingredients') {
-        const app = applicants.find(a => a.id === applicantId);
-        setSelectedIngredientApp(app);
-        setShowIngredientsManager(true);
-        return;
-      }*/
-
-      setSelectedAction({ application, action });
-      if(action.taskType === "confirm"){
-        console.log("TaskType :"+action.taskType);
-        executeAction("Confirmed");
-      } else if(action.taskType === "conditional"){
-        setShowConditionModal(action);
-      } else if(action.taskType === "action"){
-        setShowActionModal(action);
-      }
-    };
-
-    /*const handleTaskAction = (taskId, action) => {
-      const actionId = action.id;
-      if (actionId === 'complete') {
-        handleTaskComplete(taskId);
-      } else if (actionId === 'reassign') {
-        setShowReassignDropdown(prev => ({
-          ...prev,
-          [taskId]: true
-        }));
-      } else {
-        const task = allTasks.find(t => t.id === taskId);
-        const actionLabels = {
-          'set_fee': 'Fee set for inspection',
-          'select_rfr': 'RFR selected for inspection',
-          'schedule_inspection': 'Inspection scheduled with company',
-          'contact_company': 'Company contacted for follow-up',
-          'send_to_legal': 'NDA sent to legal team for review',
-          'send_to_iar': 'Ingredient list sent to IAR for review',
-          'send_contract': 'Contract sent to company for signature'
-        };
-        
-        const actionMessage = actionLabels[actionId] || `Action ${actionId} completed`;
-        alert(`✅ ${actionMessage} for ${task?.plant}`);
-        
-        handleTaskComplete(taskId);
-      }
-    };*/
-
     const handleTaskComplete = (taskId) => {
       const task = allTasks.find(t => t.id === taskId);
       if (!task) return;
@@ -633,18 +585,15 @@ export function TaskDashboard (){
         queryClient.invalidateQueries({ queryKey: ["applicants"] });
       }
     });
-    const executeAction = (assignee: string) => {
-      if (selectedAction) {
-        const taskId = selectedAction.action.TaskInstanceId;
-        const appId = selectedAction.application.id;
 
+    const executeAction = (assignee: string, action: any) => {
+      //if (selectedAction) {
         // normalize taskType safely
-        const taskType = selectedAction.action.taskType?.toLowerCase();
+        const taskType = action.taskType?.toLowerCase();
 
         if (taskType === "confirm") {
           confirmTaskMutation.mutate({
-            appId,
-            taskId,
+            taskId: action.TaskInstanceId,
           });
         } else if (taskType === "conditional") {
           confirmTaskMutation.mutate({
@@ -652,8 +601,10 @@ export function TaskDashboard (){
             taskId,
           });
         } else if (taskType === "action") {
+          const taskId = action.TaskInstanceId;
+          const appId = selectedAction.application.id;
           const role =
-            selectedAction.action.label === "AssignNCRC"
+            action.label === "AssignNCRC"
               ? "NCRC"
               : "OtherRole"; // adjust logic
 
@@ -664,25 +615,75 @@ export function TaskDashboard (){
             assignee,
           });
         }
-      }
+      //}
     };
 
+    const handleSelectAppActions = (applicationId: string, actionId: string) => {
+      setSelectedActionId(`${applicationId}:${actionId}`);
+    };
+
+    const selectedAction = React.useMemo(() => {
+      if (!selectedActionId) return null;
+
+      const [appId, actId] = selectedActionId.split(":");
+
+      // 🔒 normalize IDs as strings
+      const app = tasksplants.find(a => String(a.id) === String(appId));
+      if (!app) {
+        console.warn("No app found for", appId, tasksplants.map(t => t.id));
+        return null;
+      }
+
+      const actions = getTaskActions(app) || [];
+      const act = actions.find(a => String(a.TaskInstanceId) === String(actId));
+
+      if (!act) {
+        console.warn("No action found for", actId, actions.map(a => a.TaskInstanceId));
+        return null;
+      }
+
+      return { application: app, action: act };
+    }, [selectedActionId, tasksplants, getTaskActions]);
+
+    const handleTaskAction = (e, application, action) => {
+      console.log("handleTaskAction called with action:", action, "for application:", application);
+      e.stopPropagation();
+      e.preventDefault();
+      console.log('Action clicked: handleTaskAction', action, 'for application:', application);
+      /*if (action === 'manage_ingredients') {
+        const app = applicants.find(a => a.id === applicantId);
+        setSelectedIngredientApp(app);
+        setShowIngredientsManager(true);
+        return;
+      }*/
+      handleSelectAppActions(application.id, action.TaskInstanceId);
+      //setSelectedAction({ application, action });
+      if(action.taskType === "confirm"){
+        console.log("TaskType :"+action.taskType);
+        executeAction("Confirmed", action);
+      } else if(action.taskType === "conditional"){
+        setShowConditionModal(action);
+      } else if(action.taskType === "action"){
+        setShowActionModal(action);
+      }
+    };
+    
     return (
       <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+        <ActionModal
+          rcnames={rcnames}
+          setShowActionModal={setShowActionModal} 
+          showActionModal={showActionModal}
+          executeAction={executeAction}
+          selectedAction={selectedAction}
+          />
+        <ConditionalModal
+          setShowConditionModal={setShowConditionModal} 
+          showConditionModal={showConditionModal}
+          executeAction={executeAction}
+          selectedAction={selectedAction}
+          />
         <div className="max-w-6xl mx-auto">
-          <ActionModal
-            rcnames={rcnames}
-            setShowActionModal={setShowActionModal} 
-            showActionModal={showActionModal}
-            executeAction={executeAction}
-            selectedAction={selectedAction}
-            />
-            <ConditionalModal
-            setShowConditionModal={setShowConditionModal} 
-            showConditionModal={showConditionModal}
-            executeAction={executeAction}
-            selectedAction={selectedAction}
-            />
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
