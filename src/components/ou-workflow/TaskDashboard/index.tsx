@@ -226,7 +226,7 @@ export function TaskDashboard (){
           ? [taskitem.taskRole]
           : [];
 
-      if (status === 'complete' || status === 'done') {
+      if (status === 'complete' || status === 'done' || status === 'completed') {
         // Completed task → show as done
         color = 'bg-green-400';
         icon = CheckSquare;
