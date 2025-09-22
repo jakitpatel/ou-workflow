@@ -586,7 +586,7 @@ export function TaskDashboard (){
       }
     });
 
-    const executeAction = (assignee: string, action: any) => {
+    const executeAction = (assignee: string, action: any, result: "yes" | "no") => {
       //if (selectedAction) {
         // normalize taskType safely
         const taskType = action.taskType?.toLowerCase();
@@ -597,7 +597,8 @@ export function TaskDashboard (){
           });
         } else if (taskType === "conditional" || taskType === "condition") {
           confirmTaskMutation.mutate({
-            taskId: action.TaskInstanceId
+            taskId: action.TaskInstanceId,
+            result: result 
           });
         } else if (taskType === "action") {
           const taskId = action.TaskInstanceId;

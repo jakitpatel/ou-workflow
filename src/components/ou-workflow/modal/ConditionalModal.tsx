@@ -28,8 +28,8 @@ export const ConditionalModal: React.FC<Props> = ({
 
   const { application, action } = selectedAction;
 
-  const handleYes = () => {
-    executeAction(action.id, action); // pass action id or any identifier
+  const handleCondition = (condition: "yes" | "no") => {
+    executeAction(action.id, action, condition); // pass action id or any identifier
     setShowConditionModal(null);
   };
 
@@ -61,13 +61,13 @@ export const ConditionalModal: React.FC<Props> = ({
           {/* Actions */}
           <div className="flex justify-end gap-3">
             <button
-              onClick={() => setShowConditionModal(null)}
+              onClick={() => handleCondition("no")}
               className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
             >
               No
             </button>
             <button
-              onClick={handleYes}
+              onClick={() => handleCondition("yes")}
               className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700"
             >
               Yes

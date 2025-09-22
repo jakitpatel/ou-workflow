@@ -81,28 +81,34 @@ export async function assignTask({
 
 /** 👇 New: Confirm task mutation */
 export async function confirmTask({
-  taskId
+  taskId,
+  result,
 }: {
   taskId: string;
+  result?: "yes" | "no";
 }) {
+  const bodyObj = {
+    data: {
+      type: "TaskInstance",
+      id: taskId,
+      attributes: {
+        TaskInstanceId: taskId,
+        Status: "COMPLETED",
+        ...(result ? { result } : {}), // ✅ attach inside attributes
+      },
+    },
+  };
+
   const response = await fetch(`${API_BASE_URL}/api/TaskInstance/${taskId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ "data": {
-        "attributes": {
-          "TaskInstanceId": taskId,
-          "Status": "COMPLETED"
-        },
-        "type": "TaskInstance",
-        "id": taskId
-      }
-    }),
+    body: JSON.stringify(bodyObj),
   });
- 
+
   if (!response.ok) {
     throw new Error(`Failed to confirm task: ${response.statusText}`);
   }
- 
+
   return response.json();
 }
 
