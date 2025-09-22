@@ -595,10 +595,9 @@ export function TaskDashboard (){
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
           });
-        } else if (taskType === "conditional") {
+        } else if (taskType === "conditional" || taskType === "condition") {
           confirmTaskMutation.mutate({
-            appId,
-            taskId,
+            taskId: action.TaskInstanceId
           });
         } else if (taskType === "action") {
           const taskId = action.TaskInstanceId;
@@ -661,7 +660,7 @@ export function TaskDashboard (){
       if(action.taskType === "confirm"){
         console.log("TaskType :"+action.taskType);
         executeAction("Confirmed", action);
-      } else if(action.taskType === "conditional"){
+      } else if(action.taskType === "conditional" || action.taskType === "condition"){
         setShowConditionModal(action);
       } else if(action.taskType === "action"){
         setShowActionModal(action);

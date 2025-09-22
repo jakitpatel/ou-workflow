@@ -26,5 +26,6 @@ export interface ApplicationDetail {
   products: any[];
   preferences?: any;
   uploadedFiles?: UploadedFile[];
+  ingredients?: any[];
   // ...extend as needed
 }
