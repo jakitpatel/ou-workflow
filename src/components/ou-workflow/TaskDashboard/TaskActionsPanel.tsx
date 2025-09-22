@@ -30,9 +30,37 @@ export const TaskActionsPanel: React.FC<TaskActionsPanelProps> = ({
   const queryClient = useQueryClient();
 
   const MAX_VISIBLE = 6;
+  const ROW_SIZE = 2;
 
   const actions = getTaskActions(application);
-  const visibleActions = showAll ? actions : actions.slice(0, MAX_VISIBLE);
+
+  // normalize statuses
+  const normalized = actions.map(a => ({
+    ...a,
+    status: a.status?.toLowerCase(),
+  }));
+
+  // find index of first pending
+  const pendingIndex = normalized.findIndex(a => a.status === "pending");
+
+  // base cutoff → up to pending if found, else default
+  let cutoff = pendingIndex >= 0 ? pendingIndex + 1 : MAX_VISIBLE;
+
+  // ensure at least MAX_VISIBLE
+  if (cutoff < MAX_VISIBLE) {
+    cutoff = MAX_VISIBLE;
+  }
+
+  // ✅ round up to full row
+  if (cutoff % ROW_SIZE !== 0) {
+    cutoff = cutoff + (ROW_SIZE - (cutoff % ROW_SIZE));
+  }
+
+  // cap at total actions
+  cutoff = Math.min(cutoff, actions.length);
+
+  const visibleActions = showAll ? actions : actions.slice(0, cutoff);
+  //const visibleActions = showAll ? actions : actions.slice(0, MAX_VISIBLE);
 
   return (
     <tr>
