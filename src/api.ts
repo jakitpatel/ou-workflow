@@ -94,7 +94,7 @@ export async function confirmTask({
       attributes: {
         TaskInstanceId: taskId,
         Status: "COMPLETED",
-        ...(result ? { result } : {}), // ✅ attach inside attributes
+        ...(result ? { Result: result } : {}), // ✅ capital R
       },
     },
   };
