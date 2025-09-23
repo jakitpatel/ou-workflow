@@ -7,6 +7,8 @@ import PlantsSection from './PlantsSection';
 import ProductsTable from './ProductsTable';
 import ActivityLog from './ActivityLog';
 import FilesList from './FilesList';
+import IngredientMgmt from './Ingredients';
+import QuoteInfo from './QuoteInfo';
 
 type Props = {
   application: ApplicationDetail;
@@ -58,21 +60,6 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
     ]
   };
 
-  // Real extracted ingredient data from all Excel files - with tracking
-  const ingredientData = [
-    { source: 'File 1', ukdId: '', rmc: '', ingredient: 'Ryman Rye Grain', manufacturer: 'Jones Farms Organics', brand: 'Jones Farms Organics', packaging: 'bulk', agency: 'OU', addedDate: '2025-07-17', addedBy: 'System Import', status: 'Original', ncrcId: 'ING-2025-1001' },
-    { source: 'File 1', ukdId: '', rmc: '', ingredient: 'Yecora Rojo Grain', manufacturer: 'Jones Farms Organics', brand: 'Jones Farms Organics', packaging: 'bulk', agency: 'OU', addedDate: '2025-07-17', addedBy: 'System Import', status: 'Original', ncrcId: 'ING-2025-1002' },
-    { source: 'File 2', ukdId: '', rmc: '', ingredient: 'Durham Grain', manufacturer: 'cow & Livestock', brand: 'cow & Livestock', packaging: 'bulk', agency: 'OU', addedDate: '2025-07-17', addedBy: 'System Import', status: 'Original', ncrcId: 'ING-2025-1003' },
-    { source: 'File 2', ukdId: '', rmc: '', ingredient: 'Purple Barley Grain', manufacturer: 'cow & Livestock', brand: 'cow & Livestock', packaging: 'bulk', agency: 'OU', addedDate: '2025-07-17', addedBy: 'System Import', status: 'Original', ncrcId: 'ING-2025-1004' },
-    { source: 'File 2', ukdId: '', rmc: '', ingredient: 'Emmer Grain', manufacturer: 'cow Farms', brand: 'cow Farms', packaging: 'bulk', agency: 'OU', addedDate: '2025-07-17', addedBy: 'System Import', status: 'Original', ncrcId: 'ING-2025-1005' },
-    { source: 'File 2', ukdId: '', rmc: '', ingredient: 'Einkorn Grain', manufacturer: 'cow Farms', brand: 'cow Farms', packaging: 'bulk', agency: 'OU', addedDate: '2025-07-17', addedBy: 'System Import', status: 'Original', ncrcId: 'ING-2025-1006' },
-    { source: 'File 2', ukdId: '', rmc: '', ingredient: 'Spelt Grain', manufacturer: 'cow Farms', brand: 'cow Farms', packaging: 'bulk', agency: 'OU', addedDate: '2025-07-17', addedBy: 'System Import', status: 'Original', ncrcId: 'ING-2025-1007' },
-    // Recently added ingredients
-    { source: 'Manual Entry', ukdId: 'OUE9-VAN2024', rmc: '', ingredient: 'Natural Vanilla Extract', manufacturer: 'Premium Flavor Co', brand: 'Premium Flavor Co', packaging: 'Packaged', agency: 'OU', addedDate: '2025-07-18', addedBy: 'J. Mitchell', status: 'Recent', ncrcId: 'ING-2025-1008' },
-    { source: 'Manual Entry', ukdId: '', rmc: '', ingredient: 'Organic Quinoa Flour', manufacturer: 'Andean Grains Ltd', brand: 'Andean Grains', packaging: 'bulk', agency: 'OU-P', addedDate: '2025-07-18', addedBy: 'G. Magder', status: 'Recent', ncrcId: 'ING-2025-1009' },
-    { source: 'Supplier Update', ukdId: '', rmc: '', ingredient: 'Coconut Oil (Refined)', manufacturer: 'Tropical Oils Inc', brand: 'TropicalPure', packaging: 'Packaged', agency: 'OU', addedDate: '2025-07-18', addedBy: 'Auto-Sync', status: 'Recent', ncrcId: 'ING-2025-1010' }
-  ];
-
   // Recent activity tracking
   const recentActivity = [
     { date: '2025-07-18 14:30', action: 'Ingredient Added', details: 'Natural Vanilla Extract (Premium Flavor Co)', user: 'J. Mitchell', type: 'ingredient', status: 'approved' },
@@ -83,95 +70,8 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
     { date: '2025-07-17 16:30', action: 'Company Created', details: 'Happy Cow Mills Inc. added to Kashrus DB (KC-2025-4829)', user: 'System', type: 'company', status: 'approved' }
   ];
 
-  // Real extracted product data
-  const productData = application.products;
-  /*[
-    { source: 'Brands File 1', labelName: 'Yecora Rojo Flour', brandName: 'cow Mill', labelCompany: 'cow Mill', consumerIndustrial: 'C', bulkShipped: 'Y', symbol: 'OU' },
-    { source: 'Brands File 1', labelName: 'Rye Flour', brandName: 'cow Mill', labelCompany: 'cow Mill', consumerIndustrial: 'C', bulkShipped: 'Y', symbol: 'OU' },
-    { source: 'Form Data', labelName: 'cheese man', brandName: 'cheesy', labelCompany: 'Happy Cow Mills', consumerIndustrial: 'C', bulkShipped: 'Y', symbol: 'OU' },
-    { source: 'Form Data', labelName: 'cheese chocolate', brandName: 'choccheese', labelCompany: 'Happy Cow Mills', consumerIndustrial: 'C', bulkShipped: 'Y', symbol: 'OU' }
-  ];*/
-
   // Application data parsed from the PDF
   const applicationData = application;
-  /*{
-    status: completionStatus === 'incomplete' ? 'Not Started' : completionStatus === 'complete' ? 'Ready for Dispatch' : 'Dispatched',
-    submissionDate: 'July 17, 2025',
-    applicationId: 'APP-2025-0717-001',
-    kashrusCompanyId: 'KC-2025-4829',
-    kashrusStatus: 'Company Created',
-    primaryContact: 'John Mitchell', // Designated for initial communication
-    company: {
-      name: 'Happy Cow Mills Inc.',
-      category: 'Pharmaceutical / Nutraceutical',
-      currentlyCertified: 'No',
-      everCertified: 'No',
-      address: {
-        street: '1250 Industrial Parkway',
-        line2: 'Building A, Suite 100',
-        city: 'Rochester',
-        state: 'NY',
-        country: 'USA',
-        zip: '14624'
-      },
-      website: 'www.happycowmills.com'
-    },
-    contacts: [
-      {
-        type: 'Primary Contact',
-        name: 'John Mitchell',
-        phone: '9176966517',
-        email: 'john@happycowmills.com',
-        designated: true // Marked as primary for initial communication
-      },
-      {
-        type: 'Additional Contact',
-        name: 'Gary Magder',
-        title: 'Quality Assurance Manager',
-        phone: '9176966517',
-        email: 'gmagder@happycowmills.com',
-        designated: false
-      }
-    ],
-    plants: [
-      {
-        id: 1,
-        plantId: 'PLT-KC-2025-4829-001', // NCRC Plant ID
-        name: 'Happy Cow Mills Production Facility',
-        address: {
-          street: '1250 Industrial Parkway',
-          line2: 'Building A, Suite 100',
-          city: 'Rochester',
-          state: 'NY',
-          country: 'USA',
-          province: 'N/A',
-          region: 'Western New York',
-          zip: '14624'
-        },
-        contact: {
-          name: 'John Mitchell',
-          title: 'Plant Manager',
-          phone: '(585) 555-0123',
-          email: 'j.mitchell@happycowmills.com'
-        },
-        manufacturing: {
-          process: 'Grain cleaning, milling, and flour production. Raw grains are received in bulk, cleaned using mechanical separators, ground using stone mills, sifted through mesh screens, and packaged in food-grade containers. All processes follow HACCP guidelines.',
-          closestMajorCity: 'Rochester, NY (15 miles)'
-        },
-        otherProducts: true,
-        otherProductsList: 'Animal feed supplements, grain storage services',
-        otherPlantsProducing: true,
-        otherPlantsLocation: 'Secondary facility at 425a Commerce Drive, Rochester NY'
-      }
-    ],
-    products: productData,
-    preferences: {
-      ownBrand: true,
-      copackerDirectory: true,
-      veganCertification: true,
-      plantCount: 1
-    }
-  };*/
 
   const uploadedFiles = [
     { name: 'Application for OU Kosher Certification - Test.pdf', type: 'application', size: '245 KB', uploaded: '2025-07-17', tag: 'Application Form', processed: true },
@@ -182,7 +82,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
     { name: 'Screen List Matrix VR2Screens.csv', type: 'other', size: '3 KB', uploaded: '2025-07-17', tag: 'Reference Data', processed: true }
   ];
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status: string | number) => {
     const badges = {
       'Not Started': 'bg-gray-100 text-gray-800',
       'Ready for Dispatch': 'bg-green-100 text-green-800',
@@ -271,7 +171,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
     return Object.values(validationChecks).every(check => check.valid);
   };
 
-  const downloadFile = async (fileName) => {
+  const downloadFile = async (fileName: string) => {
     try {
       const fileContent = await window.fs.readFile(fileName);
       const blob = new Blob([fileContent]);
@@ -482,8 +382,6 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
         </div>
       )}
 
-
-
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex">
@@ -522,207 +420,9 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
 
             {activeTab === 'products' && <ProductsTable application={applicationData} />}
 
-            {activeTab === 'ingredients' && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold">Ingredient Management</h2>
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <label className="text-sm text-gray-600">Show:</label>
-                      <button
-                        onClick={() => setShowRecentOnly(!showRecentOnly)}
-                        className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                          showRecentOnly 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-700'
-                        }`}
-                      >
-                        {showRecentOnly ? 'Recent Only' : 'All Ingredients'}
-                      </button>
-                    </div>
-                    <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                      <Beaker className="h-4 w-4 mr-2" />
-                      Add New Ingredient
-                    </button>
-                  </div>
-                </div>
+            {activeTab === 'ingredients' && <IngredientMgmt application={applicationData} showRecentOnly={showRecentOnly} setShowRecentOnly={setShowRecentOnly} />}
 
-                <div className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-blue-50 rounded-lg p-3">
-                    <div className="text-2xl font-bold text-blue-600">{ingredientData.length}</div>
-                    <div className="text-sm text-blue-700">Total Ingredients</div>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-3">
-                    <div className="text-2xl font-bold text-green-600">{ingredientData.filter(i => i.status === 'Recent').length}</div>
-                    <div className="text-sm text-green-700">Added This Week</div>
-                  </div>
-                  <div className="bg-purple-50 rounded-lg p-3">
-                    <div className="text-2xl font-bold text-purple-600">{ingredientData.filter(i => i.ncrcId).length}</div>
-                    <div className="text-sm text-purple-700">In NCRC Database</div>
-                  </div>
-                  <div className="bg-orange-50 rounded-lg p-3">
-                    <div className="text-2xl font-bold text-orange-600">{ingredientData.filter(i => i.addedBy !== 'System Import').length}</div>
-                    <div className="text-sm text-orange-700">Manual Additions</div>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full table-auto">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4">Status</th>
-                        <th className="text-left py-3 px-4">NCRC ID</th>
-                        <th className="text-left py-3 px-4">Ingredient Name</th>
-                        <th className="text-left py-3 px-4">Manufacturer</th>
-                        <th className="text-left py-3 px-4">Brand</th>
-                        <th className="text-left py-3 px-4">Packaging</th>
-                        <th className="text-left py-3 px-4">Certification</th>
-                        <th className="text-left py-3 px-4">Added Date</th>
-                        <th className="text-left py-3 px-4">Added By</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(showRecentOnly ? ingredientData.filter(i => i.status === 'Recent') : ingredientData).map((ingredient, index) => (
-                        <tr key={index} className={`border-b ${ingredient.status === 'Recent' ? 'bg-green-50' : ''}`}>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              ingredient.status === 'Recent' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-gray-100 text-gray-700'
-                            }`}>
-                              {ingredient.status === 'Recent' ? '🆕 New' : '📋 Original'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="text-blue-600 font-mono text-xs">{ingredient.ncrcId}</span>
-                          </td>
-                          <td className="py-3 px-4 font-medium">{ingredient.ingredient}</td>
-                          <td className="py-3 px-4">{ingredient.manufacturer}</td>
-                          <td className="py-3 px-4">{ingredient.brand}</td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              ingredient.packaging === 'bulk' 
-                                ? 'bg-blue-100 text-blue-800' 
-                                : 'bg-purple-100 text-purple-800'
-                            }`}>
-                              {ingredient.packaging}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                              {ingredient.agency}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-600">{ingredient.addedDate}</td>
-                          <td className="py-3 px-4 text-sm text-gray-600">{ingredient.addedBy}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-700">
-                    <strong>NCRC Database Integration:</strong> All ingredients automatically sync with NCRC database. 
-                    Recent additions are highlighted and tracked for audit purposes. Ingredient certifications verified 
-                    with suppliers and documentation uploaded.
-                  </p>
-                </div>
-
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <h4 className="font-medium text-green-800 mb-2">Ingredient Sources</h4>
-                    <div className="space-y-1 text-sm text-green-700">
-                      <div>• 7 ingredients from uploaded spreadsheets</div>
-                      <div>• 2 ingredients manually added by team</div>
-                      <div>• 1 ingredient auto-synced from supplier portal</div>
-                    </div>
-                  </div>
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-2">Kosher Status</h4>
-                    <div className="space-y-1 text-sm text-blue-700">
-                      <div>• All ingredients OU certified</div>
-                      <div>• 1 ingredient OU-P (Pareve) certified</div>
-                      <div>• Certification documents uploaded and verified</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'quote' && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold mb-6">Quote Information</h2>
-                
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                  <div className="flex items-start space-x-3">
-                    <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                    <div>
-                      <h3 className="font-medium text-yellow-800">Quote Requires Verification</h3>
-                      <p className="text-yellow-700 text-sm mt-1">
-                        Quote found in system but needs verification before application can be marked complete.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-medium text-gray-900 mb-4">Quote Details</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Quote Number:</span>
-                        <span className="font-medium">{quoteData.quoteNumber}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Total Amount:</span>
-                        <span className="font-medium text-green-600 text-lg">{quoteData.amount}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Valid Until:</span>
-                        <span className="font-medium">{quoteData.validUntil}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Status:</span>
-                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
-                          Pending Acceptance
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="font-medium text-gray-900 mb-4">Quote Breakdown</h3>
-                    <div className="space-y-3">
-                      {quoteData.items.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                          <span className="text-sm text-gray-700">{item.description}</span>
-                          <span className="font-medium text-gray-900">{item.amount}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex justify-between items-center">
-                  <button
-                    onClick={() => {
-                      setValidationChecks(prev => ({
-                        ...prev,
-                        quote: { valid: true, message: 'Quote verified and accepted' }
-                      }));
-                    }}
-                    className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    Verify Quote
-                  </button>
-                  <div className="text-sm text-gray-600">
-                    Last updated: July 17, 2025
-                  </div>
-                </div>
-              </div>
-            )}
+            {activeTab === 'quote' && <QuoteInfo application={applicationData} quoteData={quoteData} setValidationChecks={setValidationChecks} />}
 
             {activeTab === 'activity' && <ActivityLog recentActivity={recentActivity} comments={comments} />}
 
