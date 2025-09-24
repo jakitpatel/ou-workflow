@@ -101,7 +101,7 @@ export async function confirmTask({
       attributes: {
         TaskInstanceId: taskId,
         Status: "COMPLETED",
-        ...(result ? { Result: result } : {}), // ✅ capital R
+        ...(result ? { Result: result.toUpperCase() } : {}), // 👈 force uppercase
       },
     },
   };
