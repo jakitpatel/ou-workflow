@@ -43,8 +43,16 @@ export const TaskActionsPanel: React.FC<TaskActionsPanelProps> = ({
   // find index of first pending
   const pendingIndex = normalized.findIndex(a => a.status === "pending");
 
-  // base cutoff → up to pending if found, else default
-  let cutoff = pendingIndex >= 0 ? pendingIndex + 1 : MAX_VISIBLE;
+  let cutoff;
+
+  if (pendingIndex >= 0) {
+    // Case 1: pending exists → show up to that pending + 1
+    cutoff = pendingIndex + 1;
+  } else {
+    // Case 2: no pending → show all completed + 1
+    const completedCount = normalized.filter(a => a.status === "completed").length;
+    cutoff = completedCount + 1;
+  }
 
   // ensure at least MAX_VISIBLE
   if (cutoff < MAX_VISIBLE) {
