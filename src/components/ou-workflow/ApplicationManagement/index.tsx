@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Edit, Upload, Tag, CheckCircle, AlertCircle, FileText, Building, Users, Package, Beaker, Clock, Send, MessageSquare, AlertTriangle, Check, X, Eye, EyeOff, User, Shield, Contact } from 'lucide-react';
+import { Edit, Upload, CheckCircle, AlertCircle, FileText, Building, Users, Package, Beaker, Clock, Send, MessageSquare, AlertTriangle, Check, X, Eye, EyeOff, User, Shield, Contact } from 'lucide-react';
 import Overview from './Overview';
 import CompanySection from './CompanySection';
 import ContactsSection from './ContactsSection';
@@ -169,24 +169,6 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
 
   const allValidationsPassed = () => {
     return Object.values(validationChecks).every(check => check.valid);
-  };
-
-  const downloadFile = async (fileName: string) => {
-    try {
-      const fileContent = await window.fs.readFile(fileName);
-      const blob = new Blob([fileContent]);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download failed:', error);
-      alert('Download failed. Please try again.');
-    }
   };
 
   const tabs = [

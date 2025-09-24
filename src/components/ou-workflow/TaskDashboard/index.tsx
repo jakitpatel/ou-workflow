@@ -20,6 +20,7 @@ import { useRCNames, useTasks } from './../hooks/useTaskDashboardHooks';
 
 import { plantHistory, staffList } from './demoData';
 import { ConditionalModal } from '../modal/ConditionalModal';
+import { useApplications } from './../hooks/useApplications';
 
  // Tasks Dashboard Component (with full table functionality restored)
 export function TaskDashboard (){
@@ -54,7 +55,7 @@ export function TaskDashboard (){
       isLoading,
       isError,
       error,
-    } = useTasks()
+    } = useApplications()
 
     // RC Lookup data
     const {
@@ -339,7 +340,7 @@ export function TaskDashboard (){
       mutationFn: sendMsgTask,
       onSuccess: () => {
         // 🔄 Invalidate to refresh data
-        queryClient.invalidateQueries({ queryKey: ["applicants"] });
+        queryClient.invalidateQueries({ queryKey: ["applications"] });
       }
     });
 
@@ -573,7 +574,7 @@ export function TaskDashboard (){
       mutationFn: confirmTask,
       onSuccess: () => {
         // 🔄 Invalidate to refresh data
-        queryClient.invalidateQueries({ queryKey: ["applicants"] });
+        queryClient.invalidateQueries({ queryKey: ["applications"] });
       }
     });
 
@@ -582,7 +583,7 @@ export function TaskDashboard (){
       mutationFn: assignTask,
       onSuccess: () => {
         // 🔄 Invalidate to refresh data
-        queryClient.invalidateQueries({ queryKey: ["applicants"] });
+        queryClient.invalidateQueries({ queryKey: ["applications"] });
       }
     });
 

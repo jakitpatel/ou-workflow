@@ -6,6 +6,24 @@ export default function FilesList({ application, uploadedFiles }: { application:
   const productData = application.products || [];
   const ingredientData = application.ingredients || [];
 
+  const downloadFile = async (fileName: string) => {
+    try {
+      const fileContent = await window.fs.readFile(fileName);
+      const blob = new Blob([fileContent]);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Download failed. Please try again.');
+    }
+  };
+  
   const getFileIcon = (type: string) => {
     switch (type) {
       case 'application': return <FileText className="h-5 w-5 text-blue-600" />;

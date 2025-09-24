@@ -1,6 +1,7 @@
 const API_BUILD = import.meta.env.VITE_API_BUILD;
 const API_LOCAL_URL = import.meta.env.VITE_API_LOCAL_URL;
 const API_CLIENT_URL = import.meta.env.VITE_API_CLIENT_URL;
+const API_LOCAL_CLIENT_URL = import.meta.env.VITE_API_LOCAL_CLIENT_URL;
 
 const API_BASE_URL =
   API_BUILD === "client" ? API_CLIENT_URL : API_LOCAL_URL;
@@ -11,7 +12,8 @@ export async function fetchApplicants({ page = 0, limit = 20 }: { page?: number;
   if (API_BUILD === "client") {
     url = `${API_BASE_URL}/get_applications?page[limit]=${limit}&page[offset]=${page}`;
   } else {
-    url = `${API_LOCAL_URL}/get_applications.json`;
+    url = `${API_BASE_URL}/get_applications?page[limit]=${limit}&page[offset]=${page}`;
+    //url = `${API_LOCAL_URL}/get_applications.json`;
   }
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to load applicants: ${response.statusText}`);
@@ -29,7 +31,7 @@ export async function fetchRoles({ page = 0, limit = 20 }: { page?: number; limi
 
   if (API_BUILD === "client") {
     //url = `${API_BASE_URL}/ncrc_role?page[limit]=${limit}&page[offset]=${page}`;
-    url = `${API_LOCAL_URL}/ncrc_role.json`;
+    url = `${API_LOCAL_CLIENT_URL}/ncrc_role.json`;
   } else {
     url = `${API_LOCAL_URL}/ncrc_role.json`;
   }
@@ -44,7 +46,7 @@ export async function fetchRcs({ page = 0, limit = 20 }: { page?: number; limit?
 
   if (API_BUILD === "client") {
     //url = `${API_BASE_URL}/ncrc_rc?page[limit]=${limit}&page[offset]=${page}`;
-    url = `${API_LOCAL_URL}/ncrc_rc.json`;
+    url = `${API_LOCAL_CLIENT_URL}/ncrc_rc.json`;
   } else {
     url = `${API_LOCAL_URL}/ncrc_rc.json`;
   }
@@ -133,7 +135,8 @@ export async function fetchApplicationDetailRaw(applicationId?: string) {
   if (API_BUILD === "client") {
     url = `${API_BASE_URL}/get_application_detail?applicationId=${applicationId}`;
   } else {
-    url = `${API_LOCAL_URL}/get_application_detail.json`;
+    url = `${API_BASE_URL}/get_application_detail?applicationId=${applicationId}`;
+    //url = `${API_LOCAL_URL}/get_application_detail.json`;
   }
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to load application detail');

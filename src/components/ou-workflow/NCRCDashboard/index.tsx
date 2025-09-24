@@ -1,11 +1,10 @@
 import React, { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from './ActionModal'
-import { Search } from 'lucide-react'
-import { fetchApplicants } from './../../../api';
+import { Search } from 'lucide-react';
 import { IngredientsManagerPage } from './IngredientsManagerPage';
 import { useUser } from './../../../context/UserContext'  // 👈 new import
+import { useApplications } from './../hooks/useApplications';
 
 type Task = {
   name: string;
@@ -80,10 +79,7 @@ export function NCRCDashboard({
     isLoading,
     isError,
     error,
-  } = useQuery({
-    queryKey: ['applicants'],
-    queryFn: fetchApplicants,  // Using API version
-  });
+  } = useApplications();
 
   const filteredApplicants = useMemo(() => {
     return (Array.isArray(applicants) ? applicants : []).filter((app) => {
