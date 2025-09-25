@@ -50,15 +50,18 @@ export async function fetchRcs({ page = 0, limit = 20 }: { page?: number; limit?
   let url: string;
 
   if (API_BUILD === "client") {
-    //url = `${API_BASE_URL}/ncrc_rc?page[limit]=${limit}&page[offset]=${page}`;
-    url = `${API_LOCAL_CLIENT_URL}/ncrc_rc.json`;
+    url = `${API_BASE_URL}/api/WFUser?filter[role]=NCRC`;
   } else {
-    url = `${API_LOCAL_URL}/ncrc_rc.json`;
+    url = `${API_BASE_URL}/api/WFUser?filter[role]=NCRC`;
   }
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to load Rcs: ${response.statusText}`);
   const json = await response.json();
-  return json.data;
+  // 🔑 map WFRole format → simplified { name, value }
+  return json.data.map((item: any) => ({
+    name : item.attributes.FullName,
+    id   : item.attributes.Username,
+  }));
 }
 
 /** 👇 New: Assign task mutation */

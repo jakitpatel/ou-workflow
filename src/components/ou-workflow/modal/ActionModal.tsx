@@ -86,7 +86,7 @@ export const ActionModal: React.FC<Props> = ({
               <option value="">-- Choose --</option>
               {rcnames.map((rc) => (
                 <option key={rc.id} value={rc.name}>
-                  {rc.name} • {rc.specialty} • Workload: {rc.workload}
+                  {rc.name}
                 </option>
               ))}
             </select>
