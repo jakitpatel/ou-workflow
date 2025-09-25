@@ -14,7 +14,8 @@
   getStatusConfig,
   getPriorityBorderClass,
   getStageColor,
-  getMessageCount
+  getMessageCount,
+  formatNowForApi
 } from './taskHelpers';
 import { useRCNames, useTasks } from './../hooks/useTaskDashboardHooks';
 
@@ -347,14 +348,19 @@ export function TaskDashboard (){
     const handleSendMessage = (taskId) => {
       const messageText = messageInputs[taskId];
       if (!messageText?.trim()) return;
-      
       const newMessage = {
-        id: Date.now(),
-        appId: taskId,
-        sender: username,
-        text: messageText,
-        timestamp: new Date(),
-        isSystemMessage: false,
+        data: {
+          type: "WFApplicationMessage",
+          attributes: {
+            ApplicationID: taskId,
+            FromUser: username,
+            ToUser: "",
+            MessageText: messageText,
+            MessageType: "User",
+            Priority: "HIGH",
+            SentDate: formatNowForApi(), // 👈 current timestamp
+          },
+        },
       };
       sendMsgTaskMutation.mutate(newMessage);
       /*setTaskMessages(prev => ({

@@ -39,4 +39,22 @@ export const getMessageCount = (app: any) => {
   return { total: messageCounts, unread: 0 };
 };
 
+export const formatNowForApi = (): string => {
+  const now = new Date();
+  const pad = (n: number) => n.toString().padStart(2, "0");
+
+  return (
+    now.getFullYear() +
+    "-" +
+    pad(now.getMonth() + 1) +
+    "-" +
+    pad(now.getDate()) +
+    " " +
+    pad(now.getHours()) +
+    ":" +
+    pad(now.getMinutes()) +
+    ":" +
+    pad(now.getSeconds())
+  );
+}
 // Add any other helpers you use in TaskDashboard here.

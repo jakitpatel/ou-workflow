@@ -121,7 +121,7 @@ export async function confirmTask({
 
 /** 👇 New: Send Msg task mutation */
 export async function sendMsgTask(newMessage: any) {
-  const response = await fetch(`${API_BASE_URL}/send-msg`, {
+  const response = await fetch(`${API_BASE_URL}/WFApplicationMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(newMessage),
