@@ -802,7 +802,7 @@ export function TaskDashboard (){
                     username={username}
                     plantInfo={plantHistory[application.plant]}
                     expandedActions={expandedActions}
-                    staff={staff}
+                    staff={rcnames}
                     showReassignDropdown={showReassignDropdown}
                     setShowReassignDropdown={setShowReassignDropdown}
                     getTaskActions={getTaskActions}

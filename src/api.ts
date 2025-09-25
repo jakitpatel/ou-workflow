@@ -48,12 +48,14 @@ export async function fetchRoles({ page = 0, limit = 20 }: { page?: number; limi
 
 export async function fetchRcs({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<any[]> {
   let url: string;
+  //const key = encodeURIComponent("filter[role]"); // "filter%5Brole%5D"
+  //const value = encodeURIComponent("NCRC");
+  //url = `${API_BASE_URL}/api/WFUser?${key}=${value}`;
 
-  if (API_BUILD === "client") {
-    url = `${API_BASE_URL}/api/WFUser?filter[role]=NCRC`;
-  } else {
-    url = `${API_BASE_URL}/api/WFUser?filter[role]=NCRC`;
-  }
+  const params = new URLSearchParams();
+  params.append("filter[role]", "NCRC");
+  url = `${API_BASE_URL}/api/WFUser?${params.toString()}`;
+
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to load Rcs: ${response.statusText}`);
   const json = await response.json();
