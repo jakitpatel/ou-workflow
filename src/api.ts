@@ -48,17 +48,13 @@ export async function fetchRoles({ page = 0, limit = 20 }: { page?: number; limi
 
 export async function fetchRcs({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<any[]> {
   let url: string;
-
-  if (API_BUILD === "client") {
-    url = `${API_BASE_URL}/api/WFUser?filter[Role]=NCRC`;
-  } else {
-    url = `${API_BASE_URL}/api/WFUser?filter[Role]=NCRC`;
-  }
+  
+  url = `${API_BASE_URL}/api/WFUser?filter[Role]=NCRC`;
 
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to load Rcs: ${response.statusText}`);
   const json = await response.json();
-  // 🔑 map WFRole format → simplified { name, value }
+  // 🔑 map WFRole format → simplified { name, id }
   return json.data.map((item: any) => ({
     name : item.attributes.FullName,
     id   : item.attributes.Username,

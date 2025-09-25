@@ -498,47 +498,50 @@ export function TaskDashboard (){
       setShowPlantHistory(plantName);
     };
 
-    const handleCreateTaskFromMessage = (taskId) => {
-      const messageText = messageInputs[taskId];
+    const handleCreateTaskFromMessage = (applicantId) => {
+      const messageText = messageInputs[applicantId];
       if (!messageText?.trim()) return;
 
       setShowTaskAssignment(prev => ({
         ...prev,
-        [taskId]: true
+        [applicantId]: true
       }));
       setTaskAssignmentData(prev => ({
         ...prev,
-        [taskId]: {
+        [applicantId]: {
           taskText: messageText,
           assignee: username
         }
       }));
     };
 
-    const handleConfirmTaskCreation = (taskId) => {
-      const assignmentData = taskAssignmentData[taskId];
+    const handleConfirmTaskCreation = (applicantId) => {
+      const assignmentData = taskAssignmentData[applicantId];
       if (!assignmentData?.taskText?.trim()) return;
 
-      const newTask = {
-        id: Date.now(),
-        title: assignmentData.taskText.length > 50 ? assignmentData.taskText.substring(0, 50) + '...' : assignmentData.taskText,
-        plant: allTasks.find(t => t.id === taskId)?.plant || 'Unknown Plant',
-        workflowStage: 'Application',
-        assignedTo: assignmentData.assignee,
-        assignedBy: username,
-        status: 'new',
-        priority: 'medium',
-        daysActive: 0,
-        applicationId: `APP-2025-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`
+      const newMessage = {
+        data: {
+          type: "WFApplicationMessage",
+          attributes: {
+            ApplicationID: applicantId,
+            FromUser: username,
+            ToUser: assignmentData.assignee,
+            MessageText: assignmentData.taskText.length > 50 ? assignmentData.taskText.substring(0, 50) + '...' : assignmentData.taskText,
+            MessageType: "User",
+            Priority: "HIGH",
+            SentDate: formatNowForApi(), // 👈 current timestamp
+          },
+        },
       };
+      sendMsgTaskMutation.mutate(newMessage);
 
-      setAllTasks(prev => [...prev, newTask]);
+      //setAllTasks(prev => [...prev, newTask]);
       
       // Clear states
-      setMessageInputs(prev => ({ ...prev, [taskId]: '' }));
-      setShowTaskAssignment(prev => ({ ...prev, [taskId]: false }));
-      setTaskAssignmentData(prev => ({ ...prev, [taskId]: null }));
-
+      setMessageInputs(prev => ({ ...prev, [applicantId]: '' }));
+      setShowTaskAssignment(prev => ({ ...prev, [applicantId]: false }));
+      setTaskAssignmentData(prev => ({ ...prev, [applicantId]: null }));
+      /*
       // Add system message
       const systemMessage = {
         id: Date.now() + 1,
@@ -550,13 +553,13 @@ export function TaskDashboard (){
       
       setTaskMessages(prev => ({
         ...prev,
-        [taskId]: [...(prev[taskId] || []), systemMessage]
-      }));
+        [applicantId]: [...(prev[applicantId] || []), systemMessage]
+      }));*/
 
       // Refocus input
       setTimeout(() => {
-        if (messageInputRefs.current[taskId]) {
-          messageInputRefs.current[taskId].focus();
+        if (messageInputRefs.current[applicantId]) {
+          messageInputRefs.current[applicantId].focus();
         }
       }, 100);
     };

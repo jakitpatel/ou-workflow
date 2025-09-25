@@ -162,7 +162,7 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
                       {staff.map((person) => (
                         <option key={person.id} value={person.name}>
                           {person.name === username ? "🫵 You" : "👤"}{" "}
-                          {person.name} ({person.department})
+                          {person.name}
                         </option>
                       ))}
                     </select>
