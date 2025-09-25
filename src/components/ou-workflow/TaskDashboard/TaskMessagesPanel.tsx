@@ -62,7 +62,11 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
                     }`}
                   >
                     <div className="flex justify-between items-start mb-1">
-                      <span className="font-medium text-gray-900">{msg.sender}</span>
+                      {/*<span className="font-medium text-gray-900">From:{msg.sender}, To:{msg.target}</span>*/}
+                      <span className="font-medium text-gray-900">
+                        From: {msg.sender}
+                        {msg.target && <> , To: {msg.target}</>}
+                      </span>
                       {msg.timestamp && (
                         <span className="text-xs text-gray-500">
                           {new Date(msg.timestamp).toLocaleDateString()}{" "}
