@@ -35,7 +35,7 @@ export const getStageColor = (stage: string) => {
 };
 
 export const getMessageCount = (app: any) => {
-  const messageCounts = app.task_messages?.length || 0;
+  const messageCounts = app.application_messages?.length || 0;
   return { total: messageCounts, unread: 0 };
 };
 

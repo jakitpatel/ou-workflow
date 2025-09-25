@@ -807,7 +807,7 @@ export function TaskDashboard (){
                     handleActionsExpand={handleActionsExpand}
                     handleMessagesExpand={handleMessagesExpand}
                     // ...pass other needed props...
-                    taskMessages={application.task_messages || []}
+                    taskMessages={application.application_messages || []}
                     messageInputs={messageInputs}
                     messageInputRefs={messageInputRefs}
                     showTaskAssignment={showTaskAssignment}
