@@ -26,23 +26,33 @@ export async function fetchApplicants({ page = 0, limit = 20 }: { page?: number;
   }));
 }
 
-export async function fetchRoles({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<any[]> {
-  let url: string;
+export async function fetchRoles({
+  username,
+  page = 0,
+  limit = 20,
+}: {
+  username: string;
+  page?: number;
+  limit?: number;
+}): Promise<any[]> {
+  const params = new URLSearchParams({
+    'fields[WFUSERROLE]': 'UserName,UserRole,CreatedDate',
+    'page[offset]': page.toString(),
+    'page[limit]': limit.toString(),
+    sort: 'id',
+    [`filter[UserName]`]: username,
+  });
 
-  if (API_BUILD === "client") {
-    //url = `${API_BASE_URL}/ncrc_role?page[limit]=${limit}&page[offset]=${page}`;
-    url = `${API_BASE_URL}/api/WFRole`;
-  } else {
-    url = `${API_BASE_URL}/api/WFRole`;
-  }
+  const url = `${API_BASE_URL}/api/WFUSERROLE?${params.toString()}`;
   const response = await fetch(url);
+
   if (!response.ok) throw new Error(`Failed to load roles: ${response.statusText}`);
   const json = await response.json();
 
-  // 🔑 map WFRole format → simplified { name, value }
   return json.data.map((item: any) => ({
-    name: item.attributes.Role,
+    name: item.attributes.UserRole,
     value: item.attributes.UserRole,
+    created: item.attributes.CreatedDate,
   }));
 }
 

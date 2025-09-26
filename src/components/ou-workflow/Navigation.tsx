@@ -20,8 +20,9 @@ export function Navigation({ hideMenu }: Props) {
     isError,
     error,
   } = useQuery({
-    queryKey: ['roles'],
-    queryFn: fetchRoles,  // Using API version
+    queryKey: ['roles', username], // cache per user
+    queryFn: () => fetchRoles({ username }),
+    enabled: !!username,           // only run if username is available
   });
   
   // close menu when clicking outside
