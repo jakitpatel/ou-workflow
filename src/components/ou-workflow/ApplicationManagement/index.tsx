@@ -19,7 +19,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
   const [editMode, setEditMode] = useState(false);
   const [showRecentOnly, setShowRecentOnly] = useState(false);
   const [userRole, setUserRole] = useState('admin'); // 'admin', 'dispatcher', 'rfr', 'ncrc'
-  const [showAdminView, setShowAdminView] = useState(true);
+  const [showAdminView, setShowAdminView] = useState(false);
   const [completionStatus, setCompletionStatus] = useState('incomplete'); // 'incomplete', 'complete', 'dispatched'
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showCommentsModal, setShowCommentsModal] = useState(false);
@@ -195,7 +195,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
             </div>
             <div className="flex items-center space-x-4">
               {/* Role Switcher for Demo */}
-              <select 
+              {/*<select 
                 value={userRole} 
                 onChange={(e) => setUserRole(e.target.value)}
                 className="px-3 py-1 border rounded text-sm"
@@ -204,9 +204,9 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
                 <option value="dispatcher">Dispatcher</option>
                 <option value="rfr">RFR</option>
                 <option value="ncrc">NCRC</option>
-              </select>
+              </select>*/}
               
-              {userRole === 'admin' && (
+              {/*userRole === 'admin' && (
                 <button
                   onClick={() => setShowAdminView(!showAdminView)}
                   className="flex items-center px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
@@ -214,18 +214,18 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
                   {showAdminView ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
                   {showAdminView ? 'Hide Admin' : 'Show Admin'}
                 </button>
-              )}
+              )*/}
               
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadge(applicationData.status)}`}>
                 {applicationData.status}
               </span>
-              <button
+              {/*<button
                 onClick={() => setEditMode(!editMode)}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Edit className="h-4 w-4 mr-2" />
                 {editMode ? 'Save Changes' : 'Edit Mode'}
-              </button>
+              </button>*/}
             </div>
           </div>
         </div>
@@ -245,13 +245,13 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
                   <p className="text-sm text-gray-600">Verify all required data before dispatching to review queue</p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <button
+                  {/*<button
                     onClick={() => setShowMessageModal(true)}
                     className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     <Send className="h-4 w-4 mr-2" />
                     Message Dispatcher
-                  </button>
+                  </button>*/}
                   <button
                     onClick={() => setShowCommentsModal(true)}
                     className="flex items-center px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
