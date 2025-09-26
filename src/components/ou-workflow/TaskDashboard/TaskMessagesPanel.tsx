@@ -62,15 +62,44 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
                     }`}
                   >
                     <div className="flex justify-between items-start mb-1">
-                      {/*<span className="font-medium text-gray-900">From:{msg.sender}, To:{msg.target}</span>*/}
+                      {/*<span className="font-medium text-gray-900">From:{msg.fromUser}, To:{msg.toUser}</span>*/}
                       <span className="font-medium text-gray-900">
-                        From: {msg.sender}
-                        {msg.target && <> , To: {msg.target}</>}
+                        From: {msg.fromUser}
+                        {msg.toUser && <> , To: {msg.toUser}</>}
                       </span>
-                      {msg.timestamp && (
+                      {msg.priority && (
+                        <span
+                          className={`text-xs font-medium px-2 py-1 rounded 
+                            ${
+                              msg.priority === 'High'
+                                ? 'bg-red-100 text-red-700'
+                                : msg.priority === 'Medium'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-green-100 text-green-700'
+                            }`}
+                        >
+                          {msg.priority}
+                        </span>
+                      )}
+
+                      {msg.messageType && (
+                        <span
+                          className={`text-xs font-medium px-2 py-1 rounded 
+                            ${
+                              msg.messageType === 'Error'
+                                ? 'bg-red-200 text-red-800'
+                                : msg.messageType === 'Warning'
+                                ? 'bg-yellow-200 text-yellow-800'
+                                : 'bg-blue-100 text-blue-700'
+                            }`}
+                        >
+                          {msg.messageType}
+                        </span>
+                      )}
+                      {msg.sentDate && (
                         <span className="text-xs text-gray-500">
-                          {new Date(msg.timestamp).toLocaleDateString()}{" "}
-                          {new Date(msg.timestamp).toLocaleTimeString([], {
+                          {new Date(msg.sentDate).toLocaleDateString()}{" "}
+                          {new Date(msg.sentDate).toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
