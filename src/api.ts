@@ -59,6 +59,21 @@ export async function fetchRoles({
 export async function fetchRcs({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<any[]> {
   let url: string;
   
+  url = `${API_BASE_URL}/api/WFUSERROLE?filter[UserRole]=NCRC`;
+ 
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to load Rcs: ${response.statusText}`);
+  const json = await response.json();
+  // 🔑 map WFRole format → simplified { name, id }
+  return json.data.map((item: any) => ({
+    name : item.attributes.UserName,
+    id   : item.attributes.UserName,
+  }));
+}
+/*
+export async function fetchRcs({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<any[]> {
+  let url: string;
+  
   url = `${API_BASE_URL}/api/WFUser?filter[Role]=NCRC`;
 
   const response = await fetch(url);
@@ -69,7 +84,7 @@ export async function fetchRcs({ page = 0, limit = 20 }: { page?: number; limit?
     name : item.attributes.FullName,
     id   : item.attributes.Username,
   }));
-}
+}*/
 
 /** 👇 New: Assign task mutation */
 export async function assignTask({
