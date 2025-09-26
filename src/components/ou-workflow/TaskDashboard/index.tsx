@@ -356,7 +356,7 @@ export function TaskDashboard (){
             FromUser: username,
             ToUser: "",
             MessageText: messageText,
-            MessageType: "User",
+            MessageType: "USER",
             Priority: "HIGH",
             SentDate: formatNowForApi(), // 👈 current timestamp
           },
@@ -527,7 +527,7 @@ export function TaskDashboard (){
             FromUser: username,
             ToUser: assignmentData.assignee,
             MessageText: assignmentData.taskText.length > 50 ? assignmentData.taskText.substring(0, 50) + '...' : assignmentData.taskText,
-            MessageType: "User",
+            MessageType: "USER",
             Priority: "HIGH",
             SentDate: formatNowForApi(), // 👈 current timestamp
           },
