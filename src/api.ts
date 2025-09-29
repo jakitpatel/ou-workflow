@@ -46,23 +46,40 @@ export async function fetchWithAuth<T>({
   return response.json();
 }
 
-export async function fetchApplicants({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<Applicant[]> {
-  let url: string;
+export async function fetchApplicants({
+  page = 0,
+  limit = 20,
+  token,
+  strategy,
+}: {
+  page?: number;
+  limit?: number;
+  token?: string;
+  strategy?: string;
+} = {}): Promise<Applicant[]> {
+  let path: string;
 
+  // Build API path
   if (API_BUILD === "client") {
-    url = `${API_BASE_URL}/get_applications?page[limit]=${limit}&page[offset]=${page}`;
+    path = `/get_applications?page[limit]=${limit}&page[offset]=${page}`;
   } else {
-    url = `${API_BASE_URL}/get_applications?page[limit]=${limit}&page[offset]=${page}`;
-    //url = `${API_LOCAL_URL}/get_applications.json`;
+    path = `/get_applications?page[limit]=${limit}&page[offset]=${page}`;
+    // path = `/get_applications.json`; // for local dev if needed
   }
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Failed to load applicants: ${response.statusText}`);
-  const json = await response.json();
+
+  // Use fetchWithAuth wrapper
+  const json = await fetchWithAuth({
+    path,
+    strategy,
+    token,
+  });
+
+  // Map stages to lowercase keys
   return json.data.map((applicant: any) => ({
     ...applicant,
     stages: Object.fromEntries(
       Object.entries(applicant.stages).map(([k, v]) => [k.toLowerCase(), v])
-    )
+    ),
   }));
 }
 
@@ -101,18 +118,32 @@ export async function fetchRoles({
   }));
 }
 
-export async function fetchRcs({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<any[]> {
-  let url: string;
-  
-  url = `${API_BASE_URL}/api/WFUSERROLE?filter[UserRole]=NCRC`;
- 
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Failed to load Rcs: ${response.statusText}`);
-  const json = await response.json();
-  // 🔑 map WFRole format → simplified { name, id }
+export async function fetchRcs({
+  page = 0,
+  limit = 20,
+  token,
+  strategy,
+}: {
+  page?: number;
+  limit?: number;
+  token?: string;
+  strategy?: string;
+} = {}): Promise<any[]> {
+  const params = new URLSearchParams({
+    "filter[UserRole]": "NCRC",
+    "page[offset]": page.toString(),
+    "page[limit]": limit.toString(),
+  });
+
+  const json = await fetchWithAuth({
+    path: `/api/WFUSERROLE?${params.toString()}`,
+    strategy,
+    token,
+  });
+
   return json.data.map((item: any) => ({
-    name : item.attributes.UserName,
-    id   : item.attributes.UserName,
+    name: item.attributes.UserName,
+    id: item.attributes.UserName,
   }));
 }
 
@@ -190,18 +221,29 @@ export async function sendMsgTask(newMessage: any) {
 }
 
 // simple wrapper - adjust URL if you host JSON differently
-export async function fetchApplicationDetailRaw(applicationId?: string) {
-  let url: string;
-  if (API_BUILD === "client") {
-    url = `${API_BASE_URL}/get_application_detail?applicationId=${applicationId}`;
+export async function fetchApplicationDetailRaw(
+  applicationId?: string,
+  token?: string,
+  strategy?: string
+) {
+  if (!applicationId) throw new Error('applicationId is required');
+
+  let path: string;
+
+  if (API_BUILD === 'client') {
+    path = `/get_application_detail?applicationId=${applicationId}`;
   } else {
-    url = `${API_BASE_URL}/get_application_detail?applicationId=${applicationId}`;
-    //url = `${API_LOCAL_URL}/get_application_detail.json`;
+    path = `/get_application_detail?applicationId=${applicationId}`;
+    // path = `/get_application_detail.json`; // for local dev if needed
   }
-  const res = await fetch(url, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Failed to load application detail');
-  //return res.json();
-  const json = await res.json();
+
+  const json = await fetchWithAuth({
+    path,
+    strategy,
+    token,
+    cache: 'no-store', // preserve original behavior
+  });
+
   return json.applicationInfo;
 }
 
