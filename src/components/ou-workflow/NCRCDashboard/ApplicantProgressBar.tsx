@@ -140,9 +140,22 @@ export function ApplicantProgressBar({
                   }`}
                 >
                   <div className="mb-2">
-                    <span className="text-sm font-semibold text-gray-900 block leading-tight">
+                    <div className="flex items-center gap-2">
+                    {/* Task name */}
+                    <span className="text-sm font-semibold text-gray-900 leading-tight">
                       {task.name}
                     </span>
+
+                    {/* Roles inline */}
+                    {task.taskRoles?.map((roleObj, idx) => (
+                      <span
+                        key={idx}
+                        className="text-xs text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded"
+                      >
+                        {roleObj.taskRole}
+                      </span>
+                    ))}
+                  </div>
                     {task.required && (
                       <span className="text-xs text-red-600 bg-red-50 px-1 py-0.5 rounded mt-1 inline-block">
                         Required
