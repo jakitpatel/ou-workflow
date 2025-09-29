@@ -38,7 +38,7 @@ function LoginPage() {
   const apiLogin = useMutation({
     mutationFn: loginApi, // 👈 use API function,
     onSuccess: (data) => {
-      login({ username: data.username, role: data.role, token: data.access_token, strategy: 'api' })
+      login({ username: username, role: data.role, token: data.access_token, strategy: 'api' })
       navigate({ to: '/' })
     },
   })
@@ -62,6 +62,9 @@ function LoginPage() {
       }
       setError('')
       apiLogin.mutate({ username, password })
+    }
+    if (strategy === 'okta') {
+      handleOkta();
     }
   }
 
@@ -117,6 +120,7 @@ function LoginPage() {
             <SelectContent>
               <SelectItem value="none">No Security</SelectItem>
               <SelectItem value="api">API Security</SelectItem>
+              <SelectItem value="okta">Okta Security</SelectItem>
             </SelectContent>
           </Select>
 
@@ -134,7 +138,7 @@ function LoginPage() {
         </form>
       </Card>
 
-      {/* Okta Card */}
+      {/* Okta Card 
       <Card className="w-full max-w-sm p-6 bg-white rounded-xl shadow-lg border border-blue-100">
         <h2 className="text-xl font-semibold text-blue-900 mb-4">Okta</h2>
         <Button
@@ -144,6 +148,7 @@ function LoginPage() {
           Login with Okta
         </Button>
       </Card>
+      */}
     </div>
   )
 }
