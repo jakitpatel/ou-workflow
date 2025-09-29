@@ -27,6 +27,7 @@ function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [strategy, setStrategy] = useState<'none' | 'api'>('none')
+  const [error, setError] = useState('')
 
   const usernameRef = useRef<HTMLInputElement>(null)
 
@@ -37,7 +38,7 @@ function LoginPage() {
   const apiLogin = useMutation({
     mutationFn: loginApi, // 👈 use API function,
     onSuccess: (data) => {
-      login({ username: data.username, role: data.role, token: data.token, strategy: 'api' })
+      login({ username: data.username, role: data.role, token: data.access_token, strategy: 'api' })
       navigate({ to: '/' })
     },
   })
@@ -45,9 +46,21 @@ function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (strategy === 'none') {
+      if (!username.trim()) {
+        setError('Username is required for No Security login.')
+        return
+      }
+      setError('')
       login({ username, strategy: 'none' })
       navigate({ to: '/' })
-    } else if (strategy === 'api') {
+    }
+
+    if (strategy === 'api') {
+      if (!username.trim() || !password.trim()) {
+        setError('Username and password are required for API login.')
+        return
+      }
+      setError('')
       apiLogin.mutate({ username, password })
     }
   }
@@ -114,7 +127,7 @@ function LoginPage() {
           >
             {strategy === 'api' && apiLogin.isPending ? 'Logging in...' : 'Login'}
           </Button>
-
+          {error && <p className="text-red-600 text-sm text-center">{error}</p>}
           {apiLogin.isError && (
             <p className="text-red-600 text-sm text-center">Login failed. Please try again.</p>
           )}
