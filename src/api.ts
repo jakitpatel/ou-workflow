@@ -171,3 +171,24 @@ export async function fetchApplicationDetailById(applicationId?: string) {
   // single object:
   return data;
 }
+
+/** 👇 New: Login API */
+export async function loginApi({
+  username,
+  password,
+}: {
+  username: string
+  password: string
+}) {
+  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Login failed: ${response.statusText}`)
+  }
+
+  return response.json() // expect { username, role, token }
+}

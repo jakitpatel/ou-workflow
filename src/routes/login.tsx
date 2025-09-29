@@ -1,9 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { useState, useEffect, useRef } from 'react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { useUser } from '@/context/UserContext'
-import { useNavigate } from '@tanstack/react-router'
-import { useState, useEffect, useRef } from 'react'
-
+import { loginApi } from "@/api";
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -36,15 +35,7 @@ function LoginPage() {
   }, [])
 
   const apiLogin = useMutation({
-    mutationFn: async ({ username, password }: { username: string; password: string }) => {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      })
-      if (!res.ok) throw new Error('Login failed')
-      return res.json()
-    },
+    mutationFn: loginApi, // 👈 use API function,
     onSuccess: (data) => {
       login({ username: data.username, role: data.role, token: data.token, strategy: 'api' })
       navigate({ to: '/' })
