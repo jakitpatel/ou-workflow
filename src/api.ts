@@ -5,7 +5,47 @@ const API_LOCAL_CLIENT_URL = import.meta.env.VITE_API_LOCAL_CLIENT_URL;
 
 const API_BASE_URL =
   API_BUILD === "client" ? API_CLIENT_URL : API_LOCAL_URL;
-    
+
+type FetchWithAuthOptions = {
+  path: string;
+  method?: string;
+  body?: any;
+  strategy?: string;
+  token?: string;
+  headers?: Record<string, string>;
+};
+
+export async function fetchWithAuth<T>({
+  path,
+  method = "GET",
+  body,
+  strategy,
+  token,
+  headers = {},
+}: FetchWithAuthOptions): Promise<T> {
+  const finalHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...headers,
+  };
+
+  // Attach Bearer token if API security is used
+  if (strategy === "api" && token) {
+    finalHeaders["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers: finalHeaders,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
 export async function fetchApplicants({ page = 0, limit = 20 }: { page?: number; limit?: number } = {}): Promise<Applicant[]> {
   let url: string;
 
@@ -30,25 +70,30 @@ export async function fetchRoles({
   username,
   page = 0,
   limit = 20,
+  token,
+  strategy,
 }: {
   username: string;
   page?: number;
   limit?: number;
+  token?: string;
+  strategy?: string;
 }): Promise<any[]> {
   const params = new URLSearchParams({
-    'fields[WFUSERROLE]': 'UserName,UserRole,CreatedDate',
-    'page[offset]': page.toString(),
-    'page[limit]': limit.toString(),
-    sort: 'id',
+    "fields[WFUSERROLE]": "UserName,UserRole,CreatedDate",
+    "page[offset]": page.toString(),
+    "page[limit]": limit.toString(),
+    sort: "id",
     [`filter[UserName]`]: username,
   });
 
-  const url = `${API_BASE_URL}/api/WFUSERROLE?${params.toString()}`;
-  const response = await fetch(url);
+  const json = await fetchWithAuth({
+    path: `/api/WFUSERROLE?${params.toString()}`,
+    strategy,
+    token,
+  });
 
-  if (!response.ok) throw new Error(`Failed to load roles: ${response.statusText}`);
-  const json = await response.json();
-
+  // map WFUSERROLE format → simplified { name, value, created }
   return json.data.map((item: any) => ({
     name: item.attributes.UserRole,
     value: item.attributes.UserRole,

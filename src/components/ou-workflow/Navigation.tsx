@@ -10,7 +10,7 @@ type Props = {
 }
 
 export function Navigation({ hideMenu }: Props) {
-  const { username, role, setRole, activeScreen, setActiveScreen, logout } = useUser()
+  const { username, token, strategy, role, setRole, activeScreen, setActiveScreen, logout } = useUser()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
@@ -22,7 +22,7 @@ export function Navigation({ hideMenu }: Props) {
     error,
   } = useQuery({
     queryKey: ['roles', username], // cache per user
-    queryFn: () => fetchRoles({ username }),
+    queryFn: () => fetchRoles({ username, token, strategy }),
     enabled: !!username,           // only run if username is available
   });
   
@@ -32,7 +32,7 @@ export function Navigation({ hideMenu }: Props) {
       setRole(roles[0].value) // or roles[0].name depending on your API
     }
   }, [roles, role, setRole])
-  
+
   // close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
