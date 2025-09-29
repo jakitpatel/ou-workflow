@@ -9,9 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OuWorkflowIndexRouteImport } from './routes/ou-workflow/index'
+import { Route as OuWorkflowApplicationIdIndexRouteImport } from './routes/ou-workflow/$applicationId/index'
 
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -22,35 +35,83 @@ const OuWorkflowIndexRoute = OuWorkflowIndexRouteImport.update({
   path: '/ou-workflow/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OuWorkflowApplicationIdIndexRoute =
+  OuWorkflowApplicationIdIndexRouteImport.update({
+    id: '/ou-workflow/$applicationId/',
+    path: '/ou-workflow/$applicationId/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/ou-workflow': typeof OuWorkflowIndexRoute
+  '/ou-workflow/$applicationId': typeof OuWorkflowApplicationIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/ou-workflow': typeof OuWorkflowIndexRoute
+  '/ou-workflow/$applicationId': typeof OuWorkflowApplicationIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/ou-workflow/': typeof OuWorkflowIndexRoute
+  '/ou-workflow/$applicationId/': typeof OuWorkflowApplicationIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ou-workflow'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/profile'
+    | '/ou-workflow'
+    | '/ou-workflow/$applicationId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ou-workflow'
-  id: '__root__' | '/' | '/ou-workflow/'
+  to:
+    | '/'
+    | '/login'
+    | '/profile'
+    | '/ou-workflow'
+    | '/ou-workflow/$applicationId'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/profile'
+    | '/ou-workflow/'
+    | '/ou-workflow/$applicationId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
+  ProfileRoute: typeof ProfileRoute
   OuWorkflowIndexRoute: typeof OuWorkflowIndexRoute
+  OuWorkflowApplicationIdIndexRoute: typeof OuWorkflowApplicationIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -65,12 +126,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OuWorkflowIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ou-workflow/$applicationId/': {
+      id: '/ou-workflow/$applicationId/'
+      path: '/ou-workflow/$applicationId'
+      fullPath: '/ou-workflow/$applicationId'
+      preLoaderRoute: typeof OuWorkflowApplicationIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
+  ProfileRoute: ProfileRoute,
   OuWorkflowIndexRoute: OuWorkflowIndexRoute,
+  OuWorkflowApplicationIdIndexRoute: OuWorkflowApplicationIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

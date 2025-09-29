@@ -3,17 +3,18 @@ import { Bell, User, BarChart3, ClipboardList, LogOut, Settings } from 'lucide-r
 import { useQuery } from '@tanstack/react-query'
 import { fetchRoles } from './../../api';
 import { useUser } from './../../context/UserContext'  // 👈 new import
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 
 type Props = {
   hideMenu?: boolean   // 👈 new optional prop
 }
 
 export function Navigation({ hideMenu }: Props) {
-  const { username, role, setRole, activeScreen, setActiveScreen } = useUser()
+  const { username, role, setRole, activeScreen, setActiveScreen, logout } = useUser()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-  
+  const navigate = useNavigate()
+
   const {
     data: roles = [],
     isLoading,
@@ -24,6 +25,13 @@ export function Navigation({ hideMenu }: Props) {
     queryFn: () => fetchRoles({ username }),
     enabled: !!username,           // only run if username is available
   });
+  
+  // 👇 Automatically set first role if not already set
+  useEffect(() => {
+    if (roles.length > 0 && !role) {
+      setRole(roles[0].value) // or roles[0].name depending on your API
+    }
+  }, [roles, role, setRole])
   
   // close menu when clicking outside
   useEffect(() => {
@@ -134,7 +142,8 @@ export function Navigation({ hideMenu }: Props) {
                   className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
                   onClick={() => {
                     setMenuOpen(false)
-                    alert('Signed out')
+                    logout()
+                    navigate({ to: '/login' })
                   }}
                 >
                   <LogOut className="w-4 h-4 mr-2" />
