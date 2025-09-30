@@ -147,38 +147,45 @@ export async function fetchRcs({
   }));
 }
 
-/** 👇 New: Assign task mutation */
+/** 👇 Assign task mutation (with fetchWithAuth) */
 export async function assignTask({
   appId,
   taskId,
   role,
   assignee,
+  token,
+  strategy,
 }: {
   appId: string;
   taskId: string;
   role: string;
   assignee: string;
+  token?: string;
+  strategy?: string;
 }) {
-  const response = await fetch(`${API_BASE_URL}/assignRole`, {
+  const json = await fetchWithAuth({
+    path: `/assignRole`,
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    strategy,
+    token,
     body: JSON.stringify({ appId, taskId, role, assignee }),
+    headers: { "Content-Type": "application/json" },
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to assign task: ${response.statusText}`);
-  }
-
-  return response.json();
+  return json;
 }
 
-/** 👇 New: Confirm task mutation */
+/** 👇 Confirm task mutation (with fetchWithAuth) */
 export async function confirmTask({
   taskId,
   result,
+  token,
+  strategy,
 }: {
   taskId: string;
   result?: "yes" | "no";
+  token?: string;
+  strategy?: string;
 }) {
   const bodyObj = {
     data: {
@@ -192,32 +199,34 @@ export async function confirmTask({
     },
   };
 
-  const response = await fetch(`${API_BASE_URL}/api/TaskInstance/${taskId}`, {
+  const json = await fetchWithAuth({
+    path: `/api/TaskInstance/${taskId}`,
     method: "PATCH",
+    strategy,
+    token,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(bodyObj),
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to confirm task: ${response.statusText}`);
-  }
-
-  return response.json();
+  return json;
 }
 
-/** 👇 New: Send Msg task mutation */
-export async function sendMsgTask(newMessage: any) {
-  const response = await fetch(`${API_BASE_URL}/api/WFApplicationMessage`, {
+/** 👇 Send Msg task mutation (with fetchWithAuth) */
+export async function sendMsgTask(
+  newMessage: any,
+  token?: string,
+  strategy?: string
+) {
+  const json = await fetchWithAuth({
+    path: `/api/WFApplicationMessage`,
     method: "POST",
+    strategy,
+    token,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(newMessage),
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to Send Message: ${response.statusText}`);
-  }
-
-  return response.json();
+  return json;
 }
 
 // simple wrapper - adjust URL if you host JSON differently

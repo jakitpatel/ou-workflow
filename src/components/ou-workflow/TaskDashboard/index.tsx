@@ -37,7 +37,7 @@ export function TaskDashboard (){
     const [completionFeedback, setCompletionFeedback] = useState([]);
     const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
-    const { username, role, setRole, setActiveScreen } = useUser() // 👈 use context
+    const { username, role, setRole, setActiveScreen, token, strategy } = useUser() // 👈 use context
     const [showActionModal, setShowActionModal] = useState(null);
     const [showConditionModal, setShowConditionModal] = useState(null);
     const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
@@ -342,6 +342,9 @@ export function TaskDashboard (){
       onSuccess: () => {
         // 🔄 Invalidate to refresh data
         queryClient.invalidateQueries({ queryKey: ["applications"] });
+      },
+      onError: (error: any) => {
+        console.error("❌ Failed to send message:", error);
       }
     });
 
@@ -362,7 +365,11 @@ export function TaskDashboard (){
           },
         },
       };
-      sendMsgTaskMutation.mutate(newMessage);
+      sendMsgTaskMutation.mutate({
+        newMessage,
+        token,
+        strategy,
+      });
       /*setTaskMessages(prev => ({
         ...prev,
         [taskId]: [...(prev[taskId] || []), newMessage]
@@ -533,7 +540,11 @@ export function TaskDashboard (){
           },
         },
       };
-      sendMsgTaskMutation.mutate(newMessage);
+      sendMsgTaskMutation.mutate({
+        newMessage,
+        token,
+        strategy
+      });
 
       //setAllTasks(prev => [...prev, newTask]);
       
@@ -584,6 +595,9 @@ export function TaskDashboard (){
       onSuccess: () => {
         // 🔄 Invalidate to refresh data
         queryClient.invalidateQueries({ queryKey: ["applications"] });
+      },
+      onError: (error: any) => {
+        console.error("❌ Failed to assign task:", error);
       }
     });
 
@@ -591,9 +605,12 @@ export function TaskDashboard (){
     const assignTaskMutation = useMutation({
       mutationFn: assignTask,
       onSuccess: () => {
-        // 🔄 Invalidate to refresh data
+        // 🔄 Refresh application list after assigning
         queryClient.invalidateQueries({ queryKey: ["applications"] });
-      }
+      },
+      onError: (error: any) => {
+        console.error("❌ Failed to assign task:", error);
+      },
     });
 
     const executeAction = (assignee: string, action: any, result: "yes" | "no") => {
@@ -604,11 +621,15 @@ export function TaskDashboard (){
         if (taskType === "confirm") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
+            token,
+            strategy
           });
         } else if (taskType === "conditional" || taskType === "condition") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
-            result: result 
+            result: result,
+            token,
+            strategy
           });
         } else if (taskType === "action") {
           const taskId = action.TaskInstanceId;
@@ -623,6 +644,8 @@ export function TaskDashboard (){
             taskId,
             role,
             assignee,
+            token,
+            strategy
           });
         }
       //}
