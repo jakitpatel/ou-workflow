@@ -13,7 +13,7 @@ function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* ✅ Navigation included */}
-      <Navigation activeScreen="profile" setActiveScreen={() => {}} />
+      <Navigation />
 
       <main className="flex-1 max-w-2xl mx-auto p-6">
         <h1 className="text-2xl font-bold mb-6">User Profile</h1>

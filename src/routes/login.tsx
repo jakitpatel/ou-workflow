@@ -26,7 +26,7 @@ function LoginPage() {
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [strategy, setStrategy] = useState<'none' | 'api'>('none')
+  const [strategy, setStrategy] = useState<'none' | 'api' | 'okta'>('none')
   const [error, setError] = useState('')
 
   const usernameRef = useRef<HTMLInputElement>(null)
@@ -112,7 +112,7 @@ function LoginPage() {
           )}
 
           {/* Strategy Selector */}
-          <Select value={strategy} onValueChange={(val) => setStrategy(val as 'none' | 'api')}>
+          <Select value={strategy} onValueChange={(val) => setStrategy(val as 'none' | 'api' | 'okta')}>
             <SelectTrigger className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-blue-500" />
               <SelectValue placeholder="Choose login strategy" />

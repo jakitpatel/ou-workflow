@@ -1,5 +1,4 @@
 import { Outlet, createRootRoute, redirect } from '@tanstack/react-router'
-import { useUser } from '@/context/UserContext'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanstackDevtools } from '@tanstack/react-devtools'
 
