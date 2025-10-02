@@ -12,7 +12,7 @@ type Props = {
   handleTaskAction: (task: Task, action: string) => void;
 };
 
-export function ApplicantCard({ applicant, setShowIngredientsManager, setSelectedIngredientApp, setActiveScreen, handleTaskAction }: Props) {
+export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: Props) {
   const priorityConfig = {
     urgent: { label: 'Urgent', color: 'bg-red-500', textColor: 'text-white' },
     high: { label: 'High', color: 'bg-orange-500', textColor: 'text-white' },
@@ -43,7 +43,8 @@ export function ApplicantCard({ applicant, setShowIngredientsManager, setSelecte
   const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   // Cross-navigation handler
-  const handleViewTasks = (companyName) => {
+  const handleViewTasks = (companyName: string) => {
+    console.log('Viewing tasks for:', companyName);
     setActiveScreen('tasks-dashboard');
   };
 
@@ -157,7 +158,7 @@ export function ApplicantCard({ applicant, setShowIngredientsManager, setSelecte
           <div className="flex space-x-2">
             <Link
               to="/ou-workflow/$applicationId"
-              params={{ applicationId: applicant.id }}
+              params={{ applicationId: String(applicant.id) }}
               className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
               View Details
