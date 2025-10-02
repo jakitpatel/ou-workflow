@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Bell, User, BarChart3, ClipboardList, LogOut, Settings } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchRoles } from './../../api';

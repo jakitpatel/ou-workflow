@@ -1,41 +1,11 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from './ActionModal'
 import { Search } from 'lucide-react';
 import { IngredientsManagerPage } from './IngredientsManagerPage';
 import { useUser } from './../../../context/UserContext'  // 👈 new import
 import { useApplications } from './../hooks/useApplications';
-
-type Task = {
-  name: string;
-  status: string;
-  assignee: string;
-  daysActive: number;
-  required: boolean;
-};
-
-type Stage = {
-  status: string;
-  progress: number;
-  tasks: Task[];
-};
-
-type Applicant = {
-  id: number;
-  company: string;
-  plant: string;
-  region: string;
-  priority: 'high' | 'medium' | 'low';
-  status: string; // e.g. 'contract_sent'
-  assignedRC: string;
-  daysInStage: number;
-  overdue: boolean;
-  lastUpdate: string;
-  nextAction: string;
-  documents: number;
-  notes: number;
-  stages: Record<string, Stage>;
-};
+//import type { Task, Stage, Applicant } from '@/types/application';
 
 type Props = {
   showIngredientsManager: boolean

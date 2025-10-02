@@ -1,5 +1,3 @@
-import React from 'react'
-
 export function NotificationsTab() {
   return (
     <div className="p-6 text-gray-700">

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Edit, Upload, CheckCircle, AlertCircle, FileText, Building, Users, Package, Beaker, Clock, Send, MessageSquare, AlertTriangle, Check, X, Eye, EyeOff, User, Shield, Contact } from 'lucide-react';
+import { useState } from 'react';
+import { Upload, CheckCircle, AlertCircle, FileText, Building, Users, Package, Beaker, Send, MessageSquare, AlertTriangle, Check, X, Shield } from 'lucide-react';
 import Overview from './Overview';
 import CompanySection from './CompanySection';
 import ContactsSection from './ContactsSection';
@@ -9,7 +9,7 @@ import ActivityLog from './ActivityLog';
 import FilesList from './FilesList';
 import IngredientMgmt from './Ingredients';
 import QuoteInfo from './QuoteInfo';
-
+import type { ApplicationDetail } from '@/types/application';
 type Props = {
   application: ApplicationDetail;
 };

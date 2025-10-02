@@ -1,4 +1,3 @@
-import React from "react";
 import type { ApplicationDetail } from "./../../../types/application";
 
 export default function CompanySection({ application, editMode }: { application: ApplicationDetail, editMode: boolean }) {

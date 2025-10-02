@@ -1,3 +1,34 @@
+export type Task = {
+  name: string;
+  status: string;
+  assignee: string;
+  daysActive: number;
+  required: boolean;
+};
+
+export type Stage = {
+  status: string;
+  progress: number;
+  tasks: Task[];
+};
+
+export type Applicant = {
+  id: number;
+  company: string;
+  plant: string;
+  region: string;
+  priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM';
+  status: string; // e.g. 'contract_sent'
+  assignedRC: string;
+  daysInStage: number;
+  overdue: boolean;
+  lastUpdate: string;
+  nextAction: string;
+  documents: number;
+  notes: number;
+  stages: Record<string, Stage>;
+};
+
 export interface Company {
   name: string;
   category?: string;

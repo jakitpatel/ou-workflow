@@ -1,7 +1,13 @@
+import type { Applicant } from './types/application';
+
+interface ApplicantsResponse {
+  data: Applicant[];
+}
+
 const API_BUILD = import.meta.env.VITE_API_BUILD;
 const API_LOCAL_URL = import.meta.env.VITE_API_LOCAL_URL;
 const API_CLIENT_URL = import.meta.env.VITE_API_CLIENT_URL;
-const API_LOCAL_CLIENT_URL = import.meta.env.VITE_API_LOCAL_CLIENT_URL;
+//const API_LOCAL_CLIENT_URL = import.meta.env.VITE_API_LOCAL_CLIENT_URL;
 
 const API_BASE_URL =
   API_BUILD === "client" ? API_CLIENT_URL : API_LOCAL_URL;
@@ -60,19 +66,14 @@ export async function fetchApplicants({
   let path: string;
 
   // Build API path
-  if (API_BUILD === "client") {
-    path = `/get_applications?page[limit]=${limit}&page[offset]=${page}`;
-  } else {
-    path = `/get_applications?page[limit]=${limit}&page[offset]=${page}`;
-    // path = `/get_applications.json`; // for local dev if needed
-  }
-
+  path = `/get_applications?page[limit]=${limit}&page[offset]=${page}`;
+  
   // Use fetchWithAuth wrapper
-  const json = await fetchWithAuth({
+  const json = (await fetchWithAuth({
     path,
     strategy,
     token,
-  });
+  })) as ApplicantsResponse;
 
   // Map stages to lowercase keys
   return json.data.map((applicant: any) => ({
@@ -239,12 +240,7 @@ export async function fetchApplicationDetailRaw(
 
   let path: string;
 
-  if (API_BUILD === 'client') {
-    path = `/get_application_detail?applicationId=${applicationId}`;
-  } else {
-    path = `/get_application_detail?applicationId=${applicationId}`;
-    // path = `/get_application_detail.json`; // for local dev if needed
-  }
+  path = `/get_application_detail?applicationId=${applicationId}`;
 
   const json = await fetchWithAuth({
     path,

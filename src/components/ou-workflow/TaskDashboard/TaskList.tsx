@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { TaskCard } from './TaskCard';
 import { X } from 'lucide-react';
 

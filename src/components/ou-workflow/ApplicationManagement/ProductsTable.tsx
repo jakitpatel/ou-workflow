@@ -1,6 +1,5 @@
 import type { ApplicationDetail } from "@/types/application";
 import { Package } from "lucide-react";
-import React from "react";
 
 export default function ProductsTable({ application }: { application: ApplicationDetail }) {
   const productData = application.products || [];

@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function StageHeader({ applicant, setSelectedApplicant }) {
   return (
     <div className="flex items-center justify-between mb-3">

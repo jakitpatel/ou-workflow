@@ -1,6 +1,5 @@
 import type { ApplicationDetail } from "@/types/application";
-import { AlertTriangle, Check, Package } from "lucide-react";
-import React from "react";
+import { AlertTriangle, Check } from "lucide-react";
 
 export default function QuoteInfo({ application, quoteData, setValidationChecks }: { application: ApplicationDetail, quoteData: any, setValidationChecks: any }) {
   //const quoteData = application.quote || {};

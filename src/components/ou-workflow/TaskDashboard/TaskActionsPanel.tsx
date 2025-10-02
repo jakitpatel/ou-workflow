@@ -1,7 +1,5 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { Wrench, ChevronDown, ChevronUp } from "lucide-react";
-import { assignTask, confirmTask } from './../../../api'; // same api.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 type TaskActionsPanelProps = {
   application: any;
@@ -27,7 +25,6 @@ export const TaskActionsPanel: React.FC<TaskActionsPanelProps> = ({
   handleTaskAction
 }) => {
   const [showAll, setShowAll] = useState(false);
-  const queryClient = useQueryClient();
 
   const MAX_VISIBLE = 6;
   const ROW_SIZE = 2;

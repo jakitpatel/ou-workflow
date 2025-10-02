@@ -1,5 +1,3 @@
-import React from "react";
-
 type Props = {
   active: string;
   onChange: (tab: string) => void;

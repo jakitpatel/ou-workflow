@@ -1,5 +1,4 @@
-import React from "react";
-import type { ApplicationDetail, UploadedFile } from "./../../../types/application";
+import type { ApplicationDetail, UploadedFile } from "@/types/application";
 import { Beaker, CheckCircle, Download, FileText, Package, Tag, Upload } from "lucide-react";
 
 export default function FilesList({ application, uploadedFiles }: { application: ApplicationDetail;  uploadedFiles: UploadedFile[] }) {

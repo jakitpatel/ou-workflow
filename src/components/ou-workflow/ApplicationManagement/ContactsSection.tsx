@@ -1,5 +1,4 @@
-import React from "react";
-import type { ApplicationDetail, Contact } from "./../../../types/application";
+import type { ApplicationDetail } from "./../../../types/application";
 
 export default function ContactsSection({ application, editMode }: { application: ApplicationDetail, editMode: boolean }) {
   return (

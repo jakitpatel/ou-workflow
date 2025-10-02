@@ -1,6 +1,6 @@
- import React, { useState,useEffect, useRef,useMemo, use } from 'react';
- import { CheckCircle, Wrench, ChevronDown, MessageCircle, X, History, Check, User, CheckSquare, Mail, Send, FileText } from 'lucide-react';
- import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+ import React, { useState,useEffect, useRef,useMemo } from 'react';
+ import { CheckCircle, X, CheckSquare } from 'lucide-react';
+ import { useMutation, useQueryClient } from '@tanstack/react-query';
  import { assignTask, confirmTask, sendMsgTask } from './../../../api'; // same api.ts
  import { useUser } from './../../../context/UserContext'  // 👈 new import
  import { ActionModal } from './../modal/ActionModal';
@@ -17,7 +17,7 @@
   getMessageCount,
   formatNowForApi
 } from './taskHelpers';
-import { useRCNames, useTasks } from './../hooks/useTaskDashboardHooks';
+import { useRCNames } from './../hooks/useTaskDashboardHooks';
 
 import { plantHistory, staffList } from './demoData';
 import { ConditionalModal } from '../modal/ConditionalModal';

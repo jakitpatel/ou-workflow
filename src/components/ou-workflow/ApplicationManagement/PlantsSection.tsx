@@ -1,5 +1,4 @@
-import React from "react";
-import type { ApplicationDetail, Plant } from "./../../../types/application";
+import type { ApplicationDetail } from "@/types/application";
 import { Building } from "lucide-react";
 
 export default function PlantsSection({ application, editMode }: { application: ApplicationDetail; editMode: boolean }) {

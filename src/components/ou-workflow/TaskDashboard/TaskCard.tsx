@@ -1,6 +1,6 @@
-import React from 'react';
+import type { Task } from '@/types/application';
 
-export function TaskCard({ task }) {
+export function TaskCard({ task }: { task: Task }) {
   return (
     <div
       className={`p-3 rounded border shadow-sm ${

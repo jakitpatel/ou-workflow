@@ -1,5 +1,4 @@
 import { AlertTriangle, Beaker, Building, CheckCircle, MessageSquare, Package, Send, Users } from "lucide-react";
-import React from "react";
 
 export default function ActivityLog({ recentActivity, comments }: { recentActivity: any[], comments: any[] }) {
   return (

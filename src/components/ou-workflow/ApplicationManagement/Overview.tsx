@@ -1,4 +1,3 @@
-import React from "react";
 import type { ApplicationDetail } from "./../../../types/application";
 
 export default function Overview({ application, allValidationsPassed }: { application: ApplicationDetail, allValidationsPassed: boolean }) {
