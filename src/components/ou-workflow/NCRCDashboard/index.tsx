@@ -23,8 +23,12 @@ export function NCRCDashboard({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
-  const [showActionModal, setShowActionModal] = useState(null);
-  const [selectedAction, setSelectedAction] = useState(null);
+  const [showActionModal, setShowActionModal] = useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = useState<{
+    task: any;
+    action: string;
+    applicantId: string;
+  } | null>(null);
   const { setActiveScreen } = useUser(); // 👈 use context
   
   // Lookup tables for assignments
@@ -75,7 +79,7 @@ export function NCRCDashboard({
     );
   }
 
-  const executeAction = (assignee) => {
+  const executeAction = (assignee: string) => {
     if (selectedAction) {
       const actionLabels = {
         'assign_rc': `Assigned to RC: ${assignee}`,
@@ -93,12 +97,17 @@ export function NCRCDashboard({
     }
   };
 
-  const handleTaskAction = (e, task, action, applicantId) => {
+  const handleTaskAction = (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    task: any,
+    action: string,
+    applicantId: string
+  ) => {
     e.stopPropagation();
     e.preventDefault();
     
     if (action === 'manage_ingredients') {
-      const app = applicants.find(a => a.id === applicantId);
+      const app = applicants.find(a => String(a.id) === String(applicantId));
       setSelectedIngredientApp(app);
       setShowIngredientsManager(true);
       return;

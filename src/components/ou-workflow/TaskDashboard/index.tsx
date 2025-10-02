@@ -1,25 +1,17 @@
  import React, { useState,useEffect, useRef,useMemo } from 'react';
  import { CheckCircle, X, CheckSquare } from 'lucide-react';
  import { useMutation, useQueryClient } from '@tanstack/react-query';
- import { assignTask, confirmTask, sendMsgTask } from './../../../api'; // same api.ts
- import { useUser } from './../../../context/UserContext'  // 👈 new import
+ import { assignTask, confirmTask, sendMsgTask } from '@/api'; // same api.ts
+ import { useUser } from '@/context/UserContext'  // 👈 new import
  import { ActionModal } from './../modal/ActionModal';
- //import { TaskActionsPanel } from './TaskActionsPanel';
- //import { TaskMessagesPanel } from './TaskMessagesPanel';
  import { PlantHistoryModal } from './PlantHistoryModal';
  import { TaskStatsCards } from './TaskStatsCards';
  import { TaskFilters } from './TaskFilters';
  import { TaskRow } from './TaskRow';
- import {
-  getStatusConfig,
-  getPriorityBorderClass,
-  getStageColor,
-  getMessageCount,
-  formatNowForApi
-} from './taskHelpers';
+ import { formatNowForApi } from './taskHelpers';
 import { useRCNames } from './../hooks/useTaskDashboardHooks';
 
-import { plantHistory, staffList } from './demoData';
+import { plantHistory } from './demoData';
 import { ConditionalModal } from '../modal/ConditionalModal';
 import { useApplications } from './../hooks/useApplications';
 
@@ -37,13 +29,11 @@ export function TaskDashboard (){
     const [completionFeedback, setCompletionFeedback] = useState([]);
     const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
-    const { username, role, setRole, setActiveScreen, token, strategy } = useUser() // 👈 use context
+    const { username, role, setActiveScreen, token, strategy } = useUser() // 👈 use context
     const [showActionModal, setShowActionModal] = useState(null);
     const [showConditionModal, setShowConditionModal] = useState(null);
     const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
     //const [selectedAction, setSelectedAction] = useState(null);
-    const [showAllActions, setShowAllActions] = useState<Record<string, boolean>>({});
-    const MAX_ACTIONS_SHOWN = 4; // configurable
 
     const messageInputRefs = useRef({});
 
@@ -64,7 +54,7 @@ export function TaskDashboard (){
     } = useRCNames();
 
     // Cross-navigation handler
-    const handleViewNCRCDashboard = (plantName) => {
+    const handleViewNCRCDashboard = () => {
       setActiveScreen('ncrc-dashboard');
     };
 
@@ -85,9 +75,6 @@ export function TaskDashboard (){
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }, []);
-
-    // Staff for assignments
-    const staff = staffList
 
     // Sample tasks with workflow stages
     const [allTasks, setAllTasks] = useState([

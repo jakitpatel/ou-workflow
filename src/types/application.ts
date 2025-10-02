@@ -1,9 +1,10 @@
 export type Task = {
   name: string;
-  status: string;
+  status: 'completed' | 'in_progress' | 'overdue' | 'blocked' | 'pending';
   assignee: string;
   daysActive: number;
   required: boolean;
+  taskRoles?: { taskRole: string }[]
 };
 
 export type Stage = {

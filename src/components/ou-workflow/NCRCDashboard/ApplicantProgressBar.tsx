@@ -1,24 +1,6 @@
 import React, { useState } from 'react'
 import { Package, X } from 'lucide-react'
-
-type Task = {
-  name: string
-  status: 'completed' | 'in_progress' | 'overdue' | 'blocked' | 'pending'
-  assignee: string
-  required: boolean
-  daysActive: number
-}
-
-type Stage = {
-  status: string
-  progress: number
-  tasks: Task[]
-}
-
-type Applicant = {
-  id: string
-  stages: Record<string, Stage>
-}
+import type { Task, Applicant } from '@/types/application';
 
 type Props = {
   applicant: Applicant
@@ -38,9 +20,9 @@ export function ApplicantProgressBar({
 }: Props) {
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
 
-    const handleStageClick = (stageName) => {
-        setExpandedStage(expandedStage === stageName ? null : stageName);
-    };
+  const handleStageClick = (stageName: string) => {
+      setExpandedStage(expandedStage === stageName ? null : stageName);
+  };
 
   const handleTaskActionLocal = (
     e: React.MouseEvent,
@@ -49,7 +31,7 @@ export function ApplicantProgressBar({
   ) => {
     e.stopPropagation()
     e.preventDefault()
-    handleTaskAction?.(e, task, action, applicant.id)
+    handleTaskAction?.(e, task, action, String(applicant.id))
   }
 
   const stageOrder = [

@@ -2,38 +2,14 @@ import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ApplicantProgressBar } from './ApplicantProgressBar';
 import { Bell, FileText, Clock, Bot, ClipboardList, Package, ListTodo, ExternalLink, Sparkles, AlertTriangle } from 'lucide-react'
-
-type Task = {
-  name: string;
-  status: string;
-  assignee: string;
-  daysActive: number;
-  required: boolean;
-};
-
-type Stage = {
-  status: string;
-  progress: number;
-  tasks: Task[];
-};
-
-type Applicant = {
-  id: number;
-  company: string;
-  plant: string;
-  region: string;
-  priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW';
-  status: string; // e.g., "contract_sent"
-  assignedRC: string;
-  lastUpdate: string;
-  stages: Record<string, Stage>;
-};
+import type { Task, Applicant } from '@/types/application';
 
 type Props = {
   applicant: Applicant;
   setShowIngredientsManager: (val: boolean) => void;
   setSelectedIngredientApp: (val: Applicant) => void;
   setActiveScreen: (val: string) => void;
+  handleTaskAction: (task: Task, action: string) => void;
 };
 
 export function ApplicantCard({ applicant, setShowIngredientsManager, setSelectedIngredientApp, setActiveScreen, handleTaskAction }: Props) {

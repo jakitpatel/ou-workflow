@@ -1,4 +1,4 @@
-import type { ApplicationDetail } from "./../../../types/application";
+import type { ApplicationDetail } from "@/types/application";
 
 export default function Overview({ application, allValidationsPassed }: { application: ApplicationDetail, allValidationsPassed: boolean }) {
   return (
