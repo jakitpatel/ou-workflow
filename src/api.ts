@@ -213,18 +213,22 @@ export async function confirmTask({
 }
 
 /** 👇 Send Msg task mutation (with fetchWithAuth) */
-export async function sendMsgTask(
-  newMessage: any,
-  token?: string,
-  strategy?: string
-) {
+export async function sendMsgTask({
+  newMessage,
+  token,
+  strategy,
+}: {
+  newMessage: any;
+  token?: string;
+  strategy?: string;
+}) {
   const json = await fetchWithAuth({
     path: `/api/WFApplicationMessage`,
     method: "POST",
     strategy,
     token,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(newMessage),
+    body: newMessage, // ✅ don't wrap again or stringify here
   });
 
   return json;
