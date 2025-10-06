@@ -91,6 +91,11 @@ export function ApplicantProgressBar({
               <h4 className="font-bold text-gray-900 capitalize text-lg">
                 {expandedStage} Stage Tasks
               </h4>
+              <div className="flex items-center space-x-2">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium`}>
+                  {applicant.stages[expandedStage]?.progress || '0%'} Complete
+                </span>
+              </div>
               <button
                 onClick={() => setExpandedStage(null)}
                 className="text-gray-400 hover:text-gray-600 p-1"
