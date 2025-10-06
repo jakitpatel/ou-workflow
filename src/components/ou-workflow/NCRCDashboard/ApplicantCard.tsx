@@ -149,7 +149,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
             {applicant.notes} notes
           </span>
         </div>
-        <span>Updated: {applicant.lastUpdate}</span>
+        <span>Updated: {applicant.lastUpdate.split('.')[0]}</span>
       </div>
 
       <div className="mt-4 pt-4 border-t border-gray-100">

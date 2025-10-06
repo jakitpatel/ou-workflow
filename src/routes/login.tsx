@@ -26,7 +26,7 @@ function LoginPage() {
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [strategy, setStrategy] = useState<'none' | 'api' | 'okta'>('none')
+  const [strategy, setStrategy] = useState<'none' | 'api' | 'okta'>('api')
   const [error, setError] = useState('')
 
   const usernameRef = useRef<HTMLInputElement>(null)

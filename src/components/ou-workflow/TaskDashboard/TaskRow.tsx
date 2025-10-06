@@ -20,7 +20,7 @@ export function TaskRow({
   const messageCounts = getMessageCount(application);
 
   return (
-    <React.Fragment key={application.id}>
+    <React.Fragment>
       <tr className={`hover:bg-gray-50 ${getPriorityBorderClass(application.priority)}`}>
         {/* Task & Plant Column */}
         <td className="px-6 py-4">
