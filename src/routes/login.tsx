@@ -21,15 +21,27 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
-  const { login } = useUser()
+  const { login, username, token, loginTime } = useUser()
   const navigate = useNavigate()
 
-  const [username, setUsername] = useState('')
+  //const [username, setUsername] = useState('')
+  const [formUsername, setFormUsername] = useState('')
   const [password, setPassword] = useState('')
   const [strategy, setStrategy] = useState<'none' | 'api' | 'okta'>('api')
   const [error, setError] = useState('')
 
   const usernameRef = useRef<HTMLInputElement>(null)
+
+  // Auto-redirect if user already logged in & token still valid
+  useEffect(() => {
+    if (username && token && loginTime) {
+      const now = Date.now()
+      const expiresIn = 24 * 60 * 60 * 1000 // 24 hrs
+      if (now - loginTime < expiresIn) {
+        navigate({ to: '/' })  // 👈 redirect inside
+      }
+    }
+  }, [username, token, loginTime, navigate])
 
   useEffect(() => {
     usernameRef.current?.focus()
@@ -38,7 +50,7 @@ function LoginPage() {
   const apiLogin = useMutation({
     mutationFn: loginApi, // 👈 use API function,
     onSuccess: (data) => {
-      login({ username: username, role: data.role, token: data.access_token, strategy: 'api' })
+      login({ username: formUsername, role: data.role, token: data.access_token, strategy: 'api' })
       navigate({ to: '/' })
     },
   })
@@ -46,22 +58,22 @@ function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (strategy === 'none') {
-      if (!username.trim()) {
+      if (!formUsername.trim()) {
         setError('Username is required for No Security login.')
         return
       }
       setError('')
-      login({ username, strategy: 'none' })
+      login({ username: formUsername, strategy: 'none' })
       navigate({ to: '/' })
     }
 
     if (strategy === 'api') {
-      if (!username.trim() || !password.trim()) {
+      if (!formUsername.trim() || !password.trim()) {
         setError('Username and password are required for API login.')
         return
       }
       setError('')
-      apiLogin.mutate({ username, password })
+      apiLogin.mutate({ username: formUsername, password })
     }
     if (strategy === 'okta') {
       handleOkta();
@@ -88,8 +100,8 @@ function LoginPage() {
             <User className="absolute left-3 top-3 h-4 w-4 text-blue-500" />
             <Input
               placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={formUsername}
+              onChange={(e) => setFormUsername(e.target.value)}
               ref={usernameRef}
               className="pl-10"
               onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e) }}
