@@ -20,7 +20,7 @@ type FetchWithAuthOptions = {
   token?: string;
   headers?: Record<string, string>;
 };
-
+// Fetch with Auth wrapper
 export async function fetchWithAuth<T>({
   path,
   method = "GET",
