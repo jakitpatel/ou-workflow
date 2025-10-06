@@ -169,7 +169,8 @@ export async function assignTask({
     method: "POST",
     strategy,
     token,
-    body: JSON.stringify({ appId, taskId, role, assignee }),
+    //body: JSON.stringify({ appId, taskId, role, assignee }),
+    body: { appId, taskId, role, assignee },
     headers: { "Content-Type": "application/json" },
   });
 
@@ -206,7 +207,7 @@ export async function confirmTask({
     strategy,
     token,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(bodyObj),
+    body: bodyObj, //JSON.stringify(bodyObj),
   });
 
   return json;
