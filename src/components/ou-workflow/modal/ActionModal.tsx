@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { useRCNames } from '@/components/ou-workflow/hooks/useTaskDashboardHooks'; // adjust path if needed
 
 type Application = {
   company: string;
   assignee: string;
-  // add other fields if needed
 };
 
 type SelectedAction = {
-  application: Application; // 👈 was "task" before
-  action: { id: string; label: string }; // 👈 use label for header
+  application: Application;
+  action: { id: string; label: string };
+};
+
+type Props = {
+  showActionModal: boolean;
+  selectedAction: SelectedAction | null;
+  setShowActionModal: (val: boolean | null) => void;
+  executeAction: (value: string, action: { id: string; label: string }) => void;
 };
 
 type RcLookupItem = {
@@ -19,24 +26,18 @@ type RcLookupItem = {
   workload: string;
 };
 
-type Props = {
-  showActionModal: boolean;
-  selectedAction: SelectedAction | null;
-  setShowActionModal: (val: boolean | null) => void;
-  executeAction: (value: string) => void;
-  rcnames: RcLookupItem[];
-};
-
 export const ActionModal: React.FC<Props> = ({
   showActionModal,
   setShowActionModal,
   selectedAction,
   executeAction,
-  rcnames,
 }) => {
   if (!showActionModal || !selectedAction) return null;
-  console.log("ActionModal render:", { showActionModal, selectedAction });
-  //if (!showActionModal) return null;
+
+  // ✅ Lazy-load RCs only when modal is open
+  const { data: rcnames = [], isLoading } = useRCNames({
+    enabled: showActionModal,
+  });
 
   const { application, action } = selectedAction;
   const [selectedRc, setSelectedRc] = useState<string>("");
@@ -54,9 +55,7 @@ export const ActionModal: React.FC<Props> = ({
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {action.label}
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900">{action.label}</h3>
             <button
               onClick={() => setShowActionModal(null)}
               className="text-gray-400 hover:text-gray-600"
@@ -68,8 +67,7 @@ export const ActionModal: React.FC<Props> = ({
           {/* Application Info */}
           <div className="mb-4 text-sm text-gray-600">
             <p>
-              Application:{" "}
-              <span className="font-medium">{application.company}</span>
+              Application: <span className="font-medium">{application.company}</span>
             </p>
           </div>
 
@@ -78,18 +76,23 @@ export const ActionModal: React.FC<Props> = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Select Name:
             </label>
-            <select
-              value={selectedRc}
-              onChange={(e) => setSelectedRc(e.target.value)}
-              className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">-- Choose --</option>
-              {rcnames.map((rc) => (
-                <option key={rc.id} value={rc.name}>
-                  {rc.name}
-                </option>
-              ))}
-            </select>
+
+            {isLoading ? (
+              <p className="text-sm text-gray-500">Loading RC names...</p>
+            ) : (
+              <select
+                value={selectedRc}
+                onChange={(e) => setSelectedRc(e.target.value)}
+                className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">-- Choose --</option>
+                {rcnames.map((rc: RcLookupItem) => (
+                  <option key={rc.id} value={rc.name}>
+                    {rc.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Actions */}
@@ -104,9 +107,7 @@ export const ActionModal: React.FC<Props> = ({
               onClick={handleSave}
               disabled={!selectedRc}
               className={`px-4 py-2 text-sm font-medium rounded-lg text-white ${
-                selectedRc
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-gray-300 cursor-not-allowed"
+                selectedRc ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-300 cursor-not-allowed"
               }`}
             >
               Save

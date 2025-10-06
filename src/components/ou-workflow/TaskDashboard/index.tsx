@@ -49,10 +49,12 @@ export function TaskDashboard (){
     } = useApplications()
 
     // RC Lookup data
-    const {
+    /*const {
       data: rcnames = [],
-    } = useRCNames();
-
+    } = useRCNames();*/
+      const { data: rcnames = [] } = useRCNames({
+        enabled: showActionModal,
+      });
     // Cross-navigation handler
     const handleViewNCRCDashboard = () => {
       setActiveScreen('ncrc-dashboard');
@@ -143,9 +145,64 @@ export function TaskDashboard (){
       ]
     });
 
+    const stageOrder = [
+      { key: 'initial', name: 'Initial' },
+      { key: 'nda', name: 'NDA' },
+      { key: 'inspection', name: 'Inspection' },
+      { key: 'ingredients', name: 'Ingredients' },
+      { key: 'products', name: 'Products' },
+      { key: 'contract', name: 'Contract' },
+      { key: 'certification', name: 'Certification' }
+    ]
     // helper: flatten all tasks from all stages
-    const getAllTasks = (app) => {
+    /*const getAllTasks = (app) => {
       if (!app?.stages) return [];
+      return Object.values(app.stages).flatMap(stage => stage.tasks || []);
+    };*/
+    // Flatten tasks by stageOrder, with stage info
+    // Usage: getAllTasks(app)                      -> old behavior, tasks only
+//        getAllTasks(app, { includeStage: true }) -> tasks with `.stage` added
+    const getAllTasks = (app, options = { includeStage: false }) => {
+      if (!app?.stages) return [];
+
+      const includeStage = !!options.includeStage;
+
+      // Build a case-insensitive map of stages: lowercased key -> { key, stageObj }
+      const stageKeyMap = Object.keys(app.stages).reduce((acc, realKey) => {
+        acc[realKey.toLowerCase()] = { key: realKey, stage: app.stages[realKey] };
+        return acc;
+      }, {});
+
+      // If stageOrder exists and is an array, use it to control ordering
+      if (Array.isArray(stageOrder) && stageOrder.length > 0) {
+        return stageOrder.flatMap(entry => {
+          // accept entry as either string or object { key, name }
+          const desiredName = typeof entry === 'string' ? entry : (entry.name ?? entry.key ?? '');
+          if (!desiredName) return [];
+
+          const lookup = desiredName.toLowerCase();
+          const found = stageKeyMap[lookup];
+
+          // If not found by name, also try 'key' field from entry (useful if stageOrder uses different naming)
+          let stageObj = found ? found.stage : null;
+          let realStageName = found ? found.key : null;
+          if (!stageObj && typeof entry === 'object' && entry.key) {
+            const alt = stageKeyMap[(entry.key + '').toLowerCase()];
+            if (alt) {
+              stageObj = alt.stage;
+              realStageName = alt.key;
+            }
+          }
+
+          if (!stageObj) return []; // skip missing stage
+
+          const tasks = stageObj.tasks || [];
+          if (!includeStage) return tasks;
+          return tasks.map(t => ({ ...t, stage: realStageName || desiredName }));
+        });
+      }
+
+      // Fallback: preserve original behaviour (insertion order of app.stages)
       return Object.values(app.stages).flatMap(stage => stage.tasks || []);
     };
 
@@ -488,7 +545,7 @@ export function TaskDashboard (){
       setRecentReassignments(prev => prev.filter(r => r.id !== reassignmentId));
     };
 
-    const handleShowPlantHistory = (plantName) => {
+    const handleShowPlantHistory = (plantName: string) => {
       setShowPlantHistory(plantName);
     };
 
@@ -811,6 +868,7 @@ export function TaskDashboard (){
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredTasks.map((application) => (
                   <TaskRow
+                    key={application.id}   // ✅ unique key here
                     application={application}
                     username={username}
                     plantInfo={plantHistory[application.plant]}
