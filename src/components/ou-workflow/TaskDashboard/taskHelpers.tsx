@@ -1,14 +1,27 @@
-import { Bell, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Bell, Clock, AlertTriangle, CheckCircle, HelpCircle } from 'lucide-react';
 
 // Example helper functions. Copy all relevant helpers from your index.tsx.
 export const getStatusConfig = (status: string, daysActive = 0) => {
-  const configs = {
+  // normalize status for lookup
+  const key = status.toLowerCase();
+
+  const configs: Record<string, { label: string; color: string; icon: any }> = {
     new: { label: 'New', color: 'bg-blue-100 text-blue-800', icon: Bell },
     in_progress: { label: 'In Progress', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
     overdue: { label: `Overdue (${daysActive}d)`, color: 'bg-red-100 text-red-800', icon: AlertTriangle },
-    completed: { label: 'Completed', color: 'bg-green-100 text-green-800', icon: CheckCircle }
-    };
-    return configs[status] || configs.new;
+    completed: { label: 'Completed', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+  };
+
+  if (configs[key]) {
+    return configs[key];
+  }
+
+  // fallback for unknown status
+  return {
+    label: status.toUpperCase(), // preserve original case for display
+    color: 'bg-gray-100 text-gray-800',
+    icon: HelpCircle,
+  };
 };
 
 export const getPriorityBorderClass = (priority: string) => {
