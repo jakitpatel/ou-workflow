@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Bell, User, BarChart3, ClipboardList, LogOut, Settings } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { fetchRoles } from './../../api';
+//import { useQuery } from '@tanstack/react-query'
+//import { fetchRoles } from './../../api';
 import { useUser } from './../../context/UserContext'  // 👈 new import
 import { Link, useNavigate } from '@tanstack/react-router'
 
@@ -14,24 +14,6 @@ export function Navigation({ hideMenu }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
-
-  const {
-    data: roles = [],
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: ['roles', username], // cache per user
-    queryFn: () => fetchRoles({ username, token, strategy }),
-    enabled: !!username,           // only run if username is available
-  });
-  
-  // 👇 Automatically set first role if not already set
-  useEffect(() => {
-    if (roles.length > 0 && !role) {
-      setRole(roles[0].value) // or roles[0].name depending on your API
-    }
-  }, [roles, role, setRole])
 
   // close menu when clicking outside
   useEffect(() => {
@@ -65,7 +47,8 @@ export function Navigation({ hideMenu }: Props) {
             {/* ✅ Conditionally render top menu */}
             {!hideMenu && (
               <nav className="flex space-x-1">
-                <button
+                <Link
+                  to="/ou-workflow"
                   onClick={() => setActiveScreen('ncrc-dashboard')}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeScreen === 'ncrc-dashboard'
@@ -75,9 +58,10 @@ export function Navigation({ hideMenu }: Props) {
                 >
                   <BarChart3 className="w-4 h-4 inline-block mr-1.5" />
                   NCRC Dashboard
-                </button>
+                </Link>
 
-                <button
+                <Link
+                  to="/ou-workflow"
                   onClick={() => setActiveScreen('tasks-dashboard')}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeScreen === 'tasks-dashboard'
@@ -87,7 +71,7 @@ export function Navigation({ hideMenu }: Props) {
                 >
                   <ClipboardList className="w-4 h-4 inline-block mr-1.5" />
                   Tasks & Notifications
-                </button>
+                </Link>
               </nav>
             )}
           </div>
@@ -107,31 +91,13 @@ export function Navigation({ hideMenu }: Props) {
   </button>
           {menuOpen && (
               <div className="absolute right-0 top-10 w-48 bg-white border border-gray-200 shadow-lg rounded-md py-2 z-50">
-                
-                {/* Roles Dropdown */}
-                <div className="px-3 pb-2">
-                  {isLoading && <p className="text-xs text-gray-500">Loading roles...</p>}
-                  {isError && <p className="text-xs text-red-500">Error loading roles</p>}
-                  {!isLoading && !isError && roles.length > 0 && (
-                    <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md text-sm p-1 focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select Role</option>
-                      {roles.map((role: { name: string; value: string }, idx: number) => (
-                        <option key={idx} value={role.value}>
-                          {role.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
                {/* Profile */}
                 <Link
                   to="/profile"
-                  onClick={() => setMenuOpen(false)} // close dropdown on click
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setActiveScreen(null); // ✅ safe now
+                  }}
                   className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                 >
                   <Settings className="w-4 h-4 mr-2 text-gray-500" />

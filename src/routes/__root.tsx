@@ -1,6 +1,8 @@
 import { Outlet, createRootRoute, redirect } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanstackDevtools } from '@tanstack/react-devtools'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
@@ -32,6 +34,7 @@ export const Route = createRootRoute({
   component: () => (
     <>
       <Outlet />
+      <ReactQueryDevtools initialIsOpen={false} />
       <TanstackDevtools
         config={{
           position: 'bottom-left',

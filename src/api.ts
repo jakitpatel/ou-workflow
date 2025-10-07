@@ -110,6 +110,10 @@ export async function fetchRoles({
     strategy,
     token,
   });
+  if (!Array.isArray(json.data)) {
+    console.error("❌ json.data is not an array:", json);
+    throw new Error("Invalid roles response");
+  }
 
   // map WFUSERROLE format → simplified { name, value, created }
   return json.data.map((item: any) => ({
