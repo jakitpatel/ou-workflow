@@ -12,6 +12,7 @@ type UserContextType = {
   login: (data: { username: string; role?: string; token?: string; strategy: LoginStrategy }) => void
   logout: () => void
   setActiveScreen: (screen: string) => void
+  setRole: (role: string | null) => void
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
@@ -77,7 +78,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   return (
     <UserContext.Provider
-      value={{ username, role, token, strategy, activeScreen, loginTime, login, logout, setActiveScreen }}
+      value={{ username, role, setRole, token, strategy, activeScreen, loginTime, login, logout, setActiveScreen }}
     >
       {children}
     </UserContext.Provider>
