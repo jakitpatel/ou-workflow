@@ -222,11 +222,13 @@ export async function confirmTask({
   result,
   token,
   strategy,
+  username
 }: {
   taskId: string;
   result?: "yes" | "no";
   token?: string;
   strategy?: string;
+  username?: string;
 }) {
   const json = await fetchWithAuth({
     path: `/complete_task`,
@@ -236,7 +238,7 @@ export async function confirmTask({
     headers: { "Content-Type": "application/json" },
     body: { task_instance_id: taskId, 
             result: result ? result.toUpperCase() : undefined,
-            completed_by: "user1",
+            completed_by: username,
             completion_notes: "Task completed successfully" },
   });
 

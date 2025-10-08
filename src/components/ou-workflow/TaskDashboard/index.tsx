@@ -658,14 +658,16 @@ export function TaskDashboard (){
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
             token,
-            strategy
+            strategy,
+            username
           });
         } else if (taskType === "conditional" || taskType === "condition") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
             result: result,
             token,
-            strategy
+            strategy,
+            username
           });
         } else if (taskType === "action") {
           const taskId = action.TaskInstanceId;
