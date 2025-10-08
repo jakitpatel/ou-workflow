@@ -48,6 +48,12 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
     setActiveScreen('tasks-dashboard');
   };
 
+  // Build a lookup by type for easier access
+  const filesByType = applicant.files?.reduce((acc, file) => {
+    acc[file.fileType] = file;
+    return acc;
+  }, {} as Record<string, typeof applicant.files[0]>);
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all">
       <div className="flex justify-between items-start mb-4">
@@ -177,21 +183,50 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
 
       <div className="flex items-center space-x-4 pt-2 border-t border-gray-50">
         <span className="text-xs text-gray-500 font-medium">Pre-NCRC Documentation:</span>
-        <button className="flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors">
-          <ClipboardList className="w-3 h-3 mr-1" />
-          Application Details
-          <ExternalLink className="w-3 h-3 ml-1" />
-        </button>
-        <button className="flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors">
-          <Package className="w-3 h-3 mr-1" />
-          Ingredients List
-          <ExternalLink className="w-3 h-3 ml-1" />
-        </button>
-        <button className="flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors">
-          <FileText className="w-3 h-3 mr-1" />
-          Product Details
-          <ExternalLink className="w-3 h-3 ml-1" />
-        </button>
+        {/* Application Details */}
+        {filesByType.APP && (
+          <a
+            href={filesByType.APP.filePath}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={filesByType.APP.fileName}   // 👈 tooltip here
+            className="flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            <ClipboardList className="w-3 h-3 mr-1" />
+            Application Details
+            <ExternalLink className="w-3 h-3 ml-1" />
+          </a>
+        )}
+
+        {/* Ingredients List */}
+        {filesByType.ING && (
+          <a
+            href={filesByType.ING.filePath}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={filesByType.ING.fileName}   // 👈 tooltip here
+            className="flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            <Package className="w-3 h-3 mr-1" />
+            Ingredients List
+            <ExternalLink className="w-3 h-3 ml-1" />
+          </a>
+        )}
+
+        {/* Product Details */}
+        {filesByType.PROD && (
+          <a
+            href={filesByType.PROD.filePath}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={filesByType.PROD.fileName}   // 👈 tooltip here
+            className="flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            <FileText className="w-3 h-3 mr-1" />
+            Product Details
+            <ExternalLink className="w-3 h-3 ml-1" />
+          </a>
+        )}
       </div>
     </div>
   );
