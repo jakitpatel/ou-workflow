@@ -182,7 +182,7 @@ export async function assignTask({
 }
 
 /** 👇 Confirm task mutation (with fetchWithAuth) */
-export async function confirmTask({
+/*export async function confirmTask({
   taskId,
   result,
   token,
@@ -212,6 +212,32 @@ export async function confirmTask({
     token,
     headers: { "Content-Type": "application/json" },
     body: bodyObj, //JSON.stringify(bodyObj),
+  });
+
+  return json;
+}*/
+
+export async function confirmTask({
+  taskId,
+  result,
+  token,
+  strategy,
+}: {
+  taskId: string;
+  result?: "yes" | "no";
+  token?: string;
+  strategy?: string;
+}) {
+  const json = await fetchWithAuth({
+    path: `/complete_task`,
+    method: "POST",
+    strategy,
+    token,
+    headers: { "Content-Type": "application/json" },
+    body: { task_instance_id: taskId, 
+            result: result ? result.toUpperCase() : undefined,
+            completed_by: "user1",
+            completion_notes: "Task completed successfully" },
   });
 
   return json;
