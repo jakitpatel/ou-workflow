@@ -1,10 +1,11 @@
 import React from "react";
 import { MessageCircle, Send, CheckSquare } from "lucide-react";
+import { useRCNames } from "../hooks/useTaskDashboardHooks";
 
 type TaskMessagesPanelProps = {
   application: any;
   username: string;
-  staff: { id: string; name: string; department: string }[];
+  //staff: { id: string; name: string; department: string }[];
   taskMessages: any;
   messageInputs: Record<string, string>;
   messageInputRefs: React.MutableRefObject<Record<string, HTMLInputElement | null>>;
@@ -22,7 +23,6 @@ type TaskMessagesPanelProps = {
 export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
   application,
   username,
-  staff,
   taskMessages,
   messageInputs,
   messageInputRefs,
@@ -36,6 +36,10 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
   handleCreateTaskFromMessage,
   handleConfirmTaskCreation,
 }) => {
+  // RC Lookup data
+  const { data: staff = [] } = useRCNames({
+    enabled: true,
+  });
   return (
     <tr>
       <td colSpan={4} className="px-0 py-0">

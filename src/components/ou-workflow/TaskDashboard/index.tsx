@@ -9,7 +9,6 @@
  import { TaskFilters } from './TaskFilters';
  import { TaskRow } from './TaskRow';
  import { formatNowForApi } from './taskHelpers';
-import { useRCNames } from './../hooks/useTaskDashboardHooks';
 
 import { plantHistory } from './demoData';
 import { ConditionalModal } from '../modal/ConditionalModal';
@@ -48,13 +47,6 @@ export function TaskDashboard (){
       error,
     } = useApplications()
 
-    // RC Lookup data
-    /*const {
-      data: rcnames = [],
-    } = useRCNames();*/
-      const { data: rcnames = [] } = useRCNames({
-        enabled: showActionModal,
-      });
     // Cross-navigation handler
     const handleViewNCRCDashboard = () => {
       setActiveScreen('ncrc-dashboard');
@@ -748,7 +740,6 @@ export function TaskDashboard (){
     return (
       <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
         <ActionModal
-          rcnames={rcnames}
           setShowActionModal={setShowActionModal} 
           showActionModal={showActionModal}
           executeAction={executeAction}
@@ -873,7 +864,6 @@ export function TaskDashboard (){
                     username={username}
                     plantInfo={plantHistory[application.plant]}
                     expandedActions={expandedActions}
-                    staff={rcnames}
                     showReassignDropdown={showReassignDropdown}
                     setShowReassignDropdown={setShowReassignDropdown}
                     getTaskActions={getTaskActions}

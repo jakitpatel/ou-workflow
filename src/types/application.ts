@@ -1,3 +1,22 @@
+export type ApplicantFile = {
+  id: number;
+  fileName: string;
+  filePath: string;
+  fileSize: string; // e.g. "245 KB"
+  fileType: "APP" | "ING" | "PROD"; // restrict to known types
+};
+// Single application message
+export type WFApplicationMessage = {
+  id: number;
+  fromUser: string;
+  toUser: string;
+  text: string;
+  messageType: "USER" | "SYSTEM";
+  priority: "URGENT" | "HIGH" | "NORMAL" | "LOW" | "MEDIUM";
+  sentDate: string;
+  isSystemMessage: boolean;
+};
+
 export type Task = {
   name: string;
   status: 'completed' | 'in_progress' | 'overdue' | 'blocked' | 'pending';
@@ -15,6 +34,7 @@ export type Stage = {
 
 export type Applicant = {
   id: number;
+  applicationId: number;
   company: string;
   plant: string;
   region: string;
@@ -28,6 +48,12 @@ export type Applicant = {
   documents: number;
   notes: number;
   stages: Record<string, Stage>;
+  /** 👇 Matches API response */
+  application_messages?: WFApplicationMessage[];
+  /** If API sends extra stuff (like aiSuggestions), allow it */
+  aiSuggestions?: Record<string, any>;
+   /** 👇 New property for applicant files */
+  files?: ApplicantFile[];
 };
 
 export interface Company {
