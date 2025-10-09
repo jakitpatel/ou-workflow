@@ -682,6 +682,14 @@ export function TaskDashboard (){
             strategy,
             username
           });
+        } else if (taskType === "action" && taskCategory === "input") {
+          confirmTaskMutation.mutate({
+            taskId: action.TaskInstanceId,
+            result: result,
+            token,
+            strategy,
+            username
+          });
         } else if (taskType === "action" && taskCategory === "assignment") {
           const taskId = action.TaskInstanceId;
           const appId = selectedAction.application.id;
@@ -758,6 +766,8 @@ export function TaskDashboard (){
       } else if(action.taskType === "action" && action.taskCategory === "assignment"){
         setShowActionModal(action);
       } else if(action.taskType === "action" && action.taskCategory === "selector"){
+        setShowConditionModal(action);
+      } else if(action.taskType === "action" && action.taskCategory === "input"){
         setShowConditionModal(action);
       }
     };

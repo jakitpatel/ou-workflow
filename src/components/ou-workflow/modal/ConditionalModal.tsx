@@ -8,7 +8,7 @@ type Application = {
 
 type SelectedAction = {
   application: Application;
-  action: { id: string; label: string };
+  action: { id: string; label: string; taskType?: string; taskCategory?: string };
 };
 
 type Props = {
@@ -29,14 +29,18 @@ export const ConditionalModal: React.FC<Props> = ({
   executeAction,
 }) => {
   const [feeValue, setFeeValue] = useState<string>("0"); // default LOW
+  const [invoiceAmount, setInvoiceAmount] = useState<string>(""); // input for invoice
+  const [error, setError] = useState<string>("");
 
   if (!showConditionModal || !selectedAction) return null;
 
   const { application, action } = selectedAction;
 
-  const handleSave = () => {
-    executeAction(action.id, action, feeValue);
+  const handleSave = (value: string) => {
+    executeAction(action.id, action, value);
     setShowConditionModal(null);
+    setInvoiceAmount("");
+    setError("");
   };
 
   const handleCondition = (condition: "yes" | "no") => {
@@ -45,7 +49,26 @@ export const ConditionalModal: React.FC<Props> = ({
   };
 
   const isFeeStructure =
+    action.taskType?.toLowerCase() === "action" &&
+    action.taskCategory?.toLowerCase() === "selector" &&
     action.label.toLowerCase().includes("assign fee structure");
+
+  const isInvoiceAmount =
+    action.taskType?.toLowerCase() === "action" &&
+    action.taskCategory?.toLowerCase() === "input" &&
+    action.label.toLowerCase().includes("assign invoice amount");
+
+  const handleInvoiceChange = (val: string) => {
+    // Only allow digits
+    if (/^\d*$/.test(val)) {
+      setInvoiceAmount(val);
+      setError("");
+    } else {
+      setError("Please enter a valid whole number");
+    }
+  };
+
+  const isValidInvoice = invoiceAmount !== "" && /^\d+$/.test(invoiceAmount);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -75,6 +98,7 @@ export const ConditionalModal: React.FC<Props> = ({
           {/* Conditional UI */}
           {isFeeStructure ? (
             <>
+              {/* Fee Structure Selector */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Fee Structure
@@ -97,8 +121,43 @@ export const ConditionalModal: React.FC<Props> = ({
                   Cancel
                 </button>
                 <button
-                  onClick={handleSave}
+                  onClick={() => handleSave(feeValue)}
                   className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Save
+                </button>
+              </div>
+            </>
+          ) : isInvoiceAmount ? (
+            <>
+              {/* Invoice Amount Input */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Enter Invoice Amount
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={invoiceAmount}
+                  onChange={(e) => handleInvoiceChange(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  placeholder="Enter amount"
+                />
+                {error && (
+                  <p className="text-xs text-red-500 mt-1">{error}</p>
+                )}
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowConditionModal(null)}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleSave(invoiceAmount)}
+                  disabled={!isValidInvoice}
+                  className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                 >
                   Save
                 </button>
