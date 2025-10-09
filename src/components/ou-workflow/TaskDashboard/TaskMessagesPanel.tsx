@@ -1,6 +1,6 @@
 import React from "react";
 import { MessageCircle, Send, CheckSquare } from "lucide-react";
-import { useRCNames } from "../hooks/useTaskDashboardHooks";
+import { useRCList } from "../hooks/useTaskDashboardHooks";
 
 type TaskMessagesPanelProps = {
   application: any;
@@ -37,7 +37,7 @@ export const TaskMessagesPanel: React.FC<TaskMessagesPanelProps> = ({
   handleConfirmTaskCreation,
 }) => {
   // RC Lookup data
-  const { data: staff = [] } = useRCNames({
+  const { data: staff = [] } = useRCList({
     enabled: true,
   });
   return (

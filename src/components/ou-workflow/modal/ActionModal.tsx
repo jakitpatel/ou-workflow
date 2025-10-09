@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X } from 'lucide-react';
-import { useRCNames } from '@/components/ou-workflow/hooks/useTaskDashboardHooks'; // adjust path if needed
+import React, { useState } from "react";
+import { X } from "lucide-react";
+import { useRCList } from "@/components/ou-workflow/hooks/useTaskDashboardHooks"; // new hook
 
 type Application = {
   company: string;
@@ -9,7 +9,7 @@ type Application = {
 
 type SelectedAction = {
   application: Application;
-  action: { id: string; label: string };
+  action: { id: string; label: string; name?: string };
 };
 
 type Props = {
@@ -34,12 +34,22 @@ export const ActionModal: React.FC<Props> = ({
 }) => {
   if (!showActionModal || !selectedAction) return null;
 
-  // ✅ Lazy-load RCs only when modal is open
-  const { data: rcnames = [], isLoading } = useRCNames({
+  const { application, action } = selectedAction;
+  console.log("Selected Action:", action);
+  //alert(action.label);
+  // Decide role type based on action
+  const roleType: "NCRC" | "RFR" = action.label?.toLowerCase().includes("rfr")
+    ? "RFR"
+    : "NCRC";
+
+  // Fetch list depending on role type
+  const {
+    data: selectlist = [],
+    isLoading,   // 👈 make sure we pull this out
+  } = useRCList(roleType, {
     enabled: showActionModal,
   });
 
-  const { application, action } = selectedAction;
   const [selectedRc, setSelectedRc] = useState<string>("");
 
   const handleSave = () => {
@@ -67,7 +77,8 @@ export const ActionModal: React.FC<Props> = ({
           {/* Application Info */}
           <div className="mb-4 text-sm text-gray-600">
             <p>
-              Application: <span className="font-medium">{application.company}</span>
+              Application:{" "}
+              <span className="font-medium">{application.company}</span>
             </p>
           </div>
 
@@ -78,7 +89,7 @@ export const ActionModal: React.FC<Props> = ({
             </label>
 
             {isLoading ? (
-              <p className="text-sm text-gray-500">Loading RC names...</p>
+              <p className="text-sm text-gray-500">Loading {roleType} list...</p>
             ) : (
               <select
                 value={selectedRc}
@@ -86,7 +97,7 @@ export const ActionModal: React.FC<Props> = ({
                 className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">-- Choose --</option>
-                {rcnames.map((rc: RcLookupItem) => (
+                {selectlist.map((rc: RcLookupItem) => (
                   <option key={rc.id} value={rc.name}>
                     {rc.name}
                   </option>
@@ -107,7 +118,9 @@ export const ActionModal: React.FC<Props> = ({
               onClick={handleSave}
               disabled={!selectedRc}
               className={`px-4 py-2 text-sm font-medium rounded-lg text-white ${
-                selectedRc ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-300 cursor-not-allowed"
+                selectedRc
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gray-300 cursor-not-allowed"
               }`}
             >
               Save

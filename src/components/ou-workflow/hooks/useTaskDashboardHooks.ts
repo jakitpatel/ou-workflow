@@ -12,18 +12,21 @@ export function useTasks() {
   })
 }
 
-export function useRCNames(options?: { enabled?: boolean }) {
+export function useRCList(
+  roleType: "NCRC" | "RFR",
+  options?: { enabled?: boolean }
+) {
   const { token, strategy } = useUser();
 
   const enabled = !!((strategy === "none" || !!token) && (options?.enabled ?? true));
 
   return useQuery({
-    queryKey: ["rcnames"], // 👈 keep key stable (don’t include token/strategy)
-    queryFn: () => fetchRcs({ token, strategy }),
+    queryKey: ["rc-list", roleType], // cache separate by role
+    queryFn: () => fetchRcs({ token, strategy, selectRoleType: roleType }),
     enabled,
-    staleTime: Infinity,         // 👈 never stale
-    cacheTime: Infinity,         // 👈 keep in memory until tab close
-    refetchOnWindowFocus: false, // 👈 don’t refetch on focus
+    staleTime: Infinity,
+    cacheTime: Infinity,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchOnMount: false,
   });

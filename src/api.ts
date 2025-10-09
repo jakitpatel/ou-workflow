@@ -128,14 +128,16 @@ export async function fetchRcs({
   limit = 20,
   token,
   strategy,
+  selectRoleType = "NCRC",
 }: {
   page?: number;
   limit?: number;
   token?: string;
   strategy?: string;
+  selectRoleType?: string;
 } = {}): Promise<any[]> {
   const params = new URLSearchParams({
-    "filter[UserRole]": "NCRC",
+    "filter[UserRole]": selectRoleType,
     "page[offset]": page.toString(),
     "page[limit]": limit.toString(),
   });

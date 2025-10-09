@@ -672,10 +672,18 @@ export function TaskDashboard (){
         } else if (taskType === "action") {
           const taskId = action.TaskInstanceId;
           const appId = selectedAction.application.id;
-          const role =
-            action.label === "AssignNCRC"
-              ? "NCRC"
-              : "OtherRole"; // adjust logic
+
+          const rawLabel = action.label ?? "";
+          const normalized = rawLabel.replace(/\s+/g, "").toLowerCase();
+
+          let role: "RFR" | "NCRC" | "OtherRole";
+          if (normalized.includes("selectrfr") || normalized.includes("assignrfr")) {
+            role = "RFR";
+          } else if (normalized.includes("assignncrc")) {
+            role = "NCRC";
+          } else {
+            role = "OtherRole";
+          }
 
           assignTaskMutation.mutate({
             appId,
@@ -683,7 +691,7 @@ export function TaskDashboard (){
             role,
             assignee,
             token,
-            strategy
+            strategy,
           });
         }
       //}
