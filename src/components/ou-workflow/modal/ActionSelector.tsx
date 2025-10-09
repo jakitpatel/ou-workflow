@@ -15,14 +15,10 @@ type Props = {
   showConditionModal: boolean;
   selectedAction: SelectedAction | null;
   setShowConditionModal: (val: boolean | null) => void;
-  executeAction: (
-    id: string,
-    action: { id: string; label: string },
-    value: string
-  ) => void;
+  executeAction: (id: string, action: { id: string; label: string }, value: string) => void;
 };
 
-export const ConditionalModal: React.FC<Props> = ({
+export const ActionSelector: React.FC<Props> = ({
   showConditionModal,
   setShowConditionModal,
   selectedAction,
@@ -44,8 +40,7 @@ export const ConditionalModal: React.FC<Props> = ({
     setShowConditionModal(null);
   };
 
-  const isFeeStructure =
-    action.label.toLowerCase().includes("assign fee structure");
+  const isFeeStructure = action.label.toLowerCase().includes("assign fee structure");
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -53,9 +48,7 @@ export const ConditionalModal: React.FC<Props> = ({
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {action.label}
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900">{action.label}</h3>
             <button
               onClick={() => setShowConditionModal(null)}
               className="text-gray-400 hover:text-gray-600"

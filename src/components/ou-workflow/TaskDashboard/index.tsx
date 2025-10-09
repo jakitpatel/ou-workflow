@@ -300,6 +300,9 @@ export function TaskDashboard (){
       const taskTypeval = taskitem.taskType
       ? taskitem.taskType.toLowerCase()
       : "unknown";
+      const taskCategoryval = taskitem.taskCategory
+      ? taskitem.taskCategory.toLowerCase()
+      : "unknown";
       return {
         TaskInstanceId: `${taskitem.TaskInstanceId}`,
         label: taskitem.name,
@@ -307,6 +310,7 @@ export function TaskDashboard (){
         required: taskitem.required,
         assignee: taskitem.assignee,
         taskType: taskTypeval,
+        taskCategory: taskCategoryval,
         color,
         icon,
         disabled,
@@ -653,15 +657,16 @@ export function TaskDashboard (){
       //if (selectedAction) {
         // normalize taskType safely
         const taskType = action.taskType?.toLowerCase();
+        const taskCategory = action.taskCategory?.toLowerCase();
 
-        if (taskType === "confirm") {
+        if (taskType === "confirm" && taskCategory === "confirmation") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
             token,
             strategy,
             username
           });
-        } else if (taskType === "conditional" || taskType === "condition") {
+        } else if ((taskType === "conditional" || taskType === "condition") && taskCategory === "approval") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
             result: result,
@@ -669,7 +674,15 @@ export function TaskDashboard (){
             strategy,
             username
           });
-        } else if (taskType === "action") {
+        } else if (taskType === "action" && taskCategory === "selector") {
+          confirmTaskMutation.mutate({
+            taskId: action.TaskInstanceId,
+            result: result,
+            token,
+            strategy,
+            username
+          });
+        } else if (taskType === "action" && taskCategory === "assignment") {
           const taskId = action.TaskInstanceId;
           const appId = selectedAction.application.id;
 
@@ -737,13 +750,15 @@ export function TaskDashboard (){
       }*/
       handleSelectAppActions(application.id, action.TaskInstanceId);
       //setSelectedAction({ application, action });
-      if(action.taskType === "confirm"){
+      if(action.taskType === "confirm" && action.taskCategory === "confirmation"){
         console.log("TaskType :"+action.taskType);
         executeAction("Confirmed", action);
-      } else if(action.taskType === "conditional" || action.taskType === "condition"){
+      } else if((action.taskType === "conditional" || action.taskType === "condition") && action.taskCategory === "approval"){
         setShowConditionModal(action);
-      } else if(action.taskType === "action"){
+      } else if(action.taskType === "action" && action.taskCategory === "assignment"){
         setShowActionModal(action);
+      } else if(action.taskType === "action" && action.taskCategory === "selector"){
+        setShowConditionModal(action);
       }
     };
     

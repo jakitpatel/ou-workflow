@@ -183,42 +183,6 @@ export async function assignTask({
   return json;
 }
 
-/** 👇 Confirm task mutation (with fetchWithAuth) */
-/*export async function confirmTask({
-  taskId,
-  result,
-  token,
-  strategy,
-}: {
-  taskId: string;
-  result?: "yes" | "no";
-  token?: string;
-  strategy?: string;
-}) {
-  const bodyObj = {
-    data: {
-      type: "TaskInstance",
-      id: taskId,
-      attributes: {
-        TaskInstanceId: taskId,
-        Status: "COMPLETED",
-        ...(result ? { Result: result.toUpperCase() } : {}), // 👈 force uppercase
-      },
-    },
-  };
-
-  const json = await fetchWithAuth({
-    path: `/api/TaskInstance/${taskId}`,
-    method: "PATCH",
-    strategy,
-    token,
-    headers: { "Content-Type": "application/json" },
-    body: bodyObj, //JSON.stringify(bodyObj),
-  });
-
-  return json;
-}*/
-
 export async function confirmTask({
   taskId,
   result,
