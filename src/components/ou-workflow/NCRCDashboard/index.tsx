@@ -1,10 +1,14 @@
-import { useState, useMemo } from 'react'
+import React, { useState,useMemo } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApplicantCard } from './ApplicantCard'
-import { ActionModal } from './ActionModal'
+import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
+import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
 import { Search } from 'lucide-react';
 import { IngredientsManagerPage } from './IngredientsManagerPage';
 import { useUser } from './../../../context/UserContext'  // 👈 new import
 import { useApplications } from './../hooks/useApplications';
+
+ import { assignTask, confirmTask } from '@/api'; // same api.ts
 //import type { Task, Stage, Applicant } from '@/types/application';
 
 type Props = {
@@ -23,30 +27,16 @@ export function NCRCDashboard({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
-  const [showActionModal, setShowActionModal] = useState<string | null>(null);
-  const [selectedAction, setSelectedAction] = useState<{
+  /*const [selectedAction, setSelectedAction] = useState<{
     task: any;
     action: string;
     applicantId: string;
-  } | null>(null);
-  const { setActiveScreen } = useUser(); // 👈 use context
-  
-  // Lookup tables for assignments
-  const rcLookup = [
-    { id: 'rc1', name: 'R. Gorelik', department: 'NCRC', specialty: 'Dairy Products', workload: 'Light' },
-    { id: 'rc2', name: 'Rabbi Goldstein', department: 'NCRC', specialty: 'Baked Goods', workload: 'Medium' },
-    { id: 'rc3', name: 'Rabbi Stern', department: 'NCRC', specialty: 'General', workload: 'Heavy' },
-    { id: 'rc4', name: 'Rabbi Klein', department: 'NCRC', specialty: 'International', workload: 'Light' },
-    { id: 'rc5', name: 'R. Herbsman', department: 'IAR', specialty: 'Ingredients Review', workload: 'Medium' }
-  ];
-
-  const departmentLookup = [
-    { id: 'products', name: 'Products Department', contact: 'products@ou.org', avgTime: '3-5 days' },
-    { id: 'iar', name: 'Ingredients (IAR)', contact: 'iar@ou.org', avgTime: '5-7 days' },
-    { id: 'legal', name: 'Legal Department', contact: 'legal@ou.org', avgTime: '2-3 days' },
-    { id: 'rfr', name: 'RFR Team', contact: 'inspections@ou.org', avgTime: '1-2 weeks' },
-    { id: 'halachic', name: 'Halachic Review', contact: 'halachic@ou.org', avgTime: '3-5 days' }
-  ];
+  } | null>(null);*/
+  const { setActiveScreen, token, strategy, username } = useUser(); // 👈 use context
+  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+  const [showActionModal, setShowActionModal] = useState(null);
+  const [showConditionModal, setShowConditionModal] = useState(null);
+  const queryClient = useQueryClient();
 
   const {
     data: applicants = [],
@@ -79,43 +69,125 @@ export function NCRCDashboard({
     );
   }
 
-  const executeAction = (assignee: string) => {
-    if (selectedAction) {
-      const actionLabels = {
-        'assign_rc': `Assigned to RC: ${assignee}`,
-        'assign_department': `Assigned to department: ${assignee}`,
-        'update_status': `Status updated to: ${assignee}`
-      };
-      
-      const actionMessage = actionLabels[selectedAction.action] || `Action completed: ${selectedAction.action}`;
-      
-      handleTaskUpdate(
-        `${selectedAction.applicantId}-${selectedAction.task.name}`,
-        selectedAction.action === 'update_status' ? assignee : 'assigned',
-        selectedAction.action !== 'update_status' ? assignee : null
-      );
+  const confirmTaskMutation = useMutation({
+    mutationFn: confirmTask,
+    onSuccess: () => {
+      // 🔄 Invalidate to refresh data
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+    },
+    onError: (error: any) => {
+      console.error("❌ Failed to assign task:", error);
     }
+  });
+
+  //const assignTaskMutation = useAssignTask();
+  const assignTaskMutation = useMutation({
+    mutationFn: assignTask,
+    onSuccess: () => {
+      // 🔄 Refresh application list after assigning
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
+    },
+    onError: (error: any) => {
+      console.error("❌ Failed to assign task:", error);
+    },
+  });
+
+  const executeAction = (assignee: string, action: any, result: "yes" | "no") => {
+      //if (selectedAction) {
+        // normalize taskType safely
+        const taskType = action.taskType?.toLowerCase();
+        const taskCategory = action.taskCategory?.toLowerCase();
+
+        if (taskType === "confirm" && taskCategory === "confirmation") {
+          confirmTaskMutation.mutate({
+            taskId: action.TaskInstanceId,
+            token,
+            strategy,
+            username
+          });
+        } else if ((taskType === "conditional" || taskType === "condition") && taskCategory === "approval") {
+          confirmTaskMutation.mutate({
+            taskId: action.TaskInstanceId,
+            result: result,
+            token,
+            strategy,
+            username
+          });
+        } else if (taskType === "action" && taskCategory === "selector") {
+          confirmTaskMutation.mutate({
+            taskId: action.TaskInstanceId,
+            result: result,
+            token,
+            strategy,
+            username
+          });
+        } else if (taskType === "action" && taskCategory === "input") {
+          confirmTaskMutation.mutate({
+            taskId: action.TaskInstanceId,
+            result: result,
+            token,
+            strategy,
+            username
+          });
+        } else if (taskType === "action" && taskCategory === "assignment") {
+          const taskId = action.TaskInstanceId;
+          const appId = selectedAction.application.id;
+
+          const rawLabel = action.label ?? "";
+          const normalized = rawLabel.replace(/\s+/g, "").toLowerCase();
+
+          let role: "RFR" | "NCRC" | "OtherRole";
+          if (normalized.includes("selectrfr") || normalized.includes("assignrfr")) {
+            role = "RFR";
+          } else if (normalized.includes("assignncrc")) {
+            role = "NCRC";
+          } else {
+            role = "OtherRole";
+          }
+
+          assignTaskMutation.mutate({
+            appId,
+            taskId,
+            role,
+            assignee,
+            token,
+            strategy,
+          });
+        }
+      //}
+    };
+  
+  const getAllTasks = (app) => {
+    if (!app?.stages) return [];
+    return Object.values(app.stages).flatMap(stage => stage.tasks || []);
   };
 
-  /*const handleTaskAction = (
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-    task: any,
-    action: string,
-    applicantId: string
-  ) => {
-    e.stopPropagation();
-    e.preventDefault();
-    
-    if (action === 'manage_ingredients') {
-      const app = applicants.find(a => String(a.id) === String(applicantId));
-      setSelectedIngredientApp(app);
-      setShowIngredientsManager(true);
-      return;
+  const selectedAction = React.useMemo(() => {
+    if (!selectedActionId) return null;
+
+    const [appId, actId] = selectedActionId.split(":");
+
+    // 🔒 normalize IDs as strings
+    const app = applicants.find(a => String(a.id) === String(appId));
+    if (!app) {
+      console.warn("No app found for", appId, applicants.map(t => t.id));
+      return null;
     }
-    
-    setSelectedAction({ task, action, applicantId });
-    setShowActionModal(action);
-  };*/
+
+    const actions = getAllTasks(app) || [];
+    const act = actions.find(a => String(a.TaskInstanceId) === String(actId));
+
+    if (!act) {
+      console.warn("No action found for", actId, actions.map(a => a.TaskInstanceId));
+      return null;
+    }
+
+    return { application: app, action: act };
+  }, [selectedActionId, applicants, getAllTasks]);
+
+  const handleSelectAppActions = (applicationId: string, actionId: string) => {
+    setSelectedActionId(`${applicationId}:${actionId}`);
+  };
 
   const handleTaskAction = (e, application, action) => {
       console.log("handleTaskAction called with action:", action, "for application:", application);
@@ -130,16 +202,21 @@ export function NCRCDashboard({
       }*/
       handleSelectAppActions(application.id, action.TaskInstanceId);
       //setSelectedAction({ application, action });
-      if(action.taskType === "confirm" && action.taskCategory === "confirmation"){
-        console.log("TaskType :"+action.taskType);
+      const actionType = action.taskType?.toLowerCase(); // e.g., "confirm", "conditional", "action"
+      const actionCategory = action.taskCategory?.toLowerCase(); // e.g., "confirmation", "approval", "assignment", "selector", "input"
+      if(actionType === "confirm" && actionCategory === "confirmation"){
+        console.log("TaskType :"+actionType);
         executeAction("Confirmed", action);
-      } else if((action.taskType === "conditional" || action.taskType === "condition") && action.taskCategory === "approval"){
+      } else if((actionType === "conditional" || actionType === "condition") && actionCategory === "approval"){
+        console.log("Conditional Action :"+actionType);
         setShowConditionModal(action);
-      } else if(action.taskType === "action" && action.taskCategory === "assignment"){
+      } else if(actionType === "action" && actionCategory === "assignment"){
+        console.log("Assignment Action :"+actionType);
         setShowActionModal(action);
-      } else if(action.taskType === "action" && action.taskCategory === "selector"){
+      } else if(actionType === "action" && actionCategory === "selector"){
         setShowConditionModal(action);
-      } else if(action.taskType === "action" && action.taskCategory === "input"){
+      } else if(actionType === "action" && actionCategory === "input"){
+        console.log("Input Action :"+actionType);
         setShowConditionModal(action);
       }
     };
@@ -222,12 +299,18 @@ export function NCRCDashboard({
         )}
       </div>
 
-      <ActionModal departmentLookup={departmentLookup} 
-      rcLookup={rcLookup}
-      executeAction={executeAction}
-      setShowActionModal={setShowActionModal} 
-      showActionModal={showActionModal} 
-      selectedAction={selectedAction} />
+      <ActionModal
+        setShowActionModal={setShowActionModal} 
+        showActionModal={showActionModal}
+        executeAction={executeAction}
+        selectedAction={selectedAction}
+        />
+      <ConditionalModal
+        setShowConditionModal={setShowConditionModal} 
+        showConditionModal={showConditionModal}
+        executeAction={executeAction}
+        selectedAction={selectedAction}
+        />
     </div>
   );
 }

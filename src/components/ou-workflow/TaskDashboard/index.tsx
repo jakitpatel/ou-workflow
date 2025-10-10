@@ -305,7 +305,7 @@ export function TaskDashboard (){
       : "unknown";
       return {
         TaskInstanceId: `${taskitem.TaskInstanceId}`,
-        label: taskitem.name,
+        name: taskitem.name,
         status: taskitem.status,
         required: taskitem.required,
         assignee: taskitem.assignee,
@@ -319,10 +319,7 @@ export function TaskDashboard (){
 
     // main: get actions for an application
     const getTaskActions = (app) => {
-      const baseActions = [];/*[
-        { id: 'complete', label: 'Mark Complete', icon: Check, color: 'bg-green-600 hover:bg-green-700' },
-        { id: 'reassign', label: 'Reassign', icon: User, color: 'bg-blue-600 hover:bg-blue-700' }
-      ];*/
+      const baseActions = [];
 
       const allTasks = getAllTasks(app);
       const taskActions = allTasks.map(task => mapTaskToAction(task, app));
@@ -694,7 +691,7 @@ export function TaskDashboard (){
           const taskId = action.TaskInstanceId;
           const appId = selectedAction.application.id;
 
-          const rawLabel = action.label ?? "";
+          const rawLabel = action.name ?? "";
           const normalized = rawLabel.replace(/\s+/g, "").toLowerCase();
 
           let role: "RFR" | "NCRC" | "OtherRole";

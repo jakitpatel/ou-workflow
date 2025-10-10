@@ -9,14 +9,14 @@ type Application = {
 
 type SelectedAction = {
   application: Application;
-  action: { id: string; label: string; name?: string };
+  action: { id: string; name?: string };
 };
 
 type Props = {
   showActionModal: boolean;
   selectedAction: SelectedAction | null;
   setShowActionModal: (val: boolean | null) => void;
-  executeAction: (value: string, action: { id: string; label: string }) => void;
+  executeAction: (value: string, action: { id: string; name: string }) => void;
 };
 
 type RcLookupItem = {
@@ -36,9 +36,9 @@ export const ActionModal: React.FC<Props> = ({
 
   const { application, action } = selectedAction;
   console.log("Selected Action:", action);
-  //alert(action.label);
+  //alert(action.name);
   // Decide role type based on action
-  const roleType: "NCRC" | "RFR" = action.label?.toLowerCase().includes("rfr")
+  const roleType: "NCRC" | "RFR" = action.name?.toLowerCase().includes("rfr")
     ? "RFR"
     : "NCRC";
 
@@ -65,7 +65,7 @@ export const ActionModal: React.FC<Props> = ({
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">{action.label}</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{action.name}</h3>
             <button
               onClick={() => setShowActionModal(null)}
               className="text-gray-400 hover:text-gray-600"

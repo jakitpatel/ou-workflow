@@ -8,7 +8,7 @@ type Application = {
 
 type SelectedAction = {
   application: Application;
-  action: { id: string; label: string; taskType?: string; taskCategory?: string };
+  action: { id: string; name: string; taskType?: string; taskCategory?: string };
 };
 
 type Props = {
@@ -17,7 +17,7 @@ type Props = {
   setShowConditionModal: (val: boolean | null) => void;
   executeAction: (
     id: string,
-    action: { id: string; label: string },
+    action: { id: string; name: string },
     value: string
   ) => void;
 };
@@ -31,8 +31,10 @@ export const ConditionalModal: React.FC<Props> = ({
   const [feeValue, setFeeValue] = useState<string>("0"); // default LOW
   const [invoiceAmount, setInvoiceAmount] = useState<string>(""); // input for invoice
   const [error, setError] = useState<string>("");
-
+  console.log("Rendering ConditionalModal");
+  console.log(selectedAction?.action.name);
   if (!showConditionModal || !selectedAction) return null;
+  //if (!showConditionModal) return null;
 
   const { application, action } = selectedAction;
 
@@ -51,12 +53,12 @@ export const ConditionalModal: React.FC<Props> = ({
   const isFeeStructure =
     action.taskType?.toLowerCase() === "action" &&
     action.taskCategory?.toLowerCase() === "selector" &&
-    action.label.toLowerCase().includes("assign fee structure");
+    action.name.toLowerCase().includes("assign fee structure");
 
   const isInvoiceAmount =
     action.taskType?.toLowerCase() === "action" &&
     action.taskCategory?.toLowerCase() === "input" &&
-    action.label.toLowerCase().includes("assign invoice amount");
+    action.name.toLowerCase().includes("assign invoice amount");
 
   const handleInvoiceChange = (val: string) => {
     // Only allow digits
@@ -77,7 +79,7 @@ export const ConditionalModal: React.FC<Props> = ({
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">
-              {action.label}
+              {action.name}
             </h3>
             <button
               onClick={() => setShowConditionModal(null)}

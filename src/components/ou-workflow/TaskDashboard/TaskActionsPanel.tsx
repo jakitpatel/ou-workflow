@@ -114,7 +114,7 @@ export const TaskActionsPanel: React.FC<TaskActionsPanelProps> = ({
                   className={`flex items-center justify-center px-4 py-3 text-white rounded-lg transition-colors text-sm font-medium ${action.color}`}
                 >
                   {action.icon && <action.icon className="w-4 h-4 mr-2" />}
-                  {action.label}
+                  {action.name}
                 </button>
               ))}
             </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Package, X } from 'lucide-react'
 import type { Task, Applicant } from '@/types/application';
+import { useUser } from '@/context/UserContext';
 
 type Props = {
   applicant: Applicant
@@ -19,6 +20,7 @@ export function ApplicantProgressBar({
   handleTaskAction
 }: Props) {
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
+  const { username, role } = useUser() // 👈 use context
 
   const handleStageClick = (stageName: string) => {
       setExpandedStage(expandedStage === stageName ? null : stageName);
@@ -75,7 +77,7 @@ export function ApplicantProgressBar({
     if (status === 'complete' || status === 'done' || status === 'completed') {
       // Completed task → show as done
       color = 'bg-green-400';
-      icon = CheckSquare;
+      //icon = CheckSquare;
       disabled = true;
 
     } else if (taskRoles.length > 0 && !taskRoles.includes(role)) {
@@ -178,7 +180,9 @@ export function ApplicantProgressBar({
                 gap: '0.75rem'
               }}
             >
-              {applicant.stages[expandedStage].tasks.map((task, index) => (
+              {applicant.stages[expandedStage].tasks.map((task, index) => {
+                const action = mapTaskToAction(task, applicant);
+                return (
                 <div
                   key={index}
                   className={`bg-white rounded border-l-4 p-3 shadow-sm ${
@@ -195,10 +199,19 @@ export function ApplicantProgressBar({
                 >
                   <div className="mb-2">
                     <div className="flex items-center gap-2">
-                    {/* Task name */}
-                    <span className="text-sm font-semibold text-gray-900 leading-tight">
-                      {task.name}
-                    </span>
+                    {/* Task name OR button */}
+                    {action.disabled ? (
+                      <span className="text-sm font-semibold text-gray-900 leading-tight">
+                        {task.name}
+                      </span>
+                    ) : (
+                      <button
+                        onClick={(e) => handleTaskAction(e, applicant, task)}
+                        className="text-sm font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded"
+                      >
+                        {task.name}
+                      </button>
+                    )}
 
                     {/* Roles inline */}
                     {task.taskRoles?.map((roleObj, idx) => (
@@ -209,16 +222,6 @@ export function ApplicantProgressBar({
                         {roleObj.taskRole}
                       </span>
                     ))}
-                    {/*mapTaskToAction(task, applicant).!disabled && (
-                      <button
-                        onClick={(e) =>
-                          handleTaskActionLocal(e, task, 'some_action')
-                        }
-                        className="text-xs text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded"
-                      >
-                        Take Action
-                      </button>
-                    )*/}
                   </div>
                     {task.required && (
                       <span className="text-xs text-red-600 bg-red-50 px-1 py-0.5 rounded mt-1 inline-block">
@@ -299,7 +302,8 @@ export function ApplicantProgressBar({
                     )}
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           </div>
         )}
