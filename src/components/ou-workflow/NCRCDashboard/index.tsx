@@ -133,7 +133,7 @@ export function NCRCDashboard({
           const taskId = action.TaskInstanceId;
           const appId = selectedAction.application.id;
 
-          const rawLabel = action.label ?? "";
+          const rawLabel = action.name ?? "";
           const normalized = rawLabel.replace(/\s+/g, "").toLowerCase();
 
           let role: "RFR" | "NCRC" | "OtherRole";

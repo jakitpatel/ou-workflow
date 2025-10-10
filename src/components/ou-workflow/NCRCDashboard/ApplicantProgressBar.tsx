@@ -207,7 +207,7 @@ export function ApplicantProgressBar({
                     ) : (
                       <button
                         onClick={(e) => handleTaskAction(e, applicant, task)}
-                        className="text-sm font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded"
+                        className="text-sm font-semibold text-white bg-blue-600 px-2 py-1 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         {task.name}
                       </button>
