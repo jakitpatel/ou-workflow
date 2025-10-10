@@ -58,6 +58,73 @@ export function ApplicantProgressBar({
     return statusColors[normalized] ?? '#d1d5db' // default gray-300
   }
 
+  const mapTaskToAction = (taskitem, application) => {
+    let color, icon, disabled = false;
+
+    // Normalize status
+    const status = taskitem.status?.toLowerCase();
+
+    // Always normalize taskRole into array
+    // Normalize taskRoles into array of strings
+    const taskRoles = Array.isArray(taskitem.taskRoles)
+      ? taskitem.taskRoles.map(r => r.taskRole).filter(Boolean)
+      : taskitem.taskRole
+        ? [taskitem.taskRole]
+        : [];
+
+    if (status === 'complete' || status === 'done' || status === 'completed') {
+      // Completed task → show as done
+      color = 'bg-green-400';
+      icon = CheckSquare;
+      disabled = true;
+
+    } else if (taskRoles.length > 0 && !taskRoles.includes(role)) {
+      // Task roles exist but don't include current user's role → disabled
+      color = 'bg-gray-300 cursor-not-allowed';
+      disabled = true;
+
+    } else if (taskRoles.includes(role)) {
+      console.log('taskitem:', taskitem, 'application:', application);
+
+      // Role matches → check assignment
+      const roles = Array.isArray(application?.assignedRoles) ? application.assignedRoles : [];
+
+      const isAssigned = roles.some((ar: any) => ar[role] === username);
+      console.log('isAssigned:', isAssigned);
+
+      if (isAssigned && status==='pending') {
+        // Active & assigned to current user → allowed
+        color = 'bg-blue-600 hover:bg-blue-700';
+      } else {
+        // Not assigned or inactive
+        color = 'bg-gray-300 cursor-not-allowed';
+        disabled = true;
+      }
+    } else {
+      // No roles defined at all → disabled
+      color = 'bg-gray-300 cursor-not-allowed';
+      disabled = true;
+    }
+    const taskTypeval = taskitem.taskType
+    ? taskitem.taskType.toLowerCase()
+    : "unknown";
+    const taskCategoryval = taskitem.taskCategory
+    ? taskitem.taskCategory.toLowerCase()
+    : "unknown";
+    return {
+      TaskInstanceId: `${taskitem.TaskInstanceId}`,
+      label: taskitem.name,
+      status: taskitem.status,
+      required: taskitem.required,
+      assignee: taskitem.assignee,
+      taskType: taskTypeval,
+      taskCategory: taskCategoryval,
+      color,
+      icon,
+      disabled,
+    };
+  };
+
   return (
     <div className="mt-3">
       {/* Progress Bar */}
@@ -142,6 +209,16 @@ export function ApplicantProgressBar({
                         {roleObj.taskRole}
                       </span>
                     ))}
+                    {/*mapTaskToAction(task, applicant).!disabled && (
+                      <button
+                        onClick={(e) =>
+                          handleTaskActionLocal(e, task, 'some_action')
+                        }
+                        className="text-xs text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded"
+                      >
+                        Take Action
+                      </button>
+                    )*/}
                   </div>
                     {task.required && (
                       <span className="text-xs text-red-600 bg-red-50 px-1 py-0.5 rounded mt-1 inline-block">
@@ -154,6 +231,8 @@ export function ApplicantProgressBar({
                     <span
                       className={`inline-block px-2 py-1 rounded text-xs font-medium ${
                         task.status?.toLowerCase() === 'complete'
+                          ? 'bg-green-100 text-green-800'
+                          : task.status?.toLowerCase() === 'completed'
                           ? 'bg-green-100 text-green-800'
                           : task.status?.toLowerCase() === 'pending'
                           ? 'bg-blue-100 text-blue-800'
@@ -200,46 +279,6 @@ export function ApplicantProgressBar({
                   )}
 
                   <div className="flex space-x-1">
-                    {task.status === 'pending' && task.assignee === 'Pending' && (
-                      <>
-                        {(task.name.includes('Assign to RC') ||
-                          task.name.includes('Review Completed by RC')) && (
-                          <button
-                            onClick={(e) =>
-                              handleTaskActionLocal(e, task, 'assign_rc')
-                            }
-                            className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                          >
-                            Assign RC
-                          </button>
-                        )}
-                        {(task.name.includes('Products Dept') ||
-                          task.name.includes('IAR') ||
-                          task.name.includes('RFR')) && (
-                          <button
-                            onClick={(e) =>
-                              handleTaskActionLocal(e, task, 'assign_department')
-                            }
-                            className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                          >
-                            Assign Dept
-                          </button>
-                        )}
-                      </>
-                    )}
-
-                    {task.status !== 'completed' &&
-                      task.assignee !== 'Pending' && (
-                        <button
-                          onClick={(e) =>
-                            handleTaskActionLocal(e, task, 'update_status')
-                          }
-                          className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-                        >
-                          Update
-                        </button>
-                      )}
-
                     {task.status === 'completed' && (
                       <div className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded text-center font-medium">
                         Completed ✓

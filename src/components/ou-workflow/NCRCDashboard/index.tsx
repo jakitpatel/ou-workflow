@@ -97,7 +97,7 @@ export function NCRCDashboard({
     }
   };
 
-  const handleTaskAction = (
+  /*const handleTaskAction = (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
     task: any,
     action: string,
@@ -115,8 +115,34 @@ export function NCRCDashboard({
     
     setSelectedAction({ task, action, applicantId });
     setShowActionModal(action);
-  };
+  };*/
 
+  const handleTaskAction = (e, application, action) => {
+      console.log("handleTaskAction called with action:", action, "for application:", application);
+      e.stopPropagation();
+      e.preventDefault();
+      console.log('Action clicked: handleTaskAction', action, 'for application:', application);
+      /*if (action === 'manage_ingredients') {
+        const app = applicants.find(a => a.id === applicantId);
+        setSelectedIngredientApp(app);
+        setShowIngredientsManager(true);
+        return;
+      }*/
+      handleSelectAppActions(application.id, action.TaskInstanceId);
+      //setSelectedAction({ application, action });
+      if(action.taskType === "confirm" && action.taskCategory === "confirmation"){
+        console.log("TaskType :"+action.taskType);
+        executeAction("Confirmed", action);
+      } else if((action.taskType === "conditional" || action.taskType === "condition") && action.taskCategory === "approval"){
+        setShowConditionModal(action);
+      } else if(action.taskType === "action" && action.taskCategory === "assignment"){
+        setShowActionModal(action);
+      } else if(action.taskType === "action" && action.taskCategory === "selector"){
+        setShowConditionModal(action);
+      } else if(action.taskType === "action" && action.taskCategory === "input"){
+        setShowConditionModal(action);
+      }
+    };
   return (
     <div className="max-w-7xl mx-auto px-6 py-6">
       <div className="mb-6">
