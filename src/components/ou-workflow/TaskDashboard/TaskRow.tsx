@@ -90,18 +90,7 @@ export function TaskRow({
         {/* Messages Column */}
         
         <td className="px-6 py-4">
-            {/*
-            <button
-            onClick={() => handleMessagesExpand(application.id)}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-            <MessageCircle className="w-4 h-4" />
-            <span className="text-sm">
-                {messageCounts.total} message{messageCounts.total !== 1 ? 's' : ''}
-            </span>
-            <ChevronDown className={`w-4 h-4 transition-transform ${isMessagesExpanded ? 'rotate-180' : ''}`} />
-            </button>
-            */}
+            {application.stageName}
         </td>
 
         {/* Status Column */}
