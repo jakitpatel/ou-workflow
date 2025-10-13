@@ -616,7 +616,7 @@ export function TaskDashboard (){
       mutationFn: confirmTask,
       onSuccess: () => {
         // 🔄 Invalidate to refresh data
-        queryClient.invalidateQueries({ queryKey: ["applications"] });
+        queryClient.invalidateQueries({ queryKey: ["tasksplants"] });
       },
       onError: (error: any) => {
         console.error("❌ Failed to assign task:", error);
@@ -628,7 +628,7 @@ export function TaskDashboard (){
       mutationFn: assignTask,
       onSuccess: () => {
         // 🔄 Refresh application list after assigning
-        queryClient.invalidateQueries({ queryKey: ["applications"] });
+        queryClient.invalidateQueries({ queryKey: ["tasksplants"] });
       },
       onError: (error: any) => {
         console.error("❌ Failed to assign task:", error);
