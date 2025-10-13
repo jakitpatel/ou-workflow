@@ -41,7 +41,7 @@ export function TaskRow({
                   </span>
                 )}
                 {application?.overdue != null && (
-                  <span className="text-sm font-medium ml-1">
+                  <span className="text-sm font-medium ml-1 text-red-600">
                     {application.overdue} overdue
                   </span>
                 )}
