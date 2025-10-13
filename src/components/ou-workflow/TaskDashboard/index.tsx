@@ -12,7 +12,7 @@
 
 import { plantHistory } from './demoData';
 import { ConditionalModal } from '../modal/ConditionalModal';
-import { useApplications } from './../hooks/useApplications';
+import { useTasks } from './../hooks/useTaskDashboardHooks';
 
  // Tasks Dashboard Component (with full table functionality restored)
 export function TaskDashboard (){
@@ -45,7 +45,7 @@ export function TaskDashboard (){
       isLoading,
       isError,
       error,
-    } = useApplications()
+    } = useTasks()
 
     // Cross-navigation handler
     const handleViewNCRCDashboard = () => {
@@ -122,21 +122,6 @@ export function TaskDashboard (){
       }
     ]);
 
-    // Messages for each task
-    const [taskMessages, setTaskMessages] = useState({
-      1: [
-        { id: 1, sender: 'R. Gorelik', text: 'NDA received from Brooklyn Bread, needs review', timestamp: new Date('2025-01-15T10:30:00'), isSystemMessage: false },
-        { id: 2, sender: 'System', text: 'Task overdue - 5 days active', timestamp: new Date('2025-01-20T09:00:00'), isSystemMessage: true },
-      ],
-      2: [
-        { id: 3, sender: 'R. Epstein', text: 'Invoice processing needed for contract completion', timestamp: new Date('2025-01-18T14:15:00'), isSystemMessage: false }
-      ],
-      3: [
-        { id: 4, sender: 'R. Dick', text: 'KIM payment still pending - company not responding', timestamp: new Date('2025-01-13T16:20:00'), isSystemMessage: false },
-        { id: 5, sender: 'System', text: 'Payment overdue - escalation required', timestamp: new Date('2025-01-20T08:00:00'), isSystemMessage: true }
-      ]
-    });
-
     const stageOrder = [
       { key: 'initial', name: 'Initial' },
       { key: 'nda', name: 'NDA' },
@@ -199,8 +184,8 @@ export function TaskDashboard (){
     };
 
     const taskStats = useMemo(() => {
-      const allTasks = tasksplants.flatMap(app => getAllTasks(app))
-
+      //const allTasks = tasksplants.flatMap(app => getAllTasks(app))
+      const allTasks = tasksplants;
       // normalize status + filter by user (if needed)
       const userTasks = allTasks
         .map(task => ({
@@ -230,9 +215,9 @@ export function TaskDashboard (){
         //if (task.assignedTo !== username) return false;
         
         const matchesSearch = !searchTerm ||
-        (task.title && task.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (task.plant && task.plant.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (task.company && task.company.toLowerCase().includes(searchTerm.toLowerCase()));
+        (task.taskName && task.taskName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (task.plantName && task.plantName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (task.companyName && task.companyName.toLowerCase().includes(searchTerm.toLowerCase()));
         
         const matchesStatus = statusFilter === 'all' || 
           (statusFilter === 'active' && task.status !== 'completed') ||
@@ -742,30 +727,35 @@ export function TaskDashboard (){
       return { application: app, action: act };
     }, [selectedActionId, tasksplants, getTaskActions]);
 
-    const handleTaskAction = (e, application, action) => {
-      console.log("handleTaskAction called with action:", action, "for application:", application);
+    const handleApplicationTaskAction = (e, application) => {
+      console.log("handleApplicationTaskAction called for application:", application);
       e.stopPropagation();
       e.preventDefault();
-      console.log('Action clicked: handleTaskAction', action, 'for application:', application);
+      console.log('Action clicked: handleApplicationTaskAction for application:', application);
       /*if (action === 'manage_ingredients') {
         const app = applicants.find(a => a.id === applicantId);
         setSelectedIngredientApp(app);
         setShowIngredientsManager(true);
         return;
       }*/
-      handleSelectAppActions(application.id, action.TaskInstanceId);
+      handleSelectAppActions(application.id, application.taskInstanceId);
       //setSelectedAction({ application, action });
-      if(action.taskType === "confirm" && action.taskCategory === "confirmation"){
-        console.log("TaskType :"+action.taskType);
-        executeAction("Confirmed", action);
-      } else if((action.taskType === "conditional" || action.taskType === "condition") && action.taskCategory === "approval"){
-        setShowConditionModal(action);
-      } else if(action.taskType === "action" && action.taskCategory === "assignment"){
-        setShowActionModal(action);
-      } else if(action.taskType === "action" && action.taskCategory === "selector"){
-        setShowConditionModal(action);
-      } else if(action.taskType === "action" && action.taskCategory === "input"){
-        setShowConditionModal(action);
+      const actionType = application.taskType?.toLowerCase(); // e.g., "confirm", "conditional", "action"
+      const actionCategory = application.TaskCategory?.toLowerCase(); // e.g., "confirmation", "approval", "assignment", "selector", "input"
+      if(actionType === "confirm" && actionCategory === "confirmation"){
+        console.log("TaskType :"+actionType);
+        executeAction("Confirmed", application);
+      } else if((actionType === "conditional" || actionType === "condition") && actionCategory === "approval"){
+        console.log("Conditional Action :"+actionType);
+        setShowConditionModal(application);
+      } else if(actionType === "action" && actionCategory === "assignment"){
+        console.log("Assignment Action :"+actionType);
+        setShowActionModal(application);
+      } else if(actionType === "action" && actionCategory === "selector"){
+        setShowConditionModal(application);
+      } else if(actionType === "action" && actionCategory === "input"){
+        console.log("Input Action :"+actionType);
+        setShowConditionModal(application);
       }
     };
     
@@ -884,14 +874,14 @@ export function TaskDashboard (){
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task & Plant</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Messages</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{/*Messages*/}</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredTasks.map((application) => (
                   <TaskRow
-                    key={application.id}   // ✅ unique key here
+                    key={application.taskInstanceId}   // ✅ unique key here
                     application={application}
                     username={username}
                     plantInfo={plantHistory[application.plant]}
@@ -899,7 +889,7 @@ export function TaskDashboard (){
                     showReassignDropdown={showReassignDropdown}
                     setShowReassignDropdown={setShowReassignDropdown}
                     getTaskActions={getTaskActions}
-                    handleTaskAction={handleTaskAction}
+                    handleApplicationTaskAction={handleApplicationTaskAction}
                     handleReassignTask={handleReassignTask}
                     expandedMessages={expandedMessages}
                     handleShowPlantHistory={handleShowPlantHistory}

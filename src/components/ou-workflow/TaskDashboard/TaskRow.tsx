@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { act } from 'react';
 import { getStatusConfig, getPriorityBorderClass, getStageColor, getMessageCount } from './taskHelpers';
 import { History, Wrench, ChevronDown, MessageCircle } from 'lucide-react';
 import { TaskActionsPanel } from './TaskActionsPanel';
-import { TaskMessagesPanel } from './TaskMessagesPanel';
+//import { TaskMessagesPanel } from './TaskMessagesPanel';
 
 export function TaskRow({
   application,
@@ -12,6 +12,7 @@ export function TaskRow({
   handleShowPlantHistory,
   handleActionsExpand,
   handleMessagesExpand,
+  handleApplicationTaskAction,
   ...props
 }) {
   const statusConfig = getStatusConfig(application.status, application.daysActive);
@@ -27,12 +28,12 @@ export function TaskRow({
             <div className="space-y-2">
             {/* Plant name - prominent and clickable */}
             <button 
-                onClick={() => handleShowPlantHistory(application.plant)}
+                onClick={() => handleShowPlantHistory(application.plantName)}
                 className="text-left group"
                 title={`Click to view ${application.plant} history. ${plantInfo?.applications || 0} applications`}
             >
                 <div className="text-base font-bold group-hover:text-blue-600 transition-colors text-gray-900">
-                {application.plant}
+                {application.plantName}
                 <History className="w-4 h-4 inline ml-2 opacity-60 group-hover:opacity-100" />
                 <span className="text-sm font-medium ml-1">{application.daysInStage} days elapsed</span>
                 {/*<span className="text-sm font-normal ml-1 text-gray-600">
@@ -56,6 +57,15 @@ export function TaskRow({
         {/* Actions Column */}
         <td className="px-6 py-4">
             <button
+              key={application.TaskInstanceId}
+              onClick={(e) => handleApplicationTaskAction(e, application)}
+              className={`flex items-center justify-center px-4 py-3 text-white rounded-lg transition-colors text-sm font-medium bg-blue-600 hover:bg-blue-700`}
+            >
+              {application.icon && <application.icon className="w-4 h-4 mr-2" />}
+              {application.taskName}
+            </button>
+            {/*
+            <button
             onClick={() => handleActionsExpand(application.id)}
             className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
@@ -63,10 +73,13 @@ export function TaskRow({
             <span className="text-sm">Actions</span>
             <ChevronDown className={`w-4 h-4 transition-transform ${isActionsExpanded ? 'rotate-180' : ''}`} />
             </button>
+            */}
         </td>
 
         {/* Messages Column */}
+        
         <td className="px-6 py-4">
+            {/*
             <button
             onClick={() => handleMessagesExpand(application.id)}
             className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
@@ -77,6 +90,7 @@ export function TaskRow({
             </span>
             <ChevronDown className={`w-4 h-4 transition-transform ${isMessagesExpanded ? 'rotate-180' : ''}`} />
             </button>
+            */}
         </td>
 
         {/* Status Column */}
@@ -94,13 +108,13 @@ export function TaskRow({
           {...props}
         />
       )}
-      {isMessagesExpanded && (
+      {/*isMessagesExpanded && (
         <TaskMessagesPanel
           key={`${application.id}-messages`} // ✅ unique key
           application={application}
           {...props}
         />
-      )}
+      )*/}
     </React.Fragment>
   );
 }

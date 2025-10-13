@@ -1,4 +1,4 @@
-import type { Applicant } from './types/application';
+import type { Applicant, ApplicationTasksResponse, ApplicationTask } from './types/application';
 
 interface ApplicantsResponse {
   data: Applicant[];
@@ -286,4 +286,27 @@ export async function loginApi({
   }
 
   return response.json() // expect { username, role, token }
+}
+// Fetch Applicants Tasks
+export async function fetchApplicationTasks({
+  page = 0,
+  limit = 20,
+  token,
+  strategy,
+}: {
+  page?: number;
+  limit?: number;
+  token?: string;
+  strategy?: string;
+} = {}): Promise<ApplicationTask[]> {
+  const path = `/get_application_tasks?page[limit]=${limit}&page[offset]=${page}`;
+
+  const json = (await fetchWithAuth({
+    path,
+    strategy,
+    token,
+  })) as ApplicationTasksResponse;
+
+  // Directly return data
+  return json.data;
 }

@@ -87,3 +87,28 @@ export interface ApplicationDetail {
   ingredients?: any[];
   // ...extend as needed
 }
+
+export interface ApplicationTask {
+  TaskCategory: string;          // e.g., "CONFIRMATION"
+  applicationId: number;
+  assignee: string;              // e.g., "admin"
+  assigneeRole: string;          // e.g., "LEGAL", "RFR", "PROD"
+  companyId: number;
+  companyName: string;
+  completedDate: string | null;
+  laneName: string;              // e.g., "NDA", "Inspection"
+  plantId: number;
+  plantName: string;
+  processInstanceId: number;
+  stageInstanceId: number;
+  startedDate: string | null;
+  status: "PENDING" | "COMPLETED" | string; // can extend as needed
+  taskInstanceId: number;
+  taskName: string;              // e.g., "Send NDA"
+  taskType: string;              // e.g., "CONFIRM"
+}
+
+export interface ApplicationTasksResponse {
+  data: ApplicationTask[];
+  status: string; // e.g., "ok"
+}
