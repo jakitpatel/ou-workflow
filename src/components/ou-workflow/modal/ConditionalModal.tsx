@@ -37,6 +37,9 @@ export const ConditionalModal: React.FC<Props> = ({
   //if (!showConditionModal) return null;
 
   const { application, action } = selectedAction;
+  const taskName = action?.name || action?.taskName || "Action";
+  const companyName = application?.company || application?.companyName || "Unknown Company";
+  const taskCategory = action.taskCategory?.toLowerCase() || action.TaskCategory?.toLowerCase();
 
   const handleSave = (value: string) => {
     executeAction(action.id, action, value);
@@ -52,13 +55,13 @@ export const ConditionalModal: React.FC<Props> = ({
 
   const isFeeStructure =
     action.taskType?.toLowerCase() === "action" &&
-    action.taskCategory?.toLowerCase() === "selector" &&
-    action.name.toLowerCase().includes("assign fee structure");
+    taskCategory === "selector" &&
+    taskName.toLowerCase().includes("assign fee structure");
 
   const isInvoiceAmount =
     action.taskType?.toLowerCase() === "action" &&
-    action.taskCategory?.toLowerCase() === "input" &&
-    action.name.toLowerCase().includes("assign invoice amount");
+    taskCategory === "input" &&
+    taskName.toLowerCase().includes("assign invoice amount");
 
   const handleInvoiceChange = (val: string) => {
     // Only allow digits
@@ -79,7 +82,7 @@ export const ConditionalModal: React.FC<Props> = ({
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">
-              {action.name}
+              {taskName}
             </h3>
             <button
               onClick={() => setShowConditionModal(null)}
@@ -93,7 +96,7 @@ export const ConditionalModal: React.FC<Props> = ({
           <div className="mb-4 text-sm text-gray-600">
             <p>
               Application:{" "}
-              <span className="font-medium">{application.company}</span>
+              <span className="font-medium">{companyName}</span>
             </p>
           </div>
 

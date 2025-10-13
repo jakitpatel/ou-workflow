@@ -639,18 +639,19 @@ export function TaskDashboard (){
       //if (selectedAction) {
         // normalize taskType safely
         const taskType = action.taskType?.toLowerCase();
-        const taskCategory = action.taskCategory?.toLowerCase();
+        const taskCategory = action.taskCategory?.toLowerCase() || action.TaskCategory?.toLowerCase();
+        const taskId = action?.TaskInstanceId ?? action?.taskInstanceId;
 
         if (taskType === "confirm" && taskCategory === "confirmation") {
           confirmTaskMutation.mutate({
-            taskId: action.TaskInstanceId,
+            taskId: taskId,
             token,
             strategy,
             username
           });
         } else if ((taskType === "conditional" || taskType === "condition") && taskCategory === "approval") {
           confirmTaskMutation.mutate({
-            taskId: action.TaskInstanceId,
+            taskId: taskId,
             result: result,
             token,
             strategy,
@@ -658,7 +659,7 @@ export function TaskDashboard (){
           });
         } else if (taskType === "action" && taskCategory === "selector") {
           confirmTaskMutation.mutate({
-            taskId: action.TaskInstanceId,
+            taskId: taskId,
             result: result,
             token,
             strategy,
@@ -666,17 +667,15 @@ export function TaskDashboard (){
           });
         } else if (taskType === "action" && taskCategory === "input") {
           confirmTaskMutation.mutate({
-            taskId: action.TaskInstanceId,
+            taskId: taskId,
             result: result,
             token,
             strategy,
             username
           });
         } else if (taskType === "action" && taskCategory === "assignment") {
-          const taskId = action.TaskInstanceId;
-          const appId = selectedAction.application.id;
-
-          const rawLabel = action.name ?? "";
+          const appId = selectedAction?.application?.id ?? selectedAction?.application?.applicationId ?? null;
+          const rawLabel = action?.name ?? action?.taskName ?? "";
           const normalized = rawLabel.replace(/\s+/g, "").toLowerCase();
 
           let role: "RFR" | "NCRC" | "OtherRole";
@@ -716,16 +715,16 @@ export function TaskDashboard (){
         return null;
       }
 
-      const actions = getTaskActions(app) || [];
-      const act = actions.find(a => String(a.TaskInstanceId) === String(actId));
+      //const actions = getTaskActions(app) || [];
+      const act = tasksplants.find(a => String(a.taskInstanceId) === String(actId));
 
       if (!act) {
-        console.warn("No action found for", actId, actions.map(a => a.TaskInstanceId));
+        console.warn("No action found for", actId, tasksplants.map(a => a.taskInstanceId));
         return null;
       }
 
       return { application: app, action: act };
-    }, [selectedActionId, tasksplants, getTaskActions]);
+    }, [selectedActionId, tasksplants]);
 
     const handleApplicationTaskAction = (e, application) => {
       console.log("handleApplicationTaskAction called for application:", application);
