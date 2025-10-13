@@ -43,6 +43,7 @@ export function TaskRow({
             </button>
             
             {/* Task title with stage label */}
+            {/*
             <div className="flex items-center space-x-2">
                 <span className={`px-2 py-1 text-xs rounded font-medium ${getStageColor(application.workflowStage)}`}>
                 {application.applicationId} {application.workflowStage}
@@ -51,6 +52,7 @@ export function TaskRow({
                 {application.title}
                 </span>
             </div>
+            */}
             </div>
         </td>
 
@@ -59,7 +61,7 @@ export function TaskRow({
             <button
               key={application.TaskInstanceId}
               onClick={(e) => handleApplicationTaskAction(e, application)}
-              className={`flex items-center justify-center px-4 py-3 text-white rounded-lg transition-colors text-sm font-medium bg-blue-600 hover:bg-blue-700`}
+              className={`flex items-center justify-center px-3 py-2 text-white rounded-lg transition-colors text-sm font-medium bg-blue-600 hover:bg-blue-700`}
             >
               {application.icon && <application.icon className="w-4 h-4 mr-2" />}
               {application.taskName}
