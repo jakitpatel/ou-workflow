@@ -35,9 +35,9 @@ export function TaskRow({
                 <div className="text-base font-bold group-hover:text-blue-600 transition-colors text-gray-900">
                 {application.plantName}
                 <History className="w-4 h-4 inline ml-2 opacity-60 group-hover:opacity-100" />
-                {application?.daysInStage != null && (
+                {application?.daysActive != null && (
                   <span className="text-sm font-medium ml-1">
-                    {application.daysInStage} days elapsed
+                    {application.daysActive} days elapsed
                   </span>
                 )}
                 {application?.overdue != null && (
