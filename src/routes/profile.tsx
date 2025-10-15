@@ -26,6 +26,10 @@ function ProfilePage() {
             {username}
           </div>
           <div>
+            <span className="font-semibold text-gray-700">Roles: </span>
+            {roles.map((role) => role.name).join(', ')}
+          </div>
+          <div>
             <span className="font-semibold text-gray-700">Role: </span>
             {role}
           </div>

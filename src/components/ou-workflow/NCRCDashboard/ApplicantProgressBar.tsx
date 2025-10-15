@@ -20,7 +20,7 @@ export function ApplicantProgressBar({
   handleTaskAction
 }: Props) {
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
-  const { username, role } = useUser() // 👈 use context
+  const { username, role, roles } = useUser() // 👈 use context
 
   const handleStageClick = (stageName: string) => {
       setExpandedStage(expandedStage === stageName ? null : stageName);
@@ -60,67 +60,72 @@ export function ApplicantProgressBar({
     return statusColors[normalized] ?? '#d1d5db' // default gray-300
   }
 
-  const mapTaskToAction = (taskitem, application) => {
-    let color, icon, disabled = false;
+  const mapTaskToAction = (taskItem, application) => {
+    // Default styling
+    let color = 'bg-gray-300 cursor-not-allowed';
+    let icon = null;
+    let disabled = true;
 
-    // Normalize status
-    const status = taskitem.status?.toLowerCase();
-
-    // Always normalize taskRole into array
-    // Normalize taskRoles into array of strings
-    const taskRoles = Array.isArray(taskitem.taskRoles)
-      ? taskitem.taskRoles.map(r => r.taskRole).filter(Boolean)
-      : taskitem.taskRole
-        ? [taskitem.taskRole]
+    const status = taskItem.status?.toLowerCase() ?? 'unknown';
+    const taskRoles = Array.isArray(taskItem.taskRoles)
+      ? taskItem.taskRoles.map(r => r.taskRole?.toLowerCase()).filter(Boolean)
+      : taskItem.taskRole
+        ? [taskItem.taskRole.toLowerCase()]
         : [];
 
-    if (status === 'complete' || status === 'done' || status === 'completed') {
-      // Completed task → show as done
+    const userRoles = Array.isArray(roles)
+    ? roles.map(r => r.value?.toLowerCase()).filter(Boolean)
+    : [];
+
+    const taskType = taskItem.taskType?.toLowerCase() ?? 'unknown';
+    const taskCategory = taskItem.taskCategory?.toLowerCase() ?? 'unknown';
+
+    // ✅ Case 1: Completed
+    if (['complete', 'done', 'completed'].includes(status)) {
       color = 'bg-green-400';
-      //icon = CheckSquare;
-      disabled = true;
-
-    } else if (taskRoles.length > 0 && !taskRoles.includes(role)) {
-      // Task roles exist but don't include current user's role → disabled
-      color = 'bg-gray-300 cursor-not-allowed';
-      disabled = true;
-
-    } else if (taskRoles.includes(role)) {
-      console.log('taskitem:', taskitem, 'application:', application);
-
-      // Role matches → check assignment
-      const roles = Array.isArray(application?.assignedRoles) ? application.assignedRoles : [];
-
-      const isAssigned = roles.some((ar: any) => ar[role] === username);
-      console.log('isAssigned:', isAssigned);
-
-      if (isAssigned && status==='pending') {
-        // Active & assigned to current user → allowed
-        color = 'bg-blue-600 hover:bg-blue-700';
-      } else {
-        // Not assigned or inactive
-        color = 'bg-gray-300 cursor-not-allowed';
-        disabled = true;
-      }
-    } else {
-      // No roles defined at all → disabled
-      color = 'bg-gray-300 cursor-not-allowed';
       disabled = true;
     }
-    const taskTypeval = taskitem.taskType
-    ? taskitem.taskType.toLowerCase()
-    : "unknown";
-    const taskCategoryval = taskitem.taskCategory
-    ? taskitem.taskCategory.toLowerCase()
-    : "unknown";
+
+    // ✅ Case 2: Role-based permission check
+    else if (taskRoles.length > 0) {
+      //console.log('roles from context:', userRoles);
+      //console.log('taskRoles:', taskRoles);
+
+      // Find intersection between taskRoles and userRoles
+      const matchingRoles = userRoles.filter(r => taskRoles.includes(r));
+
+      if (matchingRoles.length === 0) {
+        // User has none of the required roles
+        color = 'bg-gray-300 cursor-not-allowed';
+        disabled = true;
+      } else {
+        // User has at least one matching role → check assignment
+        const assignedRoles = Array.isArray(application?.assignedRoles)
+          ? application.assignedRoles
+          : [];
+
+        // Check if user is assigned under any matching role
+        const isAssigned = assignedRoles.some(ar =>
+          matchingRoles.some(role =>
+            ar[role.toUpperCase()]?.toLowerCase() === (username ? username.toLowerCase() : '')
+          )
+        );
+
+        if (isAssigned && status === 'pending') {
+          color = 'bg-blue-600 hover:bg-blue-700';
+          disabled = false;
+        }
+      }
+    }
+
     return {
-      TaskInstanceId: `${taskitem.TaskInstanceId}`,
-      label: taskitem.name,
-      status: taskitem.status,
-      required: taskitem.required,
-      assignee: taskitem.assignee,
-      taskType: taskTypeval,
-      taskCategory: taskCategoryval,
+      TaskInstanceId: String(taskItem.TaskInstanceId ?? ''),
+      label: taskItem.name ?? '',
+      status: taskItem.status ?? '',
+      required: taskItem.required ?? false,
+      assignee: taskItem.assignee ?? null,
+      taskType,
+      taskCategory,
       color,
       icon,
       disabled,
