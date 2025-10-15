@@ -43,8 +43,8 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
   const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   // Cross-navigation handler
-  const handleViewTasks = (companyName: string) => {
-    console.log('Viewing tasks for:', companyName);
+  const handleViewTasks = (applicationId) => {
+    console.log('Viewing tasks for:', applicationId);
     setActiveScreen('tasks-dashboard');
   };
 
@@ -60,7 +60,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
         <div className="flex-1">
           <div className="flex items-center space-x-3 mb-2">
             <button
-              onClick={() => handleViewTasks(applicant.company)}
+              onClick={() => handleViewTasks(applicant.applicationId)}
               className="text-lg font-semibold text-blue-600 hover:text-blue-800 transition-colors"
               title={`Click to view tasks for ${applicant.company}`}
             >
@@ -172,7 +172,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
               View Details
             </Link>
             <button 
-              onClick={() => handleViewTasks(applicant.company)}
+              onClick={() => handleViewTasks(applicant.applicationId)}
               className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
             >
               View Tasks →

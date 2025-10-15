@@ -26,28 +26,34 @@ function ProfilePage() {
             {username}
           </div>
           <div>
-            <span className="font-semibold text-gray-700">Roles: </span>
-            {roles.map((role) => role.name).join(', ')}
-          </div>
-          <div>
-            <span className="font-semibold text-gray-700">Role: </span>
-            {role}
+            <span className="font-semibold text-gray-700">Active Role: </span>
+            {role === 'ALL'
+              ? `AllRoles (${roles.map((r) => r.name).join(', ')})`
+              : role || 'None selected'}
           </div>
           {/* Roles Dropdown */}
           <div className="pb-2">
-            {/*isLoading && <p className="text-xs text-gray-500">Loading roles...</p>*/}
-            {/*isError && <p className="text-xs text-red-500">Error loading roles</p>*/}
             <span className="font-semibold text-gray-700">Select Role: </span>
             {roles.length > 0 && (
               <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
+                value={role === 'ALL' ? 'ALL' : role}
+                onChange={(e) => {
+                  const selectedValue = e.target.value;
+                  if (selectedValue === 'ALL') {
+                    // ✅ special case: select all roles
+                    setRole('ALL');
+                  } else {
+                    setRole(selectedValue);
+                  }
+                }}
                 className="w-full border border-gray-300 rounded-md text-sm p-1 focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select Role</option>
-                {roles.map((role: { name: string; value: string }, idx: number) => (
-                  <option key={idx} value={role.value}>
-                    {role.name}
+                {/* ✅ new option */}
+                <option value="ALL">All Roles</option>
+                {roles.map((r, idx) => (
+                  <option key={idx} value={r.value}>
+                    {r.name}
                   </option>
                 ))}
               </select>

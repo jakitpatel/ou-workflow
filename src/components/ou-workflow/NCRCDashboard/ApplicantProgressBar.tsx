@@ -73,9 +73,12 @@ export function ApplicantProgressBar({
         ? [taskItem.taskRole.toLowerCase()]
         : [];
 
-    const userRoles = Array.isArray(roles)
-    ? roles.map(r => r.value?.toLowerCase()).filter(Boolean)
-    : [];
+    const userRoles =
+    role?.toUpperCase() === 'ALL'
+      ? (roles ?? []).map(r => r.value?.toLowerCase()).filter(Boolean)
+      : role
+      ? [role.toLowerCase()]
+      : [];
 
     const taskType = taskItem.taskType?.toLowerCase() ?? 'unknown';
     const taskCategory = taskItem.taskCategory?.toLowerCase() ?? 'unknown';
