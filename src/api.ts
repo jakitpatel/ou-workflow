@@ -20,7 +20,7 @@ type FetchWithAuthOptions = {
   token?: string;
   headers?: Record<string, string>;
 };
-// Fetch with Auth wrapper
+// Fetch with Auth wrapper (improved)
 export async function fetchWithAuth<T>({
   path,
   method = "GET",
@@ -45,8 +45,23 @@ export async function fetchWithAuth<T>({
     body: body ? JSON.stringify(body) : undefined,
   });
 
+  // ✅ Gracefully handle non-OK responses
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    let errorBody: any = null;
+    try {
+      errorBody = await response.json(); // attempt to parse JSON error message
+    } catch {
+      // fallback to text if not JSON
+      errorBody = await response.text();
+    }
+
+    // ✅ Attach HTTP status and backend message for React Query
+    const error: any = new Error(
+      errorBody?.message || `API request failed: ${response.status} ${response.statusText}`
+    );
+    error.status = response.status;
+    error.details = errorBody;
+    throw error;
   }
 
   return response.json();
@@ -287,19 +302,25 @@ export async function loginApi({
 
   return response.json() // expect { username, role, token }
 }
-// Fetch Applicants Tasks
 export async function fetchApplicationTasks({
   page = 0,
   limit = 20,
   token,
   strategy,
+  applicationId,
 }: {
   page?: number;
   limit?: number;
   token?: string;
   strategy?: string;
+  applicationId?: string;
 } = {}): Promise<ApplicationTask[]> {
-  const path = `/get_application_tasks?page[limit]=${limit}&page[offset]=${page}`;
+  let path = `/get_application_tasks?page[limit]=${limit}&page[offset]=${page}`;
+
+  // ✅ Add filter only if applicationId is passed
+  if (applicationId) {
+    path += `&filter[application_id]=${encodeURIComponent(applicationId)}`;
+  }
 
   const json = (await fetchWithAuth({
     path,
@@ -307,6 +328,5 @@ export async function fetchApplicationTasks({
     token,
   })) as ApplicationTasksResponse;
 
-  // Directly return data
   return json.data;
 }
