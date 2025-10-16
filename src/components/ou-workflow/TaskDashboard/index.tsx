@@ -13,6 +13,7 @@
 import { plantHistory } from './demoData';
 import { ConditionalModal } from '../modal/ConditionalModal';
 import { useTasks } from './../hooks/useTaskDashboardHooks';
+import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 
  // Tasks Dashboard Component (with full table functionality restored)
 export function TaskDashboard (){
@@ -37,6 +38,7 @@ export function TaskDashboard (){
     const messageInputRefs = useRef({});
 
     const queryClient = useQueryClient();
+    const errorDialogRef = useRef<ErrorDialogRef>(null);
 
    //const queryClient = useQueryClient()
    //const applicants = queryClient.getQueryData(['applicants']) || []
@@ -131,12 +133,6 @@ export function TaskDashboard (){
       { key: 'contract', name: 'Contract' },
       { key: 'certification', name: 'Certification' }
     ]
-    // helper: flatten all tasks from all stages
-    /*const getAllTasks = (app) => {
-      if (!app?.stages) return [];
-      return Object.values(app.stages).flatMap(stage => stage.tasks || []);
-    };*/
-    // Flatten tasks by stageOrder, with stage info
     // Usage: getAllTasks(app)                      -> old behavior, tasks only
 //        getAllTasks(app, { includeStage: true }) -> tasks with `.stage` added
     const getAllTasks = (app, options = { includeStage: false }) => {
@@ -620,6 +616,11 @@ export function TaskDashboard (){
       },
       onError: (error: any) => {
         console.error("❌ Failed to assign task:", error);
+        const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Something went wrong while confirming the task.";
+        errorDialogRef.current?.open(message);
       }
     });
 
@@ -632,6 +633,11 @@ export function TaskDashboard (){
       },
       onError: (error: any) => {
         console.error("❌ Failed to assign task:", error);
+        const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Something went wrong while assigning the task.";
+        errorDialogRef.current?.open(message);
       },
     });
 
@@ -666,6 +672,14 @@ export function TaskDashboard (){
             username
           });
         } else if (taskType === "action" && taskCategory === "input") {
+          confirmTaskMutation.mutate({
+            taskId: taskId,
+            result: result,
+            token,
+            strategy,
+            username
+          });
+        }  else if (taskType === "action" && taskCategory === "scheduling") {
           confirmTaskMutation.mutate({
             taskId: taskId,
             result: result,
@@ -754,6 +768,9 @@ export function TaskDashboard (){
         setShowConditionModal(application);
       } else if(actionType === "action" && actionCategory === "input"){
         console.log("Input Action :"+actionType);
+        setShowConditionModal(application);
+      } else if(actionType === "action" && actionCategory === "scheduling"){
+        console.log("Scheduling Action :"+actionType);
         setShowConditionModal(application);
       }
     };
@@ -928,6 +945,8 @@ export function TaskDashboard (){
             onViewNCRCDashboard={handleViewNCRCDashboard}
           />
         </div>
+        {/* Global Error Dialog */}
+        <ErrorDialog ref={errorDialogRef} />
       </div>
     );
   };

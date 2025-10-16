@@ -28,18 +28,20 @@ export const ConditionalModal: React.FC<Props> = ({
   selectedAction,
   executeAction,
 }) => {
-  const [feeValue, setFeeValue] = useState<string>("0"); // default LOW
-  const [invoiceAmount, setInvoiceAmount] = useState<string>(""); // input for invoice
+  const [feeValue, setFeeValue] = useState<string>("0");
+  const [invoiceAmount, setInvoiceAmount] = useState<string>("");
   const [error, setError] = useState<string>("");
-  console.log("Rendering ConditionalModal");
-  console.log(selectedAction?.action.name);
+
+  // ✅ New state for DateTime picker
+  const [scheduledDateTime, setScheduledDateTime] = useState<string>("");
+
   if (!showConditionModal || !selectedAction) return null;
-  //if (!showConditionModal) return null;
 
   const { application, action } = selectedAction;
-  const taskName = action?.name || action?.taskName || "Action";
+  const taskName = action?.name || action?.taskName || "Action"; 
   const companyName = application?.company || application?.companyName || "Unknown Company";
-  const taskCategory = action.taskCategory?.toLowerCase() || action.TaskCategory?.toLowerCase();
+  const taskCategory =
+    action.taskCategory?.toLowerCase() || action.TaskCategory?.toLowerCase();
 
   const handleSave = (value: string) => {
     executeAction(action.id, action, value);
@@ -63,8 +65,12 @@ export const ConditionalModal: React.FC<Props> = ({
     taskCategory === "input" &&
     taskName.toLowerCase().includes("assign invoice amount");
 
+  // ✅ New scheduling condition
+  const isScheduling =
+    action.taskType?.toLowerCase() === "action" &&
+    taskCategory === "scheduling";
+
   const handleInvoiceChange = (val: string) => {
-    // Only allow digits
     if (/^\d*$/.test(val)) {
       setInvoiceAmount(val);
       setError("");
@@ -75,15 +81,20 @@ export const ConditionalModal: React.FC<Props> = ({
 
   const isValidInvoice = invoiceAmount !== "" && /^\d+$/.test(invoiceAmount);
 
+  // ✅ Validate datetime field
+  const isValidSchedule = scheduledDateTime !== "";
+
+  const handleScheduleSave = () => {
+    handleSave(scheduledDateTime);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              {taskName}
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900">{taskName}</h3>
             <button
               onClick={() => setShowConditionModal(null)}
               className="text-gray-400 hover:text-gray-600"
@@ -162,6 +173,36 @@ export const ConditionalModal: React.FC<Props> = ({
                 <button
                   onClick={() => handleSave(invoiceAmount)}
                   disabled={!isValidInvoice}
+                  className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                >
+                  Save
+                </button>
+              </div>
+            </>
+          ) : isScheduling ? (
+            <>
+              {/* ✅ DateTime Picker Section */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Date & Time
+                </label>
+                <input
+                  type="datetime-local"
+                  value={scheduledDateTime}
+                  onChange={(e) => setScheduledDateTime(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowConditionModal(null)}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleScheduleSave}
+                  disabled={!isValidSchedule}
                   className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                 >
                   Save

@@ -1,4 +1,4 @@
-import React, { useState,useMemo } from 'react';
+import React, { useState,useMemo, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
@@ -7,8 +7,8 @@ import { Search } from 'lucide-react';
 import { IngredientsManagerPage } from './IngredientsManagerPage';
 import { useUser } from './../../../context/UserContext'  // 👈 new import
 import { useApplications } from './../hooks/useApplications';
-
- import { assignTask, confirmTask } from '@/api'; // same api.ts
+import { assignTask, confirmTask } from '@/api'; // same api.ts
+import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 //import type { Task, Stage, Applicant } from '@/types/application';
 
 type Props = {
@@ -37,6 +37,7 @@ export function NCRCDashboard({
   const [showActionModal, setShowActionModal] = useState(null);
   const [showConditionModal, setShowConditionModal] = useState(null);
   const queryClient = useQueryClient();
+  const errorDialogRef = useRef<ErrorDialogRef>(null);
 
   const {
     data: applicants = [],
@@ -77,6 +78,11 @@ export function NCRCDashboard({
     },
     onError: (error: any) => {
       console.error("❌ Failed to assign task:", error);
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Something went wrong while confirming the task.";
+      errorDialogRef.current?.open(message);
     }
   });
 
@@ -89,6 +95,11 @@ export function NCRCDashboard({
     },
     onError: (error: any) => {
       console.error("❌ Failed to assign task:", error);
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Something went wrong while assigning the task.";
+      errorDialogRef.current?.open(message);
     },
   });
 
@@ -122,6 +133,14 @@ export function NCRCDashboard({
             username
           });
         } else if (taskType === "action" && taskCategory === "input") {
+          confirmTaskMutation.mutate({
+            taskId: action.TaskInstanceId,
+            result: result,
+            token,
+            strategy,
+            username
+          });
+        } else if (taskType === "action" && taskCategory === "scheduling") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
             result: result,
@@ -218,6 +237,9 @@ export function NCRCDashboard({
       } else if(actionType === "action" && actionCategory === "input"){
         console.log("Input Action :"+actionType);
         setShowConditionModal(action);
+      } else if(actionType === "action" && actionCategory === "scheduling"){
+        console.log("Scheduling Action :"+actionType);
+        setShowConditionModal(action);
       }
     };
   return (
@@ -311,6 +333,8 @@ export function NCRCDashboard({
         executeAction={executeAction}
         selectedAction={selectedAction}
         />
+        {/* Global Error Dialog */}
+        <ErrorDialog ref={errorDialogRef} />
     </div>
   );
 }
