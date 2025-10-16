@@ -808,6 +808,9 @@ export function TaskDashboard (){
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
           />
+          {/* List */}
+          {isLoading && <div className="text-gray-500">Loading Tasks & Plants...</div>}
+          {isError && <div className="text-red-600">Error: {(error as Error).message}</div>}
 
           {/* Completion Feedback */}
           <div className="mt-6">
