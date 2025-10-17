@@ -1,7 +1,7 @@
 import React, { act } from 'react';
 import { getStatusConfig, getPriorityBorderClass, getStageColor, getMessageCount } from './taskHelpers';
 import { History, Wrench, ChevronDown, MessageCircle } from 'lucide-react';
-import { TaskActionsPanel } from './TaskActionsPanel';
+//import { TaskActionsPanel } from './TaskActionsPanel';
 //import { TaskMessagesPanel } from './TaskMessagesPanel';
 
 export function TaskRow({
@@ -13,12 +13,12 @@ export function TaskRow({
   handleActionsExpand,
   handleMessagesExpand,
   handleApplicationTaskAction,
-  ...props
+  //...props
 }) {
   const statusConfig = getStatusConfig(application.status, application.daysActive);
-  const isActionsExpanded = expandedActions.has(application.id);
-  const isMessagesExpanded = expandedMessages.has(application.id);
-  const messageCounts = getMessageCount(application);
+  //const isActionsExpanded = expandedActions.has(application.id);
+  //const isMessagesExpanded = expandedMessages.has(application.id);
+  //const messageCounts = getMessageCount(application);
 
   return (
     <React.Fragment>
@@ -101,13 +101,13 @@ export function TaskRow({
             </span>
         </td>
       </tr>
-      {isActionsExpanded && (
+      {/*isActionsExpanded && (
         <TaskActionsPanel
           key={`${application.id}-actions`}  // ✅ unique key
           application={application}
           {...props}
         />
-      )}
+      )*/}
       {/*isMessagesExpanded && (
         <TaskMessagesPanel
           key={`${application.id}-messages`} // ✅ unique key

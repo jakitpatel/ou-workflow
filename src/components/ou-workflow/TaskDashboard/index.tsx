@@ -3,7 +3,8 @@
  import { useMutation, useQueryClient } from '@tanstack/react-query';
  import { assignTask, confirmTask, sendMsgTask } from '@/api'; // same api.ts
  import { useUser } from '@/context/UserContext'  // 👈 new import
- import { ActionModal } from './../modal/ActionModal';
+ import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
+ import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
  import { PlantHistoryModal } from './PlantHistoryModal';
  import { TaskStatsCards } from './TaskStatsCards';
  import { TaskFilters } from './TaskFilters';
@@ -11,7 +12,6 @@
  import { formatNowForApi } from './taskHelpers';
 
 import { plantHistory } from './demoData';
-import { ConditionalModal } from '../modal/ConditionalModal';
 import { useTasks } from './../hooks/useTaskDashboardHooks';
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 
@@ -39,9 +39,7 @@ export function TaskDashboard (){
 
     const queryClient = useQueryClient();
     const errorDialogRef = useRef<ErrorDialogRef>(null);
-
-   //const queryClient = useQueryClient()
-   //const applicants = queryClient.getQueryData(['applicants']) || []
+    // Fetch tasks and plants
    const {
       data: tasksplants = [],
       isLoading,
@@ -72,59 +70,7 @@ export function TaskDashboard (){
       };
     }, []);
 
-    // Sample tasks with workflow stages
-    const [allTasks, setAllTasks] = useState([
-      {
-        id: 1,
-        title: 'Review NDA Documentation',
-        plant: 'Brooklyn Bread Co.',
-        assignedTo: 'A. Gottesman',
-        assignedBy: 'R. Gorelik',
-        status: 'overdue',
-        priority: 'high',
-        daysActive: 5,
-        applicationId: 'APP-2025-001',
-        workflowStage: 'NDA'
-      },
-      {
-        id: 2,
-        title: 'Process Ingredient Review',
-        plant: 'Artisan Bakery',
-        assignedTo: 'A. Gottesman',
-        assignedBy: 'R. Epstein',
-        status: 'in_progress',
-        priority: 'medium',
-        daysActive: 2,
-        applicationId: 'APP-2025-005',
-        workflowStage: 'Ingredients'
-      },
-      {
-        id: 3,
-        title: 'Schedule Initial Inspection',
-        plant: 'Metro Spice Company',
-        assignedTo: 'A. Gottesman',
-        assignedBy: 'R. Dick',
-        status: 'overdue',
-        priority: 'urgent',
-        daysActive: 7,
-        applicationId: 'APP-2025-004',
-        workflowStage: 'Inspection'
-      },
-      {
-        id: 4,
-        title: 'Finalize Contract Terms',
-        plant: 'Happy Snacks',
-        assignedTo: 'A. Gottesman',
-        assignedBy: 'System',
-        status: 'new',
-        priority: 'medium',
-        daysActive: 1,
-        applicationId: 'APP-2025-008',
-        workflowStage: 'Contract'
-      }
-    ]);
-
-    const stageOrder = [
+    /*const stageOrder = [
       { key: 'initial', name: 'Initial' },
       { key: 'nda', name: 'NDA' },
       { key: 'inspection', name: 'Inspection' },
@@ -132,10 +78,10 @@ export function TaskDashboard (){
       { key: 'products', name: 'Products' },
       { key: 'contract', name: 'Contract' },
       { key: 'certification', name: 'Certification' }
-    ]
+    ]*/
     // Usage: getAllTasks(app)                      -> old behavior, tasks only
 //        getAllTasks(app, { includeStage: true }) -> tasks with `.stage` added
-    const getAllTasks = (app, options = { includeStage: false }) => {
+    /*const getAllTasks = (app, options = { includeStage: false }) => {
       if (!app?.stages) return [];
 
       const includeStage = !!options.includeStage;
@@ -177,10 +123,9 @@ export function TaskDashboard (){
 
       // Fallback: preserve original behaviour (insertion order of app.stages)
       return Object.values(app.stages).flatMap(stage => stage.tasks || []);
-    };
+    };*/
 
     const taskStats = useMemo(() => {
-      //const allTasks = tasksplants.flatMap(app => getAllTasks(app))
       const allTasks = tasksplants;
       // normalize status + filter by user (if needed)
       const userTasks = allTasks
@@ -231,7 +176,7 @@ export function TaskDashboard (){
       });
     }, [tasksplants, username, searchTerm, statusFilter]);
 
-   const mapTaskToAction = (taskitem, application) => {
+   /*const mapTaskToAction = (taskitem, application) => {
       let color, icon, disabled = false;
 
       // Normalize status
@@ -296,17 +241,17 @@ export function TaskDashboard (){
         icon,
         disabled,
       };
-    };
+    };*/
 
     // main: get actions for an application
-    const getTaskActions = (app) => {
+    /*const getTaskActions = (app) => {
       const baseActions = [];
 
       const allTasks = getAllTasks(app);
       const taskActions = allTasks.map(task => mapTaskToAction(task, app));
       // return flat list of tasks + base actions
       return [...taskActions, ...baseActions];
-    };
+    };*/
 
     // Event handlers
     const handleActionsExpand = (taskId) => {
@@ -403,45 +348,6 @@ export function TaskDashboard (){
           messageInputRefs.current[taskId].focus();
         }
       }, 50);
-    };
-
-    const handleTaskComplete = (taskId) => {
-      const task = allTasks.find(t => t.id === taskId);
-      if (!task) return;
-
-      const completedTask = {
-        ...task,
-        status: 'completed',
-        completedAt: new Date().toISOString()
-      };
-
-      setAllTasks(prev => prev.map(t => t.id === taskId ? completedTask : t));
-      
-      const feedback = {
-        id: Date.now(),
-        taskId: taskId,
-        taskTitle: task.title,
-        taskPlant: task.plant,
-        timestamp: new Date(),
-        dismissed: false
-      };
-      
-      setCompletionFeedback(prev => [feedback, ...prev]);
-
-      setTimeout(() => {
-        setCompletionFeedback(prev => prev.filter(f => f.id !== feedback.id));
-      }, 10000);
-
-      setExpandedActions(prev => {
-        const newExpanded = new Set(prev);
-        newExpanded.delete(taskId);
-        return newExpanded;
-      });
-      setExpandedMessages(prev => {
-        const newExpanded = new Set(prev);
-        newExpanded.delete(taskId);
-        return newExpanded;
-      });
     };
 
     const handleReassignTask = (taskId, newAssignee) => {
@@ -907,7 +813,7 @@ export function TaskDashboard (){
                     expandedActions={expandedActions}
                     showReassignDropdown={showReassignDropdown}
                     setShowReassignDropdown={setShowReassignDropdown}
-                    getTaskActions={getTaskActions}
+                    //getTaskActions={getTaskActions}
                     handleApplicationTaskAction={handleApplicationTaskAction}
                     handleReassignTask={handleReassignTask}
                     expandedMessages={expandedMessages}
