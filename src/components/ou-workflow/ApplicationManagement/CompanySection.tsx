@@ -97,7 +97,7 @@ export default function CompanySection({ application, editMode }: { application:
             </div>
             <div className="flex justify-between">
               <span className="text-blue-700">Status:</span>
-              <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Active</span>
+              <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">{application.kashrusStatus}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-blue-700">Created:</span>

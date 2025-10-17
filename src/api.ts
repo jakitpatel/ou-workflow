@@ -315,11 +315,11 @@ export async function fetchApplicationTasks({
   strategy?: string;
   applicationId?: string;
 } = {}): Promise<ApplicationTask[]> {
-  let path = `/get_application_tasks?page[limit]=${limit}&page[offset]=${page}`;
-
+  //let path = `/get_application_tasks?page[limit]=${limit}&page[offset]=${page}`;
+  let path = `/get_application_tasks`;
   // ✅ Add filter only if applicationId is passed
   if (applicationId) {
-    path += `&filter[applicationId]=${encodeURIComponent(applicationId)}`;
+    path += `?filter[applicationId]=${encodeURIComponent(applicationId)}`;
   }
 
   const json = (await fetchWithAuth({

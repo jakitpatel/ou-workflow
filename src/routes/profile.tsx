@@ -11,7 +11,13 @@ export const Route = createFileRoute('/profile')({
 
 function ProfilePage() {
   const { username, role, roles, setRole, token, strategy } = useUser()
-  const apiUrl = "http://localhost:5656";//import.meta.env.VITE_API_BASE_URL
+  
+  const API_BUILD = import.meta.env.VITE_API_BUILD;
+  const API_LOCAL_URL = import.meta.env.VITE_API_LOCAL_URL;
+  const API_CLIENT_URL = import.meta.env.VITE_API_CLIENT_URL;
+
+  const API_BASE_URL =
+    API_BUILD === "client" ? API_CLIENT_URL : API_LOCAL_URL;
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -61,7 +67,7 @@ function ProfilePage() {
           </div>
           <div>
             <span className="font-semibold text-gray-700">API URL: </span>
-            {apiUrl}
+            {API_BASE_URL}
           </div>
         </div>
       </main>

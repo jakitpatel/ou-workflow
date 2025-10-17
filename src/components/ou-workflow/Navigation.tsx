@@ -17,6 +17,13 @@ export function Navigation({ hideMenu }: Props) {
   const navigate = useNavigate()
   const { setApplicationId } = useTaskContext();
   
+  const API_BUILD = import.meta.env.VITE_API_BUILD;
+  const API_LOCAL_URL = import.meta.env.VITE_API_LOCAL_URL;
+  const API_CLIENT_URL = import.meta.env.VITE_API_CLIENT_URL;
+
+  const API_BASE_URL =
+    API_BUILD === "client" ? API_CLIENT_URL : API_LOCAL_URL;
+
   // close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -80,6 +87,7 @@ export function Navigation({ hideMenu }: Props) {
 
           {/* Right: Notifications + User */}
          <div className="flex items-center space-x-3 relative" ref={menuRef}>
+          <span className="text-sm text-gray-500 mr-4">API : {API_BASE_URL}</span>
   <Bell className="w-5 h-5 text-gray-500 cursor-pointer" />
   <button
     type="button"
