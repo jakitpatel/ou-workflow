@@ -319,7 +319,7 @@ export async function fetchApplicationTasks({
 
   // ✅ Add filter only if applicationId is passed
   if (applicationId) {
-    path += `&filter[application_id]=${encodeURIComponent(applicationId)}`;
+    path += `&filter[applicationId]=${encodeURIComponent(applicationId)}`;
   }
 
   const json = (await fetchWithAuth({

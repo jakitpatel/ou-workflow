@@ -4,6 +4,7 @@ import { Bell, User, BarChart3, ClipboardList, LogOut, Settings } from 'lucide-r
 //import { fetchRoles } from './../../api';
 import { useUser } from './../../context/UserContext'  // 👈 new import
 import { Link, useNavigate } from '@tanstack/react-router'
+import { useTaskContext } from '@/context/TaskContext'
 
 type Props = {
   hideMenu?: boolean   // 👈 new optional prop
@@ -14,7 +15,8 @@ export function Navigation({ hideMenu }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
-
+  const { setApplicationId } = useTaskContext();
+  
   // close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -49,7 +51,7 @@ export function Navigation({ hideMenu }: Props) {
               <nav className="flex space-x-1">
                 <Link
                   to="/ou-workflow"
-                  onClick={() => setActiveScreen('ncrc-dashboard')}
+                  onClick={() => {setApplicationId(null); setActiveScreen('ncrc-dashboard')}}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeScreen === 'ncrc-dashboard'
                       ? 'bg-blue-100 text-blue-700'
