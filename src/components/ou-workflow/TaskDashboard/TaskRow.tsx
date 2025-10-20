@@ -86,12 +86,16 @@ export function TaskRow({
             </button>
             */}
         </td>
+        {/* Role Column */}
+        <td className="px-6 py-4">
+            {application.assigneeRole}
+        </td>
 
         {/* Messages Column */}
-        
         <td className="px-6 py-4">
             {application.stageName}
         </td>
+
 
         {/* Status Column */}
         <td className="px-6 py-4">

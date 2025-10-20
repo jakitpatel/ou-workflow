@@ -30,7 +30,7 @@ export function TaskDashboard (){
     const [completionFeedback, setCompletionFeedback] = useState([]);
     const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
-    const { username, role, setActiveScreen, token, strategy } = useUser() // 👈 use context
+    const { username, role, roles, setActiveScreen, token, strategy } = useUser() // 👈 use context
     const [showActionModal, setShowActionModal] = useState(null);
     const [showConditionModal, setShowConditionModal] = useState(null);
     const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
@@ -154,8 +154,20 @@ export function TaskDashboard (){
 
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
+      // Normalize user roles
+      const isAllRole = role?.toUpperCase() === 'ALL';
+      const userRoles = isAllRole
+        ? (roles ?? []).map(r => r.value?.toLowerCase()).filter(Boolean)
+        : role
+        ? [role.toLowerCase()]
+        : [];
+      console.log('User Roles for filtering:', userRoles);
       let filtered = tasksplants.filter(task => {
-        //if (task.assignedTo !== username) return false;
+        // ✅ If 'ALL' role selected → skip role check and show all tasks
+        if (!isAllRole) {
+          const taskRole = task.assigneeRole?.toLowerCase();
+          if (!taskRole || !userRoles.includes(taskRole)) return false;
+        }
         
         const matchesSearch = !searchTerm ||
         (task.taskName && task.taskName.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -801,6 +813,7 @@ export function TaskDashboard (){
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task & Plant</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 </tr>
