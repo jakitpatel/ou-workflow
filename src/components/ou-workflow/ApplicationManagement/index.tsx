@@ -10,6 +10,7 @@ import FilesList from './FilesList';
 import IngredientMgmt from './Ingredients';
 import QuoteInfo from './QuoteInfo';
 import type { ApplicationDetail } from '@/types/application';
+import { Navigation } from '../Navigation';
 type Props = {
   application: ApplicationDetail;
 };
@@ -186,47 +187,46 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Application Review & Management</h1>
-              <p className="text-gray-600">NCRC Preprocessing Interface</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              {/* Role Switcher for Demo */}
-              {/*<select 
-                value={userRole} 
-                onChange={(e) => setUserRole(e.target.value)}
-                className="px-3 py-1 border rounded text-sm"
+      <Navigation />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center py-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Application Review & Management</h1>
+            <p className="text-gray-600">NCRC Preprocessing Interface</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            {/* Role Switcher for Demo */}
+            {/*<select 
+              value={userRole} 
+              onChange={(e) => setUserRole(e.target.value)}
+              className="px-3 py-1 border rounded text-sm"
+            >
+              <option value="admin">Admin</option>
+              <option value="dispatcher">Dispatcher</option>
+              <option value="rfr">RFR</option>
+              <option value="ncrc">NCRC</option>
+            </select>*/}
+            
+            {/*userRole === 'admin' && (
+              <button
+                onClick={() => setShowAdminView(!showAdminView)}
+                className="flex items-center px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
               >
-                <option value="admin">Admin</option>
-                <option value="dispatcher">Dispatcher</option>
-                <option value="rfr">RFR</option>
-                <option value="ncrc">NCRC</option>
-              </select>*/}
-              
-              {/*userRole === 'admin' && (
-                <button
-                  onClick={() => setShowAdminView(!showAdminView)}
-                  className="flex items-center px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                >
-                  {showAdminView ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
-                  {showAdminView ? 'Hide Admin' : 'Show Admin'}
-                </button>
-              )*/}
-              
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadge(applicationData.status)}`}>
-                {applicationData.status}
-              </span>
-              {/*<button
-                onClick={() => setEditMode(!editMode)}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                {editMode ? 'Save Changes' : 'Edit Mode'}
-              </button>*/}
-            </div>
+                {showAdminView ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
+                {showAdminView ? 'Hide Admin' : 'Show Admin'}
+              </button>
+            )*/}
+            
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadge(applicationData.status)}`}>
+              {applicationData.status}
+            </span>
+            {/*<button
+              onClick={() => setEditMode(!editMode)}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              {editMode ? 'Save Changes' : 'Edit Mode'}
+            </button>*/}
           </div>
         </div>
       </div>
