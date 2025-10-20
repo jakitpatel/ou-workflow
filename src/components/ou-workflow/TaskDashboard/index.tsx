@@ -1,5 +1,5 @@
  import React, { useState,useEffect, useRef,useMemo } from 'react';
- import { CheckCircle, X, CheckSquare } from 'lucide-react';
+ import { CheckCircle, X } from 'lucide-react';
  import { useMutation, useQueryClient } from '@tanstack/react-query';
  import { assignTask, confirmTask, sendMsgTask } from '@/api'; // same api.ts
  import { useUser } from '@/context/UserContext'  // 👈 new import
@@ -161,7 +161,7 @@ export function TaskDashboard (){
         : role
         ? [role.toLowerCase()]
         : [];
-      console.log('User Roles for filtering:', userRoles);
+      //console.log('User Roles for filtering:', userRoles);
       let filtered = tasksplants.filter(task => {
         // ✅ If 'ALL' role selected → skip role check and show all tasks
         if (!isAllRole) {
@@ -186,7 +186,8 @@ export function TaskDashboard (){
         const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
         if (priorityDiff !== 0) return priorityDiff;
         
-        return b.daysActive - a.daysActive;
+        // Ensure daysActive is a number (fallback to 0 when undefined) to avoid TS errors
+        return (b.daysActive ?? 0) - (a.daysActive ?? 0);
       });
     }, [tasksplants, username, searchTerm, statusFilter]);
 
@@ -677,7 +678,7 @@ export function TaskDashboard (){
       const actionCategory = application.TaskCategory?.toLowerCase(); // e.g., "confirmation", "approval", "assignment", "selector", "input"
       if(actionType === "confirm" && actionCategory === "confirmation"){
         console.log("TaskType :"+actionType);
-        executeAction("Confirmed", application);
+        executeAction("Confirmed", application, "no");
       } else if((actionType === "conditional" || actionType === "condition") && actionCategory === "approval"){
         console.log("Conditional Action :"+actionType);
         setShowConditionModal(application);

@@ -1,16 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useUser } from '../context/UserContext'
-import { Navigation } from './../components/ou-workflow/Navigation' // 👈 import your nav
-import { useQuery } from '@tanstack/react-query'
-import { fetchRoles } from './../api';
-import { useEffect } from 'react';
+import { useUser } from '@/context/UserContext'
+import { Navigation } from '@/components/ou-workflow/Navigation' // 👈 import your nav
 
 export const Route = createFileRoute('/profile')({
   component: ProfilePage,
 })
 
 function ProfilePage() {
-  const { username, role, roles, setRole, token, strategy } = useUser()
+  const { username, role, roles, setRole } = useUser()
   
   const API_BUILD = import.meta.env.VITE_API_BUILD;
   const API_LOCAL_URL = import.meta.env.VITE_API_LOCAL_URL;

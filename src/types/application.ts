@@ -106,6 +106,7 @@ export interface ApplicationTask {
   taskInstanceId: number;
   taskName: string;              // e.g., "Send NDA"
   taskType: string;              // e.g., "CONFIRM"
+  daysActive?: number;
 }
 
 export interface ApplicationTasksResponse {
