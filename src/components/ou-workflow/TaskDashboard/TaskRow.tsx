@@ -1,6 +1,6 @@
 import React, { act } from 'react';
-import { getStatusConfig, getPriorityBorderClass, getStageColor, getMessageCount } from './taskHelpers';
-import { History, Wrench, ChevronDown, MessageCircle } from 'lucide-react';
+import { getStatusConfig, getPriorityBorderClass } from './taskHelpers';
+import { History } from 'lucide-react';
 //import { TaskActionsPanel } from './TaskActionsPanel';
 //import { TaskMessagesPanel } from './TaskMessagesPanel';
 

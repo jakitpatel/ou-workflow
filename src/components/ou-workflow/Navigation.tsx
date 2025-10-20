@@ -11,7 +11,7 @@ type Props = {
 }
 
 export function Navigation({ hideMenu }: Props) {
-  const { username, token, strategy, role, setRole, activeScreen, setActiveScreen, logout } = useUser()
+  const { username, role, activeScreen, setActiveScreen, logout } = useUser()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
