@@ -35,7 +35,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   // 👇 useQuery but disabled — only run when we call refetch()
   const { refetch } = useQuery({
     queryKey: ['roles', username],
-    queryFn: () => fetchRoles({ username, token, strategy }),
+    queryFn: () =>
+    fetchRoles({
+      username: username ?? '', // ensure string
+      token: token ?? undefined, // convert null → undefined
+      strategy: strategy ?? undefined, // convert null → undefined
+    }),
     enabled: false, // manual mode
     refetchOnWindowFocus: false,
     retry: (failureCount, error: any) => {

@@ -1,4 +1,4 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { fetchApplicationTasks, fetchRcs } from './../../../api' // adjust import as needed
 import { useUser } from '@/context/UserContext'
 
@@ -7,7 +7,11 @@ export function useTasks(applicationId?: string) {
 
   return useQuery({
     queryKey: ['tasksplants', token, strategy, applicationId ?? 'all'],
-    queryFn: () => fetchApplicationTasks({ token, strategy, applicationId }),
+    queryFn: () => fetchApplicationTasks({ 
+      token: token ?? undefined,     // ✅ null → undefined
+      strategy: strategy ?? undefined, // ✅ null → undefined
+      applicationId 
+    }),
     enabled: strategy === 'none' || !!token, // ✅ always fetch if user is authorized
   });
 }
@@ -22,7 +26,11 @@ export function useRCList(
 
   return useQuery({
     queryKey: ["rc-list", roleType], // cache separate by role
-    queryFn: () => fetchRcs({ token, strategy, selectRoleType: roleType }),
+    queryFn: () => fetchRcs({ 
+      token: token ?? undefined,     // ✅ null → undefined
+      strategy: strategy ?? undefined, // ✅ null → undefined
+      selectRoleType: roleType 
+    }),
     enabled,
     staleTime: Infinity,
     cacheTime: Infinity,

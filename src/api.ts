@@ -17,7 +17,7 @@ type FetchWithAuthOptions = {
   method?: string;
   body?: any;
   strategy?: string;
-  token?: string;
+  token?: string | null;
   headers?: Record<string, string>;
 };
 // Fetch with Auth wrapper (improved)
@@ -75,7 +75,7 @@ export async function fetchApplicants({
 }: {
   page?: number;
   limit?: number;
-  token?: string;
+  token?: string | null;
   strategy?: string;
 } = {}): Promise<Applicant[]> {
   let path: string;
@@ -109,7 +109,7 @@ export async function fetchRoles({
   username: string;
   page?: number;
   limit?: number;
-  token?: string;
+  token?: string | null;
   strategy?: string;
 }): Promise<any[]> {
   const params = new URLSearchParams({
@@ -147,7 +147,7 @@ export async function fetchRcs({
 }: {
   page?: number;
   limit?: number;
-  token?: string;
+  token?: string | null;
   strategy?: string;
   selectRoleType?: string;
 } = {}): Promise<any[]> {
@@ -251,7 +251,7 @@ export async function sendMsgTask({
 // simple wrapper - adjust URL if you host JSON differently
 export async function fetchApplicationDetailRaw(
   applicationId?: string,
-  token?: string,
+  token?: string | null,
   strategy?: string
 ) {
   if (!applicationId) throw new Error('applicationId is required');
@@ -303,15 +303,15 @@ export async function loginApi({
   return response.json() // expect { username, role, token }
 }
 export async function fetchApplicationTasks({
-  page = 0,
-  limit = 20,
+  //page = 0,
+  //limit = 20,
   token,
   strategy,
   applicationId,
 }: {
-  page?: number;
-  limit?: number;
-  token?: string;
+  //page?: number;
+  //limit?: number;
+  token?: string | null;
   strategy?: string;
   applicationId?: string;
 } = {}): Promise<ApplicationTask[]> {
