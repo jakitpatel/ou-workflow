@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import type { LoginStrategy } from '@/types/auth'
 import { useQuery } from '@tanstack/react-query'
 import { fetchRoles } from '@/api'
+//import { useRouter } from '@tanstack/react-router'
 
 type UserContextType = {
   username: string | null
@@ -29,6 +30,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [strategy, setStrategy] = useState<LoginStrategy | null>(null)
   const [loginTime, setLoginTime] = useState<number | null>(null)
   const [activeScreen, setActiveScreen] = useState<'ncrc-dashboard' | 'tasks-dashboard' | null>('ncrc-dashboard')
+  //const router = useRouter();
 
   // 👇 useQuery but disabled — only run when we call refetch()
   const { refetch } = useQuery({
@@ -36,6 +38,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
     queryFn: () => fetchRoles({ username, token, strategy }),
     enabled: false, // manual mode
     refetchOnWindowFocus: false,
+    retry: (failureCount, error: any) => {
+      if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) {
+        return false; // don’t retry client errors
+      }
+      return failureCount < 2; // retry up to 2 times for server/network issues
+    }
   })
 
   // 🔹 Fetch roles manually after login (when username changes)
@@ -43,11 +51,39 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (username) {
       console.log("🔄 Preparing to fetch roles for:", username)
       refetch().then((result) => {
+        // 🔸 Handle errors first
+        if (result.error) {
+          const err: any = result.error;
+          const msg =
+            err.details?.msg ||
+            err.details?.message ||
+            err.message ||
+            "Unknown error";
+
+          console.error("❌ Role fetch failed:", msg, err);
+
+          // 🔐 Detect invalid/expired token conditions
+          if (
+            msg.includes("Signature verification failed") ||
+            msg.includes("invalid token") ||
+            err.status === 401 ||
+            err.status === 422
+          ) {
+            console.warn("🚫 Invalid token detected — logging out user.");
+            // Show alert to the user
+            window.alert("Your session has expired or is invalid. Please log in again.")
+            logout();
+            //router.navigate({ to: '/login', replace: true });
+            window.location.href = "/login"; // or navigate("/login") if using TanStack Router
+            return;
+          }
+        }
         if (result.data) {
           console.log("✅ Refetch returned data:", result.data)
           setRoles(result.data)
 
-          const defaultRole = role || result.data[0]?.value || null
+          //const defaultRole = role || result.data[0]?.value || null
+          const defaultRole = role || 'ALL';
           setRole(defaultRole)
 
           localStorage.setItem(
