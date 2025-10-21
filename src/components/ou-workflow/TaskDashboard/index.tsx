@@ -26,7 +26,6 @@ export function TaskDashboard (){
     const [showTaskAssignment, setShowTaskAssignment] = useState({});
     const [taskAssignmentData, setTaskAssignmentData] = useState({});
     const [showPlantHistory, setShowPlantHistory] = useState(null);
-    const [recentReassignments, setRecentReassignments] = useState([]);
     const [completionFeedback, setCompletionFeedback] = useState([]);
     const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
@@ -71,61 +70,6 @@ export function TaskDashboard (){
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }, []);
-
-    /*const stageOrder = [
-      { key: 'initial', name: 'Initial' },
-      { key: 'nda', name: 'NDA' },
-      { key: 'inspection', name: 'Inspection' },
-      { key: 'ingredients', name: 'Ingredients' },
-      { key: 'products', name: 'Products' },
-      { key: 'contract', name: 'Contract' },
-      { key: 'certification', name: 'Certification' }
-    ]*/
-    // Usage: getAllTasks(app)                      -> old behavior, tasks only
-//        getAllTasks(app, { includeStage: true }) -> tasks with `.stage` added
-    /*const getAllTasks = (app, options = { includeStage: false }) => {
-      if (!app?.stages) return [];
-
-      const includeStage = !!options.includeStage;
-
-      // Build a case-insensitive map of stages: lowercased key -> { key, stageObj }
-      const stageKeyMap = Object.keys(app.stages).reduce((acc, realKey) => {
-        acc[realKey.toLowerCase()] = { key: realKey, stage: app.stages[realKey] };
-        return acc;
-      }, {});
-
-      // If stageOrder exists and is an array, use it to control ordering
-      if (Array.isArray(stageOrder) && stageOrder.length > 0) {
-        return stageOrder.flatMap(entry => {
-          // accept entry as either string or object { key, name }
-          const desiredName = typeof entry === 'string' ? entry : (entry.name ?? entry.key ?? '');
-          if (!desiredName) return [];
-
-          const lookup = desiredName.toLowerCase();
-          const found = stageKeyMap[lookup];
-
-          // If not found by name, also try 'key' field from entry (useful if stageOrder uses different naming)
-          let stageObj = found ? found.stage : null;
-          let realStageName = found ? found.key : null;
-          if (!stageObj && typeof entry === 'object' && entry.key) {
-            const alt = stageKeyMap[(entry.key + '').toLowerCase()];
-            if (alt) {
-              stageObj = alt.stage;
-              realStageName = alt.key;
-            }
-          }
-
-          if (!stageObj) return []; // skip missing stage
-
-          const tasks = stageObj.tasks || [];
-          if (!includeStage) return tasks;
-          return tasks.map(t => ({ ...t, stage: realStageName || desiredName }));
-        });
-      }
-
-      // Fallback: preserve original behaviour (insertion order of app.stages)
-      return Object.values(app.stages).flatMap(stage => stage.tasks || []);
-    };*/
 
     const taskStats = useMemo(() => {
       const allTasks = tasksplants;
@@ -190,83 +134,6 @@ export function TaskDashboard (){
         return (b.daysActive ?? 0) - (a.daysActive ?? 0);
       });
     }, [tasksplants, username, searchTerm, statusFilter]);
-
-   /*const mapTaskToAction = (taskitem, application) => {
-      let color, icon, disabled = false;
-
-      // Normalize status
-      const status = taskitem.status?.toLowerCase();
-
-      // Always normalize taskRole into array
-      // Normalize taskRoles into array of strings
-      const taskRoles = Array.isArray(taskitem.taskRoles)
-        ? taskitem.taskRoles.map(r => r.taskRole).filter(Boolean)
-        : taskitem.taskRole
-          ? [taskitem.taskRole]
-          : [];
-
-      if (status === 'complete' || status === 'done' || status === 'completed') {
-        // Completed task → show as done
-        color = 'bg-green-400';
-        icon = CheckSquare;
-        disabled = true;
-
-      } else if (taskRoles.length > 0 && !taskRoles.includes(role)) {
-        // Task roles exist but don't include current user's role → disabled
-        color = 'bg-gray-300 cursor-not-allowed';
-        disabled = true;
-
-      } else if (taskRoles.includes(role)) {
-        console.log('taskitem:', taskitem, 'application:', application);
-
-        // Role matches → check assignment
-        const roles = Array.isArray(application?.assignedRoles) ? application.assignedRoles : [];
-
-        const isAssigned = roles.some((ar: any) => ar[role] === username);
-        console.log('isAssigned:', isAssigned);
-
-        if (isAssigned && status==='pending') {
-          // Active & assigned to current user → allowed
-          color = 'bg-blue-600 hover:bg-blue-700';
-        } else {
-          // Not assigned or inactive
-          color = 'bg-gray-300 cursor-not-allowed';
-          disabled = true;
-        }
-      } else {
-        // No roles defined at all → disabled
-        color = 'bg-gray-300 cursor-not-allowed';
-        disabled = true;
-      }
-      const taskTypeval = taskitem.taskType
-      ? taskitem.taskType.toLowerCase()
-      : "unknown";
-      const taskCategoryval = taskitem.taskCategory
-      ? taskitem.taskCategory.toLowerCase()
-      : "unknown";
-      return {
-        TaskInstanceId: `${taskitem.TaskInstanceId}`,
-        name: taskitem.name,
-        status: taskitem.status,
-        required: taskitem.required,
-        assignee: taskitem.assignee,
-        taskType: taskTypeval,
-        taskCategory: taskCategoryval,
-        color,
-        icon,
-        disabled,
-      };
-    };*/
-
-    // main: get actions for an application
-    /*const getTaskActions = (app) => {
-      const baseActions = [];
-
-      const allTasks = getAllTasks(app);
-      const taskActions = allTasks.map(task => mapTaskToAction(task, app));
-      // return flat list of tasks + base actions
-      return [...taskActions, ...baseActions];
-    };*/
 
     // Event handlers
     const handleActionsExpand = (taskId) => {
@@ -365,45 +232,6 @@ export function TaskDashboard (){
       }, 50);
     };
 
-    const handleReassignTask = (taskId, newAssignee) => {
-      const task = allTasks.find(t => t.id === taskId);
-      if (!task) return;
-
-      const reassignment = {
-        id: Date.now(),
-        taskId,
-        taskTitle: task.title,
-        fromUser: task.assignedTo,
-        toUser: newAssignee,
-        timestamp: new Date(),
-        dismissed: false
-      };
-
-      setRecentReassignments(prev => [reassignment, ...prev.slice(0, 4)]);
-
-      setTimeout(() => {
-        setRecentReassignments(prev => prev.filter(r => r.id !== reassignment.id));
-      }, 10000);
-
-      setAllTasks(prev => prev.map(t => 
-        t.id === taskId 
-          ? { 
-              ...t, 
-              assignedTo: newAssignee,
-              isReassigned: true,
-              originalAssignee: task.assignedTo
-            }
-          : t
-      ));
-
-      setShowReassignDropdown(prev => ({ ...prev, [taskId]: false }));
-      setExpandedActions(prev => {
-        const newExpanded = new Set(prev);
-        newExpanded.delete(taskId);
-        return newExpanded;
-      });
-    };
-
     const handleUndoCompletion = (taskId) => {
       setAllTasks(prev => prev.map(t => 
         t.id === taskId 
@@ -416,28 +244,6 @@ export function TaskDashboard (){
 
     const handleDismissCompletionFeedback = (feedbackId) => {
       setCompletionFeedback(prev => prev.filter(f => f.id !== feedbackId));
-    };
-
-    const handleUndoReassignment = (reassignmentId) => {
-      const reassignment = recentReassignments.find(r => r.id === reassignmentId);
-      if (!reassignment) return;
-
-      setAllTasks(prev => prev.map(t => 
-        t.id === reassignment.taskId 
-          ? { 
-              ...t, 
-              assignedTo: reassignment.fromUser,
-              isReassigned: false,
-              originalAssignee: null
-            }
-          : t
-      ));
-
-      setRecentReassignments(prev => prev.filter(r => r.id !== reassignmentId));
-    };
-
-    const handleDismissReassignment = (reassignmentId) => {
-      setRecentReassignments(prev => prev.filter(r => r.id !== reassignmentId));
     };
 
     const handleShowPlantHistory = (plantName: string) => {
@@ -770,43 +576,6 @@ export function TaskDashboard (){
             )}
           </div>
 
-          {/* Reassignment Notifications */}
-          <div className="mt-2">
-            {recentReassignments.length > 0 && (
-              <div className="space-y-2 mb-4">
-                {recentReassignments.map(reassignment => (
-                  <div key={reassignment.id} className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
-                    <div className="flex items-center">
-                      <RotateCcw className="w-5 h-5 text-blue-600 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-blue-900">
-                          Task reassigned: {reassignment.taskTitle}
-                        </p>
-                        <p className="text-xs text-blue-700">
-                          From {reassignment.fromUser} to {reassignment.toUser} • {reassignment.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleUndoReassignment(reassignment.id)}
-                        className="text-xs text-blue-700 hover:text-blue-900 underline"
-                      >
-                        Undo
-                      </button>
-                      <button
-                        onClick={() => handleDismissReassignment(reassignment.id)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Tasks Table */}
           <div className="bg-white rounded-lg shadow-sm border overflow-hidden mt-6">
             <table className="min-w-full">
@@ -831,7 +600,6 @@ export function TaskDashboard (){
                     setShowReassignDropdown={setShowReassignDropdown}
                     //getTaskActions={getTaskActions}
                     handleApplicationTaskAction={handleApplicationTaskAction}
-                    handleReassignTask={handleReassignTask}
                     expandedMessages={expandedMessages}
                     handleShowPlantHistory={handleShowPlantHistory}
                     handleActionsExpand={handleActionsExpand}

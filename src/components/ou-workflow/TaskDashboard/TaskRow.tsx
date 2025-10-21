@@ -1,4 +1,4 @@
-import React, { act } from 'react';
+import React from 'react';
 import { getStatusConfig, getPriorityBorderClass } from './taskHelpers';
 import { History } from 'lucide-react';
 //import { TaskActionsPanel } from './TaskActionsPanel';
@@ -7,11 +7,7 @@ import { History } from 'lucide-react';
 export function TaskRow({
   application,
   plantInfo,
-  expandedActions,
-  expandedMessages,
   handleShowPlantHistory,
-  handleActionsExpand,
-  handleMessagesExpand,
   handleApplicationTaskAction,
   //...props
 }) {
