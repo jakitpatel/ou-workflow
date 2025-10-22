@@ -105,6 +105,7 @@ export interface ApplicationDetail {
 export interface ApplicationTask {
   TaskCategory: string;          // e.g., "CONFIRMATION"
   applicationId: number;
+  id: number;
   assignee: string;              // e.g., "admin"
   assigneeRole: string;          // e.g., "LEGAL", "RFR", "PROD"
   companyId: number;

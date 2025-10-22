@@ -1,11 +1,11 @@
-import React, { useState,useMemo, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
 import { Search } from 'lucide-react';
 import { IngredientsManagerPage } from './IngredientsManagerPage';
-import { useUser } from './../../../context/UserContext'  // 👈 new import
+import { useUser } from '@/context/UserContext'  // 👈 new import
 import { useApplications } from './../hooks/useApplications';
 import { assignTask, confirmTask } from '@/api'; // same api.ts
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
@@ -117,41 +117,41 @@ export function NCRCDashboard({
         if (taskType === "confirm" && taskCategory === "confirmation") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
-            token,
-            strategy,
-            username
+            token: token ?? undefined,     // ✅ null → undefined
+            strategy: strategy ?? undefined, // ✅ null → undefined
+            username: username ?? undefined,
           });
         } else if ((taskType === "conditional" || taskType === "condition") && taskCategory === "approval") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
             result: result,
-            token,
-            strategy,
-            username
+            token: token ?? undefined,     // ✅ null → undefined
+            strategy: strategy ?? undefined, // ✅ null → undefined
+            username: username ?? undefined,
           });
         } else if (taskType === "action" && taskCategory === "selector") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
             result: result,
-            token,
-            strategy,
-            username
+            token: token ?? undefined,     // ✅ null → undefined
+            strategy: strategy ?? undefined, // ✅ null → undefined
+            username: username ?? undefined,
           });
         } else if (taskType === "action" && taskCategory === "input") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
             result: result,
-            token,
-            strategy,
-            username
+            token: token ?? undefined,     // ✅ null → undefined
+            strategy: strategy ?? undefined, // ✅ null → undefined
+            username: username ?? undefined,
           });
         } else if (taskType === "action" && taskCategory === "scheduling") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
             result: result,
-            token,
-            strategy,
-            username
+            token: token ?? undefined,     // ✅ null → undefined
+            strategy: strategy ?? undefined, // ✅ null → undefined
+            username: username ?? undefined,
           });
         } else if (taskType === "action" && taskCategory === "assignment") {
           const taskId = action.TaskInstanceId;
@@ -174,8 +174,8 @@ export function NCRCDashboard({
             taskId,
             role,
             assignee,
-            token,
-            strategy,
+            token: token ?? undefined,     // ✅ null → undefined
+            strategy: strategy ?? undefined, // ✅ null → undefined
           });
         }
       //}
@@ -230,7 +230,7 @@ export function NCRCDashboard({
       const actionCategory = action.taskCategory?.toLowerCase(); // e.g., "confirmation", "approval", "assignment", "selector", "input"
       if(actionType === "confirm" && actionCategory === "confirmation"){
         console.log("TaskType :"+actionType);
-        executeAction("Confirmed", action);
+        executeAction("Confirmed", action, "yes");
       } else if((actionType === "conditional" || actionType === "condition") && actionCategory === "approval"){
         console.log("Conditional Action :"+actionType);
         setShowConditionModal(action);

@@ -33,7 +33,7 @@ export function useRCList(
     }),
     enabled,
     staleTime: Infinity,
-    cacheTime: Infinity,
+    gcTime: Infinity, // ✅ replaced cacheTime
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchOnMount: false,

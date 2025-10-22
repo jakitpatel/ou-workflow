@@ -199,11 +199,11 @@ export async function assignTask({
   token,
   strategy,
 }: {
-  appId: string;
+  appId?: number | null;
   taskId: string;
   role: string;
   assignee: string;
-  token?: string;
+  token?: string | null;
   strategy?: string;
 }) {
   const json = await fetchWithAuth({
@@ -228,7 +228,7 @@ export async function confirmTask({
 }: {
   taskId: string;
   result?: "yes" | "no";
-  token?: string;
+  token?: string | null;
   strategy?: string;
   username?: string;
 }) {
@@ -254,7 +254,7 @@ export async function sendMsgTask({
   strategy,
 }: {
   newMessage: any;
-  token?: string;
+  token?: string | null;
   strategy?: string;
 }) {
   const json = await fetchWithAuth({

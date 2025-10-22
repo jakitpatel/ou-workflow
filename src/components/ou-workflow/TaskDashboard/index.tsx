@@ -1,5 +1,4 @@
  import React, { useState,useEffect, useRef,useMemo } from 'react';
- import { CheckCircle, X } from 'lucide-react';
  import { useMutation, useQueryClient } from '@tanstack/react-query';
  import { assignTask, confirmTask, sendMsgTask } from '@/api'; // same api.ts
  import { useUser } from '@/context/UserContext'  // 👈 new import
@@ -12,7 +11,7 @@
  import { formatNowForApi } from './taskHelpers';
 
 import { plantHistory } from './demoData';
-import { useTasks } from './../hooks/useTaskDashboardHooks';
+import { useTasks } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 import { useTaskContext } from '@/context/TaskContext';
 
@@ -26,7 +25,6 @@ export function TaskDashboard (){
     const [showTaskAssignment, setShowTaskAssignment] = useState({});
     const [taskAssignmentData, setTaskAssignmentData] = useState({});
     const [showPlantHistory, setShowPlantHistory] = useState(null);
-    const [completionFeedback, setCompletionFeedback] = useState([]);
     const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
     const { username, role, roles, setActiveScreen, token, strategy } = useUser() // 👈 use context
@@ -232,20 +230,6 @@ export function TaskDashboard (){
       }, 50);
     };
 
-    const handleUndoCompletion = (taskId) => {
-      setAllTasks(prev => prev.map(t => 
-        t.id === taskId 
-          ? { ...t, status: t.daysActive > 3 ? 'overdue' : 'in_progress', completedAt: null }
-          : t
-      ));
-      
-      setCompletionFeedback(prev => prev.filter(f => f.taskId !== taskId));
-    };
-
-    const handleDismissCompletionFeedback = (feedbackId) => {
-      setCompletionFeedback(prev => prev.filter(f => f.id !== feedbackId));
-    };
-
     const handleShowPlantHistory = (plantName: string) => {
       setShowPlantHistory(plantName);
     };
@@ -378,41 +362,41 @@ export function TaskDashboard (){
         if (taskType === "confirm" && taskCategory === "confirmation") {
           confirmTaskMutation.mutate({
             taskId: taskId,
-            token,
-            strategy,
-            username
+            token: token ?? undefined,     // ✅ null → undefined
+            strategy: strategy ?? undefined, // ✅ null → undefined
+            username: username ?? undefined, // ✅ null → undefined
           });
         } else if ((taskType === "conditional" || taskType === "condition") && taskCategory === "approval") {
           confirmTaskMutation.mutate({
             taskId: taskId,
             result: result,
-            token,
-            strategy,
-            username
+            token: token ?? undefined,     // ✅ null → undefined
+            strategy: strategy ?? undefined, // ✅ null → undefined
+            username: username ?? undefined, // ✅ null → undefined
           });
         } else if (taskType === "action" && taskCategory === "selector") {
           confirmTaskMutation.mutate({
             taskId: taskId,
             result: result,
-            token,
-            strategy,
-            username
+            token: token ?? undefined,     // ✅ null → undefined
+            strategy: strategy ?? undefined, // ✅ null → undefined
+            username: username ?? undefined, // ✅ null → undefined
           });
         } else if (taskType === "action" && taskCategory === "input") {
           confirmTaskMutation.mutate({
             taskId: taskId,
             result: result,
-            token,
-            strategy,
-            username
+            token: token ?? undefined,     // ✅ null → undefined
+            strategy: strategy ?? undefined, // ✅ null → undefined
+            username: username ?? undefined, // ✅ null → undefined
           });
         }  else if (taskType === "action" && taskCategory === "scheduling") {
           confirmTaskMutation.mutate({
             taskId: taskId,
             result: result,
-            token,
-            strategy,
-            username
+            token: token ?? undefined,     // ✅ null → undefined
+            strategy: strategy ?? undefined, // ✅ null → undefined
+            username: username ?? undefined, // ✅ null → undefined
           });
         } else if (taskType === "action" && taskCategory === "assignment") {
           const appId = selectedAction?.application?.id ?? selectedAction?.application?.applicationId ?? null;
@@ -433,8 +417,8 @@ export function TaskDashboard (){
             taskId,
             role,
             assignee,
-            token,
-            strategy,
+            token: token ?? undefined,
+            strategy: strategy ?? undefined,
           });
         }
       //}
@@ -538,43 +522,6 @@ export function TaskDashboard (){
           {/* List */}
           {isLoading && <div className="text-gray-500">Loading Tasks & Plants...</div>}
           {isError && <div className="text-red-600">Error: {(error as Error).message}</div>}
-
-          {/* Completion Feedback */}
-          <div className="mt-6">
-            {completionFeedback.length > 0 && (
-              <div className="space-y-2 mb-4">
-                {completionFeedback.map(feedback => (
-                  <div key={feedback.id} className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
-                    <div className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-green-600 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-green-900">
-                          Task completed: {feedback.taskTitle}
-                        </p>
-                        <p className="text-xs text-green-700">
-                          {feedback.taskPlant} • {feedback.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleUndoCompletion(feedback.taskId)}
-                        className="text-xs text-green-700 hover:text-green-900 underline"
-                      >
-                        Undo
-                      </button>
-                      <button
-                        onClick={() => handleDismissCompletionFeedback(feedback.id)}
-                        className="text-green-600 hover:text-green-800"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* Tasks Table */}
           <div className="bg-white rounded-lg shadow-sm border overflow-hidden mt-6">
