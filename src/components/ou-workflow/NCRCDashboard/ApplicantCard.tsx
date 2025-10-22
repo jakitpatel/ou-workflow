@@ -127,7 +127,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
                 <span className="text-xs font-medium text-blue-800">Smart Actions</span>
               </div>
               <ul className="text-xs text-gray-700 space-y-1">
-                {applicant.aiSuggestions.todoItems.slice(0, 2).map((item, index) => (
+                {applicant?.aiSuggestions?.todoItems.slice(0, 2).map((item, index) => (
                   <li key={index} className="flex items-start">
                     <span className="w-1 h-1 bg-blue-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                     {item}
@@ -141,7 +141,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
                 <AlertTriangle className="w-3 h-3 text-orange-600 mr-1" />
                 <span className="text-xs font-medium text-orange-800">Critical Path</span>
               </div>
-              <p className="text-xs text-gray-700">{applicant.aiSuggestions.criticalPath}</p>
+              <p className="text-xs text-gray-700">{applicant?.aiSuggestions?.criticalPath}</p>
             </div>
           </div>
         </div>
@@ -187,7 +187,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
       <div className="flex items-center space-x-4 pt-2 border-t border-gray-50">
         <span className="text-xs text-gray-500 font-medium">Pre-NCRC Documentation:</span>
         {/* Application Details */}
-        {filesByType.APP && (
+        {filesByType?.APP && (
           <a
             href={filesByType.APP.filePath}
             target="_blank"
@@ -202,7 +202,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
         )}
 
         {/* Ingredients List */}
-        {filesByType.ING && (
+        {filesByType?.ING && (
           <a
             href={filesByType.ING.filePath}
             target="_blank"
@@ -217,7 +217,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
         )}
 
         {/* Product Details */}
-        {filesByType.PROD && (
+        {filesByType?.PROD && (
           <a
             href={filesByType.PROD.filePath}
             target="_blank"

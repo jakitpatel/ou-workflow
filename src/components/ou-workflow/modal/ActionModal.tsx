@@ -4,12 +4,13 @@ import { useRCList } from "@/components/ou-workflow/hooks/useTaskDashboardHooks"
 
 type Application = {
   company: string;
+  companyName?: string;
   assignee: string;
 };
 
 type SelectedAction = {
   application: Application;
-  action: { id: string; name?: string };
+  action: { id: string; name?: string; taskName?: string};
 };
 
 type Props = {

@@ -5,7 +5,6 @@ import { useUser } from '@/context/UserContext';
 
 type Props = {
   applicant: Applicant
-  showDetails?: boolean
   handleTaskAction?: (
     e: React.MouseEvent,
     task: Task,
@@ -16,7 +15,6 @@ type Props = {
 
 export function ApplicantProgressBar({
   applicant,
-  showDetails = false,
   handleTaskAction
 }: Props) {
   const [expandedStage, setExpandedStage] = useState<string | null>(null)

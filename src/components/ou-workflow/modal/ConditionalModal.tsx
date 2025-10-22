@@ -3,12 +3,13 @@ import { X } from "lucide-react";
 
 type Application = {
   company: string;
+  companyName?: string;
   assignee: string;
 };
 
 type SelectedAction = {
   application: Application;
-  action: { id: string; name: string; taskType?: string; taskCategory?: string };
+  action: { id: string; name: string; taskType?: string; taskCategory?: string; taskName?: string; TaskCategory?: string };
 };
 
 type Props = {
