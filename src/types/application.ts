@@ -67,9 +67,22 @@ export interface Company {
 
 export interface Contact { type:string; name:string; phone?:string; email?:string; title?:string; designated?:boolean }
 
-export interface Plant { id:number; plantId:string; name:string; address:any; contact:any; manufacturing:any; otherProducts?:boolean; otherProductsList?:string }
+export interface Plant { id:number; plantId:string; name:string; address:any; contact:any; manufacturing:any; otherProducts?:boolean; otherProductsList?:string, otherPlantsProducing?:boolean, otherPlantsLocation?:string }
 
 export interface UploadedFile { name:string; type:string; size:string; uploaded:string; tag?:string; processed?:boolean; recordCount?:number }
+
+export interface QuoteItem {
+  description: string;
+  amount: string;
+}
+
+export interface QuoteData {
+  quoteNumber: string;
+  amount: string;
+  validUntil: string;
+  status: 'pending_acceptance' | 'accepted' | 'rejected' | 'expired' | string;
+  items: QuoteItem[];
+}
 
 export interface ApplicationDetail {
   applicationId: string;
@@ -85,6 +98,7 @@ export interface ApplicationDetail {
   preferences?: any;
   uploadedFiles?: UploadedFile[];
   ingredients?: any[];
+  quoteData?: QuoteData; // <-- added here
   // ...extend as needed
 }
 

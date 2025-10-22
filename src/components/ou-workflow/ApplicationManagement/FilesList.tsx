@@ -7,8 +7,11 @@ export default function FilesList({ application, uploadedFiles }: { application:
 
   const downloadFile = async (fileName: string) => {
     try {
-      const fileContent = await window.fs.readFile(fileName);
-      const blob = new Blob([fileContent]);
+      const response = await fetch(`/files/${fileName}`); // adjust path
+      if (!response.ok) throw new Error('File not found');
+      //const fileContent = await window.fs.readFile(fileName);
+      const blob = await response.blob();
+      //const blob = new Blob([fileContent]);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

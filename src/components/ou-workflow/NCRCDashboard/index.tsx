@@ -1,4 +1,4 @@
-import React, { useState,useMemo, useRef } from 'react';
+import React, { useState,useMemo, useRef, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
@@ -36,17 +36,22 @@ export function NCRCDashboard({
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [showActionModal, setShowActionModal] = useState(null);
   const [showConditionModal, setShowConditionModal] = useState(null);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   const queryClient = useQueryClient();
   const errorDialogRef = useRef<ErrorDialogRef>(null);
 
-  const {
-    data: applicants = [],
-    isLoading,
-    isError,
-    error,
-  } = useApplications();
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedSearchTerm(searchTerm), 1000);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+  
+  const { data: applicants = [], isLoading, isError, error } = useApplications({
+    searchTerm: debouncedSearchTerm,
+    statusFilter,
+    priorityFilter,
+  });
 
-  const filteredApplicants = useMemo(() => {
+  /*const filteredApplicants = useMemo(() => {
     return (Array.isArray(applicants) ? applicants : []).filter((app) => {
       const matchesSearch =
         app.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,7 +64,7 @@ export function NCRCDashboard({
       return matchesSearch && matchesStatus && matchesPriority;
     });
   }, [searchTerm, statusFilter, priorityFilter, applicants]);
-
+  */
   // ✅ Return conditionally AFTER all hooks
   if (showIngredientsManager && selectedIngredientApp) {
     return (
@@ -297,13 +302,13 @@ export function NCRCDashboard({
       {/* Results Summary */}
       <div className="mb-4 flex items-center justify-between">
         <p className="text-gray-600">
-          Showing {filteredApplicants.length} of {applicants.length} applications
+          Showing {applicants.length} of {applicants.length} applications
         </p>
       </div>
 
       <div className="space-y-4">
-        {filteredApplicants.length > 0 ? (
-          filteredApplicants.map((applicant) => (
+        {applicants.length > 0 ? (
+          applicants.map((applicant) => (
             <ApplicantCard
               key={applicant.id}
               applicant={applicant}

@@ -392,7 +392,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
 
           {/* Main Content Area */}
           <div className="flex-1">
-            {activeTab === "overview" && <Overview application={applicationData} allValidationsPassed={allValidationsPassed} />}
+            {activeTab === "overview" && <Overview application={applicationData} allValidationsPassed={allValidationsPassed()} />}
 
             {activeTab === 'company' && <CompanySection application={applicationData} editMode={editMode} />}
 

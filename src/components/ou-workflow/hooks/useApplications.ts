@@ -1,22 +1,32 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchApplicants } from './../../../api' // adjust import as needed
+import { fetchApplicants } from '@/api' // adjust import as needed
 import { useUser } from '@/context/UserContext';
 
-export function useApplications() {
+export function useApplications({
+  searchTerm,
+  statusFilter,
+  priorityFilter,
+}: {
+  searchTerm?: string;
+  statusFilter?: string;
+  priorityFilter?: string;
+}) {
   const { token, strategy } = useUser();
 
   return useQuery({
-  queryKey: ['applications', token, strategy],
-  queryFn: () => fetchApplicants({ 
-    token: token ?? undefined,     // ✅ null → undefined
-    strategy: strategy ?? undefined, // ✅ null → undefined
-  }),
-  enabled: strategy === 'none' || !!token,
-  retry: (failureCount, error: any) => {
-    if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) {
-      return false; // don’t retry client errors
-    }
-    return failureCount < 2; // retry up to 2 times for server/network issues
-  },
-});
+    queryKey: ['applications', { token, strategy, searchTerm, statusFilter, priorityFilter }],
+    queryFn: () =>
+      fetchApplicants({
+        token: token ?? undefined,
+        strategy: strategy ?? undefined,
+        searchTerm,
+        statusFilter,
+        priorityFilter,
+      }),
+    enabled: strategy === 'none' || !!token,
+    retry: (failureCount, error: any) => {
+      if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) return false;
+      return failureCount < 2;
+    },
+  });
 }

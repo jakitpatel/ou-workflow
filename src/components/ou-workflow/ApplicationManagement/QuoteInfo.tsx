@@ -1,8 +1,13 @@
-import type { ApplicationDetail } from "@/types/application";
+import type { ApplicationDetail, QuoteData } from "@/types/application";
+import type { Dispatch, SetStateAction } from "react";
 import { AlertTriangle, Check } from "lucide-react";
+type ValidationCheck = { valid: boolean; message: string };
+type ValidationChecks = { quote?: ValidationCheck; [key: string]: ValidationCheck | undefined };
 
-export default function QuoteInfo({ application, quoteData, setValidationChecks }: { application: ApplicationDetail, quoteData: any, setValidationChecks: any }) {
+export default function QuoteInfo({ application, quoteData, setValidationChecks }: { application: ApplicationDetail, quoteData: QuoteData, setValidationChecks: Dispatch<SetStateAction<ValidationChecks>> }) {
   //const quoteData = application.quote || {};
+  console.log("Application Data:", application);
+  console.log("Application Data:", application);
   return (
     <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-6">Quote Information</h2>

@@ -72,16 +72,37 @@ export async function fetchApplicants({
   limit = 20,
   token,
   strategy,
+  searchTerm,
+  statusFilter,
+  priorityFilter,
 }: {
   page?: number;
   limit?: number;
   token?: string | null;
   strategy?: string;
+  searchTerm?: string;
+  statusFilter?: string;
+  priorityFilter?: string;
 } = {}): Promise<Applicant[]> {
-  let path: string;
+  const params = new URLSearchParams();
 
-  // Build API path
-  path = `/get_applications?page[limit]=${limit}&page[offset]=${page}`;
+  // Pagination
+  params.append('page[limit]', String(limit));
+  params.append('page[offset]', String(page));
+
+  // Filters (only append if defined and not empty)
+  if (searchTerm && searchTerm.trim() !== '') {
+    params.append('filter[company]', searchTerm.trim());
+  }
+  if (statusFilter && statusFilter !== 'all') {
+    params.append('filter[status]', statusFilter);
+  }
+  if (priorityFilter && priorityFilter !== 'all') {
+    params.append('filter[priority]', priorityFilter);
+  }
+
+  // Construct full URL
+  const path = `/get_applications?${params.toString()}`;
   
   // Use fetchWithAuth wrapper
   const json = (await fetchWithAuth({
@@ -249,11 +270,15 @@ export async function sendMsgTask({
 }
 
 // simple wrapper - adjust URL if you host JSON differently
-export async function fetchApplicationDetailRaw(
+export async function fetchApplicationDetailRaw({
+  applicationId,
+  token,
+  strategy,
+}: {
   applicationId?: string,
-  token?: string | null,
-  strategy?: string
-) {
+  token?: string | null;
+  strategy?: string;
+} = {}): Promise<any> {
   if (!applicationId) throw new Error('applicationId is required');
 
   let path: string;

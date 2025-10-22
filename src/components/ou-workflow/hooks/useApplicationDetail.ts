@@ -7,7 +7,11 @@ export const useApplicationDetail = (applicationId?: string) => {
 
   return useQuery({
     queryKey: ['application', applicationId, token, strategy], // cache per user/session
-    queryFn: () => fetchApplicationDetailRaw(applicationId, token, strategy),
+    queryFn: () => fetchApplicationDetailRaw({ 
+      applicationId,
+      token: token ?? undefined,     // ✅ null → undefined
+      strategy: strategy ?? undefined, // ✅ null → undefined
+    }),
     staleTime: 1000 * 60 * 2,
     refetchOnWindowFocus: false,
     enabled: !!applicationId && (strategy === 'none' || !!token), // fetch only if appId exists

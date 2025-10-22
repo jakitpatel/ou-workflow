@@ -69,8 +69,8 @@ export default function Overview({ application, allValidationsPassed }: { applic
                 </div>
                 <div className="flex items-center justify-between">
                 <span>Validation Status:</span>
-                <span className={`font-medium ${allValidationsPassed() ? 'text-green-600' : 'text-red-600'}`}>
-                    {allValidationsPassed() ? 'All Passed' : 'Issues Found'}
+                <span className={`font-medium ${allValidationsPassed ? 'text-green-600' : 'text-red-600'}`}>
+                    {allValidationsPassed ? 'All Passed' : 'Issues Found'}
                 </span>
                 </div>
             </div>
