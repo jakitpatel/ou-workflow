@@ -1,8 +1,21 @@
 import React from 'react';
 import { getStatusConfig, getPriorityBorderClass } from './taskHelpers';
 import { History } from 'lucide-react';
+import type { ApplicationTask } from '@/types/application';
 //import { TaskActionsPanel } from './TaskActionsPanel';
 //import { TaskMessagesPanel } from './TaskMessagesPanel';
+
+interface PlantInfo {
+  applications?: number;
+}
+
+interface TaskRowProps {
+  application: ApplicationTask;
+  plantInfo?: PlantInfo;
+  handleShowPlantHistory: (plantName: string) => void;
+  handleApplicationTaskAction: (e: React.MouseEvent, application: ApplicationTask) => void;
+  //...props
+}
 
 export function TaskRow({
   application,
@@ -10,7 +23,7 @@ export function TaskRow({
   handleShowPlantHistory,
   handleApplicationTaskAction,
   //...props
-}) {
+}: TaskRowProps) {
   const statusConfig = getStatusConfig(application.status, application.daysActive);
   //const isActionsExpanded = expandedActions.has(application.id);
   //const isMessagesExpanded = expandedMessages.has(application.id);
@@ -26,7 +39,7 @@ export function TaskRow({
             <button 
                 onClick={() => handleShowPlantHistory(application.plantName)}
                 className="text-left group"
-                title={`Click to view ${application.plant} history. ${plantInfo?.applications || 0} applications`}
+                title={`Click to view ${application.plantName} history. ${plantInfo?.applications || 0} applications`}
             >
                 <div className="text-base font-bold group-hover:text-blue-600 transition-colors text-gray-900">
                 {application.plantName}
@@ -64,11 +77,11 @@ export function TaskRow({
         {/* Actions Column */}
         <td className="px-6 py-4">
             <button
-              key={application.TaskInstanceId}
+              key={application.taskInstanceId}
               onClick={(e) => handleApplicationTaskAction(e, application)}
               className={`flex items-center justify-center px-3 py-2 text-white rounded-lg transition-colors text-sm font-medium bg-blue-600 hover:bg-blue-700`}
             >
-              {application.icon && <application.icon className="w-4 h-4 mr-2" />}
+              {/*application.icon && <application.icon className="w-4 h-4 mr-2" />*/}
               {application.taskName}
             </button>
             {/*

@@ -121,7 +121,10 @@ export interface ApplicationTask {
   taskInstanceId: number;
   taskName: string;              // e.g., "Send NDA"
   taskType: string;              // e.g., "CONFIRM"
-  daysActive?: number;
+  daysActive: number;
+  priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM';
+  stageName: string;              // e.g., "Send NDA"
+  overdue: number;
 }
 
 export interface ApplicationTasksResponse {
