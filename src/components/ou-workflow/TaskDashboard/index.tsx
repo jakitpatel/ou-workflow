@@ -212,8 +212,8 @@ export function TaskDashboard (){
       };
       sendMsgTaskMutation.mutate({
         newMessage,
-        token,
-        strategy,
+        token: token ?? undefined,     // ✅ null → undefined
+        strategy: strategy ?? undefined, // ✅ null → undefined
       });
       /*setTaskMessages(prev => ({
         ...prev,
@@ -605,7 +605,6 @@ export function TaskDashboard (){
                     handleActionsExpand={handleActionsExpand}
                     handleMessagesExpand={handleMessagesExpand}
                     // ...pass other needed props...
-                    taskMessages={application.application_messages || []}
                     messageInputs={messageInputs}
                     messageInputRefs={messageInputRefs}
                     showTaskAssignment={showTaskAssignment}
