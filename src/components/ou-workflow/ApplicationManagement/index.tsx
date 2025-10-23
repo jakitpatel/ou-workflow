@@ -4,7 +4,7 @@ import Overview from './Overview';
 import CompanySection from './CompanySection';
 import ContactsSection from './ContactsSection';
 import PlantsSection from './PlantsSection';
-import ProductsTable from './ProductsTable';
+import ProductsTable from './Products/ProductsTable';
 import ActivityLog from './ActivityLog';
 import FilesList from './FilesList';
 import IngredientMgmt from './Ingredients';
@@ -84,7 +84,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
   ];
 
   const getStatusBadge = (status: string | number) => {
-    const badges = {
+    const badges: Record<string, string> = {
       'Not Started': 'bg-gray-100 text-gray-800',
       'Ready for Dispatch': 'bg-green-100 text-green-800',
       'Dispatched': 'bg-blue-100 text-blue-800',
@@ -92,7 +92,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
       'Completed': 'bg-green-100 text-green-800',
       'Needs Review': 'bg-red-100 text-red-800'
     };
-    return badges[status] || badges['Not Started'];
+    return badges[String(status)] || badges['Not Started'];
   };
 
   const handleCompleteApplication = () => {

@@ -540,9 +540,7 @@ export function TaskDashboard (){
                   <TaskRow
                     key={application.taskInstanceId}   // ✅ unique key here
                     application={application}
-                    username={username}
                     plantInfo={plantHistory[application.plant]}
-                    expandedActions={expandedActions}
                     showReassignDropdown={showReassignDropdown}
                     setShowReassignDropdown={setShowReassignDropdown}
                     //getTaskActions={getTaskActions}

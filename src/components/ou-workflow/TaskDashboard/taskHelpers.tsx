@@ -25,7 +25,7 @@ export const getStatusConfig = (status: string, daysActive = 0) => {
 };
 
 export const getPriorityBorderClass = (priority: string) => {
-  const classes = {
+  const classes: Record<string, string> = {
     urgent: 'border-l-4 border-red-500',
     high: 'border-l-4 border-orange-400',
     medium: 'border-l-4 border-blue-400',
@@ -35,7 +35,7 @@ export const getPriorityBorderClass = (priority: string) => {
 };
 
 export const getStageColor = (stage: string) => {
-  const colors = {
+  const colors: Record<string, string> = {
     'Application': 'bg-purple-100 text-purple-700',
     'NDA': 'bg-blue-100 text-blue-700',
     'Inspection': 'bg-orange-100 text-orange-700',
@@ -43,8 +43,8 @@ export const getStageColor = (stage: string) => {
     'Products': 'bg-indigo-100 text-indigo-700',
     'Contract': 'bg-yellow-100 text-yellow-700',
     'Certification': 'bg-emerald-100 text-emerald-700'
-    };
-    return colors[stage] || 'bg-gray-100 text-gray-700';
+  };
+  return colors[stage] || 'bg-gray-100 text-gray-700';
 };
 
 export const getMessageCount = (app: any) => {
