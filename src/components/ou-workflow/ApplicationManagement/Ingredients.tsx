@@ -21,10 +21,11 @@ export default function IngredientMgmt({ application, showRecentOnly, setShowRec
                 {showRecentOnly ? 'Recent Only' : 'All Ingredients'}
                 </button>
             </div>
-            <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+            {/*<button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                 <Beaker className="h-4 w-4 mr-2" />
                 Add New Ingredient
             </button>
+            */}
             </div>
         </div>
 

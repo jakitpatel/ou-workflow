@@ -18,7 +18,7 @@ export default function ProductsTable({ application }: { application: Applicatio
       ? [role.toLowerCase()]
       : [];
 
-  const canEditProducts = userRoles.includes("prod");
+  const canEditProducts = userRoles.includes("product_role");
 
   const productData = application.products || [];
   const totalProducts = productData.length;
