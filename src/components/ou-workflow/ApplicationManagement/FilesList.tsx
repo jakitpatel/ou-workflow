@@ -1,10 +1,10 @@
 import type { ApplicationDetail, UploadedFile } from "@/types/application";
 import { Beaker, CheckCircle, Download, FileText, Package, Tag, Upload } from "lucide-react";
 
-export default function FilesList({ application, uploadedFiles }: { application: ApplicationDetail;  uploadedFiles: UploadedFile[] }) {
+export default function FilesList({ application }: { application: ApplicationDetail }) {
   const productData = application.products || [];
   const ingredientData = application.ingredients || [];
-
+  const uploadedFiles = application.files || [];
   const downloadFile = async (fileName: string) => {
     try {
       const response = await fetch(`/files/${fileName}`); // adjust path
@@ -70,7 +70,7 @@ export default function FilesList({ application, uploadedFiles }: { application:
             <div className="flex items-center space-x-4">
               {getFileIcon(file.type)}
               <div>
-                <h3 className="font-medium text-gray-900">{file.name}</h3>
+                <h3 className="font-medium text-gray-900">{file.fileName}</h3>
                 <p className="text-sm text-gray-600">
                   {file.size} • Uploaded {file.uploaded}
                   {file.recordCount && (

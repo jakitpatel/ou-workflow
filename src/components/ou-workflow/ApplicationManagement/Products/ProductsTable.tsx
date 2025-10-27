@@ -22,8 +22,8 @@ export default function ProductsTable({ application }: { application: Applicatio
 
   const productData = application.products || [];
   const totalProducts = productData.length;
-  const consumerProducts = productData.filter(p => p.consumerIndustrial === "C").length;
-  const bulkShipped = productData.filter(p => p.bulkShipped === "Y").length;
+  const consumerProducts = productData.filter(p => p.ConsumerIndustrial === "Consumer").length;
+  const bulkShipped = productData.filter(p => p.bulkShipped === true).length;
   const fromApplication = productData.filter(p => p.source === "Form Data").length;
 
   // Add/Edit Product mutations
@@ -159,16 +159,16 @@ export default function ProductsTable({ application }: { application: Applicatio
                     <td className="py-3 px-4">{product.brandName}</td>
                     <td className="py-3 px-4">{product.labelCompany}</td>
                     <td className="py-3 px-4">
-                      <Badge text={product.consumerIndustrial === "C" ? "Consumer" : "Industrial"} color="blue" />
+                      <Badge text={product.ConsumerIndustrial === "Industrial" ? "Industrial" : "Consumer"} color="blue" />
                     </td>
                     <td className="py-3 px-4">
-                      <Badge text={product.bulkShipped === "Y" ? "Yes" : "No"} color={product.bulkShipped === "Y" ? "green" : "gray"} />
+                      <Badge text={product.bulkShipped === true ? "Yes" : "No"} color={product.bulkShipped === true ? "green" : "gray"} />
                     </td>
                     <td className="py-3 px-4">
-                      <Badge text={product.symbol} color="green" />
+                      <Badge text={product.certification} color="green" />
                     </td>
                     <td className="py-3 px-4">
-                      <Badge text="Submitted" color="yellow" />
+                      <Badge text={product.status} color="yellow" />
                     </td>
                     {canEditProducts && (
                     <td className="py-3 px-4 flex items-center space-x-2">

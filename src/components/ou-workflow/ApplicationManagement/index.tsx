@@ -408,7 +408,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
 
             {activeTab === 'activity' && <ActivityLog recentActivity={recentActivity} comments={comments} />}
 
-            {activeTab === 'files' && <FilesList application={applicationData} uploadedFiles={uploadedFiles} />}
+            {activeTab === 'files' && <FilesList application={applicationData} />}
           </div>
         </div>
       </div>
