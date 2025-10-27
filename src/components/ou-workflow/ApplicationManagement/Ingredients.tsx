@@ -72,7 +72,8 @@ export default function IngredientMgmt({ application, showRecentOnly, setShowRec
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-gray-100 text-gray-700'
                     }`}>
-                        {ingredient.status === 'Recent' ? '🆕 New' : '📋 Original'}
+                        {/*ingredient.status === 'Recent' ? '🆕 New' : '📋 Original'*/}
+                        {ingredient.status}
                     </span>
                     </td>
                     <td className="py-3 px-4">
@@ -92,7 +93,7 @@ export default function IngredientMgmt({ application, showRecentOnly, setShowRec
                     </td>
                     <td className="py-3 px-4">
                     <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                        {ingredient.agency}
+                        {ingredient.certification}
                     </span>
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-600">{ingredient.addedDate}</td>
