@@ -5,14 +5,21 @@ export default function FilesList({ application }: { application: ApplicationDet
   const productData = application.products || [];
   const ingredientData = application.ingredients || [];
   const uploadedFiles = application.files || [];
-  const downloadFile = async (fileName: string) => {
+  const downloadFile = async (fileName: string, filePath: string) => {
     try {
-      const response = await fetch(`/files/${fileName}`); // adjust path
-      if (!response.ok) throw new Error('File not found');
-      //const fileContent = await window.fs.readFile(fileName);
+      // Try to fetch the file directly from SharePoint
+      const response = await fetch(filePath, {
+        credentials: 'include', // ensures cookies/session tokens are sent
+      });
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.statusText}`);
+      }
+
+      // Convert the file to a Blob and trigger download
       const blob = await response.blob();
-      //const blob = new Blob([fileContent]);
       const url = URL.createObjectURL(blob);
+
       const a = document.createElement('a');
       a.href = url;
       a.download = fileName;
@@ -22,9 +29,10 @@ export default function FilesList({ application }: { application: ApplicationDet
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Download failed:', error);
-      alert('Download failed. Please try again.');
+      alert('Unable to download file. Please make sure you are logged into SharePoint.');
     }
   };
+
   
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -68,11 +76,20 @@ export default function FilesList({ application }: { application: ApplicationDet
         {uploadedFiles.map((file, index) => (
           <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
             <div className="flex items-center space-x-4">
-              {getFileIcon(file.type)}
+              {getFileIcon(file.fileType)}
               <div>
-                <h3 className="font-medium text-gray-900">{file.fileName}</h3>
+                <h3 className="font-medium text-gray-900">
+                  <a
+                    href={file.filePath}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline hover:text-blue-800"
+                  >
+                    {file.fileName}
+                  </a>
+                </h3>
                 <p className="text-sm text-gray-600">
-                  {file.size} • Uploaded {file.uploaded}
+                  {file.size} • Uploaded {file.uploadedDate}
                   {file.recordCount && (
                     <span className="ml-2 text-green-600">
                       • {file.recordCount} records extracted
@@ -83,15 +100,17 @@ export default function FilesList({ application }: { application: ApplicationDet
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <Tag className="h-4 w-4 text-gray-400" />
+                {/*<Tag className="h-4 w-4 text-gray-400" />*/}
+                {file.description && (
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                   file.type === 'ingredients' ? 'bg-green-100 text-green-800' :
                   file.type === 'products' ? 'bg-purple-100 text-purple-800' :
                   file.type === 'application' ? 'bg-blue-100 text-blue-800' :
                   'bg-gray-100 text-gray-800'
                 }`}>
-                  {file.tag}
+                  {file.description}
                 </span>
+                )}
                 {file.processed && (
                   <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs ml-2">
                     <CheckCircle className="h-3 w-3 inline mr-1" />
@@ -100,7 +119,7 @@ export default function FilesList({ application }: { application: ApplicationDet
                 )}
               </div>
               <button
-                onClick={() => downloadFile(file.name)}
+                onClick={() => downloadFile(file.fileName,file.filePath)}
                 className="flex items-center px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
               >
                 <Download className="h-4 w-4 mr-1" />
