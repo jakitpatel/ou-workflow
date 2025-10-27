@@ -92,7 +92,7 @@ export async function fetchApplicants({
 
   // Filters (only append if defined and not empty)
   if (searchTerm && searchTerm.trim() !== '') {
-    params.append('filter[company]', searchTerm.trim());
+    params.append('filter[name]', searchTerm.trim());
   }
   if (statusFilter && statusFilter !== 'all') {
     params.append('filter[status]', statusFilter);

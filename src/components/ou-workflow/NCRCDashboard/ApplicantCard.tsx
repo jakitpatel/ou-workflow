@@ -93,13 +93,15 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
           <p className="text-gray-600 text-sm">{applicant.plant} • {applicant.region}</p>
         </div>
         <div className="flex items-center space-x-2">
-          <button 
+          {showAIAssistant && (
+            <button 
             onClick={() => setShowAIAssistant(!showAIAssistant)}
             className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             title="AI Assistant - Powered by Gemini"
           >
             <Bot className="w-4 h-4" />
           </button>
+          )}
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${status.color}`}>
             {status.label}
           </span>

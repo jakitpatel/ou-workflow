@@ -6,6 +6,7 @@ export default function PlantsSection({ application, editMode }: { application: 
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Plant Information</h2>
+        {/*
         <div className="flex items-center space-x-2">
           <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
             ✓ In Kashrus DB
@@ -15,6 +16,7 @@ export default function PlantsSection({ application, editMode }: { application: 
             View in Database
           </button>
         </div>
+        */}
       </div>
 
       <div className="space-y-8">
