@@ -1,5 +1,5 @@
-import type { ApplicationDetail, UploadedFile } from "@/types/application";
-import { Beaker, CheckCircle, Download, FileText, Package, Tag, Upload } from "lucide-react";
+import type { ApplicationDetail } from "@/types/application";
+import { Beaker, CheckCircle, Download, FileText, Package, Upload } from "lucide-react";
 
 export default function FilesList({ application }: { application: ApplicationDetail }) {
   const productData = application.products || [];
@@ -63,11 +63,11 @@ export default function FilesList({ application }: { application: ApplicationDet
           <div className="text-sm text-green-700">Processed</div>
         </div>
         <div className="bg-purple-50 rounded-lg p-3">
-          <div className="text-2xl font-bold text-purple-600">{uploadedFiles.filter(f => f.type === 'ingredients').length}</div>
+          <div className="text-2xl font-bold text-purple-600">{uploadedFiles.filter(f => f.fileType === 'ingredients').length}</div>
           <div className="text-sm text-purple-700">Ingredient Files</div>
         </div>
         <div className="bg-orange-50 rounded-lg p-3">
-          <div className="text-2xl font-bold text-orange-600">{uploadedFiles.filter(f => f.type === 'products').length}</div>
+          <div className="text-2xl font-bold text-orange-600">{uploadedFiles.filter(f => f.fileType === 'products').length}</div>
           <div className="text-sm text-orange-700">Product Files</div>
         </div>
       </div>
@@ -103,9 +103,9 @@ export default function FilesList({ application }: { application: ApplicationDet
                 {/*<Tag className="h-4 w-4 text-gray-400" />*/}
                 {file.description && (
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  file.type === 'ingredients' ? 'bg-green-100 text-green-800' :
-                  file.type === 'products' ? 'bg-purple-100 text-purple-800' :
-                  file.type === 'application' ? 'bg-blue-100 text-blue-800' :
+                  file.fileType === 'ingredients' ? 'bg-green-100 text-green-800' :
+                  file.fileType === 'products' ? 'bg-purple-100 text-purple-800' :
+                  file.fileType === 'application' ? 'bg-blue-100 text-blue-800' :
                   'bg-gray-100 text-gray-800'
                 }`}>
                   {file.description}

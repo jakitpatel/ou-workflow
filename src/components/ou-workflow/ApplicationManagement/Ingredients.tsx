@@ -1,5 +1,5 @@
 import type { ApplicationDetail } from "@/types/application";
-import { Beaker } from "lucide-react";
+//import { Beaker } from "lucide-react";
 
 export default function IngredientMgmt({ application, showRecentOnly, setShowRecentOnly }: { application: ApplicationDetail, showRecentOnly: boolean, setShowRecentOnly: (value: boolean) => void }) {
   const ingredientData = application.ingredients || [];

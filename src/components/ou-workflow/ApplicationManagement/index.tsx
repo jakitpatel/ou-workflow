@@ -48,19 +48,6 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
     { id: 2, author: 'G. Magder', date: '2025-07-18 13:20', comment: 'Plant contact information confirmed. John Mitchell will be primary for all communications.', type: 'internal' }
   ]);
 
-  // Quote information
-  const quoteData = {
-    quoteNumber: 'QT-2025-HC-001',
-    amount: '$2,850',
-    validUntil: '2025-08-17',
-    status: 'pending_acceptance',
-    items: [
-      { description: 'Initial Certification - 1 Plant', amount: '$1,500' },
-      { description: 'Product Review (4 products)', amount: '$800' },
-      { description: 'Ingredient Analysis (10 ingredients)', amount: '$550' }
-    ]
-  };
-
   // Recent activity tracking
   const recentActivity = [
     { date: '2025-07-18 14:30', action: 'Ingredient Added', details: 'Natural Vanilla Extract (Premium Flavor Co)', user: 'J. Mitchell', type: 'ingredient', status: 'approved' },
@@ -73,15 +60,6 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
 
   // Application data parsed from the PDF
   const applicationData = application;
-
-  const uploadedFiles = [
-    { name: 'Application for OU Kosher Certification - Test.pdf', type: 'application', size: '245 KB', uploaded: '2025-07-17', tag: 'Application Form', processed: true },
-    { name: 'happycow IngredientOUKosher.xlsx', type: 'ingredients', size: '12 KB', uploaded: '2025-07-17', tag: 'Ingredient List', processed: true, recordCount: 2 },
-    { name: 'happycow BrandsOUKosher.xlsx', type: 'products', size: '8 KB', uploaded: '2025-07-17', tag: 'Brand/Product List', processed: true, recordCount: 2 },
-    { name: 'Ingredient happycowOUKosher 1.xlsx', type: 'ingredients', size: '15 KB', uploaded: '2025-07-17', tag: 'Ingredient List (Additional)', processed: true, recordCount: 5 },
-    { name: 'happycow BrandsOUKosher 1.xlsx', type: 'products', size: '9 KB', uploaded: '2025-07-17', tag: 'Brand/Product List (Additional)', processed: true, recordCount: 2 },
-    { name: 'Screen List Matrix VR2Screens.csv', type: 'other', size: '3 KB', uploaded: '2025-07-17', tag: 'Reference Data', processed: true }
-  ];
 
   const getStatusBadge = (status: string | number) => {
     const badges: Record<string, string> = {
@@ -404,7 +382,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
 
             {activeTab === 'ingredients' && <IngredientMgmt application={applicationData} showRecentOnly={showRecentOnly} setShowRecentOnly={setShowRecentOnly} />}
 
-            {activeTab === 'quote' && <QuoteInfo application={applicationData} quoteData={quoteData} setValidationChecks={setValidationChecks} />}
+            {activeTab === 'quote' && <QuoteInfo application={applicationData} />}
 
             {activeTab === 'activity' && <ActivityLog recentActivity={recentActivity} comments={comments} />}
 

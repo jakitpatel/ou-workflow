@@ -1,13 +1,19 @@
-import type { ApplicationDetail, QuoteData } from "@/types/application";
-import type { Dispatch, SetStateAction } from "react";
-import { AlertTriangle, Check } from "lucide-react";
-type ValidationCheck = { valid: boolean; message: string };
-type ValidationChecks = { quote?: ValidationCheck; [key: string]: ValidationCheck | undefined };
+import type { ApplicationDetail, QuoteData, QuoteItem } from "@/types/application";
+//import type { Dispatch, SetStateAction } from "react";
+import { AlertTriangle } from "lucide-react";
+//type ValidationCheck = { valid: boolean; message: string };
+//type ValidationChecks = { quote?: ValidationCheck; [key: string]: ValidationCheck | undefined };
 
-export default function QuoteInfo({ application, quoteData, setValidationChecks }: { application: ApplicationDetail, quoteData: QuoteData, setValidationChecks: Dispatch<SetStateAction<ValidationChecks>> }) {
-  //const quoteData = application.quote || {};
+export default function QuoteInfo({ application }: { application: ApplicationDetail }) {
   console.log("Application Data:", application);
-  console.log("Application Data:", application);
+  const quoteData = application.quotes || [];
+  console.log("quote Data:", quoteData);
+
+  function formatUSD(amount: number | string) {
+    const num = Number(amount) || 0;
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(num);
+  }
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-6">Quote Information</h2>
@@ -23,45 +29,47 @@ export default function QuoteInfo({ application, quoteData, setValidationChecks 
             </div>
             </div>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {quoteData.map((quote: QuoteData, index: number) => (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" key={index}>
             <div>
-            <h3 className="font-medium text-gray-900 mb-4">Quote Details</h3>
-            <div className="space-y-3">
+                <h3 className="font-medium text-gray-900 mb-4">Quote Details</h3>
+                <div className="space-y-3">
                 <div className="flex justify-between">
-                <span className="text-gray-600">Quote Number:</span>
-                <span className="font-medium">{quoteData.quoteNumber}</span>
+                    <span className="text-gray-600">Quote Number:</span>
+                    <span className="font-medium">{quote.QuoteNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                <span className="text-gray-600">Total Amount:</span>
-                <span className="font-medium text-green-600 text-lg">{quoteData.amount}</span>
+                    <span className="text-gray-600">Total Amount:</span>
+                    <span className="font-medium text-green-600 text-lg">{formatUSD(quote.TotalAmount)}</span>
                 </div>
                 <div className="flex justify-between">
-                <span className="text-gray-600">Valid Until:</span>
-                <span className="font-medium">{quoteData.validUntil}</span>
+                    <span className="text-gray-600">Valid Until:</span>
+                    <span className="font-medium">{quote.validUntil}</span>
                 </div>
                 <div className="flex justify-between">
-                <span className="text-gray-600">Status:</span>
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
-                    Pending Acceptance
-                </span>
+                    <span className="text-gray-600">Status:</span>
+                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
+                    {quote.Status}
+                    </span>
+                </div>
                 </div>
             </div>
-            </div>
 
             <div>
-            <h3 className="font-medium text-gray-900 mb-4">Quote Breakdown</h3>
-            <div className="space-y-3">
-                {quoteData.items.map((item, index) => (
-                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                    <span className="text-sm text-gray-700">{item.description}</span>
-                    <span className="font-medium text-gray-900">{item.amount}</span>
-                </div>
+                <h3 className="font-medium text-gray-900 mb-4">Quote Breakdown</h3>
+                <div className="space-y-3">
+                {quote.items?.map((item: QuoteItem, i) => (
+                    <div key={i} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                    <span className="text-sm text-gray-700">{item.Description}</span>
+                    <span className="font-medium text-gray-900">{formatUSD(item.Amount)}</span>
+                    </div>
                 ))}
+                </div>
             </div>
             </div>
-        </div>
+        ))}
 
+        {/*
         <div className="mt-6 flex justify-between items-center">
             <button
             onClick={() => {
@@ -79,6 +87,7 @@ export default function QuoteInfo({ application, quoteData, setValidationChecks 
             Last updated: July 17, 2025
             </div>
         </div>
+        */}
         </div>
   );
 }

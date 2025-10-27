@@ -3,7 +3,7 @@ export type ApplicantFile = {
   fileName: string;
   filePath: string;
   fileSize: string; // e.g. "245 KB"
-  fileType: "APP" | "ING" | "PROD"; // restrict to known types
+  fileType: "APP" | "ING" | "PROD" | "PDF" | "JPEG"; // restrict to known types
 };
 // Single application message
 export type WFApplicationMessage = {
@@ -69,19 +69,31 @@ export interface Contact { type:string; name:string; phone?:string; email?:strin
 
 export interface Plant { id:number; plantId:string; name:string; address:any; contact:any; manufacturing:any; otherProducts?:boolean; otherProductsList?:string, otherPlantsProducing?:boolean, otherPlantsLocation?:string }
 
-export interface UploadedFile { name:string; type:string; size:string; uploaded:string; tag?:string; processed?:boolean; recordCount?:number }
+export interface UploadedFile { 
+  fileId:number; 
+  fileType:string; 
+  filePath:string; 
+  uploadedDate:string; 
+  tag?:string; 
+  processed?:boolean; 
+  recordCount?:number; 
+  description?:string;
+  fileName?:string;
+}
 
 export interface QuoteItem {
-  description: string;
-  amount: string;
+  Description: string;
+  Amount: string;
+  itemId?: number;
 }
 
 export interface QuoteData {
-  quoteNumber: string;
-  amount: string;
+  QuoteNumber: string;
+  TotalAmount: string;
   validUntil: string;
-  status: 'pending_acceptance' | 'accepted' | 'rejected' | 'expired' | string;
+  Status: 'pending_acceptance' | 'accepted' | 'rejected' | 'expired' | string;
   items: QuoteItem[];
+  quoteId?: number;
 }
 
 export interface ApplicationDetail {
@@ -96,10 +108,9 @@ export interface ApplicationDetail {
   plants: Plant[];
   products: any[];
   preferences?: any;
-  uploadedFiles?: UploadedFile[];
+  files?: UploadedFile[];
   ingredients?: any[];
-  quoteData?: QuoteData; // <-- added here
-  // ...extend as needed
+  quotes?: QuoteData[]; // <-- added here
 }
 
 export interface ApplicationTask {
