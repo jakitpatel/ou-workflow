@@ -1,5 +1,5 @@
 import type { ApplicationDetail } from "@/types/application";
-import { Beaker, CheckCircle, Download, FileText, Package, Upload } from "lucide-react";
+import { Beaker, CheckCircle, Download, FileText, Package } from "lucide-react";
 
 export default function FilesList({ application }: { application: ApplicationDetail }) {
   const productData = application.products || [];
@@ -47,10 +47,12 @@ export default function FilesList({ application }: { application: ApplicationDet
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">File Management</h2>
+        {/*
         <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
           <Upload className="h-4 w-4 mr-2" />
           Upload Additional Files
         </button>
+        */}
       </div>
 
       <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">

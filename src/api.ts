@@ -102,7 +102,7 @@ export async function fetchApplicants({
   }
 
   // Construct full URL
-  const path = `/get_applications?${params.toString()}`;
+  const path = `/get_applications_async?${params.toString()}`;
   
   // Use fetchWithAuth wrapper
   const json = (await fetchWithAuth({

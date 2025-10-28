@@ -78,7 +78,8 @@ export interface UploadedFile {
   processed?:boolean; 
   recordCount?:number; 
   description?:string;
-  fileName?:string;
+  fileName?:string | undefined;
+  size?:string | undefined;
 }
 
 export interface QuoteItem {
