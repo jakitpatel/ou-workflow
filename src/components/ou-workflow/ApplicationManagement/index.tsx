@@ -390,7 +390,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
 
             {activeTab === 'files' && <FilesList application={applicationData} />}
 
-            {activeTab === 'messages' && <MessageLog recentActivity={recentActivity} comments={comments} />}
+            {activeTab === 'messages' && <MessageLog application={applicationData} />}
           </div>
         </div>
       </div>

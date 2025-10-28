@@ -114,6 +114,7 @@ export interface ApplicationDetail {
   files?: UploadedFile[];
   ingredients?: any[];
   quotes?: QuoteData[]; // <-- added here
+  messages?: WFApplicationMessage[];
 }
 
 export interface ApplicationTask {
