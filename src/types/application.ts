@@ -23,7 +23,8 @@ export type Task = {
   assignee: string;
   daysActive: number;
   required: boolean;
-  overdue: number;
+  overdue: boolean;
+  overdueDays?: number;
   taskRoles?: { taskRole: string }[]
 };
 

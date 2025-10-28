@@ -237,9 +237,9 @@ export function ApplicantProgressBar({
                         Required
                       </span>
                     )}
-                    {task?.overdue > 0 && (
+                    {task?.overdueDays > 0 && (
                       <span className="text-sm font-medium text-red-600">
-                        {task.overdue} overdue
+                        {task.overdueDays} overdue
                       </span>
                     )}
                   </div>
