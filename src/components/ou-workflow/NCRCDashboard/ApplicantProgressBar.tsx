@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Package, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import type { Task, Applicant } from '@/types/application';
 import { useUser } from '@/context/UserContext';
 
@@ -24,6 +24,7 @@ export function ApplicantProgressBar({
       setExpandedStage(expandedStage === stageName ? null : stageName);
   };
 
+  /*
   const handleTaskActionLocal = (
     e: React.MouseEvent,
     task: Task,
@@ -33,6 +34,7 @@ export function ApplicantProgressBar({
     e.preventDefault()
     handleTaskAction?.(e, task, action, String(applicant.id))
   }
+  */
 
   const stageOrder = [
     { key: 'initial', name: 'Initial' },
@@ -229,11 +231,18 @@ export function ApplicantProgressBar({
                       </span>
                     ))}
                   </div>
+                  <div className="flex justify-between items-center">
                     {task.required && (
                       <span className="text-xs text-red-600 bg-red-50 px-1 py-0.5 rounded mt-1 inline-block">
                         Required
                       </span>
                     )}
+                    {task?.overdue > 0 && (
+                      <span className="text-sm font-medium text-red-600">
+                        {task.overdue} overdue
+                      </span>
+                    )}
+                  </div>
                   </div>
 
                   <div className="mb-2">

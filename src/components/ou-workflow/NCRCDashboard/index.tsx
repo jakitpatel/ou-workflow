@@ -274,11 +274,16 @@ export function NCRCDashboard({
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[140px]"
         >
           <option value="all">All Statuses</option>
-          <option value="contract_sent">Contract Sent</option>
-          <option value="under_review">Under Review</option>
-          <option value="inspection_scheduled">Inspection Scheduled</option>
-          <option value="payment_pending">Payment Pending</option>
-          <option value="certified">Certified</option>
+          <option value="COMPL">Application processing is Certified</option>
+          <option value="CONTRACT">Contract SENT to Customer</option>
+          <option value="DISP">Application has been dispatched for review</option>
+          <option value="INC">Application is incomplete</option>
+          <option value="INP">Application is currently being processed</option>
+          <option value="INSPECTION">Inspection Scheduled</option>
+          <option value="NEW">Application is new</option>
+          <option value="PAYPEND">Payment is Pending</option>
+          <option value="REVIEW">Inspection Report Submitted to IAR</option>
+          <option value="WTH">Application has been Withdrawn</option>
         </select>
 
         <select
