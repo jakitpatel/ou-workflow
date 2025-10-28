@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Upload, CheckCircle, AlertCircle, FileText, Building, Users, Package, Beaker, Send, MessageSquare, AlertTriangle, Check, X, Shield } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileText, Building, Users, Package, Beaker, Send, MessageSquare, AlertTriangle, Check, X, Shield, MessageCircle } from 'lucide-react';
 import Overview from './Overview';
 import CompanySection from './CompanySection';
 import ContactsSection from './ContactsSection';
@@ -11,6 +11,7 @@ import IngredientMgmt from './Ingredients';
 import QuoteInfo from './QuoteInfo';
 import type { ApplicationDetail } from '@/types/application';
 import { Navigation } from '../Navigation';
+import MessageLog from './MessageLog';
 type Props = {
   application: ApplicationDetail;
 };
@@ -159,7 +160,8 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
     { id: 'ingredients', label: 'Ingredients', icon: Beaker },
     { id: 'quote', label: 'Quote', icon: FileText },
     { id: 'activity', label: 'Recent Activity', icon: AlertCircle },
-    { id: 'files', label: 'File Management', icon: Upload }
+    { id: 'files', label: 'File Management', icon: Upload },
+    { id: 'messages', label: 'Messages', icon: MessageCircle },
   ];
 
   return (
@@ -387,6 +389,8 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
             {activeTab === 'activity' && <ActivityLog recentActivity={recentActivity} comments={comments} />}
 
             {activeTab === 'files' && <FilesList application={applicationData} />}
+
+            {activeTab === 'messages' && <MessageLog recentActivity={recentActivity} comments={comments} />}
           </div>
         </div>
       </div>

@@ -294,7 +294,7 @@ export function ApplicantProgressBar({
                       </div>
                     )}
 
-                    {(task.name.includes('IAR') ||
+                    {/*(task.name.includes('IAR') ||
                       expandedStage === 'ingredients') && (
                       <button
                         onClick={(e) =>
@@ -305,7 +305,7 @@ export function ApplicantProgressBar({
                         <Package className="w-3 h-3 inline mr-1" />
                         Ingredients
                       </button>
-                    )}
+                    )*/}
                   </div>
                 </div>
               );

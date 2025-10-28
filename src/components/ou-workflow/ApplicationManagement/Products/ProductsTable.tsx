@@ -9,7 +9,7 @@ export default function ProductsTable({ application }: { application: Applicatio
   const { role, roles } = useUser();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
-  const queryClient = useQueryClient();
+  //const queryClient = useQueryClient();
 
   const userRoles =
     role?.toUpperCase() === "ALL"
@@ -32,7 +32,7 @@ export default function ProductsTable({ application }: { application: Applicatio
   const onAddProduct = async (newProduct: any) => {
     try {
       await saveProductMutation.mutateAsync(newProduct);
-      await queryClient.invalidateQueries(["application", application.id]);
+      //await queryClient.invalidateQueries(["application", application.id]);
     } catch (err) {
       console.error("Add product failed:", err);
     }
@@ -41,7 +41,7 @@ export default function ProductsTable({ application }: { application: Applicatio
   const onEditProduct = async (updatedProduct: any) => {
     try {
       await saveProductMutation.mutateAsync(updatedProduct);
-      await queryClient.invalidateQueries(["application", application.id]);
+      //await queryClient.invalidateQueries(["application", application.id]);
     } catch (err) {
       console.error("Edit product failed:", err);
     }
@@ -54,7 +54,7 @@ export default function ProductsTable({ application }: { application: Applicatio
       if (!res.ok) throw new Error("Delete failed");
       return res.json();
     },
-    onSuccess: () => queryClient.invalidateQueries(["application", application.id]),
+    //onSuccess: () => queryClient.invalidateQueries(["application", application.id]),
   });
 
   const onDeleteProduct = async (productId: string) => {
