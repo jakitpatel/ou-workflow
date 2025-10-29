@@ -3,7 +3,7 @@ import { Bell, User, BarChart3, ClipboardList, LogOut, Settings } from 'lucide-r
 //import { useQuery } from '@tanstack/react-query'
 //import { fetchRoles } from './../../api';
 import { useUser } from './../../context/UserContext'  // 👈 new import
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useTaskContext } from '@/context/TaskContext'
 
 type Props = {
@@ -11,6 +11,9 @@ type Props = {
 }
 
 export function Navigation({ hideMenu }: Props) {
+  // inside Navigation component, remove setActiveScreen calls and add:
+  const location = useRouterState({ select: (s) => s.location.pathname })
+  
   const { username, role, activeScreen, setActiveScreen, logout } = useUser()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -54,9 +57,9 @@ export function Navigation({ hideMenu }: Props) {
             </div>
 
             {/* ✅ Conditionally render top menu */}
-            {!hideMenu && (
+            {!false && (
               <nav className="flex space-x-1">
-                <Link
+                {/*<Link
                   to="/ou-workflow"
                   onClick={() => {setApplicationId(null); setActiveScreen('ncrc-dashboard')}}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -74,6 +77,30 @@ export function Navigation({ hideMenu }: Props) {
                   onClick={() => setActiveScreen('tasks-dashboard')}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeScreen === 'tasks-dashboard'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <ClipboardList className="w-4 h-4 inline-block mr-1.5" />
+                  Tasks & Notifications
+                </Link>
+                */}
+                <Link
+                  to="/ou-workflow/ncrc-dashboard/"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.includes('ncrc-dashboard')
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4 inline-block mr-1.5" />
+                  NCRC Dashboard
+                </Link>
+
+                <Link
+                  to="/ou-workflow/tasks-dashboard/"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.includes('tasks-dashboard')
                       ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}

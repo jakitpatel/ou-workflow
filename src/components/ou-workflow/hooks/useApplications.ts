@@ -15,6 +15,8 @@ export function useApplications({
 
   return useQuery({
     queryKey: ['applications', { token, strategy, searchTerm, statusFilter, priorityFilter }],
+    //staleTime: 1000 * 60 * 5, // 5 minutes cache
+    //keepPreviousData: true,   // keep list visible during refetch
     queryFn: () =>
       fetchApplicants({
         token: token ?? undefined,

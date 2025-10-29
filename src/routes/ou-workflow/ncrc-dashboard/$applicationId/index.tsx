@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useApplicationDetail } from './../../../components/ou-workflow/hooks/useApplicationDetail';
-import { ApplicationManagementInterface } from './../../../components/ou-workflow/ApplicationManagement'
+import { useApplicationDetail } from '@/components/ou-workflow/hooks/useApplicationDetail';
+import { ApplicationManagementInterface } from '@/components/ou-workflow/ApplicationManagement';
 
-export const Route = createFileRoute('/ou-workflow/$applicationId/')({
+export const Route = createFileRoute('/ou-workflow/ncrc-dashboard/$applicationId/')({
   component: ApplicationDetailPage,
 })
 

@@ -16,7 +16,7 @@ import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 import { useTaskContext } from '@/context/TaskContext';
 
  // Tasks Dashboard Component (with full table functionality restored)
-export function TaskDashboard (){
+export function TaskDashboard ({ applicationId }){
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('active');
     const [expandedActions, setExpandedActions] = useState(new Set());
@@ -34,7 +34,7 @@ export function TaskDashboard (){
     //const [selectedAction, setSelectedAction] = useState(null);
 
     const messageInputRefs = useRef({});
-    const { applicationId, setApplicationId } = useTaskContext();
+    //const { applicationId, setApplicationId } = useTaskContext();
     const queryClient = useQueryClient();
     const errorDialogRef = useRef<ErrorDialogRef>(null);
     // Fetch tasks and plants
@@ -47,7 +47,7 @@ export function TaskDashboard (){
     // Cross-navigation handler
     const handleViewNCRCDashboard = () => {
       console.log('Returning to NCRC Dashboard');
-      setApplicationId(null);
+      //setApplicationId(null);
       setActiveScreen('ncrc-dashboard');
     };
 

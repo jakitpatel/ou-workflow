@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { ApplicantProgressBar } from './ApplicantProgressBar';
 import { Bell, FileText, Clock, Bot, ClipboardList, Package, ListTodo, ExternalLink, Sparkles, AlertTriangle } from 'lucide-react'
 import type { Task, Applicant } from '@/types/application';
@@ -14,6 +14,9 @@ type Props = {
 };
 
 export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: Props) {
+  // inside your component
+  const navigate = useNavigate();
+
   const priorityConfig = {
     urgent: { label: 'Urgent', color: 'bg-red-500', textColor: 'text-white' },
     high: { label: 'High', color: 'bg-orange-500', textColor: 'text-white' },
@@ -49,6 +52,15 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
     console.log('Viewing tasks for:', applicationId);
     setApplicationId(applicationId); // ✅ store globally
     setActiveScreen('tasks-dashboard'); // ✅ switch tab
+    // ✅ navigate to the route instead of setActiveScreen()
+    if (applicationId) {
+      navigate({
+        to: '/ou-workflow/tasks-dashboard/$applicationId',
+        params: { applicationId },
+      })
+    } else {
+      navigate({ to: '/ou-workflow/tasks-dashboard/' })
+    }
   };
 
   // Build a lookup by type for easier access
@@ -170,7 +182,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
           <p className="text-sm text-gray-700 font-medium">Next: {applicant.nextAction}</p>
           <div className="flex space-x-2">
             <Link
-              to="/ou-workflow/$applicationId"
+              to="/ou-workflow/ncrc-dashboard/$applicationId"
               params={{ applicationId: String(applicant.id) }}
               className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >

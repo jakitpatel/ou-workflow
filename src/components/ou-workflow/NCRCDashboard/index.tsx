@@ -9,7 +9,7 @@ import { useUser } from '@/context/UserContext'  // 👈 new import
 import { useApplications } from './../hooks/useApplications';
 import { assignTask, confirmTask } from '@/api'; // same api.ts
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
-//import type { Task, Stage, Applicant } from '@/types/application';
+import type { Applicant } from '@/types/application';
 
 type Props = {
   showIngredientsManager: boolean
@@ -45,26 +45,12 @@ export function NCRCDashboard({
     return () => clearTimeout(handler);
   }, [searchTerm]);
   
-  const { data: applicants = [], isLoading, isError, error } = useApplications({
+  const { data: applicants = [] as Applicant[], isLoading, isError, error } = useApplications({
     searchTerm: debouncedSearchTerm,
     statusFilter,
     priorityFilter,
   });
 
-  /*const filteredApplicants = useMemo(() => {
-    return (Array.isArray(applicants) ? applicants : []).filter((app) => {
-      const matchesSearch =
-        app.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.plant?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.region?.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
-      const matchesPriority = priorityFilter === 'all' || app.priority === priorityFilter;
-
-      return matchesSearch && matchesStatus && matchesPriority;
-    });
-  }, [searchTerm, statusFilter, priorityFilter, applicants]);
-  */
   // ✅ Return conditionally AFTER all hooks
   if (showIngredientsManager && selectedIngredientApp) {
     return (

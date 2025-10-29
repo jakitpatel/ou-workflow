@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useUser } from '@/context/UserContext'
-import { Navigation } from '@/components/ou-workflow/Navigation' // 👈 import your nav
+//import { Navigation } from '@/components/ou-workflow/Navigation' // 👈 import your nav
 
 export const Route = createFileRoute('/profile')({
   component: ProfilePage,
@@ -19,7 +19,7 @@ function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* ✅ Navigation included */}
-      <Navigation />
+      {/*<Navigation />*/}
 
       <main className="flex-1 max-w-2xl mx-auto p-6">
         <h1 className="text-2xl font-bold mb-6">User Profile</h1>
