@@ -4,8 +4,9 @@ import { TanstackDevtools } from '@tanstack/react-devtools'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Navigation } from '@/components/ou-workflow/Navigation'
 
-// ✅ Helper: handle subpath correctly (e.g. /dashboard/)
-const LOGIN_PATH = `${import.meta.env.BASE_URL}login`
+// ✅ Normalize base: remove trailing slash
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '') || ''
+const LOGIN_PATH = `${BASE}/login`
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
@@ -13,7 +14,7 @@ export const Route = createRootRoute({
     const isLoginPage = location.pathname === LOGIN_PATH || location.pathname === '/login' // handle both
 
     if (!userStr) {
-      if (!isLoginPage) throw redirect({ to: LOGIN_PATH })
+      if (!isLoginPage) throw redirect({ to: '/login' })    // ✅ Router handles basepath automatically
       return
     }
 
@@ -23,7 +24,7 @@ export const Route = createRootRoute({
 
     if (!loginTime || now - loginTime > 24 * 60 * 60 * 1000) {
       localStorage.removeItem('user')
-      if (!isLoginPage) throw redirect({ to: LOGIN_PATH })
+      if (!isLoginPage) throw redirect({ to: '/login' })
     }
   },
   component: RootLayout,

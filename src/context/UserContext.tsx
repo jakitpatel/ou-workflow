@@ -82,7 +82,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
             //window.location.href = "/login"; // or navigate("/login") if using TanStack Router
             // ✅ Respect Vite base path (e.g. /dashboard/)
             const base = import.meta.env.BASE_URL || '/';
-            window.location.href = `${base}login`;
+            const loginUrl = `${base.replace(/\/$/, '')}/login`; // ✅ strips trailing slash
+            console.log("Redirecting to login page at base path:", loginUrl);
+            window.location.href = loginUrl;
             return;
           }
         }
