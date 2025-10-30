@@ -273,10 +273,18 @@ export function ApplicantProgressBar({
                     </span>
 
                     {task.status?.toLowerCase() === 'completed' && (
+                      <>
                       <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded font-medium">
                         {task.CompletedDate?.split('.')[0]}
                       </span>
+                      {task.executedBy && (
+                      <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded font-medium">
+                        {task.executedBy}
+                      </span>
+                      )}
+                      </>
                     )}
+                    
                     {task.status?.toLowerCase() === 'pending' && Number(task.daysPending) > 0 && (
                       <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded font-medium">
                         {task.daysPending} days pending

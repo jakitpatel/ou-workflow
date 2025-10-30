@@ -29,6 +29,7 @@ export type Task = {
   daysPending?: number;
   daysOverdue?: number;
   description: string;
+  executedBy?: string;
   taskRoles?: { taskRole: string }[]
 };
 
