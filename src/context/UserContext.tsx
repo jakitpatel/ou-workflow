@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import type { LoginStrategy } from '@/types/auth'
 import { useQuery } from '@tanstack/react-query'
 import { fetchRoles } from '@/api'
-//import { useRouter } from '@tanstack/react-router'
+import { redirect } from '@tanstack/react-router'
 
 type UserContextType = {
   username: string | null
@@ -79,12 +79,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
             window.alert("Your session has expired or is invalid. Please log in again.")
             logout();
             //router.navigate({ to: '/login', replace: true });
-            //window.location.href = "/login"; // or navigate("/login") if using TanStack Router
             // ✅ Respect Vite base path (e.g. /dashboard/)
             const base = import.meta.env.BASE_URL || '/';
             const loginUrl = `${base.replace(/\/$/, '')}/login`; // ✅ strips trailing slash
             console.log("Redirecting to login page at base path:", loginUrl);
-            window.location.href = loginUrl;
+            window.location.replace(loginUrl)
             return;
           }
         }

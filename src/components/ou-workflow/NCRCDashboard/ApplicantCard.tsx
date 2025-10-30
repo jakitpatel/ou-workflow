@@ -99,8 +99,16 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
             )}
             <div className="flex items-center text-gray-600 bg-gray-100 px-2 py-1 rounded">
               <Clock className="w-4 h-4 mr-1" />
-              <span className="text-sm font-medium">{applicant.daysInStage} days elapsed</span>
+              <span className="text-sm font-medium">{applicant.daysInProcess} days elapsed</span>
             </div>
+             {applicant?.daysOverdue > 0 && (
+              <div className="flex items-center text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                <Clock className="w-4 h-4 mr-1" />
+                <span className="text-sm font-medium ml-1 text-red-600">
+                  {applicant.daysOverdue} overdue
+                </span>
+              </div>
+            )}
           </div>
           <p className="text-gray-600 text-sm">{applicant.plant} • {applicant.region}</p>
         </div>

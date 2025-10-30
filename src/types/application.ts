@@ -43,8 +43,9 @@ export type Applicant = {
   priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM';
   status: string; // e.g. 'contract_sent'
   assignedRC: string;
-  daysInStage: number;
+  daysInProcess: number;
   overdue: boolean;
+  daysOverdue: number;
   lastUpdate: string;
   nextAction: string;
   documents: number;
