@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
@@ -10,6 +10,7 @@ import { useApplications } from './../hooks/useApplications';
 import { assignTask, confirmTask } from '@/api'; // same api.ts
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 import type { Applicant } from '@/types/application';
+import { ApplicantStatsCards } from './ApplicantStatsCards';
 
 type Props = {
   showIngredientsManager: boolean
@@ -51,6 +52,36 @@ export function NCRCDashboard({
     priorityFilter,
   });
 
+  const applicantStats = useMemo(() => {
+    const allApplicants = applicants || [];
+
+    const userApplicants = allApplicants.map(applicant => ({
+      ...applicant,
+      status: applicant.status?.toLowerCase() || ''
+    }));
+
+    const newCount = userApplicants.filter(t => t.status === 'new').length;
+    const inProgressCount = userApplicants.filter(t => t.status === 'inp').length;
+    const withdrawnCount = userApplicants.filter(t => t.status === 'wth').length;
+    const completedCount = userApplicants.filter(
+      t => t.status === 'compl' || t.status === 'completed'
+    ).length;
+
+    // “others” = total - (known statuses)
+    const othersCount =
+      userApplicants.length -
+      (newCount + inProgressCount + withdrawnCount + completedCount);
+
+    return {
+      total: userApplicants.length,
+      new: newCount,
+      inProgress: inProgressCount,
+      withdrawn: withdrawnCount,
+      completed: completedCount,
+      others: othersCount,
+    };
+  }, [username, applicants]);
+  
   // ✅ Return conditionally AFTER all hooks
   if (showIngredientsManager && selectedIngredientApp) {
     return (
@@ -239,8 +270,10 @@ export function NCRCDashboard({
         <h2 className="text-2xl font-bold text-gray-900">NCRC Dashboard</h2>
         <p className="text-gray-600">Executive Overview - Certification Management</p>
       </div>
+      {/* Stats Cards */}
+      <ApplicantStatsCards stats={applicantStats} />
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 mt-6">
         <div className="flex items-center space-x-4">
         <div className="flex-1">
           <div className="relative">
