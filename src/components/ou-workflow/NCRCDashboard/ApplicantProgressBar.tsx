@@ -209,12 +209,16 @@ export function ApplicantProgressBar({
                     <div className="flex items-center gap-2">
                     {/* Task name OR button */}
                     {action.disabled ? (
-                      <span className="text-sm font-semibold text-gray-900 leading-tight">
+                      <span
+                        className="text-sm font-semibold text-gray-900 leading-tight"
+                        title={task.description || 'No description available'}
+                      >
                         {task.name}
                       </span>
                     ) : (
                       <button
                         onClick={(e) => handleTaskAction(e, applicant, task)}
+                        title={task.description || 'No description available'}
                         className="text-sm font-semibold text-white bg-blue-600 px-2 py-1 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         {task.name}

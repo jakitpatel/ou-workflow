@@ -79,6 +79,7 @@ export function TaskRow({
             <button
               key={application.taskInstanceId}
               onClick={(e) => handleApplicationTaskAction(e, application)}
+              title={application.taskDescription || 'No description available'}
               className={`flex items-center justify-center px-3 py-2 text-white rounded-lg transition-colors text-sm font-medium bg-blue-600 hover:bg-blue-700`}
             >
               {/*application.icon && <application.icon className="w-4 h-4 mr-2" />*/}

@@ -28,6 +28,7 @@ export type Task = {
   CompletedDate?: string;
   daysPending?: number;
   daysOverdue?: number;
+  description: string;
   taskRoles?: { taskRole: string }[]
 };
 
@@ -139,6 +140,7 @@ export interface ApplicationTask {
   status: "PENDING" | "COMPLETED" | string; // can extend as needed
   taskInstanceId: number;
   taskName: string;              // e.g., "Send NDA"
+  taskDescription: string;       // e.g., "Send the NDA to the client"
   taskType: string;              // e.g., "CONFIRM"
   daysActive: number;
   priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM';
