@@ -245,12 +245,11 @@ export function ApplicantProgressBar({
                   </div>
                   </div>
 
-                  <div className="mb-2">
+                  <div className="mb-2 flex items-center gap-2">
                     <span
                       className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                        task.status?.toLowerCase() === 'complete'
-                          ? 'bg-green-100 text-green-800'
-                          : task.status?.toLowerCase() === 'completed'
+                        task.status?.toLowerCase() === 'complete' ||
+                        task.status?.toLowerCase() === 'completed'
                           ? 'bg-green-100 text-green-800'
                           : task.status?.toLowerCase() === 'pending'
                           ? 'bg-blue-100 text-blue-800'
@@ -263,20 +262,22 @@ export function ApplicantProgressBar({
                           : 'bg-gray-100 text-gray-800'
                       }`}
                     >
-                     {(() => {
-                        const status = (task.status || "").toLowerCase();
-                        return status;
-                        /*return status === "completed"
-                          ? "Completed"
-                          : status === "in_progress"
-                          ? "In Progress"
-                          : status === "overdue"
-                          ? "Needs Attention"
-                          : status === "blocked"
-                          ? "Blocked"
-                          : "Pending";*/
+                      {(() => {
+                        const status = (task.status || '').toLowerCase()
+                        return status
                       })()}
                     </span>
+
+                    {task.status?.toLowerCase() === 'completed' && (
+                      <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded font-medium">
+                        {task.CompletedDate?.split('.')[0]}
+                      </span>
+                    )}
+                    {task.status?.toLowerCase() === 'pending' && Number(task.daysPending) > 0 && (
+                      <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded font-medium">
+                        {task.daysPending} days pending
+                      </span>
+                    )}
                   </div>
 
                   {task.daysActive > 0 && (
@@ -297,12 +298,6 @@ export function ApplicantProgressBar({
                   )}
 
                   <div className="flex space-x-1">
-                    {task.status === 'completed' && (
-                      <div className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded text-center font-medium">
-                        Completed ✓
-                      </div>
-                    )}
-
                     {/*(task.name.includes('IAR') ||
                       expandedStage === 'ingredients') && (
                       <button

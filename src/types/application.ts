@@ -25,6 +25,9 @@ export type Task = {
   required: boolean;
   overdue: boolean;
   overdueDays?: number;
+  CompletedDate?: string;
+  daysPending?: number;
+  daysOverdue?: number;
   taskRoles?: { taskRole: string }[]
 };
 
