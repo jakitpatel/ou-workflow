@@ -31,6 +31,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
       </div>
 
       {/* Status filter dropdown */}
+      {/*
       <div className="flex items-center space-x-2">
         <Filter className="w-4 h-4 text-gray-400" />
         <select
@@ -46,6 +47,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           <option value="completed">Completed</option>
         </select>
       </div>
+      */}
     </div>
   )
 }
