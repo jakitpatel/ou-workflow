@@ -61,8 +61,12 @@ export function NCRCDashboard({
     }));
 
     const newCount = userApplicants.filter(t => t.status === 'new').length;
-    const inProgressCount = userApplicants.filter(t => t.status === 'inp').length;
-    const withdrawnCount = userApplicants.filter(t => t.status === 'wth').length;
+    const inProgressCount = userApplicants.filter(
+      t => t.status === 'inp' || t.status === 'in progress'
+    ).length;
+    const withdrawnCount = userApplicants.filter(
+      t => t.status === 'wth' || t.status === 'withdrawn'
+    ).length;
     const completedCount = userApplicants.filter(
       t => t.status === 'compl' || t.status === 'completed' || t.status === 'certified'
     ).length;
