@@ -2,17 +2,19 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchApplicationTasks, fetchRcs } from './../../../api' // adjust import as needed
 import { useUser } from '@/context/UserContext'
 
-export function useTasks(applicationId?: string) {
+export function useTasks(applicationId?: string, searchTerm?: string) {
   const { token, strategy } = useUser();
 
   return useQuery({
-    queryKey: ['tasksplants', token, strategy, applicationId ?? 'all'],
-    queryFn: () => fetchApplicationTasks({ 
-      token: token ?? undefined,     // ✅ null → undefined
-      strategy: strategy ?? undefined, // ✅ null → undefined
-      applicationId 
-    }),
-    enabled: strategy === 'none' || !!token, // ✅ always fetch if user is authorized
+    queryKey: ['tasksplants', token, strategy, applicationId ?? 'all', searchTerm ?? ''],
+    queryFn: () =>
+      fetchApplicationTasks({
+        token: token ?? undefined,
+        strategy: strategy ?? undefined,
+        applicationId,
+        searchTerm, // ✅ new param
+      }),
+    enabled: strategy === 'none' || !!token,
   });
 }
 

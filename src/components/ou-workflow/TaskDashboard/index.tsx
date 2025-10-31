@@ -13,12 +13,11 @@
 import { plantHistory } from './demoData';
 import { useTasks } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
-import { useTaskContext } from '@/context/TaskContext';
+//import { useTaskContext } from '@/context/TaskContext';
 
  // Tasks Dashboard Component (with full table functionality restored)
 export function TaskDashboard ({ applicationId }){
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('active');
     const [expandedActions, setExpandedActions] = useState(new Set());
     const [expandedMessages, setExpandedMessages] = useState(new Set());
     const [messageInputs, setMessageInputs] = useState({});
@@ -32,17 +31,23 @@ export function TaskDashboard ({ applicationId }){
     const [showConditionModal, setShowConditionModal] = useState(null);
     const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
     //const [selectedAction, setSelectedAction] = useState(null);
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
     const messageInputRefs = useRef({});
     //const { applicationId, setApplicationId } = useTaskContext();
     const queryClient = useQueryClient();
     const errorDialogRef = useRef<ErrorDialogRef>(null);
     // Fetch tasks and plants
+    useEffect(() => {
+      const handler = setTimeout(() => setDebouncedSearchTerm(searchTerm), 1000);
+      return () => clearTimeout(handler);
+    }, [searchTerm]); 
+
     const {
       data: tasksplants = [],
       isLoading,
       isError,
-    } = useTasks(applicationId || undefined);
+    } = useTasks(applicationId || undefined, debouncedSearchTerm);
 
     // Cross-navigation handler
     const handleViewNCRCDashboard = () => {
@@ -96,42 +101,28 @@ export function TaskDashboard ({ applicationId }){
 
     // Filter and sort tasks
     const filteredTasks = useMemo(() => {
-      // Normalize user roles
       const isAllRole = role?.toUpperCase() === 'ALL';
       const userRoles = isAllRole
         ? (roles ?? []).map(r => r.value?.toLowerCase()).filter(Boolean)
         : role
         ? [role.toLowerCase()]
         : [];
-      //console.log('User Roles for filtering:', userRoles);
+
       let filtered = tasksplants.filter(task => {
-        // ✅ If 'ALL' role selected → skip role check and show all tasks
         if (!isAllRole) {
           const taskRole = task.assigneeRole?.toLowerCase();
           if (!taskRole || !userRoles.includes(taskRole)) return false;
         }
-        
-        const matchesSearch = !searchTerm ||
-        (task.taskName && task.taskName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (task.plantName && task.plantName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (task.companyName && task.companyName.toLowerCase().includes(searchTerm.toLowerCase()));
-        
-        const matchesStatus = statusFilter === 'all' || 
-          (statusFilter === 'active' && task.status !== 'completed') ||
-          task.status === statusFilter;
-        
-        return matchesSearch && matchesStatus;
+        return true;
       });
 
       return filtered.sort((a, b) => {
         const priorityOrder = { urgent: 0, high: 1, medium: 2, normal: 2, low: 3 };
         const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
         if (priorityDiff !== 0) return priorityDiff;
-        
-        // Ensure daysActive is a number (fallback to 0 when undefined) to avoid TS errors
         return (b.daysActive ?? 0) - (a.daysActive ?? 0);
       });
-    }, [tasksplants, username, searchTerm, statusFilter]);
+    }, [tasksplants, role, roles]);
 
     // Event handlers
     const handleActionsExpand = (taskId) => {
@@ -516,8 +507,6 @@ export function TaskDashboard ({ applicationId }){
           <TaskFilters
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
           />
           {/* List */}
           {isLoading && <div className="text-gray-500">Loading Tasks & Plants...</div>}

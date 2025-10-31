@@ -29,7 +29,7 @@ export const ApplicantStatsCards: React.FC<ApplicantStatsCardsProps> = ({ stats 
       </div>
       <div className="bg-green-50 p-4 rounded-lg border border-green-200">
         <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
-        <div className="text-sm text-green-700">COMPLETED</div>
+        <div className="text-sm text-green-700">CERTIFIED</div>
       </div>
       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
         <div className="text-2xl font-bold text-gray-600">{stats.others}</div>

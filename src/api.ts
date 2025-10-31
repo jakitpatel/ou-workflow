@@ -328,24 +328,29 @@ export async function loginApi({
   return response.json() // expect { username, role, token }
 }
 export async function fetchApplicationTasks({
-  //page = 0,
-  //limit = 20,
   token,
   strategy,
   applicationId,
+  searchTerm,
 }: {
-  //page?: number;
-  //limit?: number;
   token?: string | null;
   strategy?: string;
   applicationId?: string;
+  searchTerm?: string;
 } = {}): Promise<ApplicationTask[]> {
-  //let path = `/get_application_tasks?page[limit]=${limit}&page[offset]=${page}`;
-  let path = `/get_application_tasks`;
-  // ✅ Add filter only if applicationId is passed
+  let params: string[] = [];
+
   if (applicationId) {
-    path += `?filter[applicationId]=${encodeURIComponent(applicationId)}`;
+    params.push(`filter[applicationId]=${encodeURIComponent(applicationId)}`);
   }
+
+  // ✅ Add server-side filter for plant name
+  if (searchTerm) {
+    params.push(`filter[plantName]=${encodeURIComponent(searchTerm)}`);
+  }
+
+  const queryString = params.length ? `?${params.join('&')}` : '';
+  const path = `/get_application_tasks${queryString}`;
 
   const json = (await fetchWithAuth({
     path,

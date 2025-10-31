@@ -1,18 +1,14 @@
 import React from 'react'
-import { Search, Filter } from 'lucide-react'
+import { Search } from 'lucide-react'
 
 interface TaskFiltersProps {
   searchTerm: string
   setSearchTerm: (value: string) => void
-  statusFilter: string
-  setStatusFilter: (value: string) => void
 }
 
 export const TaskFilters: React.FC<TaskFiltersProps> = ({
   searchTerm,
-  setSearchTerm,
-  statusFilter,
-  setStatusFilter,
+  setSearchTerm
 }) => {
   return (
     <div className="mt-6 flex flex-wrap items-center gap-4">
@@ -29,25 +25,6 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           />
         </div>
       </div>
-
-      {/* Status filter dropdown */}
-      {/*
-      <div className="flex items-center space-x-2">
-        <Filter className="w-4 h-4 text-gray-400" />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-sm border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active Only</option>
-          <option value="new">New</option>
-          <option value="in_progress">In Progress</option>
-          <option value="overdue">Overdue</option>
-          <option value="completed">Completed</option>
-        </select>
-      </div>
-      */}
     </div>
   )
 }
