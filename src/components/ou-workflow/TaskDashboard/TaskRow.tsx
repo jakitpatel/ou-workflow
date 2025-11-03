@@ -33,37 +33,38 @@ export function TaskRow({
     <React.Fragment>
       <tr className={`hover:bg-gray-50 ${getPriorityBorderClass(application.priority)}`}>
         {/* Task & Plant Column */}
-        <td className="px-6 py-4">
-            <div className="space-y-2">
+        <td className="px-6 py-4 align-middle">
+          <div className="space-y-2">
             {/* Plant name - prominent and clickable */}
-            <button 
-                onClick={() => handleShowPlantHistory(application.plantName)}
-                className="text-left group"
-                title={`Click to view ${application.plantName} history. ${plantInfo?.applications || 0} applications`}
+            <button
+              onClick={() => handleShowPlantHistory(application.plantName)}
+              className="text-left group"
+              title={`Click to view ${application.plantName} history. ${plantInfo?.applications || 0} applications`}
             >
-                <div className="text-base font-bold group-hover:text-blue-600 transition-colors text-gray-900">
+              <div className="text-base font-bold group-hover:text-blue-600 transition-colors text-gray-900">
                 {application.plantName}
-                </div>
+              </div>
             </button>
-                <div className="flex items-center">
-                  {(application?.daysPending ?? 0) > 0 && (
-                    <>
-                    <History className="w-4 h-4 inline ml-2 opacity-60 group-hover:opacity-100" />
-                    <span className="text-sm font-medium ml-1">
-                      {application.daysPending} days elapsed
-                    </span>
-                  </>
-                  )}
-                  {application?.daysOverdue > 0 && (
-                    <>
-                    <History className="w-4 h-4 inline ml-2 opacity-60 group-hover:opacity-100" />
-                    <span className="text-sm font-medium ml-1 text-red-600">
-                      {application.daysOverdue} days overdue
-                    </span>
-                    </>
-                  )}
+
+            {/* Status row */}
+            <div className="flex items-center flex-wrap text-sm text-gray-700">
+              {(application?.daysPending ?? 0) > 0 && (
+                <div className="flex items-center mr-3">
+                  <History className="w-4 h-4 inline opacity-60 group-hover:opacity-100" />
+                  <span className="ml-1 font-medium">{application.daysPending} days elapsed</span>
                 </div>
+              )}
+
+              {application?.daysOverdue > 0 && (
+                <div className="flex items-center">
+                  <History className="w-4 h-4 inline opacity-60 group-hover:opacity-100" />
+                  <span className="ml-1 font-medium text-red-600">
+                    {application.daysOverdue} days overdue
+                  </span>
+                </div>
+              )}
             </div>
+          </div>
         </td>
 
         {/* Actions Column */}
