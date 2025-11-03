@@ -191,7 +191,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
           <div className="flex space-x-2">
             <Link
               to="/ou-workflow/ncrc-dashboard/$applicationId"
-              params={{ applicationId: String(applicant.id) }}
+              params={{ applicationId: String(applicant.applicationId) }}
               className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
               View Details

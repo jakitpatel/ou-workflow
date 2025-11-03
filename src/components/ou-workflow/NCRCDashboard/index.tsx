@@ -176,7 +176,7 @@ export function NCRCDashboard({
           });
         } else if (taskType === "action" && taskCategory === "assignment") {
           const taskId = action.TaskInstanceId;
-          const appId = selectedAction.application.id;
+          const appId = selectedAction.application.applicationId;
 
           const rawLabel = action.name ?? "";
           const normalized = rawLabel.replace(/\s+/g, "").toLowerCase();
@@ -213,9 +213,9 @@ export function NCRCDashboard({
     const [appId, actId] = selectedActionId.split(":");
 
     // 🔒 normalize IDs as strings
-    const app = applicants.find(a => String(a.id) === String(appId));
+    const app = applicants.find(a => String(a.applicationId) === String(appId));
     if (!app) {
-      console.warn("No app found for", appId, applicants.map(t => t.id));
+      console.warn("No app found for", appId, applicants.map(t => t.applicationId));
       return null;
     }
 
@@ -240,12 +240,12 @@ export function NCRCDashboard({
       e.preventDefault();
       console.log('Action clicked: handleTaskAction', action, 'for application:', application);
       /*if (action === 'manage_ingredients') {
-        const app = applicants.find(a => a.id === applicantId);
+        const app = applicants.find(a => a.applicationId === applicantId);
         setSelectedIngredientApp(app);
         setShowIngredientsManager(true);
         return;
       }*/
-      handleSelectAppActions(application.id, action.TaskInstanceId);
+      handleSelectAppActions(application.applicationId, action.TaskInstanceId);
       //setSelectedAction({ application, action });
       const actionType = action.taskType?.toLowerCase(); // e.g., "confirm", "conditional", "action"
       const actionCategory = action.taskCategory?.toLowerCase(); // e.g., "confirmation", "approval", "assignment", "selector", "input"
@@ -338,7 +338,7 @@ export function NCRCDashboard({
         {applicants.length > 0 ? (
           applicants.map((applicant) => (
             <ApplicantCard
-              key={applicant.id}
+              key={applicant.applicationId}
               applicant={applicant}
               setShowIngredientsManager={setShowIngredientsManager}
               setSelectedIngredientApp={setSelectedIngredientApp}
