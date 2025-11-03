@@ -43,34 +43,26 @@ export function TaskRow({
             >
                 <div className="text-base font-bold group-hover:text-blue-600 transition-colors text-gray-900">
                 {application.plantName}
-                <History className="w-4 h-4 inline ml-2 opacity-60 group-hover:opacity-100" />
-                {(application?.daysPending ?? 0) > 0 && (
-                  <span className="text-sm font-medium ml-1">
-                    {application.daysPending} days elapsed
-                  </span>
-                )}
-                {application?.daysOverdue > 0 && (
-                  <span className="text-sm font-medium ml-1 text-red-600">
-                    {application.daysOverdue} overdue
-                  </span>
-                )}
-                {/*<span className="text-sm font-normal ml-1 text-gray-600">
-                  {application.applicationId}
-                </span>*/}
                 </div>
             </button>
-            
-            {/* Task title with stage label */}
-            {/*
-            <div className="flex items-center space-x-2">
-                <span className={`px-2 py-1 text-xs rounded font-medium ${getStageColor(application.workflowStage)}`}>
-                {application.applicationId} {application.workflowStage}
-                </span>
-                <span className="font-medium text-sm text-gray-900">
-                {application.title}
-                </span>
-            </div>
-            */}
+                <div className="flex items-center">
+                  {(application?.daysPending ?? 0) > 0 && (
+                    <>
+                    <History className="w-4 h-4 inline ml-2 opacity-60 group-hover:opacity-100" />
+                    <span className="text-sm font-medium ml-1">
+                      {application.daysPending} days elapsed
+                    </span>
+                  </>
+                  )}
+                  {application?.daysOverdue > 0 && (
+                    <>
+                    <History className="w-4 h-4 inline ml-2 opacity-60 group-hover:opacity-100" />
+                    <span className="text-sm font-medium ml-1 text-red-600">
+                      {application.daysOverdue} days overdue
+                    </span>
+                    </>
+                  )}
+                </div>
             </div>
         </td>
 
