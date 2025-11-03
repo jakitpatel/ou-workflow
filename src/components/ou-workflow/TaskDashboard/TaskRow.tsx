@@ -2,8 +2,6 @@ import React from 'react';
 import { getStatusConfig, getPriorityBorderClass } from './taskHelpers';
 import { History } from 'lucide-react';
 import type { ApplicationTask } from '@/types/application';
-//import { TaskActionsPanel } from './TaskActionsPanel';
-//import { TaskMessagesPanel } from './TaskMessagesPanel';
 
 interface PlantInfo {
   applications?: number;
@@ -78,16 +76,6 @@ export function TaskRow({
               {/*application.icon && <application.icon className="w-4 h-4 mr-2" />*/}
               {application.taskName}
             </button>
-            {/*
-            <button
-            onClick={() => handleActionsExpand(application.id)}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-            <Wrench className="w-4 h-4" />
-            <span className="text-sm">Actions</span>
-            <ChevronDown className={`w-4 h-4 transition-transform ${isActionsExpanded ? 'rotate-180' : ''}`} />
-            </button>
-            */}
         </td>
         {/* Role Column */}
         <td className="px-6 py-4">
@@ -108,20 +96,6 @@ export function TaskRow({
             </span>
         </td>
       </tr>
-      {/*isActionsExpanded && (
-        <TaskActionsPanel
-          key={`${application.id}-actions`}  // ✅ unique key
-          application={application}
-          {...props}
-        />
-      )*/}
-      {/*isMessagesExpanded && (
-        <TaskMessagesPanel
-          key={`${application.id}-messages`} // ✅ unique key
-          application={application}
-          {...props}
-        />
-      )*/}
     </React.Fragment>
   );
 }

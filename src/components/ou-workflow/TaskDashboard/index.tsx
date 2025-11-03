@@ -16,9 +16,10 @@ import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 //import { useTaskContext } from '@/context/TaskContext';
 
  // Tasks Dashboard Component (with full table functionality restored)
-export function TaskDashboard ({ applicationId }){
+type TaskDashboardProps = { applicationId?: string | number | null };
+export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     const [searchTerm, setSearchTerm] = useState('');
-    const [expandedActions, setExpandedActions] = useState(new Set());
+    //const [expandedActions, setExpandedActions] = useState(new Set());
     const [expandedMessages, setExpandedMessages] = useState(new Set());
     const [messageInputs, setMessageInputs] = useState({});
     const [showTaskAssignment, setShowTaskAssignment] = useState({});
@@ -27,8 +28,8 @@ export function TaskDashboard ({ applicationId }){
     const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
     const { username, role, roles, setActiveScreen, token, strategy } = useUser() // 👈 use context
-    const [showActionModal, setShowActionModal] = useState(null);
-    const [showConditionModal, setShowConditionModal] = useState(null);
+    const [showActionModal, setShowActionModal] = useState<boolean | null>(null);
+    const [showConditionModal, setShowConditionModal] = useState<boolean | null>(null);
     const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
     //const [selectedAction, setSelectedAction] = useState(null);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
@@ -123,46 +124,6 @@ export function TaskDashboard ({ applicationId }){
         return (b.daysActive ?? 0) - (a.daysActive ?? 0);
       });
     }, [tasksplants, role, roles]);
-
-    // Event handlers
-    const handleActionsExpand = (taskId) => {
-      setExpandedActions(prev => {
-        const newExpanded = new Set(prev);
-        if (newExpanded.has(taskId)) {
-          newExpanded.delete(taskId);
-        } else {
-          newExpanded.add(taskId);
-          setExpandedMessages(prev => {
-            const newMessages = new Set(prev);
-            newMessages.delete(taskId);
-            return newMessages;
-          });
-        }
-        return newExpanded;
-      });
-    };
-
-    const handleMessagesExpand = (taskId) => {
-      setExpandedMessages(prev => {
-        const newExpanded = new Set(prev);
-        if (newExpanded.has(taskId)) {
-          newExpanded.delete(taskId);
-        } else {
-          newExpanded.add(taskId);
-          setExpandedActions(prev => {
-            const newActions = new Set(prev);
-            newActions.delete(taskId);
-            return newActions;
-          });
-          setTimeout(() => {
-            if (messageInputRefs.current[taskId]) {
-              messageInputRefs.current[taskId].focus();
-            }
-          }, 100);
-        }
-        return newExpanded;
-      });
-    };
 
     const handleMessageInputChange = (taskId, value) => {
       setMessageInputs(prev => ({
@@ -532,12 +493,9 @@ export function TaskDashboard ({ applicationId }){
                     plantInfo={plantHistory[application.plant]}
                     showReassignDropdown={showReassignDropdown}
                     setShowReassignDropdown={setShowReassignDropdown}
-                    //getTaskActions={getTaskActions}
                     handleApplicationTaskAction={handleApplicationTaskAction}
                     expandedMessages={expandedMessages}
                     handleShowPlantHistory={handleShowPlantHistory}
-                    handleActionsExpand={handleActionsExpand}
-                    handleMessagesExpand={handleMessagesExpand}
                     // ...pass other needed props...
                     messageInputs={messageInputs}
                     messageInputRefs={messageInputRefs}

@@ -3,7 +3,6 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import type { LoginStrategy } from '@/types/auth'
 import { useQuery } from '@tanstack/react-query'
 import { fetchRoles } from '@/api'
-import { redirect } from '@tanstack/react-router'
 
 type UserContextType = {
   username: string | null

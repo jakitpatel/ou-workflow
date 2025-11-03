@@ -35,8 +35,8 @@ export function NCRCDashboard({
   } | null>(null);*/
   const { setActiveScreen, token, strategy, username } = useUser(); // 👈 use context
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
-  const [showActionModal, setShowActionModal] = useState(null);
-  const [showConditionModal, setShowConditionModal] = useState(null);
+  const [showActionModal, setShowActionModal] = useState<boolean | null>(null);
+  const [showConditionModal, setShowConditionModal] = useState<boolean | null>(null);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   const queryClient = useQueryClient();
   const errorDialogRef = useRef<ErrorDialogRef>(null);

@@ -13,7 +13,7 @@ type SelectedAction = {
 };
 
 type Props = {
-  showConditionModal: boolean;
+  showConditionModal: boolean | null;
   selectedAction: SelectedAction | null;
   setShowConditionModal: (val: boolean | null) => void;
   executeAction: (
