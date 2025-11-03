@@ -91,7 +91,7 @@ export function TaskDashboard ({ applicationId }){
           const s = t.status?.toLowerCase();
           return s === 'in_progress' || s === 'pending';
         }).length,
-        overdue: userTasks.filter(t => t.status === 'overdue').length,
+        overdue: userTasks.filter(t => {return t.daysOverdue > 0}).length,
         completed: userTasks.filter(t => {
           const s = t.status?.toLowerCase();
           return s === 'completed' || s === 'complete';
