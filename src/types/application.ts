@@ -146,7 +146,8 @@ export interface ApplicationTask {
   daysActive: number;
   priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM';
   stageName: string;              // e.g., "Send NDA"
-  overdue: number;
+  daysPending: number;
+  daysOverdue: number;
 }
 
 export interface ApplicationTasksResponse {

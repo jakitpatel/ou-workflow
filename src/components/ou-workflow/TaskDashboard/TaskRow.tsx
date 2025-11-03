@@ -44,14 +44,14 @@ export function TaskRow({
                 <div className="text-base font-bold group-hover:text-blue-600 transition-colors text-gray-900">
                 {application.plantName}
                 <History className="w-4 h-4 inline ml-2 opacity-60 group-hover:opacity-100" />
-                {(application?.daysActive ?? 0) > 0 && (
+                {(application?.daysPending ?? 0) > 0 && (
                   <span className="text-sm font-medium ml-1">
-                    {application.daysActive} days elapsed
+                    {application.daysPending} days elapsed
                   </span>
                 )}
-                {application?.overdue > 0 && (
+                {application?.daysOverdue > 0 && (
                   <span className="text-sm font-medium ml-1 text-red-600">
-                    {application.overdue} overdue
+                    {application.daysOverdue} overdue
                   </span>
                 )}
                 {/*<span className="text-sm font-normal ml-1 text-gray-600">

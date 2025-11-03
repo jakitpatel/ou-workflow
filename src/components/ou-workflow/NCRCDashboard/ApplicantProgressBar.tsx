@@ -236,14 +236,17 @@ export function ApplicantProgressBar({
                     ))}
                   </div>
                   <div className="flex justify-between items-center">
-                    {task.required && (
+                    {/*task.required && (
                       <span className="text-xs text-red-600 bg-red-50 px-1 py-0.5 rounded mt-1 inline-block">
                         Required
                       </span>
-                    )}
-                    {task?.overdueDays > 0 && (
-                      <span className="text-sm font-medium text-red-600">
-                        {task.overdueDays} overdue
+                    )*/}
+                    <span className="text-xs text-red-600 bg-red-50 px-1 py-0.5 rounded mt-1 inline-block">
+                        Required : {task.required ? 'Yes' : 'No'}
+                    </span>
+                    {task?.daysOverdue > 0 && (
+                      <span className="text-xs font-medium text-red-600 bg-red-100 px-1.5 py-0.5 rounded">
+                        {task.daysOverdue} overdue
                       </span>
                     )}
                   </div>
@@ -292,22 +295,15 @@ export function ApplicantProgressBar({
                     )}
                   </div>
 
-                  {task.daysActive > 0 && (
+                  {/*task.daysOverdue > 0 && (
                     <div className="mb-2">
                       <span
-                        className={`text-xs font-medium ${
-                          task.status === 'overdue'
-                            ? 'text-red-600'
-                            : task.daysActive > 7
-                            ? 'text-orange-600'
-                            : 'text-gray-500'
-                        }`}
+                        className={`text-xs font-medium text-red-600 bg-red-100 px-1.5 py-0.5 rounded`}
                       >
-                        {task.daysActive} days{' '}
-                        {task.status === 'overdue' ? 'overdue' : 'active'}
+                        {task.daysOverdue} days overdue
                       </span>
                     </div>
-                  )}
+                  )*/}
 
                   <div className="flex space-x-1">
                     {/*(task.name.includes('IAR') ||
