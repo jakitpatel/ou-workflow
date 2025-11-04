@@ -65,7 +65,7 @@ export default function Overview({ application, allValidationsPassed }: { applic
                 </div>
                 <div className="flex items-center justify-between">
                 <span>Uploaded Files:</span>
-                <span className="font-medium">{application.uploadedFiles?.length}</span>
+                <span className="font-medium">{application.files?.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
                 <span>Validation Status:</span>

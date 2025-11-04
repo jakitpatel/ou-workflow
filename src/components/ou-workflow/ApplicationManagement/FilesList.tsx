@@ -121,7 +121,7 @@ export default function FilesList({ application }: { application: ApplicationDet
                 )}
               </div>
               <button
-                onClick={() => downloadFile(file.fileName,file.filePath)}
+                onClick={() => downloadFile(file.fileName ?? "", file.filePath)}
                 className="flex items-center px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
               >
                 <Download className="h-4 w-4 mr-1" />

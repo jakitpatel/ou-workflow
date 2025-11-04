@@ -154,3 +154,46 @@ export interface ApplicationTasksResponse {
   data: ApplicationTask[];
   status: string; // e.g., "ok"
 }
+
+export interface ApplicationDetailResponse {
+  applicationInfo: ApplicationDetail;
+}
+
+export interface WFUserAttributes {
+  CreatedDate: string;
+  Email: string;
+  FullName: string;
+  IsActive: boolean;
+  LastLoginDate: string | null;
+  UserRole: string | null;
+  UserName: string;
+}
+
+export interface WFUserRelationships {
+  RoleAssigmentList: {
+    data: any[];
+    links: {
+      self: string;
+    };
+  };
+  WF_Role: {
+    data: any | null;
+    links: {
+      self: string;
+    };
+  };
+}
+
+export interface WFUser {
+  id: string;
+  type: string;
+  attributes: WFUserAttributes;
+  relationships: WFUserRelationships;
+  links: {
+    self: string;
+  };
+}
+
+export interface UserRoleResponse {
+  data: WFUser[];
+}

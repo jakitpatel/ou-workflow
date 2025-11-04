@@ -17,7 +17,7 @@ type Props = {
   showActionModal: boolean | null;
   selectedAction: SelectedAction | null;
   setShowActionModal: (val: boolean | null) => void;
-  executeAction: (value: string, action: { id: string; name: string }) => void;
+  executeAction: (value: string, action: { id: string; name?: string; taskName?: string }) => void;
 };
 
 type RcLookupItem = {

@@ -59,7 +59,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
         params: { applicationId },
       })
     } else {
-      navigate({ to: '/ou-workflow/tasks-dashboard/' })
+      navigate({ to: '/ou-workflow/tasks-dashboard' })
     }
   };
 

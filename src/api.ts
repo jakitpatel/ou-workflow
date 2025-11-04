@@ -1,4 +1,4 @@
-import type { Applicant, ApplicationTasksResponse, ApplicationTask } from './types/application';
+import type { Applicant, ApplicationTasksResponse, ApplicationTask, ApplicationDetailResponse, UserRoleResponse } from './types/application';
 
 interface ApplicantsResponse {
   data: Applicant[];
@@ -145,7 +145,7 @@ export async function fetchRoles({
     path: `/api/WFUSERROLE?${params.toString()}`,
     strategy,
     token,
-  });
+  }) as UserRoleResponse;
   if (!Array.isArray(json.data)) {
     console.error("❌ json.data is not an array:", json);
     throw new Error("Invalid roles response");
@@ -182,7 +182,7 @@ export async function fetchRcs({
     path: `/api/WFUSERROLE?${params.toString()}`,
     strategy,
     token,
-  });
+  }) as UserRoleResponse;
 
   return json.data.map((item: any) => ({
     name: item.attributes.UserName,
@@ -288,9 +288,9 @@ export async function fetchApplicationDetailRaw({
   const json = await fetchWithAuth({
     path,
     strategy,
-    token,
-    cache: 'no-store', // preserve original behavior
-  });
+    token/*,
+    cache: 'no-store', // preserve original behavior*/
+  }) as ApplicationDetailResponse;
 
   return json.applicationInfo;
 }

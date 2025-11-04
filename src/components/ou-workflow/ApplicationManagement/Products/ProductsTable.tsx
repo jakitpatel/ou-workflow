@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { ApplicationDetail } from "@/types/application";
 import { Package, Pencil, Trash2 } from "lucide-react";
 import ProductFormDialog from "./ProductFormDialog";

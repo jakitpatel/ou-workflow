@@ -20,12 +20,12 @@ type TaskDashboardProps = { applicationId?: string | number | null };
 export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     const [searchTerm, setSearchTerm] = useState('');
     //const [expandedActions, setExpandedActions] = useState(new Set());
-    const [expandedMessages, setExpandedMessages] = useState(new Set());
+    //const [expandedMessages, setExpandedMessages] = useState(new Set());
     const [messageInputs, setMessageInputs] = useState({});
     const [showTaskAssignment, setShowTaskAssignment] = useState({});
     const [taskAssignmentData, setTaskAssignmentData] = useState({});
     const [showPlantHistory, setShowPlantHistory] = useState(null);
-    const [showReassignDropdown, setShowReassignDropdown] = useState({});
+    //const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
     const { username, role, roles, setActiveScreen, token, strategy } = useUser() // 👈 use context
     const [showActionModal, setShowActionModal] = useState<boolean | null>(null);
@@ -62,7 +62,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
         if (!event.target.closest('.task-assignment-panel') &&
             !event.target.closest('.plant-history-modal')) {
           setShowTaskAssignment({});
-          setShowReassignDropdown({});
+          //setShowReassignDropdown({});
           if (!event.target.closest('.plant-history-modal')) {
             setShowPlantHistory(null);
           }
@@ -491,10 +491,10 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
                     key={application.taskInstanceId}   // ✅ unique key here
                     application={application}
                     plantInfo={plantHistory[application.plant]}
-                    showReassignDropdown={showReassignDropdown}
-                    setShowReassignDropdown={setShowReassignDropdown}
+                    //showReassignDropdown={showReassignDropdown}
+                    //setShowReassignDropdown={setShowReassignDropdown}
                     handleApplicationTaskAction={handleApplicationTaskAction}
-                    expandedMessages={expandedMessages}
+                    //expandedMessages={expandedMessages}
                     handleShowPlantHistory={handleShowPlantHistory}
                     // ...pass other needed props...
                     messageInputs={messageInputs}
