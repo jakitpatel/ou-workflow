@@ -82,7 +82,9 @@ function LoginPage() {
 
   const handleOkta = () => {
     const API_BASE_URL = "https://devvm01.nyc.ou.org:5656";
-    const returnUrl = encodeURIComponent('http://devvm10:80/dashboard/cognito-callback');
+    const base = import.meta.env.BASE_URL || '/';
+    const callBackUrl = `${base.replace(/\/$/, '')}/cognito-callback`; // ✅ strips trailing slash
+    const returnUrl = encodeURIComponent(callBackUrl);
     const loginUrl = `${API_BASE_URL}/api/auth/login?return_url=${returnUrl}`;
     window.location.replace(loginUrl);
   }
