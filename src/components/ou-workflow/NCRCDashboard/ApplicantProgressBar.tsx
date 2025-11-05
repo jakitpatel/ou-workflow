@@ -295,16 +295,6 @@ export function ApplicantProgressBar({
                     )}
                   </div>
 
-                  {/*task.daysOverdue > 0 && (
-                    <div className="mb-2">
-                      <span
-                        className={`text-xs font-medium text-red-600 bg-red-100 px-1.5 py-0.5 rounded`}
-                      >
-                        {task.daysOverdue} days overdue
-                      </span>
-                    </div>
-                  )*/}
-
                   <div className="flex space-x-1">
                     {/*(task.name.includes('IAR') ||
                       expandedStage === 'ingredients') && (
