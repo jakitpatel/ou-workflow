@@ -81,10 +81,9 @@ function LoginPage() {
   }
 
   const handleOkta = () => {
-    //alert('Okta login not yet implemented!');
-    // TODO: Implement Okta login flow
-    const API_BASE_URL = "https://devvm01.nyc.ou.org:5656";//import.meta.env.VITE_API_CLIENT_URL;
-    const loginUrl = `${API_BASE_URL}/api/auth/login?return_url=http://devvm10:80/dashboard/index.html`;
+    const API_BASE_URL = "https://devvm01.nyc.ou.org:5656";
+    const returnUrl = encodeURIComponent('http://devvm10:80/dashboard/cognito-callback');
+    const loginUrl = `${API_BASE_URL}/api/auth/login?return_url=${returnUrl}`;
     window.location.replace(loginUrl);
   }
 
