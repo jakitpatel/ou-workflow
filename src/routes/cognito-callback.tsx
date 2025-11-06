@@ -14,10 +14,10 @@ function CognitoCallback() {
     const params = new URLSearchParams(window.location.search)
     const accessToken = params.get('access_token')
     const email = params.get('email') || params.get('user_id')
-
+    const username = params.get('user_id') || email;  // assuming email is used as username
     if (accessToken && email) {
       login({
-        username: email,
+        username: username,
         token: accessToken,
         strategy: 'cognito', // ✅ correct provider
       })
