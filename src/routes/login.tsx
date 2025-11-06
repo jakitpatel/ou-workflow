@@ -105,6 +105,7 @@ function LoginPage() {
         <h2 className="text-xl font-semibold text-blue-900 mb-4">Login Options</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Username Input */}
+          {strategy === 'api' && (
           <div className="relative">
             <User className="absolute left-3 top-3 h-4 w-4 text-blue-500" />
             <Input
@@ -116,7 +117,7 @@ function LoginPage() {
               onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e) }}
             />
           </div>
-
+          )}
           {/* Password Input */}
           {strategy === 'api' && (
             <div className="relative">
