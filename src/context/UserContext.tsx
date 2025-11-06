@@ -33,7 +33,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   // 👇 useQuery but disabled — only run when we call refetch()
   const { refetch } = useQuery({
-    queryKey: ['roles', username],
+    queryKey: ['roles', username, token], // ✅ include token so it’s reactive
     queryFn: () =>
     fetchRoles({
       username: username ?? '', // ensure string
@@ -52,7 +52,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   // 🔹 Fetch roles manually after login (when username changes)
   useEffect(() => {
-    if (username) {
+    if (username && token) { // ✅ require both to be ready
       console.log("🔄 Preparing to fetch roles for:", username)
       refetch().then((result) => {
         // 🔸 Handle errors first
@@ -108,7 +108,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
       })
     }
-  }, [username, refetch]) // ⬅️ include refetch in deps
+  }, [username, token, refetch]); // ✅ add token here
 
   // 🔹 Load from storage on refresh
   useEffect(() => {
