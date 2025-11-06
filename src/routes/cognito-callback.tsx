@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { useUser } from '@/context/UserContext'
 
@@ -8,6 +8,7 @@ export const Route = createFileRoute('/cognito-callback')({
 
 function CognitoCallback() {
   const { login } = useUser()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -18,19 +19,16 @@ function CognitoCallback() {
       login({
         username: email,
         token: accessToken,
-        strategy: 'okta',
+        strategy: 'okta', // ✅ correct provider
       })
 
-      // ✅ Clean URL to avoid showing token
-      window.history.replaceState({}, '', '/dashboard/')
-
-      // ✅ Redirect to home page after saving
-      window.location.assign('/dashboard/')
+      setTimeout(() => {
+        navigate({ to: '/' }) // ✅ goes to dashboard (home route)
+      }, 50) // let context sync to storage first
     } else {
-      // Invalid → go back to login screen
-      window.location.assign('/dashboard/login')
+      navigate({ to: '/login' })
     }
-  }, [login])
+  }, [])
 
   return (
     <div className="flex items-center justify-center h-screen text-lg text-blue-700">

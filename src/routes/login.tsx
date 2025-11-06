@@ -81,10 +81,12 @@ function LoginPage() {
   }
 
   const handleOkta = () => {
-    const API_BASE_URL = "https://devvm01.nyc.ou.org:5656";
     const base = import.meta.env.BASE_URL || '/';
-    const callBackUrl = `${base.replace(/\/$/, '')}/cognito-callback`; // ✅ strips trailing slash
+    //const callBackUrl = `${base.replace(/\/$/, '')}/cognito-callback`; // ✅ strips trailing slash
+    const callBackUrl = `http://devvm10/dashboard/cognito-callback`;
     const returnUrl = encodeURIComponent(callBackUrl);
+    console.log('Okta login, callback URL:', callBackUrl);
+    const API_BASE_URL = "https://devvm01.nyc.ou.org:5656";
     const loginUrl = `${API_BASE_URL}/api/auth/login?return_url=${returnUrl}`;
     window.location.replace(loginUrl);
   }

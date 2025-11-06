@@ -7,24 +7,31 @@ import { Navigation } from '@/components/ou-workflow/Navigation'
 // ✅ Normalize base: remove trailing slash
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '') || ''
 const LOGIN_PATH = `${BASE}/login`
+const CALLBACK_PATH = `${BASE}/cognito-callback`
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
     const userStr = localStorage.getItem('user')
-    const isLoginPage = location.pathname === LOGIN_PATH || location.pathname === '/login' // handle both
+    const isLoginPage =
+      location.pathname === LOGIN_PATH || location.pathname === '/login'
+
+    const isCallbackPage =
+      location.pathname === CALLBACK_PATH || location.pathname === '/cognito-callback'
+
+    // ✅ Allow login and callback screen without auth
+    if (isLoginPage || isCallbackPage) return
 
     if (!userStr) {
-      if (!isLoginPage) throw redirect({ to: '/login' })    // ✅ Router handles basepath automatically
-      return
+      throw redirect({ to: '/login' })
     }
 
     const user = JSON.parse(userStr)
-    const loginTime = user.loginTime ? new Date(user.loginTime).getTime() : null
+    const loginTime = new Date(user.loginTime).getTime()
     const now = Date.now()
 
     if (!loginTime || now - loginTime > 24 * 60 * 60 * 1000) {
       localStorage.removeItem('user')
-      if (!isLoginPage) throw redirect({ to: '/login' })
+      throw redirect({ to: '/login' })
     }
   },
   component: RootLayout,
