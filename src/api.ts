@@ -35,7 +35,7 @@ export async function fetchWithAuth<T>({
   };
 
   // Attach Bearer token if API security is used
-  if (strategy === "api" && token) {
+  if ((strategy === "api" || strategy === "cognito") && token) {
     finalHeaders["Authorization"] = `Bearer ${token}`;
   }
 
@@ -133,6 +133,8 @@ export async function fetchRoles({
   token?: string | null;
   strategy?: string;
 }): Promise<any[]> {
+  console.log("Fetching roles for user:", username);
+  console.log("Using token:", token);
   const params = new URLSearchParams({
     "fields[WFUSERROLE]": "UserName,UserRole,CreatedDate",
     "page[offset]": page.toString(),

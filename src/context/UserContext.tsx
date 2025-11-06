@@ -54,6 +54,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (username && token) { // ✅ require both to be ready
       console.log("🔄 Preparing to fetch roles for:", username)
+      console.log("🔄 Preparing to fetch roles for:", token)
       refetch().then((result) => {
         // 🔸 Handle errors first
         if (result.error) {

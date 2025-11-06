@@ -27,7 +27,7 @@ function LoginPage() {
   //const [username, setUsername] = useState('')
   const [formUsername, setFormUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [strategy, setStrategy] = useState<'none' | 'api' | 'okta'>('api')
+  const [strategy, setStrategy] = useState<'none' | 'api' | 'cognito'>('api')
   const [error, setError] = useState('')
 
   const usernameRef = useRef<HTMLInputElement>(null)
@@ -75,12 +75,12 @@ function LoginPage() {
       setError('')
       apiLogin.mutate({ username: formUsername, password })
     }
-    if (strategy === 'okta') {
-      handleOkta();
+    if (strategy === 'cognito') {
+      handleCognito();
     }
   }
 
-  const handleOkta = () => {
+  const handleCognito = () => {
     const base = import.meta.env.BASE_URL || '/';
     const origin = window.location.origin; // http://devvm10
 
@@ -133,7 +133,7 @@ function LoginPage() {
           )}
 
           {/* Strategy Selector */}
-          <Select value={strategy} onValueChange={(val) => setStrategy(val as 'none' | 'api' | 'okta')}>
+          <Select value={strategy} onValueChange={(val) => setStrategy(val as 'none' | 'api' | 'cognito')}>
             <SelectTrigger className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-blue-500" />
               <SelectValue placeholder="Choose login strategy" />
@@ -141,7 +141,7 @@ function LoginPage() {
             <SelectContent>
               <SelectItem value="none">No Security</SelectItem>
               <SelectItem value="api">API Security</SelectItem>
-              <SelectItem value="okta">Okta Security</SelectItem>
+              <SelectItem value="cognito">Cognito Security</SelectItem>
             </SelectContent>
           </Select>
 

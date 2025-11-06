@@ -19,7 +19,7 @@ function CognitoCallback() {
       login({
         username: email,
         token: accessToken,
-        strategy: 'okta', // ✅ correct provider
+        strategy: 'cognito', // ✅ correct provider
       })
 
       setTimeout(() => {
