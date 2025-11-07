@@ -129,7 +129,7 @@ export function NCRCDashboard({
     },
   });
 
-  const executeAction = (assignee: string, action: any, result: "yes" | "no") => {
+  const executeAction = (assignee: string, action: any, result: "yes" | "no" | "pending" | "completed" | "in_progress") => {
       //if (selectedAction) {
         // normalize taskType safely
         const taskType = action.taskType?.toLowerCase();
@@ -173,6 +173,27 @@ export function NCRCDashboard({
             token: token ?? undefined,     // ✅ null → undefined
             strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined,
+          });
+        } else if (taskType === "progress" && taskCategory === "progress_task") {
+          let status = "";
+          if (result === "completed") {
+            // Handle completed status
+            status = "Completed";
+          } else if (result === "in_progress") {
+            // Handle in_progress status
+            status = "In Progress";
+          } else if (result === "pending") {
+            // Handle pending status
+            status = "PENDING";
+            return;
+          }
+          confirmTaskMutation.mutate({
+            taskId: action.TaskInstanceId,
+            result: result,
+            token: token ?? undefined,     // ✅ null → undefined
+            strategy: strategy ?? undefined, // ✅ null → undefined
+            username: username ?? undefined,
+            status: status,
           });
         } else if (taskType === "action" && taskCategory === "assignment") {
           const taskId = action.TaskInstanceId;
@@ -265,6 +286,9 @@ export function NCRCDashboard({
         setShowConditionModal(action);
       } else if(actionType === "action" && actionCategory === "scheduling"){
         console.log("Scheduling Action :"+actionType);
+        setShowConditionModal(action);
+      } else if(actionType === "progress" && actionCategory === "progress_task"){
+        console.log("Progress Action :"+actionType);
         setShowConditionModal(action);
       }
     };

@@ -230,24 +230,47 @@ export async function confirmTask({
   result,
   token,
   strategy,
-  username
+  username,
+  status
 }: {
   taskId: string;
-  result?: "yes" | "no";
+  result?: "yes" | "no" | "completed" | "in_progress" | "pending";
   token?: string | null;
   strategy?: string;
   username?: string;
+  status?: string;
 }) {
+  let completion_notes = "Task completed successfully";
+  if (result && status) {
+    // Handle different statuses
+    if (result === "completed") {
+      // Handle completed status
+      completion_notes = "Task completed successfully";
+    } else if (result === "in_progress") {
+      // Handle in_progress status
+      completion_notes = "Task IN PROGRESS successfully";
+    } else if (result === "pending") {
+      // Handle pending status
+      completion_notes = "Task PENDING successfully";
+    }
+  }
+  // ✅ Build body dynamically — only include fields that exist
+  const body: Record<string, any> = {
+    task_instance_id: taskId,
+    completed_by: username,
+    completion_notes,
+  };
+
+  if (result) body.result = result.toUpperCase();
+  if (status) body.status = status; // ✅ Only add if defined
+
   const json = await fetchWithAuth({
     path: `/complete_task`,
     method: "POST",
     strategy,
     token,
     headers: { "Content-Type": "application/json" },
-    body: { task_instance_id: taskId, 
-            result: result ? result.toUpperCase() : undefined,
-            completed_by: username,
-            completion_notes: "Task completed successfully" },
+    body,
   });
 
   return json;

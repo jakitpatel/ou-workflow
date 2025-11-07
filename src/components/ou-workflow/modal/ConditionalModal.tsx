@@ -71,6 +71,11 @@ export const ConditionalModal: React.FC<Props> = ({
     action.taskType?.toLowerCase() === "action" &&
     taskCategory === "scheduling";
 
+   // ✅ NEW: Progress Task condition
+  const isProgressTask =
+    action.taskType?.toLowerCase() === "progress" &&
+    taskCategory === "progress_task";
+
   const handleInvoiceChange = (val: string) => {
     if (/^\d*$/.test(val)) {
       setInvoiceAmount(val);
@@ -87,6 +92,12 @@ export const ConditionalModal: React.FC<Props> = ({
 
   const handleScheduleSave = () => {
     handleSave(scheduledDateTime);
+  };
+
+  // ✅ Common function for progress status
+  const handleProgressStatus = (status: string) => {
+    executeAction(action.id, action, status);
+    setShowConditionModal(null);
   };
 
   return (
@@ -110,6 +121,13 @@ export const ConditionalModal: React.FC<Props> = ({
               Application:{" "}
               <span className="font-medium">{companyName}</span>
             </p>
+            {/* ✅ Show current assignee for all progress actions */}
+            {isProgressTask && (
+              <p>
+                Current Assignee:{" "}
+                <span className="font-medium">{application.assignee}</span>
+              </p>
+            )}
           </div>
 
           {/* Conditional UI */}
@@ -208,6 +226,32 @@ export const ConditionalModal: React.FC<Props> = ({
                 >
                   Save
                 </button>
+              </div>
+            </>
+          ) : isProgressTask ? (
+            <>
+              {/* ✅ NEW: Progress Task Section */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700">
+                  Update Status:
+                </label>
+                {["completed", "in_progress", "pending"].map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => handleProgressStatus(status)}
+                    className={`w-full text-left p-3 border rounded-lg hover:bg-gray-50 transition-colors ${
+                      status === "completed"
+                        ? "border-green-200 bg-green-50"
+                        : status === "in_progress"
+                        ? "border-blue-200 bg-blue-50"
+                        : "border-gray-200"
+                    }`}
+                  >
+                    <span className="font-medium capitalize">
+                      {status.replace("_", " ")}
+                    </span>
+                  </button>
+                ))}
               </div>
             </>
           ) : (

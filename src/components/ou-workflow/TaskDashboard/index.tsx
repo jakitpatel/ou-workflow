@@ -304,7 +304,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       },
     });
 
-    const executeAction = (assignee: string, action: any, result: "yes" | "no") => {
+    const executeAction = (assignee: string, action: any, result: "yes" | "no" | "pending" | "completed" | "in_progress") => {
       //if (selectedAction) {
         // normalize taskType safely
         const taskType = action.taskType?.toLowerCase();
@@ -349,6 +349,27 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
             token: token ?? undefined,     // ✅ null → undefined
             strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined, // ✅ null → undefined
+          });
+        } else if (taskType === "progress" && taskCategory === "progress_task") {
+          let status = "";
+          if (result === "completed") {
+            // Handle completed status
+            status = "Completed";
+          } else if (result === "in_progress") {
+            // Handle in_progress status
+            status = "In Progress";
+          } else if (result === "pending") {
+            // Handle pending status
+            status = "PENDING";
+            return;
+          }
+          confirmTaskMutation.mutate({
+            taskId: taskId,
+            result: result,
+            token: token ?? undefined,     // ✅ null → undefined
+            strategy: strategy ?? undefined, // ✅ null → undefined
+            username: username ?? undefined, // ✅ null → undefined
+            status: status,
           });
         } else if (taskType === "action" && taskCategory === "assignment") {
           const appId = selectedAction?.application?.id ?? selectedAction?.application?.applicationId ?? null;
@@ -434,6 +455,9 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
         setShowConditionModal(application);
       } else if(actionType === "action" && actionCategory === "scheduling"){
         console.log("Scheduling Action :"+actionType);
+        setShowConditionModal(application);
+      } else if(actionType === "progress" && actionCategory === "progress_task"){
+        console.log("Progress Action :"+actionType);
         setShowConditionModal(application);
       }
     };
