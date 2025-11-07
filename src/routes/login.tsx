@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 
 import { User, Lock, ShieldCheck, LogIn } from 'lucide-react'
+import { getApiBaseUrl } from '@/lib/utils';
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -89,7 +90,8 @@ function LoginPage() {
 
     console.log('Callback URL:', callBackUrl);
     //const API_BASE_URL = import.meta.env.VITE_API_CLIENT_URL;
-    const API_BASE_URL = (window as any).__APP_CONFIG__?.API_CLIENT_URL ?? '';
+    //const API_BASE_URL = (window as any).__APP_CONFIG__?.API_CLIENT_URL ?? '';
+    const API_BASE_URL = getApiBaseUrl();
     const loginUrl = `${API_BASE_URL}/api/auth/login?return_url=${returnUrl}`;
     window.location.replace(loginUrl);
   }

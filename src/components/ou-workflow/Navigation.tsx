@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Bell, User, BarChart3, ClipboardList, LogOut, Settings } from 'lucide-react'
 import { useUser } from './../../context/UserContext'  // 👈 new import
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { getApiBaseUrl } from '@/lib/utils'
 
 /*type Props = {
   hideMenu?: boolean   // 👈 new optional prop
@@ -16,13 +17,8 @@ export function Navigation() {
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   
-  const API_BUILD = import.meta.env.VITE_API_BUILD;
-  const API_LOCAL_URL = import.meta.env.VITE_API_LOCAL_URL;
-  const API_CLIENT_URL = import.meta.env.VITE_API_CLIENT_URL;
-
-  const API_BASE_URL =
-    API_BUILD === "client" ? API_CLIENT_URL : API_LOCAL_URL;
-
+  const API_BASE_URL = getApiBaseUrl();
+  
   // close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

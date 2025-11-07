@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useUser } from '@/context/UserContext'
 //import { Navigation } from '@/components/ou-workflow/Navigation' // 👈 import your nav
+import { getApiBaseUrl } from "@/lib/utils";
 
 export const Route = createFileRoute('/profile')({
   component: ProfilePage,
@@ -8,13 +9,7 @@ export const Route = createFileRoute('/profile')({
 
 function ProfilePage() {
   const { username, role, roles, setRole } = useUser()
-  
-  const API_BUILD = import.meta.env.VITE_API_BUILD;
-  const API_LOCAL_URL = import.meta.env.VITE_API_LOCAL_URL;
-  const API_CLIENT_URL = import.meta.env.VITE_API_CLIENT_URL;
-
-  const API_BASE_URL =
-    API_BUILD === "client" ? API_CLIENT_URL : API_LOCAL_URL;
+  const API_BASE_URL = getApiBaseUrl();
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">

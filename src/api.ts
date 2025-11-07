@@ -1,21 +1,12 @@
+import { getApiBaseUrl } from './lib/utils';
 import type { Applicant, ApplicationTasksResponse, ApplicationTask, ApplicationDetailResponse, UserRoleResponse } from './types/application';
 
 interface ApplicantsResponse {
   data: Applicant[];
 }
 
-/*
-const API_BUILD = import.meta.env.VITE_API_BUILD;
-const API_LOCAL_URL = import.meta.env.VITE_API_LOCAL_URL;
-const API_CLIENT_URL = import.meta.env.VITE_API_CLIENT_URL;
-//const API_LOCAL_CLIENT_URL = import.meta.env.VITE_API_LOCAL_CLIENT_URL;
-
-const API_BASE_URL =
-  API_BUILD === "client" ? API_CLIENT_URL : API_LOCAL_URL;
-*/
-
-const API_BASE_URL = (window as any).__APP_CONFIG__?.API_CLIENT_URL ?? '';
-
+const API_BASE_URL = getApiBaseUrl();
+  
 type FetchWithAuthOptions = {
   path: string;
   method?: string;
