@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useUser } from '@/context/UserContext'
 //import { Navigation } from '@/components/ou-workflow/Navigation' // 👈 import your nav
-import { getApiBaseUrl } from "@/lib/utils";
+import { getApiBaseUrl, getBuildInfo } from "@/lib/utils";
 
 export const Route = createFileRoute('/profile')({
   component: ProfilePage,
@@ -10,6 +10,7 @@ export const Route = createFileRoute('/profile')({
 function ProfilePage() {
   const { username, role, roles, setRole } = useUser()
   const API_BASE_URL = getApiBaseUrl();
+  const { version, buildTime } = getBuildInfo();
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -60,6 +61,16 @@ function ProfilePage() {
           <div>
             <span className="font-semibold text-gray-700">API URL: </span>
             {API_BASE_URL}
+          </div>
+          {/* ✅ New section */}
+          <hr className="my-3" />
+          <div>
+            <span className="font-semibold text-gray-700">Build Version: </span>
+            v{version}
+          </div>
+          <div>
+            <span className="font-semibold text-gray-700">Build Time: </span>
+            {buildTime}
           </div>
         </div>
       </main>

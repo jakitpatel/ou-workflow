@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite --port 3000",
     "start": "vite --port 3000",
+    "prebuild": "node scripts/write-build-info.js",
     "build": "vite build && tsc",
     "serve": "vite preview",
     "test": "vitest run"
