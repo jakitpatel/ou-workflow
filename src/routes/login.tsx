@@ -88,7 +88,8 @@ function LoginPage() {
     const returnUrl = encodeURIComponent(callBackUrl);
 
     console.log('Callback URL:', callBackUrl);
-    const API_BASE_URL = import.meta.env.VITE_API_CLIENT_URL;
+    //const API_BASE_URL = import.meta.env.VITE_API_CLIENT_URL;
+    const API_BASE_URL = (window as any).__APP_CONFIG__?.API_CLIENT_URL ?? '';
     const loginUrl = `${API_BASE_URL}/api/auth/login?return_url=${returnUrl}`;
     window.location.replace(loginUrl);
   }

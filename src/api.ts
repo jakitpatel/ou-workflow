@@ -4,6 +4,7 @@ interface ApplicantsResponse {
   data: Applicant[];
 }
 
+/*
 const API_BUILD = import.meta.env.VITE_API_BUILD;
 const API_LOCAL_URL = import.meta.env.VITE_API_LOCAL_URL;
 const API_CLIENT_URL = import.meta.env.VITE_API_CLIENT_URL;
@@ -11,6 +12,9 @@ const API_CLIENT_URL = import.meta.env.VITE_API_CLIENT_URL;
 
 const API_BASE_URL =
   API_BUILD === "client" ? API_CLIENT_URL : API_LOCAL_URL;
+*/
+
+const API_BASE_URL = (window as any).__APP_CONFIG__?.API_CLIENT_URL ?? '';
 
 type FetchWithAuthOptions = {
   path: string;
@@ -133,8 +137,8 @@ export async function fetchRoles({
   token?: string | null;
   strategy?: string;
 }): Promise<any[]> {
-  console.log("Fetching roles for user:", username);
-  console.log("Using token:", token);
+  //console.log("Fetching roles for user:", username);
+  //console.log("Using token:", token);
   const params = new URLSearchParams({
     "fields[WFUSERROLE]": "UserName,UserRole,CreatedDate",
     "page[offset]": page.toString(),
