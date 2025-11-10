@@ -195,6 +195,7 @@ function LoginPage() {
                   onChange={(e) => setFormUsername(e.target.value)}
                   ref={usernameRef}
                   className="pl-10"
+                  autoComplete="username"
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e) }}
                 />
               </div>
@@ -207,6 +208,7 @@ function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10"
+                  autoComplete="current-password"
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e) }}
                 />
               </div>
