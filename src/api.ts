@@ -5,8 +5,60 @@ interface ApplicantsResponse {
   data: Applicant[];
 }
 
-const API_BASE_URL = getApiBaseUrl();
-  
+//const API_BASE_URL = getApiBaseUrl();
+
+/**
+ * ✅ Dynamic API base URL:
+ * Always uses the latest `apiBaseUrl` selected by user in context,
+ * with fallback to window.__APP_CONFIG__ or env-based util.
+ */
+function resolveApiBaseUrl(): string {
+  try {
+    // 🧩 Debug log to confirm the selected server is active
+    const userContext = (window as any).__USER_CONTEXT__
+    const contextUrl = userContext?.apiBaseUrl
+    console.log(
+      `[resolveApiBaseUrl] Current base URL:`,
+      contextUrl || '(no context)',
+      '| From Context:',
+      !!contextUrl
+    )
+
+    // 1️⃣ Try context
+    if (contextUrl) {
+      return contextUrl
+    }
+
+    // 2️⃣ Try global config
+    const config = (window as any).__APP_CONFIG__
+    if (config) {
+      const servers = Object.keys(config)
+        .filter((key) => key.startsWith('API_CLIENT_URL'))
+        .map((key) => config[key])
+      if (servers.length > 0) {
+        console.log(`[resolveApiBaseUrl] Using config server:`, servers[0])
+        return servers[0]
+      }
+    }
+
+    // 3️⃣ Fallback to util
+    const fallback = getApiBaseUrl()
+    console.log(`[resolveApiBaseUrl] Using fallback getApiBaseUrl():`, fallback)
+    return fallback
+  } catch (err) {
+    console.warn('[resolveApiBaseUrl] Exception occurred:', err)
+    return getApiBaseUrl()
+  }
+}
+
+/**
+ * 👇 Helper to keep `UserContext` syncable with global scope.
+ * (We set this once in UserProvider.)
+ */
+export function registerUserContext(ctx: any) {
+  ;(window as any).__USER_CONTEXT__ = ctx
+}
+
 type FetchWithAuthOptions = {
   path: string;
   method?: string;
@@ -24,6 +76,7 @@ export async function fetchWithAuth<T>({
   token,
   headers = {},
 }: FetchWithAuthOptions): Promise<T> {
+  const baseUrl = resolveApiBaseUrl(); //API_BASE_URL
   const finalHeaders: Record<string, string> = {
     "Content-Type": "application/json",
     ...headers,
@@ -34,7 +87,7 @@ export async function fetchWithAuth<T>({
     finalHeaders["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${baseUrl}${path}`, {
     method,
     headers: finalHeaders,
     body: body ? JSON.stringify(body) : undefined,
@@ -335,7 +388,8 @@ export async function loginApi({
   username: string
   password: string
 }) {
-  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  const baseUrl = resolveApiBaseUrl(); //API_BASE_URL
+  const response = await fetch(`${baseUrl}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),

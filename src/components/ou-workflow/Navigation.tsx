@@ -12,12 +12,12 @@ export function Navigation() {
   // inside Navigation component, remove setActiveScreen calls and add:
   const location = useRouterState({ select: (s) => s.location.pathname })
   
-  const { username, role, setActiveScreen, logout } = useUser()
+  const { username, role, setActiveScreen, logout, apiBaseUrl } = useUser()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   
-  const API_BASE_URL = getApiBaseUrl();
+  const API_BASE_URL = apiBaseUrl; //getApiBaseUrl();
   
   // close menu when clicking outside
   useEffect(() => {

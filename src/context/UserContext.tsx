@@ -1,8 +1,7 @@
-// src/context/UserContext.tsx
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import type { LoginStrategy } from '@/types/auth'
 import { useQuery } from '@tanstack/react-query'
-import { fetchRoles } from '@/api'
+import { fetchRoles, registerUserContext } from '@/api'
 
 type UserContextType = {
   username: string | null
@@ -12,6 +11,8 @@ type UserContextType = {
   strategy: LoginStrategy | null
   activeScreen: 'ncrc-dashboard' | 'tasks-dashboard' | null
   loginTime: number | null
+  apiBaseUrl: string | null
+  setApiBaseUrl: (url: string | null) => void
   login: (data: { username: string; role?: string; token?: string; strategy: LoginStrategy }) => void
   logout: () => void
   setActiveScreen: (screen: 'ncrc-dashboard' | 'tasks-dashboard' | null) => void
@@ -29,96 +30,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [strategy, setStrategy] = useState<LoginStrategy | null>(null)
   const [loginTime, setLoginTime] = useState<number | null>(null)
   const [activeScreen, setActiveScreen] = useState<'ncrc-dashboard' | 'tasks-dashboard' | null>('ncrc-dashboard')
-  //const router = useRouter();
 
-  // 👇 useQuery but disabled — only run when we call refetch()
-  const { refetch } = useQuery({
-    queryKey: ['roles', username, token], // ✅ include token so it’s reactive
-    queryFn: () =>
-    fetchRoles({
-      username: username ?? '', // ensure string
-      token: token ?? undefined, // convert null → undefined
-      strategy: strategy ?? undefined, // convert null → undefined
-    }),
-    enabled: false, // manual mode
-    refetchOnWindowFocus: false,
-    retry: (failureCount, error: any) => {
-      if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) {
-        return false; // don’t retry client errors
-      }
-      return failureCount < 2; // retry up to 2 times for server/network issues
-    }
-  })
+  const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(null)
 
-  // 🔹 Fetch roles manually after login (when username changes)
+  // ✅ Ensure context registration always matches current base URL
   useEffect(() => {
-    if (username && token) { // ✅ require both to be ready
-      console.log("🔄 Preparing to fetch roles for:", username)
-      console.log("🔄 Preparing to fetch roles for:", token)
-      refetch().then((result) => {
-        // 🔸 Handle errors first
-        if (result.error) {
-          const err: any = result.error;
-          const msg =
-            err.details?.msg ||
-            err.details?.message ||
-            err.message ||
-            "Unknown error";
+    registerUserContext({ apiBaseUrl })
+  }, [apiBaseUrl])
 
-          console.error("❌ Role fetch failed:", msg, err);
-
-          // 🔐 Detect invalid/expired token conditions
-          if (
-            msg.includes("Signature verification failed") ||
-            msg.includes("invalid token") ||
-            err.status === 401 ||
-            err.status === 422
-          ) {
-            console.warn("🚫 Invalid token detected — logging out user.");
-            // Show alert to the user
-            window.alert("Your session has expired or is invalid. Please log in again.")
-            logout();
-            //router.navigate({ to: '/login', replace: true });
-            // ✅ Respect Vite base path (e.g. /dashboard/)
-            const base = import.meta.env.BASE_URL || '/';
-            const loginUrl = `${base.replace(/\/$/, '')}/login`; // ✅ strips trailing slash
-            console.log("Redirecting to login page at base path:", loginUrl);
-            window.location.replace(loginUrl)
-            return;
-          }
-        }
-        if (result.data) {
-          console.log("✅ Refetch returned data:", result.data)
-          setRoles(result.data)
-
-          //const defaultRole = role || result.data[0]?.value || null
-          const defaultRole = role || 'ALL';
-          setRole(defaultRole)
-
-          localStorage.setItem(
-            'user',
-            JSON.stringify({
-              username,
-              role: defaultRole,
-              roles: result.data,
-              token,
-              strategy,
-              loginTime,
-            })
-          )
-        }
-      })
-    }
-  }, [username, token, refetch]); // ✅ add token here
-
-  // 🔹 Load from storage on refresh
+  // ✅ Load from localStorage on startup FIRST (before anything else)
   useEffect(() => {
     const stored = localStorage.getItem('user')
     if (stored) {
       const parsed = JSON.parse(stored)
-
       const now = Date.now()
-      const expiresIn = 24 * 60 * 60 * 1000 // 24 hrs
+      const expiresIn = 24 * 60 * 60 * 1000 // 24 hours
 
       if (parsed.loginTime && now - parsed.loginTime > expiresIn) {
         localStorage.removeItem('user')
@@ -129,20 +55,124 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setToken(parsed.token)
         setStrategy(parsed.strategy)
         setLoginTime(parsed.loginTime)
+        //console.log(parsed);
+        //console.log("[UserContext] Loaded user from storage:", parsed.apiBaseUrl)
+        // ✅ Preserve stored API Base URL if present
+        if (parsed.apiBaseUrl && parsed.apiBaseUrl !== 'null') {
+          setApiBaseUrl(parsed.apiBaseUrl)
+        } else {
+          /*// fallback: try first configured server
+          const config = (window as any).__APP_CONFIG__
+          if (config) {
+            const servers = Object.keys(config)
+              .filter((k) => k.startsWith('API_CLIENT_URL'))
+              .map((k) => config[k])
+              .filter(Boolean)
+            if (servers.length > 0) setApiBaseUrl(servers[0])
+          }*/
+        }
       }
+    } else {
+      // No user stored: fallback to first configured server
+      /*
+      const config = (window as any).__APP_CONFIG__
+      if (config) {
+        const servers = Object.keys(config)
+          .filter((k) => k.startsWith('API_CLIENT_URL'))
+          .map((k) => config[k])
+          .filter(Boolean)
+        if (servers.length > 0) setApiBaseUrl(servers[0])
+      }
+      */
     }
   }, [])
 
-  // 🔹 Basic login
+  // 🔹 Persist selected API server whenever it changes
+  useEffect(() => {
+    const stored = localStorage.getItem('user')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      parsed.apiBaseUrl = apiBaseUrl
+      localStorage.setItem('user', JSON.stringify(parsed))
+    }
+  }, [apiBaseUrl])
+
+  const { refetch } = useQuery({
+    queryKey: ['roles', username, token],
+    queryFn: () =>
+      fetchRoles({
+        username: username ?? '',
+        token: token ?? undefined,
+        strategy: strategy ?? undefined,
+      }),
+    enabled: false,
+    refetchOnWindowFocus: false,
+    retry: (failureCount, error: any) => {
+      if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) return false
+      return failureCount < 2
+    },
+  })
+
+  useEffect(() => {
+    if (username && token && apiBaseUrl) {
+      refetch().then((result) => {
+        if (result.error) {
+          const err: any = result.error
+          const msg =
+            err.details?.msg ||
+            err.details?.message ||
+            err.message ||
+            'Unknown error'
+
+          console.error('❌ Role fetch failed:', msg, err)
+          if (
+            msg.includes('Signature verification failed') ||
+            msg.includes('invalid token') ||
+            err.status === 401 ||
+            err.status === 422
+          ) {
+            window.alert('Your session has expired or is invalid. Please log in again.')
+            logout()
+            const base = import.meta.env.BASE_URL || '/'
+            const loginUrl = `${base.replace(/\/$/, '')}/login`
+            window.location.replace(loginUrl)
+            return
+          }
+        }
+
+        if (result.data) {
+          setRoles(result.data)
+          const defaultRole = role || 'ALL'
+          setRole(defaultRole)
+
+          // ✅ Preserve current apiBaseUrl while saving user
+          localStorage.setItem(
+            'user',
+            JSON.stringify({
+              username,
+              role: defaultRole,
+              roles: result.data,
+              token,
+              strategy,
+              loginTime,
+              apiBaseUrl,
+            })
+          )
+        }
+      })
+    }
+  }, [username, token, refetch, apiBaseUrl])
+
   const login = (data: { username: string; role?: string; token?: string; strategy: LoginStrategy }) => {
     const now = Date.now()
     setUsername(data.username)
     setRole(data.role || null)
-    setRoles([]) // roles will be fetched manually after login
+    setRoles([])
     setToken(data.token || null)
     setStrategy(data.strategy)
     setLoginTime(now)
 
+    // ✅ Include selected API server
     localStorage.setItem(
       'user',
       JSON.stringify({
@@ -152,6 +182,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         token: data.token || null,
         strategy: data.strategy,
         loginTime: now,
+        apiBaseUrl,
       })
     )
   }
@@ -178,6 +209,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
         strategy,
         activeScreen,
         loginTime,
+        apiBaseUrl,
+        setApiBaseUrl,
         login,
         logout,
         setActiveScreen,

@@ -13,33 +13,56 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-
-import { User, Lock, ShieldCheck, LogIn } from 'lucide-react'
-import { getApiBaseUrl } from '@/lib/utils';
+import { User, Lock, ShieldCheck, LogIn, Server } from 'lucide-react'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
 })
 
 function LoginPage() {
-  const { login, username, token, loginTime } = useUser()
+  const {
+    login,
+    username,
+    token,
+    loginTime,
+    apiBaseUrl,
+    setApiBaseUrl, // 👈 from UserContext
+  } = useUser()
+
   const navigate = useNavigate()
 
-  //const [username, setUsername] = useState('')
   const [formUsername, setFormUsername] = useState('')
   const [password, setPassword] = useState('')
   const [strategy, setStrategy] = useState<'none' | 'api' | 'cognito'>('api')
   const [error, setError] = useState('')
+  const [availableServers, setAvailableServers] = useState<string[]>([])
 
   const usernameRef = useRef<HTMLInputElement>(null)
 
-  // Auto-redirect if user already logged in & token still valid
+  // 🔹 Load API servers from window.__APP_CONFIG__
+  useEffect(() => {
+    const config = (window as any).__APP_CONFIG__
+    if (config) {
+      const servers = Object.keys(config)
+        .filter((key) => key.startsWith('API_CLIENT_URL'))
+        .map((key) => config[key])
+        .filter(Boolean)
+      setAvailableServers(servers)
+
+      // if no server selected yet, pick the first one
+      if (!apiBaseUrl && servers.length > 0) {
+        setApiBaseUrl(servers[0])
+      }
+    }
+  }, [apiBaseUrl, setApiBaseUrl])
+
+  // 🔹 Auto-redirect if user is already logged in
   useEffect(() => {
     if (username && token && loginTime) {
       const now = Date.now()
       const expiresIn = 24 * 60 * 60 * 1000 // 24 hrs
       if (now - loginTime < expiresIn) {
-        navigate({ to: '/' })  // 👈 redirect inside
+        navigate({ to: '/' })
       }
     }
   }, [username, token, loginTime, navigate])
@@ -48,16 +71,28 @@ function LoginPage() {
     usernameRef.current?.focus()
   }, [])
 
+  // 🔹 API login mutation
   const apiLogin = useMutation({
-    mutationFn: loginApi, // 👈 use API function,
+    mutationFn: loginApi, // 👈 use selected server
     onSuccess: (data) => {
-      login({ username: formUsername, role: data.role, token: data.access_token, strategy: 'api' })
+      login({
+        username: formUsername,
+        role: data.role,
+        token: data.access_token,
+        strategy: 'api',
+      })
       navigate({ to: '/' })
     },
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!apiBaseUrl) {
+      setError('Please select an API server first.')
+      return
+    }
+
     if (strategy === 'none') {
       if (!formUsername.trim()) {
         setError('Username is required for No Security login.')
@@ -76,24 +111,26 @@ function LoginPage() {
       setError('')
       apiLogin.mutate({ username: formUsername, password })
     }
+
     if (strategy === 'cognito') {
-      handleCognito();
+      handleCognito()
     }
   }
 
   const handleCognito = () => {
-    const base = import.meta.env.BASE_URL || '/';
-    const origin = window.location.origin; // http://devvm10
+    if (!apiBaseUrl) {
+      setError('Please select an API server before using Cognito login.')
+      return
+    }
 
-    const callBackUrl = `${origin}${base.replace(/\/$/, '')}/cognito-callback`;
-    const returnUrl = encodeURIComponent(callBackUrl);
+    const base = import.meta.env.BASE_URL || '/'
+    const origin = window.location.origin
+    const callBackUrl = `${origin}${base.replace(/\/$/, '')}/cognito-callback`
+    const returnUrl = encodeURIComponent(callBackUrl)
+    const loginUrl = `${apiBaseUrl}/api/auth/login?return_url=${returnUrl}`
 
-    console.log('Callback URL:', callBackUrl);
-    //const API_BASE_URL = import.meta.env.VITE_API_CLIENT_URL;
-    //const API_BASE_URL = (window as any).__APP_CONFIG__?.API_CLIENT_URL ?? '';
-    const API_BASE_URL = getApiBaseUrl();
-    const loginUrl = `${API_BASE_URL}/api/auth/login?return_url=${returnUrl}`;
-    window.location.replace(loginUrl);
+    console.log('Redirecting to:', loginUrl)
+    window.location.replace(loginUrl)
   }
 
   return (
@@ -103,41 +140,39 @@ function LoginPage() {
         <h1 className="text-3xl font-bold">Login</h1>
       </div>
 
-      {/* Login Card */}
       <Card className="w-full max-w-sm p-6 bg-white rounded-xl shadow-lg border border-blue-100">
         <h2 className="text-xl font-semibold text-blue-900 mb-4">Login Options</h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {/* Username Input */}
-          {strategy === 'api' && (
-          <div className="relative">
-            <User className="absolute left-3 top-3 h-4 w-4 text-blue-500" />
-            <Input
-              placeholder="Username"
-              value={formUsername}
-              onChange={(e) => setFormUsername(e.target.value)}
-              ref={usernameRef}
-              className="pl-10"
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e) }}
-            />
-          </div>
-          )}
-          {/* Password Input */}
-          {strategy === 'api' && (
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-blue-500" />
-              <Input
-                placeholder="Password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10"
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e) }}
-              />
-            </div>
-          )}
 
-          {/* Strategy Selector */}
-          <Select value={strategy} onValueChange={(val) => setStrategy(val as 'none' | 'api' | 'cognito')}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+          {/* 🔹 Server Selector */}
+          <div>
+            <label className="text-sm font-medium text-blue-800 mb-1 block">
+              Select API Server
+            </label>
+            <Select
+              value={apiBaseUrl || ''}
+              onValueChange={(val) => setApiBaseUrl(val)}
+            >
+              <SelectTrigger className="flex items-center gap-2">
+                <Server className="w-4 h-4 text-blue-500" />
+                <SelectValue placeholder="Choose API server" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableServers.map((url, i) => (
+                  <SelectItem key={i} value={url}>
+                    {url}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 🔹 Strategy Selector */}
+          <Select
+            value={strategy}
+            onValueChange={(val) => setStrategy(val as 'none' | 'api' | 'cognito')}
+          >
             <SelectTrigger className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-blue-500" />
               <SelectValue placeholder="Choose login strategy" />
@@ -149,31 +184,49 @@ function LoginPage() {
             </SelectContent>
           </Select>
 
-          {/* Submit Button */}
+          {/* 🔹 Username/Password (API mode only) */}
+          {strategy === 'api' && (
+            <>
+              <div className="relative">
+                <User className="absolute left-3 top-3 h-4 w-4 text-blue-500" />
+                <Input
+                  placeholder="Username"
+                  value={formUsername}
+                  onChange={(e) => setFormUsername(e.target.value)}
+                  ref={usernameRef}
+                  className="pl-10"
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e) }}
+                />
+              </div>
+
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-blue-500" />
+                <Input
+                  placeholder="Password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10"
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(e) }}
+                />
+              </div>
+            </>
+          )}
+
+          {/* 🔹 Submit */}
           <Button
             type="submit"
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-transform hover:scale-[1.02]"
           >
             {strategy === 'api' && apiLogin.isPending ? 'Logging in...' : 'Login'}
           </Button>
+
           {error && <p className="text-red-600 text-sm text-center">{error}</p>}
           {apiLogin.isError && (
             <p className="text-red-600 text-sm text-center">Login failed. Please try again.</p>
           )}
         </form>
       </Card>
-
-      {/* Okta Card 
-      <Card className="w-full max-w-sm p-6 bg-white rounded-xl shadow-lg border border-blue-100">
-        <h2 className="text-xl font-semibold text-blue-900 mb-4">Okta</h2>
-        <Button
-          onClick={handleOkta}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold transition-transform hover:scale-[1.02]"
-        >
-          Login with Okta
-        </Button>
-      </Card>
-      */}
     </div>
   )
 }

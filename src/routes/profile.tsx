@@ -8,8 +8,8 @@ export const Route = createFileRoute('/profile')({
 })
 
 function ProfilePage() {
-  const { username, role, roles, setRole } = useUser()
-  const API_BASE_URL = getApiBaseUrl();
+  const { username, role, roles, setRole, apiBaseUrl } = useUser()
+  const API_BASE_URL = apiBaseUrl; //getApiBaseUrl();
   const { version, buildTime } = getBuildInfo();
 
   return (

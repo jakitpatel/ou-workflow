@@ -24,9 +24,9 @@ export function getApiBaseUrl(): string {
 
   const baseUrl = (window as any).__APP_CONFIG__?.API_CLIENT_URL ?? '';
   if (!baseUrl) {
-    console.warn(
+    /*console.warn(
       "[utils:getApiBaseUrl] No API base URL found. Check your .env configuration."
-    )
+    )*/
   }
 
   return baseUrl ?? ""
