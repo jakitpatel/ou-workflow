@@ -33,7 +33,7 @@ function LoginPage() {
 
   const [formUsername, setFormUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [strategy, setStrategy] = useState<'none' | 'api' | 'cognito'>('api')
+  const [strategy, setStrategy] = useState<'none' | 'api' | 'cognito'>('cognito')
   const [error, setError] = useState('')
   const [availableServers, setAvailableServers] = useState<string[]>([])
 
