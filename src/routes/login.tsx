@@ -122,7 +122,16 @@ function LoginPage() {
       setError('Please select an API server before using Cognito login.')
       return
     }
-
+    // ✅ persist the selected server before redirect
+    try {
+      const storedUser = localStorage.getItem('user')
+      const parsed = storedUser ? JSON.parse(storedUser) : {}
+      parsed.apiBaseUrl = apiBaseUrl
+      localStorage.setItem('user', JSON.stringify(parsed))
+      console.log('[handleCognito] Saved apiBaseUrl before redirect:', apiBaseUrl)
+    } catch (err) {
+      console.warn('[handleCognito] Failed to persist apiBaseUrl:', err)
+    }
     const base = import.meta.env.BASE_URL || '/'
     const origin = window.location.origin
     const callBackUrl = `${origin}${base.replace(/\/$/, '')}/cognito-callback`
