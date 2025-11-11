@@ -180,6 +180,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const parsed = JSON.parse(stored)
         if (parsed.apiBaseUrl && parsed.apiBaseUrl !== 'null') {
           preservedApiBaseUrl = parsed.apiBaseUrl
+          console.log("[UserContext:login] Preserving stored API Base URL:", preservedApiBaseUrl);
           setApiBaseUrl(parsed.apiBaseUrl)
         }
       } catch {}
@@ -195,7 +196,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         token: data.token || null,
         strategy: data.strategy,
         loginTime: now,
-        apiBaseUrl: preservedApiBaseUrl || null, // ✅ Preserve old one
+        apiBaseUrl: preservedApiBaseUrl, // ✅ Preserve old one
       })
     )
   }
