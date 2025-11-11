@@ -7,7 +7,7 @@ export const Route = createFileRoute('/cognito-callback')({
 })
 
 function CognitoCallback() {
-  const { login } = useUser()
+  const { login, apiBaseUrl } = useUser()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -15,7 +15,7 @@ function CognitoCallback() {
     const accessToken = params.get('access_token')
     const email = params.get('email') || params.get('user_id')
     const username = params.get('user_id') || email;  // assuming email is used as username
-    if (accessToken && username) {
+    if (accessToken && username && apiBaseUrl) {
       login({
         username: username,
         token: accessToken,
@@ -28,7 +28,7 @@ function CognitoCallback() {
     } else {
       navigate({ to: '/login' })
     }
-  }, [])
+  }, [apiBaseUrl])
 
   return (
     <div className="flex items-center justify-center h-screen text-lg text-blue-700">

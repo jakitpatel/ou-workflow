@@ -172,6 +172,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setStrategy(data.strategy)
     setLoginTime(now)
 
+    // ✅ Fallback to existing apiBaseUrl or persisted one
+    const stored = localStorage.getItem('user')
+    let preservedApiBaseUrl = apiBaseUrl
+    if (!preservedApiBaseUrl && stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        if (parsed.apiBaseUrl && parsed.apiBaseUrl !== 'null') {
+          preservedApiBaseUrl = parsed.apiBaseUrl
+          setApiBaseUrl(parsed.apiBaseUrl)
+        }
+      } catch {}
+    }
+
     // ✅ Include selected API server
     localStorage.setItem(
       'user',
@@ -182,7 +195,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         token: data.token || null,
         strategy: data.strategy,
         loginTime: now,
-        apiBaseUrl,
+        apiBaseUrl: preservedApiBaseUrl || null, // ✅ Preserve old one
       })
     )
   }
