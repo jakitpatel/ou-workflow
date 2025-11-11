@@ -31,7 +31,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loginTime, setLoginTime] = useState<number | null>(null)
   const [activeScreen, setActiveScreen] = useState<'ncrc-dashboard' | 'tasks-dashboard' | null>('ncrc-dashboard')
 
-  const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(null)
+  //const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(null)
+  const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(
+  () => localStorage.getItem('apiBaseUrl') || null
+)
 
   // ✅ Ensure context registration always matches current base URL
   useEffect(() => {
@@ -174,8 +177,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     // ✅ Fallback to existing apiBaseUrl or persisted one
     const stored = localStorage.getItem('user')
-    let preservedApiBaseUrl = apiBaseUrl
+    let preservedApiBaseUrl = apiBaseUrl;
+    console.log("apiBaseUrl : "+apiBaseUrl);
     if (!preservedApiBaseUrl && stored) {
+      console.log("preservedApiBaseUrl : "+preservedApiBaseUrl);
       try {
         const parsed = JSON.parse(stored)
         if (parsed.apiBaseUrl && parsed.apiBaseUrl !== 'null') {
