@@ -7,8 +7,6 @@ import { useTaskContext } from '@/context/TaskContext';
 
 type Props = {
   applicant: Applicant;
-  setShowIngredientsManager: (val: boolean) => void;
-  setSelectedIngredientApp: (val: Applicant) => void;
   setActiveScreen: (val: string) => void;
   handleTaskAction: (task: Task, action: string) => void;
 };

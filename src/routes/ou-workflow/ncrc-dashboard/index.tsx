@@ -6,20 +6,7 @@ export const Route = createFileRoute('/ou-workflow/ncrc-dashboard/')({
 })
 
 function NcrcDashboardWrapper() {
-  // Access context passed from index.tsx layout
-  const {
-    showIngredientsManager,
-    setShowIngredientsManager,
-    selectedIngredientApp,
-    setSelectedIngredientApp,
-  } = Route.useRouteContext() as any
-
   return (
-    <NCRCDashboard
-      showIngredientsManager={showIngredientsManager}
-      setShowIngredientsManager={setShowIngredientsManager}
-      selectedIngredientApp={selectedIngredientApp}
-      setSelectedIngredientApp={setSelectedIngredientApp}
-    />
+    <NCRCDashboard />
   )
 }

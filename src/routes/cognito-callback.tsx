@@ -15,7 +15,7 @@ function CognitoCallback() {
     const accessToken = params.get('access_token')
     const email = params.get('email') || params.get('user_id')
     const username = params.get('user_id') || email;  // assuming email is used as username
-    if (accessToken && email) {
+    if (accessToken && username) {
       login({
         username: username,
         token: accessToken,

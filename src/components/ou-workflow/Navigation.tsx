@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Bell, User, BarChart3, ClipboardList, LogOut, Settings } from 'lucide-react'
 import { useUser } from './../../context/UserContext'  // 👈 new import
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { getApiBaseUrl } from '@/lib/utils'
+//import { getApiBaseUrl } from '@/lib/utils'
 
 /*type Props = {
   hideMenu?: boolean   // 👈 new optional prop

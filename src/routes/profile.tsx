@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useUser } from '@/context/UserContext'
 //import { Navigation } from '@/components/ou-workflow/Navigation' // 👈 import your nav
-import { getApiBaseUrl, getBuildInfo } from "@/lib/utils";
+import { getBuildInfo } from "@/lib/utils";
 
 export const Route = createFileRoute('/profile')({
   component: ProfilePage,

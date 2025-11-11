@@ -294,21 +294,6 @@ export function ApplicantProgressBar({
                       </span>
                     )}
                   </div>
-
-                  <div className="flex space-x-1">
-                    {/*(task.name.includes('IAR') ||
-                      expandedStage === 'ingredients') && (
-                      <button
-                        onClick={(e) =>
-                          handleTaskActionLocal(e, task, 'manage_ingredients')
-                        }
-                        className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
-                      >
-                        <Package className="w-3 h-3 inline mr-1" />
-                        Ingredients
-                      </button>
-                    )*/}
-                  </div>
                 </div>
               );
               })}

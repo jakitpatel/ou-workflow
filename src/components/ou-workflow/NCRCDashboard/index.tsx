@@ -4,7 +4,6 @@ import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
 import { Search } from 'lucide-react';
-import { IngredientsManagerPage } from './IngredientsManagerPage';
 import { useUser } from '@/context/UserContext'  // 👈 new import
 import { useApplications } from './../hooks/useApplications';
 import { assignTask, confirmTask } from '@/api'; // same api.ts
@@ -12,19 +11,7 @@ import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 import type { Applicant } from '@/types/application';
 import { ApplicantStatsCards } from './ApplicantStatsCards';
 
-type Props = {
-  showIngredientsManager: boolean
-  setShowIngredientsManager: (val: boolean) => void
-  selectedIngredientApp: any
-  setSelectedIngredientApp: (val: any) => void
-}
-
-export function NCRCDashboard({
-  showIngredientsManager,
-  setShowIngredientsManager,
-  selectedIngredientApp,
-  setSelectedIngredientApp
-}: Props) {
+export function NCRCDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -86,16 +73,6 @@ export function NCRCDashboard({
     };
   }, [username, applicants]);
   
-  // ✅ Return conditionally AFTER all hooks
-  if (showIngredientsManager && selectedIngredientApp) {
-    return (
-      <IngredientsManagerPage
-        selectedIngredientApp={selectedIngredientApp}
-        setShowIngredientsManager={setShowIngredientsManager}
-      />
-    );
-  }
-
   const confirmTaskMutation = useMutation({
     mutationFn: confirmTask,
     onSuccess: () => {
@@ -223,7 +200,7 @@ export function NCRCDashboard({
       //}
     };
   
-  const getAllTasks = (app) => {
+  const getAllTasks = (app: Applicant) => {
     if (!app?.stages) return [];
     return Object.values(app.stages).flatMap(stage => stage.tasks || []);
   };
@@ -260,12 +237,6 @@ export function NCRCDashboard({
       e.stopPropagation();
       e.preventDefault();
       console.log('Action clicked: handleTaskAction', action, 'for application:', application);
-      /*if (action === 'manage_ingredients') {
-        const app = applicants.find(a => a.applicationId === applicantId);
-        setSelectedIngredientApp(app);
-        setShowIngredientsManager(true);
-        return;
-      }*/
       handleSelectAppActions(application.applicationId, action.TaskInstanceId);
       //setSelectedAction({ application, action });
       const actionType = action.taskType?.toLowerCase(); // e.g., "confirm", "conditional", "action"
@@ -364,8 +335,6 @@ export function NCRCDashboard({
             <ApplicantCard
               key={applicant.applicationId}
               applicant={applicant}
-              setShowIngredientsManager={setShowIngredientsManager}
-              setSelectedIngredientApp={setSelectedIngredientApp}
               setActiveScreen={setActiveScreen}
               handleTaskAction={handleTaskAction}
             />
