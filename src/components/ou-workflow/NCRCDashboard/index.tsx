@@ -232,7 +232,7 @@ export function NCRCDashboard() {
     setSelectedActionId(`${applicationId}:${actionId}`);
   };
 
-  const handleTaskAction = (e, application, action) => {
+  const handleTaskAction = (e, application: Applicant, action) => {
       console.log("handleTaskAction called with action:", action, "for application:", application);
       e.stopPropagation();
       e.preventDefault();

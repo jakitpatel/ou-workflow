@@ -178,14 +178,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // ✅ Fallback to existing apiBaseUrl or persisted one
     const stored = localStorage.getItem('user')
     let preservedApiBaseUrl = apiBaseUrl;
-    console.log("apiBaseUrl : "+apiBaseUrl);
+    //console.log("apiBaseUrl : "+apiBaseUrl);
     if (!preservedApiBaseUrl && stored) {
-      console.log("preservedApiBaseUrl : "+preservedApiBaseUrl);
+      //console.log("preservedApiBaseUrl : "+preservedApiBaseUrl);
       try {
         const parsed = JSON.parse(stored)
         if (parsed.apiBaseUrl && parsed.apiBaseUrl !== 'null') {
           preservedApiBaseUrl = parsed.apiBaseUrl
-          console.log("[UserContext:login] Preserving stored API Base URL:", preservedApiBaseUrl);
+          //console.log("[UserContext:login] Preserving stored API Base URL:", preservedApiBaseUrl);
           setApiBaseUrl(parsed.apiBaseUrl)
         }
       } catch {}

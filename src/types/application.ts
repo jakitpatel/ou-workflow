@@ -18,6 +18,7 @@ export type WFApplicationMessage = {
 };
 
 export type Task = {
+  TaskInstanceId: number;
   name: string;
   status: 'completed' | 'in_progress' | 'overdue' | 'blocked' | 'pending';
   assignee: string;
