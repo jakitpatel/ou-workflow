@@ -35,6 +35,11 @@ export function NCRCDashboard() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
   
+  // (2) Reset pagination on filter/search change
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearchTerm, statusFilter, priorityFilter]);
+
   const { data, isLoading, isError, error } = useApplications({
     searchTerm: debouncedSearchTerm,
     statusFilter,
