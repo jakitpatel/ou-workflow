@@ -12,6 +12,8 @@ import type { Applicant } from '@/types/application';
 import { ApplicantStatsCards } from './ApplicantStatsCards';
 
 export function NCRCDashboard() {
+  const [page, setPage] = useState(0);
+  const limit = 20;
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -33,11 +35,26 @@ export function NCRCDashboard() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
   
-  const { data: applicants = [] as Applicant[], isLoading, isError, error } = useApplications({
+  const { data, isLoading, isError, error } = useApplications({
     searchTerm: debouncedSearchTerm,
     statusFilter,
     priorityFilter,
+    page,
+    limit,
   });
+
+  const applicants = data?.data || [];
+  const totalCount = data?.meta?.total_count || 0;
+  const totalPages = Math.ceil(totalCount / limit);
+
+  const handleFirst = () => setPage(0);
+  const handlePrev = () => setPage(p => Math.max(p - limit, 0));
+  const handleNext = () => setPage(p => (p + limit < totalCount ? p + limit : p));
+  const handleLast = () => setPage((totalPages - 1) * limit);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
 
   const applicantStats = useMemo(() => {
     const allApplicants = applicants || [];
@@ -323,12 +340,46 @@ export function NCRCDashboard() {
       {isError && <div className="text-red-600">Error: {(error as Error).message}</div>}
 
       {/* Results Summary */}
+      {/* Start Pagination Controls */}
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-gray-600">
-          Showing {applicants.length} of {applicants.length} applications
-        </p>
+        <div className="text-gray-600">
+          Showing {page + 1}–{Math.min(page + limit, totalCount)} of {totalCount} applications
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleFirst}
+            disabled={page === 0}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            First
+          </button>
+          <button
+            onClick={handlePrev}
+            disabled={page === 0}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <span className="text-sm font-medium">
+            Page {Math.floor(page / limit) + 1} of {totalPages}
+          </span>
+          <button
+            onClick={handleNext}
+            disabled={page + limit >= totalCount}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+          <button
+            onClick={handleLast}
+            disabled={page + limit >= totalCount}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Last
+          </button>
+        </div>
       </div>
-
+      {/* End Pagination Controls */}
       <div className="space-y-4">
         {applicants.length > 0 ? (
           applicants.map((applicant) => (

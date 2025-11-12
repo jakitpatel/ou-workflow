@@ -6,17 +6,20 @@ export function useApplications({
   searchTerm,
   statusFilter,
   priorityFilter,
+  page,
+  limit,
 }: {
-  searchTerm?: string;
-  statusFilter?: string;
-  priorityFilter?: string;
+  searchTerm?: string
+  statusFilter?: string
+  priorityFilter?: string
+  page?: number
+  limit?: number
 }) {
   const { token, strategy } = useUser();
 
   return useQuery({
-    queryKey: ['applications', { token, strategy, searchTerm, statusFilter, priorityFilter }],
+    queryKey: ['applications', { token, strategy, searchTerm, statusFilter, priorityFilter, page, limit }],
     //staleTime: 1000 * 60 * 5, // 5 minutes cache
-    //keepPreviousData: true,   // keep list visible during refetch
     queryFn: () =>
       fetchApplicants({
         token: token ?? undefined,
@@ -24,7 +27,10 @@ export function useApplications({
         searchTerm,
         statusFilter,
         priorityFilter,
+        page,
+        limit,
       }),
+    keepPreviousData: true,   // keep list visible during refetch
     enabled: strategy === 'none' || !!token,
     retry: (failureCount, error: any) => {
       if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) return false;

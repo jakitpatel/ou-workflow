@@ -198,3 +198,16 @@ export interface WFUser {
 export interface UserRoleResponse {
   data: WFUser[];
 }
+
+export interface ApplicantsResponse {
+  data: Applicant[];
+  meta: {
+    async_enabled: boolean;
+    count: number;
+    limit: number;
+    offset: number;
+    processing_time: number;
+    total_count: number;
+  };
+  status: 'ok' | 'error';
+}

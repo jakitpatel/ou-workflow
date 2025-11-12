@@ -1,9 +1,5 @@
 import { getApiBaseUrl } from './lib/utils';
-import type { Applicant, ApplicationTasksResponse, ApplicationTask, ApplicationDetailResponse, UserRoleResponse } from './types/application';
-
-interface ApplicantsResponse {
-  data: Applicant[];
-}
+import type { ApplicantsResponse, Applicant, ApplicationTasksResponse, ApplicationTask, ApplicationDetailResponse, UserRoleResponse } from './types/application';
 
 //const API_BASE_URL = getApiBaseUrl();
 
@@ -160,12 +156,23 @@ export async function fetchApplicants({
   })) as ApplicantsResponse;
 
   // Map stages to lowercase keys
-  return json.data.map((applicant: any) => ({
+  /*return json.data.map((applicant: any) => ({
+    ...applicant,
+    stages: Object.fromEntries(
+      Object.entries(applicant.stages).map(([k, v]) => [k.toLowerCase(), v])
+    ),
+  }));*/
+  const mappedData = json.data.map((applicant: any) => ({
     ...applicant,
     stages: Object.fromEntries(
       Object.entries(applicant.stages).map(([k, v]) => [k.toLowerCase(), v])
     ),
   }));
+
+  return {
+    data: mappedData,
+    meta: json.meta || { total_count: mappedData.length },
+  } as any;
 }
 
 export async function fetchRoles({
