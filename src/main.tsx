@@ -9,6 +9,7 @@ import { routeTree } from './routeTree.gen'
 import './index.css'
 import reportWebVitals from './reportWebVitals.ts'
 import { UserProvider } from './context/UserContext.tsx' // 👈
+import { Toaster } from 'sonner';
 
 // Create a new router instance
 const router = createRouter({
@@ -40,6 +41,7 @@ if (rootElement && !rootElement.innerHTML) {
       <QueryClientProvider client={queryClient}>
         <UserProvider>
           <RouterProvider router={router} />
+          <Toaster position="top-right" />
         </UserProvider>
       </QueryClientProvider>
     </StrictMode>,

@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query"
 import { fetchWithAuth } from "@/api"
 import { useUser } from "@/context/UserContext"
 import { X } from "lucide-react" // ✔ Better close icon
+import { toast } from "sonner"
 
 type Props = {
   mode: "create" | "delete"
@@ -42,7 +43,8 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
       setError(null)
       setValue("")
       onClose()
-      alert(`${mode === "create" ? "Created" : "Deleted"} successfully!`)
+      toast.success(`${mode === "create" ? "Created" : "Deleted"} successfully!`)
+      //alert(`${mode === "create" ? "Created" : "Deleted"} successfully!`)
     },
   })
 
