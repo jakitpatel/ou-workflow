@@ -26,7 +26,7 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
         path:
           mode === "create"
             ? `/createApplication?ownsId=${value}`
-            : `/deleteApplication?ApplicationID=${value}`,
+            : `/deleteApplication?applicationID=${value}`,
         strategy,
         token,
       })
