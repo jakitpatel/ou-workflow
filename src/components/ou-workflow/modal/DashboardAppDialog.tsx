@@ -22,29 +22,44 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
     mutationFn: async () => {
       if (!value.trim()) throw new Error("Value is required")
 
-      if (mode === "create") {
-        return await fetchWithAuth({
-          path: `/createApplication?ownsId=${value}`,
-          strategy,
-          token,
-        })
-      } else {
-        return await fetchWithAuth({
-          path: `/deleteApplication?applicationId=${value}`,
-          strategy,
-          token,
-        })
+      const response = await fetchWithAuth({
+        path:
+          mode === "create"
+            ? `/createApplication?ownsId=${value}`
+            : `/deleteApplication?ApplicationID=${value}`,
+        strategy,
+        token,
+      })
+
+      if (!response || !response.status) {
+        throw new Error("Unexpected API response")
       }
+
+      const statusMsg = response.status.toLowerCase()
+
+      if (
+        statusMsg.includes("required") ||
+        statusMsg.includes("error") ||
+        statusMsg.includes("not found") ||
+        statusMsg.includes("failure")
+      ) {
+        throw new Error(response.status)
+      }
+
+      return response
     },
+
     onError: (err: any) => {
-      setError(err?.message || "Unknown error occurred")
+      const message = err?.message || "Unknown error occurred"
+      setError(message)
+      //toast.error(message)
     },
-    onSuccess: () => {
+
+    onSuccess: (res) => {
       setError(null)
       setValue("")
       onClose()
-      toast.success(`${mode === "create" ? "Created" : "Deleted"} successfully!`)
-      //alert(`${mode === "create" ? "Created" : "Deleted"} successfully!`)
+      toast.success(res?.status)
     },
   })
 
