@@ -24,7 +24,7 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
 
       if (mode === "create") {
         return await fetchWithAuth({
-          path: `/createApplication?ownsid=${value}`,
+          path: `/createApplication?ownsId=${value}`,
           strategy,
           token,
         })
