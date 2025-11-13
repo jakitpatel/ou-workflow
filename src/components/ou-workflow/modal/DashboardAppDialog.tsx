@@ -22,7 +22,7 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
     mutationFn: async () => {
       if (!value.trim()) throw new Error("Value is required")
 
-      const response = await fetchWithAuth({
+      return await fetchWithAuth({
         path:
           mode === "create"
             ? `/createApplication?ownsId=${value}`
@@ -30,36 +30,27 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
         strategy,
         token,
       })
-
-      if (!response || !response.status) {
-        throw new Error("Unexpected API response")
-      }
-
-      const statusMsg = response.status.toLowerCase()
-
-      if (
-        statusMsg.includes("required") ||
-        statusMsg.includes("error") ||
-        statusMsg.includes("not found") ||
-        statusMsg.includes("failure")
-      ) {
-        throw new Error(response.status)
-      }
-
-      return response
     },
 
     onError: (err: any) => {
-      const message = err?.message || "Unknown error occurred"
-      setError(message)
-      //toast.error(message)
+      // Prefer backend status field if available
+      const backendMessage =
+        err?.details?.status ||
+        err?.details?.message ||
+        err?.message ||
+        "Unknown error occurred"
+
+      setError(backendMessage)
+      toast.error(backendMessage)
     },
 
     onSuccess: (res) => {
+      // Backend success message is ALWAYS in res.status
+      toast.success(res.status)
+
       setError(null)
       setValue("")
       onClose()
-      toast.success(res?.status)
     },
   })
 
