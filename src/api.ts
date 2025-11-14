@@ -192,8 +192,8 @@ export async function fetchRoles({
   //console.log("Using token:", token);
   const params = new URLSearchParams({
     "fields[WFUSERROLE]": "UserName,UserRole,CreatedDate",
-    "page[offset]": page.toString(),
-    "page[limit]": limit.toString(),
+    //"page[offset]": page.toString(),
+    //"page[limit]": limit.toString(),
     sort: "id",
     [`filter[UserName]`]: username,
   });
@@ -216,7 +216,8 @@ export async function fetchRoles({
   }));
 }
 
-export async function fetchRcs({
+// Fetch users by role type (NCRC, RFR, etc.)
+export async function fetchUserByRole({
   page = 0,
   limit = 20,
   token,
@@ -230,9 +231,9 @@ export async function fetchRcs({
   selectRoleType?: string;
 } = {}): Promise<any[]> {
   const params = new URLSearchParams({
-    "filter[UserRole]": selectRoleType,
-    "page[offset]": page.toString(),
-    "page[limit]": limit.toString(),
+    "filter[UserRole]": selectRoleType
+    //"page[offset]": page.toString(),
+    //"page[limit]": limit.toString(),
   });
 
   const json = await fetchWithAuth({
@@ -373,18 +374,6 @@ export async function fetchApplicationDetailRaw({
   }) as ApplicationDetailResponse;
 
   return json.applicationInfo;
-}
-
-// If your JSON contains multiple applications, add a selector:
-export async function fetchApplicationDetailById(applicationId?: string) {
-  const data = await fetchApplicationDetailRaw();
-  // if data is an array:
-  if (Array.isArray(data)) {
-    if (!applicationId) return data;
-    return data.find((a: any)=>a.applicationId === applicationId) || null;
-  }
-  // single object:
-  return data;
 }
 
 /** 👇 New: Login API */

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
-import { useRCList } from "@/components/ou-workflow/hooks/useTaskDashboardHooks";
+import { useUserListByRole } from "@/components/ou-workflow/hooks/useTaskDashboardHooks";
 
 type Application = {
   company: string;
@@ -51,7 +51,7 @@ export const ActionModal: React.FC<Props> = ({
   const {
     data: selectlist = [],
     isLoading,
-  } = useRCList(roleType, { enabled: showActionModal });
+  } = useUserListByRole(roleType, { enabled: showActionModal });
 
   const companyName =
     application?.company || application?.companyName || "Unknown Company";

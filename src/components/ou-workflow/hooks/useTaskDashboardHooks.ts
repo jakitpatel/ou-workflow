@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchApplicationTasks, fetchRcs } from './../../../api' // adjust import as needed
+import { fetchApplicationTasks, fetchUserByRole } from './../../../api' // adjust import as needed
 import { useUser } from '@/context/UserContext'
 
 export function useTasks(applicationId?: string, searchTerm?: string) {
@@ -18,7 +18,7 @@ export function useTasks(applicationId?: string, searchTerm?: string) {
   });
 }
 
-export function useRCList(
+export function useUserListByRole(
   roleType: "NCRC" | "RFR",
   options?: { enabled?: boolean }
 ) {
@@ -28,7 +28,7 @@ export function useRCList(
 
   return useQuery({
     queryKey: ["rc-list", roleType], // cache separate by role
-    queryFn: () => fetchRcs({ 
+    queryFn: () => fetchUserByRole({ 
       token: token ?? undefined,     // ✅ null → undefined
       strategy: strategy ?? undefined, // ✅ null → undefined
       selectRoleType: roleType 
