@@ -60,6 +60,23 @@ export function ApplicantProgressBar({
     return statusColors[normalized] ?? '#d1d5db' // default gray-300
   }
 
+  function getAssignedUser(taskRoles, assignedRoles) {
+    if (!taskRoles?.length) return null;
+
+    for (const role of taskRoles) {
+      const lowerRole = role.toLowerCase();
+
+      for (const assigned of assignedRoles) {
+        const assignedKey = Object.keys(assigned)[0];      // e.g., "NCRC"
+        if (assignedKey.toLowerCase() === lowerRole) {
+          return assigned[assignedKey];                    // e.g., "S.Benjamin"
+        }
+      }
+    }
+
+    return null;
+  }
+
   const mapTaskToAction = (taskItem, application) => {
     // Default styling
     let color = 'bg-gray-300 cursor-not-allowed';
@@ -120,13 +137,17 @@ export function ApplicantProgressBar({
         }
       }
     }
+    const assignedRolesList = Array.isArray(application?.assignedRoles)
+          ? application.assignedRoles
+          : [];
+    const assignee = getAssignedUser(taskRoles, assignedRolesList);
 
     return {
       TaskInstanceId: String(taskItem.TaskInstanceId ?? ''),
       label: taskItem.name ?? '',
       status: taskItem.status ?? '',
       required: taskItem.required ?? false,
-      assignee: taskItem.assignee ?? null,
+      assignee: assignee ?? null,
       taskType,
       taskCategory,
       color,
@@ -190,6 +211,7 @@ export function ApplicantProgressBar({
             >
               {applicant.stages[expandedStage].tasks.map((task, index) => {
                 const action = mapTaskToAction(task, applicant);
+                console.log(action);
                 return (
                 <div
                   key={index}
@@ -234,6 +256,12 @@ export function ApplicantProgressBar({
                         {roleObj.taskRole}
                       </span>
                     ))}
+                    {action.assignee && (
+                      <span
+                        className="text-xs text-green-700 bg-green-50 px-1.5 py-0.5 rounded"  >
+                        {action.assignee}
+                      </span>
+                    )}
                   </div>
                   <div className="flex justify-between items-center">
                     {/*task.required && (
