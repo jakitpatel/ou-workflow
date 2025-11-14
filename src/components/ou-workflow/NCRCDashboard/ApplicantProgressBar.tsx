@@ -114,7 +114,7 @@ export function ApplicantProgressBar({
           )
         );
 
-        if (isAssigned && status === 'pending') {
+        if (isAssigned && (status === 'pending' || status === 'in_progress')) {
           color = 'bg-blue-600 hover:bg-blue-700';
           disabled = false;
         }
