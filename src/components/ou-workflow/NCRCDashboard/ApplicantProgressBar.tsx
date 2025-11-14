@@ -258,7 +258,7 @@ export function ApplicantProgressBar({
                     ))}
                     {action.assignee && (
                       <span
-                        className="text-xs text-green-700 bg-green-50 px-1.5 py-0.5 rounded"  >
+                        className="text-xs text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded"  >
                         {action.assignee}
                       </span>
                     )}
