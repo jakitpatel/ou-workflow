@@ -360,8 +360,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
             status = "In Progress";
           } else if (result === "pending") {
             // Handle pending status
-            status = "PENDING";
-            return;
+            status = "Pending";
           }
           confirmTaskMutation.mutate({
             taskId: taskId,
