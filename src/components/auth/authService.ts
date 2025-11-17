@@ -3,6 +3,7 @@
  */
 
 import { cognitoConfig } from "@/components/auth/cognitoConfig";
+import jsSHA from "jssha";
 
 // Generate random string for PKCE
 function generateRandomString(length: number): string {
@@ -17,10 +18,25 @@ function generateRandomString(length: number): string {
 }
 
 // Generate SHA-256 hash
+/*
 async function sha256(plain: string): Promise<ArrayBuffer> {
   const encoder = new TextEncoder();
   const data = encoder.encode(plain);
   return crypto.subtle.digest("SHA-256", data);
+}
+*/
+
+async function sha256(plain: string): Promise<ArrayBuffer | string> {
+  if (crypto?.subtle) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(plain);
+    return crypto.subtle.digest("SHA-256", data);
+  } else {
+    // Fallback for insecure environments (NOT RECOMMENDED for production)
+    const shaObj = new jsSHA("SHA-256", "TEXT");
+    shaObj.update(plain);
+    return shaObj.getHash("ARRAYBUFFER");
+  }
 }
 
 // Base64 URL encode
