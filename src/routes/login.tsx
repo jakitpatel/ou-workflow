@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { User, Lock, ShieldCheck, LogIn, Server } from 'lucide-react'
+import { authlogin } from "@/components/auth/authService";
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -33,7 +34,7 @@ function LoginPage() {
 
   const [formUsername, setFormUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [strategy, setStrategy] = useState<'none' | 'api' | 'cognito'>('cognito')
+  const [strategy, setStrategy] = useState<'none' | 'api' | 'cognito' | 'cognitodirect'>('cognito')
   const [error, setError] = useState('')
   const [availableServers, setAvailableServers] = useState<string[]>([])
 
@@ -115,6 +116,10 @@ function LoginPage() {
     if (strategy === 'cognito') {
       handleCognito()
     }
+
+    if (strategy === 'cognitodirect') {
+      handleCognitoDirect()
+    }
   }
 
   const handleCognito = () => {
@@ -140,6 +145,33 @@ function LoginPage() {
 
     console.log('Redirecting to:', loginUrl)
     window.location.replace(loginUrl)
+  }
+
+  const handleCognitoDirect = () => {
+    if (!apiBaseUrl) {
+      setError('Please select an API server before using Cognito login.')
+      return
+    }
+    // ✅ persist the selected server before redirect
+    try {
+      const storedUser = localStorage.getItem('user')
+      const parsed = storedUser ? JSON.parse(storedUser) : {}
+      parsed.apiBaseUrl = apiBaseUrl
+      localStorage.setItem('user', JSON.stringify(parsed))
+      console.log('[handleCognito] Saved apiBaseUrl before redirect:', apiBaseUrl)
+    } catch (err) {
+      console.warn('[handleCognito] Failed to persist apiBaseUrl:', err)
+    }
+    authlogin();
+    /*const base = import.meta.env.BASE_URL || '/'
+    const origin = window.location.origin
+    const callBackUrl = `${origin}${base.replace(/\/$/, '')}/cognito-callback`
+    const returnUrl = encodeURIComponent(callBackUrl)
+    const loginUrl = `${apiBaseUrl}/api/auth/login?return_url=${returnUrl}`
+
+    console.log('Redirecting to:', loginUrl)
+    window.location.replace(loginUrl)
+    */
   }
 
   return (
@@ -190,6 +222,7 @@ function LoginPage() {
               <SelectItem value="none">No Security</SelectItem>
               <SelectItem value="api">API Security</SelectItem>
               <SelectItem value="cognito">Cognito Security</SelectItem>
+              <SelectItem value="cognitodirect">Cognito Direct Security</SelectItem>
             </SelectContent>
           </Select>
 

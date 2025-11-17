@@ -61,17 +61,19 @@ export function ApplicantProgressBar({
   }
 
   function getAssignedUser(taskRoles, assignedRoles) {
-    if (!taskRoles?.length) return null;
+    if (!taskRoles?.length || !Array.isArray(assignedRoles)) return null;
 
+    // Build a fast case-insensitive lookup map
+    const roleMap = assignedRoles.reduce((map, item) => {
+      const key = Object.keys(item)[0];
+      if (key) map[key.toLowerCase()] = item[key];
+      return map;
+    }, {});
+
+    // Return first matching role/user
     for (const role of taskRoles) {
-      const lowerRole = role.toLowerCase();
-
-      for (const assigned of assignedRoles) {
-        const assignedKey = Object.keys(assigned)[0];      // e.g., "NCRC"
-        if (assignedKey.toLowerCase() === lowerRole) {
-          return assigned[assignedKey];                    // e.g., "S.Benjamin"
-        }
-      }
+      const user = roleMap[role.toLowerCase()];
+      if (user) return user;
     }
 
     return null;
