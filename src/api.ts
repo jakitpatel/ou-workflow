@@ -177,8 +177,6 @@ export async function fetchApplicants({
 
 export async function fetchRoles({
   username,
-  page = 0,
-  limit = 20,
   token,
   strategy,
 }: {
@@ -192,8 +190,6 @@ export async function fetchRoles({
   //console.log("Using token:", token);
   const params = new URLSearchParams({
     "fields[WFUSERROLE]": "UserName,UserRole,CreatedDate",
-    //"page[offset]": page.toString(),
-    //"page[limit]": limit.toString(),
     sort: "id",
     [`filter[UserName]`]: username,
   });
@@ -218,8 +214,6 @@ export async function fetchRoles({
 
 // Fetch users by role type (NCRC, RFR, etc.)
 export async function fetchUserByRole({
-  page = 0,
-  limit = 20,
   token,
   strategy,
   selectRoleType = "NCRC",
@@ -232,8 +226,6 @@ export async function fetchUserByRole({
 } = {}): Promise<any[]> {
   const params = new URLSearchParams({
     "filter[UserRole]": selectRoleType
-    //"page[offset]": page.toString(),
-    //"page[limit]": limit.toString(),
   });
 
   const json = await fetchWithAuth({

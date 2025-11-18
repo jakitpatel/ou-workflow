@@ -27,7 +27,7 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
           mode === "create"
             ? `/createApplication?ownsId=${value}`
             : `/deleteApplication?applicationID=${value}`,
-        strategy,
+        strategy: strategy ?? undefined,
         token,
       })
     },
@@ -46,7 +46,7 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
 
     onSuccess: (res) => {
       // Backend success message is ALWAYS in res.status
-      toast.success(res.status)
+      toast.success((res as { status: string }).status)
 
       setError(null)
       setValue("")

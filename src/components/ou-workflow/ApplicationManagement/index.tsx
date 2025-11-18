@@ -18,10 +18,10 @@ type Props = {
 
 export const ApplicationManagementInterface = ({ application }: Props) => {
   const [activeTab, setActiveTab] = useState('overview');
-  const [editMode, setEditMode] = useState(false);
+  const [editMode] = useState(false);
   const [showRecentOnly, setShowRecentOnly] = useState(false);
-  const [userRole, setUserRole] = useState('admin'); // 'admin', 'dispatcher', 'rfr', 'ncrc'
-  const [showAdminView, setShowAdminView] = useState(false);
+  const [userRole] = useState('admin'); // 'admin', 'dispatcher', 'rfr', 'ncrc'
+  const [showAdminView] = useState(false);
   const [completionStatus, setCompletionStatus] = useState('incomplete'); // 'incomplete', 'complete', 'dispatched'
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showCommentsModal, setShowCommentsModal] = useState(false);
@@ -29,7 +29,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
   const [newComment, setNewComment] = useState('');
 
   // Validation state for required data
-  const [validationChecks, setValidationChecks] = useState({
+  const [validationChecks] = useState({
     company: { valid: true, message: 'Company KC-2025-4829 verified in Kashrus DB' },
     plant: { valid: true, message: 'Plant PLT-KC-2025-4829-001 created and linked' },
     contacts: { valid: true, message: 'Primary contact John Mitchell designated for initial communication' },

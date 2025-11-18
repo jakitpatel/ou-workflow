@@ -162,6 +162,7 @@ function LoginPage() {
     } catch (err) {
       console.warn('[handleCognito] Failed to persist apiBaseUrl:', err)
     }
+    //sessionStorage.setItem('auth_redirect', window.location.pathname + window.location.search);
     authlogin();
     /*const base = import.meta.env.BASE_URL || '/'
     const origin = window.location.origin

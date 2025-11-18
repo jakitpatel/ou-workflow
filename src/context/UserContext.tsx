@@ -2,11 +2,12 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import type { LoginStrategy } from '@/types/auth'
 import { useQuery } from '@tanstack/react-query'
 import { fetchRoles, registerUserContext } from '@/api'
+import type { UserRole } from '@/types/application'
 
 type UserContextType = {
   username: string | null
   role: string | null
-  roles: string[]
+  roles: UserRole[] | null;     // Update this field
   token: string | null
   strategy: LoginStrategy | null
   activeScreen: 'ncrc-dashboard' | 'tasks-dashboard' | null
@@ -17,7 +18,7 @@ type UserContextType = {
   logout: () => void
   setActiveScreen: (screen: 'ncrc-dashboard' | 'tasks-dashboard' | null) => void
   setRole: (role: string | null) => void
-  setRoles: (roles: string[]) => void
+  setRoles: (roles: UserRole[] | null) => void  // 🔄 Updated
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
@@ -25,7 +26,8 @@ const UserContext = createContext<UserContextType | undefined>(undefined)
 export function UserProvider({ children }: { children: ReactNode }) {
   const [username, setUsername] = useState<string | null>(null)
   const [role, setRole] = useState<string | null>(null)
-  const [roles, setRoles] = useState<string[]>([])
+  //const [roles, setRoles] = useState<string[]>([])
+  const [roles, setRoles] = useState<UserRole[] | null>(null) // 🔄 Updated
   const [token, setToken] = useState<string | null>(null)
   const [strategy, setStrategy] = useState<LoginStrategy | null>(null)
   const [loginTime, setLoginTime] = useState<number | null>(null)

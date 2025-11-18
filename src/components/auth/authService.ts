@@ -26,7 +26,7 @@ async function sha256(plain: string): Promise<ArrayBuffer> {
 }
 */
 
-async function sha256(plain: string): Promise<ArrayBuffer | string> {
+async function sha256(plain: string): Promise<ArrayBuffer> {
   if (crypto?.subtle) {
     const encoder = new TextEncoder();
     const data = encoder.encode(plain);
@@ -35,7 +35,7 @@ async function sha256(plain: string): Promise<ArrayBuffer | string> {
     // Fallback for insecure environments (NOT RECOMMENDED for production)
     const shaObj = new jsSHA("SHA-256", "TEXT");
     shaObj.update(plain);
-    return shaObj.getHash("ARRAYBUFFER");
+    return shaObj.getHash("ARRAYBUFFER") as ArrayBuffer;
   }
 }
 

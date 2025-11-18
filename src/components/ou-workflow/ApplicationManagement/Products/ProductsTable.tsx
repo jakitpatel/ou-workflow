@@ -1,14 +1,14 @@
-import { useState } from "react";
+//import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import type { ApplicationDetail } from "@/types/application";
 import { Package, Pencil, Trash2 } from "lucide-react";
-import ProductFormDialog from "./ProductFormDialog";
+//import ProductFormDialog from "./ProductFormDialog";
 import { useUser } from "@/context/UserContext";
 
 export default function ProductsTable({ application }: { application: ApplicationDetail }) {
   const { role, roles } = useUser();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  //const [isDialogOpen, setIsDialogOpen] = useState(false);
+  //const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   //const queryClient = useQueryClient();
 
   const userRoles =
@@ -17,7 +17,7 @@ export default function ProductsTable({ application }: { application: Applicatio
       : role
       ? [role.toLowerCase()]
       : [];
-
+  //console.log(roles);
   const canEditProducts = userRoles.includes("product_role");
 
   const productData = application.products || [];
@@ -27,9 +27,9 @@ export default function ProductsTable({ application }: { application: Applicatio
   const fromApplication = productData.filter(p => p.source === "Form Data").length;
 
   // Add/Edit Product mutations
-  const saveProductMutation = useMutation({ /* implement your API call here */ });
+  //const saveProductMutation = useMutation({ /* implement your API call here */ });
 
-  const onAddProduct = async (newProduct: any) => {
+  /*const onAddProduct = async (newProduct: any) => {
     try {
       await saveProductMutation.mutateAsync(newProduct);
       //await queryClient.invalidateQueries(["application", application.id]);
@@ -45,7 +45,7 @@ export default function ProductsTable({ application }: { application: Applicatio
     } catch (err) {
       console.error("Edit product failed:", err);
     }
-  };
+  };*/
 
   // Delete Product mutation
   const deleteProductMutation = useMutation({
@@ -67,23 +67,6 @@ export default function ProductsTable({ application }: { application: Applicatio
 
   return (
     <>
-      {/* Product Form Dialog */}
-      {isDialogOpen && canEditProducts && (
-        <ProductFormDialog
-          open={isDialogOpen}
-          product={selectedProduct}
-          onClose={() => setIsDialogOpen(false)}
-          onSave={async (productData: any) => {
-            if (selectedProduct) {
-              await onEditProduct(productData);
-            } else {
-              await onAddProduct(productData);
-            }
-            setIsDialogOpen(false);
-          }}
-        />
-      )}
-
       <div className="bg-white rounded-lg shadow p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 space-x-2">
@@ -102,8 +85,8 @@ export default function ProductsTable({ application }: { application: Applicatio
               <button
                 onClick={() => {
                   if (!canEditProducts) return;
-                setSelectedProduct(null);
-                setIsDialogOpen(true);
+                //setSelectedProduct(null);
+                //setIsDialogOpen(true);
             }}
             className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
               canEditProducts
@@ -175,8 +158,8 @@ export default function ProductsTable({ application }: { application: Applicatio
                       <button
                         onClick={() => {
                           if (!canEditProducts) return;
-                          setSelectedProduct(product);
-                          setIsDialogOpen(true);
+                          //setSelectedProduct(product);
+                          //setIsDialogOpen(true);
                         }}
                         className={`text-gray-700 hover:text-gray-900 transition-colors ${
                           !canEditProducts && "text-gray-400 cursor-not-allowed hover:text-gray-400"

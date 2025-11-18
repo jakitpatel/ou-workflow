@@ -30,7 +30,8 @@ export function useApplications({
         page,
         limit,
       }),
-    keepPreviousData: true,   // keep list visible during refetch
+    // keep showing previous data until new data is loaded:
+    placeholderData: (previousData) => previousData,
     enabled: strategy === 'none' || !!token,
     retry: (failureCount, error: any) => {
       if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) return false;

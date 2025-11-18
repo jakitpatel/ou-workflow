@@ -27,15 +27,15 @@ function ProfilePage() {
           <div>
             <span className="font-semibold text-gray-700">Active Role: </span>
             {role === 'ALL'
-              ? `AllRoles (${roles.map((r) => r.name).join(', ')})`
+              ? `AllRoles (${(roles ?? []).map((r) => r.name).join(', ')})`
               : role || 'None selected'}
           </div>
           {/* Roles Dropdown */}
           <div className="pb-2">
             <span className="font-semibold text-gray-700">Select Role: </span>
-            {roles.length > 0 && (
+            {(roles ?? []).length > 0 && (
               <select
-                value={role === 'ALL' ? 'ALL' : role}
+                value={role === 'ALL' ? 'ALL' : role ?? ''}
                 onChange={(e) => {
                   const selectedValue = e.target.value;
                   if (selectedValue === 'ALL') {
@@ -50,7 +50,7 @@ function ProfilePage() {
                 <option value="">Select Role</option>
                 {/* ✅ new option */}
                 <option value="ALL">All Roles</option>
-                {roles.map((r, idx) => (
+                {(roles ?? []).map((r, idx) => (
                   <option key={idx} value={r.value}>
                     {r.name}
                   </option>

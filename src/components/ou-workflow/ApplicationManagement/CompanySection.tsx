@@ -36,7 +36,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2</label>
             <input
               type="text"
-              value={application.company.address.line2}
+              value={application.company.address.line2 ?? ""}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
