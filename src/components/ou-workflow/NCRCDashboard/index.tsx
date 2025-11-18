@@ -128,7 +128,7 @@ export function NCRCDashboard() {
     },
   });
 
-  const executeAction = (assignee: string, action: any, result: "yes" | "no" | "pending" | "completed" | "in_progress") => {
+  const executeAction = (assignee: string, action: any, result?: "yes" | "no" | "pending" | "completed" | "in_progress") => {
       //if (selectedAction) {
         // normalize taskType safely
         const taskType = action.taskType?.toLowerCase();
@@ -144,7 +144,7 @@ export function NCRCDashboard() {
         } else if ((taskType === "conditional" || taskType === "condition") && taskCategory === "approval") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
-            result: result,
+            result: result ?? undefined,
             token: token ?? undefined,     // ✅ null → undefined
             strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined,
@@ -152,7 +152,7 @@ export function NCRCDashboard() {
         } else if (taskType === "action" && taskCategory === "selector") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
-            result: result,
+            result: result ?? undefined,
             token: token ?? undefined,     // ✅ null → undefined
             strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined,
@@ -160,7 +160,7 @@ export function NCRCDashboard() {
         } else if (taskType === "action" && taskCategory === "input") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
-            result: result,
+            result: result ?? undefined,
             token: token ?? undefined,     // ✅ null → undefined
             strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined,
@@ -168,7 +168,7 @@ export function NCRCDashboard() {
         } else if (taskType === "action" && taskCategory === "scheduling") {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
-            result: result,
+            result: result ?? undefined,
             token: token ?? undefined,     // ✅ null → undefined
             strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined,
@@ -187,7 +187,7 @@ export function NCRCDashboard() {
           }
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
-            result: result,
+            result: result ?? undefined,
             token: token ?? undefined,     // ✅ null → undefined
             strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined,
@@ -195,7 +195,7 @@ export function NCRCDashboard() {
           });
         } else if (taskType === "action" && taskCategory === "assignment") {
           const taskId = action.TaskInstanceId;
-          const appId = selectedAction.application.applicationId;
+          const appId = selectedAction?.application?.applicationId ?? action.application?.applicationId ?? action.applicationId;
 
           const rawLabel = action.name ?? "";
           const normalized = rawLabel.replace(/\s+/g, "").toLowerCase();

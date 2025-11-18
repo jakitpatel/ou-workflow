@@ -37,6 +37,8 @@ export type Task = {
   daysOverdue?: number;
   description: string;
   executedBy?: string;
+  taskType?: string;
+  taskCategory?: string;
   taskRoles?: { taskRole: string }[]
 };
 
@@ -45,6 +47,7 @@ export type Stage = {
   progress: number;
   tasks: Task[];
 };
+export type AssignedRole = Record<string, string>;
 
 export type Applicant = {
   id: number;
@@ -55,6 +58,7 @@ export type Applicant = {
   priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM';
   status: string; // e.g. 'contract_sent'
   assignedRC: string;
+  assignedRoles?: AssignedRole[]; // 👈 Added this line
   daysInProcess: number;
   overdue: boolean;
   daysOverdue: number;

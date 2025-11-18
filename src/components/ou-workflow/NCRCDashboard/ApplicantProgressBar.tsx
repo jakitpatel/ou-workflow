@@ -7,9 +7,8 @@ type Props = {
   applicant: Applicant
   handleTaskAction?: (
     e: React.MouseEvent,
-    task: Task,
-    action: string,
-    applicantId: string
+    application: Applicant,
+    action: Task
   ) => void
 }
 
@@ -23,18 +22,6 @@ export function ApplicantProgressBar({
   const handleStageClick = (stageName: string) => {
       setExpandedStage(expandedStage === stageName ? null : stageName);
   };
-
-  /*
-  const handleTaskActionLocal = (
-    e: React.MouseEvent,
-    task: Task,
-    action: string
-  ) => {
-    e.stopPropagation()
-    e.preventDefault()
-    handleTaskAction?.(e, task, action, String(applicant.id))
-  }
-  */
 
   const stageOrder = [
     { key: 'initial', name: 'Initial' },
@@ -79,7 +66,7 @@ export function ApplicantProgressBar({
     return null;
   }
 
-  const mapTaskToAction = (taskItem, application) => {
+  const mapTaskToAction = (taskItem: Task, application: Applicant) => {
     // Default styling
     let color = 'bg-gray-300 cursor-not-allowed';
     let icon = null;
@@ -87,7 +74,7 @@ export function ApplicantProgressBar({
 
     const status = taskItem.status?.toLowerCase() ?? 'unknown';
     const taskRoles = Array.isArray(taskItem.taskRoles)
-      ? taskItem.taskRoles.map(r => r.taskRole?.toLowerCase()).filter(Boolean)
+      ? taskItem.taskRoles.map((r: { taskRole?: string }) => r.taskRole?.toLowerCase()).filter(Boolean)
       : taskItem.taskRole
         ? [taskItem.taskRole.toLowerCase()]
         : [];
@@ -241,7 +228,7 @@ export function ApplicantProgressBar({
                       </span>
                     ) : (
                       <button
-                        onClick={(e) => handleTaskAction(e, applicant, task)}
+                        onClick={(e) => handleTaskAction?.(e, applicant, task)}
                         title={task.description || 'No description available'}
                         className="text-sm font-semibold text-white bg-blue-600 px-2 py-1 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >

@@ -7,8 +7,8 @@ import { useTaskContext } from '@/context/TaskContext';
 
 type Props = {
   applicant: Applicant;
-  setActiveScreen: (val: string) => void;
-  handleTaskAction: (task: Task, action: string) => void;
+  setActiveScreen: (val: "ncrc-dashboard" | "tasks-dashboard" | null) => void;
+  handleTaskAction: (e: React.MouseEvent<HTMLButtonElement>, application:Applicant, action: Task) => void;
 };
 
 export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: Props) {

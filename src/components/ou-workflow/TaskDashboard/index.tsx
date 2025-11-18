@@ -223,8 +223,8 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       };
       sendMsgTaskMutation.mutate({
         newMessage,
-        token,
-        strategy
+        token: token ?? undefined,
+        strategy: strategy ?? undefined
       });
 
       //setAllTasks(prev => [...prev, newTask]);
