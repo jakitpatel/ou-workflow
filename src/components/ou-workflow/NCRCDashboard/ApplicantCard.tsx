@@ -15,7 +15,8 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
   // inside your component
   const navigate = useNavigate();
 
-  const priorityConfig = {
+  type PriorityKey = 'urgent' | 'high' | 'medium' | 'low' | 'normal';
+  const priorityConfig: Record<PriorityKey, { label: string; color: string; textColor: string }> = {
     urgent: { label: 'Urgent', color: 'bg-red-500', textColor: 'text-white' },
     high: { label: 'High', color: 'bg-orange-500', textColor: 'text-white' },
     medium: { label: 'Medium', color: 'bg-blue-500', textColor: 'text-white' },
@@ -40,27 +41,26 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
 
   const normalized = applicant.status?.toLowerCase() ?? '';
   const status = statusConfig[normalized as keyof typeof statusConfig] ?? defaultStatus(applicant.status);
-  //const priority = priorityConfig[applicant.priority];
-  const priority = priorityConfig[applicant.priority?.toLowerCase()] || priorityConfig.low;
+  const priorityKey = (applicant.priority?.toLowerCase() ?? 'low') as PriorityKey;
+  const priority = priorityConfig[priorityKey] || priorityConfig.low;
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const { setApplicationId } = useTaskContext();
   
   // Cross-navigation handler
-  const handleViewTasks = (applicationId) => {
+  const handleViewTasks = (applicationId?: string | number) => {
     console.log('Viewing tasks for:', applicationId);
-    setApplicationId(applicationId); // ✅ store globally
+    setApplicationId(applicationId ? String(applicationId) : null); // ensure string stored
     setActiveScreen('tasks-dashboard'); // ✅ switch tab
     // ✅ navigate to the route instead of setActiveScreen()
     if (applicationId) {
       navigate({
         to: '/ou-workflow/tasks-dashboard/$applicationId',
-        params: { applicationId },
+        params: { applicationId: String(applicationId) },
       })
     } else {
       navigate({ to: '/ou-workflow/tasks-dashboard' })
     }
   };
-
   // Build a lookup by type for easier access
   const filesByType = applicant.files?.reduce((acc, file) => {
     acc[file.fileType] = file;
@@ -147,7 +147,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
                 <span className="text-xs font-medium text-blue-800">Smart Actions</span>
               </div>
               <ul className="text-xs text-gray-700 space-y-1">
-                {applicant?.aiSuggestions?.todoItems.slice(0, 2).map((item, index) => (
+                {(applicant?.aiSuggestions?.todoItems ?? []).slice(0, 2).map((item: string, index: number) => (
                   <li key={index} className="flex items-start">
                     <span className="w-1 h-1 bg-blue-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                     {item}

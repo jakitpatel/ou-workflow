@@ -9,6 +9,7 @@
  import { TaskFilters } from './TaskFilters';
  import { TaskRow } from './TaskRow';
  import { formatNowForApi } from './taskHelpers';
+ import type { ApplicationTask } from '@/types/application';
 
 import { plantHistory } from './demoData';
 import { useTasks } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
@@ -21,20 +22,20 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     const [searchTerm, setSearchTerm] = useState('');
     //const [expandedActions, setExpandedActions] = useState(new Set());
     //const [expandedMessages, setExpandedMessages] = useState(new Set());
-    const [messageInputs, setMessageInputs] = useState({});
+    const [messageInputs, setMessageInputs] = useState<Record<string, string>>({});
     const [showTaskAssignment, setShowTaskAssignment] = useState({});
     const [taskAssignmentData, setTaskAssignmentData] = useState({});
-    const [showPlantHistory, setShowPlantHistory] = useState(null);
+    const [showPlantHistory, setShowPlantHistory] = useState<string | null>(null);
     //const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
-    const { username, role, roles, setActiveScreen, token, strategy } = useUser() // 👈 use context
+    const { username, role, roles, token, strategy, setActiveScreen } = useUser() // 👈 use context
     const [showActionModal, setShowActionModal] = useState<boolean | null>(null);
     const [showConditionModal, setShowConditionModal] = useState<boolean | null>(null);
     const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
     //const [selectedAction, setSelectedAction] = useState(null);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
-    const messageInputRefs = useRef({});
+    const messageInputRefs = useRef<Record<string, HTMLTextAreaElement | HTMLInputElement | null>>({});
     //const { applicationId, setApplicationId } = useTaskContext();
     const queryClient = useQueryClient();
     const errorDialogRef = useRef<ErrorDialogRef>(null);
@@ -58,12 +59,16 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     };
 
     useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (!event.target.closest('.task-assignment-panel') &&
-            !event.target.closest('.plant-history-modal')) {
+      const handleClickOutside = (event: MouseEvent) => {
+        const target = event.target as Element | null;
+        if (
+          target &&
+          !target.closest('.task-assignment-panel') &&
+          !target.closest('.plant-history-modal')
+        ) {
           setShowTaskAssignment({});
           //setShowReassignDropdown({});
-          if (!event.target.closest('.plant-history-modal')) {
+          if (!target.closest('.plant-history-modal')) {
             setShowPlantHistory(null);
           }
         }
@@ -118,14 +123,16 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       });
 
       return filtered.sort((a, b) => {
-        const priorityOrder = { urgent: 0, high: 1, medium: 2, normal: 2, low: 3 };
-        const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+        const priorityOrder: Record<string, number> = { urgent: 0, high: 1, medium: 2, normal: 2, low: 3 };
+        const aPriority = String(a.priority ?? '').toLowerCase();
+        const bPriority = String(b.priority ?? '').toLowerCase();
+        const priorityDiff = (priorityOrder[aPriority] ?? 99) - (priorityOrder[bPriority] ?? 99);
         if (priorityDiff !== 0) return priorityDiff;
         return (b.daysActive ?? 0) - (a.daysActive ?? 0);
       });
     }, [tasksplants, role, roles]);
 
-    const handleMessageInputChange = (taskId, value) => {
+    const handleMessageInputChange = (taskId: string, value: string) => {
       setMessageInputs(prev => ({
         ...prev,
         [taskId]: value
@@ -143,7 +150,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       }
     });
 
-    const handleSendMessage = (taskId) => {
+    const handleSendMessage = (taskId: string) => {
       const messageText = messageInputs[taskId];
       if (!messageText?.trim()) return;
       const newMessage = {
@@ -174,7 +181,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
         ...prev,
         [taskId]: ''
       }));
-
+  
       setTimeout(() => {
         if (messageInputRefs.current[taskId]) {
           messageInputRefs.current[taskId].focus();
@@ -186,7 +193,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       setShowPlantHistory(plantName);
     };
 
-    const handleCreateTaskFromMessage = (applicantId) => {
+    const handleCreateTaskFromMessage = (applicantId: string) => {
       const messageText = messageInputs[applicantId];
       if (!messageText?.trim()) return;
 
@@ -203,7 +210,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       }));
     };
 
-    const handleConfirmTaskCreation = (applicantId) => {
+    const handleConfirmTaskCreation = (applicantId: string) => {
       const assignmentData = taskAssignmentData[applicantId];
       if (!assignmentData?.taskText?.trim()) return;
 
@@ -256,10 +263,10 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       }, 100);
     };
 
-    const handleKeyPress = (e, taskId) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+    const handleKeyPress = (e: React.KeyboardEvent, taskId: string) => {
+      if ((e as React.KeyboardEvent).key === 'Enter' && !(e as React.KeyboardEvent).shiftKey) {
         e.preventDefault();
-        if (e.ctrlKey || e.metaKey) {
+        if ((e as React.KeyboardEvent).ctrlKey || (e as React.KeyboardEvent).metaKey) {
           if (showTaskAssignment[taskId]) {
             handleConfirmTaskCreation(taskId);
           } else {
@@ -423,7 +430,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       return { application: app, action: act };
     }, [selectedActionId, tasksplants]);
 
-    const handleApplicationTaskAction = (e, application) => {
+    const handleApplicationTaskAction = (e: React.MouseEvent<HTMLElement>, application: any) => {
       console.log("handleApplicationTaskAction called for application:", application);
       e.stopPropagation();
       e.preventDefault();
@@ -551,6 +558,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
             plantHistory={plantHistory}
             onViewNCRCDashboard={handleViewNCRCDashboard}
           />
+
         </div>
         {/* Global Error Dialog */}
         <ErrorDialog ref={errorDialogRef} />

@@ -47,7 +47,10 @@ export function ApplicantProgressBar({
     return statusColors[normalized] ?? '#d1d5db' // default gray-300
   }
 
-  function getAssignedUser(taskRoles, assignedRoles) {
+  function getAssignedUser(
+    taskRoles: string[] | undefined,
+    assignedRoles: Array<Record<string, string>> | undefined
+  ) {
     if (!taskRoles?.length || !Array.isArray(assignedRoles)) return null;
 
     // Build a fast case-insensitive lookup map

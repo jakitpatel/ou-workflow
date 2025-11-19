@@ -253,7 +253,7 @@ export function NCRCDashboard() {
     setSelectedActionId(`${applicationId}:${actionId}`);
   };
 
-  const handleTaskAction = (e, application: Applicant, action) => {
+  const handleTaskAction = (e: React.MouseEvent<HTMLElement>, application: Applicant, action: any) => {
       console.log("handleTaskAction called with action:", action, "for application:", application);
       e.stopPropagation();
       e.preventDefault();
