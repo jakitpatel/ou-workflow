@@ -9,7 +9,7 @@
  import { TaskFilters } from './TaskFilters';
  import { TaskRow } from './TaskRow';
  import { formatNowForApi } from './taskHelpers';
- import type { ApplicationTask } from '@/types/application';
+ //import type { ApplicationTask } from '@/types/application';
 
 import { plantHistory } from './demoData';
 import { useTasks } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
@@ -23,8 +23,9 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     //const [expandedActions, setExpandedActions] = useState(new Set());
     //const [expandedMessages, setExpandedMessages] = useState(new Set());
     const [messageInputs, setMessageInputs] = useState<Record<string, string>>({});
-    const [showTaskAssignment, setShowTaskAssignment] = useState({});
-    const [taskAssignmentData, setTaskAssignmentData] = useState({});
+    const [showTaskAssignment, setShowTaskAssignment] = useState<Record<string, boolean>>({});
+    type TaskAssignment = { taskText: string; assignee: string | null };
+    const [taskAssignmentData, setTaskAssignmentData] = useState<Record<string, TaskAssignment | null>>({});
     const [showPlantHistory, setShowPlantHistory] = useState<string | null>(null);
     //const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
@@ -49,6 +50,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       data: tasksplants = [],
       isLoading,
       isError,
+      error
     } = useTasks(applicationId || undefined, debouncedSearchTerm);
 
     // Cross-navigation handler
@@ -205,7 +207,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
         ...prev,
         [applicantId]: {
           taskText: messageText,
-          assignee: username
+          assignee: username ?? null
         }
       }));
     };
@@ -501,7 +503,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
           />
           {/* List */}
           {isLoading && <div className="text-gray-500">Loading Tasks & Plants...</div>}
-          {isError && <div className="text-red-600">Error: {(error as Error).message}</div>}
+          {isError && <div className="text-red-600">Error: {error?.message}</div>}
 
           {/* Tasks Table */}
           <div className="bg-white rounded-lg shadow-sm border overflow-hidden mt-6">
@@ -520,7 +522,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
                   <TaskRow
                     key={application.taskInstanceId}   // ✅ unique key here
                     application={application}
-                    plantInfo={plantHistory[application.plant]}
+                    plantInfo={plantHistory[String(application.plantId) as keyof typeof plantHistory]}
                     //showReassignDropdown={showReassignDropdown}
                     //setShowReassignDropdown={setShowReassignDropdown}
                     handleApplicationTaskAction={handleApplicationTaskAction}

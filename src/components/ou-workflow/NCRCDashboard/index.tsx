@@ -386,7 +386,7 @@ export function NCRCDashboard() {
       {/* End Pagination Controls */}
       <div className="space-y-4">
         {applicants.length > 0 ? (
-          applicants.map((applicant) => (
+          applicants.map((applicant: Applicant) => (
             <ApplicantCard
               key={applicant.applicationId}
               applicant={applicant}
