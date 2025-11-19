@@ -76,11 +76,20 @@ export function ApplicantProgressBar({
     let disabled = true;
 
     const status = taskItem.status?.toLowerCase() ?? 'unknown';
-    const taskRoles = Array.isArray(taskItem.taskRoles)
-      ? taskItem.taskRoles.map((r: { taskRole?: string }) => r.taskRole?.toLowerCase()).filter(Boolean)
-      : taskItem.taskRole
-        ? [taskItem.taskRole.toLowerCase()]
-        : [];
+    const taskRoles = (() => {
+      // Normalize task roles into an array of lowercase strings.
+      // Support: array of objects ({ taskRole }), array of strings, or a single string.
+      if (Array.isArray(taskItem.taskRoles)) {
+        return taskItem.taskRoles
+          .map((r: any) => (typeof r === 'string' ? r : r?.taskRole))
+          .filter(Boolean)
+          .map((s: string) => s.toLowerCase());
+      }
+      if (typeof taskItem.taskRoles === 'string') {
+        return [String(taskItem.taskRoles).toLowerCase()];
+      }
+      return [];
+    })();
 
     const userRoles =
     role?.toUpperCase() === 'ALL'
