@@ -8,6 +8,7 @@ import { Navigation } from '@/components/ou-workflow/Navigation'
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '') || ''
 const LOGIN_PATH = `${BASE}/login`
 const CALLBACK_PATH = `${BASE}/cognito-callback`
+const CALLBACK_DIRECT_PATH = `${BASE}/cognito-directcallback`
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
@@ -18,8 +19,11 @@ export const Route = createRootRoute({
     const isCallbackPage =
       location.pathname === CALLBACK_PATH || location.pathname === '/cognito-callback'
 
+    const isCallbackDirectPage =
+      location.pathname === CALLBACK_DIRECT_PATH || location.pathname === '/cognito-directcallback'
+
     // ✅ Allow login and callback screen without auth
-    if (isLoginPage || isCallbackPage) return
+    if (isLoginPage || isCallbackPage || isCallbackDirectPage) return
 
     if (!userStr) {
       throw redirect({ to: '/login' })

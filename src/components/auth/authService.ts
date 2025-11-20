@@ -133,12 +133,12 @@ async function authlogin(): Promise<void> {
   console.log("Cognito redirect:", cognitoConfig.oauth.redirectSignIn);
 
   const callBackUrl = getReturnUrl();
-  const returnUrl = encodeURIComponent(callBackUrl);
+  //const returnUrl = encodeURIComponent(callBackUrl);
 
   const params = new URLSearchParams({
     response_type: cognitoConfig.oauth.responseType,
     client_id: cognitoConfig.userPoolWebClientId,
-    redirect_uri: returnUrl,
+    redirect_uri: callBackUrl,
     state,
     scope: cognitoConfig.oauth.scope.join(" "),
     code_challenge: codeChallenge,
@@ -235,7 +235,7 @@ async function refreshAccessToken(): Promise<string> {
   return tokens.access_token;
 }
 
-function logout() {
+function cognitoLogout() {
   clearTokens();
   const logoutUrl = `https://${cognitoConfig.domain}/logout?client_id=${cognitoConfig.userPoolWebClientId}&logout_uri=${encodeURIComponent(
     cognitoConfig.oauth.redirectSignOut,
@@ -303,7 +303,7 @@ export {
   getAccessToken,
   getIdToken,
   getUserInfo,
-  logout,
+  cognitoLogout,
   initAuth,
   requireAuth,
   authenticatedFetch,

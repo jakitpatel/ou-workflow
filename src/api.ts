@@ -79,7 +79,7 @@ export async function fetchWithAuth<T>({
   };
 
   // Attach Bearer token if API security is used
-  if ((strategy === "api" || strategy === "cognito") && token) {
+  if ((strategy === "api" || strategy === "cognito" || strategy === "cognitodirect") && token) {
     finalHeaders["Authorization"] = `Bearer ${token}`;
   }
 

@@ -26,10 +26,13 @@ function CognitoDirectCallback() {
         if (!userInfo) {
           throw new Error('Failed to extract user info from ID token.')
         }
-
+        let parts = userInfo.email.split('@');
+        let uname = parts[0]; 
+        console.log(uname); // Output: user.name
+        
         // 💾 Save login state in React context
         login({
-          username: userInfo.username,
+          username: uname, //userInfo.username,
           token: sessionStorage.getItem('access_token')!,
           strategy: 'cognitodirect',
         })

@@ -23,9 +23,9 @@ export interface CognitoConfig {
 export const cognitoConfig: CognitoConfig = {
   region: "us-east-1",
   userPoolId: "us-east-1_d38hiE2QM",
-  userPoolWebClientId: "3iec660aiv2evjdtn062s0ap22",
+  userPoolWebClientId: "44ntf452shmltsmdtravlo52i",
   domain: "us-east-1d38hie2qm.auth.us-east-1.amazoncognito.com", // No https://
-
+ 
   oauth: {
     scope: ["openid", "email", "phone"],
     redirectSignIn: window.location.origin, // Use current app URL

@@ -3,6 +3,7 @@ import type { LoginStrategy } from '@/types/auth'
 import { useQuery } from '@tanstack/react-query'
 import { fetchRoles, registerUserContext } from '@/api'
 import type { UserRole } from '@/types/application'
+import { cognitoLogout } from "@/components/auth/authService";
 
 type UserContextType = {
   username: string | null
@@ -209,13 +210,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
+    // Clear UI/user context
     setUsername(null)
     setRole(null)
     setRoles([])
     setToken(null)
     setStrategy(null)
     setLoginTime(null)
-    localStorage.removeItem('user')
+    // Clear your app storage
+    localStorage.removeItem("user");
+    // Clear Cognito session + redirect to hosted UI logout
+    cognitoLogout();
   }
 
   return (
