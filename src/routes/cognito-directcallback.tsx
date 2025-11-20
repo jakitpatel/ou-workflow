@@ -54,7 +54,7 @@ function CognitoDirectCallback() {
     }
 
     authenticate()
-  }, [login, navigate])
+  }, [])
 
   return (
     <div className="flex items-center justify-center h-screen text-lg text-blue-700">
