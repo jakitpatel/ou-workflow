@@ -135,7 +135,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
             msg.includes('Signature verification failed') ||
             msg.includes('invalid token') ||
             err.status === 401 ||
-            err.status === 422
+            err.status === 422 || 
+            msg.includes("Failed to fetch") ||
+            err instanceof TypeError
           ) {
             window.alert('Your session has expired or is invalid. Please log in again.')
             logout()

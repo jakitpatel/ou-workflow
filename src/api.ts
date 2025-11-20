@@ -1,6 +1,8 @@
 import { getApiBaseUrl } from './lib/utils';
 import type { ApplicantsResponse, Applicant, ApplicationTasksResponse, ApplicationTask, ApplicationDetailResponse, UserRoleResponse } from './types/application';
-
+import { getAccessToken, refreshAccessToken } from './components/auth/authService';
+//import { congnit } from "./components/context/UserContext";
+import { cognitoLogout } from "./components/auth/authService";
 //const API_BASE_URL = getApiBaseUrl();
 
 /**
@@ -60,11 +62,11 @@ type FetchWithAuthOptions = {
   method?: string;
   body?: any;
   strategy?: string;
-  token?: string | null;
+  token?: string | null | undefined;
   headers?: Record<string, string>;
 };
 // Fetch with Auth wrapper (improved)
-export async function fetchWithAuth<T>({
+/*export async function fetchWithAuth<T>({
   path,
   method = "GET",
   body,
@@ -103,6 +105,89 @@ export async function fetchWithAuth<T>({
     const error: any = new Error(
       errorBody?.message || `API request failed: ${response.status} ${response.statusText}`
     );
+    error.status = response.status;
+    error.details = errorBody;
+    throw error;
+  }
+
+  return response.json();
+}
+*/
+
+export async function fetchWithAuth<T>({
+  path,
+  method = "GET",
+  body,
+  strategy,
+  token,
+  headers = {},
+}: FetchWithAuthOptions): Promise<T> {
+  const baseUrl = resolveApiBaseUrl();
+
+  // Determine token source
+  // 🔥 If strategy is Cognito → always use sessionStorage tokens
+  let accessToken =
+    strategy === "cognito" || strategy === "cognitodirect"
+      ? getAccessToken()
+      : token;
+
+  const finalHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...headers,
+  };
+
+  if (accessToken) {
+    finalHeaders["Authorization"] = `Bearer ${accessToken}`;
+  }
+
+  async function doFetch(currentToken: string | null) {
+    const resp = await fetch(`${baseUrl}${path}`, {
+      method,
+      headers: {
+        ...finalHeaders,
+        ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return resp;
+  }
+
+  // 1️⃣ Initial request
+  let response = await doFetch(accessToken);
+
+  // 2️⃣ If token expired → try refresh (Cognito only)
+  if (
+    response.status === 401 &&
+    (strategy === "cognito" || strategy === "cognitodirect")
+  ) {
+    try {
+      const newToken = await refreshAccessToken(); // refresh & save to sessionStorage
+      accessToken = newToken;
+
+      // Retry request with new token
+      response = await doFetch(newToken);
+    } catch (err) {
+      console.error("🔴 Token refresh failed:", err);
+      cognitoLogout();
+      throw new Error("Session expired. Please log in again.");
+    }
+  }
+
+  // 3️⃣ Final error handling
+  if (!response.ok) {
+    let errorBody: any = null;
+
+    try {
+      errorBody = await response.json();
+    } catch {
+      errorBody = await response.text();
+    }
+
+    const error: any = new Error(
+      errorBody?.message ||
+        `API request failed: ${response.status} ${response.statusText}`
+    );
+
     error.status = response.status;
     error.details = errorBody;
     throw error;
