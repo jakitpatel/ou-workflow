@@ -150,6 +150,90 @@ async function authlogin(): Promise<void> {
 }
 
 async function handleOAuthCallback(): Promise<boolean> {
+  console.log("Callback URL:", window.location.href);
+
+  // Prevent double-processing of callback
+  if (sessionStorage.getItem("oauth_handled")) {
+    console.log("OAuth callback already processed. Skipping.");
+    return true;
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get("code");
+  const state = urlParams.get("state");
+  const error = urlParams.get("error");
+
+  // Handle Cognito error
+  if (error) {
+    const errorDescription = urlParams.get("error_description") || error;
+    throw new Error(errorDescription);
+  }
+
+  // If no code present → callback not valid yet
+  if (!code) {
+    console.warn("No authorization code found in URL.");
+    return false;
+  }
+
+  // Verify state
+  const savedState = sessionStorage.getItem("oauth_state");
+  if (savedState && savedState !== state) {
+    throw new Error("Invalid state parameter - possible CSRF attack");
+  }
+
+  // Verify PKCE
+  const codeVerifier = sessionStorage.getItem("pkce_code_verifier");
+  if (!codeVerifier) {
+    throw new Error("No PKCE code_verifier found. Session issue.");
+  }
+
+  // 🔥 IMPORTANT: Strip query params ONLY after reading them
+  window.history.replaceState({}, document.title, window.location.pathname);
+
+  try {
+    // Exchange the authorization code for tokens
+    const tokenResponse = await fetch(`https://${cognitoConfig.domain}/oauth2/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: cognitoConfig.userPoolWebClientId,
+        code,
+        redirect_uri: getReturnUrl(),
+        code_verifier: codeVerifier,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const txt = await tokenResponse.text();
+      console.error("Token response error:", txt);
+      throw new Error(txt);
+    }
+
+    const tokens = await tokenResponse.json();
+
+    // Store tokens
+    sessionStorage.setItem("access_token", tokens.access_token);
+    sessionStorage.setItem("id_token", tokens.id_token);
+    if (tokens.refresh_token) {
+      sessionStorage.setItem("refresh_token", tokens.refresh_token);
+    }
+
+    // Cleanup temporary OAuth data
+    sessionStorage.removeItem("oauth_state");
+    sessionStorage.removeItem("pkce_code_verifier");
+
+    // Mark callback as processed
+    sessionStorage.setItem("oauth_handled", "1");
+
+    return true;
+  } catch (error) {
+    console.error("Token exchange error:", error);
+    throw error;
+  }
+}
+/*
+async function handleOAuthCallback(): Promise<boolean> {
   const urlParams = new URLSearchParams(window.location.search);
   const code = urlParams.get("code");
   const state = urlParams.get("state");
@@ -209,6 +293,7 @@ async function handleOAuthCallback(): Promise<boolean> {
     throw error;
   }
 }
+*/
 
 async function refreshAccessToken(): Promise<string> {
   const refreshToken = sessionStorage.getItem("refresh_token");
