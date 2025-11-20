@@ -109,12 +109,19 @@ function clearTokens() {
   sessionStorage.removeItem("access_token");
   sessionStorage.removeItem("id_token");
   sessionStorage.removeItem("refresh_token");
+  sessionStorage.removeItem("oauth_handled");
 }
 
 function getReturnUrl(): string {
   const origin = cognitoConfig.oauth.redirectSignIn;
   const base = import.meta.env.BASE_URL || "/";
   return `${origin}${base.replace(/\/$/, "")}/cognito-directcallback`;
+}
+
+function getLogoutUrl(): string {
+  const origin = cognitoConfig.oauth.redirectSignOut;
+  const base = import.meta.env.BASE_URL || "/";
+  return `${origin}${base.replace(/\/$/, "")}/cognito-logout`;
 }
 
 async function authlogin(): Promise<void> {
@@ -322,8 +329,9 @@ async function refreshAccessToken(): Promise<string> {
 
 function cognitoLogout() {
   clearTokens();
+  const logout_uri = getLogoutUrl();
   const logoutUrl = `https://${cognitoConfig.domain}/logout?client_id=${cognitoConfig.userPoolWebClientId}&logout_uri=${encodeURIComponent(
-    cognitoConfig.oauth.redirectSignOut,
+    logout_uri,
   )}`;
   window.location.href = logoutUrl;
 }
@@ -392,4 +400,5 @@ export {
   initAuth,
   requireAuth,
   authenticatedFetch,
+  clearTokens,
 };
