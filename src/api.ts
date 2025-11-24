@@ -298,6 +298,56 @@ export async function fetchRoles({
   token?: string | null;
   strategy?: string;
 }): Promise<any[]> {
+  const baseUrl = resolveApiBaseUrl();
+  const path = `/auth/exchange-cognito-token`;
+
+  // 🔐 Determine final token source based on strategy
+  const accessToken = getAccessToken();
+
+  if (!accessToken) {
+    throw new Error("Access token missing. Please login again.");
+  }
+
+  async function doPost() {
+    try {
+      const resp = await fetch(`${baseUrl}${path}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ token: accessToken }),
+      });
+
+      // ❌ Non-200 HTTP response
+      if (!resp.ok) {
+        const errBody = await resp.text();
+        throw new Error(
+          `Server error ${resp.status}: ${errBody || resp.statusText}`
+        );
+      }
+
+      return resp.json(); // Expected: access token + roles + user info
+    } catch (err: any) {
+      console.error("fetchRoles POST error:", err);
+      throw new Error("Network request failed: " + err.message);
+    }
+  }
+
+  // 1️⃣ Perform the request
+  const response = await doPost();
+  return response;
+}
+/*
+export async function fetchRoles({
+  username,
+  token,
+  strategy,
+}: {
+  username: string;
+  token?: string | null;
+  strategy?: string;
+}): Promise<any[]> {
  
   const baseUrl = resolveApiBaseUrl();
   const path = `/auth/exchange-cognito-token`;
@@ -317,6 +367,8 @@ export async function fetchRoles({
   const response = await resp.json();
   return response;
 }
+*/
+
 // Fetch users by role type (NCRC, RFR, etc.)
 export async function fetchUserByRole({
   token,
