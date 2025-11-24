@@ -338,36 +338,6 @@ export async function fetchRoles({
   const response = await doPost();
   return response;
 }
-/*
-export async function fetchRoles({
-  username,
-  token,
-  strategy,
-}: {
-  username: string;
-  token?: string | null;
-  strategy?: string;
-}): Promise<any[]> {
- 
-  const baseUrl = resolveApiBaseUrl();
-  const path = `/auth/exchange-cognito-token`;
-  
-  async function doFetch() {
-    const body = {"token": getAccessToken()};
-    const resp = await fetch(`${baseUrl}${path}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-    });
-    return resp;
-  }
-  
-  // 1️⃣ Initial request
-  const resp = await doFetch();
-  const response = await resp.json();
-  return response;
-}
-*/
 
 // Fetch users by role type (NCRC, RFR, etc.)
 export async function fetchUserByRole({
