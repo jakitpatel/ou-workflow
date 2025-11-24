@@ -123,48 +123,42 @@ export async function fetchWithAuth<T>({
   headers = {},
 }: FetchWithAuthOptions): Promise<T> {
   const baseUrl = resolveApiBaseUrl();
-
-  // Determine token source
-  // 🔥 If strategy is Cognito → always use sessionStorage tokens
+  //console.log("fetchWithAuth called with:", { path, method, strategy, token, baseUrl });
+  // Pick token source
   let accessToken =
     strategy === "cognito" || strategy === "cognitodirect"
-      ? getAccessToken()
+      ? token //getAccessToken()
       : token;
 
-  const finalHeaders: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...headers,
-  };
-
-  if (accessToken) {
-    finalHeaders["Authorization"] = `Bearer ${accessToken}`;
-  }
-
   async function doFetch(currentToken: string | null) {
-    const resp = await fetch(`${baseUrl}${path}`, {
+    const requestHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...headers,
+    };
+
+    if (currentToken) {
+      requestHeaders["Authorization"] = `Bearer ${currentToken}`;
+    }
+
+    return fetch(`${baseUrl}${path}`, {
       method,
-      headers: {
-        ...finalHeaders,
-        ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {}),
-      },
+      headers: requestHeaders,
       body: body ? JSON.stringify(body) : undefined,
     });
-    return resp;
   }
 
-  // 1️⃣ Initial request
+  // 1️⃣ First request
   let response = await doFetch(accessToken);
 
-  // 2️⃣ If token expired → try refresh (Cognito only)
+  // 2️⃣ Retry if Cognito access token expired
   if (
     response.status === 401 &&
     (strategy === "cognito" || strategy === "cognitodirect")
   ) {
     try {
-      const newToken = await refreshAccessToken(); // refresh & save to sessionStorage
+      const newToken = await refreshAccessToken();
       accessToken = newToken;
 
-      // Retry request with new token
       response = await doFetch(newToken);
     } catch (err) {
       console.error("🔴 Token refresh failed:", err);
@@ -173,15 +167,11 @@ export async function fetchWithAuth<T>({
     }
   }
 
-  // 3️⃣ Final error handling
+  // 3️⃣ Error handling
   if (!response.ok) {
-    let errorBody: any = null;
-
-    try {
-      errorBody = await response.json();
-    } catch {
-      errorBody = await response.text();
-    }
+    let errorBody;
+    try { errorBody = await response.json(); }
+    catch { errorBody = await response.text(); }
 
     const error: any = new Error(
       errorBody?.message ||
@@ -195,6 +185,7 @@ export async function fetchWithAuth<T>({
 
   return response.json();
 }
+
 
 export async function fetchApplicants({
   page = 0,
@@ -259,7 +250,8 @@ export async function fetchApplicants({
     meta: json.meta || { total_count: mappedData.length },
   } as any;
 }
-
+/* Fetch roles by username */
+/*
 export async function fetchRoles({
   username,
   token,
@@ -296,7 +288,35 @@ export async function fetchRoles({
     created: item.attributes.CreatedDate,
   }));
 }
-
+*/
+export async function fetchRoles({
+  username,
+  token,
+  strategy,
+}: {
+  username: string;
+  token?: string | null;
+  strategy?: string;
+}): Promise<any[]> {
+ 
+  const baseUrl = resolveApiBaseUrl();
+  const path = `/auth/exchange-cognito-token`;
+  
+  async function doFetch() {
+    const body = {"token": getAccessToken()};
+    const resp = await fetch(`${baseUrl}${path}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+    });
+    return resp;
+  }
+  
+  // 1️⃣ Initial request
+  const resp = await doFetch();
+  const response = await resp.json();
+  return response;
+}
 // Fetch users by role type (NCRC, RFR, etc.)
 export async function fetchUserByRole({
   token,

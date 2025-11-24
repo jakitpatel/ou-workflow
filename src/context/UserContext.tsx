@@ -122,6 +122,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (username && token && apiBaseUrl) {
       refetch().then((result) => {
+        console.log('🔹 Fetched roles for user:', result.data)
         if (result.error) {
           const err: any = result.error
           const msg =
@@ -139,17 +140,29 @@ export function UserProvider({ children }: { children: ReactNode }) {
             msg.includes("Failed to fetch") ||
             err instanceof TypeError
           ) {
+            /*
             window.alert('Your session has expired or is invalid. Please log in again.')
             logout()
             const base = import.meta.env.BASE_URL || '/'
             const loginUrl = `${base.replace(/\/$/, '')}/login`
             window.location.replace(loginUrl)
+            */
+            console.log("err=" + err + "   msg=" + msg);
             return
           }
         }
 
         if (result.data) {
-          setRoles(result.data)
+          let roles = result.data.user_info.roles || [];
+          //console.log("roles=" + JSON.stringify(roles));
+          const formattedRoles = roles.map((role: any) => ({
+            name: role.role_name,
+            value: role.role_name,
+            created: null, // no created date available in your response
+          }));
+          console.log("formattedRoles=" + JSON.stringify(formattedRoles));
+          setRoles(formattedRoles);
+
           const defaultRole = role || 'ALL'
           setRole(defaultRole)
 
@@ -157,10 +170,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
           localStorage.setItem(
             'user',
             JSON.stringify({
-              username,
+              username: result.data.user_info.user_id,
               role: defaultRole,
-              roles: result.data,
-              token,
+              roles: formattedRoles,
+              token: result.data.access_token || token,
               strategy,
               loginTime,
               apiBaseUrl,
