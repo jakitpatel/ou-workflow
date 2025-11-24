@@ -120,7 +120,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   })
 
   useEffect(() => {
-    if (username && token && apiBaseUrl) {
+    if (token && apiBaseUrl) {
       refetch().then((result) => {
         console.log('🔹 Fetched roles for user:', result.data)
         if (result.error) {
@@ -165,7 +165,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
           const defaultRole = role || 'ALL'
           setRole(defaultRole)
-
+          setToken(result.data.access_token);
           // ✅ Preserve current apiBaseUrl while saving user
           localStorage.setItem(
             'user',
@@ -182,7 +182,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
       })
     }
-  }, [username, token, refetch, apiBaseUrl])
+  }, [token, refetch, apiBaseUrl])
 
   const login = (data: { username: string; role?: string; token?: string; strategy: LoginStrategy }) => {
     const now = Date.now()

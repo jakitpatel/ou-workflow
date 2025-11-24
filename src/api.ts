@@ -301,43 +301,39 @@ export async function fetchRoles({
   const baseUrl = resolveApiBaseUrl();
   const path = `/auth/exchange-cognito-token`;
 
-  // 🔐 Determine final token source based on strategy
   const accessToken = getAccessToken();
 
   if (!accessToken) {
+    // This is NOT a network error → OK to throw
     throw new Error("Access token missing. Please login again.");
   }
 
-  async function doPost() {
-    try {
-      const resp = await fetch(`${baseUrl}${path}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({ token: accessToken }),
-      });
+  try {
+    const resp = await fetch(`${baseUrl}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ token: accessToken }),
+    });
 
-      // ❌ Non-200 HTTP response
-      if (!resp.ok) {
-        const errBody = await resp.text();
-        throw new Error(
-          `Server error ${resp.status}: ${errBody || resp.statusText}`
-        );
-      }
-
-      return resp.json(); // Expected: access token + roles + user info
-    } catch (err: any) {
-      console.error("fetchRoles POST error:", err);
-      throw new Error("Network request failed: " + err.message);
+    // ❌ Non-200 responses → throw a controlled error
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      const error: any = new Error(text || resp.statusText);
+      error.status = resp.status;
+      throw error; // SAFE
     }
-  }
 
-  // 1️⃣ Perform the request
-  const response = await doPost();
-  return response;
+    return await resp.json();
+  } catch (err) {
+    // ⚠️ IMPORTANT: DO NOT wrap TypeError (timeout, CORS, DNS, offline)
+    // If we rethrow the original err, React Query can classify correctly
+    console.error("fetchRoles error:", err);
+    throw err; // rethrow original as-is
+  }
 }
+
 
 // Fetch users by role type (NCRC, RFR, etc.)
 export async function fetchUserByRole({
