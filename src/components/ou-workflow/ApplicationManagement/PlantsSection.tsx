@@ -20,7 +20,7 @@ export default function PlantsSection({ application, editMode }: { application: 
       </div>
 
       <div className="space-y-8">
-        {application.plants.map((plant, index) => (
+        {application.plant.map((plant, index) => (
           <div key={index} className="border rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-medium text-gray-900">Plant #{plant.id}: {plant.name}</h3>

@@ -1,109 +1,123 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import type { LoginStrategy } from '@/types/auth'
-import { useQuery } from '@tanstack/react-query'
-import { fetchRoles, registerUserContext } from '@/api'
-import type { UserRole } from '@/types/application'
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  type ReactNode,
+} from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchRoles, registerUserContext } from "@/api";
 import { cognitoLogout } from "@/components/auth/authService";
+import type { LoginStrategy } from "@/types/auth";
+import type { UserRole } from "@/types/application";
 
-type UserContextType = {
-  username: string | null
-  role: string | null
-  roles: UserRole[] | null;     // Update this field
-  token: string | null
-  strategy: LoginStrategy | null
-  activeScreen: 'ncrc-dashboard' | 'tasks-dashboard' | null
-  loginTime: number | null
-  apiBaseUrl: string | null
-  setApiBaseUrl: (url: string | null) => void
-  login: (data: { username: string; role?: string; token?: string; strategy: LoginStrategy }) => void
-  logout: () => void
-  setActiveScreen: (screen: 'ncrc-dashboard' | 'tasks-dashboard' | null) => void
-  setRole: (role: string | null) => void
-  setRoles: (roles: UserRole[] | null) => void  // 🔄 Updated
+/* ------------------------------------------------------------------
+ * LocalStorage Helpers (Clean & Reusable)
+ * ------------------------------------------------------------------ */
+const LS_KEY = "user";
+
+function loadStoredUser() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
-const UserContext = createContext<UserContextType | undefined>(undefined)
+function saveStoredUser(data: Record<string, any>) {
+  localStorage.setItem(LS_KEY, JSON.stringify(data));
+}
 
+function clearStoredUser() {
+  localStorage.removeItem(LS_KEY);
+}
+
+/* ------------------------------------------------------------------
+ * Types
+ * ------------------------------------------------------------------ */
+type ActiveScreen = "ncrc-dashboard" | "tasks-dashboard" | null;
+
+type StoredUser = {
+  username: string | null;
+  role: string | null;
+  roles: UserRole[] | null;
+  token: string | null;
+  strategy: LoginStrategy | null;
+  loginTime: number | null;
+  apiBaseUrl: string | null;
+};
+
+type UserContextType = StoredUser & {
+  activeScreen: ActiveScreen;
+  setActiveScreen: (s: ActiveScreen) => void;
+  setApiBaseUrl: (url: string | null) => void;
+  setRole: (role: string | null) => void;
+  setRoles: (roles: UserRole[] | null) => void;
+  rolesLoaded: boolean;              // 👈 ADD THIS
+  setRolesLoaded: (v: boolean) => void; // 👈 AND THIS
+  login: (data: {
+    username: string;
+    role?: string;
+    token?: string;
+    strategy: LoginStrategy;
+  }) => void;
+  logout: () => void;
+};
+
+const UserContext = createContext<UserContextType | undefined>(undefined);
+
+/* ------------------------------------------------------------------
+ * Provider
+ * ------------------------------------------------------------------ */
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [username, setUsername] = useState<string | null>(null)
-  const [role, setRole] = useState<string | null>(null)
-  //const [roles, setRoles] = useState<string[]>([])
-  const [roles, setRoles] = useState<UserRole[] | null>(null) // 🔄 Updated
-  const [token, setToken] = useState<string | null>(null)
-  const [strategy, setStrategy] = useState<LoginStrategy | null>(null)
-  const [loginTime, setLoginTime] = useState<number | null>(null)
-  const [activeScreen, setActiveScreen] = useState<'ncrc-dashboard' | 'tasks-dashboard' | null>('ncrc-dashboard')
+  const stored = loadStoredUser();
 
-  //const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(null)
+  const [rolesLoaded, setRolesLoaded] = useState(false);
+  const [username, setUsername] = useState(stored?.username ?? null);
+  const [role, setRole] = useState<string | null>(stored?.role ?? null);
+  const [roles, setRoles] = useState<UserRole[] | null>(stored?.roles ?? null);
+  const [token, setToken] = useState<string | null>(stored?.token ?? null);
+  const [strategy, setStrategy] = useState<LoginStrategy | null>(
+    stored?.strategy ?? null
+  );
+  const [loginTime, setLoginTime] = useState<number | null>(
+    stored?.loginTime ?? null
+  );
+  const [activeScreen, setActiveScreen] = useState<ActiveScreen>(
+    "ncrc-dashboard"
+  );
   const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(
-  () => localStorage.getItem('apiBaseUrl') || null
-)
+    stored?.apiBaseUrl ?? null
+  );
 
-  // ✅ Ensure context registration always matches current base URL
+  /* ------------------------------------------------------------------
+   * Persist changes cleanly (ONLY when relevant fields change)
+   * ------------------------------------------------------------------ */
   useEffect(() => {
-    registerUserContext({ apiBaseUrl })
-  }, [apiBaseUrl])
+    saveStoredUser({
+      username,
+      role,
+      roles,
+      token,
+      strategy,
+      loginTime,
+      apiBaseUrl,
+    });
+  }, [username, role, roles, token, strategy, loginTime, apiBaseUrl]);
 
-  // ✅ Load from localStorage on startup FIRST (before anything else)
+  /* ------------------------------------------------------------------
+   * Register context with API base URL on change
+   * ------------------------------------------------------------------ */
   useEffect(() => {
-    const stored = localStorage.getItem('user')
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      const now = Date.now()
-      const expiresIn = 24 * 60 * 60 * 1000 // 24 hours
+    registerUserContext({ apiBaseUrl });
+  }, [apiBaseUrl]);
 
-      if (parsed.loginTime && now - parsed.loginTime > expiresIn) {
-        localStorage.removeItem('user')
-      } else {
-        setUsername(parsed.username)
-        setRole(parsed.role || null)
-        setRoles(parsed.roles || [])
-        setToken(parsed.token)
-        setStrategy(parsed.strategy)
-        setLoginTime(parsed.loginTime)
-        //console.log(parsed);
-        //console.log("[UserContext] Loaded user from storage:", parsed.apiBaseUrl)
-        // ✅ Preserve stored API Base URL if present
-        if (parsed.apiBaseUrl && parsed.apiBaseUrl !== 'null') {
-          setApiBaseUrl(parsed.apiBaseUrl)
-        } else {
-          /*// fallback: try first configured server
-          const config = (window as any).__APP_CONFIG__
-          if (config) {
-            const servers = Object.keys(config)
-              .filter((k) => k.startsWith('API_CLIENT_URL'))
-              .map((k) => config[k])
-              .filter(Boolean)
-            if (servers.length > 0) setApiBaseUrl(servers[0])
-          }*/
-        }
-      }
-    } else {
-      // No user stored: fallback to first configured server
-      /*
-      const config = (window as any).__APP_CONFIG__
-      if (config) {
-        const servers = Object.keys(config)
-          .filter((k) => k.startsWith('API_CLIENT_URL'))
-          .map((k) => config[k])
-          .filter(Boolean)
-        if (servers.length > 0) setApiBaseUrl(servers[0])
-      }
-      */
-    }
-  }, [])
-
-  // 🔹 Persist selected API server whenever it changes
-  useEffect(() => {
-    const stored = localStorage.getItem('user')
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      parsed.apiBaseUrl = apiBaseUrl
-      localStorage.setItem('user', JSON.stringify(parsed))
-    }
-  }, [apiBaseUrl])
-
-  const { refetch } = useQuery({
+  /* ------------------------------------------------------------------
+   * Role loading (React Query)
+   * ------------------------------------------------------------------ */
+  const { refetch : fetchUserRoles } = useQuery({
     queryKey: ['roles', username, token],
     queryFn: () =>
       fetchRoles({
@@ -115,155 +129,113 @@ export function UserProvider({ children }: { children: ReactNode }) {
     refetchOnWindowFocus: false,
     retry: (failureCount, error: any) => {
       if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) return false
+      console.log("Retry attempt:", failureCount, "Error:", error);
       return false; //return failureCount < 2
     },
   })
 
+  /* ------------------------------------------------------------------
+   * Load roles when token available & apiBaseUrl loaded
+   * ------------------------------------------------------------------ */
   useEffect(() => {
-    if (token && apiBaseUrl) {
-      refetch().then((result) => {
-        console.log('🔹 Fetched roles for user:', result.data)
-        if (result.error) {
-          const err: any = result.error
-          const msg =
-            err.details?.msg ||
-            err.details?.message ||
-            err.message ||
-            'Unknown error'
+    if (!token || !apiBaseUrl) return;
+    //console.log("Fetching user roles : Token or API Base URL changed:", { token, apiBaseUrl });
+    fetchUserRoles().then((res) => {
+    const data = res.data as any;
+    if (!data || !data.user_info) return;
 
-          console.error('❌ Role fetch failed:', msg, err)
-          if (
-            msg.includes('Signature verification failed') ||
-            msg.includes('invalid token') ||
-            err.status === 401 ||
-            err.status === 422 || 
-            msg.includes("Failed to fetch") ||
-            err instanceof TypeError
-          ) {
-            /*
-            window.alert('Your session has expired or is invalid. Please log in again.')
-            logout()
-            const base = import.meta.env.BASE_URL || '/'
-            const loginUrl = `${base.replace(/\/$/, '')}/login`
-            window.location.replace(loginUrl)
-            */
-            console.log("err=" + err + "   msg=" + msg);
-            return
-          }
-        }
+    const formatted = (data.user_info?.roles || []).map((r: any) => ({
+        name: r.role_name,
+        value: r.role_name,
+        created: null,
+    }));
 
-        if (result.data) {
-          let roles = result.data.user_info.roles || [];
-          //console.log("roles=" + JSON.stringify(roles));
-          const formattedRoles = roles.map((role: any) => ({
-            name: role.role_name,
-            value: role.role_name,
-            created: null, // no created date available in your response
-          }));
-          console.log("formattedRoles=" + JSON.stringify(formattedRoles));
-          setRoles(formattedRoles);
+    setRoles(formatted);
+    setRole((prev) => prev || "ALL");
+    setRolesLoaded(true);
+    //console.log("User roles fetched and set:", formatted);
+    if (data.access_token) setToken(data.access_token);
+    });
+  }, [token, apiBaseUrl, fetchUserRoles]);
 
-          const defaultRole = role || 'ALL'
-          setRole(defaultRole)
-          setToken(result.data.access_token);
-          // ✅ Preserve current apiBaseUrl while saving user
-          localStorage.setItem(
-            'user',
-            JSON.stringify({
-              username: result.data.user_info.user_id,
-              role: defaultRole,
-              roles: formattedRoles,
-              token: result.data.access_token || token,
-              strategy,
-              loginTime,
-              apiBaseUrl,
-            })
-          )
-        }
-      })
-    }
-  }, [token, refetch, apiBaseUrl])
+  /* ------------------------------------------------------------------
+   * Login Handler
+   * ------------------------------------------------------------------ */
+  const login = (data: {
+    username: string;
+    role?: string;
+    token?: string;
+    strategy: LoginStrategy;
+  }) => {
+    const now = Date.now();
 
-  const login = (data: { username: string; role?: string; token?: string; strategy: LoginStrategy }) => {
-    const now = Date.now()
-    setUsername(data.username)
-    setRole(data.role || null)
-    setRoles([])
-    setToken(data.token || null)
-    setStrategy(data.strategy)
-    setLoginTime(now)
+    setUsername(data.username);
+    setRole(data.role ?? null);
+    setRoles(null);
+    setToken(data.token ?? null);
+    setStrategy(data.strategy);
+    setLoginTime(now);
+  };
 
-    // ✅ Fallback to existing apiBaseUrl or persisted one
-    const stored = localStorage.getItem('user')
-    let preservedApiBaseUrl = apiBaseUrl;
-    //console.log("apiBaseUrl : "+apiBaseUrl);
-    if (!preservedApiBaseUrl && stored) {
-      //console.log("preservedApiBaseUrl : "+preservedApiBaseUrl);
-      try {
-        const parsed = JSON.parse(stored)
-        if (parsed.apiBaseUrl && parsed.apiBaseUrl !== 'null') {
-          preservedApiBaseUrl = parsed.apiBaseUrl
-          //console.log("[UserContext:login] Preserving stored API Base URL:", preservedApiBaseUrl);
-          setApiBaseUrl(parsed.apiBaseUrl)
-        }
-      } catch {}
-    }
-
-    // ✅ Include selected API server
-    localStorage.setItem(
-      'user',
-      JSON.stringify({
-        username: data.username,
-        role: data.role || null,
-        roles: [],
-        token: data.token || null,
-        strategy: data.strategy,
-        loginTime: now,
-        apiBaseUrl: preservedApiBaseUrl, // ✅ Preserve old one
-      })
-    )
-  }
-
+  /* ------------------------------------------------------------------
+   * Logout Handler
+   * ------------------------------------------------------------------ */
   const logout = () => {
-    // Clear UI/user context
-    setUsername(null)
-    setRole(null)
-    setRoles([])
-    setToken(null)
-    setStrategy(null)
-    setLoginTime(null)
-    // Clear your app storage
-    localStorage.removeItem("user");
-    // Clear Cognito session + redirect to hosted UI logout
-    cognitoLogout();
-  }
+    setUsername(null);
+    setRole(null);
+    setRoles(null);
+    setToken(null);
+    setStrategy(null);
+    setLoginTime(null);
+    setRolesLoaded(false);
 
-  return (
-    <UserContext.Provider
-      value={{
-        username,
-        role,
-        roles,
-        setRole,
-        setRoles,
-        token,
-        strategy,
-        activeScreen,
-        loginTime,
-        apiBaseUrl,
-        setApiBaseUrl,
-        login,
-        logout,
-        setActiveScreen,
-      }}
-    >
-      {children}
-    </UserContext.Provider>
-  )
+    clearStoredUser();
+    cognitoLogout();
+  };
+
+  /* ------------------------------------------------------------------
+   * Memoized value
+   * ------------------------------------------------------------------ */
+  const value = useMemo<UserContextType>(
+    () => ({
+      username,
+      role,
+      roles,
+      token,
+      strategy,
+      loginTime,
+      apiBaseUrl,
+      activeScreen,
+      setActiveScreen,
+      setApiBaseUrl,
+      setRole,
+      setRoles,
+      login,
+      logout,
+      rolesLoaded,
+      setRolesLoaded,
+    }),
+    [
+      username,
+      role,
+      roles,
+      token,
+      strategy,
+      loginTime,
+      apiBaseUrl,
+      activeScreen,
+      rolesLoaded,
+    ]
+  );
+
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
 
+/* ------------------------------------------------------------------
+ * Hook
+ * ------------------------------------------------------------------ */
 export function useUser() {
-  const ctx = useContext(UserContext)
-  if (!ctx) throw new Error('useUser must be used within a UserProvider')
-  return ctx
+  const ctx = useContext(UserContext);
+  if (!ctx) throw new Error("useUser must be used within a UserProvider");
+  return ctx;
 }

@@ -209,6 +209,23 @@ export interface UserRoleResponse {
   data: WFUser[];
 }
 
+export interface UserRoleTokenResponse {
+  access_token: string;
+  message: string;
+  token_type: string;
+  valid: boolean;
+
+  user_info: {
+    cognito_sub: string;
+    email: Record<string, never>; // because you showed: "email": {}
+    user_id: string;
+
+    roles: {
+      role_name: string;
+    }[];
+  };
+}
+
 export interface ApplicantsResponse {
   data: Applicant[];
   meta: {

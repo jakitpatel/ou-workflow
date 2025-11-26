@@ -8,53 +8,45 @@ export const Route = createFileRoute('/cognito-directcallback')({
 })
 
 function CognitoDirectCallback() {
-  const { login } = useUser()
+  const { login, rolesLoaded } = useUser()
   const navigate = useNavigate()
 
+  // 1️⃣ Handle OAuth first
   useEffect(() => {
     const authenticate = async () => {
       try {
-        // 🔐 Handle the callback and token exchange
         const ok = await handleOAuthCallback()
+        if (!ok) throw new Error("OAuth callback missing valid code")
 
-        if (!ok) {
-          throw new Error('OAuth callback did not contain a valid code.')
-        }
-
-        // 👍 Retrieve user info from ID token (after successful token exchange)
         const userInfo = getUserInfo()
-        if (!userInfo) {
-          throw new Error('Failed to extract user info from ID token.')
-        }
-        let parts = userInfo.email.split('@');
-        let uname = parts[0]; 
-        console.log(uname); // Output: user.name
-        
-        // 💾 Save login state in React context
+        if (!userInfo) throw new Error("Failed to extract user info")
+
+        const uname = userInfo.email.split("@")[0]
+
         login({
-          username: uname, //userInfo.username,
-          token: sessionStorage.getItem('access_token')!,
-          strategy: 'cognitodirect',
+          username: uname,
+          token: sessionStorage.getItem("access_token")!,
+          strategy: "cognitodirect"
         })
 
-        console.log('[CognitoDirectCallback] User logged in:', userInfo)
-
-        // 🧭 Redirect where user originally wanted to go
-        const redirectUrl = sessionStorage.getItem('auth_redirect') || '/'
-        sessionStorage.removeItem('auth_redirect')
-
-        // Allow time for context persistence
-        setTimeout(() => {
-          navigate({ to: redirectUrl })
-        }, 80)
+        console.log("[CognitoDirectCallback] login complete")
       } catch (err: any) {
-        console.error('[CognitoDirectCallback] Auth error:', err)
-        navigate({ to: '/login', search: { error: err.message } })
+        console.error("[CognitoDirectCallback] Auth error:", err)
+        navigate({ to: "/login", search: { error: err.message } })
       }
     }
 
     authenticate()
   }, [])
+
+  // 2️⃣ When roles are ready → navigate
+  useEffect(() => {
+    if (rolesLoaded) {
+      const redirectUrl = sessionStorage.getItem("auth_redirect") || "/"
+      sessionStorage.removeItem("auth_redirect")
+      navigate({ to: redirectUrl })
+    }
+  }, [rolesLoaded])
 
   return (
     <div className="flex items-center justify-center h-screen text-lg text-blue-700">

@@ -301,7 +301,7 @@ export async function fetchRoles({
   const baseUrl = resolveApiBaseUrl();
   const path = `/auth/exchange-cognito-token`;
 
-  const accessToken = getAccessToken();
+  const accessToken = token ?? getAccessToken();
 
   if (!accessToken) {
     // This is NOT a network error → OK to throw
@@ -309,6 +309,7 @@ export async function fetchRoles({
   }
 
   try {
+    // keep the Response type, don't cast the Response directly to UserRoleTokenResponse
     const resp = await fetch(`${baseUrl}${path}`, {
       method: "POST",
       headers: {
@@ -325,7 +326,8 @@ export async function fetchRoles({
       throw error; // SAFE
     }
 
-    return await resp.json();
+    const data = await resp.json();
+    return data;
   } catch (err) {
     // ⚠️ IMPORTANT: DO NOT wrap TypeError (timeout, CORS, DNS, offline)
     // If we rethrow the original err, React Query can classify correctly
