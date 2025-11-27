@@ -117,7 +117,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   /* ------------------------------------------------------------------
    * Role loading (React Query)
    * ------------------------------------------------------------------ */
-  const { refetch : fetchUserRoles } = useQuery({
+  /*const { refetch : fetchUserRoles } = useQuery({
     queryKey: ['roles', username, token],
     queryFn: () =>
       fetchRoles({
@@ -132,12 +132,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
       console.log("Retry attempt:", failureCount, "Error:", error);
       return false; //return failureCount < 2
     },
-  })
+  })*/
 
   /* ------------------------------------------------------------------
    * Load roles when token available & apiBaseUrl loaded
    * ------------------------------------------------------------------ */
-  useEffect(() => {
+  /*useEffect(() => {
     if (!token || !apiBaseUrl) return;
     //console.log("Fetching user roles : Token or API Base URL changed:", { token, apiBaseUrl });
     fetchUserRoles().then((res) => {
@@ -157,13 +157,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (data.access_token) setToken(data.access_token);
     });
   }, [token, apiBaseUrl, fetchUserRoles]);
-
+  */
   /* ------------------------------------------------------------------
    * Login Handler
    * ------------------------------------------------------------------ */
   const login = (data: {
     username?: string | null;
     role?: string;
+    roles?: UserRole[] | null;
     token?: string;
     strategy: LoginStrategy;
   }) => {
@@ -171,7 +172,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     setUsername(data.username ?? null);
     setRole(data.role ?? null);
-    setRoles(null);
+    setRoles(data.roles ?? null);
     setToken(data.token ?? null);
     setStrategy(data.strategy);
     setLoginTime(now);
@@ -202,6 +203,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       role,
       roles,
       token,
+      setToken,
       strategy,
       loginTime,
       apiBaseUrl,
