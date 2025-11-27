@@ -2,6 +2,15 @@ import type { ApplicationDetail } from "@/types/application";
 //import { Building } from "lucide-react";
 
 export default function PlantsSection({ application, editMode }: { application: ApplicationDetail; editMode: boolean }) {
+  const plant = application?.plants?.[0];
+  const plantAddresses = application?.plantAddresses || [];
+  const physicalAddress = plantAddresses.find(
+    (a) => a.type?.toLowerCase() === "physical"
+  );
+  const plantContacts = application?.plantContacts || [];
+  const primaryContact = plantContacts.find(
+    (c) => c.type?.toLowerCase() === "primary contact"
+  );
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex justify-between items-center mb-6">
@@ -20,8 +29,8 @@ export default function PlantsSection({ application, editMode }: { application: 
       </div>
 
       <div className="space-y-8">
-        {application.plants.map((plant, index) => (
-          <div key={index} className="border rounded-lg p-6">
+        {/*{application.plants.map((plant, index) => (   */}
+          <div className="border rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-medium text-gray-900">Plant #{plant.id}: {plant.name}</h3>
               <div className="flex items-center space-x-2">
@@ -40,7 +49,7 @@ export default function PlantsSection({ application, editMode }: { application: 
                   <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
                   <input
                     type="text"
-                    value={plant.address.street}
+                    value={physicalAddress?.street}
                     readOnly={!editMode}
                     className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
                   />
@@ -49,7 +58,7 @@ export default function PlantsSection({ application, editMode }: { application: 
                   <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2</label>
                   <input
                     type="text"
-                    value={plant.address.line2}
+                    value={physicalAddress?.line2}
                     readOnly={!editMode}
                     className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
                   />
@@ -58,7 +67,7 @@ export default function PlantsSection({ application, editMode }: { application: 
                   <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
                   <input
                     type="text"
-                    value={plant.address.city}
+                    value={physicalAddress?.city}
                     readOnly={!editMode}
                     className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
                   />
@@ -67,7 +76,7 @@ export default function PlantsSection({ application, editMode }: { application: 
                   <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
                   <input
                     type="text"
-                    value={plant.address.state}
+                    value={physicalAddress?.state}
                     readOnly={!editMode}
                     className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
                   />
@@ -76,7 +85,7 @@ export default function PlantsSection({ application, editMode }: { application: 
                   <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
                   <input
                     type="text"
-                    value={plant.address.zip}
+                    value={physicalAddress?.zip}
                     readOnly={!editMode}
                     className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
                   />
@@ -85,7 +94,7 @@ export default function PlantsSection({ application, editMode }: { application: 
                   <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
                   <input
                     type="text"
-                    value={plant.address.country}
+                    value={physicalAddress?.country}
                     readOnly={!editMode}
                     className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
                   />
@@ -101,7 +110,7 @@ export default function PlantsSection({ application, editMode }: { application: 
                   <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
                   <input
                     type="text"
-                    value={plant.contact?.name}
+                    value={primaryContact?.name}
                     readOnly={!editMode}
                     className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
                   />
@@ -110,7 +119,7 @@ export default function PlantsSection({ application, editMode }: { application: 
                   <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
                   <input
                     type="text"
-                    value={plant.contact?.title}
+                    value={primaryContact?.role}
                     readOnly={!editMode}
                     className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
                   />
@@ -119,7 +128,7 @@ export default function PlantsSection({ application, editMode }: { application: 
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                   <input
                     type="text"
-                    value={plant.contact?.phone}
+                    value={primaryContact?.phone}
                     readOnly={!editMode}
                     className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
                   />
@@ -128,7 +137,7 @@ export default function PlantsSection({ application, editMode }: { application: 
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                   <input
                     type="email"
-                    value={plant.contact?.email}
+                    value={primaryContact?.email}
                     readOnly={!editMode}
                     className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
                   />
@@ -219,7 +228,7 @@ export default function PlantsSection({ application, editMode }: { application: 
               </div>
             </div>
           </div>
-        ))}
+        {/*}))}*/}
       </div>
     </div>
   );
