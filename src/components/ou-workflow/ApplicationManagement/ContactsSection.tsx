@@ -23,6 +23,7 @@ export default function ContactsSection({
               }`}
             >
               {/* HEADER ROW */}
+              {isPrimary && (
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-2">
                   <span
@@ -35,13 +36,14 @@ export default function ContactsSection({
                     {isPrimary ? "⭐ Primary Contact" : "Contact"}
                   </span>
                 </div>
-
+              
                 {contact.designated && (
                   <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
                     ⭐ Designated Initial Contact
                   </span>
                 )}
               </div>
+              )}
 
               {/* 4 COLUMN INPUT GRID */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
