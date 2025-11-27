@@ -290,9 +290,9 @@ export async function fetchRoles({
 }
 */
 export async function fetchRoles({
-  username,
+  //username,
   token,
-  strategy,
+  //strategy,
 }: {
   username: string;
   token?: string | null;
@@ -481,7 +481,7 @@ export async function fetchApplicationDetailRaw({
 
   let path: string;
 
-  path = `/get_application_detail?applicationId=${applicationId}`;
+  path = `/get_application_detail_v2?applicationId=${applicationId}`;
 
   const json = await fetchWithAuth({
     path,
