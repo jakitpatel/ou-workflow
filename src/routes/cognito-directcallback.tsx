@@ -48,9 +48,7 @@ function CognitoDirectCallback() {
       if (!userInfo) throw new Error("Failed to load user info")
 
       const formattedRoles = (userInfo.roles || []).map((r: any) => ({
-        name: r.role_name,
-        value: r.role_name,
-        created: null,
+        name: r.role_name
       }))
 
       // 3) Login
