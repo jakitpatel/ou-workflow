@@ -5,7 +5,7 @@ export default function ContactsSection({ application, editMode }: { application
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-xl font-semibold mb-6">Contact Information</h2>
       <div className="space-y-6">
-        {application.contacts.map((contact, index) => (
+        {application.companyContacts?.map((contact, index) => (
           <div key={index} className={`border rounded-lg p-4 ${contact.designated ? 'border-purple-200 bg-purple-50' : ''}`}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-medium text-gray-900">{contact.type}</h3>
