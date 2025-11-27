@@ -76,11 +76,11 @@ function CognitoDirectCallback() {
         search: { error: err.message ?? "OAuth failure" },
       })
     }
-  }, [navigate, login, fetchUserRoles])
+  }, [])
 
   useEffect(() => {
     runOAuthFlow()
-  }, [runOAuthFlow])
+  }, [])
 
   return (
     <div className="flex items-center justify-center h-screen text-lg text-blue-700">
