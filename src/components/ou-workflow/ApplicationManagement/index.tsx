@@ -154,7 +154,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: FileText },
     { id: 'company', label: 'Company Details', icon: Building },
-    { id: 'contacts', label: 'Contacts', icon: Users },
+    { id: 'contacts', label: 'Company Contacts', icon: Users },
     { id: 'plants', label: 'Plants', icon: Building },
     { id: 'products', label: 'Products', icon: Package },
     { id: 'ingredients', label: 'Ingredients', icon: Beaker },
