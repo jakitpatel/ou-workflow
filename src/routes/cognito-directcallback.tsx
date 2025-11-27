@@ -21,7 +21,7 @@ function CognitoDirectCallback() {
         const userInfo = getUserInfo()
         if (!userInfo) throw new Error("Failed to extract user info")
 
-        const uname = userInfo.email.split("@")[0]
+        const uname = null; //userInfo.email.split("@")[0]
 
         login({
           username: uname,

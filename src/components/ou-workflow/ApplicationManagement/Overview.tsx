@@ -20,7 +20,7 @@ export default function Overview({ application, allValidationsPassed }: { applic
                 </div>
                 <div className="flex items-center justify-between">
                 <span>Plant ID:</span>
-                <span className="text-green-700 font-medium">{application.plant[0]?.plantId}</span>
+                <span className="text-green-700 font-medium">{application.plants[0]?.plantId}</span>
                 </div>
                 <div className="flex items-center justify-between">
                 <span>Primary Contact:</span>

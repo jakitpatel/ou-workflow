@@ -9,6 +9,7 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, '') || ''
 const LOGIN_PATH = `${BASE}/login`
 const CALLBACK_PATH = `${BASE}/cognito-callback`
 const CALLBACK_DIRECT_PATH = `${BASE}/cognito-directcallback`
+const COGNITO_LOGOUT_PATH = `${BASE}/cognito-logout`
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
@@ -22,8 +23,11 @@ export const Route = createRootRoute({
     const isCallbackDirectPage =
       location.pathname === CALLBACK_DIRECT_PATH || location.pathname === '/cognito-directcallback'
 
+    const isCognitoLogoutPage =
+      location.pathname === COGNITO_LOGOUT_PATH || location.pathname === '/cognito-logout'
+    
     // ✅ Allow login and callback screen without auth
-    if (isLoginPage || isCallbackPage || isCallbackDirectPage) return
+    if (isLoginPage || isCallbackPage || isCallbackDirectPage || isCognitoLogoutPage) return
 
     if (!userStr) {
       throw redirect({ to: '/login' })

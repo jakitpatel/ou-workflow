@@ -35,6 +35,7 @@ export function useApplications({
     enabled: strategy === 'none' || !!token,
     retry: (failureCount, error: any) => {
       if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) return false;
+      console.log("Retry attempt:", failureCount);
       return false; //return failureCount < 2;
     },
   });

@@ -162,14 +162,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
    * Login Handler
    * ------------------------------------------------------------------ */
   const login = (data: {
-    username: string;
+    username?: string | null;
     role?: string;
     token?: string;
     strategy: LoginStrategy;
   }) => {
     const now = Date.now();
 
-    setUsername(data.username);
+    setUsername(data.username ?? null);
     setRole(data.role ?? null);
     setRoles(null);
     setToken(data.token ?? null);
