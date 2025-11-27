@@ -2,6 +2,10 @@ import type { ApplicationDetail } from "@/types/application";
 
 export default function CompanySection({ application, editMode }: { application: ApplicationDetail, editMode: boolean }) {
   const company = application?.company?.[0];
+  const companyAddresses = application?.companyAddresses || [];
+  const physicalAddress = companyAddresses.find(
+    (a) => a.type?.toLowerCase() === "physical"
+  );
   // ✅ Handle missing data gracefully
   if (!company) {
     return (
@@ -36,7 +40,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
             <input
               type="text"
-              value={company.address.street}
+              value={physicalAddress?.street ?? ""}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
@@ -45,7 +49,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2</label>
             <input
               type="text"
-              value={company.address.line2 ?? ""}
+              value={physicalAddress?.line2 ?? ""}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
@@ -54,7 +58,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
             <input
               type="text"
-              value={company.address.city}
+              value={physicalAddress?.city ?? ""}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
@@ -63,7 +67,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
             <input
               type="text"
-              value={company.address.state}
+              value={physicalAddress?.state ?? ""}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
@@ -72,7 +76,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
             <input
               type="text"
-              value={company.address.zip}
+              value={physicalAddress?.zip ?? ""}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
@@ -81,7 +85,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
             <input
               type="text"
-              value={company.address.country}
+              value={physicalAddress?.country ?? ""}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
