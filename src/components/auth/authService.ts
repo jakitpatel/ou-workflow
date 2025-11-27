@@ -110,6 +110,7 @@ function clearTokens() {
   sessionStorage.removeItem("id_token");
   sessionStorage.removeItem("refresh_token");
   sessionStorage.removeItem("oauth_handled");
+  sessionStorage.removeItem("cognito_callback_done");
 }
 
 function getReturnUrl(): string {
