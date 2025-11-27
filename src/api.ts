@@ -490,7 +490,8 @@ export async function fetchApplicationDetailRaw({
     cache: 'no-store', // preserve original behavior*/
   }) as ApplicationDetailResponse;
 
-  return json.applicationInfo;
+  //return json.applicationInfo;
+  return json.appplicationinfo;
 }
 
 /** 👇 New: Login API */
