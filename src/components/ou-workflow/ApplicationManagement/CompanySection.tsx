@@ -1,6 +1,15 @@
 import type { ApplicationDetail } from "@/types/application";
 
 export default function CompanySection({ application, editMode }: { application: ApplicationDetail, editMode: boolean }) {
+  const company = application?.company?.[0];
+  // ✅ Handle missing data gracefully
+  if (!company) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <p className="text-gray-500">No company information available.</p>
+      </div>
+    );
+  }
   return (
     <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-6">Company Information</h2>
@@ -9,7 +18,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
             <input
               type="text"
-              value={application.company.name}
+              value={company.name}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
@@ -18,7 +27,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
             <input
               type="text"
-              value={application.company.category}
+              value={company.category}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
@@ -27,7 +36,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
             <input
               type="text"
-              value={application.company.address.street}
+              value={company.address.street}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
@@ -36,7 +45,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2</label>
             <input
               type="text"
-              value={application.company.address.line2 ?? ""}
+              value={company.address.line2 ?? ""}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
@@ -45,7 +54,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
             <input
               type="text"
-              value={application.company.address.city}
+              value={company.address.city}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
@@ -54,7 +63,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
             <input
               type="text"
-              value={application.company.address.state}
+              value={company.address.state}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
@@ -63,7 +72,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
             <input
               type="text"
-              value={application.company.address.zip}
+              value={company.address.zip}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
@@ -72,7 +81,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
             <input
               type="text"
-              value={application.company.address.country}
+              value={company.address.country}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />
@@ -81,7 +90,7 @@ export default function CompanySection({ application, editMode }: { application:
             <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
             <input
               type="text"
-              value={application.company.website}
+              value={company.website}
               readOnly={!editMode}
               className={`w-full px-3 py-2 border rounded-lg ${editMode ? 'border-gray-300' : 'border-gray-200 bg-gray-50'}`}
             />

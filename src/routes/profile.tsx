@@ -51,7 +51,7 @@ function ProfilePage() {
                 {/* ✅ new option */}
                 <option value="ALL">All Roles</option>
                 {(roles ?? []).map((r, idx) => (
-                  <option key={idx} value={r.value}>
+                  <option key={idx} value={r.name}>
                     {r.name}
                   </option>
                 ))}
