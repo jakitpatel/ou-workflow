@@ -61,15 +61,15 @@ export default function FilesList({ application }: { application: ApplicationDet
           <div className="text-sm text-blue-700">Total Files</div>
         </div>
         <div className="bg-green-50 rounded-lg p-3">
-          <div className="text-2xl font-bold text-green-600">{uploadedFiles.filter(f => f.processed).length}</div>
+          <div className="text-2xl font-bold text-green-600">{uploadedFiles.filter(f => f.IsProcessed).length}</div>
           <div className="text-sm text-green-700">Processed</div>
         </div>
         <div className="bg-purple-50 rounded-lg p-3">
-          <div className="text-2xl font-bold text-purple-600">{uploadedFiles.filter(f => f.fileType === 'ingredients').length}</div>
+          <div className="text-2xl font-bold text-purple-600">{uploadedFiles.filter(f => f.FileType === 'ingredients').length}</div>
           <div className="text-sm text-purple-700">Ingredient Files</div>
         </div>
         <div className="bg-orange-50 rounded-lg p-3">
-          <div className="text-2xl font-bold text-orange-600">{uploadedFiles.filter(f => f.fileType === 'products').length}</div>
+          <div className="text-2xl font-bold text-orange-600">{uploadedFiles.filter(f => f.FileType === 'products').length}</div>
           <div className="text-sm text-orange-700">Product Files</div>
         </div>
       </div>
@@ -78,23 +78,23 @@ export default function FilesList({ application }: { application: ApplicationDet
         {uploadedFiles.map((file, index) => (
           <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
             <div className="flex items-center space-x-4">
-              {getFileIcon(file.fileType)}
+              {getFileIcon(file.FileType)}
               <div>
                 <h3 className="font-medium text-gray-900">
                   <a
-                    href={file.filePath}
+                    href={file.FilePath}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline hover:text-blue-800"
                   >
-                    {file.fileName}
+                    {file.FileName}
                   </a>
                 </h3>
                 <p className="text-sm text-gray-600">
-                  {file.size} • Uploaded {file.uploadedDate}
-                  {file.recordCount && (
+                  {file.FileSize} • Uploaded {file.UploadedDate}
+                  {file.RecordCount && (
                     <span className="ml-2 text-green-600">
-                      • {file.recordCount} records extracted
+                      • {file.RecordCount} records extracted
                     </span>
                   )}
                 </p>
@@ -105,15 +105,15 @@ export default function FilesList({ application }: { application: ApplicationDet
                 {/*<Tag className="h-4 w-4 text-gray-400" />*/}
                 {file.description && (
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  file.fileType === 'ingredients' ? 'bg-green-100 text-green-800' :
-                  file.fileType === 'products' ? 'bg-purple-100 text-purple-800' :
-                  file.fileType === 'application' ? 'bg-blue-100 text-blue-800' :
+                  file.FileType === 'ingredients' ? 'bg-green-100 text-green-800' :
+                  file.FileType === 'products' ? 'bg-purple-100 text-purple-800' :
+                  file.FileType === 'application' ? 'bg-blue-100 text-blue-800' :
                   'bg-gray-100 text-gray-800'
                 }`}>
                   {file.description}
                 </span>
                 )}
-                {file.processed && (
+                {file.IsProcessed && (
                   <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs ml-2">
                     <CheckCircle className="h-3 w-3 inline mr-1" />
                     Processed
@@ -121,7 +121,7 @@ export default function FilesList({ application }: { application: ApplicationDet
                 )}
               </div>
               <button
-                onClick={() => downloadFile(file.fileName ?? "", file.filePath)}
+                onClick={() => downloadFile(file.FileName ?? "", file.FilePath)}
                 className="flex items-center px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
               >
                 <Download className="h-4 w-4 mr-1" />
@@ -141,7 +141,7 @@ export default function FilesList({ application }: { application: ApplicationDet
               <p className="text-green-700 text-sm mt-1">
                 All uploaded files have been successfully processed and normalized. 
                 <br />
-                <strong>Data extracted:</strong> {ingredientData.length} ingredients, {productData.length} products from {uploadedFiles.filter(f => f.processed).length} files.
+                <strong>Data extracted:</strong> {ingredientData.length} ingredients, {productData.length} products from {uploadedFiles.filter(f => f.IsProcessed).length} files.
                 <br />
                 <strong>Ready for NCRC review.</strong> All ingredient and product data has been cross-referenced and validated.
               </p>
