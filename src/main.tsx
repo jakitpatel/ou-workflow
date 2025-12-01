@@ -11,10 +11,13 @@ import reportWebVitals from './reportWebVitals.ts'
 import { UserProvider } from './context/UserContext.tsx' // 👈
 import { Toaster } from 'sonner';
 
+// Create a QueryClient instance  for React Query
+export const queryClient = new QueryClient()
+
 // Create a new router instance
 const router = createRouter({
   routeTree,
-  context: {},
+  context: { queryClient },
   defaultPreload: 'intent',
   scrollRestoration: true,
   defaultStructuralSharing: true,
@@ -26,11 +29,11 @@ const router = createRouter({
 declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router
+    context: {
+      queryClient: QueryClient
+    }
   }
 }
-
-// Create a QueryClient instance
-const queryClient = new QueryClient()
 
 // Render the app
 const rootElement = document.getElementById('app')

@@ -3,13 +3,16 @@ import { handleOAuthCallback } from "@/components/auth/authService"
 import { fetchRoles } from "@/api"
 import { useUser } from "@/context/UserContext"
 import { useEffect } from "react"
-import type { QueryClient } from "@tanstack/react-query"
+//import type { QueryClient } from "@tanstack/react-query"
 
 export const Route = createFileRoute("/cognito-directcallback")({
   beforeLoad: async ({ context }) => {
-    const queryClient = (context as { queryClient: QueryClient }).queryClient;
-    console.log("[CognitoCallback] Starting OAuth handler...")
-
+    //const queryClient = (context as { queryClient: QueryClient }).queryClient;
+    console.log("[CognitoCallback] Starting OAuth handler...");
+    
+    const queryClient = context.queryClient;
+    console.log("Callback got QueryClient:", queryClient);
+    
     // 🔒 Prevent browser re-executing OAuth flow on refresh
     if (sessionStorage.getItem("cognito_callback_done") === "1") {
       console.warn("[CognitoCallback] Already completed, redirecting...")
