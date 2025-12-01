@@ -8,12 +8,13 @@
  import { TaskStatsCards } from './TaskStatsCards';
  import { TaskFilters } from './TaskFilters';
  import { TaskRow } from './TaskRow';
- import { formatNowForApi } from './taskHelpers';
+ //import { formatNowForApi } from './taskHelpers';
  //import type { ApplicationTask } from '@/types/application';
 
 import { plantHistory } from './demoData';
 import { useTasks } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
+import type { ApplicationTask } from '@/types/application';
 //import { useTaskContext } from '@/context/TaskContext';
 
  // Tasks Dashboard Component (with full table functionality restored)
@@ -22,10 +23,10 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     const [searchTerm, setSearchTerm] = useState('');
     //const [expandedActions, setExpandedActions] = useState(new Set());
     //const [expandedMessages, setExpandedMessages] = useState(new Set());
-    const [messageInputs, setMessageInputs] = useState<Record<string, string>>({});
-    const [showTaskAssignment, setShowTaskAssignment] = useState<Record<string, boolean>>({});
-    type TaskAssignment = { taskText: string; assignee: string | null };
-    const [taskAssignmentData, setTaskAssignmentData] = useState<Record<string, TaskAssignment | null>>({});
+    //const [messageInputs, setMessageInputs] = useState<Record<string, string>>({});
+    //const [showTaskAssignment, setShowTaskAssignment] = useState<Record<string, boolean>>({});
+    //type TaskAssignment = { taskText: string; assignee: string | null };
+    //const [taskAssignmentData, setTaskAssignmentData] = useState<Record<string, TaskAssignment | null>>({});
     const [showPlantHistory, setShowPlantHistory] = useState<string | null>(null);
     //const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
@@ -36,7 +37,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     //const [selectedAction, setSelectedAction] = useState(null);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
-    const messageInputRefs = useRef<Record<string, HTMLTextAreaElement | HTMLInputElement | null>>({});
+    //const messageInputRefs = useRef<Record<string, HTMLTextAreaElement | HTMLInputElement | null>>({});
     //const { applicationId, setApplicationId } = useTaskContext();
     const queryClient = useQueryClient();
     const errorDialogRef = useRef<ErrorDialogRef>(null);
@@ -51,7 +52,14 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       isLoading,
       isError,
       error
-    } = useTasks(applicationId || undefined, debouncedSearchTerm);
+    } = useTasks(
+      typeof applicationId === 'string' || applicationId === undefined
+        ? applicationId
+        : applicationId != null
+          ? String(applicationId)
+          : undefined,
+      debouncedSearchTerm
+    );
 
     // Cross-navigation handler
     const handleViewNCRCDashboard = () => {
@@ -68,7 +76,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
           !target.closest('.task-assignment-panel') &&
           !target.closest('.plant-history-modal')
         ) {
-          setShowTaskAssignment({});
+          //setShowTaskAssignment({});
           //setShowReassignDropdown({});
           if (!target.closest('.plant-history-modal')) {
             setShowPlantHistory(null);
@@ -133,7 +141,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
         return (b.daysActive ?? 0) - (a.daysActive ?? 0);
       });
     }, [tasksplants, role, roles]);
-
+    /*
     const handleMessageInputChange = (taskId: string, value: string) => {
       setMessageInputs(prev => ({
         ...prev,
@@ -151,7 +159,8 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
         console.error("❌ Failed to send message:", error);
       }
     });
-
+    */
+    /*
     const handleSendMessage = (taskId: string) => {
       const messageText = messageInputs[taskId];
       if (!messageText?.trim()) return;
@@ -174,10 +183,6 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
         token: token ?? undefined,     // ✅ null → undefined
         strategy: strategy ?? undefined, // ✅ null → undefined
       });
-      /*setTaskMessages(prev => ({
-        ...prev,
-        [taskId]: [...(prev[taskId] || []), newMessage]
-      }));*/
       
       setMessageInputs(prev => ({
         ...prev,
@@ -190,11 +195,11 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
         }
       }, 50);
     };
-
+    */
     const handleShowPlantHistory = (plantName: string) => {
       setShowPlantHistory(plantName);
     };
-
+    /*
     const handleCreateTaskFromMessage = (applicantId: string) => {
       const messageText = messageInputs[applicantId];
       if (!messageText?.trim()) return;
@@ -211,7 +216,9 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
         }
       }));
     };
+    */
 
+    /*
     const handleConfirmTaskCreation = (applicantId: string) => {
       const assignmentData = taskAssignmentData[applicantId];
       if (!assignmentData?.taskText?.trim()) return;
@@ -242,21 +249,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       setMessageInputs(prev => ({ ...prev, [applicantId]: '' }));
       setShowTaskAssignment(prev => ({ ...prev, [applicantId]: false }));
       setTaskAssignmentData(prev => ({ ...prev, [applicantId]: null }));
-      /*
-      // Add system message
-      const systemMessage = {
-        id: Date.now() + 1,
-        sender: 'System',
-        text: `✅ Task created: "${newTask.title}" → assigned to ${assignmentData.assignee}`,
-        timestamp: new Date(),
-        isSystemMessage: true,
-      };
       
-      setTaskMessages(prev => ({
-        ...prev,
-        [applicantId]: [...(prev[applicantId] || []), systemMessage]
-      }));*/
-
       // Refocus input
       setTimeout(() => {
         if (messageInputRefs.current[applicantId]) {
@@ -264,7 +257,8 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
         }
       }, 100);
     };
-
+    */
+    /*
     const handleKeyPress = (e: React.KeyboardEvent, taskId: string) => {
       if ((e as React.KeyboardEvent).key === 'Enter' && !(e as React.KeyboardEvent).shiftKey) {
         e.preventDefault();
@@ -279,6 +273,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
         }
       }
     };
+    */
 
     const confirmTaskMutation = useMutation({
       mutationFn: confirmTask,
@@ -523,23 +518,8 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
                     key={application.taskInstanceId}   // ✅ unique key here
                     application={application}
                     plantInfo={plantHistory[String(application.plantId) as keyof typeof plantHistory]}
-                    //showReassignDropdown={showReassignDropdown}
-                    //setShowReassignDropdown={setShowReassignDropdown}
-                    handleApplicationTaskAction={handleApplicationTaskAction}
-                    //expandedMessages={expandedMessages}
+                    handleApplicationTaskAction={handleApplicationTaskAction as (e: React.MouseEvent<Element>, application: ApplicationTask) => void}
                     handleShowPlantHistory={handleShowPlantHistory}
-                    // ...pass other needed props...
-                    messageInputs={messageInputs}
-                    messageInputRefs={messageInputRefs}
-                    showTaskAssignment={showTaskAssignment}
-                    setShowTaskAssignment={setShowTaskAssignment}
-                    taskAssignmentData={taskAssignmentData}
-                    setTaskAssignmentData={setTaskAssignmentData}
-                    handleMessageInputChange={handleMessageInputChange}
-                    handleKeyPress={handleKeyPress}
-                    handleSendMessage={handleSendMessage}
-                    handleCreateTaskFromMessage={handleCreateTaskFromMessage}
-                    handleConfirmTaskCreation={handleConfirmTaskCreation}
                   />
                 ))}
               </tbody>
