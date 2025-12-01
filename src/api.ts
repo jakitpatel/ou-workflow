@@ -385,14 +385,12 @@ export async function sendMsgTask({
 }
 
 // Fetch application detail data from the API
-export async function fetchApplicationDetailRaw({
+export async function fetchApplicationDetail({
   applicationId,
-  token,
-  strategy,
+  token
 }: {
   applicationId?: string;
   token?: string | null;
-  strategy?: string;
 } = {}): Promise<any> {
   if (!applicationId) throw new Error("applicationId is required");
 
@@ -402,7 +400,6 @@ export async function fetchApplicationDetailRaw({
 
   const json = (await fetchWithAuth({
     path,
-    strategy,
     token /*,
     cache: 'no-store', // preserve original behavior*/,
   })) as ApplicationDetailResponse;
