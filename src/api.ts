@@ -1,6 +1,16 @@
-import { getApiBaseUrl } from './lib/utils';
-import type { ApplicantsResponse, Applicant, ApplicationTasksResponse, ApplicationTask, ApplicationDetailResponse, UserRoleResponse } from './types/application';
-import { getAccessToken, refreshAccessToken } from './components/auth/authService';
+import { getApiBaseUrl } from "./lib/utils";
+import type {
+  ApplicantsResponse,
+  Applicant,
+  ApplicationTasksResponse,
+  ApplicationTask,
+  ApplicationDetailResponse,
+  UserRoleResponse,
+} from "./types/application";
+import {
+  getAccessToken,
+  refreshAccessToken,
+} from "./components/auth/authService";
 import { cognitoLogout } from "./components/auth/authService";
 //const API_BASE_URL = getApiBaseUrl();
 
@@ -12,39 +22,42 @@ import { cognitoLogout } from "./components/auth/authService";
 function resolveApiBaseUrl(): string {
   try {
     // 🧩 Debug log to confirm the selected server is active
-    const userContext = (window as any).__USER_CONTEXT__
-    const contextUrl = userContext?.apiBaseUrl
+    const userContext = (window as any).__USER_CONTEXT__;
+    const contextUrl = userContext?.apiBaseUrl;
     console.log(
       `[resolveApiBaseUrl] Current base URL:`,
-      contextUrl || '(no context)',
-      '| From Context:',
-      !!contextUrl
-    )
+      contextUrl || "(no context)",
+      "| From Context:",
+      !!contextUrl,
+    );
 
     // 1️⃣ Try context
     if (contextUrl) {
-      return contextUrl
+      return contextUrl;
     }
 
     // 2️⃣ Try global config
-    const config = (window as any).__APP_CONFIG__
+    const config = (window as any).__APP_CONFIG__;
     if (config) {
       const servers = Object.keys(config)
-        .filter((key) => key.startsWith('API_CLIENT_URL'))
-        .map((key) => config[key])
+        .filter((key) => key.startsWith("API_CLIENT_URL"))
+        .map((key) => config[key]);
       if (servers.length > 0) {
-        console.log(`[resolveApiBaseUrl] Using config server:`, servers[0])
-        return servers[0]
+        console.log(`[resolveApiBaseUrl] Using config server:`, servers[0]);
+        return servers[0];
       }
     }
 
     // 3️⃣ Fallback to util
-    const fallback = getApiBaseUrl()
-    console.log(`[resolveApiBaseUrl] Using fallback getApiBaseUrl():`, fallback)
-    return fallback
+    const fallback = getApiBaseUrl();
+    console.log(
+      `[resolveApiBaseUrl] Using fallback getApiBaseUrl():`,
+      fallback,
+    );
+    return fallback;
   } catch (err) {
-    console.warn('[resolveApiBaseUrl] Exception occurred:', err)
-    return getApiBaseUrl()
+    console.warn("[resolveApiBaseUrl] Exception occurred:", err);
+    return getApiBaseUrl();
   }
 }
 
@@ -53,9 +66,10 @@ function resolveApiBaseUrl(): string {
  * (We set this once in UserProvider.)
  */
 export function registerUserContext(ctx: any) {
-  ;(window as any).__USER_CONTEXT__ = ctx
+  (window as any).__USER_CONTEXT__ = ctx;
 }
 
+// Define fetchWithAuth options type
 type FetchWithAuthOptions = {
   path: string;
   method?: string;
@@ -65,6 +79,7 @@ type FetchWithAuthOptions = {
   headers?: Record<string, string>;
 };
 
+// Fetch with authentication wrapper
 export async function fetchWithAuth<T>({
   path,
   method = "GET",
@@ -101,7 +116,7 @@ export async function fetchWithAuth<T>({
   let response = await doFetch(accessToken);
 
   // 2️⃣ Retry if Cognito access token expired
-  if (response.status === 401 && (strategy === "cognito")) {
+  if (response.status === 401 && strategy === "cognito") {
     try {
       const newToken = await refreshAccessToken();
       accessToken = newToken;
@@ -117,12 +132,15 @@ export async function fetchWithAuth<T>({
   // 3️⃣ Error handling
   if (!response.ok) {
     let errorBody;
-    try { errorBody = await response.json(); }
-    catch { errorBody = await response.text(); }
+    try {
+      errorBody = await response.json();
+    } catch {
+      errorBody = await response.text();
+    }
 
     const error: any = new Error(
       errorBody?.message ||
-        `API request failed: ${response.status} ${response.statusText}`
+        `API request failed: ${response.status} ${response.statusText}`,
     );
 
     error.status = response.status;
@@ -133,7 +151,7 @@ export async function fetchWithAuth<T>({
   return response.json();
 }
 
-
+// Fetch applicants data from the API
 export async function fetchApplicants({
   page = 0,
   limit = 20,
@@ -154,23 +172,23 @@ export async function fetchApplicants({
   const params = new URLSearchParams();
 
   // Pagination
-  params.append('page[limit]', String(limit));
-  params.append('page[offset]', String(page));
+  params.append("page[limit]", String(limit));
+  params.append("page[offset]", String(page));
 
   // Filters (only append if defined and not empty)
-  if (searchTerm && searchTerm.trim() !== '') {
-    params.append('filter[name]', searchTerm.trim());
+  if (searchTerm && searchTerm.trim() !== "") {
+    params.append("filter[name]", searchTerm.trim());
   }
-  if (statusFilter && statusFilter !== 'all') {
-    params.append('filter[status]', statusFilter);
+  if (statusFilter && statusFilter !== "all") {
+    params.append("filter[status]", statusFilter);
   }
-  if (priorityFilter && priorityFilter !== 'all') {
-    params.append('filter[priority]', priorityFilter);
+  if (priorityFilter && priorityFilter !== "all") {
+    params.append("filter[priority]", priorityFilter);
   }
 
   // Construct full URL
   const path = `/get_applications_v1?${params.toString()}`;
-  
+
   // Use fetchWithAuth wrapper
   const json = (await fetchWithAuth({
     path,
@@ -181,7 +199,7 @@ export async function fetchApplicants({
   const mappedData = json.data.map((applicant: any) => ({
     ...applicant,
     stages: Object.fromEntries(
-      Object.entries(applicant.stages).map(([k, v]) => [k.toLowerCase(), v])
+      Object.entries(applicant.stages).map(([k, v]) => [k.toLowerCase(), v]),
     ),
   }));
 
@@ -191,8 +209,9 @@ export async function fetchApplicants({
   } as any;
 }
 
+// Fetch roles data from the API with exchange-cognito-token endpoint
 export async function fetchRoles({
-  token
+  token,
 }: {
   token?: string | null;
 }): Promise<any[]> {
@@ -211,7 +230,7 @@ export async function fetchRoles({
     const resp = await fetch(`${baseUrl}${path}`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ token: accessToken }),
     });
@@ -234,7 +253,6 @@ export async function fetchRoles({
   }
 }
 
-
 // Fetch users by role type (NCRC, RFR, etc.)
 export async function fetchUserByRole({
   token,
@@ -248,14 +266,14 @@ export async function fetchUserByRole({
   selectRoleType?: string;
 } = {}): Promise<any[]> {
   const params = new URLSearchParams({
-    "filter[UserRole]": selectRoleType
+    "filter[UserRole]": selectRoleType,
   });
 
-  const json = await fetchWithAuth({
+  const json = (await fetchWithAuth({
     path: `/api/WFUSERROLE?${params.toString()}`,
     strategy,
     token,
-  }) as UserRoleResponse;
+  })) as UserRoleResponse;
 
   return json.data.map((item: any) => ({
     name: item.attributes.UserName,
@@ -292,13 +310,14 @@ export async function assignTask({
   return json;
 }
 
+// Confirm task mutation (with fetchWithAuth)
 export async function confirmTask({
   taskId,
   result,
   token,
   strategy,
   username,
-  status
+  status,
 }: {
   taskId: string;
   result?: "yes" | "no" | "completed" | "in_progress" | "pending";
@@ -365,33 +384,34 @@ export async function sendMsgTask({
   return json;
 }
 
-// simple wrapper - adjust URL if you host JSON differently
+// Fetch application detail data from the API
 export async function fetchApplicationDetailRaw({
   applicationId,
   token,
   strategy,
 }: {
-  applicationId?: string,
+  applicationId?: string;
   token?: string | null;
   strategy?: string;
 } = {}): Promise<any> {
-  if (!applicationId) throw new Error('applicationId is required');
+  if (!applicationId) throw new Error("applicationId is required");
 
   let path: string;
 
   path = `/get_application_detail_v2?applicationId=${applicationId}`;
 
-  const json = await fetchWithAuth({
+  const json = (await fetchWithAuth({
     path,
     strategy,
-    token/*,
-    cache: 'no-store', // preserve original behavior*/
-  }) as ApplicationDetailResponse;
+    token /*,
+    cache: 'no-store', // preserve original behavior*/,
+  })) as ApplicationDetailResponse;
 
   //return json.applicationInfo;
   return json.appplicationinfo;
 }
 
+// Fetch application tasks data from the API
 export async function fetchApplicationTasks({
   token,
   strategy,
@@ -414,7 +434,7 @@ export async function fetchApplicationTasks({
     params.push(`filter[plantName]=${encodeURIComponent(searchTerm)}`);
   }
 
-  const queryString = params.length ? `?${params.join('&')}` : '';
+  const queryString = params.length ? `?${params.join("&")}` : "";
   const path = `/get_application_tasks${queryString}`;
 
   const json = (await fetchWithAuth({
