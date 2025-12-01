@@ -1,6 +1,7 @@
 import type { ApplicationDetail } from "@/types/application";
 
 export default function Overview({ application, allValidationsPassed }: { application: ApplicationDetail, allValidationsPassed: boolean }) {
+  const company = application?.company?.[0];
   return (
     <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-6">Application Overview</h2>
@@ -32,11 +33,11 @@ export default function Overview({ application, allValidationsPassed }: { applic
                 </div>
                 <div className="flex items-center justify-between">
                 <span>Currently OU Certified:</span>
-                <span className="text-red-600">{application.company.currentlyCertified}</span>
+                <span className="text-red-600">{company?.currentlyCertified}</span>
                 </div>
                 <div className="flex items-center justify-between">
                 <span>Previously Certified:</span>
-                <span className="text-red-600">{application.company.everCertified}</span>
+                <span className="text-red-600">{company?.everCertified}</span>
                 </div>
             </div>
             </div>

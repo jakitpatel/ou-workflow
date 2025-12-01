@@ -1,3 +1,7 @@
+// Auth types
+export type LoginStrategy = 'none' | 'cognito';
+
+// Application-related types
 export type UserRole = {
   name: string;
   value: string;
@@ -80,7 +84,6 @@ export interface Company {
   category?: string;
   currentlyCertified?: string;
   everCertified?: string;
-  address: { street: string; line2?: string; city:string; state:string; country:string; zip:string };
   website?: string;
 }
 
@@ -90,15 +93,15 @@ export interface Plant { id:number; plantId:string; name:string; address:any; co
 
 export interface UploadedFile { 
   fileId:number; 
-  fileType:string; 
-  filePath:string; 
-  uploadedDate:string; 
+  FileType:string; 
+  FilePath:string; 
+  UploadedDate:string; 
   tag?:string; 
-  processed?:boolean; 
-  recordCount?:number; 
+  IsProcessed?:boolean; 
+  RecordCount?:number; 
   description?:string;
-  fileName?:string | undefined;
-  size?:string | undefined;
+  FileName?:string | undefined;
+  FileSize?:string | undefined;
 }
 
 export interface QuoteItem {
@@ -116,6 +119,41 @@ export interface QuoteData {
   quoteId?: number;
 }
 
+export interface CompanyAddress {
+  city: string;
+  country: string;
+  line2: string;
+  state: string;
+  street: string;
+  type: string; // or "Billing" | "Physical"
+  zip: string;
+}
+
+export interface CompanyContact {
+  email: string;
+  name: string;
+  phone: string;
+  role?: string; // optional because some don't have it
+  type: string;  // or "Primary Contact" | "Not Primary Contact"
+}
+export interface PlantAddress {
+  street: string
+  line2?: string
+  city: string
+  state: string
+  zip: string
+  country?: string
+  type: string // "Billing" | "Physical" ... (if you want, I can enum this)
+}
+
+export interface PlantContact {
+  name: string
+  email: string
+  phone: string
+  role?: string
+  type: string // "Primary Contact" | "Not Primary Contact" etc.
+}
+
 export interface ApplicationDetail {
   applicationId: string;
   status: string;
@@ -123,9 +161,13 @@ export interface ApplicationDetail {
   kashrusCompanyId?: string;
   kashrusStatus?: string;
   primaryContact?: string;
-  company: Company;
+  company: Company[];
+  companyAddresses?: CompanyAddress[];   // <--- typed
+  companyContacts?: CompanyContact[];    // <--- typed
   contacts: Contact[];
   plants: Plant[];
+  plantAddresses?: PlantAddress[];
+  plantContacts?: PlantContact[];
   products: any[];
   preferences?: any;
   files?: UploadedFile[];
@@ -168,6 +210,7 @@ export interface ApplicationTasksResponse {
 
 export interface ApplicationDetailResponse {
   applicationInfo: ApplicationDetail;
+  appplicationinfo: ApplicationDetail;
 }
 
 export interface WFUserAttributes {

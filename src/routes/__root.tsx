@@ -7,7 +7,6 @@ import { Navigation } from '@/components/ou-workflow/Navigation'
 // ✅ Normalize base: remove trailing slash
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '') || ''
 const LOGIN_PATH = `${BASE}/login`
-const CALLBACK_PATH = `${BASE}/cognito-callback`
 const CALLBACK_DIRECT_PATH = `${BASE}/cognito-directcallback`
 const COGNITO_LOGOUT_PATH = `${BASE}/cognito-logout`
 
@@ -17,9 +16,6 @@ export const Route = createRootRoute({
     const isLoginPage =
       location.pathname === LOGIN_PATH || location.pathname === '/login'
 
-    const isCallbackPage =
-      location.pathname === CALLBACK_PATH || location.pathname === '/cognito-callback'
-
     const isCallbackDirectPage =
       location.pathname === CALLBACK_DIRECT_PATH || location.pathname === '/cognito-directcallback'
 
@@ -27,7 +23,7 @@ export const Route = createRootRoute({
       location.pathname === COGNITO_LOGOUT_PATH || location.pathname === '/cognito-logout'
     
     // ✅ Allow login and callback screen without auth
-    if (isLoginPage || isCallbackPage || isCallbackDirectPage || isCognitoLogoutPage) return
+    if (isLoginPage || isCallbackDirectPage || isCognitoLogoutPage) return
 
     if (!userStr) {
       throw redirect({ to: '/login' })

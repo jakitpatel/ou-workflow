@@ -37,11 +37,11 @@ export default function ContactsSection({
                   </span>
                 </div>
               
-                {contact.designated && (
+                {/*contact.designated && (
                   <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
                     ⭐ Designated Initial Contact
                   </span>
-                )}
+                )*/}
               </div>
               )}
 

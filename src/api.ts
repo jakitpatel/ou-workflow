@@ -1,7 +1,6 @@
 import { getApiBaseUrl } from './lib/utils';
 import type { ApplicantsResponse, Applicant, ApplicationTasksResponse, ApplicationTask, ApplicationDetailResponse, UserRoleResponse } from './types/application';
 import { getAccessToken, refreshAccessToken } from './components/auth/authService';
-//import { congnit } from "./components/context/UserContext";
 import { cognitoLogout } from "./components/auth/authService";
 //const API_BASE_URL = getApiBaseUrl();
 
@@ -65,54 +64,6 @@ type FetchWithAuthOptions = {
   token?: string | null | undefined;
   headers?: Record<string, string>;
 };
-// Fetch with Auth wrapper (improved)
-/*export async function fetchWithAuth<T>({
-  path,
-  method = "GET",
-  body,
-  strategy,
-  token,
-  headers = {},
-}: FetchWithAuthOptions): Promise<T> {
-  const baseUrl = resolveApiBaseUrl(); //API_BASE_URL
-  const finalHeaders: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...headers,
-  };
-
-  // Attach Bearer token if API security is used
-  if ((strategy === "api" || strategy === "cognito" || strategy === "cognitodirect") && token) {
-    finalHeaders["Authorization"] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${baseUrl}${path}`, {
-    method,
-    headers: finalHeaders,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  // ✅ Gracefully handle non-OK responses
-  if (!response.ok) {
-    let errorBody: any = null;
-    try {
-      errorBody = await response.json(); // attempt to parse JSON error message
-    } catch {
-      // fallback to text if not JSON
-      errorBody = await response.text();
-    }
-
-    // ✅ Attach HTTP status and backend message for React Query
-    const error: any = new Error(
-      errorBody?.message || `API request failed: ${response.status} ${response.statusText}`
-    );
-    error.status = response.status;
-    error.details = errorBody;
-    throw error;
-  }
-
-  return response.json();
-}
-*/
 
 export async function fetchWithAuth<T>({
   path,
@@ -123,14 +74,13 @@ export async function fetchWithAuth<T>({
   headers = {},
 }: FetchWithAuthOptions): Promise<T> {
   const baseUrl = resolveApiBaseUrl();
-  //console.log("fetchWithAuth called with:", { path, method, strategy, token, baseUrl });
   // Pick token source
   let accessToken =
-    strategy === "cognito" || strategy === "cognitodirect"
+    strategy === "cognito"
       ? token //getAccessToken()
       : token;
 
-  async function doFetch(currentToken: string | null) {
+  async function doFetch(currentToken: string | null | undefined) {
     const requestHeaders: Record<string, string> = {
       "Content-Type": "application/json",
       ...headers,
@@ -151,10 +101,7 @@ export async function fetchWithAuth<T>({
   let response = await doFetch(accessToken);
 
   // 2️⃣ Retry if Cognito access token expired
-  if (
-    response.status === 401 &&
-    (strategy === "cognito" || strategy === "cognitodirect")
-  ) {
+  if (response.status === 401 && (strategy === "cognito")) {
     try {
       const newToken = await refreshAccessToken();
       accessToken = newToken;
@@ -231,13 +178,6 @@ export async function fetchApplicants({
     token,
   })) as ApplicantsResponse;
 
-  // Map stages to lowercase keys
-  /*return json.data.map((applicant: any) => ({
-    ...applicant,
-    stages: Object.fromEntries(
-      Object.entries(applicant.stages).map(([k, v]) => [k.toLowerCase(), v])
-    ),
-  }));*/
   const mappedData = json.data.map((applicant: any) => ({
     ...applicant,
     stages: Object.fromEntries(
@@ -250,53 +190,11 @@ export async function fetchApplicants({
     meta: json.meta || { total_count: mappedData.length },
   } as any;
 }
-/* Fetch roles by username */
-/*
-export async function fetchRoles({
-  username,
-  token,
-  strategy,
-}: {
-  username: string;
-  page?: number;
-  limit?: number;
-  token?: string | null;
-  strategy?: string;
-}): Promise<any[]> {
-  //console.log("Fetching roles for user:", username);
-  //console.log("Using token:", token);
-  const params = new URLSearchParams({
-    "fields[WFUSERROLE]": "UserName,UserRole,CreatedDate",
-    sort: "id",
-    [`filter[UserName]`]: username,
-  });
 
-  const json = await fetchWithAuth({
-    path: `/api/WFUSERROLE?${params.toString()}`,
-    strategy,
-    token,
-  }) as UserRoleResponse;
-  if (!Array.isArray(json.data)) {
-    console.error("❌ json.data is not an array:", json);
-    throw new Error("Invalid roles response");
-  }
-
-  // map WFUSERROLE format → simplified { name, value, created }
-  return json.data.map((item: any) => ({
-    name: item.attributes.UserRole,
-    value: item.attributes.UserRole,
-    created: item.attributes.CreatedDate,
-  }));
-}
-*/
 export async function fetchRoles({
-  //username,
-  token,
-  //strategy,
+  token
 }: {
-  username: string;
   token?: string | null;
-  strategy?: string;
 }): Promise<any[]> {
   const baseUrl = resolveApiBaseUrl();
   const path = `/auth/exchange-cognito-token`;
@@ -494,27 +392,6 @@ export async function fetchApplicationDetailRaw({
   return json.appplicationinfo;
 }
 
-/** 👇 New: Login API */
-export async function loginApi({
-  username,
-  password,
-}: {
-  username: string
-  password: string
-}) {
-  const baseUrl = resolveApiBaseUrl(); //API_BASE_URL
-  const response = await fetch(`${baseUrl}/api/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`Login failed: ${response.statusText}`)
-  }
-
-  return response.json() // expect { username, role, token }
-}
 export async function fetchApplicationTasks({
   token,
   strategy,

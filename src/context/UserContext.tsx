@@ -6,11 +6,10 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchRoles, registerUserContext } from "@/api";
+//import { useQuery } from "@tanstack/react-query";
+import { registerUserContext } from "@/api";
 import { cognitoLogout } from "@/components/auth/authService";
-import type { LoginStrategy } from "@/types/auth";
-import type { UserRole } from "@/types/application";
+import type { UserRole, LoginStrategy } from "@/types/application";
 
 /* ------------------------------------------------------------------
  * LocalStorage Helpers (Clean & Reusable)
@@ -60,9 +59,11 @@ type UserContextType = StoredUser & {
   login: (data: {
     username: string;
     role?: string;
+    roles?: UserRole[] | null;
     token?: string;
     strategy: LoginStrategy;
-  }) => void;
+  },
+  onComplete?: () => void) => void;
   logout: () => void;
 };
 
@@ -115,50 +116,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [apiBaseUrl]);
 
   /* ------------------------------------------------------------------
-   * Role loading (React Query)
-   * ------------------------------------------------------------------ */
-  /*const { refetch : fetchUserRoles } = useQuery({
-    queryKey: ['roles', username, token],
-    queryFn: () =>
-      fetchRoles({
-        username: username ?? '',
-        token: token ?? undefined,
-        strategy: strategy ?? undefined,
-      }),
-    enabled: false,
-    refetchOnWindowFocus: false,
-    retry: (failureCount, error: any) => {
-      if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) return false
-      console.log("Retry attempt:", failureCount, "Error:", error);
-      return false; //return failureCount < 2
-    },
-  })*/
-
-  /* ------------------------------------------------------------------
-   * Load roles when token available & apiBaseUrl loaded
-   * ------------------------------------------------------------------ */
-  /*useEffect(() => {
-    if (!token || !apiBaseUrl) return;
-    //console.log("Fetching user roles : Token or API Base URL changed:", { token, apiBaseUrl });
-    fetchUserRoles().then((res) => {
-    const data = res.data as any;
-    if (!data || !data.user_info) return;
-
-    const formatted = (data.user_info?.roles || []).map((r: any) => ({
-        name: r.role_name,
-        value: r.role_name,
-        created: null,
-    }));
-
-    setRoles(formatted);
-    setRole((prev) => prev || "ALL");
-    setRolesLoaded(true);
-    //console.log("User roles fetched and set:", formatted);
-    if (data.access_token) setToken(data.access_token);
-    });
-  }, [token, apiBaseUrl, fetchUserRoles]);
-  */
-  /* ------------------------------------------------------------------
    * Login Handler
    * ------------------------------------------------------------------ */
   const login = (data: {
@@ -167,7 +124,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     roles?: UserRole[] | null;
     token?: string;
     strategy: LoginStrategy;
-  }) => {
+  }, onComplete?: () => void) => {
     const now = Date.now();
 
     setUsername(data.username ?? null);
@@ -176,6 +133,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setToken(data.token ?? null);
     setStrategy(data.strategy);
     setLoginTime(now);
+    // ensure React flushes before redirect
+    requestAnimationFrame(() => {
+      if (onComplete) onComplete();
+    });
   };
 
   /* ------------------------------------------------------------------
