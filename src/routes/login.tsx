@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useUser } from "@/context/UserContext"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -20,8 +20,6 @@ export const Route = createFileRoute("/login")({
 })
 
 function LoginPage() {
-  const router = useRouter()
-  const queryClient = router.options.context?.queryClient;
 
   const {
     login,
@@ -88,10 +86,7 @@ function LoginPage() {
     if (strategy === "none") {
       setError("")
       try {
-        const data: any = await queryClient.fetchQuery({
-          queryKey: ["roles"],
-          queryFn: () => fetchRoles({ token: "wiieowieo323232" }),
-        })
+        const data: any = await fetchRoles({ token: "wiieowieo323232" })
 
         if (!data || !data.user_info) {
           setError("Unable to load user info.")
