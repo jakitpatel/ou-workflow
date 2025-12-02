@@ -2,6 +2,8 @@
 export type LoginStrategy = 'none' | 'cognito';
 
 // Application-related types
+export type ActionResult = "yes" | "no" | "pending" | "completed" | "in_progress";
+
 export type UserRole = {
   name: string;
   value: string;

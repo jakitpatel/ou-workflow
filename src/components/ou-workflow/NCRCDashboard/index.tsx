@@ -8,7 +8,7 @@ import { useUser } from '@/context/UserContext'  // 👈 new import
 import { useApplications } from './../hooks/useApplications';
 import { assignTask, confirmTask } from '@/api'; // same api.ts
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
-import type { Applicant } from '@/types/application';
+import type { Applicant, Task } from '@/types/application';
 import { ApplicantStatsCards } from './ApplicantStatsCards';
 
 export function NCRCDashboard() {
@@ -24,8 +24,8 @@ export function NCRCDashboard() {
   } | null>(null);*/
   const { setActiveScreen, token, strategy, username } = useUser(); // 👈 use context
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
-  const [showActionModal, setShowActionModal] = useState<boolean | null>(null);
-  const [showConditionModal, setShowConditionModal] = useState<boolean | null>(null);
+  const [showActionModal, setShowActionModal] = useState<Task | null | boolean>(null);
+  const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   const queryClient = useQueryClient();
   const errorDialogRef = useRef<ErrorDialogRef>(null);
@@ -128,7 +128,7 @@ export function NCRCDashboard() {
     },
   });
 
-  const executeAction = (assignee: string, action: any, result?: "yes" | "no" | "pending" | "completed" | "in_progress") => {
+  const executeAction = (assignee: string, action: any, result?: string) => {
       //if (selectedAction) {
         // normalize taskType safely
         const taskType = action.taskType?.toLowerCase();
@@ -249,11 +249,11 @@ export function NCRCDashboard() {
     return { application: app, action: act };
   }, [selectedActionId, applicants, getAllTasks]);
 
-  const handleSelectAppActions = (applicationId: string | number, actionId: string) => {
+  const handleSelectAppActions = (applicationId: string | number, actionId: string | number) => {
     setSelectedActionId(`${applicationId}:${actionId}`);
   };
 
-  const handleTaskAction = (e: React.MouseEvent<HTMLElement>, application: Applicant, action: any) => {
+  const handleTaskAction = (e: React.MouseEvent, application: Applicant, action: Task) => {
       console.log("handleTaskAction called with action:", action, "for application:", application);
       e.stopPropagation();
       e.preventDefault();

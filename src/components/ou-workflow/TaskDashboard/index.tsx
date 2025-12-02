@@ -1,6 +1,6 @@
  import React, { useState,useEffect, useRef,useMemo } from 'react';
  import { useMutation, useQueryClient } from '@tanstack/react-query';
- import { assignTask, confirmTask, sendMsgTask } from '@/api'; // same api.ts
+ import { assignTask, confirmTask } from '@/api'; // same api.ts
  import { useUser } from '@/context/UserContext'  // 👈 new import
  import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
  import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
@@ -14,7 +14,7 @@
 import { plantHistory } from './demoData';
 import { useTasks } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
-import type { ApplicationTask } from '@/types/application';
+import type { ApplicationTask, Task } from '@/types/application';
 //import { useTaskContext } from '@/context/TaskContext';
 
  // Tasks Dashboard Component (with full table functionality restored)
@@ -31,8 +31,8 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     //const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
     const { username, role, roles, token, strategy, setActiveScreen } = useUser() // 👈 use context
-    const [showActionModal, setShowActionModal] = useState<boolean | null>(null);
-    const [showConditionModal, setShowConditionModal] = useState<boolean | null>(null);
+    const [showActionModal, setShowActionModal] = useState<boolean | null | Task>(null);
+    const [showConditionModal, setShowConditionModal] = useState<boolean | null | Task>(null);
     const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
     //const [selectedAction, setSelectedAction] = useState(null);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
@@ -308,7 +308,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       },
     });
 
-    const executeAction = (assignee: string, action: any, result: "yes" | "no" | "pending" | "completed" | "in_progress") => {
+    const executeAction = (assignee: string, action: any, result?: string) => {
       //if (selectedAction) {
         // normalize taskType safely
         const taskType = action.taskType?.toLowerCase();

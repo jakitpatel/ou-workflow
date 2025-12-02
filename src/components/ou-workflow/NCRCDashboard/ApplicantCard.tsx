@@ -8,7 +8,7 @@ import { useTaskContext } from '@/context/TaskContext';
 type Props = {
   applicant: Applicant;
   setActiveScreen: (val: "ncrc-dashboard" | "tasks-dashboard" | null) => void;
-  handleTaskAction: (e: React.MouseEvent<HTMLButtonElement>, application:Applicant, action: Task) => void;
+  handleTaskAction: (e: React.MouseEvent, application:Applicant, action: Task) => void;
 };
 
 export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: Props) {
@@ -127,7 +127,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
       </div>
 
       
-      <ApplicantProgressBar applicant={applicant} showDetails={false} handleTaskAction={handleTaskAction} />
+      <ApplicantProgressBar applicant={applicant} handleTaskAction={handleTaskAction} />
       
       {/* AI Assistant Panel */}
       {showAIAssistant && (

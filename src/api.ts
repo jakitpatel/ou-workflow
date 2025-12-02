@@ -319,7 +319,7 @@ export async function confirmTask({
   status,
 }: {
   taskId: string;
-  result?: "yes" | "no" | "completed" | "in_progress" | "pending";
+  result?: string;
   token?: string | null;
   strategy?: string;
   username?: string;

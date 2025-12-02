@@ -1,14 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
-
-type Application = {
-  company: string;
-  companyName?: string;
-  assignee: string;
-};
+import type { Task, Applicant } from "@/types/application";
 
 type SelectedAction = {
-  application: Application;
+   application: Applicant | Task | any;
   action: {
     id: string;
     name: string;
@@ -16,16 +11,16 @@ type SelectedAction = {
     taskCategory?: string;
     taskName?: string;
     TaskCategory?: string;
-  };
+  } | Task | any;
 };
 
 type Props = {
-  showConditionModal: boolean | null;
+  showConditionModal: boolean | null | Task;
   selectedAction: SelectedAction | null;
-  setShowConditionModal: (val: boolean | null) => void;
+  setShowConditionModal: (val: boolean | null | Task) => void;
   executeAction: (
     id: string,
-    action: { id: string; name: string },
+    action: { id: string; name?: string },
     value: string
   ) => void;
 };

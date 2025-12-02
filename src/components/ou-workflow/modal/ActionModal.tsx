@@ -1,25 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { useUserListByRole } from "@/components/ou-workflow/hooks/useTaskDashboardHooks";
-
-type Application = {
-  company: string;
-  companyName?: string;
-  assignee: string;
-};
+import type { Task, Applicant } from "@/types/application";
 
 type SelectedAction = {
-  application: Application;
-  action: { id: string; name?: string; taskName?: string };
+  application: Applicant | Task | any;
+  action: Task | { id: string; name?: string; taskName?: string } | any;
 };
-
 type Props = {
-  showActionModal: boolean | null;
+  showActionModal: boolean | null | Task;
   selectedAction: SelectedAction | null;
-  setShowActionModal: (val: boolean | null) => void;
+  setShowActionModal: (val: boolean | null | Task) => void;
   executeAction: (
     value: string,
-    action: { id: string; name?: string; taskName?: string }
+    action: { id: string; name?: string; taskName?: string },
+    result?: string
   ) => void;
 };
 
