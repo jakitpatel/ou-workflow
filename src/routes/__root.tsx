@@ -3,6 +3,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanstackDevtools } from '@tanstack/react-devtools'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Navigation } from '@/components/ou-workflow/Navigation'
+import { isAuthenticated } from "@/components/auth/authService"
 
 // ✅ Normalize base: remove trailing slash
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '') || ''
@@ -29,6 +30,11 @@ export const Route = createRootRoute({
       throw redirect({ to: '/login' })
     }
 
+    if (!isAuthenticated()) {
+      localStorage.removeItem('user');
+      throw redirect({ to: '/login' })
+    }
+    /*
     const user = JSON.parse(userStr)
     const loginTime = new Date(user.loginTime).getTime()
     const now = Date.now()
@@ -36,7 +42,7 @@ export const Route = createRootRoute({
     if (!loginTime || now - loginTime > 24 * 60 * 60 * 1000) {
       localStorage.removeItem('user')
       throw redirect({ to: '/login' })
-    }
+    }*/
   },
   component: RootLayout,
 })
