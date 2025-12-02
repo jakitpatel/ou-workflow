@@ -1,7 +1,6 @@
 import { getApiBaseUrl } from "./lib/utils";
 import type {
   ApplicantsResponse,
-  Applicant,
   ApplicationTasksResponse,
   ApplicationTask,
   ApplicationDetailResponse,
@@ -168,7 +167,7 @@ export async function fetchApplicants({
   searchTerm?: string;
   statusFilter?: string;
   priorityFilter?: string;
-} = {}): Promise<Applicant[]> {
+} = {}): Promise<ApplicantsResponse> {
   const params = new URLSearchParams();
 
   // Pagination

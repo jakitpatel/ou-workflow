@@ -31,18 +31,10 @@ export const Route = createRootRoute({
     }
 
     if (!isAuthenticated()) {
+      //console.log("User is not authenticated anymore.Move to login screen.");
       localStorage.removeItem('user');
       throw redirect({ to: '/login' })
     }
-    /*
-    const user = JSON.parse(userStr)
-    const loginTime = new Date(user.loginTime).getTime()
-    const now = Date.now()
-
-    if (!loginTime || now - loginTime > 24 * 60 * 60 * 1000) {
-      localStorage.removeItem('user')
-      throw redirect({ to: '/login' })
-    }*/
   },
   component: RootLayout,
 })

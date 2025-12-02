@@ -249,7 +249,7 @@ export function NCRCDashboard() {
     return { application: app, action: act };
   }, [selectedActionId, applicants, getAllTasks]);
 
-  const handleSelectAppActions = (applicationId: string, actionId: string) => {
+  const handleSelectAppActions = (applicationId: string | number, actionId: string) => {
     setSelectedActionId(`${applicationId}:${actionId}`);
   };
 
