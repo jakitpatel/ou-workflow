@@ -93,7 +93,7 @@ export function ApplicantProgressBar({
 
     const userRoles =
     role?.toUpperCase() === 'ALL'
-      ? (roles ?? []).map(r => r.value?.toLowerCase()).filter(Boolean)
+      ? (roles ?? []).map(r => r.name?.toLowerCase()).filter(Boolean)
       : role
       ? [role.toLowerCase()]
       : [];
@@ -117,6 +117,7 @@ export function ApplicantProgressBar({
 
       if (matchingRoles.length === 0) {
         // User has none of the required roles
+        //console.log('No matching roles for task:', taskItem.name);
         color = 'bg-gray-300 cursor-not-allowed';
         disabled = true;
       } else {

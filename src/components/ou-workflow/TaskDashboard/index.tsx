@@ -119,7 +119,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     const filteredTasks = useMemo(() => {
       const isAllRole = role?.toUpperCase() === 'ALL';
       const userRoles = isAllRole
-        ? (roles ?? []).map(r => r.value?.toLowerCase()).filter(Boolean)
+        ? (roles ?? []).map(r => r.name?.toLowerCase()).filter(Boolean)
         : role
         ? [role.toLowerCase()]
         : [];
