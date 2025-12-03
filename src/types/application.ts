@@ -7,7 +7,6 @@ export type ActionResult = "yes" | "no" | "pending" | "completed" | "in_progress
 export type UserRole = {
   name: string;
   value: string;
-  created: string;
 }
 
 export type ApplicantFile = {
