@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useUser } from "@/context/UserContext"
 import { Button } from "@/components/ui/button"
@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ShieldCheck, LogIn, Server } from "lucide-react"
-import { authlogin } from "@/components/auth/authService"
+import { authlogin, isAuthenticated } from "@/components/auth/authService"
 import { fetchRoles } from "@/api"
 //import type { QueryClient } from "@tanstack/react-query"
 
@@ -25,7 +25,6 @@ function LoginPage() {
     login,
     username,
     token,
-    loginTime,
     apiBaseUrl,
     setApiBaseUrl,
   } = useUser()
@@ -36,40 +35,29 @@ function LoginPage() {
   const [error, setError] = useState("")
   const [availableServers, setAvailableServers] = useState<string[]>([])
 
-  const usernameRef = useRef<HTMLInputElement>(null)
-
   // 🔹 Load API servers
   useEffect(() => {
-    const config = (window as any).__APP_CONFIG__
-    if (config) {
-      const servers = Object.keys(config)
-        .filter((key) => key.startsWith("API_CLIENT_URL"))
-        .map((key) => config[key])
-        .filter(Boolean)
+    const config = (window as any).__APP_CONFIG__;
+    if (!config) return;
 
-      setAvailableServers(servers)
+    const servers = Object.keys(config)
+      .filter((k) => k.startsWith("API_CLIENT_URL"))
+      .map((key) => config[key])
+      .filter(Boolean);
 
-      if (!apiBaseUrl && servers.length > 0) {
-        setApiBaseUrl(servers[0])
-      }
+    setAvailableServers(servers);
+
+    if (!apiBaseUrl && servers.length > 0) {
+      setApiBaseUrl(servers[0]);
     }
-  }, [apiBaseUrl, setApiBaseUrl])
+  }, [apiBaseUrl]);
 
   // 🔹 Auto-redirect if session already valid
   useEffect(() => {
-    if (username && token && loginTime) {
-      const now = Date.now()
-      const expiresIn = 24 * 60 * 60 * 1000 // 24 hrs
-      if (now - loginTime < expiresIn) {
-        console.log("[LoginPage] Existing session valid, redirecting...");
-        navigate({ to: "/" })
-      }
+    if (username && token && isAuthenticated()) {
+      navigate({ to: "/" })
     }
-  }, [username, token, loginTime, navigate])
-  
-  useEffect(() => {
-    usernameRef.current?.focus()
-  }, [])
+  }, [username, token, navigate])
 
   // 🔹 Handle login
   const handleSubmit = async (e: React.FormEvent) => {
@@ -99,6 +87,8 @@ function LoginPage() {
             }))
           : []
 
+        sessionStorage.setItem("access_token", data.access_token);
+        sessionStorage.setItem("id_token", data.id_token);
         login({
           username: data.user_info.user_id,
           role: "ALL",
