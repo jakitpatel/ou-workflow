@@ -3,7 +3,6 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { ApplicantProgressBar } from './ApplicantProgressBar';
 import { Bell, FileText, Clock, Bot, ClipboardList, Package, ListTodo, ExternalLink, Sparkles, AlertTriangle } from 'lucide-react'
 import type { Task, Applicant } from '@/types/application';
-import { useTaskContext } from '@/context/TaskContext';
 
 type Props = {
   applicant: Applicant;
@@ -44,12 +43,10 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
   const priorityKey = (applicant.priority?.toLowerCase() ?? 'low') as PriorityKey;
   const priority = priorityConfig[priorityKey] || priorityConfig.low;
   const [showAIAssistant, setShowAIAssistant] = useState(false);
-  const { setApplicationId } = useTaskContext();
   
   // Cross-navigation handler
   const handleViewTasks = (applicationId?: string | number) => {
     console.log('Viewing tasks for:', applicationId);
-    setApplicationId(applicationId ? String(applicationId) : null); // ensure string stored
     setActiveScreen('tasks-dashboard'); // ✅ switch tab
     // ✅ navigate to the route instead of setActiveScreen()
     if (applicationId) {

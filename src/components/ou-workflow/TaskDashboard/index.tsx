@@ -15,7 +15,6 @@ import { plantHistory } from './demoData';
 import { useTasks } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 import type { ApplicationTask, Task } from '@/types/application';
-//import { useTaskContext } from '@/context/TaskContext';
 
  // Tasks Dashboard Component (with full table functionality restored)
 type TaskDashboardProps = { applicationId?: string | number | null };
@@ -38,7 +37,6 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
     //const messageInputRefs = useRef<Record<string, HTMLTextAreaElement | HTMLInputElement | null>>({});
-    //const { applicationId, setApplicationId } = useTaskContext();
     const queryClient = useQueryClient();
     const errorDialogRef = useRef<ErrorDialogRef>(null);
     // Fetch tasks and plants
@@ -64,7 +62,6 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     // Cross-navigation handler
     const handleViewNCRCDashboard = () => {
       console.log('Returning to NCRC Dashboard');
-      //setApplicationId(null);
       setActiveScreen('ncrc-dashboard');
     };
 
