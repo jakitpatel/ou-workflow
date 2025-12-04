@@ -54,8 +54,6 @@ type UserContextType = StoredUser & {
   setApiBaseUrl: (url: string | null) => void;
   setRole: (role: string | null) => void;
   setRoles: (roles: UserRole[] | null) => void;
-  rolesLoaded: boolean;              // 👈 ADD THIS
-  setRolesLoaded: (v: boolean) => void; // 👈 AND THIS
   login: (data: {
     username: string;
     role?: string;
@@ -75,7 +73,6 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: ReactNode }) {
   const stored = loadStoredUser();
 
-  const [rolesLoaded, setRolesLoaded] = useState(false);
   const [username, setUsername] = useState(stored?.username ?? null);
   const [role, setRole] = useState<string | null>(stored?.role ?? null);
   const [roles, setRoles] = useState<UserRole[] | null>(stored?.roles ?? null);
@@ -149,7 +146,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setStrategy(null);
     setLoginTime(null);
-    setRolesLoaded(false);
 
     clearStoredUser();
     cognitoLogout();
@@ -175,8 +171,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setRoles,
       login,
       logout,
-      rolesLoaded,
-      setRolesLoaded,
     }),
     [
       username,
@@ -187,7 +181,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       loginTime,
       apiBaseUrl,
       activeScreen,
-      rolesLoaded,
     ]
   );
 
