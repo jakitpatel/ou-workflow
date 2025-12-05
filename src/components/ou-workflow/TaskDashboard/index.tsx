@@ -29,7 +29,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     const [showPlantHistory, setShowPlantHistory] = useState<string | null>(null);
     //const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
-    const { username, role, roles, token, strategy, setActiveScreen } = useUser() // 👈 use context
+    const { username, role, roles, token, strategy } = useUser() // 👈 use context
     const [showActionModal, setShowActionModal] = useState<boolean | null | Task>(null);
     const [showConditionModal, setShowConditionModal] = useState<boolean | null | Task>(null);
     const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
@@ -62,7 +62,6 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     // Cross-navigation handler
     const handleViewNCRCDashboard = () => {
       console.log('Returning to NCRC Dashboard');
-      setActiveScreen('ncrc-dashboard');
     };
 
     useEffect(() => {

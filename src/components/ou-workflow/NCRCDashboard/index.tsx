@@ -22,7 +22,7 @@ export function NCRCDashboard() {
     action: string;
     applicantId: string;
   } | null>(null);*/
-  const { setActiveScreen, token, strategy, username } = useUser(); // 👈 use context
+  const { token, strategy, username } = useUser(); // 👈 use context
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [showActionModal, setShowActionModal] = useState<Task | null | boolean>(null);
   const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null);
@@ -390,7 +390,6 @@ export function NCRCDashboard() {
             <ApplicantCard
               key={applicant.applicationId}
               applicant={applicant}
-              setActiveScreen={setActiveScreen}
               handleTaskAction={handleTaskAction}
             />
           ))

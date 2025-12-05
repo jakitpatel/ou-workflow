@@ -6,11 +6,10 @@ import type { Task, Applicant } from '@/types/application';
 
 type Props = {
   applicant: Applicant;
-  setActiveScreen: (val: "ncrc-dashboard" | "tasks-dashboard" | null) => void;
   handleTaskAction: (e: React.MouseEvent, application:Applicant, action: Task) => void;
 };
 
-export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: Props) {
+export function ApplicantCard({ applicant, handleTaskAction }: Props) {
   // inside your component
   const navigate = useNavigate();
 
@@ -47,8 +46,7 @@ export function ApplicantCard({ applicant, setActiveScreen, handleTaskAction }: 
   // Cross-navigation handler
   const handleViewTasks = (applicationId?: string | number) => {
     console.log('Viewing tasks for:', applicationId);
-    setActiveScreen('tasks-dashboard'); // ✅ switch tab
-    // ✅ navigate to the route instead of setActiveScreen()
+    // ✅ navigate to the route
     if (applicationId) {
       navigate({
         to: '/ou-workflow/tasks-dashboard/$applicationId',

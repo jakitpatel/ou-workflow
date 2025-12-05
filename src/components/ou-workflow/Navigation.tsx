@@ -9,10 +9,10 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 }*/
 
 export function Navigation() {
-  // inside Navigation component, remove setActiveScreen calls and add:
+  // inside Navigation component and add:
   const location = useRouterState({ select: (s) => s.location.pathname })
   
-  const { username, role, setActiveScreen, logout, apiBaseUrl } = useUser()
+  const { username, role, logout, apiBaseUrl } = useUser()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
@@ -99,7 +99,6 @@ export function Navigation() {
                   to="/profile"
                   onClick={() => {
                     setMenuOpen(false);
-                    setActiveScreen(null); // ✅ safe now
                   }}
                   className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                 >

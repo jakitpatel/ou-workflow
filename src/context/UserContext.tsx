@@ -6,7 +6,6 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
-//import { useQuery } from "@tanstack/react-query";
 import { registerUserContext } from "@/api";
 import { cognitoLogout } from "@/components/auth/authService";
 import type { UserRole, LoginStrategy } from "@/types/application";
@@ -36,7 +35,6 @@ function clearStoredUser() {
 /* ------------------------------------------------------------------
  * Types
  * ------------------------------------------------------------------ */
-type ActiveScreen = "ncrc-dashboard" | "tasks-dashboard" | null;
 
 type StoredUser = {
   username: string | null;
@@ -49,8 +47,6 @@ type StoredUser = {
 };
 
 type UserContextType = StoredUser & {
-  activeScreen: ActiveScreen;
-  setActiveScreen: (s: ActiveScreen) => void;
   setApiBaseUrl: (url: string | null) => void;
   setRole: (role: string | null) => void;
   setRoles: (roles: UserRole[] | null) => void;
@@ -82,9 +78,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
   );
   const [loginTime, setLoginTime] = useState<number | null>(
     stored?.loginTime ?? null
-  );
-  const [activeScreen, setActiveScreen] = useState<ActiveScreen>(
-    "ncrc-dashboard"
   );
   const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(
     stored?.apiBaseUrl ?? null
@@ -164,8 +157,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       strategy,
       loginTime,
       apiBaseUrl,
-      activeScreen,
-      setActiveScreen,
       setApiBaseUrl,
       setRole,
       setRoles,
@@ -180,7 +171,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       strategy,
       loginTime,
       apiBaseUrl,
-      activeScreen,
     ]
   );
 

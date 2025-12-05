@@ -8,7 +8,7 @@ export const Route = createFileRoute("/")({
 })
 
 function App() {
-  const { username, setActiveScreen } = useUser()
+  const { username } = useUser()
 
   const [showCreate, setShowCreate] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
@@ -29,7 +29,6 @@ function App() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
           <Link
             to="/ou-workflow/ncrc-dashboard"
-            onClick={() => setActiveScreen("ncrc-dashboard")}
             className="block bg-white rounded-xl shadow hover:shadow-lg p-6 text-left transition"
           >
             <h2 className="text-lg font-semibold text-blue-600 mb-2">
@@ -39,7 +38,6 @@ function App() {
 
           <Link
             to="/ou-workflow/tasks-dashboard"
-            onClick={() => setActiveScreen("tasks-dashboard")}
             className="block bg-white rounded-xl shadow hover:shadow-lg p-6 text-left transition"
           >
             <h2 className="text-lg font-semibold text-blue-600 mb-2">
