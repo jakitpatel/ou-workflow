@@ -5,54 +5,48 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Navigation } from '@/components/ou-workflow/Navigation'
 import { isAuthenticated } from "@/components/auth/authService"
 
-// Normalize base: remove trailing slash
+// ✅ Normalize base: remove trailing slash
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '') || ''
-
-// Normalize pathname by removing BASE prefix
-function normalizePath(pathname: string) {
-  return pathname.startsWith(BASE)
-    ? pathname.slice(BASE.length) || '/'
-    : pathname
-}
+const LOGIN_PATH = `${BASE}/login`
+const CALLBACK_DIRECT_PATH = `${BASE}/cognito-directcallback`
+const COGNITO_LOGOUT_PATH = `${BASE}/cognito-logout`
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
     const userStr = localStorage.getItem('user')
+    const isLoginPage =
+      location.pathname === LOGIN_PATH || location.pathname === '/login'
 
-    // Normalize incoming route
-    const path = normalizePath(location.pathname)
+    const isCallbackDirectPage =
+      location.pathname === CALLBACK_DIRECT_PATH || location.pathname === '/cognito-directcallback'
 
-    const isLoginPage = path === '/login'
-    const isCallbackDirectPage = path === '/cognito-directcallback'
-    const isCognitoLogoutPage = path === '/cognito-logout'
+    const isCognitoLogoutPage =
+      location.pathname === COGNITO_LOGOUT_PATH || location.pathname === '/cognito-logout'
+    
+    // ✅ Allow login and callback screen without auth
+    if (isLoginPage || isCallbackDirectPage || isCognitoLogoutPage) return
 
-    // Allow these routes without authentication
-    if (isLoginPage || isCallbackDirectPage || isCognitoLogoutPage) {
-      return
-    }
-
-    // Require auth for all other routes
     if (!userStr) {
       throw redirect({ to: '/login' })
     }
 
     if (!isAuthenticated()) {
-      localStorage.removeItem('user')
+      //console.log("User is not authenticated anymore.Move to login screen.");
+      localStorage.removeItem('user');
       throw redirect({ to: '/login' })
     }
   },
-
   component: RootLayout,
 })
 
 function RootLayout() {
   const route = useRouterState()
-
-  const path = normalizePath(route.location.pathname)
-  const isLoginPage = path === '/login'
+  const isLoginPage =
+    route.location.pathname === LOGIN_PATH || route.location.pathname === '/login'
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* ✅ Show nav everywhere except /login */}
       {!isLoginPage && <Navigation />}
 
       <main className="flex-1">
@@ -63,7 +57,10 @@ function RootLayout() {
       <TanstackDevtools
         config={{ position: 'bottom-left' }}
         plugins={[
-          { name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> },
+          {
+            name: 'Tanstack Router',
+            render: <TanStackRouterDevtoolsPanel />,
+          },
         ]}
       />
     </div>
