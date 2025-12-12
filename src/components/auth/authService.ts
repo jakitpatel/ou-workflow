@@ -99,9 +99,14 @@ function getUserInfo():
     console.log("ID Token payload:", payload);
     console.log("Access Token payload:", accessPayload);
     // Priority: roles → groups → empty
-    const roles =
+    const rawRoles =
       accessPayload.roles ||
       [];
+    // 🔥 Inline transformation → [{ name: "DISPATCH" }, ...]
+    const roles = Array.isArray(rawRoles)
+      ? rawRoles.map(r => ({ name: r }))
+      : [];
+
     return {
       email: payload.email,
       username: accessPayload.app_username,
