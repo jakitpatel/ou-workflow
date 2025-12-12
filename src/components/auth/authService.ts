@@ -90,14 +90,28 @@ function getUserInfo():
   | null {
   try {
     const idToken = getIdToken();
-    if (!idToken) return null;
+    const accessToken = getAccessToken();
+    //if (!idToken) return null;
+    if (!idToken || !accessToken) return null;
 
     const payload = JSON.parse(atob(idToken.split(".")[1]));
+    const accessPayload = JSON.parse(atob(accessToken.split(".")[1]));
+    console.log("ID Token payload:", payload);
+    console.log("Access Token payload:", accessPayload);
+    const roles =
+      accessPayload["cognito:groups"] ||
+      accessPayload["roles"] ||
+      accessPayload["custom:roles"] ||
+      [];
     return {
       email: payload.email,
       username: payload["cognito:username"] || payload.username,
       name: payload.name,
       sub: payload.sub,
+      // 🔥 merged roles directly from access token
+      roles,
+      access_token: accessToken,
+      id_token: idToken,
     };
   } catch (e) {
     console.error("Error parsing user info:", e);

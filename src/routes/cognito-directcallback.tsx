@@ -1,9 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { handleOAuthCallback } from "@/components/auth/authService"
-import { fetchRoles } from "@/api"
+import { getUserInfo, handleOAuthCallback } from "@/components/auth/authService"
+//import { fetchRoles } from "@/api"
 import { useUser } from "@/context/UserContext"
 import { useEffect } from "react"
 import type { QueryClient } from "@tanstack/react-query"
+//import { get } from "node:http"
 
 export const Route = createFileRoute("/cognito-directcallback")({
   beforeLoad: async (
@@ -41,7 +42,16 @@ export const Route = createFileRoute("/cognito-directcallback")({
           search: { error: "Token missing" },
         })
       }
-
+      // Get user info using the access token
+      const data = await getUserInfo();
+      console.log("[CognitoCallback] Fetched user info:", data);
+      if (!data) {
+        throw redirect({
+          to: "/login",
+          search: { error: "Unable to load user info" },
+        })
+      }
+      /*
       // 2) Fetch roles via queryClient
       const data = await queryClient.fetchQuery({
         queryKey: ["roles"],
@@ -58,7 +68,6 @@ export const Route = createFileRoute("/cognito-directcallback")({
       const roles = Array.isArray(data.user_info.roles)
         ? data.user_info.roles.map((r: { role_name?: string }) => ({ name: r.role_name || "" }))
         : []
-
       // 3) Store final user object in sessionStorage for use in component
       sessionStorage.setItem(
         "final_user_json",
@@ -69,7 +78,20 @@ export const Route = createFileRoute("/cognito-directcallback")({
           token: data.access_token,
           strategy: "cognito",
         })
-      )
+      )*/
+     sessionStorage.setItem(
+        "final_user_json",
+        JSON.stringify({
+          username: data.username,
+          email: data.email,
+          name: data.name,
+          sub: data.sub,
+          roles: data.roles,        // ← direct from access_token
+          role: "ALL",
+          token: token,
+          strategy: "cognito",
+        })
+      );
 
       // Mark as done ONLY after successful completion
       sessionStorage.setItem("cognito_callback_done", "1")

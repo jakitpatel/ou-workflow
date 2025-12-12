@@ -71,6 +71,7 @@ function LoginPage() {
     // -----------------------------
     // 🔹 No Security Flow (Just For Development/Testing)
     // -----------------------------
+    //if (apiBaseUrl === "http://localhost:3001") {
     if (strategy === "none") {
       setError("")
       try {
