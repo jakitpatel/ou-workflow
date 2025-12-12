@@ -1,19 +1,11 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { getUserInfo, handleOAuthCallback } from "@/components/auth/authService"
-//import { fetchRoles } from "@/api"
 import { useUser } from "@/context/UserContext"
 import { useEffect } from "react"
-import type { QueryClient } from "@tanstack/react-query"
-//import { get } from "node:http"
 
 export const Route = createFileRoute("/cognito-directcallback")({
-  beforeLoad: async (
-    ctx: { context?: { queryClient?: QueryClient } }
-  ) => {
+  beforeLoad: async () => {
     console.log("[CognitoCallback] Starting OAuth handler...");
-    
-    const queryClient = ctx.context?.queryClient as QueryClient;
-    console.log("Callback got QueryClient:", queryClient);
     
     // 🔒 Prevent browser re-executing OAuth flow on refresh
     if (sessionStorage.getItem("cognito_callback_done") === "1") {
@@ -35,13 +27,15 @@ export const Route = createFileRoute("/cognito-directcallback")({
         })
       }
 
+      /*
       const token = sessionStorage.getItem("access_token")
       if (!token) {
         throw redirect({
           to: "/login",
           search: { error: "Token missing" },
         })
-      }
+      }*/
+
       // Get user info using the access token
       const data = await getUserInfo();
       console.log("[CognitoCallback] Fetched user info:", data);
@@ -51,44 +45,14 @@ export const Route = createFileRoute("/cognito-directcallback")({
           search: { error: "Unable to load user info" },
         })
       }
-      /*
-      // 2) Fetch roles via queryClient
-      const data = await queryClient.fetchQuery({
-        queryKey: ["roles"],
-        queryFn: () => fetchRoles({ token }), // username required by type but not used
-      }) as any // fetchRoles returns UserRoleTokenResponse but is typed as any[]
-
-      if (!data || !data.user_info) {
-        throw redirect({
-          to: "/login",
-          search: { error: "Unable to load user info" },
-        })
-      }
-
-      const roles = Array.isArray(data.user_info.roles)
-        ? data.user_info.roles.map((r: { role_name?: string }) => ({ name: r.role_name || "" }))
-        : []
-      // 3) Store final user object in sessionStorage for use in component
-      sessionStorage.setItem(
-        "final_user_json",
-        JSON.stringify({
-          username: data.user_info.user_id,
-          role: "ALL",
-          roles,
-          token: data.access_token,
-          strategy: "cognito",
-        })
-      )*/
+      
      sessionStorage.setItem(
         "final_user_json",
         JSON.stringify({
           username: data.username,
-          email: data.email,
-          name: data.name,
-          sub: data.sub,
           roles: data.roles,        // ← direct from access_token
           role: "ALL",
-          token: token,
+          token: data.access_token,
           strategy: "cognito",
         })
       );

@@ -110,8 +110,6 @@ function getUserInfo():
     return {
       email: payload.email,
       username: accessPayload.app_username,
-      name: accessPayload.username,
-      sub: payload.sub,
       // 🔥 merged roles directly from access token
       roles,
       access_token: accessToken,
