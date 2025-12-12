@@ -46,7 +46,8 @@ export const Route = createFileRoute("/cognito-directcallback")({
 function CognitoDirectCallback() {
   const { login } = useUser()
   const navigate = Route.useNavigate()
-
+  console.log("Route full path:", Route.fullPath);   // ✅ Add here
+  console.log('useLoaderData called');
   const loaderData = Route.useLoaderData() ?? { user: null }
   console.log('loaderData:', loaderData);
   const user = loaderData.user
