@@ -98,15 +98,14 @@ function getUserInfo():
     const accessPayload = JSON.parse(atob(accessToken.split(".")[1]));
     console.log("ID Token payload:", payload);
     console.log("Access Token payload:", accessPayload);
+    // Priority: roles → groups → empty
     const roles =
-      accessPayload["cognito:groups"] ||
-      accessPayload["roles"] ||
-      accessPayload["custom:roles"] ||
+      accessPayload.roles ||
       [];
     return {
       email: payload.email,
-      username: payload["cognito:username"] || payload.username,
-      name: payload.name,
+      username: accessPayload.app_username,
+      name: accessPayload.username,
       sub: payload.sub,
       // 🔥 merged roles directly from access token
       roles,
