@@ -12,32 +12,31 @@ export const Route = createFileRoute("/cognito-directcallback")({
       throw redirect({ to: redirectTo })
     }
 
-    // Handle OAuth + token parsing
-    const ok = await handleOAuthCallback()
-    if (!ok) {
-      throw redirect({
-        to: "/login",
-        search: { error: "OAuth callback invalid" },
-      })
-    }
+    try {
+      // Step 1: OAuth code → tokens
+      const ok = await handleOAuthCallback()
+      if (!ok) {
+        return { user: null }  // <-- always return object to avoid undefined
+      }
 
-    const data = getUserInfo()
-    if (!data) {
-      throw redirect({
-        to: "/login",
-        search: { error: "Unable to load user info" },
-      })
-    }
+      // Step 2: Extract user info from tokens
+      const data = getUserInfo()
+      if (!data) {
+        return { user: null }  // <-- avoid undefined
+      }
 
-    // Return data to component — do NOT mark callback_done yet
-    return {
-      user: {
-        username: data.username,
-        roles: data.roles,
-        role: "ALL",
-        token: data.access_token,
-        strategy: "cognito",
-      },
+      // Step 3: Return for component-side login
+      return {
+        user: {
+          username: data.username,
+          roles: data.roles,
+          role: "ALL",
+          token: data.access_token,
+          strategy: "cognito",
+        },
+      }
+    } catch (err) {
+      return { user: null } // <-- ALWAYS return safe loader shape
     }
   },
 
@@ -48,7 +47,7 @@ function CognitoDirectCallback() {
   const { login } = useUser()
   const navigate = Route.useNavigate()
 
-  // Data returned from beforeLoad()
+  // Loader always returns at least: { user: null }
   const { user } = Route.useLoaderData()
 
   useEffect(() => {
@@ -57,12 +56,12 @@ function CognitoDirectCallback() {
       return
     }
 
-    // Perform the actual login inside React
+    // Perform login on the client
     login(user, () => {
-      // Mark OAuth flow completed only after we log them in
+      // Mark the callback flow complete *after* login succeeds
       sessionStorage.setItem("cognito_callback_done", "1")
 
-      // Redirect back to original protected route (if any)
+      // Redirect back to the protected page or home
       const redirectTo = sessionStorage.getItem("auth_redirect") || "/"
       sessionStorage.removeItem("auth_redirect")
 
