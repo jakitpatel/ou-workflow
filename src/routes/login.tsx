@@ -12,8 +12,6 @@ import {
 } from "@/components/ui/select"
 import { ShieldCheck, LogIn, Server } from "lucide-react"
 import { authlogin, isAuthenticated } from "@/auth/authService"
-import { fetchRoles } from "@/api"
-//import type { QueryClient } from "@tanstack/react-query"
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -22,8 +20,6 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
 
   const {
-    login,
-    username,
     token,
     apiBaseUrl,
     setApiBaseUrl,
@@ -54,64 +50,24 @@ function LoginPage() {
 
   // 🔹 Auto-redirect if session already valid
   useEffect(() => {
-    if (username && token && isAuthenticated()) {
+    if (token && isAuthenticated()) {
       navigate({ to: "/" })
     }
-  }, [username, token, navigate])
+  }, [token, navigate])
 
   // 🔹 Handle login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!apiBaseUrl) {
-      setError("Please select an API server first.")
+      setError("Please select an API server before using Cognito login.")
       return
-    }
-
-    // -----------------------------
-    // 🔹 No Security Flow (Just For Development/Testing)
-    // -----------------------------
-    //if (apiBaseUrl === "http://localhost:3001") {
-    if (strategy === "none") {
-      setError("")
-      try {
-        const data: any = await fetchRoles({ token: "wiieowieo323232" })
-
-        if (!data || !data.user_info) {
-          setError("Unable to load user info.")
-          return
-        }
-
-        const roles = Array.isArray(data.user_info.roles)
-          ? data.user_info.roles.map((r: { role_name?: string }) => ({
-              name: r.role_name || "",
-            }))
-          : []
-
-        sessionStorage.setItem("access_token", data.access_token);
-        sessionStorage.setItem("id_token", data.id_token);
-        login({
-          username: data.user_info.user_id,
-          role: "ALL",
-          roles,
-          strategy: "none",
-        },() => navigate({ to: "/" }))
-
-        //navigate({ to: "/" })
-      } catch (err: any) {
-        setError("Login failed: " + err.message)
-      }
     }
 
     // -----------------------------
     // 🔹 Cognito Flow
     // -----------------------------
     if (strategy === "cognito") {
-      if (!apiBaseUrl) {
-        setError("Please select an API server before using Cognito login.")
-        return
-      }
-
       try {
         const storedUser = sessionStorage.getItem("user")
         const parsed = storedUser ? JSON.parse(storedUser) : {}
