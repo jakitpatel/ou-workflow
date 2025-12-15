@@ -114,10 +114,10 @@ function LoginPage() {
       }
 
       try {
-        const storedUser = localStorage.getItem("user")
+        const storedUser = sessionStorage.getItem("user")
         const parsed = storedUser ? JSON.parse(storedUser) : {}
         parsed.apiBaseUrl = apiBaseUrl
-        localStorage.setItem("user", JSON.stringify(parsed))
+        sessionStorage.setItem("user", JSON.stringify(parsed))
 
         console.log("[handleCognito] Saved apiBaseUrl before redirect:", apiBaseUrl)
       } catch (err) {

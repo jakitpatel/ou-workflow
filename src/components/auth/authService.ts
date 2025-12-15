@@ -73,6 +73,7 @@ function isAuthenticated(): boolean {
     return true;
   } catch (e) {
     console.error("Error parsing token:", e);
+    clearTokens();
     return false;
   }
 }
@@ -204,7 +205,6 @@ async function handleOAuthCallback(): Promise<boolean> {
   if (savedState && savedState !== state) {
     throw new Error("Invalid state parameter - possible CSRF attack");
   }
-
   // Verify PKCE
   const codeVerifier = sessionStorage.getItem("pkce_code_verifier");
   if (!codeVerifier) {

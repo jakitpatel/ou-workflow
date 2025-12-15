@@ -11,13 +11,13 @@ import { cognitoLogout } from "@/components/auth/authService";
 import type { UserRole, LoginStrategy } from "@/types/application";
 
 /* ------------------------------------------------------------------
- * LocalStorage Helpers (Clean & Reusable)
+ * SessionStorage Helpers
  * ------------------------------------------------------------------ */
-const LS_KEY = "user";
+const SS_KEY = "user";
 
 function loadStoredUser() {
   try {
-    const raw = localStorage.getItem(LS_KEY);
+    const raw = sessionStorage.getItem(SS_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -25,11 +25,11 @@ function loadStoredUser() {
 }
 
 function saveStoredUser(data: Record<string, any>) {
-  localStorage.setItem(LS_KEY, JSON.stringify(data));
+  sessionStorage.setItem(SS_KEY, JSON.stringify(data));
 }
 
 function clearStoredUser() {
-  localStorage.removeItem(LS_KEY);
+  sessionStorage.removeItem(SS_KEY);
 }
 
 /* ------------------------------------------------------------------
@@ -40,24 +40,25 @@ type StoredUser = {
   username: string | null;
   role: string | null;
   roles: UserRole[] | null;
-  token: string | null;
   strategy: LoginStrategy | null;
   loginTime: number | null;
   apiBaseUrl: string | null;
 };
 
 type UserContextType = StoredUser & {
+  token: string | null; // derived from sessionStorage (not persisted here)
   setApiBaseUrl: (url: string | null) => void;
   setRole: (role: string | null) => void;
   setRoles: (roles: UserRole[] | null) => void;
-  login: (data: {
-    username: string;
-    role?: string;
-    roles?: UserRole[] | null;
-    token?: string;
-    strategy: LoginStrategy;
-  },
-  onComplete?: () => void) => void;
+  login: (
+    data: {
+      username?: string | null;
+      role?: string;
+      roles?: UserRole[] | null;
+      strategy: LoginStrategy;
+    },
+    onComplete?: () => void
+  ) => void;
   logout: () => void;
 };
 
@@ -72,7 +73,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [username, setUsername] = useState(stored?.username ?? null);
   const [role, setRole] = useState<string | null>(stored?.role ?? null);
   const [roles, setRoles] = useState<UserRole[] | null>(stored?.roles ?? null);
-  const [token, setToken] = useState<string | null>(stored?.token ?? null);
   const [strategy, setStrategy] = useState<LoginStrategy | null>(
     stored?.strategy ?? null
   );
@@ -83,23 +83,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
     stored?.apiBaseUrl ?? null
   );
 
+  // 🔐 Token is owned by auth layer (Cognito callback)
+  const token = sessionStorage.getItem("access_token");
+
   /* ------------------------------------------------------------------
-   * Persist changes cleanly (ONLY when relevant fields change)
+   * Persist user snapshot to sessionStorage
    * ------------------------------------------------------------------ */
   useEffect(() => {
     saveStoredUser({
       username,
       role,
       roles,
-      token,
       strategy,
       loginTime,
       apiBaseUrl,
     });
-  }, [username, role, roles, token, strategy, loginTime, apiBaseUrl]);
+  }, [username, role, roles, strategy, loginTime, apiBaseUrl]);
 
   /* ------------------------------------------------------------------
-   * Register context with API base URL on change
+   * Register context with API base URL
    * ------------------------------------------------------------------ */
   useEffect(() => {
     registerUserContext({ apiBaseUrl });
@@ -108,24 +110,26 @@ export function UserProvider({ children }: { children: ReactNode }) {
   /* ------------------------------------------------------------------
    * Login Handler
    * ------------------------------------------------------------------ */
-  const login = (data: {
-    username?: string | null;
-    role?: string;
-    roles?: UserRole[] | null;
-    token?: string;
-    strategy: LoginStrategy;
-  }, onComplete?: () => void) => {
+  const login = (
+    data: {
+      username?: string | null;
+      role?: string;
+      roles?: UserRole[] | null;
+      strategy: LoginStrategy;
+    },
+    onComplete?: () => void
+  ) => {
     const now = Date.now();
 
     setUsername(data.username ?? null);
     setRole(data.role ?? null);
     setRoles(data.roles ?? null);
-    setToken(data.token ?? null);
     setStrategy(data.strategy);
     setLoginTime(now);
-    // ensure React flushes before redirect
+
+    // allow state flush before redirect
     requestAnimationFrame(() => {
-      if (onComplete) onComplete();
+      onComplete?.();
     });
   };
 
@@ -136,27 +140,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUsername(null);
     setRole(null);
     setRoles(null);
-    setToken(null);
     setStrategy(null);
     setLoginTime(null);
 
     clearStoredUser();
+
+    // Clear OAuth artifacts like (access_token, id_token, refresh_token,oauth_handled,cognito_callback_done)
     cognitoLogout();
   };
 
   /* ------------------------------------------------------------------
-   * Memoized value
+   * Memoized Context Value
    * ------------------------------------------------------------------ */
   const value = useMemo<UserContextType>(
     () => ({
       username,
       role,
       roles,
-      token,
-      setToken,
       strategy,
       loginTime,
       apiBaseUrl,
+      token,
       setApiBaseUrl,
       setRole,
       setRoles,
@@ -167,10 +171,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       username,
       role,
       roles,
-      token,
       strategy,
       loginTime,
       apiBaseUrl,
+      token,
     ]
   );
 
@@ -182,6 +186,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
  * ------------------------------------------------------------------ */
 export function useUser() {
   const ctx = useContext(UserContext);
-  if (!ctx) throw new Error("useUser must be used within a UserProvider");
+  if (!ctx) {
+    throw new Error("useUser must be used within a UserProvider");
+  }
   return ctx;
 }

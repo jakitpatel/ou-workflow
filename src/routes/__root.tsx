@@ -1,48 +1,58 @@
 import { Outlet, createRootRoute, redirect, useRouterState } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanstackDevtools } from '@tanstack/react-devtools'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+//import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+//import { TanstackDevtools } from '@tanstack/react-devtools'
+//import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Navigation } from '@/components/ou-workflow/Navigation'
 import { isAuthenticated } from "@/components/auth/authService"
 
 // ✅ Normalize base: remove trailing slash
+/*
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '') || ''
 const LOGIN_PATH = `${BASE}/login`
 const CALLBACK_DIRECT_PATH = `${BASE}/cognito-directcallback`
 const COGNITO_LOGOUT_PATH = `${BASE}/cognito-logout`
+*/
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
-    const userStr = localStorage.getItem('user')
-    const isLoginPage =
-      location.pathname === LOGIN_PATH || location.pathname === '/login'
-
-    const isCallbackDirectPage =
-      location.pathname === CALLBACK_DIRECT_PATH || location.pathname === '/cognito-directcallback'
-
-    const isCognitoLogoutPage =
-      location.pathname === COGNITO_LOGOUT_PATH || location.pathname === '/cognito-logout'
+    // Use endsWith() for reliable path matching regardless of BASE_URL differences
+    const path = location.pathname;
+    console.log("Root beforeLoad path:", path); // <-- Add this log
+    const isPublicPath = 
+        path.endsWith('/login') || 
+        path.endsWith('/cognito-directcallback') || 
+        path.endsWith('/cognito-logout');
     
-    // ✅ Allow login and callback screen without auth
-    if (isLoginPage || isCallbackDirectPage || isCognitoLogoutPage) return
-
-    if (!userStr) {
-      throw redirect({ to: '/login' })
+    // ✅ If it's a public path, immediately return and allow navigation to proceed
+    if (isPublicPath) {
+      return; 
     }
+
+    // --- Protected Routes Logic ---
+    /*const userStr = sessionStorage.getItem('user')
+    if (!userStr) {
+      // If user isn't in local storage and not on a public path, redirect to login
+      throw redirect({ to: '/login' })
+    }*/
 
     if (!isAuthenticated()) {
-      //console.log("User is not authenticated anymore.Move to login screen.");
-      localStorage.removeItem('user');
+      // If user data is stale/invalid, clear it and redirect to login
+      sessionStorage.removeItem('user');
       throw redirect({ to: '/login' })
     }
+    
+    // If we reach here, the user is authenticated and on a protected route.
   },
   component: RootLayout,
 })
 
 function RootLayout() {
-  const route = useRouterState()
+  const route = useRouterState();
+  const path = route.location.pathname;
+
   const isLoginPage =
-    route.location.pathname === LOGIN_PATH || route.location.pathname === '/login'
+    path.endsWith("/login") ||
+    path.endsWith("/cognito-directcallback");
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -52,7 +62,7 @@ function RootLayout() {
       <main className="flex-1">
         <Outlet />
       </main>
-
+      {/*
       <ReactQueryDevtools initialIsOpen={false} />
       <TanstackDevtools
         config={{ position: 'bottom-left' }}
@@ -62,7 +72,7 @@ function RootLayout() {
             render: <TanStackRouterDevtoolsPanel />,
           },
         ]}
-      />
+      />*/}
     </div>
   )
 }
