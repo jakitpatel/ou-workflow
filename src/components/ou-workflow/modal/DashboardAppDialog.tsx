@@ -15,7 +15,7 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
   const [value, setValue] = useState("")
   const [error, setError] = useState<string | null>(null)
 
-  const { token, strategy } = useUser()
+  const { token } = useUser()
   const dialogRef = useRef<HTMLDivElement>(null)
 
   const mutation = useMutation({
@@ -27,7 +27,6 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
           mode === "create"
             ? `/createApplication?ownsId=${value}`
             : `/deleteApplication?applicationID=${value}`,
-        strategy: strategy ?? undefined,
         token,
       })
     },

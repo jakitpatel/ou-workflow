@@ -73,7 +73,6 @@ type FetchWithAuthOptions = {
   path: string;
   method?: string;
   body?: any;
-  strategy?: string;
   token?: string | null | undefined;
   headers?: Record<string, string>;
 };
@@ -83,16 +82,12 @@ export async function fetchWithAuth<T>({
   path,
   method = "GET",
   body,
-  strategy,
   token,
   headers = {},
 }: FetchWithAuthOptions): Promise<T> {
   const baseUrl = resolveApiBaseUrl();
   // Pick token source
-  let accessToken =
-    strategy === "cognito"
-      ? token //getAccessToken()
-      : token;
+  let accessToken = token; //getAccessToken()
 
   async function doFetch(currentToken: string | null | undefined) {
     const requestHeaders: Record<string, string> = {
@@ -115,7 +110,7 @@ export async function fetchWithAuth<T>({
   let response = await doFetch(accessToken);
 
   // 2️⃣ Retry if Cognito access token expired
-  if (response.status === 401 && strategy === "cognito") {
+  if (response.status === 401) {
     try {
       const newToken = await refreshAccessToken();
       accessToken = newToken;
@@ -155,7 +150,6 @@ export async function fetchApplicants({
   page = 0,
   limit = 20,
   token,
-  strategy,
   searchTerm,
   statusFilter,
   priorityFilter,
@@ -163,7 +157,6 @@ export async function fetchApplicants({
   page?: number;
   limit?: number;
   token?: string | null;
-  strategy?: string;
   searchTerm?: string;
   statusFilter?: string;
   priorityFilter?: string;
@@ -191,7 +184,6 @@ export async function fetchApplicants({
   // Use fetchWithAuth wrapper
   const json = (await fetchWithAuth({
     path,
-    strategy,
     token,
   })) as ApplicantsResponse;
 
@@ -255,13 +247,11 @@ export async function fetchRoles({
 // Fetch users by role type (NCRC, RFR, etc.)
 export async function fetchUserByRole({
   token,
-  strategy,
   selectRoleType = "NCRC",
 }: {
   page?: number;
   limit?: number;
   token?: string | null;
-  strategy?: string;
   selectRoleType?: string;
 } = {}): Promise<any[]> {
   const params = new URLSearchParams({
@@ -270,7 +260,6 @@ export async function fetchUserByRole({
 
   const json = (await fetchWithAuth({
     path: `/api/WFUSERROLE?${params.toString()}`,
-    strategy,
     token,
   })) as UserRoleResponse;
 
@@ -287,19 +276,16 @@ export async function assignTask({
   role,
   assignee,
   token,
-  strategy,
 }: {
   appId?: number | null;
   taskId: string;
   role: string;
   assignee: string;
   token?: string | null;
-  strategy?: string;
 }) {
   const json = await fetchWithAuth({
     path: `/assignRole`,
     method: "POST",
-    strategy,
     token,
     //body: JSON.stringify({ appId, taskId, role, assignee }),
     body: { appId, taskId, role, assignee },
@@ -314,14 +300,12 @@ export async function confirmTask({
   taskId,
   result,
   token,
-  strategy,
   username,
   status,
 }: {
   taskId: string;
   result?: string;
   token?: string | null;
-  strategy?: string;
   username?: string;
   status?: string;
 }) {
@@ -352,7 +336,6 @@ export async function confirmTask({
   const json = await fetchWithAuth({
     path: `/complete_task`,
     method: "POST",
-    strategy,
     token,
     headers: { "Content-Type": "application/json" },
     body,
@@ -365,16 +348,13 @@ export async function confirmTask({
 export async function sendMsgTask({
   newMessage,
   token,
-  strategy,
 }: {
   newMessage: any;
   token?: string | null;
-  strategy?: string;
 }) {
   const json = await fetchWithAuth({
     path: `/api/WFApplicationMessage`,
     method: "POST",
-    strategy,
     token,
     headers: { "Content-Type": "application/json" },
     body: newMessage, // ✅ don't wrap again or stringify here
@@ -410,12 +390,10 @@ export async function fetchApplicationDetail({
 // Fetch application tasks data from the API
 export async function fetchApplicationTasks({
   token,
-  strategy,
   applicationId,
   searchTerm,
 }: {
   token?: string | null;
-  strategy?: string;
   applicationId?: string;
   searchTerm?: string;
 } = {}): Promise<ApplicationTask[]> {
@@ -435,7 +413,6 @@ export async function fetchApplicationTasks({
 
   const json = (await fetchWithAuth({
     path,
-    strategy,
     token,
   })) as ApplicationTasksResponse;
 

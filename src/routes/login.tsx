@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ShieldCheck, LogIn, Server } from "lucide-react"
+import { LogIn, Server } from "lucide-react"
 import { authlogin, isAuthenticated } from "@/auth/authService"
 
 export const Route = createFileRoute("/login")({
@@ -27,7 +27,6 @@ function LoginPage() {
 
   const navigate = useNavigate()
 
-  const [strategy, setStrategy] = useState<"none" | "cognito">("cognito")
   const [error, setError] = useState("")
   const [availableServers, setAvailableServers] = useState<string[]>([])
 
@@ -63,24 +62,20 @@ function LoginPage() {
       setError("Please select an API server before using Cognito login.")
       return
     }
-
     // -----------------------------
     // 🔹 Cognito Flow
     // -----------------------------
-    if (strategy === "cognito") {
-      try {
-        const storedUser = sessionStorage.getItem("user")
-        const parsed = storedUser ? JSON.parse(storedUser) : {}
-        parsed.apiBaseUrl = apiBaseUrl
-        sessionStorage.setItem("user", JSON.stringify(parsed))
+    try {
+      const storedUser = sessionStorage.getItem("user")
+      const parsed = storedUser ? JSON.parse(storedUser) : {}
+      parsed.apiBaseUrl = apiBaseUrl
+      sessionStorage.setItem("user", JSON.stringify(parsed))
 
-        console.log("[handleCognito] Saved apiBaseUrl before redirect:", apiBaseUrl)
-      } catch (err) {
-        console.warn("[handleCognito] Failed to persist apiBaseUrl:", err)
-      }
-
-      authlogin()
+      console.log("[handleCognito] Saved apiBaseUrl before redirect:", apiBaseUrl)
+    } catch (err) {
+      console.warn("[handleCognito] Failed to persist apiBaseUrl:", err)
     }
+    authlogin()
   }
 
   return (
@@ -117,21 +112,6 @@ function LoginPage() {
               </SelectContent>
             </Select>
           </div>
-
-          {/* 🔹 Strategy Selector */}
-          <Select
-            value={strategy}
-            onValueChange={(val) => setStrategy(val as "none" | "cognito")}
-          >
-            <SelectTrigger className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-blue-500" />
-              <SelectValue placeholder="Choose login strategy" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No Security</SelectItem>
-              <SelectItem value="cognito">Cognito Security</SelectItem>
-            </SelectContent>
-          </Select>
 
           {/* 🔹 Submit */}
           <Button

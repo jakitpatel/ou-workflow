@@ -22,7 +22,7 @@ export function NCRCDashboard() {
     action: string;
     applicantId: string;
   } | null>(null);*/
-  const { token, strategy, username } = useUser(); // 👈 use context
+  const { token, username } = useUser(); // 👈 use context
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [showActionModal, setShowActionModal] = useState<Task | null | boolean>(null);
   const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null);
@@ -138,7 +138,6 @@ export function NCRCDashboard() {
           confirmTaskMutation.mutate({
             taskId: action.TaskInstanceId,
             token: token ?? undefined,     // ✅ null → undefined
-            strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined,
           });
         } else if ((taskType === "conditional" || taskType === "condition") && taskCategory === "approval") {
@@ -146,7 +145,6 @@ export function NCRCDashboard() {
             taskId: action.TaskInstanceId,
             result: result ?? undefined,
             token: token ?? undefined,     // ✅ null → undefined
-            strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined,
           });
         } else if (taskType === "action" && taskCategory === "selector") {
@@ -154,7 +152,6 @@ export function NCRCDashboard() {
             taskId: action.TaskInstanceId,
             result: result ?? undefined,
             token: token ?? undefined,     // ✅ null → undefined
-            strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined,
           });
         } else if (taskType === "action" && taskCategory === "input") {
@@ -162,7 +159,6 @@ export function NCRCDashboard() {
             taskId: action.TaskInstanceId,
             result: result ?? undefined,
             token: token ?? undefined,     // ✅ null → undefined
-            strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined,
           });
         } else if (taskType === "action" && taskCategory === "scheduling") {
@@ -170,7 +166,6 @@ export function NCRCDashboard() {
             taskId: action.TaskInstanceId,
             result: result ?? undefined,
             token: token ?? undefined,     // ✅ null → undefined
-            strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined,
           });
         } else if (taskType === "progress" && taskCategory === "progress_task") {
@@ -189,7 +184,6 @@ export function NCRCDashboard() {
             taskId: action.TaskInstanceId,
             result: result ?? undefined,
             token: token ?? undefined,     // ✅ null → undefined
-            strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined,
             status: status,
           });
@@ -215,7 +209,6 @@ export function NCRCDashboard() {
             role,
             assignee,
             token: token ?? undefined,     // ✅ null → undefined
-            strategy: strategy ?? undefined, // ✅ null → undefined
           });
         }
       //}

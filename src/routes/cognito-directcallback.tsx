@@ -3,7 +3,7 @@ import { getUserInfo, handleOAuthCallback } from "@/auth/authService"
 import { useUser } from "@/context/UserContext"
 import { useEffect } from "react"
 import { isRedirect } from "@tanstack/react-router"
-import type { UserRole, LoginStrategy } from "@/types/application"
+import type { UserRole } from "@/types/application"
 
 // ============================================================================
 // Types
@@ -14,7 +14,6 @@ interface UserData {
   roles: UserRole[] | null
   role: string
   token: string
-  strategy: LoginStrategy | null;
 }
 
 interface LoaderData {
@@ -94,8 +93,7 @@ export const Route = createFileRoute("/cognito-directcallback")({
         username: userData.username,
         roles: userData.roles,
         role: "ALL", // Default role or compute based on roles
-        token: userData.access_token,
-        strategy: "cognito",
+        token: userData.access_token
       }
 
       // ✅ Only return data - component will handle login + navigation

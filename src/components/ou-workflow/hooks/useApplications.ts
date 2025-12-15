@@ -15,15 +15,14 @@ export function useApplications({
   page?: number
   limit?: number
 }) {
-  const { token, strategy } = useUser();
+  const { token } = useUser();
 
   return useQuery({
-    queryKey: ['applications', { token, strategy, searchTerm, statusFilter, priorityFilter, page, limit }],
+    queryKey: ['applications', { token, searchTerm, statusFilter, priorityFilter, page, limit }],
     //staleTime: 1000 * 60 * 5, // 5 minutes cache
     queryFn: () =>
       fetchApplicants({
         token: token ?? undefined,
-        strategy: strategy ?? undefined,
         searchTerm,
         statusFilter,
         priorityFilter,
@@ -32,7 +31,7 @@ export function useApplications({
       }),
     // keep showing previous data until new data is loaded:
     placeholderData: (previousData) => previousData,
-    enabled: strategy === 'none' || !!token,
+    enabled: !!token,
     retry: (failureCount, error: any) => {
       if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) return false;
       console.log("Retry attempt:", failureCount);

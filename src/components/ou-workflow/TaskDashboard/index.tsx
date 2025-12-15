@@ -29,7 +29,7 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
     const [showPlantHistory, setShowPlantHistory] = useState<string | null>(null);
     //const [showReassignDropdown, setShowReassignDropdown] = useState({});
 
-    const { username, role, roles, token, strategy } = useUser() // 👈 use context
+    const { username, role, roles, token } = useUser() // 👈 use context
     const [showActionModal, setShowActionModal] = useState<boolean | null | Task>(null);
     const [showConditionModal, setShowConditionModal] = useState<boolean | null | Task>(null);
     const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
@@ -177,7 +177,6 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       sendMsgTaskMutation.mutate({
         newMessage,
         token: token ?? undefined,     // ✅ null → undefined
-        strategy: strategy ?? undefined, // ✅ null → undefined
       });
       
       setMessageInputs(prev => ({
@@ -236,7 +235,6 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
       sendMsgTaskMutation.mutate({
         newMessage,
         token: token ?? undefined,
-        strategy: strategy ?? undefined
       });
 
       //setAllTasks(prev => [...prev, newTask]);
@@ -315,7 +313,6 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
           confirmTaskMutation.mutate({
             taskId: taskId,
             token: token ?? undefined,     // ✅ null → undefined
-            strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined, // ✅ null → undefined
           });
         } else if ((taskType === "conditional" || taskType === "condition") && taskCategory === "approval") {
@@ -323,7 +320,6 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
             taskId: taskId,
             result: result,
             token: token ?? undefined,     // ✅ null → undefined
-            strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined, // ✅ null → undefined
           });
         } else if (taskType === "action" && taskCategory === "selector") {
@@ -331,7 +327,6 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
             taskId: taskId,
             result: result,
             token: token ?? undefined,     // ✅ null → undefined
-            strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined, // ✅ null → undefined
           });
         } else if (taskType === "action" && taskCategory === "input") {
@@ -339,7 +334,6 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
             taskId: taskId,
             result: result,
             token: token ?? undefined,     // ✅ null → undefined
-            strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined, // ✅ null → undefined
           });
         }  else if (taskType === "action" && taskCategory === "scheduling") {
@@ -347,7 +341,6 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
             taskId: taskId,
             result: result,
             token: token ?? undefined,     // ✅ null → undefined
-            strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined, // ✅ null → undefined
           });
         } else if (taskType === "progress" && taskCategory === "progress_task") {
@@ -366,7 +359,6 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
             taskId: taskId,
             result: result,
             token: token ?? undefined,     // ✅ null → undefined
-            strategy: strategy ?? undefined, // ✅ null → undefined
             username: username ?? undefined, // ✅ null → undefined
             status: status,
           });
@@ -390,7 +382,6 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
             role,
             assignee,
             token: token ?? undefined,
-            strategy: strategy ?? undefined,
           });
         }
       //}

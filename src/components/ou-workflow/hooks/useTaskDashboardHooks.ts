@@ -4,18 +4,17 @@ import { useUser } from '@/context/UserContext'
 import type { Task } from '@/types/application';
 
 export function useTasks(applicationId?: string, searchTerm?: string) {
-  const { token, strategy } = useUser();
+  const { token } = useUser();
 
   return useQuery({
-    queryKey: ['tasksplants', token, strategy, applicationId ?? 'all', searchTerm ?? ''],
+    queryKey: ['tasksplants', token, applicationId ?? 'all', searchTerm ?? ''],
     queryFn: () =>
       fetchApplicationTasks({
         token: token ?? undefined,
-        strategy: strategy ?? undefined,
         applicationId,
         searchTerm, // ✅ new param
       }),
-    enabled: strategy === 'none' || !!token,
+    enabled: !!token,
   });
 }
 
@@ -23,15 +22,14 @@ export function useUserListByRole(
   roleType: "NCRC" | "RFR",
   options?: { enabled?: boolean | Task }
 ) {
-  const { token, strategy } = useUser();
+  const { token } = useUser();
 
-  const enabled = !!((strategy === "none" || !!token) && (options?.enabled ?? true));
+  const enabled = !!((!!token) && (options?.enabled ?? true));
 
   return useQuery({
     queryKey: ["rc-list", roleType], // cache separate by role
     queryFn: () => fetchUserByRole({ 
       token: token ?? undefined,     // ✅ null → undefined
-      strategy: strategy ?? undefined, // ✅ null → undefined
       selectRoleType: roleType 
     }),
     enabled,

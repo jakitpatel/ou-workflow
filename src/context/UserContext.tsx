@@ -8,7 +8,7 @@ import {
 } from "react";
 import { registerUserContext } from "@/api";
 import { cognitoLogout } from "@/auth/authService";
-import type { UserRole, LoginStrategy } from "@/types/application";
+import type { UserRole } from "@/types/application";
 
 /* ------------------------------------------------------------------
  * SessionStorage Helpers
@@ -40,7 +40,6 @@ type StoredUser = {
   username: string | null;
   role: string | null;
   roles: UserRole[] | null;
-  strategy: LoginStrategy | null;
   loginTime: number | null;
   apiBaseUrl: string | null;
 };
@@ -55,7 +54,6 @@ type UserContextType = StoredUser & {
       username?: string | null;
       role?: string;
       roles?: UserRole[] | null;
-      strategy: LoginStrategy | null;
     },
     onComplete?: () => void
   ) => void;
@@ -73,9 +71,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [username, setUsername] = useState(stored?.username ?? null);
   const [role, setRole] = useState<string | null>(stored?.role ?? null);
   const [roles, setRoles] = useState<UserRole[] | null>(stored?.roles ?? null);
-  const [strategy, setStrategy] = useState<LoginStrategy | null>(
-    stored?.strategy ?? null
-  );
   const [loginTime, setLoginTime] = useState<number | null>(
     stored?.loginTime ?? null
   );
@@ -94,12 +89,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       username,
       role,
       roles,
-      strategy,
       loginTime,
       apiBaseUrl,
     });
-  }, [username, role, roles, strategy, loginTime, apiBaseUrl]);
-
+  }, [username, role, roles, loginTime, apiBaseUrl]);
   /* ------------------------------------------------------------------
    * Register context with API base URL
    * ------------------------------------------------------------------ */
@@ -115,7 +108,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       username?: string | null;
       role?: string;
       roles?: UserRole[] | null;
-      strategy: LoginStrategy | null;
     },
     onComplete?: () => void
   ) => {
@@ -124,7 +116,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUsername(data.username ?? null);
     setRole(data.role ?? null);
     setRoles(data.roles ?? null);
-    setStrategy(data.strategy);
     setLoginTime(now);
 
     // allow state flush before redirect
@@ -140,7 +131,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUsername(null);
     setRole(null);
     setRoles(null);
-    setStrategy(null);
     setLoginTime(null);
 
     clearStoredUser();
@@ -157,7 +147,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       username,
       role,
       roles,
-      strategy,
       loginTime,
       apiBaseUrl,
       token,
@@ -171,7 +160,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       username,
       role,
       roles,
-      strategy,
       loginTime,
       apiBaseUrl,
       token,
