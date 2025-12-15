@@ -55,7 +55,7 @@ type UserContextType = StoredUser & {
       username?: string | null;
       role?: string;
       roles?: UserRole[] | null;
-      strategy: LoginStrategy;
+      strategy: LoginStrategy | null;
     },
     onComplete?: () => void
   ) => void;
@@ -115,7 +115,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       username?: string | null;
       role?: string;
       roles?: UserRole[] | null;
-      strategy: LoginStrategy;
+      strategy: LoginStrategy | null;
     },
     onComplete?: () => void
   ) => {

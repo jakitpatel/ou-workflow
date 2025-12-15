@@ -94,7 +94,6 @@ function LoginPage() {
           username: data.user_info.user_id,
           role: "ALL",
           roles,
-          token: data.access_token,
           strategy: "none",
         },() => navigate({ to: "/" }))
 

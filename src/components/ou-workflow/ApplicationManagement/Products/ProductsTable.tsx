@@ -13,7 +13,7 @@ export default function ProductsTable({ application }: { application: Applicatio
 
   const userRoles =
     role?.toUpperCase() === "ALL"
-      ? (roles ?? []).map(r => r.value?.toLowerCase()).filter(Boolean)
+      ? (roles ?? []).map(r => r.name?.toLowerCase()).filter(Boolean)
       : role
       ? [role.toLowerCase()]
       : [];

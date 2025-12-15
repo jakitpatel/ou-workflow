@@ -3,6 +3,7 @@
  */
 
 import { cognitoConfig } from "@/auth/cognitoConfig";
+import type { UserRole } from "@/types/application";
 import jsSHA from "jssha";
 
 // Generate random string for PKCE
@@ -87,7 +88,7 @@ function getIdToken(): string | null {
 }
 
 function getUserInfo():
-  | { email: string; username: string; name: string; sub: string }
+  | { email: string; username: string; roles: UserRole[] | null; access_token: string; id_token: string }
   | null {
   try {
     const idToken = getIdToken();
@@ -111,7 +112,6 @@ function getUserInfo():
     return {
       email: payload.email,
       username: accessPayload.app_username,
-      // 🔥 merged roles directly from access token
       roles,
       access_token: accessToken,
       id_token: idToken,

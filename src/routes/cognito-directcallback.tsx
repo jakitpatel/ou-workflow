@@ -3,6 +3,7 @@ import { getUserInfo, handleOAuthCallback } from "@/auth/authService"
 import { useUser } from "@/context/UserContext"
 import { useEffect } from "react"
 import { isRedirect } from "@tanstack/react-router"
+import type { UserRole, LoginStrategy } from "@/types/application"
 
 // ============================================================================
 // Types
@@ -10,10 +11,10 @@ import { isRedirect } from "@tanstack/react-router"
 
 interface UserData {
   username: string
-  roles: string[]
+  roles: UserRole[] | null
   role: string
   token: string
-  strategy: string
+  strategy: LoginStrategy | null;
 }
 
 interface LoaderData {
@@ -45,21 +46,6 @@ export const Route = createFileRoute("/cognito-directcallback")({
       
       throw redirect({ to: redirectTo })
     }
-
-    // Validate that we have the required OAuth parameters
-    /*
-    const searchParams = new URLSearchParams(location.search)
-    const code = searchParams.get("code")
-    const state = searchParams.get("state")
-
-    if (!code || !state) {
-      console.error('[beforeLoad] Missing OAuth parameters')
-      throw redirect({ 
-        to: "/login",
-        search: { error: "invalid_callback" }
-      })
-    }
-    */
     console.log('[beforeLoad] Validation passed, proceeding to loader')
   },
 
