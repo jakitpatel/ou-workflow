@@ -1,17 +1,6 @@
 import { Outlet, createRootRoute, redirect, useRouterState } from '@tanstack/react-router'
-//import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-//import { TanstackDevtools } from '@tanstack/react-devtools'
-//import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Navigation } from '@/components/ou-workflow/Navigation'
 import { isAuthenticated } from "@/auth/authService"
-
-// ✅ Normalize base: remove trailing slash
-/*
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, '') || ''
-const LOGIN_PATH = `${BASE}/login`
-const CALLBACK_DIRECT_PATH = `${BASE}/cognito-directcallback`
-const COGNITO_LOGOUT_PATH = `${BASE}/cognito-logout`
-*/
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
@@ -57,17 +46,6 @@ function RootLayout() {
       <main className="flex-1">
         <Outlet />
       </main>
-      {/*
-      <ReactQueryDevtools initialIsOpen={false} />
-      <TanstackDevtools
-        config={{ position: 'bottom-left' }}
-        plugins={[
-          {
-            name: 'Tanstack Router',
-            render: <TanStackRouterDevtoolsPanel />,
-          },
-        ]}
-      />*/}
     </div>
   )
 }
