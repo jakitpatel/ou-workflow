@@ -3,7 +3,7 @@ import { Outlet, createRootRoute, redirect, useRouterState } from '@tanstack/rea
 //import { TanstackDevtools } from '@tanstack/react-devtools'
 //import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { Navigation } from '@/components/ou-workflow/Navigation'
-import { isAuthenticated } from "@/components/auth/authService"
+import { isAuthenticated } from "@/auth/authService"
 
 // ✅ Normalize base: remove trailing slash
 /*
@@ -29,11 +29,6 @@ export const Route = createRootRoute({
     }
 
     // --- Protected Routes Logic ---
-    /*const userStr = sessionStorage.getItem('user')
-    if (!userStr) {
-      // If user isn't in local storage and not on a public path, redirect to login
-      throw redirect({ to: '/login' })
-    }*/
 
     if (!isAuthenticated()) {
       // If user data is stale/invalid, clear it and redirect to login

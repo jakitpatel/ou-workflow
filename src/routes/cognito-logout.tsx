@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { clearTokens } from "@/components/auth/authService"
+import { clearTokens } from "@/auth/authService"
 
 /**
  * Cognito Logout Callback Route - Professional Implementation

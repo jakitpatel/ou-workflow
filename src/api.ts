@@ -9,8 +9,8 @@ import type {
 import {
   getAccessToken,
   refreshAccessToken,
-} from "./components/auth/authService";
-import { cognitoLogout } from "./components/auth/authService";
+} from "@/auth/authService";
+import { cognitoLogout } from "./auth/authService";
 //const API_BASE_URL = getApiBaseUrl();
 
 /**

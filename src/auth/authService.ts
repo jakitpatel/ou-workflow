@@ -2,7 +2,7 @@
  * Authentication Service for PKCE-based AWS Cognito OAuth
  */
 
-import { cognitoConfig } from "@/components/auth/cognitoConfig";
+import { cognitoConfig } from "@/auth/cognitoConfig";
 import jsSHA from "jssha";
 
 // Generate random string for PKCE

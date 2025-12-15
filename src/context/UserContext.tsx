@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { registerUserContext } from "@/api";
-import { cognitoLogout } from "@/components/auth/authService";
+import { cognitoLogout } from "@/auth/authService";
 import type { UserRole, LoginStrategy } from "@/types/application";
 
 /* ------------------------------------------------------------------

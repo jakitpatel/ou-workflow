@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ShieldCheck, LogIn, Server } from "lucide-react"
-import { authlogin, isAuthenticated } from "@/components/auth/authService"
+import { authlogin, isAuthenticated } from "@/auth/authService"
 import { fetchRoles } from "@/api"
 //import type { QueryClient } from "@tanstack/react-query"
 

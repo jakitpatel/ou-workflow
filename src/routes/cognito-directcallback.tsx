@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { getUserInfo, handleOAuthCallback } from "@/components/auth/authService"
+import { getUserInfo, handleOAuthCallback } from "@/auth/authService"
 import { useUser } from "@/context/UserContext"
 import { useEffect } from "react"
 import { isRedirect } from "@tanstack/react-router"
