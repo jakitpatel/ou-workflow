@@ -6,7 +6,7 @@ import { clearTokens } from "@/components/auth/authService"
  * 
  * This route is called after Cognito logout redirects back to the app.
  * Best Practices Applied:
- * 1. Clear all tokens and user data (sessionStorage + localStorage)
+ * 1. Clear all tokens and user data (sessionStorage)
  * 2. Use full page reload to ensure UserContext re-initializes cleanly
  * 3. Proper cleanup to prevent state inconsistencies
  */

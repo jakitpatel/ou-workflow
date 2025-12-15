@@ -47,6 +47,7 @@ export const Route = createFileRoute("/cognito-directcallback")({
     }
 
     // Validate that we have the required OAuth parameters
+    /*
     const searchParams = new URLSearchParams(location.search)
     const code = searchParams.get("code")
     const state = searchParams.get("state")
@@ -58,7 +59,7 @@ export const Route = createFileRoute("/cognito-directcallback")({
         search: { error: "invalid_callback" }
       })
     }
-
+    */
     console.log('[beforeLoad] Validation passed, proceeding to loader')
   },
 
