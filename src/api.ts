@@ -249,24 +249,39 @@ export async function fetchUserByRole({
   token,
   selectRoleType = "NCRC",
 }: {
-  page?: number;
-  limit?: number;
   token?: string | null;
   selectRoleType?: string;
 } = {}): Promise<any[]> {
   const params = new URLSearchParams({
     "filter[UserRole]": selectRoleType,
   });
+  // Change to true to use WFUSERROLE endpoint & false to use ActiveNCRC/ActiveRFR endpoints
+  let useWFUSERROLE = true;
+  if (useWFUSERROLE === true) {
+    const json = (await fetchWithAuth({
+      path: `/api/WFUSERROLE?${params.toString()}`,
+      token,
+    })) as UserRoleResponse;
 
-  const json = (await fetchWithAuth({
-    path: `/api/WFUSERROLE?${params.toString()}`,
-    token,
-  })) as UserRoleResponse;
+    return json.data.map((item: any) => ({
+      name: item.attributes.UserName,
+      id: item.attributes.UserName,
+    }));
+  } else {
+    let endpoint = `ActiveNCRC`;
+    if (selectRoleType === "RFR") {
+      endpoint = `ActiveRFR`;
+    }
+    const json = (await fetchWithAuth({
+      path: `/api/${endpoint}`,
+      token,
+    })) as UserRoleResponse;
 
-  return json.data.map((item: any) => ({
-    name: item.attributes.UserName,
-    id: item.attributes.UserName,
-  }));
+    return json.data.map((item: any) => ({
+      name: item.attributes.NCRC || item.attributes.RFR,
+      id: item.attributes.NCRC || item.attributes.RFR,
+    }));
+  }
 }
 
 /** 👇 Assign task mutation (with fetchWithAuth) */
