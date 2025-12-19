@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { X } from "lucide-react";
 import { useUserListByRole } from "@/components/ou-workflow/hooks/useTaskDashboardHooks";
 import type { Task, Applicant } from "@/types/application";
@@ -7,6 +7,7 @@ type SelectedAction = {
   application: Applicant | Task | any;
   action: Task | { id: string; name?: string; taskName?: string } | any;
 };
+
 type Props = {
   showActionModal: boolean | null | Task;
   selectedAction: SelectedAction | null;
@@ -31,31 +32,47 @@ export const ActionModal: React.FC<Props> = ({
   selectedAction,
   executeAction,
 }) => {
-  if (!showActionModal || !selectedAction) return null;
-
-  const { application, action } = selectedAction;
   const dialogRef = useRef<HTMLDivElement>(null);
-
   const [selectedRc, setSelectedRc] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Determine RC list based on action
-  const roleType: "NCRC" | "RFR" =
-    action.name?.toLowerCase().includes("rfr") ? "RFR" : "NCRC";
+  const roleType: "NCRC" | "RFR" = useMemo(() => {
+    if (!selectedAction?.action?.name) return "NCRC";
+    return selectedAction.action.name.toLowerCase().includes("rfr") ? "RFR" : "NCRC";
+  }, [selectedAction?.action?.name]);
 
+  // The hook's internal 'enabled' option handles when to fetch
   const {
     data: selectlist = [],
     isLoading,
-  } = useUserListByRole(roleType, { enabled: showActionModal });
+  } = useUserListByRole(roleType, { enabled: !!showActionModal });
 
-  const companyName =
-    application?.company || application?.companyName || "Unknown Company";
-  const taskName = action?.name || action?.taskName || "Action";
+  // 🔹 FIX 3: Extract values safely with useMemo
+  const companyName = useMemo(() => {
+    return selectedAction?.application?.company || 
+           selectedAction?.application?.companyName || 
+           "Unknown Company";
+  }, [selectedAction?.application]);
+
+  const taskName = useMemo(() => {
+    return selectedAction?.action?.name || 
+           selectedAction?.action?.taskName || 
+           "Action";
+  }, [selectedAction?.action]);
+
+  // 🔹 Reset selected RC when modal closes
+  useEffect(() => {
+    if (!showActionModal) {
+      setSelectedRc("");
+    }
+  }, [showActionModal]);
 
   // ESC key close
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !saving) setShowActionModal(null);
+      if (e.key === "Escape" && !saving) {
+        setShowActionModal(null);
+      }
     };
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
@@ -69,12 +86,22 @@ export const ActionModal: React.FC<Props> = ({
   };
 
   const handleSave = async () => {
-    if (!selectedRc) return;
+    if (!selectedRc || !selectedAction) return;
     setSaving(true);
-    await executeAction(selectedRc, action);
-    setSaving(false);
-    setShowActionModal(null);
+    try {
+      await executeAction(selectedRc, selectedAction.action);
+    } catch (error) {
+      console.error("Error executing action:", error);
+    } finally {
+      setSaving(false);
+      setShowActionModal(null);
+    }
   };
+
+  // 🔹 FIX 4: Early return AFTER all hooks
+  if (!showActionModal || !selectedAction) {
+    return null;
+  }
 
   return (
     <div
@@ -91,6 +118,7 @@ export const ActionModal: React.FC<Props> = ({
           onClick={() => setShowActionModal(null)}
           disabled={saving}
           className="absolute top-3 right-3 text-gray-600 hover:text-gray-800 disabled:opacity-40"
+          aria-label="Close modal"
         >
           <X size={22} />
         </button>
@@ -107,7 +135,10 @@ export const ActionModal: React.FC<Props> = ({
 
         {/* RC Selection */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label 
+            htmlFor="rc-select"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             Select Name:
           </label>
 
@@ -115,10 +146,11 @@ export const ActionModal: React.FC<Props> = ({
             <p className="text-sm text-gray-500">Loading {roleType} list...</p>
           ) : (
             <select
+              id="rc-select"
               value={selectedRc}
               disabled={saving}
               onChange={(e) => setSelectedRc(e.target.value)}
-              className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
               <option value="">-- Choose --</option>
               {selectlist.map((rc: RcLookupItem) => (
@@ -135,7 +167,7 @@ export const ActionModal: React.FC<Props> = ({
           <button
             onClick={() => setShowActionModal(null)}
             disabled={saving}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 disabled:opacity-40"
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 disabled:opacity-40 transition-colors"
           >
             Cancel
           </button>
@@ -143,7 +175,7 @@ export const ActionModal: React.FC<Props> = ({
           <button
             onClick={handleSave}
             disabled={!selectedRc || saving}
-            className={`px-4 py-2 text-sm font-medium rounded-lg text-white flex items-center gap-2 ${
+            className={`px-4 py-2 text-sm font-medium rounded-lg text-white flex items-center gap-2 transition-colors ${
               !selectedRc || saving
                 ? "bg-gray-300 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
