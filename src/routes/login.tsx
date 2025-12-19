@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 import { useUser } from "@/context/UserContext"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -13,65 +13,54 @@ import {
 import { LogIn, Server } from "lucide-react"
 import { authlogin, isAuthenticated } from "@/auth/authService"
 
+// 🔹 Load servers once at module level
+const config = (window as any).__APP_CONFIG__ || {}
+const availableServers = Object.keys(config)
+  .filter((k) => k.startsWith("API_CLIENT_URL"))
+  .map((key) => config[key])
+  .filter(Boolean)
+
 export const Route = createFileRoute("/login")({
+  // 🔹 Redirect if already authenticated (runs before component mounts)
+  beforeLoad: () => {
+    if (isAuthenticated()) {
+      throw redirect({ to: "/" })
+    }
+  },
   component: LoginPage,
 })
 
 function LoginPage() {
-
-  const {
-    token,
-    apiBaseUrl,
-    setApiBaseUrl,
-  } = useUser()
-
-  const navigate = useNavigate()
-
+  const { apiBaseUrl, setApiBaseUrl } = useUser()
   const [error, setError] = useState("")
-  const [availableServers, setAvailableServers] = useState<string[]>([])
 
-  // 🔹 Load API servers
+  // 🔹 Initialize apiBaseUrl if not set (moved to useEffect)
   useEffect(() => {
-    const config = (window as any).__APP_CONFIG__;
-    if (!config) return;
-
-    const servers = Object.keys(config)
-      .filter((k) => k.startsWith("API_CLIENT_URL"))
-      .map((key) => config[key])
-      .filter(Boolean);
-
-    setAvailableServers(servers);
-
-    if (!apiBaseUrl && servers.length > 0) {
-      setApiBaseUrl(servers[0]);
+    if (!apiBaseUrl && availableServers.length > 0) {
+      setApiBaseUrl(availableServers[0])
     }
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, setApiBaseUrl])
 
-  // 🔹 Auto-redirect if session already valid
-  useEffect(() => {
-    if (token && isAuthenticated()) {
-      navigate({ to: "/" })
-    }
-  }, [token, navigate])
+  // 🔹 Use the current value or fall back to first server
+  const currentApiBaseUrl = apiBaseUrl || availableServers[0] || ""
 
   // 🔹 Handle login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!apiBaseUrl) {
+    if (!currentApiBaseUrl) {
       setError("Please select an API server before using Cognito login.")
       return
     }
-    // -----------------------------
+    
     // 🔹 Cognito Flow
-    // -----------------------------
     try {
       const storedUser = sessionStorage.getItem("user")
       const parsed = storedUser ? JSON.parse(storedUser) : {}
-      parsed.apiBaseUrl = apiBaseUrl
+      parsed.apiBaseUrl = currentApiBaseUrl
       sessionStorage.setItem("user", JSON.stringify(parsed))
 
-      console.log("[handleCognito] Saved apiBaseUrl before redirect:", apiBaseUrl)
+      console.log("[handleCognito] Saved apiBaseUrl before redirect:", currentApiBaseUrl)
     } catch (err) {
       console.warn("[handleCognito] Failed to persist apiBaseUrl:", err)
     }
@@ -89,14 +78,13 @@ function LoginPage() {
         <h2 className="text-xl font-semibold text-blue-900 mb-4">Login Options</h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
           {/* 🔹 Server Selector */}
           <div>
             <label className="text-sm font-medium text-blue-800 mb-1 block">
               Select API Server
             </label>
             <Select
-              value={apiBaseUrl || ""}
+              value={currentApiBaseUrl}
               onValueChange={(val) => setApiBaseUrl(val)}
             >
               <SelectTrigger className="flex items-center gap-2">
@@ -121,9 +109,7 @@ function LoginPage() {
             Login
           </Button>
 
-          {error && (
-            <p className="text-red-600 text-sm text-center">{error}</p>
-          )}
+          {error && <p className="text-red-600 text-sm text-center">{error}</p>}
         </form>
       </Card>
     </div>

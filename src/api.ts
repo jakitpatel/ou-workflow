@@ -256,8 +256,8 @@ export async function fetchUserByRole({
     "filter[UserRole]": selectRoleType,
   });
   // Change to true to use WFUSERROLE endpoint & false to use ActiveNCRC/ActiveRFR endpoints
-  let useWFUSERROLE = true;
-  if (useWFUSERROLE === true) {
+  const useWFUSERROLE = false;
+  if (useWFUSERROLE) {
     const json = (await fetchWithAuth({
       path: `/api/WFUSERROLE?${params.toString()}`,
       token,
@@ -268,12 +268,12 @@ export async function fetchUserByRole({
       id: item.attributes.UserName,
     }));
   } else {
-    let endpoint = `ActiveNCRC`;
+    let endpoint = `vActiveNCRC`;
     if (selectRoleType === "RFR") {
-      endpoint = `ActiveRFR`;
+      endpoint = `vActiveRFR`;
     }
     const json = (await fetchWithAuth({
-      path: `/api/${endpoint}`,
+      path: `/${endpoint}`,
       token,
     })) as UserRoleResponse;
 
