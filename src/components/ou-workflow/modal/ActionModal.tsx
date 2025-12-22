@@ -22,8 +22,6 @@ type Props = {
 type RcLookupItem = {
   id: string;
   name: string;
-  specialty: string;
-  workload: string;
 };
 
 export const ActionModal: React.FC<Props> = ({
