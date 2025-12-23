@@ -1,508 +1,470 @@
- import React, { useState,useEffect, useRef,useMemo } from 'react';
- import { useMutation, useQueryClient } from '@tanstack/react-query';
- import { assignTask, confirmTask } from '@/api'; // same api.ts
- import { useUser } from '@/context/UserContext'  // 👈 new import
- import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
- import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
- import { PlantHistoryModal } from './PlantHistoryModal';
- import { TaskStatsCards } from './TaskStatsCards';
- import { TaskFilters } from './TaskFilters';
- import { TaskRow } from './TaskRow';
- //import { formatNowForApi } from './taskHelpers';
- //import type { ApplicationTask } from '@/types/application';
-
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { assignTask, confirmTask } from '@/api';
+import { useUser } from '@/context/UserContext';
+import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
+import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
+import { PlantHistoryModal } from './PlantHistoryModal';
+import { TaskStatsCards } from './TaskStatsCards';
+import { TaskFilters } from './TaskFilters';
+import { TaskRow } from './TaskRow';
 import { plantHistory } from './demoData';
 import { useTasks } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
-import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
+import { ErrorDialog, type ErrorDialogRef } from '@/components/ErrorDialog';
 import type { ApplicationTask, Task } from '@/types/application';
 
- // Tasks Dashboard Component (with full table functionality restored)
-type TaskDashboardProps = { applicationId?: string | number | null };
-export function TaskDashboard ({ applicationId }: TaskDashboardProps){
-    const [searchTerm, setSearchTerm] = useState('');
-    //const [expandedActions, setExpandedActions] = useState(new Set());
-    //const [expandedMessages, setExpandedMessages] = useState(new Set());
-    //const [messageInputs, setMessageInputs] = useState<Record<string, string>>({});
-    //const [showTaskAssignment, setShowTaskAssignment] = useState<Record<string, boolean>>({});
-    //type TaskAssignment = { taskText: string; assignee: string | null };
-    //const [taskAssignmentData, setTaskAssignmentData] = useState<Record<string, TaskAssignment | null>>({});
-    const [showPlantHistory, setShowPlantHistory] = useState<string | null>(null);
-    //const [showReassignDropdown, setShowReassignDropdown] = useState({});
+// Constants
+const DEBOUNCE_DELAY = 700; // Reduced from 1000ms for better UX
+const PRIORITY_ORDER: Record<string, number> = {
+  urgent: 0,
+  high: 1,
+  medium: 2,
+  normal: 2,
+  low: 3
+};
 
-    const { username, role, roles, token } = useUser() // 👈 use context
-    const [showActionModal, setShowActionModal] = useState<boolean | null | Task>(null);
-    const [showConditionModal, setShowConditionModal] = useState<boolean | null | Task>(null);
-    const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
-    //const [selectedAction, setSelectedAction] = useState(null);
-    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+const STATUS = {
+  NEW: 'new',
+  IN_PROGRESS: 'in_progress',
+  PENDING: 'pending',
+  COMPLETED: 'completed',
+  COMPLETE: 'complete'
+} as const;
 
-    //const messageInputRefs = useRef<Record<string, HTMLTextAreaElement | HTMLInputElement | null>>({});
-    const queryClient = useQueryClient();
-    const errorDialogRef = useRef<ErrorDialogRef>(null);
-    // Fetch tasks and plants
-    useEffect(() => {
-      const handler = setTimeout(() => setDebouncedSearchTerm(searchTerm), 1000);
-      return () => clearTimeout(handler);
-    }, [searchTerm]); 
+const TASK_TYPES = {
+  CONFIRM: 'confirm',
+  CONDITIONAL: 'conditional',
+  CONDITION: 'condition',
+  ACTION: 'action',
+  PROGRESS: 'progress'
+} as const;
 
-    const {
-      data: tasksplants = [],
-      isLoading,
-      isError,
-      error
-    } = useTasks(
-      typeof applicationId === 'string' || applicationId === undefined
-        ? applicationId
-        : applicationId != null
-          ? String(applicationId)
-          : undefined,
-      debouncedSearchTerm
-    );
+const TASK_CATEGORIES = {
+  CONFIRMATION: 'confirmation',
+  APPROVAL: 'approval',
+  SELECTOR: 'selector',
+  INPUT: 'input',
+  SCHEDULING: 'scheduling',
+  PROGRESS_TASK: 'progress_task',
+  ASSIGNMENT: 'assignment'
+} as const;
 
-    // Cross-navigation handler
-    const handleViewNCRCDashboard = () => {
-      console.log('Returning to NCRC Dashboard');
-    };
+// Types
+type TaskDashboardProps = {
+  applicationId?: string | number | null;
+};
 
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        const target = event.target as Element | null;
-        if (
-          target &&
-          !target.closest('.task-assignment-panel') &&
-          !target.closest('.plant-history-modal')
-        ) {
-          //setShowTaskAssignment({});
-          //setShowReassignDropdown({});
-          if (!target.closest('.plant-history-modal')) {
-            setShowPlantHistory(null);
-          }
-        }
-      };
+type TaskRole = 'RFR' | 'NCRC' | 'OtherRole';
 
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }, []);
+// Helper Functions
+const normalizeId = (id: string | number | undefined | null): string => {
+  return id != null ? String(id) : '';
+};
 
-    const taskStats = useMemo(() => {
-      const allTasks = tasksplants;
-      // normalize status + filter by user (if needed)
-      const userTasks = allTasks
-        .map(task => ({
-          ...task,
-          status: task.status?.toLowerCase() || ''
-        }))
-        //.filter(task => task.assignedTo === username) // uncomment if you only want current user's tasks
+const normalizeStatus = (status: string | undefined): string => {
+  return status?.toLowerCase() || '';
+};
 
-      return {
-        total: userTasks.length,
-        new: userTasks.filter(t => t.status === 'new').length,
-        inProgress: userTasks.filter(t => {
-          const s = t.status?.toLowerCase();
-          return s === 'in_progress' || s === 'pending';
-        }).length,
-        overdue: userTasks.filter(t => {return t.daysOverdue > 0}).length,
-        completed: userTasks.filter(t => {
-          const s = t.status?.toLowerCase();
-          return s === 'completed' || s === 'complete';
-        }).length,
-      }
-    }, [username, tasksplants])
+const calculateTaskStats = (tasks: ApplicationTask[]) => {
+  const userTasks = tasks.map(task => ({
+    ...task,
+    status: normalizeStatus(task.status)
+  }));
 
-    // Filter and sort tasks
-    const filteredTasks = useMemo(() => {
-      const isAllRole = role?.toUpperCase() === 'ALL';
-      const userRoles = isAllRole
-        ? (roles ?? []).map(r => r.name?.toLowerCase()).filter(Boolean)
-        : role
-        ? [role.toLowerCase()]
-        : [];
+  return {
+    total: userTasks.length,
+    new: userTasks.filter(t => t.status === STATUS.NEW).length,
+    inProgress: userTasks.filter(t => {
+      const status = normalizeStatus(t.status);
+      return status === STATUS.IN_PROGRESS || status === STATUS.PENDING;
+    }).length,
+    overdue: userTasks.filter(t => t.daysOverdue > 0).length,
+    completed: userTasks.filter(t => {
+      const status = normalizeStatus(t.status);
+      return status === STATUS.COMPLETED || status === STATUS.COMPLETE;
+    }).length
+  };
+};
 
-      let filtered = tasksplants.filter(task => {
-        if (!isAllRole) {
-          const taskRole = task.assigneeRole?.toLowerCase();
-          if (!taskRole || !userRoles.includes(taskRole)) return false;
-        }
-        return true;
-      });
-
-      return filtered.sort((a, b) => {
-        const priorityOrder: Record<string, number> = { urgent: 0, high: 1, medium: 2, normal: 2, low: 3 };
-        const aPriority = String(a.priority ?? '').toLowerCase();
-        const bPriority = String(b.priority ?? '').toLowerCase();
-        const priorityDiff = (priorityOrder[aPriority] ?? 99) - (priorityOrder[bPriority] ?? 99);
-        if (priorityDiff !== 0) return priorityDiff;
-        return (b.daysActive ?? 0) - (a.daysActive ?? 0);
-      });
-    }, [tasksplants, role, roles]);
-    /*
-    const handleMessageInputChange = (taskId: string, value: string) => {
-      setMessageInputs(prev => ({
-        ...prev,
-        [taskId]: value
-      }));
-    };
-
-    const sendMsgTaskMutation = useMutation({
-      mutationFn: sendMsgTask,
-      onSuccess: () => {
-        // 🔄 Invalidate to refresh data
-        queryClient.invalidateQueries({ queryKey: ["applications"] });
-      },
-      onError: (error: any) => {
-        console.error("❌ Failed to send message:", error);
-      }
-    });
-    */
-    /*
-    const handleSendMessage = (taskId: string) => {
-      const messageText = messageInputs[taskId];
-      if (!messageText?.trim()) return;
-      const newMessage = {
-        data: {
-          type: "WFApplicationMessage",
-          attributes: {
-            ApplicationID: taskId,
-            FromUser: username,
-            ToUser: "",
-            MessageText: messageText,
-            MessageType: "USER",
-            Priority: "HIGH",
-            SentDate: formatNowForApi(), // 👈 current timestamp
-          },
-        },
-      };
-      sendMsgTaskMutation.mutate({
-        newMessage,
-        token: token ?? undefined,     // ✅ null → undefined
-      });
-      
-      setMessageInputs(prev => ({
-        ...prev,
-        [taskId]: ''
-      }));
+const determineTaskRole = (actionLabel: string): TaskRole => {
+  const normalized = actionLabel.replace(/\s+/g, '').toLowerCase();
   
-      setTimeout(() => {
-        if (messageInputRefs.current[taskId]) {
-          messageInputRefs.current[taskId].focus();
+  if (normalized.includes('selectrfr') || normalized.includes('assignrfr')) {
+    return 'RFR';
+  }
+  if (normalized.includes('assignncrc')) {
+    return 'NCRC';
+  }
+  return 'OtherRole';
+};
+
+const getStatusFromResult = (result: string): string => {
+  switch (result) {
+    case 'completed':
+      return 'Completed';
+    case 'in_progress':
+      return 'In Progress';
+    case 'pending':
+      return 'Pending';
+    default:
+      return '';
+  }
+};
+
+// Main Component
+export function TaskDashboard({ applicationId }: TaskDashboardProps) {
+  // State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  const [showPlantHistory, setShowPlantHistory] = useState<string | null>(null);
+  const [showActionModal, setShowActionModal] = useState<boolean | null | Task>(null);
+  const [showConditionModal, setShowConditionModal] = useState<boolean | null | Task>(null);
+  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+
+  // Refs
+  const errorDialogRef = useRef<ErrorDialogRef>(null);
+
+  // Context & Hooks
+  const { username, role, roles, token } = useUser();
+  const queryClient = useQueryClient();
+
+  // Debounce search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, DEBOUNCE_DELAY);
+
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  // Fetch tasks
+  const normalizedAppId = useMemo(() => {
+    if (typeof applicationId === 'string' || applicationId === undefined) {
+      return applicationId;
+    }
+    return applicationId != null ? String(applicationId) : undefined;
+  }, [applicationId]);
+
+  const {
+    data: tasksplants = [],
+    isLoading,
+    isError,
+    error
+  } = useTasks(normalizedAppId, debouncedSearchTerm);
+
+  // Close modals on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element | null;
+      if (
+        target &&
+        !target.closest('.task-assignment-panel') &&
+        !target.closest('.plant-history-modal')
+      ) {
+        if (!target.closest('.plant-history-modal')) {
+          setShowPlantHistory(null);
         }
-      }, 50);
+      }
     };
-    */
-    const handleShowPlantHistory = (plantName: string) => {
-      setShowPlantHistory(plantName);
-    };
-    /*
-    const handleCreateTaskFromMessage = (applicantId: string) => {
-      const messageText = messageInputs[applicantId];
-      if (!messageText?.trim()) return;
 
-      setShowTaskAssignment(prev => ({
-        ...prev,
-        [applicantId]: true
-      }));
-      setTaskAssignmentData(prev => ({
-        ...prev,
-        [applicantId]: {
-          taskText: messageText,
-          assignee: username ?? null
-        }
-      }));
-    };
-    */
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    /*
-    const handleConfirmTaskCreation = (applicantId: string) => {
-      const assignmentData = taskAssignmentData[applicantId];
-      if (!assignmentData?.taskText?.trim()) return;
+  // Calculate stats
+  const taskStats = useMemo(
+    () => calculateTaskStats(tasksplants),
+    [tasksplants]
+  );
 
-      const newMessage = {
-        data: {
-          type: "WFApplicationMessage",
-          attributes: {
-            ApplicationID: applicantId,
-            FromUser: username,
-            ToUser: assignmentData.assignee,
-            MessageText: assignmentData.taskText.length > 50 ? assignmentData.taskText.substring(0, 50) + '...' : assignmentData.taskText,
-            MessageType: "USER",
-            Priority: "HIGH",
-            SentDate: formatNowForApi(), // 👈 current timestamp
-          },
-        },
-      };
-      sendMsgTaskMutation.mutate({
-        newMessage,
+  // Filter and sort tasks
+  const filteredTasks = useMemo(() => {
+    const isAllRole = role?.toUpperCase() === 'ALL';
+    const userRoles = isAllRole
+      ? (roles ?? []).map(r => r.name?.toLowerCase()).filter(Boolean)
+      : role
+      ? [role.toLowerCase()]
+      : [];
+
+    // Filter by role
+    let filtered = tasksplants.filter(task => {
+      if (!isAllRole) {
+        const taskRole = task.assigneeRole?.toLowerCase();
+        return taskRole && userRoles.includes(taskRole);
+      }
+      return true;
+    });
+
+    // Sort by priority and activity
+    return filtered.sort((a, b) => {
+      const aPriority = normalizeStatus(a.priority);
+      const bPriority = normalizeStatus(b.priority);
+      const priorityDiff = (PRIORITY_ORDER[aPriority] ?? 99) - (PRIORITY_ORDER[bPriority] ?? 99);
+      
+      if (priorityDiff !== 0) return priorityDiff;
+      return (b.daysActive ?? 0) - (a.daysActive ?? 0);
+    });
+  }, [tasksplants, role, roles]);
+
+  // Mutations
+  const confirmTaskMutation = useMutation({
+    mutationFn: confirmTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasksplants'] });
+    },
+    onError: (error: any) => {
+      console.error('❌ Failed to confirm task:', error);
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        'Something went wrong while confirming the task.';
+      errorDialogRef.current?.open(message);
+    }
+  });
+
+  const assignTaskMutation = useMutation({
+    mutationFn: assignTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasksplants'] });
+    },
+    onError: (error: any) => {
+      console.error('❌ Failed to assign task:', error);
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        'Something went wrong while assigning the task.';
+      errorDialogRef.current?.open(message);
+    }
+  });
+
+  // Action handlers
+  const executeAction = useCallback(
+    (assignee: string, action: any, result?: string) => {
+      const taskType = action.taskType?.toLowerCase();
+      const taskCategory = (action.taskCategory || action.TaskCategory)?.toLowerCase();
+      const taskId = action?.TaskInstanceId ?? action?.taskInstanceId;
+
+      const mutationParams = {
+        taskId,
         token: token ?? undefined,
-      });
+        username: username ?? undefined
+      };
 
-      //setAllTasks(prev => [...prev, newTask]);
-      
-      // Clear states
-      setMessageInputs(prev => ({ ...prev, [applicantId]: '' }));
-      setShowTaskAssignment(prev => ({ ...prev, [applicantId]: false }));
-      setTaskAssignmentData(prev => ({ ...prev, [applicantId]: null }));
-      
-      // Refocus input
-      setTimeout(() => {
-        if (messageInputRefs.current[applicantId]) {
-          messageInputRefs.current[applicantId].focus();
-        }
-      }, 100);
-    };
-    */
-    /*
-    const handleKeyPress = (e: React.KeyboardEvent, taskId: string) => {
-      if ((e as React.KeyboardEvent).key === 'Enter' && !(e as React.KeyboardEvent).shiftKey) {
-        e.preventDefault();
-        if ((e as React.KeyboardEvent).ctrlKey || (e as React.KeyboardEvent).metaKey) {
-          if (showTaskAssignment[taskId]) {
-            handleConfirmTaskCreation(taskId);
-          } else {
-            handleCreateTaskFromMessage(taskId);
-          }
-        } else {
-          handleSendMessage(taskId);
-        }
+      // Handle different task types
+      if (taskType === TASK_TYPES.CONFIRM && taskCategory === TASK_CATEGORIES.CONFIRMATION) {
+        confirmTaskMutation.mutate(mutationParams);
+      } else if (
+        (taskType === TASK_TYPES.CONDITIONAL || taskType === TASK_TYPES.CONDITION) &&
+        taskCategory === TASK_CATEGORIES.APPROVAL
+      ) {
+        confirmTaskMutation.mutate({ ...mutationParams, result });
+      } else if (taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.SELECTOR) {
+        confirmTaskMutation.mutate({ ...mutationParams, result });
+      } else if (taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.INPUT) {
+        confirmTaskMutation.mutate({ ...mutationParams, result });
+      } else if (taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.SCHEDULING) {
+        confirmTaskMutation.mutate({ ...mutationParams, result });
+      } else if (taskType === TASK_TYPES.PROGRESS && taskCategory === TASK_CATEGORIES.PROGRESS_TASK) {
+        const status = result ? getStatusFromResult(result) : '';
+        confirmTaskMutation.mutate({ ...mutationParams, result, status });
+      } else if (taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.ASSIGNMENT) {
+        // Fix: Handle both id and applicationId
+        const appId = 
+          selectedAction?.application?.id ?? 
+          selectedAction?.application?.applicationId ?? 
+          null;
+        const rawLabel = action?.name ?? action?.taskName ?? '';
+        const roleType = determineTaskRole(rawLabel);
+
+        assignTaskMutation.mutate({
+          appId,
+          taskId,
+          role: roleType,
+          assignee,
+          token: token ?? undefined
+        });
       }
-    };
-    */
+    },
+    [confirmTaskMutation, assignTaskMutation, token, username]
+  );
 
-    const confirmTaskMutation = useMutation({
-      mutationFn: confirmTask,
-      onSuccess: () => {
-        // 🔄 Invalidate to refresh data
-        queryClient.invalidateQueries({ queryKey: ["tasksplants"] });
-      },
-      onError: (error: any) => {
-        console.error("❌ Failed to assign task:", error);
-        const message =
-        error?.message ||
-        error?.response?.data?.message ||
-        "Something went wrong while confirming the task.";
-        errorDialogRef.current?.open(message);
-      }
-    });
+  const handleSelectAppActions = useCallback((applicationId: string, actionId: string) => {
+    setSelectedActionId(`${applicationId}:${actionId}`);
+  }, []);
 
-    //const assignTaskMutation = useAssignTask();
-    const assignTaskMutation = useMutation({
-      mutationFn: assignTask,
-      onSuccess: () => {
-        // 🔄 Refresh application list after assigning
-        queryClient.invalidateQueries({ queryKey: ["tasksplants"] });
-      },
-      onError: (error: any) => {
-        console.error("❌ Failed to assign task:", error);
-        const message =
-        error?.message ||
-        error?.response?.data?.message ||
-        "Something went wrong while assigning the task.";
-        errorDialogRef.current?.open(message);
-      },
-    });
+  const selectedAction = useMemo(() => {
+    if (!selectedActionId) return null;
 
-    const executeAction = (assignee: string, action: any, result?: string) => {
-      //if (selectedAction) {
-        // normalize taskType safely
-        const taskType = action.taskType?.toLowerCase();
-        const taskCategory = action.taskCategory?.toLowerCase() || action.TaskCategory?.toLowerCase();
-        const taskId = action?.TaskInstanceId ?? action?.taskInstanceId;
+    const [appId, actId] = selectedActionId.split(':');
 
-        if (taskType === "confirm" && taskCategory === "confirmation") {
-          confirmTaskMutation.mutate({
-            taskId: taskId,
-            token: token ?? undefined,     // ✅ null → undefined
-            username: username ?? undefined, // ✅ null → undefined
-          });
-        } else if ((taskType === "conditional" || taskType === "condition") && taskCategory === "approval") {
-          confirmTaskMutation.mutate({
-            taskId: taskId,
-            result: result,
-            token: token ?? undefined,     // ✅ null → undefined
-            username: username ?? undefined, // ✅ null → undefined
-          });
-        } else if (taskType === "action" && taskCategory === "selector") {
-          confirmTaskMutation.mutate({
-            taskId: taskId,
-            result: result,
-            token: token ?? undefined,     // ✅ null → undefined
-            username: username ?? undefined, // ✅ null → undefined
-          });
-        } else if (taskType === "action" && taskCategory === "input") {
-          confirmTaskMutation.mutate({
-            taskId: taskId,
-            result: result,
-            token: token ?? undefined,     // ✅ null → undefined
-            username: username ?? undefined, // ✅ null → undefined
-          });
-        }  else if (taskType === "action" && taskCategory === "scheduling") {
-          confirmTaskMutation.mutate({
-            taskId: taskId,
-            result: result,
-            token: token ?? undefined,     // ✅ null → undefined
-            username: username ?? undefined, // ✅ null → undefined
-          });
-        } else if (taskType === "progress" && taskCategory === "progress_task") {
-          let status = "";
-          if (result === "completed") {
-            // Handle completed status
-            status = "Completed";
-          } else if (result === "in_progress") {
-            // Handle in_progress status
-            status = "In Progress";
-          } else if (result === "pending") {
-            // Handle pending status
-            status = "Pending";
-          }
-          confirmTaskMutation.mutate({
-            taskId: taskId,
-            result: result,
-            token: token ?? undefined,     // ✅ null → undefined
-            username: username ?? undefined, // ✅ null → undefined
-            status: status,
-          });
-        } else if (taskType === "action" && taskCategory === "assignment") {
-          const appId = selectedAction?.application?.id ?? selectedAction?.application?.applicationId ?? null;
-          const rawLabel = action?.name ?? action?.taskName ?? "";
-          const normalized = rawLabel.replace(/\s+/g, "").toLowerCase();
+    // Fix: Check both id and applicationId fields
+    const app = tasksplants.find(
+      a => normalizeId(a.id) === normalizeId(appId) || 
+           normalizeId(a.applicationId) === normalizeId(appId)
+    );
+    if (!app) {
+      console.warn('No app found for', appId, 'in tasks:', tasksplants.map(t => ({ id: t.id, applicationId: t.applicationId })));
+      return null;
+    }
 
-          let role: "RFR" | "NCRC" | "OtherRole";
-          if (normalized.includes("selectrfr") || normalized.includes("assignrfr")) {
-            role = "RFR";
-          } else if (normalized.includes("assignncrc")) {
-            role = "NCRC";
-          } else {
-            role = "OtherRole";
-          }
+    const act = tasksplants.find(a => normalizeId(a.taskInstanceId) === normalizeId(actId));
+    if (!act) {
+      console.warn('No action found for', actId);
+      return null;
+    }
 
-          assignTaskMutation.mutate({
-            appId,
-            taskId,
-            role,
-            assignee,
-            token: token ?? undefined,
-          });
-        }
-      //}
-    };
+    return { application: app, action: act };
+  }, [selectedActionId, tasksplants]);
 
-    const handleSelectAppActions = (applicationId: string, actionId: string) => {
-      setSelectedActionId(`${applicationId}:${actionId}`);
-    };
-
-    const selectedAction = React.useMemo(() => {
-      if (!selectedActionId) return null;
-
-      const [appId, actId] = selectedActionId.split(":");
-
-      // 🔒 normalize IDs as strings
-      const app = tasksplants.find(a => String(a.id) === String(appId));
-      if (!app) {
-        console.warn("No app found for", appId, tasksplants.map(t => t.id));
-        return null;
-      }
-
-      //const actions = getTaskActions(app) || [];
-      const act = tasksplants.find(a => String(a.taskInstanceId) === String(actId));
-
-      if (!act) {
-        console.warn("No action found for", actId, tasksplants.map(a => a.taskInstanceId));
-        return null;
-      }
-
-      return { application: app, action: act };
-    }, [selectedActionId, tasksplants]);
-
-    const handleApplicationTaskAction = (e: React.MouseEvent<HTMLElement>, application: any) => {
-      console.log("handleApplicationTaskAction called for application:", application);
+  const handleApplicationTaskAction = useCallback(
+    (e: React.MouseEvent<HTMLElement>, application: any) => {
       e.stopPropagation();
       e.preventDefault();
-      console.log('Action clicked: handleApplicationTaskAction for application:', application);
-      /*if (action === 'manage_ingredients') {
-        const app = applicants.find(a => a.id === applicantId);
-        setSelectedIngredientApp(app);
-        setShowIngredientsManager(true);
-        return;
-      }*/
-      handleSelectAppActions(application.id, application.taskInstanceId);
-      //setSelectedAction({ application, action });
-      const actionType = application.taskType?.toLowerCase(); // e.g., "confirm", "conditional", "action"
-      const actionCategory = application.TaskCategory?.toLowerCase(); // e.g., "confirmation", "approval", "assignment", "selector", "input"
-      if(actionType === "confirm" && actionCategory === "confirmation"){
-        console.log("TaskType :"+actionType);
-        executeAction("Confirmed", application, "no");
-      } else if((actionType === "conditional" || actionType === "condition") && actionCategory === "approval"){
-        console.log("Conditional Action :"+actionType);
+
+      console.log('Action clicked for application:', application);
+
+      // Fix: Use applicationId instead of id
+      const appId = application.id ?? application.applicationId;
+      handleSelectAppActions(appId, application.taskInstanceId);
+
+      const actionType = application.taskType?.toLowerCase();
+      const actionCategory = application.TaskCategory?.toLowerCase();
+
+      // Route to appropriate modal or execute action
+      if (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION) {
+        executeAction('Confirmed', application, 'no');
+      } else if (
+        (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) &&
+        actionCategory === TASK_CATEGORIES.APPROVAL
+      ) {
         setShowConditionModal(application);
-      } else if(actionType === "action" && actionCategory === "assignment"){
-        console.log("Assignment Action :"+actionType);
+      } else if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.ASSIGNMENT) {
         setShowActionModal(application);
-      } else if(actionType === "action" && actionCategory === "selector"){
+      } else if (
+        actionType === TASK_TYPES.ACTION &&
+        [TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].includes(actionCategory)
+      ) {
         setShowConditionModal(application);
-      } else if(actionType === "action" && actionCategory === "input"){
-        console.log("Input Action :"+actionType);
-        setShowConditionModal(application);
-      } else if(actionType === "action" && actionCategory === "scheduling"){
-        console.log("Scheduling Action :"+actionType);
-        setShowConditionModal(application);
-      } else if(actionType === "progress" && actionCategory === "progress_task"){
-        console.log("Progress Action :"+actionType);
+      } else if (actionType === TASK_TYPES.PROGRESS && actionCategory === TASK_CATEGORIES.PROGRESS_TASK) {
         setShowConditionModal(application);
       }
-    };
-    
+    },
+    [executeAction, handleSelectAppActions]
+  );
+
+  const handleShowPlantHistory = useCallback((plantName: string) => {
+    setShowPlantHistory(plantName);
+  }, []);
+
+  const handleViewNCRCDashboard = useCallback(() => {
+    console.log('Returning to NCRC Dashboard');
+  }, []);
+
+  // Render loading state
+  if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
-        <ActionModal
-          setShowActionModal={setShowActionModal} 
-          showActionModal={showActionModal}
-          executeAction={executeAction}
-          selectedAction={selectedAction}
-          />
-        <ConditionalModal
-          setShowConditionModal={setShowConditionModal} 
-          showConditionModal={showConditionModal}
-          executeAction={executeAction}
-          selectedAction={selectedAction}
-          />
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Tasks & Notifications</h1>
-              <p className="text-gray-600 mt-1">Welcome back, {username} • Separated Actions & Messages</p>
-            </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+            <p className="mt-4 text-gray-600">Loading tasks...</p>
           </div>
+        </div>
+      </div>
+    );
+  }
 
-          {/* Stats Cards */}
-          <TaskStatsCards stats={taskStats} />
+  // Render error state
+  if (isError) {
+    return (
+      <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800 font-medium">Error loading tasks</p>
+          <p className="text-red-600 text-sm mt-1">{error?.message || 'An unexpected error occurred'}</p>
+        </div>
+      </div>
+    );
+  }
 
-          {/* Filters */}
-          <TaskFilters
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-          />
-          {/* List */}
-          {isLoading && <div className="text-gray-500">Loading Tasks & Plants...</div>}
-          {isError && <div className="text-red-600">Error: {error?.message}</div>}
+  return (
+    <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+      {/* Modals */}
+      <ActionModal
+        setShowActionModal={setShowActionModal}
+        showActionModal={showActionModal}
+        executeAction={executeAction}
+        selectedAction={selectedAction}
+      />
+      <ConditionalModal
+        setShowConditionModal={setShowConditionModal}
+        showConditionModal={showConditionModal}
+        executeAction={executeAction}
+        selectedAction={selectedAction}
+      />
+      <PlantHistoryModal
+        showPlantHistory={showPlantHistory}
+        setShowPlantHistory={setShowPlantHistory}
+        plantHistory={plantHistory}
+        onViewNCRCDashboard={handleViewNCRCDashboard}
+      />
 
-          {/* Tasks Table */}
-          <div className="bg-white rounded-lg shadow-sm border overflow-hidden mt-6">
-            <table className="min-w-full">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <header className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Tasks & Notifications</h1>
+          <p className="text-gray-600 mt-1">
+            Welcome back, {username || 'User'} • Role: {role || 'Not assigned'}
+          </p>
+        </header>
+
+        {/* Stats Cards */}
+        <TaskStatsCards stats={taskStats} />
+
+        {/* Filters */}
+        <TaskFilters searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+
+        {/* Tasks Table */}
+        <div className="bg-white rounded-lg shadow-sm border overflow-hidden mt-6">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task & Plant</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Task & Plant
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Actions
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Role
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Stage
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Status
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTasks.map((application) => (
+                {filteredTasks.map(application => (
                   <TaskRow
-                    key={application.taskInstanceId}   // ✅ unique key here
+                    key={application.taskInstanceId}
                     application={application}
                     plantInfo={plantHistory[String(application.plantId) as keyof typeof plantHistory]}
                     handleApplicationTaskAction={handleApplicationTaskAction as (e: React.MouseEvent<Element>, application: ApplicationTask) => void}
@@ -512,25 +474,33 @@ export function TaskDashboard ({ applicationId }: TaskDashboardProps){
               </tbody>
             </table>
           </div>
-
-          {filteredTasks.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No tasks match your current filters.</p>
-              <p className="text-gray-400 mt-2">Try adjusting your search or filter criteria.</p>
-            </div>
-          )}
-
-          {/* Plant History Modal */}
-          <PlantHistoryModal
-            showPlantHistory={showPlantHistory}
-            setShowPlantHistory={setShowPlantHistory}
-            plantHistory={plantHistory}
-            onViewNCRCDashboard={handleViewNCRCDashboard}
-          />
-
         </div>
-        {/* Global Error Dialog */}
-        <ErrorDialog ref={errorDialogRef} />
+
+        {/* Empty State */}
+        {filteredTasks.length === 0 && !isLoading && (
+          <div className="text-center py-12 bg-white rounded-lg shadow-sm border mt-6">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+            <p className="text-gray-500 text-lg mt-4">No tasks match your current filters</p>
+            <p className="text-gray-400 mt-2">Try adjusting your search or filter criteria</p>
+          </div>
+        )}
       </div>
-    );
-  };
+
+      {/* Global Error Dialog */}
+      <ErrorDialog ref={errorDialogRef} />
+    </div>
+  );
+}
