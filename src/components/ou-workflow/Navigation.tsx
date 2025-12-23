@@ -1,127 +1,193 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Bell, User, BarChart3, ClipboardList, LogOut, Settings } from 'lucide-react'
-import { useUser } from './../../context/UserContext'  // 👈 new import
+import { useUser } from '@/context/UserContext'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-//import { getApiBaseUrl } from '@/lib/utils'
 
-/*type Props = {
-  hideMenu?: boolean   // 👈 new optional prop
-}*/
+// Navigation route constants
+const ROUTES = {
+  HOME: '/',
+  LOGIN: '/login',
+  PROFILE: '/profile',
+  NCRC_DASHBOARD: '/ou-workflow/ncrc-dashboard',
+  TASKS_DASHBOARD: '/ou-workflow/tasks-dashboard',
+} as const
 
-export function Navigation() {
-  // inside Navigation component and add:
+type NavigationProps = {
+  showMenu?: boolean
+}
+
+export function Navigation({ showMenu = true }: NavigationProps) {
   const location = useRouterState({ select: (s) => s.location.pathname })
-  
   const { username, role, logout, apiBaseUrl } = useUser()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
-  
-  const API_BASE_URL = apiBaseUrl; //getApiBaseUrl();
-  
-  // close menu when clicking outside
+
+  // Close menu when clicking outside
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuOpen(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [menuOpen])
+
+  // Close menu on Escape key
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && menuOpen) {
+        setMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [menuOpen])
+
+  const handleLogout = useCallback(() => {
+    setMenuOpen(false)
+    logout()
+    navigate({ to: ROUTES.LOGIN })
+  }, [logout, navigate])
+
+  const toggleMenu = useCallback(() => {
+    setMenuOpen((prev) => !prev)
   }, [])
 
-  return (
-    <div className="bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 py-3">
-        <div className="flex items-center justify-between">
-          {/* Left: Logo + Nav */}
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center">
-                <Link
-                  to="/"
-                  className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 transition"
-                >
-                  <span className="text-white font-bold text-xs">OU</span>
-                </Link>
-              </div>
-              <span className="text-lg font-semibold text-gray-900">Workflow System</span>
-            </div>
+  const closeMenu = useCallback(() => {
+    setMenuOpen(false)
+  }, [])
 
-            {/* ✅ Conditionally render top menu */}
-            {!false && (
-              <nav className="flex space-x-1">
+  // Helper to check if route is active
+  const isActiveRoute = (path: string) => location.includes(path)
+
+  return (
+    <nav className="bg-white border-b border-gray-200 shadow-sm" role="navigation" aria-label="Main navigation">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+        <div className="flex items-center justify-between">
+          {/* Left: Logo + Navigation Links */}
+          <div className="flex items-center space-x-4 sm:space-x-6">
+            {/* Logo */}
+            <Link
+              to={ROUTES.HOME}
+              className="flex items-center space-x-2 group"
+              aria-label="Home"
+            >
+              <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center group-hover:bg-blue-700 transition-colors">
+                <span className="text-white font-bold text-xs">OU</span>
+              </div>
+              <span className="text-base sm:text-lg font-semibold text-gray-900 hidden sm:inline">
+                Workflow System
+              </span>
+            </Link>
+
+            {/* Navigation Menu */}
+            {showMenu && (
+              <div className="hidden md:flex space-x-1">
                 <Link
-                  to="/ou-workflow/ncrc-dashboard"
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    location.includes('ncrc-dashboard')
+                  to={ROUTES.NCRC_DASHBOARD}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
+                    isActiveRoute('ncrc-dashboard')
                       ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
+                  aria-current={isActiveRoute('ncrc-dashboard') ? 'page' : undefined}
                 >
-                  <BarChart3 className="w-4 h-4 inline-block mr-1.5" />
+                  <BarChart3 className="w-4 h-4 mr-1.5" aria-hidden="true" />
                   NCRC Dashboard
                 </Link>
 
                 <Link
-                  to="/ou-workflow/tasks-dashboard"
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    location.includes('tasks-dashboard')
+                  to={ROUTES.TASKS_DASHBOARD}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
+                    isActiveRoute('tasks-dashboard')
                       ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
+                  aria-current={isActiveRoute('tasks-dashboard') ? 'page' : undefined}
                 >
-                  <ClipboardList className="w-4 h-4 inline-block mr-1.5" />
+                  <ClipboardList className="w-4 h-4 mr-1.5" aria-hidden="true" />
                   Tasks & Notifications
                 </Link>
-              </nav>
+              </div>
             )}
           </div>
 
-          {/* Right: Notifications + User */}
-         <div className="flex items-center space-x-3 relative" ref={menuRef}>
-          <span className="text-sm text-gray-500 mr-4">API : {API_BASE_URL}</span>
-  <Bell className="w-5 h-5 text-gray-500 cursor-pointer" />
-  <button
-    type="button"
-    onClick={() => {
-      setMenuOpen(!menuOpen);
-    }}
-    className="flex items-center space-x-1.5 px-2 py-1 rounded-md hover:bg-gray-100"
-  >
-    <User className="w-5 h-5 text-gray-500" />
-    <span className="text-sm text-gray-700">{username}/{role}</span>
-  </button>
-          {menuOpen && (
-              <div className="absolute right-0 top-10 w-48 bg-white border border-gray-200 shadow-lg rounded-md py-2 z-50">
-               {/* Profile */}
+          {/* Right: API Info, Notifications & User Menu */}
+          <div className="flex items-center space-x-2 sm:space-x-3 relative" ref={menuRef}>
+            {/* API Base URL - Hidden on small screens */}
+            {apiBaseUrl && (
+              <span className="hidden lg:inline text-xs sm:text-sm text-gray-500 mr-2 sm:mr-4">
+                API: {apiBaseUrl}
+              </span>
+            )}
+
+            {/* Notifications */}
+            <button
+              type="button"
+              className="p-2 rounded-md hover:bg-gray-100 transition-colors"
+              aria-label="Notifications"
+            >
+              <Bell className="w-5 h-5 text-gray-500" aria-hidden="true" />
+            </button>
+
+            {/* User Menu */}
+            <button
+              type="button"
+              onClick={toggleMenu}
+              className="flex items-center space-x-1.5 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
+              aria-expanded={menuOpen}
+              aria-haspopup="true"
+              aria-label="User menu"
+            >
+              <User className="w-5 h-5 text-gray-500" aria-hidden="true" />
+              <span className="text-xs sm:text-sm text-gray-700 max-w-[120px] truncate">
+                {username}
+                {role && <span className="text-gray-500">/{role}</span>}
+              </span>
+            </button>
+
+            {/* Dropdown Menu */}
+            {menuOpen && (
+              <div 
+                className="absolute right-0 top-12 w-48 bg-white border border-gray-200 shadow-lg rounded-md py-2 z-50"
+                role="menu"
+                aria-orientation="vertical"
+              >
+                {/* Profile Link */}
                 <Link
-                  to="/profile"
-                  onClick={() => {
-                    setMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                  to={ROUTES.PROFILE}
+                  onClick={closeMenu}
+                  className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors"
+                  role="menuitem"
                 >
-                  <Settings className="w-4 h-4 mr-2 text-gray-500" />
+                  <Settings className="w-4 h-4 mr-2 text-gray-500" aria-hidden="true" />
                   Profile
                 </Link>
-                {/* Sign out */}
+
+                {/* Divider */}
+                <div className="border-t border-gray-200 my-1" role="separator" />
+
+                {/* Sign Out */}
                 <button
-                  className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
-                  onClick={() => {
-                    setMenuOpen(false)
-                    logout()
-                    navigate({ to: '/login' })
-                  }}
+                  type="button"
+                  className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center transition-colors"
+                  onClick={handleLogout}
+                  role="menuitem"
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
+                  <LogOut className="w-4 h-4 mr-2" aria-hidden="true" />
                   Sign out
                 </button>
               </div>
             )}
-</div>
+          </div>
         </div>
       </div>
-    </div>
+    </nav>
   )
 }
