@@ -322,35 +322,19 @@ export async function fetchUserByRole({
   token?: string | null;
   selectRoleType?: string;
 } = {}): Promise<Array<{ name: string; id: string }>> {
-  const useWFUSERROLE = false; // Configuration flag
+  const params = buildPaginationParams(0, 10000);
 
-  if (useWFUSERROLE) {
-    const params = new URLSearchParams({
-      "filter[UserRole]": selectRoleType,
-    });
-
-    const response = await fetchWithAuth<UserRoleResponse>({
-      path: `/api/WFUSERROLE?${params.toString()}`,
-      token,
-    });
-
-    return response.data.map((item: any) => ({
-      name: item.attributes.UserName,
-      id: item.attributes.UserName,
-    }));
-  }
-
-  // Use legacy endpoints
-  const endpoint = selectRoleType === "RFR" ? "vActiveRFR" : "vActiveNCRC";
+  const endpoint = selectRoleType === "RFR" ? "v_selectRFR" : "v_selectNCRC";
   const response = await fetchWithAuth<UserRoleResponse>({
-    path: `/${endpoint}`,
+    path: `/${endpoint}?${params.toString()}`,
     token,
   });
 
   return response.data.map((item: any) => {
-    const userName = item.attributes.NCRC || item.attributes.RFR;
+    const userName = item.attributes.userName;
+    const fullName = item.attributes.fullName;
     return {
-      name: userName,
+      name: fullName,
       id: userName,
     };
   });

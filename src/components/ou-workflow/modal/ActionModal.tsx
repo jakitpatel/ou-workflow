@@ -152,7 +152,7 @@ export const ActionModal: React.FC<Props> = ({
             >
               <option value="">-- Choose --</option>
               {selectlist.map((rc: RcLookupItem) => (
-                <option key={rc.id} value={rc.name}>
+                <option key={rc.id} value={rc.id}>
                   {rc.name}
                 </option>
               ))}

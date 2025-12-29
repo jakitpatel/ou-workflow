@@ -214,7 +214,7 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
             </h4>
             <div className="flex items-center space-x-2">
               <span className="px-2 py-1 rounded-full text-xs font-medium">
-                {applicant.stages[expandedStage]?.progress || '0%'} Complete
+                {applicant.stages[expandedStage]?.progress || '0'}% Complete
               </span>
               <button
                 onClick={() => setExpandedStage(null)}
