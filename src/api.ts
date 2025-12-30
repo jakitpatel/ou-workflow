@@ -324,18 +324,16 @@ export async function fetchUserByRole({
 } = {}): Promise<Array<{ name: string; id: string }>> {
   const params = buildPaginationParams(0, 10000);
 
-  const endpoint = selectRoleType === "RFR" ? "v_selectRFR" : "v_selectNCRC";
+  const endpoint = selectRoleType === "RFR" ? "vSelectRFR" : "vSelectNCRC";
   const response = await fetchWithAuth<UserRoleResponse>({
-    path: `/${endpoint}?${params.toString()}`,
+    path: `/api/${endpoint}?${params.toString()}`,
     token,
   });
 
   return response.data.map((item: any) => {
-    const userName = item.attributes.userName;
-    const fullName = item.attributes.fullName;
     return {
-      name: fullName,
-      id: userName,
+      name: item.attributes.fullName,
+      id: item.attributes.userName,
     };
   });
 }
