@@ -86,16 +86,13 @@ const calculateTaskStats = (tasks: ApplicationTask[]) => {
   };
 };
 
-const determineTaskRole = (actionLabel: string): TaskRole => {
-  const normalized = actionLabel.replace(/\s+/g, '').toLowerCase();
-  
-  if (normalized.includes('selectrfr') || normalized.includes('assignrfr')) {
-    return 'RFR';
-  }
-  if (normalized.includes('assignncrc')) {
-    return 'NCRC';
-  }
-  return 'OtherRole';
+const determineTaskRole = (preScript: string): string => {
+  if (!preScript) return "OtherRole";
+
+  // "api/vSelectRFR,RFR" → ["api/vSelectRFR", "RFR"]
+  const [, role] = preScript.split(",");
+
+  return role?.trim().toUpperCase();
 };
 
 const getStatusFromResult = (result: string): string => {
@@ -273,7 +270,7 @@ export function TaskDashboard({ applicationId }: TaskDashboardProps) {
           selectedAction?.application?.id ?? 
           selectedAction?.application?.applicationId ?? 
           null;
-        const rawLabel = action?.name ?? action?.taskName ?? '';
+        const rawLabel = action?.PreScript; //action?.name ?? action?.taskName ?? '';
         const roleType = determineTaskRole(rawLabel);
 
         assignTaskMutation.mutate({

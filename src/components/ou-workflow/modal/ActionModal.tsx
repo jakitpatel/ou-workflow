@@ -34,17 +34,9 @@ export const ActionModal: React.FC<Props> = ({
   const [selectedRc, setSelectedRc] = useState("");
   const [saving, setSaving] = useState(false);
 
-  /*const roleType: "NCRC" | "RFR" = useMemo(() => {
-    console.log("Determining roleType for action:", selectedAction);
-    if (!selectedAction?.action?.name) return "NCRC";
-    return selectedAction.action.name.toLowerCase().includes("rfr") ? "RFR" : "NCRC";
-  }, [selectedAction?.action?.name]);
-  */
-  type RoleType = "NCRC" | "RFR";
-
   type ActionMeta = {
     endpoint: string;
-    roleType: RoleType;
+    roleType: string;
   };
 
   const actionMeta = useMemo<ActionMeta>(() => {

@@ -52,9 +52,7 @@ const getProgressStatus = (result: string): string => {
 };
 
 // 🎯 Role detection helper
-type RoleType = string; //"NCRC" | "RFR" | "OtherRole";
-
-const detectRole = (preScript?: string): RoleType => {
+const detectRole = (preScript?: string): string => {
   if (!preScript) return "OtherRole";
 
   // "api/vSelectRFR,RFR" → ["api/vSelectRFR", "RFR"]
