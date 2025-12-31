@@ -52,15 +52,23 @@ const getProgressStatus = (result: string): string => {
 };
 
 // 🎯 Role detection helper
-const detectRole = (taskName: string): "RFR" | "NCRC" | "OtherRole" => {
-  const normalized = taskName.replace(/\s+/g, "").toLowerCase();
-  if (normalized.includes("selectrfr") || normalized.includes("assignrfr")) {
-    return "RFR";
+type RoleType = string; //"NCRC" | "RFR" | "OtherRole";
+
+const detectRole = (preScript?: string): RoleType => {
+  if (!preScript) return "OtherRole";
+
+  // "api/vSelectRFR,RFR" → ["api/vSelectRFR", "RFR"]
+  const [, role] = preScript.split(",");
+
+  const normalizedRole = role?.trim().toUpperCase();
+  return normalizedRole;
+  /*
+  if (normalizedRole === "RFR" || normalizedRole === "NCRC") {
+    return normalizedRole;
   }
-  if (normalized.includes("assignncrc")) {
-    return "NCRC";
-  }
+
   return "OtherRole";
+  */
 };
 
 export function NCRCDashboard() {
@@ -196,7 +204,7 @@ export function NCRCDashboard() {
         const appId = selectedAction?.application?.applicationId ?? 
                       action.application?.applicationId ?? 
                       action.applicationId;
-        const role = detectRole(action.name ?? "");
+        const role = detectRole(selectedAction?.action?.PreScript ?? "");
 
         assignTaskMutation.mutate({
           appId,
