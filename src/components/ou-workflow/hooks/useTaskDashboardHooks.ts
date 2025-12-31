@@ -30,7 +30,7 @@ export function useUserListByRole(
     queryKey: ["rc-list", roleType], // cache separate by role
     queryFn: () => fetchUserByRole({ 
       token: token ?? undefined,     // ✅ null → undefined
-      selectRoleType: roleType 
+      endpoint: roleType 
     }),
     enabled,
     staleTime: Infinity,
