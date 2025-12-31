@@ -50,7 +50,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
   ]);
 
   // Recent activity tracking
-  const recentActivity = [
+  const recentActivity: Array<{ date: string; action: string; details: string; user: string; type: 'completion' | 'ingredient' | 'plant' | 'bulk' | 'company' | 'dispatch' | 'undo'; status: 'approved' | 'pending' | 'completed' }> = [
     { date: '2025-07-18 14:30', action: 'Ingredient Added', details: 'Natural Vanilla Extract (Premium Flavor Co)', user: 'J. Mitchell', type: 'ingredient', status: 'approved' },
     { date: '2025-07-18 13:15', action: 'Ingredient Added', details: 'Organic Quinoa Flour (Andean Grains Ltd)', user: 'G. Magder', type: 'ingredient', status: 'pending' },
     { date: '2025-07-18 11:45', action: 'Supplier Sync', details: 'Coconut Oil (Refined) auto-added from supplier portal', user: 'Auto-Sync', type: 'ingredient', status: 'approved' },
@@ -82,8 +82,8 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
       action: 'Application Marked Complete',
       details: 'Application verified and marked ready for dispatcher',
       user: 'J. Mitchell',
-      type: 'completion',
-      status: 'approved'
+      type: 'completion' as const,
+      status: 'approved' as const
     };
     recentActivity.unshift(newActivity);
   };
@@ -96,8 +96,8 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
       action: 'Application Dispatched',
       details: 'Application sent to dispatcher queue',
       user: 'J. Mitchell',
-      type: 'dispatch',
-      status: 'approved'
+      type: 'dispatch' as const,
+      status: 'approved' as const
     };
     recentActivity.unshift(newActivity);
   };
@@ -110,8 +110,8 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
       action: 'Completion Undone',
       details: 'Application moved back to preparation',
       user: 'J. Mitchell',
-      type: 'undo',
-      status: 'approved'
+      type: 'undo' as const,
+      status: 'approved' as const
     };
     recentActivity.unshift(newActivity);
   };
