@@ -317,16 +317,16 @@ export async function fetchRoles({
  */
 export async function fetchUserByRole({
   token,
-  selectRoleType = "NCRC",
+  selectRoleType = "api/vSelectNCRC",
 }: {
   token?: string | null;
   selectRoleType?: string;
 } = {}): Promise<Array<{ name: string; id: string }>> {
   const params = buildPaginationParams(0, 10000);
-
-  const endpoint = selectRoleType === "RFR" ? "vSelectRFR" : "vSelectNCRC";
+  const endpoint = selectRoleType;
+  //const endpoint = selectRoleType === "RFR" ? "vSelectRFR" : "vSelectNCRC";
   const response = await fetchWithAuth<UserRoleResponse>({
-    path: `/api/${endpoint}?${params.toString()}`,
+    path: `/${endpoint}?${params.toString()}`,
     token,
   });
 

@@ -34,16 +34,43 @@ export const ActionModal: React.FC<Props> = ({
   const [selectedRc, setSelectedRc] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const roleType: "NCRC" | "RFR" = useMemo(() => {
+  /*const roleType: "NCRC" | "RFR" = useMemo(() => {
+    console.log("Determining roleType for action:", selectedAction);
     if (!selectedAction?.action?.name) return "NCRC";
     return selectedAction.action.name.toLowerCase().includes("rfr") ? "RFR" : "NCRC";
   }, [selectedAction?.action?.name]);
+  */
+  type RoleType = "NCRC" | "RFR";
+
+  type ActionMeta = {
+    endpoint: string;
+    roleType: RoleType;
+  };
+
+  const actionMeta = useMemo<ActionMeta>(() => {
+    const prefix = selectedAction?.action?.PreScript;
+
+    if (!prefix) {
+      return {
+        endpoint: "vSelectNCRC",
+        roleType: "NCRC",
+      };
+    }
+
+    const [endpoint, role] = prefix.split(",");
+
+    return {
+      endpoint: endpoint?.trim() ?? "",
+      roleType: role?.trim().toUpperCase(),
+    };
+  }, [selectedAction?.action?.PreScript]);
+  
 
   // The hook's internal 'enabled' option handles when to fetch
   const {
     data: selectlist = [],
     isLoading,
-  } = useUserListByRole(roleType, { enabled: !!showActionModal });
+  } = useUserListByRole(actionMeta.endpoint, { enabled: !!showActionModal });
 
   // 🔹 FIX 3: Extract values safely with useMemo
   const companyName = useMemo(() => {
@@ -141,7 +168,7 @@ export const ActionModal: React.FC<Props> = ({
           </label>
 
           {isLoading ? (
-            <p className="text-sm text-gray-500">Loading {roleType} list...</p>
+            <p className="text-sm text-gray-500">Loading {actionMeta.roleType} list...</p>
           ) : (
             <select
               id="rc-select"

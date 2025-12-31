@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchApplicationTasks, fetchUserByRole } from './../../../api' // adjust import as needed
+import { fetchApplicationTasks, fetchUserByRole } from '@/api'
 import { useUser } from '@/context/UserContext'
 import type { Task } from '@/types/application';
 
@@ -19,7 +19,7 @@ export function useTasks(applicationId?: string, searchTerm?: string) {
 }
 
 export function useUserListByRole(
-  roleType: "NCRC" | "RFR",
+  roleType: string,
   options?: { enabled?: boolean | Task }
 ) {
   const { token } = useUser();
