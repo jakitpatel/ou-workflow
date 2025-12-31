@@ -348,7 +348,7 @@ export async function fetchUserByRole({
   endpoint?: string;
 } = {}): Promise<Array<{ name: string; id: string }>> {
   const paginationParams = buildPaginationParams(0, 10000);
-  const sortParams = buildSortParams("userName");
+  const sortParams = buildSortParams("fullName");
   const params = mergeParams(paginationParams, sortParams);
 
   const response = await fetchWithAuth<UserRoleResponse>({
