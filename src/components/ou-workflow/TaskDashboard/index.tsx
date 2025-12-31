@@ -54,8 +54,6 @@ type TaskDashboardProps = {
   applicationId?: string | number | null;
 };
 
-type TaskRole = 'RFR' | 'NCRC' | 'OtherRole';
-
 // Helper Functions
 const normalizeId = (id: string | number | undefined | null): string => {
   return id != null ? String(id) : '';
