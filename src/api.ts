@@ -223,6 +223,31 @@ function buildPaginationParams(page: number, limit: number): URLSearchParams {
   params.append("page[offset]", String(page));
   return params;
 }
+/**
+ * Builds sorting parameters
+ * Example: sort=username or sort=-username
+ */
+function buildSortParams(sortBy?: string): URLSearchParams {
+  const params = new URLSearchParams();
+
+  if (sortBy) {
+    params.append("sort", sortBy);
+  }
+
+  return params;
+}
+
+function mergeParams(...paramSets: URLSearchParams[]): URLSearchParams {
+  const merged = new URLSearchParams();
+
+  paramSets.forEach((params) => {
+    params.forEach((value, key) => {
+      merged.append(key, value);
+    });
+  });
+
+  return merged;
+}
 
 /**
  * Adds filter parameters if they have valid values
@@ -317,14 +342,15 @@ export async function fetchRoles({
  */
 export async function fetchUserByRole({
   token,
-  selectRoleType = "api/vSelectNCRC",
+  endpoint = "api/vSelectNCRC",
 }: {
   token?: string | null;
-  selectRoleType?: string;
+  endpoint?: string;
 } = {}): Promise<Array<{ name: string; id: string }>> {
-  const params = buildPaginationParams(0, 10000);
-  const endpoint = selectRoleType;
-  //const endpoint = selectRoleType === "RFR" ? "vSelectRFR" : "vSelectNCRC";
+  const paginationParams = buildPaginationParams(0, 10000);
+  const sortParams = buildSortParams("userName");
+  const params = mergeParams(paginationParams, sortParams);
+
   const response = await fetchWithAuth<UserRoleResponse>({
     path: `/${endpoint}?${params.toString()}`,
     token,
