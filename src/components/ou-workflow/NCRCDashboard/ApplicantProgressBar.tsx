@@ -157,6 +157,16 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
           color = 'bg-blue-600 hover:bg-blue-700'
           disabled = false
         }
+        // Case 3: Special roles that cannot act/assign
+        const excludedRoles = ['dispatch', 'ncrc', 'rfr'];
+        const hasExcludedRole = excludedRoles.some(role => taskRoles.includes(role));
+
+        if ((status === 'pending' || status === 'in_progress') && 
+            taskRoles.length > 0 && 
+            !hasExcludedRole) {
+          color = 'bg-blue-600 hover:bg-blue-700';
+          disabled = false;
+        }
       }
     }
 
