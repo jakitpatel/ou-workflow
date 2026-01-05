@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { X } from 'lucide-react'
 import type { Task, Applicant } from '@/types/application'
 import { useUser } from '@/context/UserContext'
+import { useFetchTaskRoles } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
 
 type Props = {
   applicant: Applicant
@@ -111,6 +112,11 @@ function getTaskBorderClass(status: string): string {
 export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
   const { username, role, roles } = useUser()
+  
+  // 🔹 Fetch TaskRoles
+  const {
+    data: taskRolesAll = [],
+  } = useFetchTaskRoles();
 
   // 🔹 Memoize user roles to avoid recalculation
   const userRoles = useMemo(() => {
@@ -158,12 +164,13 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
           disabled = false
         }
         // Case 3: Special roles that cannot act/assign
-        const excludedRoles = ['dispatch', 'ncrc', 'rfr'];
-        const hasExcludedRole = excludedRoles.some(role => taskRoles.includes(role));
+        //console.log('Group Task Roles All:', taskRolesAll);
+
+        const hasIncludedRole = taskRolesAll.some(role => taskRoles.includes(role));
 
         if ((status === 'pending' || status === 'in_progress') && 
             taskRoles.length > 0 && 
-            !hasExcludedRole) {
+            hasIncludedRole) {
           color = 'bg-blue-600 hover:bg-blue-700';
           disabled = false;
         }

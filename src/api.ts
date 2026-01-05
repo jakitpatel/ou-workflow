@@ -509,3 +509,22 @@ export async function fetchApplicationTasks({
 
   return response.data;
 }
+
+export async function fetchTaskRoles({
+  token,
+}: {
+  token?: string | null;
+} = {}): Promise<Array<string>> {
+  const params = buildPaginationParams(0, 10000);
+
+  const response = await fetchWithAuth<UserRoleResponse>({
+    path: `/api/TaskRoles?${params.toString()}`,
+    token,
+  });
+
+  return response.data
+  .filter((item: any) => item.attributes?.groupAssigment)
+  .map((item: any) =>
+    String(item.attributes.RoleCode).toLowerCase()
+  );
+}
