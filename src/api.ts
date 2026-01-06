@@ -523,7 +523,7 @@ export async function fetchTaskRoles({
   });
 
   return response.data
-  .filter((item: any) => item.attributes?.groupAssigment)
+  .filter((item: any) => item.attributes?.groupAssignment)
   .map((item: any) =>
     String(item.attributes.RoleCode).toLowerCase()
   );
