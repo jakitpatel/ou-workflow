@@ -518,7 +518,7 @@ export async function fetchTaskRoles({
   const params = buildPaginationParams(0, 10000);
 
   const response = await fetchWithAuth<UserRoleResponse>({
-    path: `/api/TaskRoles?${params.toString()}`,
+    path: `/api/TaskRole?${params.toString()}`,
     token,
   });
 
