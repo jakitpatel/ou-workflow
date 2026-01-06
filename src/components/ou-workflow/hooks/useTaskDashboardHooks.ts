@@ -52,6 +52,12 @@ export function useFetchTaskRoles(): UseQueryResult<string[]> {
         token: token ?? undefined,
       }),
     enabled: !!token,
-    staleTime: 5 * 60 * 1000,
+    // 🔒 Load once & never refetch automatically
+    staleTime: Infinity,
+    gcTime: Infinity,
+    // 🚫 Prevent background refetches
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
