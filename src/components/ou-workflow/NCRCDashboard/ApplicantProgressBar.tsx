@@ -49,23 +49,23 @@ function getAssignedUser(
   assignedRoles: Array<Record<string, string>> | undefined
 ): string | null {
   if (!taskRoles?.length || !Array.isArray(assignedRoles)) return null
+  console.log('Assigned Roles:', assignedRoles);
+  console.log('Task Roles:', taskRoles);
+ for (const taskRole of taskRoles) {
+    if (!taskRole) continue
 
-// Build case-insensitive lookup map for PRIMARY roles only
-  const roleMap = assignedRoles.reduce<Record<string, string>>((map, item) => {
-    if (!item.isPrimary) return map
+    const normalizedTaskRole = taskRole.toLowerCase()
 
-    const roleKey = Object.keys(item).find(k => k !== "isPrimary")
-    if (roleKey) {
-      map[roleKey.toLowerCase()] = item[roleKey]
+    for (const item of assignedRoles) {
+      if (item.isPrimary !== true) continue
+
+      const roleKey = Object.keys(item).find(k => k !== "isPrimary")
+      if (!roleKey) continue
+
+      if (roleKey.toLowerCase() === normalizedTaskRole) {
+        return item[roleKey]
+      }
     }
-
-    return map
-  }, {})
-
-  // Return first matching role/user
-  for (const role of taskRoles) {
-    const user = roleMap[role.toLowerCase()]
-    if (user) return user
   }
 
   return null
