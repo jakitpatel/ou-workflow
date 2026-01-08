@@ -46,7 +46,7 @@ function getStageColor(status: string): string {
 
 function getAssignedUser(
   taskRoles: string[] | undefined,
-  assignedRoles: Array<Record<string, string>> | undefined
+  assignedRoles: Array<Record<string, any>> | undefined
 ): string | null {
   if (!taskRoles?.length || !Array.isArray(assignedRoles)) return null
   console.log('Assigned Roles:', assignedRoles);
