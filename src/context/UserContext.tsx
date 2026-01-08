@@ -35,6 +35,8 @@ function clearStoredUser() {
 /* ------------------------------------------------------------------
  * Types
  * ------------------------------------------------------------------ */
+type StageLayout = 'horizontal' | 'mixed';
+type PaginationMode = 'paged' | 'infinite';
 
 type StoredUser = {
   username: string | null;
@@ -42,6 +44,8 @@ type StoredUser = {
   roles: UserRole[] | null;
   loginTime: number | null;
   apiBaseUrl: string | null;
+  stageLayout?: 'horizontal' | 'mixed';
+  paginationMode?: 'paged' | 'infinite';
 };
 
 type UserContextType = StoredUser & {
@@ -49,11 +53,14 @@ type UserContextType = StoredUser & {
   setApiBaseUrl: (url: string | null) => void;
   setRole: (role: string | null) => void;
   setRoles: (roles: UserRole[] | null) => void;
+  setStageLayout: (layout: 'horizontal' | 'mixed') => void;
+  setPaginationMode: (mode: 'paged' | 'infinite') => void;
   login: (
     data: {
       username?: string | null;
       role?: string;
       roles?: UserRole[] | null;
+      stageLayout?: 'horizontal' | 'mixed';
     },
     onComplete?: () => void
   ) => void;
@@ -78,6 +85,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     stored?.apiBaseUrl ?? null
   );
 
+  const [stageLayout, setStageLayout] = useState<'horizontal' | 'mixed'>(
+    stored?.stageLayout ?? 'horizontal'
+  );
+
+  const [paginationMode, setPaginationMode] = useState<'paged' | 'infinite'>(
+    stored?.paginationMode ?? 'paged'
+  );
+
   // 🔐 Token is owned by auth layer (Cognito callback)
   const token = sessionStorage.getItem("access_token");
 
@@ -91,8 +106,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       roles,
       loginTime,
       apiBaseUrl,
+      stageLayout,
+      paginationMode,
     });
-  }, [username, role, roles, loginTime, apiBaseUrl]);
+  }, [username, role, roles, loginTime, apiBaseUrl, paginationMode, stageLayout]);
   /* ------------------------------------------------------------------
    * Register context with API base URL
    * ------------------------------------------------------------------ */
@@ -108,6 +125,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       username?: string | null;
       role?: string;
       roles?: UserRole[] | null;
+      stageLayout?: 'horizontal' | 'mixed';
     },
     onComplete?: () => void
   ) => {
@@ -116,6 +134,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUsername(data.username ?? null);
     setRole(data.role ?? null);
     setRoles(data.roles ?? null);
+    setStageLayout(data.stageLayout ?? 'horizontal');
     setLoginTime(now);
 
     // allow state flush before redirect
@@ -155,6 +174,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setRoles,
       login,
       logout,
+      stageLayout,
+      setStageLayout,
+      paginationMode,
+      setPaginationMode,
     }),
     [
       username,
@@ -163,6 +186,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       loginTime,
       apiBaseUrl,
       token,
+      stageLayout,
+      paginationMode
     ]
   );
 

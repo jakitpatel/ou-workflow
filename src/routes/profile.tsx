@@ -34,9 +34,10 @@ function InfoCard({
 }
 
 function ProfilePage() {
-  const { username, role, roles, setRole, apiBaseUrl } = useUser()
+  const { username, role, roles, setRole, apiBaseUrl, stageLayout, setStageLayout, paginationMode, setPaginationMode } = useUser()
   const { version, buildTime } = getBuildInfo()
   const [showRoleChangeSuccess, setShowRoleChangeSuccess] = useState(false)
+  const [showPrefSuccess, setShowPrefSuccess] = useState(false);
 
   // Format active role display
   const getActiveRoleDisplay = useCallback(() => {
@@ -62,6 +63,20 @@ function ProfilePage() {
     setShowRoleChangeSuccess(true)
     setTimeout(() => setShowRoleChangeSuccess(false), 2000)
   }, [role, setRole])
+
+  const handleStageLayoutChange = (value: 'horizontal' | 'mixed') => {
+    if (value === stageLayout) return
+    setStageLayout(value)
+    setShowPrefSuccess(true)
+    setTimeout(() => setShowPrefSuccess(false), 2000)
+  }
+
+  const handlePaginationModeChange = (value: 'paged' | 'infinite') => {
+    if (value === paginationMode) return
+    setPaginationMode(value)
+    setShowPrefSuccess(true)
+    setTimeout(() => setShowPrefSuccess(false), 2000)
+  }
 
   const hasRoles = roles && roles.length > 0
 
@@ -143,6 +158,64 @@ function ProfilePage() {
               ) : (
                 <div className="text-sm text-gray-500 py-2">
                   No roles available
+                </div>
+              )}
+            </div>
+          </section>
+          {/* Preferences Card */}
+          <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Display Preferences
+              </h2>
+            </div>
+
+            <div className="px-6 py-5 space-y-6">
+              {/* Stage Layout */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Application Stage Layout
+                </label>
+                <select
+                  value={stageLayout}
+                  onChange={(e) =>
+                    handleStageLayoutChange(e.target.value as 'horizontal' | 'mixed')
+                  }
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
+                >
+                  <option value="horizontal">Horizontal (Classic)</option>
+                  <option value="mixed">Mixed (Vertical + Horizontal)</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Controls how application stages are displayed in progress view
+                </p>
+              </div>
+
+              {/* Pagination Mode */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Application List Pagination
+                </label>
+                <select
+                  value={paginationMode}
+                  onChange={(e) =>
+                    handlePaginationModeChange(e.target.value as 'paged' | 'infinite')
+                  }
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
+                >
+                  <option value="paged">Page Controls</option>
+                  <option value="infinite">Infinite Scroll</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Choose between classic pagination or scroll-to-load behavior
+                </p>
+              </div>
+
+              {/* Success Feedback */}
+              {showPrefSuccess && (
+                <div className="flex items-center space-x-2 text-sm text-green-600 animate-fade-in">
+                  <Check className="w-4 h-4" />
+                  <span>Preferences updated</span>
                 </div>
               )}
             </div>

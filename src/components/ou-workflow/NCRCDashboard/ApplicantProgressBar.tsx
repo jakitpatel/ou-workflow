@@ -118,9 +118,8 @@ function getTaskBorderClass(status: string): string {
 
 export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
-  const { username, role, roles } = useUser()
-  const [isVerticalLayout, setIsVerticalLayout] = useState(false);
-
+  const { username, role, roles, stageLayout } = useUser()
+  const isVerticalLayout = stageLayout === 'mixed';
   // 🔹 Fetch TaskRoles
   const {
     data: taskRolesAll = [],
@@ -243,12 +242,12 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
         </div>
       ) : (
         /*  MIXED LAYOUT */
-        <div className="flex items-start gap-4">
-          {/* Initial */}
+        <div className="grid grid-cols-3 gap-4 w-full items-start">
+          {/* Column 1: Initial */}
           {firstStage && (
             <button
               onClick={() => handleStageClick(firstStage.key)}
-              className={`w-24 h-6 rounded cursor-pointer hover:opacity-80 transition-all ${
+              className={`h-6 w-full px-2 rounded cursor-pointer hover:opacity-80 transition-all ${
                 expandedStage === firstStage.key
                   ? 'ring-2 ring-blue-400 ring-offset-1'
                   : ''
@@ -259,19 +258,19 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
                 )
               }}
             >
-              <span className="text-white text-xs leading-6">
+              <span className="text-white text-xs leading-6 truncate">
                 {firstStage.name}
               </span>
             </button>
           )}
 
-          {/* Vertical group */}
-          <div className="flex flex-col space-y-1">
+          {/* Column 2: Vertical stages */}
+          <div className="flex flex-col space-y-1 w-full">
             {verticalStages.map(stage => (
               <button
                 key={stage.key}
                 onClick={() => handleStageClick(stage.key)}
-                className={`w-28 h-6 rounded cursor-pointer hover:opacity-80 transition-all ${
+                className={`h-6 w-full px-2 rounded cursor-pointer hover:opacity-80 transition-all ${
                   expandedStage === stage.key
                     ? 'ring-2 ring-blue-400 ring-offset-1'
                     : ''
@@ -282,20 +281,20 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
                   )
                 }}
               >
-                <span className="text-white text-xs leading-6">
+                <span className="text-white text-xs leading-6 truncate">
                   {stage.name}
                 </span>
               </button>
             ))}
           </div>
 
-          {/* Last stages */}
-          <div className="flex space-x-1">
+          {/* Column 3: Last stages */}
+          <div className="flex space-x-1 w-full">
             {lastStages.map(stage => (
               <button
                 key={stage.key}
                 onClick={() => handleStageClick(stage.key)}
-                className={`w-28 h-6 rounded cursor-pointer hover:opacity-80 transition-all ${
+                className={`h-6 w-full px-2 rounded cursor-pointer hover:opacity-80 transition-all ${
                   expandedStage === stage.key
                     ? 'ring-2 ring-blue-400 ring-offset-1'
                     : ''
@@ -306,7 +305,7 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
                   )
                 }}
               >
-                <span className="text-white text-xs leading-6">
+                <span className="text-white text-xs leading-6 truncate">
                   {stage.name}
                 </span>
               </button>
