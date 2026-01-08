@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import { fetchApplicants } from '@/api' // adjust import as needed
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
+import { fetchApplicants } from '@/api'
 import { useUser } from '@/context/UserContext';
 
 export function useApplications({
@@ -18,8 +18,10 @@ export function useApplications({
   const { token } = useUser();
 
   return useQuery({
-    queryKey: ['applications', { token, searchTerm, statusFilter, priorityFilter, page, limit }],
-    //staleTime: 1000 * 60 * 5, // 5 minutes cache
+    queryKey: [
+      'applications',
+      { searchTerm, statusFilter, priorityFilter, page, limit },
+    ],
     queryFn: () =>
       fetchApplicants({
         token: token ?? undefined,
@@ -29,8 +31,7 @@ export function useApplications({
         page,
         limit,
       }),
-    // keep showing previous data until new data is loaded:
-    placeholderData: (previousData) => previousData,
+    placeholderData: keepPreviousData,
     enabled: !!token,
     retry: (failureCount, error: any) => {
       if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) return false;

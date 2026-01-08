@@ -14,6 +14,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import type { Task, Applicant } from '@/types/application';
+import { Route as DashboardRoute } from '@/routes/ou-workflow/ncrc-dashboard';
 
 type Props = {
   applicant: Applicant;
@@ -54,9 +55,16 @@ const DOCUMENT_TYPES = [
   { key: 'PROD', label: 'Product Details', icon: FileText },
 ] as const;
 
+const saveScrollPosition = () => {
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem('ncrc-scroll', String(window.scrollY));
+  }
+};
+
 export function ApplicantCard({ applicant, handleTaskAction }: Props) {
   const navigate = useNavigate();
   const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const dashboardSearch = DashboardRoute.useSearch();
 
   // Memoize computed values
   const status = useMemo(() => {
@@ -84,14 +92,20 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
   }, [applicant.overdue, applicant.stages]);
 
   const handleViewTasks = (applicationId?: string | number) => {
+    saveScrollPosition();
+
     if (!applicationId) {
-      navigate({ to: '/ou-workflow/tasks-dashboard' });
+      navigate({
+        to: '/ou-workflow/tasks-dashboard',
+        search: dashboardSearch,
+      });
       return;
     }
 
     navigate({
       to: '/ou-workflow/tasks-dashboard/$applicationId',
       params: { applicationId: String(applicationId) },
+      search: dashboardSearch,
     });
   };
 
@@ -120,7 +134,7 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
       <CardStats applicant={applicant} />
 
       {/* Actions Section */}
-      <CardActions applicant={applicant} onViewTasks={handleViewTasks} />
+      <CardActions applicant={applicant} onViewTasks={handleViewTasks} dashboardSearch={dashboardSearch} />
 
       {/* Documents Section */}
       <DocumentLinks filesByType={filesByType} />
@@ -289,9 +303,10 @@ function CardStats({ applicant }: { applicant: Applicant }) {
 interface CardActionsProps {
   applicant: Applicant;
   onViewTasks: (id?: string | number) => void;
+  dashboardSearch: Record<string, unknown>;
 }
 
-function CardActions({ applicant, onViewTasks }: CardActionsProps) {
+function CardActions({ applicant, onViewTasks, dashboardSearch }: CardActionsProps) {
   return (
     <div className="mt-4 pt-4 border-t border-gray-100">
       <div className="flex items-center justify-between mb-3">
@@ -300,6 +315,8 @@ function CardActions({ applicant, onViewTasks }: CardActionsProps) {
           <Link
             to="/ou-workflow/ncrc-dashboard/$applicationId"
             params={{ applicationId: String(applicant.applicationId) }}
+            search={dashboardSearch}
+            onClick={saveScrollPosition}
             className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             View Details

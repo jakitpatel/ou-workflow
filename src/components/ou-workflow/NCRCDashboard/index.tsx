@@ -11,9 +11,10 @@ import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 import type { Applicant, Task } from '@/types/application';
 import { ApplicantStatsCards } from './ApplicantStatsCards';
 import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce'; // 👈 Create this hook
+import { Route } from '@/routes/ou-workflow/ncrc-dashboard';
 
 // 🎯 Constants
-const PAGE_LIMIT = 20;
+const PAGE_LIMIT = 5;
 const DEBOUNCE_DELAY = 1000;
 
 // 🎯 Task type definitions for better type safety
@@ -70,10 +71,18 @@ const detectRole = (preScript?: string): string => {
 };
 
 export function NCRCDashboard() {
+  /*
   const [page, setPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  */
+  // 🔹 Router hooks
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
+
+  const { q, status, priority, page } = search;
+
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [showActionModal, setShowActionModal] = useState<Task | null | boolean>(null);
   const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null);
@@ -83,18 +92,13 @@ export function NCRCDashboard() {
   const errorDialogRef = useRef<ErrorDialogRef>(null);
   
   // 🔹 Use custom debounce hook instead of useEffect
-  const debouncedSearchTerm = useDebounce(searchTerm, DEBOUNCE_DELAY);
-
-  // 🔹 Reset pagination when filters change
-  useEffect(() => {
-    setPage(0);
-  }, [debouncedSearchTerm, statusFilter, priorityFilter]);
+  const debouncedSearchTerm = useDebounce(q, DEBOUNCE_DELAY);
 
   // 🔹 Fetch applications
   const { data, isLoading, isError, error } = useApplications({
     searchTerm: debouncedSearchTerm,
-    statusFilter,
-    priorityFilter,
+    statusFilter: status,
+    priorityFilter: priority,
     page,
     limit: PAGE_LIMIT,
   });
@@ -104,15 +108,31 @@ export function NCRCDashboard() {
   const totalPages = Math.ceil(totalCount / PAGE_LIMIT);
 
   // 🔹 Pagination handlers
-  const handleFirst = () => setPage(0);
-  const handlePrev = () => setPage(p => Math.max(p - PAGE_LIMIT, 0));
-  const handleNext = () => setPage(p => (p + PAGE_LIMIT < totalCount ? p + PAGE_LIMIT : p));
-  const handleLast = () => setPage((totalPages - 1) * PAGE_LIMIT);
+  const handleFirst = () => updateSearch({ page: 0 })
+  const handlePrev = () => updateSearch({ page: Math.max(page - PAGE_LIMIT, 0) });
+  const handleNext = () => updateSearch({ page: (page + PAGE_LIMIT < totalCount ? page + PAGE_LIMIT : page) });
+  const handleLast = () => updateSearch({ page: (totalPages - 1) * PAGE_LIMIT });
 
-  // 🔹 Scroll to top on page change
+  //  Restore scroll position on mount
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [page]);
+    const savedScroll = sessionStorage.getItem('ncrc-scroll')
+    if (savedScroll) {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, Number(savedScroll))
+        sessionStorage.removeItem('ncrc-scroll')
+      })
+    }
+  }, [])
+
+  const updateSearch = (updates: Partial<typeof search>) => {
+    navigate({
+      search: (prev) => {
+        const next = { ...prev, ...updates };
+        return JSON.stringify(prev) === JSON.stringify(next) ? prev : next;
+      },
+    });
+  };
+
 
   // 🔹 Calculate stats
   const applicantStats = useMemo(() => {
@@ -308,15 +328,15 @@ export function NCRCDashboard() {
                 type="text"
                 placeholder="Search by company, plant, region..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={q}
+                onChange={(e) => updateSearch({ q: e.target.value, page: 0 })}
               />
             </div>
           </div>
           
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            value={status}
+            onChange={(e) => updateSearch({ status: e.target.value, page: 0 })}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[140px]"
           >
             <option value="all">All Statuses</option>
@@ -333,8 +353,8 @@ export function NCRCDashboard() {
           </select>
 
           <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
+            value={priority}
+            onChange={(e) => updateSearch({ priority: e.target.value, page: 0 })}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[120px]"
           >
             <option value="all">All Priorities</option>
