@@ -49,8 +49,8 @@ function getAssignedUser(
   assignedRoles: Array<Record<string, any>> | undefined
 ): string | null {
   if (!taskRoles?.length || !Array.isArray(assignedRoles)) return null
-  console.log('Assigned Roles:', assignedRoles);
-  console.log('Task Roles:', taskRoles);
+  //console.log('Assigned Roles:', assignedRoles);
+  //console.log('Task Roles:', taskRoles);
  for (const taskRole of taskRoles) {
     if (!taskRole) continue
 
