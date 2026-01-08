@@ -12,7 +12,9 @@ type Props = {
     action: Task
   ) => void
 }
-
+const VERTICAL_STAGE_KEYS = ['nda', 'inspection', 'ingredients', 'products'];
+const FIRST_STAGE_KEY = 'initial';
+const LAST_STAGE_KEYS = ['contract', 'certification'];
 // 🔹 Constants moved outside component for better performance
 const STAGE_ORDER = [
   { key: 'initial', name: 'Initial' },
@@ -117,7 +119,8 @@ function getTaskBorderClass(status: string): string {
 export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
   const { username, role, roles } = useUser()
-  
+  const [isVerticalLayout, setIsVerticalLayout] = useState(false);
+
   // 🔹 Fetch TaskRoles
   const {
     data: taskRolesAll = [],
@@ -200,12 +203,23 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
     }
   }
 
+  const firstStage = STAGE_ORDER.find(s => s.key === FIRST_STAGE_KEY)
+  const verticalStages = STAGE_ORDER.filter(s =>
+    VERTICAL_STAGE_KEYS.includes(s.key)
+  )
+  const lastStages = STAGE_ORDER.filter(s =>
+    LAST_STAGE_KEYS.includes(s.key)
+  )
+
   return (
     <div className="mt-3">
       {/* Progress Bar */}
       <div className="space-y-2">
+      {/* Stat Stages */}
+      {!isVerticalLayout ? (
+        /*  NORMAL HORIZONTAL LAYOUT */
         <div className="flex space-x-1">
-          {STAGE_ORDER.map((stage) => (
+          {STAGE_ORDER.map(stage => (
             <button
               key={stage.key}
               onClick={() => handleStageClick(stage.key)}
@@ -215,16 +229,92 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
                   : ''
               }`}
               style={{
-                backgroundColor: getStageColor(applicant.stages[stage.key]?.status)
+                backgroundColor: getStageColor(
+                  applicant.stages[stage.key]?.status
+                )
               }}
               title={`Click to see ${stage.name} tasks`}
-              aria-label={`${stage.name} stage`}
-              aria-expanded={expandedStage === stage.key}
             >
-              <span className="text-white text-xs leading-6">{stage.name}</span>
+              <span className="text-white text-xs leading-6">
+                {stage.name}
+              </span>
             </button>
           ))}
         </div>
+      ) : (
+        /*  MIXED LAYOUT */
+        <div className="flex items-start gap-4">
+          {/* Initial */}
+          {firstStage && (
+            <button
+              onClick={() => handleStageClick(firstStage.key)}
+              className={`w-24 h-6 rounded cursor-pointer hover:opacity-80 transition-all ${
+                expandedStage === firstStage.key
+                  ? 'ring-2 ring-blue-400 ring-offset-1'
+                  : ''
+              }`}
+              style={{
+                backgroundColor: getStageColor(
+                  applicant.stages[firstStage.key]?.status
+                )
+              }}
+            >
+              <span className="text-white text-xs leading-6">
+                {firstStage.name}
+              </span>
+            </button>
+          )}
+
+          {/* Vertical group */}
+          <div className="flex flex-col space-y-1">
+            {verticalStages.map(stage => (
+              <button
+                key={stage.key}
+                onClick={() => handleStageClick(stage.key)}
+                className={`w-28 h-6 rounded cursor-pointer hover:opacity-80 transition-all ${
+                  expandedStage === stage.key
+                    ? 'ring-2 ring-blue-400 ring-offset-1'
+                    : ''
+                }`}
+                style={{
+                  backgroundColor: getStageColor(
+                    applicant.stages[stage.key]?.status
+                  )
+                }}
+              >
+                <span className="text-white text-xs leading-6">
+                  {stage.name}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Last stages */}
+          <div className="flex space-x-1">
+            {lastStages.map(stage => (
+              <button
+                key={stage.key}
+                onClick={() => handleStageClick(stage.key)}
+                className={`w-28 h-6 rounded cursor-pointer hover:opacity-80 transition-all ${
+                  expandedStage === stage.key
+                    ? 'ring-2 ring-blue-400 ring-offset-1'
+                    : ''
+                }`}
+                style={{
+                  backgroundColor: getStageColor(
+                    applicant.stages[stage.key]?.status
+                  )
+                }}
+              >
+                <span className="text-white text-xs leading-6">
+                  {stage.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* End Stages */}
       </div>
 
       {/* Expanded Stage Details */}
