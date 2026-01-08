@@ -50,10 +50,15 @@ function getAssignedUser(
 ): string | null {
   if (!taskRoles?.length || !Array.isArray(assignedRoles)) return null
 
-  // Build case-insensitive lookup map
+// Build case-insensitive lookup map for PRIMARY roles only
   const roleMap = assignedRoles.reduce<Record<string, string>>((map, item) => {
-    const key = Object.keys(item)[0]
-    if (key) map[key.toLowerCase()] = item[key]
+    if (!item.isPrimary) return map
+
+    const roleKey = Object.keys(item).find(k => k !== "isPrimary")
+    if (roleKey) {
+      map[roleKey.toLowerCase()] = item[roleKey]
+    }
+
     return map
   }, {})
 
