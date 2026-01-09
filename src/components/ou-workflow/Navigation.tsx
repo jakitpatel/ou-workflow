@@ -91,6 +91,12 @@ export function Navigation({ showMenu = true }: NavigationProps) {
               <div className="hidden md:flex space-x-1">
                 <Link
                   to={ROUTES.NCRC_DASHBOARD}
+                  search={{
+                    q: '',
+                    status: 'all',
+                    priority: 'all',
+                    page: 0,
+                  }}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
                     isActiveRoute('ncrc-dashboard')
                       ? 'bg-blue-100 text-blue-700'

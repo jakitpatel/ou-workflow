@@ -44,8 +44,8 @@ type StoredUser = {
   roles: UserRole[] | null;
   loginTime: number | null;
   apiBaseUrl: string | null;
-  stageLayout?: 'horizontal' | 'mixed';
-  paginationMode?: 'paged' | 'infinite';
+  stageLayout?: StageLayout;
+  paginationMode?: PaginationMode;
 };
 
 type UserContextType = StoredUser & {
@@ -53,14 +53,14 @@ type UserContextType = StoredUser & {
   setApiBaseUrl: (url: string | null) => void;
   setRole: (role: string | null) => void;
   setRoles: (roles: UserRole[] | null) => void;
-  setStageLayout: (layout: 'horizontal' | 'mixed') => void;
-  setPaginationMode: (mode: 'paged' | 'infinite') => void;
+  setStageLayout: (layout: StageLayout) => void;
+  setPaginationMode: (mode: PaginationMode) => void;
   login: (
     data: {
       username?: string | null;
       role?: string;
       roles?: UserRole[] | null;
-      stageLayout?: 'horizontal' | 'mixed';
+      stageLayout?: StageLayout;
     },
     onComplete?: () => void
   ) => void;
@@ -85,11 +85,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     stored?.apiBaseUrl ?? null
   );
 
-  const [stageLayout, setStageLayout] = useState<'horizontal' | 'mixed'>(
+  const [stageLayout, setStageLayout] = useState<StageLayout>(
     stored?.stageLayout ?? 'horizontal'
   );
 
-  const [paginationMode, setPaginationMode] = useState<'paged' | 'infinite'>(
+  const [paginationMode, setPaginationMode] = useState<PaginationMode>(
     stored?.paginationMode ?? 'paged'
   );
 
@@ -125,7 +125,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       username?: string | null;
       role?: string;
       roles?: UserRole[] | null;
-      stageLayout?: 'horizontal' | 'mixed';
+      stageLayout?: StageLayout;
     },
     onComplete?: () => void
   ) => {

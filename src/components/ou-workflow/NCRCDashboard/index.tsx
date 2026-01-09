@@ -71,12 +71,6 @@ const detectRole = (preScript?: string): string => {
 };
 
 export function NCRCDashboard() {
-  /*
-  const [page, setPage] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  */
   // 🔹 Router hooks
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
