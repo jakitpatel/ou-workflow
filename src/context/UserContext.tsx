@@ -6,7 +6,7 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
-import { registerUserContext } from "@/api";
+import { registerUserContext, fetchProfileLayout } from "@/api";
 import { cognitoLogout } from "@/auth/authService";
 import type { UserRole, PaginationMode, StageLayout } from "@/types/application";
 
@@ -114,6 +114,48 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     registerUserContext({ apiBaseUrl });
   }, [apiBaseUrl]);
+
+  useEffect(() => {
+    if (!token || !username) return;
+
+    let cancelled = false;
+
+    async function loadProfileLayout() {
+      try {
+        const records = await fetchProfileLayout({
+          token,
+          username,
+        });
+
+        if (!records || records.length === 0) return;
+
+        // Pick latest record
+        const latest = records.at(-1);
+        const profileStr = latest?.attributes?.Profile;
+
+        if (!profileStr) return;
+
+        const parsed = JSON.parse(profileStr);
+
+        if (cancelled) return;
+
+        if (parsed.stageLayout) {
+          setStageLayout(parsed.stageLayout);
+        }
+        if (parsed.paginationMode) {
+          setPaginationMode(parsed.paginationMode);
+        }
+      } catch (err) {
+        console.warn("⚠️ Failed to hydrate profile layout:", err);
+      }
+    }
+
+    loadProfileLayout();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, username]);
 
   /* ------------------------------------------------------------------
    * Login Handler

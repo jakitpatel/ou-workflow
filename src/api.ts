@@ -560,3 +560,30 @@ export async function saveProfileLayout({
     token,
   });
 }
+
+/**
+ * Profile(Page,Stage) layout save
+ */
+export async function fetchProfileLayout({
+  token,
+  username
+}: {
+  token?: string | null;
+  username?: string;
+}): Promise<any> {
+
+  const params = new URLSearchParams();
+  if (username) {
+    params.append("filter[Username]", username);
+  }
+
+  const queryString = params.toString();
+  const path = `/api/WFUserProfile${queryString ? `?${queryString}` : ""}`;
+
+  const response = await fetchWithAuth<ApplicationTasksResponse>({
+    path,
+    token,
+  });
+
+  return response.data;
+}
