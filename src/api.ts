@@ -528,3 +528,30 @@ export async function fetchTaskRoles({
     String(item.attributes.RoleCode).toLowerCase()
   );
 }
+
+/**
+ * Profile(Page,Stage) layout save
+ */
+export async function saveProfileLayout({
+  token,
+  username,
+  profileLayout,
+}: {
+  token?: string | null;
+  username?: string;
+  profileLayout?: any;
+}): Promise<any> {
+
+  // Build request body dynamically
+  const body: Record<string, any> = {
+    Username: username,
+    Profile: profileLayout,
+  };
+
+  return await fetchWithAuth({
+    path: `/api/WFUserProfile`,
+    method: "POST",
+    body,
+    token,
+  });
+}

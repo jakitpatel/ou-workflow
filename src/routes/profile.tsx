@@ -4,6 +4,8 @@ import { useUser } from '@/context/UserContext'
 import { getBuildInfo } from '@/lib/utils'
 import { User, Shield, Server, Code, Check } from 'lucide-react'
 import type {StageLayout, PaginationMode} from '@/types/application';
+import { useMutation } from '@tanstack/react-query';
+import { saveProfileLayout } from '@/api';
 
 export const Route = createFileRoute('/profile')({
   component: ProfilePage,
@@ -35,7 +37,7 @@ function InfoCard({
 }
 
 function ProfilePage() {
-  const { username, role, roles, setRole, apiBaseUrl, stageLayout, setStageLayout, paginationMode, setPaginationMode } = useUser()
+  const { username, token, role, roles, setRole, apiBaseUrl, stageLayout, setStageLayout, paginationMode, setPaginationMode } = useUser()
   const { version, buildTime } = getBuildInfo()
   const [showRoleChangeSuccess, setShowRoleChangeSuccess] = useState(false)
   const [showPrefSuccess, setShowPrefSuccess] = useState(false);
@@ -49,6 +51,29 @@ function ProfilePage() {
     }
     return role
   }, [role, roles])
+
+  const buildProfileLayout = (): string => {
+    return JSON.stringify({
+      stageLayout,
+      paginationMode,
+    });
+  };
+  // Mutation for confirming task (example usage
+  const saveProfileLayoutMutation = useMutation({
+    mutationFn: () =>
+      saveProfileLayout({
+        token,
+        username: username ?? '',
+        profileLayout: buildProfileLayout(),
+      }),
+    onSuccess: () => {
+      setShowPrefSuccess(true);
+      setTimeout(() => setShowPrefSuccess(false), 2000);
+    },
+    onError: (error: any) => {
+      console.error('❌ Failed to save profile layout:', error);
+    },
+  });
 
   // Handle role change with feedback
   const handleRoleChange = useCallback((selectedValue: string) => {
@@ -68,15 +93,13 @@ function ProfilePage() {
   const handleStageLayoutChange = (value: 'horizontal' | 'mixed') => {
     if (value === stageLayout) return
     setStageLayout(value)
-    setShowPrefSuccess(true)
-    setTimeout(() => setShowPrefSuccess(false), 2000)
+    saveProfileLayoutMutation.mutate();
   }
 
   const handlePaginationModeChange = (value: 'paged' | 'infinite') => {
     if (value === paginationMode) return
     setPaginationMode(value)
-    setShowPrefSuccess(true)
-    setTimeout(() => setShowPrefSuccess(false), 2000)
+    saveProfileLayoutMutation.mutate();
   }
 
   const hasRoles = roles && roles.length > 0
