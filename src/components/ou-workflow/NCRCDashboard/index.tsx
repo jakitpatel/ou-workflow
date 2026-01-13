@@ -5,19 +5,22 @@ import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
 import { Search } from 'lucide-react';
 import { useUser } from '@/context/UserContext'
-import { useApplications } from './../hooks/useApplications';
+//import { useApplications } from '@/components/ou-workflow/hooks/useApplications';
+import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce';
+import { useInfiniteApplications } from '@/components/ou-workflow/hooks/useInfiniteApplications';
+import { usePagedApplications } from '@/components/ou-workflow/hooks/usePagedApplications';
 import { assignTask, confirmTask } from '@/api';
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 import type { Applicant, Task } from '@/types/application';
 import { ApplicantStatsCards } from './ApplicantStatsCards';
-import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce'; // 👈 Create this hook
 import { Route } from '@/routes/ou-workflow/ncrc-dashboard';
 
 // 🎯 Constants
 const PAGE_LIMIT = 5;
 const DEBOUNCE_DELAY = 1000;
+//const STORAGE_KEY = 'ncrc-infinite-state';
 
-// 🎯 Task type definitions for better type safety
+// 🎯 Task type definitions
 const TASK_TYPES = {
   CONFIRM: 'confirm',
   CONDITIONAL: 'conditional',
@@ -55,69 +58,67 @@ const getProgressStatus = (result: string): string => {
 // 🎯 Role detection helper
 const detectRole = (preScript?: string): string => {
   if (!preScript) return "OtherRole";
-
-  // "api/vSelectRFR,RFR" → ["api/vSelectRFR", "RFR"]
   const [, role] = preScript.split(",");
-
-  const normalizedRole = role?.trim().toUpperCase();
-  return normalizedRole;
-  /*
-  if (normalizedRole === "RFR" || normalizedRole === "NCRC") {
-    return normalizedRole;
-  }
-
-  return "OtherRole";
-  */
+  return role?.trim().toUpperCase();
 };
 
 export function NCRCDashboard() {
   // 🔹 Router hooks
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
-
   const { q, status, priority, page } = search;
 
+  // 🔹 User context
+  const { token, username, paginationMode } = useUser();
+  const queryClient = useQueryClient();
+  const errorDialogRef = useRef<ErrorDialogRef>(null);
+  // UI states
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [showActionModal, setShowActionModal] = useState<Task | null | boolean>(null);
   const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null);
   
-  const { token, username } = useUser();
-  const queryClient = useQueryClient();
-  const errorDialogRef = useRef<ErrorDialogRef>(null);
+  // 🔹 Infinite Scrolling States
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
   
-  // 🔹 Use custom debounce hook instead of useEffect
-  const debouncedSearchTerm = useDebounce(q, DEBOUNCE_DELAY);
+  // 🔹 Debounced search filters
+  const debouncedSearch = useDebounce(q, DEBOUNCE_DELAY);
 
   // 🔹 Fetch applications
-  const { data, isLoading, isError, error } = useApplications({
-    searchTerm: debouncedSearchTerm,
+  /* ================================================================
+   * DATA FETCHING
+   * ================================================================ */
+  const pagedQuery = usePagedApplications({
+    searchTerm: debouncedSearch,
     statusFilter: status,
     priorityFilter: priority,
     page,
     limit: PAGE_LIMIT,
+    enabled: paginationMode === 'paged',
   });
 
-  const applicants = data?.data || [];
-  const totalCount = data?.meta?.total_count || 0;
-  const totalPages = Math.ceil(totalCount / PAGE_LIMIT);
+  const infiniteQuery = useInfiniteApplications({
+    searchTerm: debouncedSearch,
+    statusFilter: status,
+    priorityFilter: priority,
+    enabled: paginationMode === 'infinite',
+  });
 
-  // 🔹 Pagination handlers
-  const handleFirst = () => updateSearch({ page: 0 })
-  const handlePrev = () => updateSearch({ page: Math.max(page - PAGE_LIMIT, 0) });
-  const handleNext = () => updateSearch({ page: (page + PAGE_LIMIT < totalCount ? page + PAGE_LIMIT : page) });
-  const handleLast = () => updateSearch({ page: (totalPages - 1) * PAGE_LIMIT });
+  const isLoading =
+    paginationMode === 'paged'
+      ? pagedQuery.isLoading
+      : infiniteQuery.isLoading;
 
-  //  Restore scroll position on mount
-  useEffect(() => {
-    const savedScroll = sessionStorage.getItem('ncrc-scroll')
-    if (savedScroll) {
-      requestAnimationFrame(() => {
-        window.scrollTo(0, Number(savedScroll))
-        sessionStorage.removeItem('ncrc-scroll')
-      })
-    }
-  }, [])
+  const isError =
+    paginationMode === 'paged'
+      ? pagedQuery.isError
+      : infiniteQuery.isError;
 
+  const error =
+    paginationMode === 'paged'
+      ? pagedQuery.error
+      : infiniteQuery.error;
+      
+  // 🔹 Update search params helper
   const updateSearch = (updates: Partial<typeof search>) => {
     navigate({
       search: (prev) => {
@@ -127,8 +128,115 @@ export function NCRCDashboard() {
     });
   };
 
+  // 🔹 Get applicants based on mode
+  const applicants: Applicant[] =
+    paginationMode === 'paged'
+      ? pagedQuery.data?.data ?? []
+      : infiniteQuery.data?.pages.flatMap(p => p.data) ?? [];
 
-  // 🔹 Calculate stats
+  const totalCount =
+    paginationMode === 'paged'
+      ? pagedQuery.data?.meta?.total_count ?? 0
+      : infiniteQuery.data?.pages?.[0]?.meta?.total_count ?? 0;
+
+  const totalPages = Math.ceil(totalCount / PAGE_LIMIT);
+
+  // 🔹 Pagination handlers
+  const handleFirst = () => updateSearch({ page: 0 })
+  const handlePrev = () => updateSearch({ page: Math.max(page - PAGE_LIMIT, 0) });
+  const handleNext = () => updateSearch({ page: (page + PAGE_LIMIT < totalCount ? page + PAGE_LIMIT : page) });
+  const handleLast = () => updateSearch({ page: (totalPages - 1) * PAGE_LIMIT });
+
+  // ✅ Restore scroll position ONLY for paged mode
+  useEffect(() => {
+    if (paginationMode !== 'paged') return;
+
+    const savedScroll = sessionStorage.getItem('ncrc-paged-scroll');
+    if (!savedScroll) return;
+
+    requestAnimationFrame(() => {
+      window.scrollTo(0, Number(savedScroll));
+      sessionStorage.removeItem('ncrc-paged-scroll');
+    });
+  }, [paginationMode]);
+
+  // Restore scroll position on mount for Infinite mode
+  useEffect(() => {
+    if (paginationMode !== 'infinite') return;
+    if (!infiniteQuery.data) return;
+
+    const raw = sessionStorage.getItem('ncrc-infinite-scroll');
+    if (!raw) return;
+
+    const { scrollY, anchorId } = JSON.parse(raw);
+
+    // Wait for DOM + cards to render
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (anchorId) {
+          const el = document.querySelector(
+            `[data-app-id="${anchorId}"]`
+          ) as HTMLElement | null;
+
+          if (el) {
+            el.scrollIntoView({ block: 'center', behavior: 'auto' });
+          } else {
+            window.scrollTo(0, scrollY ?? 0);
+          }
+        } else {
+          window.scrollTo(0, scrollY ?? 0);
+        }
+
+        sessionStorage.removeItem('ncrc-infinite-scroll');
+      });
+    });
+  }, [paginationMode, infiniteQuery.data]);
+
+
+  /* ================================================================
+   * INTERSECTION OBSERVER (INFINITE ONLY)
+   * ================================================================ */
+  useEffect(() => {
+    if (paginationMode !== 'infinite') return;
+    if (!sentinelRef.current) return;
+    if (!infiniteQuery.hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (
+          entries[0].isIntersecting &&
+          infiniteQuery.hasNextPage &&
+          !infiniteQuery.isFetchingNextPage
+        ) {
+          infiniteQuery.fetchNextPage();
+        }
+      },
+      { rootMargin: '300px' }
+    );
+
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [
+    paginationMode,
+    infiniteQuery.hasNextPage,
+    infiniteQuery.fetchNextPage,
+    infiniteQuery.isFetchingNextPage
+  ]);
+
+  // ==============================
+  // 🔹 RESET PAGE ON MODE SWITCH
+  // ==============================
+  
+  useEffect(() => {
+    if (paginationMode === 'paged' && page !== 0) {
+      updateSearch({ page: 0 });
+    }
+  }, [paginationMode]);
+
+  // ==============================
+  // 🔹 CALCULATE STATS
+  // ==============================
+  
   const applicantStats = useMemo(() => {
     const normalizedApplicants = applicants.map(app => ({
       ...app,
@@ -157,11 +265,15 @@ export function NCRCDashboard() {
     };
   }, [applicants]);
 
-  // 🔹 Mutations
+  // ==============================
+  // 🔹 MUTATIONS
+  // ==============================
+  
   const confirmTaskMutation = useMutation({
     mutationFn: confirmTask,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: ['applications', 'paged'] });
+      queryClient.invalidateQueries({ queryKey: ['applications', 'infinite'] });
     },
     onError: (error: any) => {
       console.error("❌ Failed to confirm task:", error);
@@ -176,7 +288,8 @@ export function NCRCDashboard() {
   const assignTaskMutation = useMutation({
     mutationFn: assignTask,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: ['applications', 'paged'] });
+      queryClient.invalidateQueries({ queryKey: ['applications', 'infinite'] });
     },
     onError: (error: any) => {
       console.error("❌ Failed to assign task:", error);
@@ -188,20 +301,21 @@ export function NCRCDashboard() {
     },
   });
 
-  // 🔹 Execute action based on task type
+  // ==============================
+  // 🔹 EXECUTE ACTION
+  // ==============================
+  
   const executeAction = (assignee: string, action: any, result?: string) => {
     const taskType = action.taskType?.toLowerCase();
     const taskCategory = action.taskCategory?.toLowerCase();
     const taskId = action.TaskInstanceId;
 
-    // Common mutation params
     const baseParams = {
       taskId,
       token: token ?? undefined,
       username: username ?? undefined,
     };
 
-    // Handle different task types
     if (taskType === TASK_TYPES.CONFIRM && taskCategory === TASK_CATEGORIES.CONFIRMATION) {
       confirmTaskMutation.mutate(baseParams);
     } 
@@ -240,46 +354,43 @@ export function NCRCDashboard() {
     }
   };
 
-  // 🔹 Get selected action
+  // ==============================
+  // 🔹 SELECTED ACTION
+  // ==============================
+  
   const selectedAction = useMemo(() => {
     if (!selectedActionId) return null;
 
     const [appId, actId] = selectedActionId.split(":");
     const app = applicants.find(a => String(a.applicationId) === String(appId));
     
-    if (!app) {
-      console.warn("No app found for", appId);
-      return null;
-    }
+    if (!app) return null;
 
     const actions = getAllTasks(app);
     const act = actions.find(a => String(a.TaskInstanceId) === String(actId));
 
-    if (!act) {
-      console.warn("No action found for", actId);
-      return null;
-    }
+    if (!act) return null;
 
     return { application: app, action: act };
   }, [selectedActionId, applicants]);
 
-  // 🔹 Handle action selection
+  // ==============================
+  // 🔹 HANDLE ACTION SELECTION
+  // ==============================
+  
   const handleSelectAppActions = (applicationId: string | number, actionId: string | number) => {
     setSelectedActionId(`${applicationId}:${actionId}`);
   };
 
-  // 🔹 Handle task action click
   const handleTaskAction = (e: React.MouseEvent, application: Applicant, action: Task) => {
     e.stopPropagation();
     e.preventDefault();
     
-    console.log('Action clicked:', action, 'for application:', application);
     handleSelectAppActions(application.applicationId, action.TaskInstanceId);
 
     const actionType = action.taskType?.toLowerCase();
     const actionCategory = action.taskCategory?.toLowerCase();
 
-    // Route to appropriate modal or execute immediately
     if (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION) {
       executeAction("Confirmed", action, "yes");
     } 
@@ -361,68 +472,112 @@ export function NCRCDashboard() {
       </div>
 
       {/* Loading/Error States */}
-      {isLoading && <div className="text-gray-500">Loading applicants...</div>}
-      {isError && <div className="text-red-600">Error: {(error as Error).message}</div>}
+      {isLoading && paginationMode === 'paged' && (
+        <div className="text-gray-500">Loading applicants...</div>
+      )}
+      {isError && (
+        <div className="text-center py-8">
+          <div className="text-red-600 font-semibold">Error loading applications</div>
+          <div className="text-gray-600 mt-2">{(error as Error).message}</div>
+        </div>
+      )}
 
       {/* Pagination Controls */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="text-gray-600">
-          Showing {page + 1}–{Math.min(page + PAGE_LIMIT, totalCount)} of {totalCount} applications
+      {paginationMode === 'paged' && (
+        <div className="mb-4 flex items-center justify-between">
+          <div className="text-gray-600">
+            Showing {page + 1}–{Math.min(page + PAGE_LIMIT, totalCount)} of {totalCount} applications
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleFirst}
+              disabled={page === 0}
+              className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+            >
+              First
+            </button>
+            <button
+              onClick={handlePrev}
+              disabled={page === 0}
+              className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+            >
+              Prev
+            </button>
+            <span className="text-sm font-medium">
+              Page {Math.floor(page / PAGE_LIMIT) + 1} of {totalPages}
+            </span>
+            <button
+              onClick={handleNext}
+              disabled={page + PAGE_LIMIT >= totalCount}
+              className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+            >
+              Next
+            </button>
+            <button
+              onClick={handleLast}
+              disabled={page + PAGE_LIMIT >= totalCount}
+              className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
+            >
+              Last
+            </button>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handleFirst}
-            disabled={page === 0}
-            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
-          >
-            First
-          </button>
-          <button
-            onClick={handlePrev}
-            disabled={page === 0}
-            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
-          >
-            Prev
-          </button>
-          <span className="text-sm font-medium">
-            Page {Math.floor(page / PAGE_LIMIT) + 1} of {totalPages}
-          </span>
-          <button
-            onClick={handleNext}
-            disabled={page + PAGE_LIMIT >= totalCount}
-            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
-          >
-            Next
-          </button>
-          <button
-            onClick={handleLast}
-            disabled={page + PAGE_LIMIT >= totalCount}
-            className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
-          >
-            Last
-          </button>
+      )}
+
+      {/* Initial Loading for Infinite Mode */}
+      {paginationMode === 'infinite' && infiniteQuery.isLoading && !infiniteQuery.data && (
+        <div className="text-center py-12">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+          <p className="text-gray-500 mt-4">Loading applications...</p>
         </div>
-      </div>
+      )}
 
       {/* Applicants List */}
-      <div className="space-y-4">
-        {applicants.length > 0 ? (
-          applicants.map((applicant: Applicant) => (
-            <ApplicantCard
-              key={applicant.applicationId}
-              applicant={applicant}
-              handleTaskAction={handleTaskAction}
-            />
-          ))
-        ) : (
-          !isLoading && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No applications match your current filters.</p>
-              <p className="text-gray-400 mt-2">Try adjusting your search or filter criteria.</p>
+       {!isError && (
+        <div className="space-y-4">
+          {applicants.length > 0 ? (
+            applicants.map((applicant: Applicant) => (
+              <ApplicantCard
+                key={`${applicant.applicationId}-${paginationMode}`}
+                applicant={applicant}
+                handleTaskAction={handleTaskAction}
+              />
+            ))
+          ) : (
+            !isLoading && (
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-lg">No applications match your current filters.</p>
+                <p className="text-gray-400 mt-2">Try adjusting your search or filter criteria.</p>
+              </div>
+            )
+          )}
+        </div>
+      )}
+
+      {/* Infinite Scroll Sentinel & Loading States */}
+      {paginationMode === 'infinite' && !isError && (
+        <>
+          {/* Sentinel for triggering next page */}
+          {infiniteQuery.hasNextPage && (
+            <div ref={sentinelRef} className="h-1" />
+          )}
+
+          {/* Loading next page */}
+          {infiniteQuery.isFetchingNextPage && (
+            <div className="text-center py-6">
+              <div className="inline-block h-6 w-6 animate-spin rounded-full border-3 border-solid border-blue-500 border-r-transparent"></div>
+              <p className="text-gray-500 mt-2">Loading more applications...</p>
             </div>
-          )
-        )}
-      </div>
+          )}
+
+          {/* End of list */}
+          {!infiniteQuery.hasNextPage && applicants.length > 0 && !infiniteQuery.isFetchingNextPage && (
+            <div className="text-center py-6 text-gray-400 border-t border-gray-200 mt-4">
+              You've reached the end of the list ({applicants.length} applications loaded)
+            </div>
+          )}
+        </>
+      )}
 
       {/* Modals */}
       <ActionModal

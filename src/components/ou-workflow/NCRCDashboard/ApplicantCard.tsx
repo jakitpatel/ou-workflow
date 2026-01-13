@@ -55,10 +55,17 @@ const DOCUMENT_TYPES = [
   { key: 'PROD', label: 'Product Details', icon: FileText },
 ] as const;
 
-const saveScrollPosition = () => {
+const saveScrollPosition = (applicationId: string | number) => {
   if (typeof window !== 'undefined') {
-    sessionStorage.setItem('ncrc-scroll', String(window.scrollY));
+    sessionStorage.setItem('ncrc-paged-scroll', String(window.scrollY));
   }
+  sessionStorage.setItem(
+    'ncrc-infinite-scroll',
+    JSON.stringify({
+      scrollY: window.scrollY,
+      anchorId: applicationId ?? null,
+    })
+  );
 };
 
 export function ApplicantCard({ applicant, handleTaskAction }: Props) {
@@ -92,7 +99,7 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
   }, [applicant.overdue, applicant.stages]);
 
   const handleViewTasks = (applicationId?: string | number) => {
-    saveScrollPosition();
+    saveScrollPosition(applicationId ?? '');
 
     if (!applicationId) {
       navigate({
@@ -112,7 +119,7 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
   const toggleAIAssistant = () => setShowAIAssistant((prev) => !prev);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all">
+    <div data-app-id={applicant.applicationId} className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all">
       {/* Header Section */}
       <CardHeader
         applicant={applicant}
@@ -316,7 +323,7 @@ function CardActions({ applicant, onViewTasks, dashboardSearch }: CardActionsPro
             to="/ou-workflow/ncrc-dashboard/$applicationId"
             params={{ applicationId: String(applicant.applicationId) }}
             search={dashboardSearch}
-            onClick={saveScrollPosition}
+            onClick={() => saveScrollPosition(applicant.applicationId)}
             className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             View Details

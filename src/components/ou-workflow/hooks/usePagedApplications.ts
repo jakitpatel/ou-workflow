@@ -2,18 +2,20 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { fetchApplicants } from '@/api';
 import { useUser } from '@/context/UserContext';
 
-export function useApplications({
+const PAGE_LIMIT = 5;
+
+export function usePagedApplications({
   searchTerm,
   statusFilter,
   priorityFilter,
-  offset,  // ✅ Changed from 'page' to 'offset'
+  page,
   limit,
-  enabled
+  enabled = true,
 }: {
   searchTerm?: string;
   statusFilter?: string;
   priorityFilter?: string;
-  offset?: number;  // ✅ Changed from 'page'
+  page: number;
   limit?: number;
   enabled?: boolean;
 }) {
@@ -22,26 +24,28 @@ export function useApplications({
   return useQuery({
     queryKey: [
       'applications',
-      { token, searchTerm, statusFilter, priorityFilter, offset, limit },  // ✅ Using offset
+      'paged',
+      { token, searchTerm, statusFilter, priorityFilter, page },
     ],
+
     queryFn: () =>
       fetchApplicants({
         token: token ?? undefined,
         searchTerm,
         statusFilter,
         priorityFilter,
-        page: offset,  // ✅ Pass offset as page to API
-        limit,
+        page,
+        limit: limit ?? PAGE_LIMIT, // ✅ FIX
       }),
-    placeholderData: keepPreviousData,
+
     enabled: enabled && !!token,
-    staleTime: 30000, // ✅ Added: Keep data fresh for 30s
-    gcTime: 5 * 60 * 1000, // ✅ Added: Cache for 5 minutes
+    placeholderData: keepPreviousData, // ✅ Fixed: proper syntax
+    staleTime: 30_000,
     retry: (failureCount, error: any) => {
       if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) {
         return false;
       }
       return failureCount < 2; // ✅ Allow up to 2 retries
-    },
+    }
   });
 }

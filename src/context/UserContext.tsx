@@ -8,7 +8,7 @@ import {
 } from "react";
 import { registerUserContext } from "@/api";
 import { cognitoLogout } from "@/auth/authService";
-import type { UserRole } from "@/types/application";
+import type { UserRole, PaginationMode, StageLayout } from "@/types/application";
 
 /* ------------------------------------------------------------------
  * SessionStorage Helpers
@@ -35,8 +35,6 @@ function clearStoredUser() {
 /* ------------------------------------------------------------------
  * Types
  * ------------------------------------------------------------------ */
-type StageLayout = 'horizontal' | 'mixed';
-type PaginationMode = 'paged' | 'infinite';
 
 type StoredUser = {
   username: string | null;
@@ -126,6 +124,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       role?: string;
       roles?: UserRole[] | null;
       stageLayout?: StageLayout;
+      paginationMode?: PaginationMode;
     },
     onComplete?: () => void
   ) => {
@@ -135,6 +134,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setRole(data.role ?? null);
     setRoles(data.roles ?? null);
     setStageLayout(data.stageLayout ?? 'horizontal');
+    setPaginationMode(data.paginationMode ?? 'paged');
     setLoginTime(now);
 
     // allow state flush before redirect
@@ -151,6 +151,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setRole(null);
     setRoles(null);
     setLoginTime(null);
+    setStageLayout("horizontal");
+    setPaginationMode("paged");
 
     clearStoredUser();
 

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchApplicationDetail } from './../../../api';
+import { fetchApplicationDetail } from '@/api';
 import { useUser } from '@/context/UserContext';
 
 export const useApplicationDetail = (applicationId?: string) => {

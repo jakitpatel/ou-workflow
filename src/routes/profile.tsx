@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react'
 import { useUser } from '@/context/UserContext'
 import { getBuildInfo } from '@/lib/utils'
 import { User, Shield, Server, Code, Check } from 'lucide-react'
+import type {StageLayout, PaginationMode} from '@/types/application';
 
 export const Route = createFileRoute('/profile')({
   component: ProfilePage,
@@ -179,7 +180,7 @@ function ProfilePage() {
                 <select
                   value={stageLayout}
                   onChange={(e) =>
-                    handleStageLayoutChange(e.target.value as 'horizontal' | 'mixed')
+                    handleStageLayoutChange(e.target.value as StageLayout)
                   }
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
                 >
@@ -199,7 +200,7 @@ function ProfilePage() {
                 <select
                   value={paginationMode}
                   onChange={(e) =>
-                    handlePaginationModeChange(e.target.value as 'paged' | 'infinite')
+                    handlePaginationModeChange(e.target.value as PaginationMode)
                   }
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
                 >
