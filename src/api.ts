@@ -539,18 +539,23 @@ export async function saveProfileLayout({
 }: {
   token?: string | null;
   username?: string;
-  profileLayout?: any;
+  profileLayout?: string; // 👈 expect STRING
 }): Promise<any> {
 
-  // Build request body dynamically
-  const body: Record<string, any> = {
-    Username: username,
-    Profile: profileLayout,
+  const body = {
+    data: {
+      type: 'WFUserProfile',
+      attributes: {
+        Username: username,
+        Profile: profileLayout, // ✅ JSON string
+        CreatedDate: new Date().toISOString(),
+      },
+    },
   };
 
-  return await fetchWithAuth({
-    path: `/api/WFUserProfile`,
-    method: "POST",
+  return fetchWithAuth({
+    path: '/api/WFUserProfile',
+    method: 'POST',
     body,
     token,
   });
