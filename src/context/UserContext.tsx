@@ -40,6 +40,7 @@ type StoredUser = {
   username: string | null;
   role: string | null;
   roles: UserRole[] | null;
+  delegated: UserRole[] | null;
   loginTime: number | null;
   apiBaseUrl: string | null;
   stageLayout?: StageLayout;

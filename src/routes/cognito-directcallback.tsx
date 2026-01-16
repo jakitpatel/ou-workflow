@@ -12,6 +12,7 @@ import type { UserRole } from "@/types/application"
 interface UserData {
   username: string
   roles: UserRole[] | null
+  delegated: UserRole[] | null
   role: string
   token: string
 }
