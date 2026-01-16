@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { X } from 'lucide-react'
+import { UserCog, X } from 'lucide-react'
 import type { Task, Applicant } from '@/types/application'
 import { useUser } from '@/context/UserContext'
 import { useFetchTaskRoles } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
@@ -145,6 +145,7 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
     // Default state
     let color = 'bg-gray-300 cursor-not-allowed'
     let disabled = true
+    let isdelegate = false;
 
     // Case 1: Completed tasks
     if (COMPLETED_STATUSES.includes(status)) {
@@ -170,7 +171,8 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
           color = 'bg-blue-600 hover:bg-blue-700'
           disabled = false
         }
-        // Case 4: Special delegated roles that cannot act/assign
+        // Case 3: Special delegated user that act/assign on behalf of others
+        //console.log('Delegated User Roles:', delegated);
         const delegatedNames = delegated?.map(d => d.name.toLowerCase()) ?? [];
 
         const isAssignedToDelegated = assignedRoles.some(ar =>
@@ -183,10 +185,12 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
         if (isAssignedToDelegated && (status === 'pending' || status === 'in_progress')) {
           color = 'bg-blue-600 hover:bg-blue-700'
           disabled = false
+          isdelegate = true;
         }
+        
         /////
 
-        // Case 3: Special roles that cannot act/assign
+        // Case 4: Special roles that cannot act/assign
         //console.log('Group Task Roles All:', taskRolesAll);
         const hasIncludedRole = taskRolesAll.some(role => taskRoles.includes(role));
 
@@ -213,7 +217,8 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
       taskType: taskItem.taskType?.toLowerCase() ?? 'unknown',
       taskCategory: taskItem.taskCategory?.toLowerCase() ?? 'unknown',
       color,
-      disabled
+      disabled,
+      isdelegate
     }
   }
 
@@ -398,6 +403,22 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
                       {action.assignee && (
                         <span className="text-xs text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
                           {action.assignee}
+                        </span>
+                      )}
+                      {/* isdelegate */}
+                      {action.isdelegate && (
+                        <span className="relative group inline-flex items-center ml-1 text-blue-600">
+                          <UserCog size={14} />
+
+                          <span className="
+                            absolute -top-7 left-1/2 -translate-x-1/2
+                            hidden group-hover:block
+                            whitespace-nowrap
+                            bg-gray-800 text-white text-xs
+                            px-2 py-1 rounded shadow
+                          ">
+                            As Assistant
+                          </span>
                         </span>
                       )}
                     </div>
