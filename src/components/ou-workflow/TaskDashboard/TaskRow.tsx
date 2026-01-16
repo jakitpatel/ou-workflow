@@ -185,7 +185,7 @@ export const TaskRow = memo(({
           {isValidAssignee(application.assignee) ? (
             application.assignee
           ) : (
-            <span className="text-gray-400 italic">Not assigned</span>
+            <span className="text-gray-400 italic">Group</span>
           )}
         </div>
       </td>
