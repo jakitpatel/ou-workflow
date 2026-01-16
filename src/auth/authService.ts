@@ -88,7 +88,7 @@ function getIdToken(): string | null {
 }
 
 function getUserInfo():
-  | { email: string; username: string; roles: UserRole[] | null; access_token: string; id_token: string }
+  | { email: string; username: string; roles: UserRole[] | null; access_token: string; id_token: string, delegated: UserRole[] | null }
   | null {
   try {
     const idToken = getIdToken();
@@ -109,12 +109,22 @@ function getUserInfo():
       ? rawRoles.map(r => ({ name: r }))
       : [];
 
+     // Priority: delegated
+    const rawDelegated =
+      accessPayload.delegated ||
+      [];
+    // 🔥 Inline transformation → [{ name: "DISPATCH" }, ...]
+    const delegated = Array.isArray(rawDelegated)
+      ? rawDelegated.map(r => ({ name: r }))
+      : [];
+
     return {
       email: payload.email,
       username: accessPayload.app_username,
       roles,
       access_token: accessToken,
       id_token: idToken,
+      delegated
     };
   } catch (e) {
     console.error("Error parsing user info:", e);

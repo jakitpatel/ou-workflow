@@ -92,6 +92,7 @@ export const Route = createFileRoute("/cognito-directcallback")({
       const user: UserData = {
         username: userData.username,
         roles: userData.roles,
+        delegated: userData.delegated,
         role: "ALL", // Default role or compute based on roles
         token: userData.access_token
       }

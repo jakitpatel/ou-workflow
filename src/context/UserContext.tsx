@@ -58,6 +58,7 @@ type UserContextType = StoredUser & {
       username?: string | null;
       role?: string;
       roles?: UserRole[] | null;
+      delegated?: UserRole[] | null;
       stageLayout?: StageLayout;
     },
     onComplete?: () => void
@@ -76,6 +77,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [username, setUsername] = useState(stored?.username ?? null);
   const [role, setRole] = useState<string | null>(stored?.role ?? null);
   const [roles, setRoles] = useState<UserRole[] | null>(stored?.roles ?? null);
+  const [delegated, setDelegated] = useState<UserRole[] | null>(stored?.delegated ?? null);
   const [loginTime, setLoginTime] = useState<number | null>(
     stored?.loginTime ?? null
   );
@@ -102,12 +104,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       username,
       role,
       roles,
+      delegated,
       loginTime,
       apiBaseUrl,
       stageLayout,
       paginationMode,
     });
-  }, [username, role, roles, loginTime, apiBaseUrl, paginationMode, stageLayout]);
+  }, [username, role, roles, delegated, loginTime, apiBaseUrl, paginationMode, stageLayout]);
   /* ------------------------------------------------------------------
    * Register context with API base URL
    * ------------------------------------------------------------------ */
@@ -165,6 +168,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       username?: string | null;
       role?: string;
       roles?: UserRole[] | null;
+      delegated?: UserRole[] | null;
       stageLayout?: StageLayout;
       paginationMode?: PaginationMode;
     },
@@ -175,6 +179,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUsername(data.username ?? null);
     setRole(data.role ?? null);
     setRoles(data.roles ?? null);
+    setDelegated(data.delegated ?? null);
     setStageLayout(data.stageLayout ?? 'horizontal');
     setPaginationMode(data.paginationMode ?? 'paged');
     setLoginTime(now);
@@ -192,6 +197,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUsername(null);
     setRole(null);
     setRoles(null);
+    setDelegated(null);
     setLoginTime(null);
     setStageLayout("horizontal");
     setPaginationMode("paged");
@@ -210,12 +216,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
       username,
       role,
       roles,
+      delegated,
       loginTime,
       apiBaseUrl,
       token,
       setApiBaseUrl,
       setRole,
       setRoles,
+      setDelegated,
       login,
       logout,
       stageLayout,
@@ -227,6 +235,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       username,
       role,
       roles,
+      delegated,
       loginTime,
       apiBaseUrl,
       token,

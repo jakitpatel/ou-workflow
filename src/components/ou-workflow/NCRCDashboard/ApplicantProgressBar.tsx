@@ -118,7 +118,7 @@ function getTaskBorderClass(status: string): string {
 
 export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
-  const { username, role, roles, stageLayout } = useUser()
+  const { username, role, roles, delegated, stageLayout } = useUser()
   const isVerticalLayout = stageLayout === 'mixed';
   // 🔹 Fetch TaskRoles
   const {
@@ -170,9 +170,24 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
           color = 'bg-blue-600 hover:bg-blue-700'
           disabled = false
         }
+        // Case 4: Special delegated roles that cannot act/assign
+        const delegatedNames = delegated?.map(d => d.name.toLowerCase()) ?? [];
+
+        const isAssignedToDelegated = assignedRoles.some(ar =>
+          matchingRoles.some(role => {
+            const assignedName = ar[role.toUpperCase()]?.toLowerCase();
+            return assignedName && delegatedNames.includes(assignedName);
+          })
+        );
+
+        if (isAssignedToDelegated && (status === 'pending' || status === 'in_progress')) {
+          color = 'bg-blue-600 hover:bg-blue-700'
+          disabled = false
+        }
+        /////
+
         // Case 3: Special roles that cannot act/assign
         //console.log('Group Task Roles All:', taskRolesAll);
-
         const hasIncludedRole = taskRolesAll.some(role => taskRoles.includes(role));
 
         if ((status === 'pending' || status === 'in_progress') && 

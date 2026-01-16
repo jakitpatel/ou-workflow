@@ -171,7 +171,15 @@ export const TaskRow = memo(({
           )}
         </div>
       </td>
-
+      {/* Assignee Column */}
+      <td className="px-6 py-4 align-top">
+      <div className="text-sm text-gray-900 font-medium">
+                {application.assignee || (
+      <span className="text-gray-400 italic">Not assigned</span>
+                )}
+      </div>
+      </td>
+      
       {/* Stage Column */}
       <td className="px-6 py-4 align-top">
         <div className="text-sm text-gray-900">
