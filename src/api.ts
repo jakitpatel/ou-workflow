@@ -397,12 +397,14 @@ export async function confirmTask({
   token,
   username,
   status,
+  capacity
 }: {
   taskId: string;
   result?: string;
   token?: string | null;
   username?: string;
   status?: string;
+  capacity?: string;
 }): Promise<any> {
   // Determine completion notes based on result
   const completionNotesMap: Record<string, string> = {
@@ -419,6 +421,7 @@ export async function confirmTask({
     task_instance_id: taskId,
     completed_by: username,
     completion_notes,
+    capacity: capacity,
   };
 
   if (result) {

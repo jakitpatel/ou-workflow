@@ -44,6 +44,7 @@ export type Task = {
   description: string;
   executedBy?: string;
   taskType?: string;
+  capacity?: string;
   taskCategory?: string;
   taskRoles?: { taskRole: string }[]
 };

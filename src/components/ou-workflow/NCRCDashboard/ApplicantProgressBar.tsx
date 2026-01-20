@@ -146,7 +146,7 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
     let color = 'bg-gray-300 cursor-not-allowed'
     let disabled = true
     let isdelegate = false;
-
+    let capacity = "ADMIN";
     // Case 1: Completed tasks
     if (COMPLETED_STATUSES.includes(status)) {
       color = 'bg-green-400'
@@ -169,7 +169,8 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
 
         if (isAssigned && (status === 'pending' || status === 'in_progress')) {
           color = 'bg-blue-600 hover:bg-blue-700'
-          disabled = false
+          disabled = false;
+          capacity = "ADMIN";
         }
         // Case 3: Special delegated user that act/assign on behalf of others
         //console.log('Delegated User Roles:', delegated);
@@ -186,6 +187,7 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
           color = 'bg-blue-600 hover:bg-blue-700'
           disabled = false
           isdelegate = true;
+          capacity = "DESIGNATED";
         }
         
         /////
@@ -199,6 +201,7 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
             hasIncludedRole) {
           color = 'bg-blue-600 hover:bg-blue-700';
           disabled = false;
+          capacity = "MEMBER";
         }
       }
     }
@@ -218,7 +221,8 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
       taskCategory: taskItem.taskCategory?.toLowerCase() ?? 'unknown',
       color,
       disabled,
-      isdelegate
+      isdelegate,
+      capacity
     }
   }
 
@@ -360,7 +364,7 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {applicant.stages[expandedStage].tasks.map((task, index) => {
               const action = mapTaskToAction(task, applicant)
-
+              task.capacity = action.capacity; // Assign capacity for debugging
               return (
                 <div
                   key={task.TaskInstanceId || index}

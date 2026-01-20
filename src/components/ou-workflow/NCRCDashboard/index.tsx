@@ -309,11 +309,12 @@ export function NCRCDashboard() {
     const taskType = action.taskType?.toLowerCase();
     const taskCategory = action.taskCategory?.toLowerCase();
     const taskId = action.TaskInstanceId;
-
+    console.log("capacity:", action);
     const baseParams = {
       taskId,
       token: token ?? undefined,
       username: username ?? undefined,
+      capacity: action.capacity ?? undefined,
     };
 
     if (taskType === TASK_TYPES.CONFIRM && taskCategory === TASK_CATEGORIES.CONFIRMATION) {
