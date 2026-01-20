@@ -373,17 +373,19 @@ export async function assignTask({
   role,
   assignee,
   token,
+  capacity,
 }: {
   appId?: number | null;
   taskId: string;
   role: string;
   assignee: string;
   token?: string | null;
+  capacity?: string;
 }): Promise<any> {
   return await fetchWithAuth({
     path: `/assignRole`,
     method: "POST",
-    body: { appId, taskId, role, assignee },
+    body: { appId, taskId, role, assignee, capacity },
     token,
   });
 }

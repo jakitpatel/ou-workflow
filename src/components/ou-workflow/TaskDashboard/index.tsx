@@ -287,7 +287,8 @@ export function TaskDashboard({ applicationId }: TaskDashboardProps) {
           taskId,
           role: roleType,
           assignee,
-          token: token ?? undefined
+          token: token ?? undefined,
+          capacity: capacity
         });
       }
     },

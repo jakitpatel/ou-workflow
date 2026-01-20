@@ -339,6 +339,7 @@ export function NCRCDashboard() {
           role,
           assignee,
           token: token ?? undefined,
+          capacity: action.capacity ?? undefined
         });
       } 
       else if ([TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].includes(taskCategory)) {
