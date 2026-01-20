@@ -146,7 +146,7 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
     let color = 'bg-gray-300 cursor-not-allowed'
     let disabled = true
     let isdelegate = false;
-    let capacity = "ADMIN";
+    let capacity = "MEMBER";
     // Case 1: Completed tasks
     if (COMPLETED_STATUSES.includes(status)) {
       color = 'bg-green-400'
@@ -170,7 +170,7 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
         if (isAssigned && (status === 'pending' || status === 'in_progress')) {
           color = 'bg-blue-600 hover:bg-blue-700'
           disabled = false;
-          capacity = "ADMIN";
+          capacity = "MEMBER";
         }
         // Case 3: Special delegated user that act/assign on behalf of others
         //console.log('Delegated User Roles:', delegated);
@@ -187,7 +187,7 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
           color = 'bg-blue-600 hover:bg-blue-700'
           disabled = false
           isdelegate = true;
-          capacity = "DESIGNATED";
+          capacity = "ASSISTANT";
         }
         
         /////
@@ -201,7 +201,7 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
             hasIncludedRole) {
           color = 'bg-blue-600 hover:bg-blue-700';
           disabled = false;
-          capacity = "MEMBER";
+          capacity = "DESIGNATED";
         }
       }
     }
