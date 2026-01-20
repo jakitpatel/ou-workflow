@@ -238,11 +238,22 @@ export function TaskDashboard({ applicationId }: TaskDashboardProps) {
       const taskType = action.taskType?.toLowerCase();
       const taskCategory = (action.taskCategory || action.TaskCategory)?.toLowerCase();
       const taskId = action?.TaskInstanceId ?? action?.taskInstanceId;
-
+      let capacity = "";
+      let assigneeValue = action.assignee;
+      if(assigneeValue.trim() !== '' && assigneeValue.toUpperCase() !== 'NULL'){
+        if(username?.toLowerCase() === assigneeValue.toLowerCase()){
+          capacity = "MEMBER";
+        } else {
+          capacity = "ASSISTANT";
+        }
+      } else {
+        capacity = "DESIGNATED";
+      }
       const mutationParams = {
         taskId,
         token: token ?? undefined,
-        username: username ?? undefined
+        username: username ?? undefined,
+        capacity: capacity
       };
 
       // Handle different task types
