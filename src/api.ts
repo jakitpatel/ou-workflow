@@ -277,6 +277,7 @@ export async function fetchApplicants({
   searchTerm,
   statusFilter,
   priorityFilter,
+  applicationId,
 }: {
   page?: number;
   limit?: number;
@@ -284,6 +285,7 @@ export async function fetchApplicants({
   searchTerm?: string;
   statusFilter?: string;
   priorityFilter?: string;
+  applicationId?: number;
 } = {}): Promise<ApplicantsResponse> {
   const params = buildPaginationParams(page, limit);
 
@@ -292,6 +294,10 @@ export async function fetchApplicants({
     "filter[status]": statusFilter,
     "filter[priority]": priorityFilter,
   });
+  
+  if (applicationId !== undefined) {
+    params.append("filter[applicationId]", String(applicationId));
+  }
 
   const response = await fetchWithAuth<ApplicantsResponse>({
     path: `/get_applications_v1?${params.toString()}`,

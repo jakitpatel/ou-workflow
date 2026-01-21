@@ -66,7 +66,7 @@ export function NCRCDashboard() {
   // 🔹 Router hooks
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
-  const { q, status, priority, page } = search;
+  const { q, status, priority, page, applicationId } = search;
 
   // 🔹 User context
   const { token, username, paginationMode } = useUser();
@@ -91,6 +91,7 @@ export function NCRCDashboard() {
     searchTerm: debouncedSearch,
     statusFilter: status,
     priorityFilter: priority,
+    applicationId,
     page,
     limit: PAGE_LIMIT,
     enabled: paginationMode === 'paged',
@@ -100,6 +101,7 @@ export function NCRCDashboard() {
     searchTerm: debouncedSearch,
     statusFilter: status,
     priorityFilter: priority,
+    applicationId,
     enabled: paginationMode === 'infinite',
   });
 

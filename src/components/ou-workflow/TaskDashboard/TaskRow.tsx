@@ -2,6 +2,8 @@ import React, { memo } from 'react';
 import { Clock, AlertCircle } from 'lucide-react';
 import { getStatusConfig, getPriorityBorderClass } from './taskHelpers';
 import type { ApplicationTask } from '@/types/application';
+import { useNavigate } from '@tanstack/react-router';
+import { Route as DashboardRoute } from '@/routes/ou-workflow/ncrc-dashboard';
 
 // Types
 interface PlantInfo {
@@ -141,18 +143,29 @@ StatusBadge.displayName = 'StatusBadge';
 export const TaskRow = memo(({
   application,
   plantInfo,
-  handleShowPlantHistory,
   handleApplicationTaskAction,
 }: TaskRowProps) => {
+  const navigate = useNavigate();
+  //const dashboardSearch = DashboardRoute.useSearch();
   const applicationCount = plantInfo?.applications ?? 0;
   const daysPending = application?.daysPending ?? 0;
   const daysOverdue = application?.daysOverdue ?? 0;
   const hasDaysInfo = daysPending > 0 || daysOverdue > 0;
 
-  const handlePlantClick = () => {
-    handleShowPlantHistory(application.plantName);
-  };
+  const handleTaskApplicationClick = () => {
+    if (!application.applicationId) {
+      return;
+    }
 
+    navigate({
+      to: DashboardRoute.to,
+      search: (prev) => ({
+        ...prev,
+        applicationId: Number(application.applicationId),
+        page: 0,
+      }),
+    });
+  };
   const handleActionClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     handleApplicationTaskAction(e, application);
   };
@@ -177,7 +190,7 @@ export const TaskRow = memo(({
           <PlantNameButton
             plantName={application.plantName}
             applicationCount={applicationCount}
-            onClick={handlePlantClick}
+            onClick={handleTaskApplicationClick}
           />
 
           {/* Time Information */}

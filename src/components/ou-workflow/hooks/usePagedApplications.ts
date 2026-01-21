@@ -8,6 +8,7 @@ export function usePagedApplications({
   searchTerm,
   statusFilter,
   priorityFilter,
+  applicationId,
   page,
   limit,
   enabled = true,
@@ -15,6 +16,7 @@ export function usePagedApplications({
   searchTerm?: string;
   statusFilter?: string;
   priorityFilter?: string;
+  applicationId?: number;
   page: number;
   limit?: number;
   enabled?: boolean;
@@ -25,7 +27,7 @@ export function usePagedApplications({
     queryKey: [
       'applications',
       'paged',
-      { token, searchTerm, statusFilter, priorityFilter, page },
+      { token, searchTerm, statusFilter, priorityFilter, page, applicationId },
     ],
 
     queryFn: () =>
@@ -34,8 +36,9 @@ export function usePagedApplications({
         searchTerm,
         statusFilter,
         priorityFilter,
+        applicationId,
         page,
-        limit: limit ?? PAGE_LIMIT, // ✅ FIX
+        limit: limit ?? PAGE_LIMIT,
       }),
 
     enabled: enabled && !!token,
