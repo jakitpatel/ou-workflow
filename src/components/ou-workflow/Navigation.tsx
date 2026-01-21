@@ -105,7 +105,7 @@ export function Navigation({ showMenu = true }: NavigationProps) {
                   aria-current={isActiveRoute('ncrc-dashboard') ? 'page' : undefined}
                 >
                   <BarChart3 className="w-4 h-4 mr-1.5" aria-hidden="true" />
-                  NCRC Dashboard
+                  Application Dashboard
                 </Link>
 
                 <Link

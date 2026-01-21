@@ -418,7 +418,7 @@ export function NCRCDashboard() {
     <div className="max-w-7xl mx-auto px-6 py-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">NCRC Dashboard</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Application Dashboard</h2>
         <p className="text-gray-600">Executive Overview - Certification Management</p>
       </div>
 
