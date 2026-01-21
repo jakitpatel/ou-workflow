@@ -489,10 +489,12 @@ export async function fetchApplicationTasks({
   token,
   applicationId,
   searchTerm,
+  days
 }: {
   token?: string | null;
   applicationId?: string;
   searchTerm?: string;
+  days?: number;
 } = {}): Promise<ApplicationTask[]> {
   const params = new URLSearchParams();
 
@@ -503,6 +505,7 @@ export async function fetchApplicationTasks({
   if (searchTerm) {
     params.append("filter[plantName]", searchTerm);
   }
+  if (days) params.append('days', String(days));
 
   const queryString = params.toString();
   const path = `/get_application_tasks${queryString ? `?${queryString}` : ""}`;

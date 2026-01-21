@@ -11,9 +11,7 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
   setSearchTerm
 }) => {
   return (
-    <div className="mt-6 flex flex-wrap items-center gap-4">
-      {/* Search input */}
-      <div className="flex-1 min-w-64">
+      <div className="flex-1 min-w-[280px]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
@@ -25,6 +23,5 @@ export const TaskFilters: React.FC<TaskFiltersProps> = ({
           />
         </div>
       </div>
-    </div>
   )
 }

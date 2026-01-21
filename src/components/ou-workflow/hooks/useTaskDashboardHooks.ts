@@ -4,16 +4,17 @@ import { useUser } from '@/context/UserContext'
 import type { Task } from '@/types/application';
 import type { UseQueryResult } from '@tanstack/react-query';
 
-export function useTasks(applicationId?: string, searchTerm?: string) {
+export function useTasks(applicationId?: string, searchTerm?: string, daysFilter: 'pending' | 7 | 30 = 'pending') {
   const { token } = useUser();
 
   return useQuery({
-    queryKey: ['tasksplants', token, applicationId ?? 'all', searchTerm ?? ''],
+    queryKey: ['tasksplants', token, applicationId ?? 'all', searchTerm ?? '', daysFilter],
     queryFn: () =>
       fetchApplicationTasks({
         token: token ?? undefined,
         applicationId,
         searchTerm, // ✅ new param
+        days: daysFilter === 'pending' ? undefined : daysFilter
       }),
     enabled: !!token,
   });

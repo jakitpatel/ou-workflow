@@ -54,6 +54,8 @@ type TaskDashboardProps = {
   applicationId?: string | number | null;
 };
 
+type DaysFilter = 'pending' | 7 | 30;
+
 // Helper Functions
 const normalizeId = (id: string | number | undefined | null): string => {
   return id != null ? String(id) : '';
@@ -115,6 +117,7 @@ export function TaskDashboard({ applicationId }: TaskDashboardProps) {
   const [showActionModal, setShowActionModal] = useState<boolean | null | Task>(null);
   const [showConditionModal, setShowConditionModal] = useState<boolean | null | Task>(null);
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+  const [daysFilter, setDaysFilter] = useState<DaysFilter>('pending');
 
   // Refs
   const errorDialogRef = useRef<ErrorDialogRef>(null);
@@ -145,7 +148,7 @@ export function TaskDashboard({ applicationId }: TaskDashboardProps) {
     isLoading,
     isError,
     error
-  } = useTasks(normalizedAppId, debouncedSearchTerm);
+  } = useTasks(normalizedAppId, debouncedSearchTerm, daysFilter);
 
   // Close modals on outside click
   useEffect(() => {
@@ -428,8 +431,32 @@ export function TaskDashboard({ applicationId }: TaskDashboardProps) {
         <TaskStatsCards stats={taskStats} />
 
         {/* Filters */}
-        <TaskFilters searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+        {/*<TaskFilters searchTerm={searchTerm} setSearchTerm={setSearchTerm} />*/}
+        <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+          <TaskFilters searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
 
+          {/* Days Filter Buttons */}
+          <div className="flex items-center gap-2">
+            {(['pending', 7, 30] as DaysFilter[]).map(option => {
+              const isActive = daysFilter === option;
+
+              return (
+                <button
+                  key={option}
+                  onClick={() => setDaysFilter(option)}
+                  className={[
+                    'px-3 py-1.5 text-sm rounded-md border transition',
+                    isActive
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                  ].join(' ')}
+                >
+                  {option === 'pending' ? 'Pending' : `${option} Days`}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         {/* Tasks Table */}
         <div className="bg-white rounded-lg shadow-sm border overflow-hidden mt-6">
           <div className="overflow-x-auto">
