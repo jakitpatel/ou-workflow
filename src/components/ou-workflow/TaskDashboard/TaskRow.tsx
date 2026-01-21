@@ -160,7 +160,9 @@ export const TaskRow = memo(({
     navigate({
       to: DashboardRoute.to,
       search: (prev) => ({
-        ...prev,
+        q: prev.q ?? '',
+        status: prev.status ?? 'all',
+        priority: prev.priority ?? 'all',
         applicationId: Number(application.applicationId),
         page: 0,
       }),
