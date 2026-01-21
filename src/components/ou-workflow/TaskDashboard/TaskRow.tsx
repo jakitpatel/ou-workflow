@@ -63,25 +63,53 @@ const PlantNameButton = memo(({
 
 PlantNameButton.displayName = 'PlantNameButton';
 
-const ActionButton = memo(({ 
-  taskName, 
-  taskDescription, 
-  onClick 
-}: { 
-  taskName: string; 
-  taskDescription?: string | null; 
+const COMPLETED_STATUSES = ['complete', 'done', 'completed'];
+
+type ActionButtonProps = {
+  taskName: string;
+  taskDescription?: string | null;
+  status?: string | null;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    title={taskDescription || 'No description available'}
-    className="inline-flex items-center justify-center px-4 py-2 text-white rounded-lg transition-all text-sm font-medium bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
-    aria-label={`Execute task: ${taskName}`}
-  >
-    {taskName}
-  </button>
-));
+};
+
+export const ActionButton = memo(
+  ({ taskName, taskDescription, status, onClick }: ActionButtonProps) => {
+    const isCompleted = COMPLETED_STATUSES.includes(
+      status?.toLowerCase() ?? ''
+    );
+
+    // ✅ Completed → plain text
+    if (isCompleted) {
+      return (
+        <span
+          className="text-sm font-medium text-gray-500 cursor-not-allowed"
+          title="Task already completed"
+        >
+          {taskName}
+        </span>
+      );
+    }
+
+    // ✅ Active → button
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        title={taskDescription || 'No description available'}
+        aria-label={`Execute task: ${taskName}`}
+        className="
+          inline-flex items-center justify-center
+          px-4 py-2 text-sm font-medium text-white
+          rounded-lg bg-blue-600 hover:bg-blue-700
+          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+          transition-all shadow-sm hover:shadow-md
+        "
+      >
+        {taskName}
+      </button>
+    );
+  }
+);
 
 ActionButton.displayName = 'ActionButton';
 
@@ -168,6 +196,7 @@ export const TaskRow = memo(({
           taskName={application.taskName}
           taskDescription={application.taskDescription}
           onClick={handleActionClick}
+          status={application.status}
         />
       </td>
 
