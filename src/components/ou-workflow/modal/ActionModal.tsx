@@ -22,6 +22,8 @@ type Props = {
 type RcLookupItem = {
   id: string;
   name: string;
+  pct_of_total_apps?: number;
+  pct_of_total_apps_at_work?: number;
 };
 
 export const ActionModal: React.FC<Props> = ({
@@ -44,7 +46,7 @@ export const ActionModal: React.FC<Props> = ({
 
     if (!prefix) {
       return {
-        endpoint: "vSelectNCRC",
+        endpoint: "api/vSelectNCRC",
         roleType: "NCRC",
       };
     }
@@ -172,7 +174,21 @@ export const ActionModal: React.FC<Props> = ({
               <option value="">-- Choose --</option>
               {selectlist.map((rc: RcLookupItem) => (
                 <option key={rc.id} value={rc.id}>
-                  {rc.name}
+                  {rc.name} 
+                  {((rc.pct_of_total_apps ?? 0) > 0 ||
+                    (rc.pct_of_total_apps_at_work ?? 0) > 0) && (
+                    <>
+                      {' '}
+                      (
+                      {(rc.pct_of_total_apps ?? 0) > 0 && `${rc.pct_of_total_apps}% total`}
+                      {(rc.pct_of_total_apps ?? 0) > 0 &&
+                        (rc.pct_of_total_apps_at_work ?? 0) > 0 &&
+                        ', '}
+                      {(rc.pct_of_total_apps_at_work ?? 0) > 0 &&
+                        `${rc.pct_of_total_apps_at_work}% at work`}
+                      )
+                    </>
+                  )}
                 </option>
               ))}
             </select>

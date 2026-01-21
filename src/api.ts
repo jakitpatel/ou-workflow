@@ -294,7 +294,7 @@ export async function fetchApplicants({
     "filter[status]": statusFilter,
     "filter[priority]": priorityFilter,
   });
-  
+
   if (applicationId !== undefined) {
     params.append("filter[applicationId]", String(applicationId));
   }
@@ -366,6 +366,8 @@ export async function fetchUserByRole({
     return {
       name: item.attributes.fullName,
       id: item.attributes.userName,
+      pct_of_total_apps: item.attributes.pct_of_total_apps,
+      pct_of_total_apps_at_work : item.attributes.pct_of_total_apps_at_work,
     };
   });
 }
