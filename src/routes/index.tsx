@@ -135,7 +135,7 @@ function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
             <DashboardCard
               title="Application Dashboard"
-              description="View and manage NCRC applications and workflows"
+              description="View and manage applications and workflows"
               icon={BarChart3}
               to="/ou-workflow/ncrc-dashboard"
               variant="primary"
