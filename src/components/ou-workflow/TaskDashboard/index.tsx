@@ -431,30 +431,40 @@ export function TaskDashboard({ applicationId }: TaskDashboardProps) {
         <TaskStatsCards stats={taskStats} />
 
         {/* Filters */}
-        {/*<TaskFilters searchTerm={searchTerm} setSearchTerm={setSearchTerm} />*/}
         <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
           <TaskFilters searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
 
           {/* Days Filter Buttons */}
-          <div className="flex items-center gap-2">
-            {(['pending', 7, 30] as DaysFilter[]).map(option => {
-              const isActive = daysFilter === option;
+          <div className="shrink-0">
+            {/* Days Filter – Segmented Control */}
+            <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
+              {(['pending', 7, 30] as DaysFilter[]).map((option, index, arr) => {
+                const isActive = daysFilter === option;
+                const isFirst = index === 0;
+                const isLast = index === arr.length - 1;
 
-              return (
-                <button
-                  key={option}
-                  onClick={() => setDaysFilter(option)}
-                  className={[
-                    'px-3 py-1.5 text-sm rounded-md border transition',
-                    isActive
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-                  ].join(' ')}
-                >
-                  {option === 'pending' ? 'Pending' : `${option} Days`}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={option}
+                    onClick={() => setDaysFilter(option)}
+                    aria-pressed={isActive}
+                    className={[
+                      'px-3 py-1.5 text-sm font-medium transition',
+                      'border-r border-gray-300 last:border-r-0',
+                      isActive
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-100',
+                      isFirst && 'rounded-l-lg',
+                      isLast && 'rounded-r-lg',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                  >
+                    {option === 'pending' ? 'Pending' : `${option} Days`}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
         {/* Tasks Table */}
