@@ -139,6 +139,20 @@ const StatusBadge = memo(({
 
 StatusBadge.displayName = 'StatusBadge';
 
+// Utility Functions
+function formatDateOnly(date?: string | null) {
+  if (!date) return null;
+
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+
+  return d.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 // Main Component
 export const TaskRow = memo(({
   application,
@@ -245,11 +259,44 @@ export const TaskRow = memo(({
 
       {/* Status Column */}
       <td className="px-6 py-4 align-top">
-        <StatusBadge 
-          status={application.status} 
-          daysActive={application.daysActive} 
-        />
+        <div className="space-y-1">
+          <StatusBadge
+            status={application.status}
+            daysActive={application.daysActive}
+          />
+
+          {/* Lifecycle Dates */}
+          {(application.startedDate || application.completedDate) && (
+            <div className="text-xs text-gray-500 leading-tight space-y-0.5">
+              {application.startedDate && (
+                <div>
+                  Started: {formatDateOnly(application.startedDate)}
+                </div>
+              )}
+
+              {COMPLETED_STATUSES.includes(application.status?.toLowerCase() ?? '') && (
+                <>
+                  {application.completedDate && (
+                    <div>
+                      Completed: {formatDateOnly(application.completedDate)}
+                    </div>
+                  )}
+
+                  {typeof application.completedCapacity === 'string' && (
+                    <div>
+                      Capacity:{' '}
+                      <span className="font-medium text-gray-700">
+                        {application.completedCapacity}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </td>
+
     </tr>
   );
 });
