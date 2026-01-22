@@ -502,7 +502,7 @@ export async function fetchApplicationTasks({
   token?: string | null;
   applicationId?: string;
   searchTerm?: string;
-  days?: number;
+  days?: string | number | undefined;
 } = {}): Promise<ApplicationTask[]> {
   const params = new URLSearchParams();
 

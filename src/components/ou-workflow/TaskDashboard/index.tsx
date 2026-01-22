@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearch, useNavigate, useParams } from '@tanstack/react-router';
 import { assignTask, confirmTask } from '@/api';
 import { useUser } from '@/context/UserContext';
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
@@ -12,6 +13,12 @@ import { plantHistory } from './demoData';
 import { useTasks } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
 import { ErrorDialog, type ErrorDialogRef } from '@/components/ErrorDialog';
 import type { ApplicationTask, Task } from '@/types/application';
+
+// Types
+type TaskSearchParams = {
+  qs?: string;
+  days?: string | number;
+};
 
 // Constants
 const DEBOUNCE_DELAY = 700; // Reduced from 1000ms for better UX
@@ -49,12 +56,7 @@ const TASK_CATEGORIES = {
   ASSIGNMENT: 'assignment'
 } as const;
 
-// Types
-type TaskDashboardProps = {
-  applicationId?: string | number | null;
-};
-
-type DaysFilter = 'pending' | 7 | 30;
+type DaysFilter = string | number; // 'pending' | 7 | 30;
 
 // Helper Functions
 const normalizeId = (id: string | number | undefined | null): string => {
@@ -109,16 +111,21 @@ const getStatusFromResult = (result: string): string => {
 };
 
 // Main Component
-export function TaskDashboard({ applicationId }: TaskDashboardProps) {
-  // State
-  const [searchTerm, setSearchTerm] = useState('');
+export function TaskDashboard() {
+  // Router hooks - Use route-agnostic approach
+  const search = useSearch({ strict: false }) as TaskSearchParams;
+  const navigate = useNavigate();
+  const params = useParams({ strict: false });
+
+  const searchTerm = (search as any).qs || '';
+  const daysFilter = (search as any).days || 'pending';
+  const applicationId = (params as any)?.applicationId;
+
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   const [showPlantHistory, setShowPlantHistory] = useState<string | null>(null);
   const [showActionModal, setShowActionModal] = useState<boolean | null | Task>(null);
   const [showConditionModal, setShowConditionModal] = useState<boolean | null | Task>(null);
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
-  const [daysFilter, setDaysFilter] = useState<DaysFilter>('pending');
-
   // Refs
   const errorDialogRef = useRef<ErrorDialogRef>(null);
 
@@ -432,7 +439,14 @@ export function TaskDashboard({ applicationId }: TaskDashboardProps) {
 
         {/* Filters */}
         <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-          <TaskFilters searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+          <TaskFilters searchTerm={searchTerm} setSearchTerm={(value) => {
+              navigate({
+                search: (prev: TaskSearchParams) => ({
+                  ...prev,
+                  qs: value,
+                }),
+              } as any);
+            }} />
 
           {/* Days Filter Buttons */}
           <div className="shrink-0">
@@ -446,7 +460,14 @@ export function TaskDashboard({ applicationId }: TaskDashboardProps) {
                 return (
                   <button
                     key={option}
-                    onClick={() => setDaysFilter(option)}
+                    onClick={() =>
+                      navigate({
+                        search: (prev: TaskSearchParams) => ({
+                          ...prev,
+                          days: option,
+                        }),
+                      } as any)
+                    }
                     aria-pressed={isActive}
                     className={[
                       'px-3 py-1.5 text-sm font-medium transition',

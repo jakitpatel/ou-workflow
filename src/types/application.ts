@@ -204,6 +204,7 @@ export interface ApplicationTask {
   stageName: string;              // e.g., "Send NDA"
   daysPending: number;
   daysOverdue: number;
+  completedCapacity?: string | null;
 }
 
 export interface ApplicationTasksResponse {

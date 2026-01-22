@@ -170,17 +170,23 @@ export const TaskRow = memo(({
     if (!application.applicationId) {
       return;
     }
-
-    navigate({
-      to: DashboardRoute.to,
-      search: (prev) => ({
-        q: prev.q ?? '',
-        status: prev.status ?? 'all',
-        priority: prev.priority ?? 'all',
-        applicationId: Number(application.applicationId),
-        page: 0,
-      }),
-    });
+    let detailFlag = true;
+    if (detailFlag) {
+      navigate({
+        to: `${DashboardRoute.to}/${application.applicationId}`,
+      });
+    } else{
+      navigate({
+        to: DashboardRoute.to,
+        search: (prev) => ({
+          q: prev.q ?? '',
+          status: prev.status ?? 'all',
+          priority: prev.priority ?? 'all',
+          applicationId: Number(application.applicationId),
+          page: 0,
+        }),
+      });
+    }
   };
   const handleActionClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     handleApplicationTaskAction(e, application);

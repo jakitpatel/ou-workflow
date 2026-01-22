@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import type { Task, Applicant } from '@/types/application';
 import { Route as DashboardRoute } from '@/routes/ou-workflow/ncrc-dashboard';
+import { Route as TaskDashboardRoute } from '@/routes/ou-workflow/tasks-dashboard';
+import { Route as TaskDashboardWithAppRoute } from '@/routes/ou-workflow/tasks-dashboard/$applicationId';
 
 type Props = {
   applicant: Applicant;
@@ -100,19 +102,26 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
 
   const handleViewTasks = (applicationId?: string | number) => {
     saveScrollPosition(applicationId ?? '');
-
+    // 🔹 No applicationId → base tasks dashboard
     if (!applicationId) {
       navigate({
-        to: '/ou-workflow/tasks-dashboard',
-        search: dashboardSearch,
+        to: TaskDashboardRoute.to,
+        search: () => ({
+          qs: '',
+          days: 'pending',
+        }),
       });
       return;
     }
 
+    // 🔹 With applicationId → param route
     navigate({
-      to: '/ou-workflow/tasks-dashboard/$applicationId',
+      to: TaskDashboardWithAppRoute.to,
       params: { applicationId: String(applicationId) },
-      search: dashboardSearch,
+      search: () => ({
+        qs: '',
+        days: 'pending',
+      }),
     });
   };
 

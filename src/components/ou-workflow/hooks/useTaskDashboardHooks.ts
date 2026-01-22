@@ -4,7 +4,7 @@ import { useUser } from '@/context/UserContext'
 import type { Task } from '@/types/application';
 import type { UseQueryResult } from '@tanstack/react-query';
 
-export function useTasks(applicationId?: string, searchTerm?: string, daysFilter: 'pending' | 7 | 30 = 'pending') {
+export function useTasks(applicationId?: string, searchTerm?: string, daysFilter: string | number | undefined = 'pending') {
   const { token } = useUser();
 
   return useQuery({

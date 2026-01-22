@@ -110,6 +110,10 @@ export function Navigation({ showMenu = true }: NavigationProps) {
 
                 <Link
                   to={ROUTES.TASKS_DASHBOARD}
+                  search={{
+                    qs:'',
+                    days: 'pending'
+                  }}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
                     isActiveRoute('tasks-dashboard')
                       ? 'bg-blue-100 text-blue-700'
