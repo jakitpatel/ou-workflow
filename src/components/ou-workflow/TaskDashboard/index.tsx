@@ -426,6 +426,8 @@ export function TaskDashboard() {
       />
 
       <div className="max-w-6xl mx-auto">
+        {/* Sticky Top Section */}
+        <div className="sticky top-0 z-20 bg-gray-50 pb-4">
         {/* Header */}
         <header className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Tasks & Notifications</h1>
@@ -488,11 +490,12 @@ export function TaskDashboard() {
             </div>
           </div>
         </div>
+        </div>
         {/* Tasks Table */}
-        <div className="bg-white rounded-lg shadow-sm border overflow-hidden mt-6">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+       <div className="bg-white rounded-lg shadow-sm border mt-6">
+        <div className="overflow-auto max-h-[calc(100vh-380px)]">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="sticky top-0 z-10 bg-gray-50">
                 <tr>
                   <th
                     scope="col"
