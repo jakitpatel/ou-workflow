@@ -45,6 +45,7 @@ export type Task = {
   executedBy?: string;
   taskType?: string;
   capacity?: string;
+  completedBy?: string;
   taskCategory?: string;
   taskRoles?: { taskRole: string }[]
 };
@@ -205,6 +206,7 @@ export interface ApplicationTask {
   daysPending: number;
   daysOverdue: number;
   completedCapacity?: string | null;
+  completedBy?: string | null;
 }
 
 export interface ApplicationTasksResponse {
