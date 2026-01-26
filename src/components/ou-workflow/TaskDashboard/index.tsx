@@ -403,63 +403,47 @@ export function TaskDashboard() {
     );
   }
 
-  return (
-    <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
-      {/* Modals */}
-      <ActionModal
-        setShowActionModal={setShowActionModal}
-        showActionModal={showActionModal}
-        executeAction={executeAction}
-        selectedAction={selectedAction}
-      />
-      <ConditionalModal
-        setShowConditionModal={setShowConditionModal}
-        showConditionModal={showConditionModal}
-        executeAction={executeAction}
-        selectedAction={selectedAction}
-      />
-      <PlantHistoryModal
-        showPlantHistory={showPlantHistory}
-        setShowPlantHistory={setShowPlantHistory}
-        plantHistory={plantHistory}
-        onViewNCRCDashboard={handleViewNCRCDashboard}
-      />
+return (
+  <>
+    {/* Main Content */}
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-6">
 
-      <div className="max-w-6xl mx-auto">
-        {/* Sticky Top Section */}
-        <div className="sticky top-0 z-20 bg-gray-50 pb-4">
-        {/* Header */}
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Tasks & Notifications</h1>
-          <p className="text-gray-600 mt-1">
-            Welcome back, {username || 'User'} • Role: {role || 'Not assigned'}
-          </p>
-        </header>
+        {/* Sticky Header Section */}
+        <div className="sticky top-16 z-20 bg-gray-50 pb-4">
+          {/* Header */}
+          <header className="pt-6 pb-4">
+            <h1 className="text-2xl font-bold text-gray-900">Tasks & Notifications</h1>
+            <p className="text-gray-600 mt-1">
+              Welcome back, {username || 'User'} • Role: {role || 'Not assigned'}
+            </p>
+          </header>
 
-        {/* Stats Cards */}
-        <TaskStatsCards stats={taskStats} />
+          {/* Stats */}
+          <div className="pb-4">
+            <TaskStatsCards stats={taskStats} />
+          </div>
 
-        {/* Filters */}
-        <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-          <TaskFilters searchTerm={searchTerm} setSearchTerm={(value) => {
-              navigate({
-                search: (prev: TaskSearchParams) => ({
-                  ...prev,
-                  qs: value,
-                }),
-              } as any);
-            }} />
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex-1">
+              <TaskFilters
+                searchTerm={searchTerm}
+                setSearchTerm={(value) =>
+                  navigate({
+                    search: (prev: TaskSearchParams) => ({
+                      ...prev,
+                      qs: value,
+                    }),
+                  } as any)
+                }
+              />
+            </div>
 
-          {/* Days Filter Buttons */}
-          <div className="shrink-0">
-            {/* Days Filter – Segmented Control */}
-            <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
-              {(['pending', 7, 30] as DaysFilter[]).map((option, index, arr) => {
-                const isActive = daysFilter === option;
-                const isFirst = index === 0;
-                const isLast = index === arr.length - 1;
-
-                return (
+            {/* Days Filter */}
+            <div className="shrink-0">
+              <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
+                {(['pending', 7, 30] as DaysFilter[]).map((option, i, arr) => (
                   <button
                     key={option}
                     onClick={() =>
@@ -470,111 +454,77 @@ export function TaskDashboard() {
                         }),
                       } as any)
                     }
-                    aria-pressed={isActive}
                     className={[
                       'px-3 py-1.5 text-sm font-medium transition',
                       'border-r border-gray-300 last:border-r-0',
-                      isActive
+                      daysFilter === option
                         ? 'bg-blue-600 text-white'
                         : 'bg-white text-gray-700 hover:bg-gray-100',
-                      isFirst && 'rounded-l-lg',
-                      isLast && 'rounded-r-lg',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
+                      i === 0 && 'rounded-l-lg',
+                      i === arr.length - 1 && 'rounded-r-lg',
+                    ].join(' ')}
                   >
                     {option === 'pending' ? 'Pending' : `${option} Days`}
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </div>
         </div>
-        </div>
-        {/* Tasks Table */}
-       <div className="bg-white rounded-lg shadow-sm border mt-6">
-        <div className="overflow-auto max-h-[calc(100vh-380px)]">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="sticky top-0 z-10 bg-gray-50">
+
+        {/* ================= TABLE ================= */}
+        <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="max-h-[calc(100vh-20rem)] overflow-y-auto relative">
+
+            <table className="min-w-full table-fixed">
+              <thead className="sticky top-0 z-10 bg-gray-50 border-b">
                 <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th className="w-[28%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Task & Plant
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th className="w-[16%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Actions
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th className="w-[12%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Role
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th className="w-[14%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Assignee
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Stage
                   </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Status
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+
+              <tbody className="divide-y divide-gray-200">
                 {filteredTasks.map(application => (
                   <TaskRow
                     key={application.taskInstanceId}
                     application={application}
-                    plantInfo={plantHistory[String(application.plantId) as keyof typeof plantHistory]}
-                    handleApplicationTaskAction={handleApplicationTaskAction as (e: React.MouseEvent<Element>, application: ApplicationTask) => void}
+                    plantInfo={plantHistory[String(application.plantId)]}
+                    handleApplicationTaskAction={handleApplicationTaskAction}
                     handleShowPlantHistory={handleShowPlantHistory}
                   />
                 ))}
               </tbody>
             </table>
+
           </div>
         </div>
 
-        {/* Empty State */}
-        {filteredTasks.length === 0 && !isLoading && (
-          <div className="text-center py-12 bg-white rounded-lg shadow-sm border mt-6">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
-            <p className="text-gray-500 text-lg mt-4">No tasks match your current filters</p>
-            <p className="text-gray-400 mt-2">Try adjusting your search or filter criteria</p>
-          </div>
-        )}
       </div>
-
-      {/* Global Error Dialog */}
-      <ErrorDialog ref={errorDialogRef} />
     </div>
-  );
+
+    {/* Modals */}
+    <ActionModal {...{ showActionModal, setShowActionModal, executeAction, selectedAction }} />
+    <ConditionalModal {...{ showConditionModal, setShowConditionModal, executeAction, selectedAction }} />
+    <PlantHistoryModal {...{ showPlantHistory, setShowPlantHistory, plantHistory }} />
+    <ErrorDialog ref={errorDialogRef} />
+  </>
+);
+
 }

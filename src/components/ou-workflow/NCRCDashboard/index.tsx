@@ -417,171 +417,248 @@ export function NCRCDashboard() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Application Dashboard</h2>
-        <p className="text-gray-600">Executive Overview - Certification Management</p>
-      </div>
-
-      {/* Stats Cards */}
-      <ApplicantStatsCards stats={applicantStats} />
-
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 mt-6">
-        <div className="flex items-center space-x-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search by company, plant, region..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={q}
-                onChange={(e) => updateSearch({ q: e.target.value, page: 0 })}
-              />
+    <>
+      {/* Main Content - Single browser scroll, navigation accounts for fixed nav height */}
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-6">
+          {/* Sticky Header Section - Sticks below fixed nav */}
+          <div className="sticky top-16 z-20 bg-gray-50 pb-4">
+            {/* Header */}
+            <div className="pt-6 pb-4">
+              <h2 className="text-2xl font-bold text-gray-900">Application Dashboard</h2>
+              <p className="text-gray-600">Executive Overview - Certification Management</p>
             </div>
-          </div>
-          
-          <select
-            value={status}
-            onChange={(e) => updateSearch({ status: e.target.value, page: 0 })}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[140px]"
-          >
-            <option value="all">All Statuses</option>
-            <option value="COMPL">Certified</option>
-            <option value="CONTRACT">Contract Sent</option>
-            <option value="DISP">Dispatched</option>
-            <option value="INC">Incomplete</option>
-            <option value="INP">In Progress</option>
-            <option value="INSPECTION">Inspection Scheduled</option>
-            <option value="NEW">New</option>
-            <option value="PAYPEND">Payment Pending</option>
-            <option value="REVIEW">Under Review</option>
-            <option value="WTH">Withdrawn</option>
-          </select>
 
-          <select
-            value={priority}
-            onChange={(e) => updateSearch({ priority: e.target.value, page: 0 })}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[120px]"
-          >
-            <option value="all">All Priorities</option>
-            <option value="urgent">Urgent</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-      </div>
+            {/* Stats Cards - Sticky */}
+            <div className="pb-4">
+              <ApplicantStatsCards stats={applicantStats} />
+            </div>
 
-      {/* Loading/Error States */}
-      {isLoading && paginationMode === 'paged' && (
-        <div className="text-gray-500">Loading applicants...</div>
-      )}
-      {isError && (
-        <div className="text-center py-8">
-          <div className="text-red-600 font-semibold">Error loading applications</div>
-          <div className="text-gray-600 mt-2">{(error as Error).message}</div>
-        </div>
-      )}
+            {/* Filters - Sticky */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <div className="flex items-center gap-4">
 
-      {/* Pagination Controls */}
-      {paginationMode === 'paged' && (
-        <div className="mb-4 flex items-center justify-between">
-          <div className="text-gray-600">
-            Showing {page + 1}–{Math.min(page + PAGE_LIMIT, totalCount)} of {totalCount} applications
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handleFirst}
-              disabled={page === 0}
-              className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
-            >
-              First
-            </button>
-            <button
-              onClick={handlePrev}
-              disabled={page === 0}
-              className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
-            >
-              Prev
-            </button>
-            <span className="text-sm font-medium">
-              Page {Math.floor(page / PAGE_LIMIT) + 1} of {totalPages}
-            </span>
-            <button
-              onClick={handleNext}
-              disabled={page + PAGE_LIMIT >= totalCount}
-              className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
-            >
-              Next
-            </button>
-            <button
-              onClick={handleLast}
-              disabled={page + PAGE_LIMIT >= totalCount}
-              className="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50"
-            >
-              Last
-            </button>
-          </div>
-        </div>
-      )}
+                {/* Search */}
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      placeholder="Search by company, plant, region..."
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg
+                                focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={q}
+                      onChange={(e) => updateSearch({ q: e.target.value, page: 0 })}
+                    />
+                  </div>
+                </div>
 
-      {/* Initial Loading for Infinite Mode */}
-      {paginationMode === 'infinite' && infiniteQuery.isLoading && !infiniteQuery.data && (
-        <div className="text-center py-12">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-          <p className="text-gray-500 mt-4">Loading applications...</p>
-        </div>
-      )}
+                {/* Status */}
+                <select
+                  value={status}
+                  onChange={(e) => updateSearch({ status: e.target.value, page: 0 })}
+                  className="px-4 py-2 border border-gray-300 rounded-lg
+                            focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                            min-w-[140px]"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="COMPL">Certified</option>
+                  <option value="CONTRACT">Contract Sent</option>
+                  <option value="DISP">Dispatched</option>
+                  <option value="INC">Incomplete</option>
+                  <option value="INP">In Progress</option>
+                  <option value="INSPECTION">Inspection Scheduled</option>
+                  <option value="NEW">New</option>
+                  <option value="PAYPEND">Payment Pending</option>
+                  <option value="REVIEW">Under Review</option>
+                  <option value="WTH">Withdrawn</option>
+                </select>
 
-      {/* Applicants List */}
-       {!isError && (
-        <div className="space-y-4">
-          {applicants.length > 0 ? (
-            applicants.map((applicant: Applicant) => (
-              <ApplicantCard
-                key={`${applicant.applicationId}-${paginationMode}`}
-                applicant={applicant}
-                handleTaskAction={handleTaskAction}
-              />
-            ))
-          ) : (
-            !isLoading && (
-              <div className="text-center py-12">
-                <p className="text-gray-500 text-lg">No applications match your current filters.</p>
-                <p className="text-gray-400 mt-2">Try adjusting your search or filter criteria.</p>
+                {/* Priority */}
+                <select
+                  value={priority}
+                  onChange={(e) => updateSearch({ priority: e.target.value, page: 0 })}
+                  className="px-4 py-2 border border-gray-300 rounded-lg
+                            focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                            min-w-[120px]"
+                >
+                  <option value="all">All Priorities</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+
+                {/* My Applications Toggle — icon only with tooltip */}
+                <div className="ml-auto flex items-center pl-4 border-l border-gray-200">
+                  <label
+                    className="relative inline-flex items-center cursor-pointer"
+                    title="Show only my applications"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={Boolean(search.myOnly)}
+                      onChange={(e) =>
+                        updateSearch({
+                          myOnly: e.target.checked ? true : undefined,
+                          page: 0,
+                        })
+                      }
+                      className="sr-only"
+                      aria-label="Show only my applications"
+                    />
+
+                    <span
+                      className={`w-4 h-4 rounded border flex items-center justify-center transition-colors
+                        ${
+                          search.myOnly
+                            ? 'bg-blue-600 border-blue-600'
+                            : 'bg-white border-gray-300 hover:border-gray-400'
+                        }`}
+                    >
+                      {search.myOnly && (
+                        <svg
+                          className="w-3 h-3 text-white"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          aria-hidden="true"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0l-3.25-3.25a1 1 0 011.414-1.414l2.543 2.543 6.543-6.543a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      )}
+                    </span>
+                  </label>
+                </div>
               </div>
-            )
-          )}
+            </div>
+
+
+            {/* Loading/Error States */}
+            {isLoading && paginationMode === 'paged' && (
+              <div className="text-gray-500 mb-4">Loading applicants...</div>
+            )}
+            {isError && (
+              <div className="text-center py-4 mb-4 bg-red-50 rounded-lg border border-red-200">
+                <div className="text-red-600 font-semibold">Error loading applications</div>
+                <div className="text-gray-600 mt-2">{(error as Error).message}</div>
+              </div>
+            )}
+
+            {/* Pagination Controls - Sticky */}
+            {paginationMode === 'paged' && !isError && (
+              <div className="flex items-center justify-between bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3">
+                <div className="text-gray-600 text-sm">
+                  Showing {page + 1}–{Math.min(page + PAGE_LIMIT, totalCount)} of {totalCount} applications
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleFirst}
+                    disabled={page === 0}
+                    className="px-3 py-1.5 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
+                    First
+                  </button>
+                  <button
+                    onClick={handlePrev}
+                    disabled={page === 0}
+                    className="px-3 py-1.5 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
+                    Prev
+                  </button>
+                  <span className="text-sm font-medium px-3 py-1.5 bg-gray-50 rounded-md">
+                    Page {Math.floor(page / PAGE_LIMIT) + 1} of {totalPages}
+                  </span>
+                  <button
+                    onClick={handleNext}
+                    disabled={page + PAGE_LIMIT >= totalCount}
+                    className="px-3 py-1.5 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
+                    Next
+                  </button>
+                  <button
+                    onClick={handleLast}
+                    disabled={page + PAGE_LIMIT >= totalCount}
+                    className="px-3 py-1.5 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
+                    Last
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Applications List - Regular Flow (uses browser scroll) */}
+          <div className="pb-8">
+            {/* Initial Loading for Infinite Mode */}
+            {paginationMode === 'infinite' && infiniteQuery.isLoading && !infiniteQuery.data && (
+              <div className="text-center py-12">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+                <p className="text-gray-500 mt-4">Loading applications...</p>
+              </div>
+            )}
+
+            {/* Applicants List */}
+            {!isError && (
+              <div className="space-y-4">
+                {applicants.length > 0 ? (
+                  applicants.map((applicant: Applicant) => (
+                    <ApplicantCard
+                      key={`${applicant.applicationId}-${paginationMode}`}
+                      applicant={applicant}
+                      handleTaskAction={handleTaskAction}
+                    />
+                  ))
+                ) : (
+                  !isLoading && (
+                    <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+                      <div className="max-w-md mx-auto">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Search className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-900 text-lg font-medium mb-2">No applications found</p>
+                        <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+
+            {/* Infinite Scroll States */}
+            {paginationMode === 'infinite' && !isError && (
+              <>
+                {/* Sentinel for triggering next page */}
+                {infiniteQuery.hasNextPage && (
+                  <div ref={sentinelRef} className="h-1" />
+                )}
+
+                {/* Loading next page */}
+                {infiniteQuery.isFetchingNextPage && (
+                  <div className="text-center py-8">
+                    <div className="inline-block h-6 w-6 animate-spin rounded-full border-3 border-solid border-blue-500 border-r-transparent"></div>
+                    <p className="text-gray-500 mt-2 text-sm">Loading more applications...</p>
+                  </div>
+                )}
+
+                {/* End of list */}
+                {!infiniteQuery.hasNextPage && applicants.length > 0 && !infiniteQuery.isFetchingNextPage && (
+                  <div className="text-center py-8 mt-6">
+                    <div className="inline-block px-4 py-2 bg-gray-100 rounded-full">
+                      <p className="text-gray-600 text-sm font-medium">
+                        All {applicants.length} applications loaded
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      )}
-
-      {/* Infinite Scroll Sentinel & Loading States */}
-      {paginationMode === 'infinite' && !isError && (
-        <>
-          {/* Sentinel for triggering next page */}
-          {infiniteQuery.hasNextPage && (
-            <div ref={sentinelRef} className="h-1" />
-          )}
-
-          {/* Loading next page */}
-          {infiniteQuery.isFetchingNextPage && (
-            <div className="text-center py-6">
-              <div className="inline-block h-6 w-6 animate-spin rounded-full border-3 border-solid border-blue-500 border-r-transparent"></div>
-              <p className="text-gray-500 mt-2">Loading more applications...</p>
-            </div>
-          )}
-
-          {/* End of list */}
-          {!infiniteQuery.hasNextPage && applicants.length > 0 && !infiniteQuery.isFetchingNextPage && (
-            <div className="text-center py-6 text-gray-400 border-t border-gray-200 mt-4">
-              You've reached the end of the list ({applicants.length} applications loaded)
-            </div>
-          )}
-        </>
-      )}
+      </div>
 
       {/* Modals */}
       <ActionModal
@@ -599,6 +676,6 @@ export function NCRCDashboard() {
       
       {/* Global Error Dialog */}
       <ErrorDialog ref={errorDialogRef} />
-    </div>
+    </>
   );
 }
