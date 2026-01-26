@@ -43,7 +43,7 @@ function RootLayout() {
       {/* ✅ Show nav everywhere except /login */}
       {!isLoginPage && <Navigation />}
 
-      <main className="flex-1">
+      <main className="flex-1 pt-16">
         <Outlet />
       </main>
     </div>
