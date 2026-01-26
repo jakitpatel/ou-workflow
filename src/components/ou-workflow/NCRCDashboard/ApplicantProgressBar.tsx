@@ -12,6 +12,8 @@ type Props = {
     action: Task
   ) => void
 }
+const LEFT_STAGES = ['nda', 'inspection'];
+const RIGHT_STAGES = ['ingredients', 'products'];
 const VERTICAL_STAGE_KEYS = ['nda', 'inspection', 'ingredients', 'products'];
 const FIRST_STAGE_KEY = 'initial';
 const LAST_STAGE_KEYS = ['contract', 'certification'];
@@ -266,12 +268,13 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
         </div>
       ) : (
         /*  MIXED LAYOUT */
-        <div className="grid grid-cols-3 gap-4 w-full items-start">
+        <div className="flex items-center gap-4 w-full">
+
           {/* Column 1: Initial */}
           {firstStage && (
             <button
               onClick={() => handleStageClick(firstStage.key)}
-              className={`h-6 w-full px-2 rounded cursor-pointer hover:opacity-80 transition-all ${
+              className={`h-6 px-3 rounded cursor-pointer hover:opacity-80 transition-all whitespace-nowrap ${
                 expandedStage === firstStage.key
                   ? 'ring-2 ring-blue-400 ring-offset-1'
                   : ''
@@ -288,51 +291,150 @@ export function ApplicantProgressBar({ applicant, handleTaskAction }: Props) {
             </button>
           )}
 
-          {/* Column 2: Vertical stages */}
-          <div className="flex flex-col space-y-1 w-full">
-            {verticalStages.map(stage => (
-              <button
-                key={stage.key}
-                onClick={() => handleStageClick(stage.key)}
-                className={`h-6 w-full px-2 rounded cursor-pointer hover:opacity-80 transition-all ${
-                  expandedStage === stage.key
-                    ? 'ring-2 ring-blue-400 ring-offset-1'
-                    : ''
-                }`}
-                style={{
-                  backgroundColor: getStageColor(
-                    applicant.stages[stage.key]?.status
-                  )
-                }}
-              >
-                <span className="text-white text-xs leading-6 truncate">
-                  {stage.name}
-                </span>
-              </button>
-            ))}
+          {/* Arrow */}
+          <div className="flex-shrink-0 text-gray-400">
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 7l5 5m0 0l-5 5m5-5H6"
+              />
+            </svg>
           </div>
 
-          {/* Column 3: Last stages */}
-          <div className="flex space-x-1 w-full">
-            {lastStages.map(stage => (
-              <button
-                key={stage.key}
-                onClick={() => handleStageClick(stage.key)}
-                className={`h-6 w-full px-2 rounded cursor-pointer hover:opacity-80 transition-all ${
-                  expandedStage === stage.key
-                    ? 'ring-2 ring-blue-400 ring-offset-1'
-                    : ''
-                }`}
-                style={{
-                  backgroundColor: getStageColor(
-                    applicant.stages[stage.key]?.status
-                  )
-                }}
-              >
-                <span className="text-white text-xs leading-6 truncate">
-                  {stage.name}
-                </span>
-              </button>
+          {/* Parallel Stages Box */}
+          <div
+            className="border-2 border-gray-300 rounded-lg px-3 py-3 bg-gray-50 flex-shrink-0"
+            style={{ minWidth: '290px' }}
+          >
+            <div className="grid grid-cols-2 gap-x-3">
+
+              {/* Left column */}
+              <div className="flex flex-col space-y-2">
+                {LEFT_STAGES.map((key) => {
+                  const stage = verticalStages.find(s => s.key === key);
+                  if (!stage) return null;
+
+                  return (
+                    <button
+                      key={stage.key}
+                      onClick={() => handleStageClick(stage.key)}
+                      className={`h-6 w-full px-2 rounded transition-all hover:opacity-80 ${
+                        expandedStage === stage.key
+                          ? 'ring-2 ring-blue-400 ring-offset-1'
+                          : ''
+                      }`}
+                      style={{
+                        backgroundColor: getStageColor(
+                          applicant.stages[stage.key]?.status
+                        ),
+                      }}
+                    >
+                      <span className="text-white text-xs leading-6 truncate">
+                        {stage.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Right column */}
+              <div className="flex flex-col space-y-2">
+                {RIGHT_STAGES.map((key) => {
+                  const stage = verticalStages.find(s => s.key === key);
+                  if (!stage) return null;
+
+                  return (
+                    <button
+                      key={stage.key}
+                      onClick={() => handleStageClick(stage.key)}
+                      className={`h-6 w-full px-2 rounded transition-all hover:opacity-80 ${
+                        expandedStage === stage.key
+                          ? 'ring-2 ring-blue-400 ring-offset-1'
+                          : ''
+                      }`}
+                      style={{
+                        backgroundColor: getStageColor(
+                          applicant.stages[stage.key]?.status
+                        ),
+                      }}
+                    >
+                      <span className="text-white text-xs leading-6 truncate">
+                        {stage.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+            </div>
+          </div>
+
+          {/* Arrow */}
+          <div className="flex-shrink-0 text-gray-400">
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 7l5 5m0 0l-5 5m5-5H6"
+              />
+            </svg>
+          </div>
+
+          {/* Column 3: Last stages (2-step linear flow) */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {lastStages.map((stage, index) => (
+              <React.Fragment key={stage.key}>
+                <button
+                  onClick={() => handleStageClick(stage.key)}
+                  className={`h-6 px-3 rounded cursor-pointer hover:opacity-80 transition-all whitespace-nowrap ${
+                    expandedStage === stage.key
+                      ? 'ring-2 ring-blue-400 ring-offset-1'
+                      : ''
+                  }`}
+                  style={{
+                    backgroundColor: getStageColor(
+                      applicant.stages[stage.key]?.status
+                    ),
+                  }}
+                >
+                  <span className="text-white text-xs leading-6 truncate">
+                    {stage.name}
+                  </span>
+                </button>
+
+                {/* Arrow BETWEEN stages */}
+                {index < lastStages.length - 1 && (
+                  <div className="flex-shrink-0 text-gray-400">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </React.Fragment>
             ))}
           </div>
         </div>

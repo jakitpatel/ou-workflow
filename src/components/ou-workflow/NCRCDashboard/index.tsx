@@ -490,7 +490,7 @@ export function NCRCDashboard() {
                 </select>
 
                 {/* All Apps | My Apps segmented control */}
-                <div className="ml-auto flex items-center pl-4 border-l border-gray-200">
+                <div className="ml-auto flex items-center border-gray-200">
                   <div
                     className="inline-flex rounded-lg border border-gray-300 overflow-hidden"
                     role="group"
