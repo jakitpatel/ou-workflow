@@ -489,50 +489,59 @@ export function NCRCDashboard() {
                   <option value="low">Low</option>
                 </select>
 
-                {/* My Applications Toggle — icon only with tooltip */}
+                {/* All Apps | My Apps segmented control */}
                 <div className="ml-auto flex items-center pl-4 border-l border-gray-200">
-                  <label
-                    className="relative inline-flex items-center cursor-pointer"
-                    title="Show only my applications"
+                  <div
+                    className="inline-flex rounded-lg border border-gray-300 overflow-hidden"
+                    role="group"
+                    aria-label="Application visibility filter"
                   >
-                    <input
-                      type="checkbox"
-                      checked={Boolean(search.myOnly)}
-                      onChange={(e) =>
+                    {/* All Apps */}
+                    <button
+                      type="button"
+                      onClick={() =>
                         updateSearch({
-                          myOnly: e.target.checked ? true : undefined,
+                          myOnly: undefined,
                           page: 0,
                         })
                       }
-                      className="sr-only"
-                      aria-label="Show only my applications"
-                    />
-
-                    <span
-                      className={`w-4 h-4 rounded border flex items-center justify-center transition-colors
-                        ${
-                          search.myOnly
-                            ? 'bg-blue-600 border-blue-600'
-                            : 'bg-white border-gray-300 hover:border-gray-400'
-                        }`}
+                      aria-pressed={!search.myOnly}
+                      className={[
+                        'px-3 py-1.5 text-sm font-medium transition-colors',
+                        !search.myOnly
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100',
+                        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
+                      ].join(' ')}
+                      title="Show all applications"
                     >
-                      {search.myOnly && (
-                        <svg
-                          className="w-3 h-3 text-white"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          aria-hidden="true"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0l-3.25-3.25a1 1 0 011.414-1.414l2.543 2.543 6.543-6.543a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      )}
-                    </span>
-                  </label>
+                      All Apps
+                    </button>
+
+                    {/* My Apps */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateSearch({
+                          myOnly: true,
+                          page: 0,
+                        })
+                      }
+                      aria-pressed={Boolean(search.myOnly)}
+                      className={[
+                        'px-3 py-1.5 text-sm font-medium transition-colors border-l border-gray-300',
+                        search.myOnly
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100',
+                        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
+                      ].join(' ')}
+                      title="Show only applications assigned to me"
+                    >
+                      My Apps
+                    </button>
+                  </div>
                 </div>
+
               </div>
             </div>
 
