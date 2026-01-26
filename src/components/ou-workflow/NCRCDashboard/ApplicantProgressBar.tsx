@@ -29,7 +29,7 @@ const STAGE_ORDER = [
 ] as const
 
 const STATUS_COLORS: Record<string, string> = {
-  new: '#6366f1',
+  new: '#808080',
   completed: '#10b981',
   in_progress: '#3b82f6',
   overdue: '#ef4444',
