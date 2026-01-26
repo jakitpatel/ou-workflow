@@ -207,7 +207,7 @@ export const TaskRow = memo(({
     >
       {/* Task & Plant Column */}
       <td className="px-6 py-4 align-top">
-        <div className="space-y-2">
+        <div className="">
           {/* Plant Name */}
           <PlantNameButton
             plantName={application.plantName}
@@ -293,6 +293,14 @@ export const TaskRow = memo(({
                       Capacity:{' '}
                       <span className="font-medium text-gray-700">
                         {application.completedCapacity}
+                      </span>
+                    </div>
+                  )}
+                  {typeof application.completedBy === 'string' && (
+                    <div>
+                      Completed By:{' '}
+                      <span className="font-medium text-gray-700">
+                        {application.completedBy}
                       </span>
                     </div>
                   )}
