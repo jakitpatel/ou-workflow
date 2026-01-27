@@ -18,12 +18,12 @@ export function usePagedApplications({
   statusFilter?: string;
   priorityFilter?: string;
   applicationId?: number;
-  myOnly?: string;
+  myOnly?: string | boolean;
   page: number;
   limit?: number;
   enabled?: boolean;
 }) {
-  const { token } = useUser();
+  const { token, role } = useUser();
 
   return useQuery({
     queryKey: [
@@ -40,6 +40,7 @@ export function usePagedApplications({
         priorityFilter,
         applicationId,
         myOnly,
+        role,
         page,
         limit: limit ?? PAGE_LIMIT,
       }),

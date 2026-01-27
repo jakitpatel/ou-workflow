@@ -18,11 +18,11 @@ export function useInfiniteApplications({
   statusFilter?: string;
   priorityFilter?: string;
   applicationId?: number;
-  myOnly?: string;
+  myOnly?: string | boolean;
   limit?: number;
   enabled?: boolean;
 }) {
-  const { token } = useUser();
+  const { token, role } = useUser();
 
   return useInfiniteQuery({
     queryKey: [
@@ -39,6 +39,7 @@ export function useInfiniteApplications({
         priorityFilter,
         applicationId,
         myOnly,
+        role,
         page: pageParam,      // offset
         limit: limit ?? PAGE_LIMIT,
       }),
