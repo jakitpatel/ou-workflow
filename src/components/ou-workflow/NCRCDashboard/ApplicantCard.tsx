@@ -363,7 +363,7 @@ function CardActions({ applicant, onViewTasks, dashboardSearch }: CardActionsPro
   return (
     <div className="mt-3 pt-3 border-t border-gray-100">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm text-gray-700 font-medium">Next: {applicant.nextAction}</p>
+        <p className="text-sm text-gray-700 font-medium">{/*Next: {applicant.nextAction}*/}</p>
         <div className="flex space-x-2">
           <Link
             to="/ou-workflow/ncrc-dashboard/$applicationId"
