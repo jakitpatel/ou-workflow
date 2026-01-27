@@ -31,11 +31,11 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 const LAYOUT_CONFIG = {
-  leftStages: ['nda', 'inspection'],
-  rightStages: ['ingredients', 'products'],
-  verticalStageKeys: ['nda', 'inspection', 'ingredients', 'products'],
-  firstStageKey: 'initial',
-  lastStageKeys: ['contract', 'certification']
+  leftStages: ['nda', 'inspection'] as const,
+  rightStages: ['ingredients', 'products'] as const,
+  verticalStageKeys: ['nda', 'inspection', 'ingredients', 'products'] as const,
+  firstStageKey: 'initial' as const,
+  lastStageKeys: ['contract', 'certification'] as const
 } as const
 
 // ==========================================
@@ -161,10 +161,10 @@ type MixedLayoutProps = {
 function MixedLayout({ applicant, expandedStage, onStageClick }: MixedLayoutProps) {
   const firstStage = STAGE_ORDER.find((s) => s.key === LAYOUT_CONFIG.firstStageKey)
   const verticalStages = STAGE_ORDER.filter((s) =>
-    LAYOUT_CONFIG.verticalStageKeys.includes(s.key)
+    (LAYOUT_CONFIG.verticalStageKeys as readonly string[]).includes(s.key)
   )
   const lastStages = STAGE_ORDER.filter((s) =>
-    LAYOUT_CONFIG.lastStageKeys.includes(s.key)
+    (LAYOUT_CONFIG.lastStageKeys as readonly string[]).includes(s.key)
   )
 
   const leftStages = LAYOUT_CONFIG.leftStages

@@ -142,18 +142,15 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
           <CardHeader
             applicant={applicant}
             priority={priority}
-            status={status}
             isCritical={isCritical}
-            showAIAssistant={showAIAssistant}
-            onViewTasks={handleViewTasks}
+            //onViewTasks={handleViewTasks}
             onViewApplicationDetails={(id) => {
-              saveScrollPosition(id);
               navigate({
                 to: '/ou-workflow/ncrc-dashboard/$applicationId',
                 params: { applicationId: String(id) }
               });
             }}
-            onToggleAI={toggleAIAssistant}
+            //onToggleAI={toggleAIAssistant}
           />
         </div>
 
@@ -206,23 +203,19 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
 interface CardHeaderProps {
   applicant: Applicant;
   priority: { label: string; color: string; textColor: string };
-  status: { label: string; color: string; step: number };
+  //status: { label: string; color: string; step: number };
   isCritical: boolean;
-  showAIAssistant: boolean;
-  onViewTasks: (id?: string | number) => void;
+  //showAIAssistant: boolean;
+  //onViewTasks: (id?: string | number) => void;
   onViewApplicationDetails: (id?: string | number) => void;
-  onToggleAI: () => void;
+  //onToggleAI: () => void;
 }
 
 function CardHeader({
   applicant,
   priority,
-  status,
   isCritical,
-  showAIAssistant,
-  onViewTasks,
-  onViewApplicationDetails,
-  onToggleAI,
+  onViewApplicationDetails
 }: CardHeaderProps) {
   return (
     <div className="flex justify-between items-start">
@@ -239,7 +232,10 @@ function CardHeader({
           </button>
           */}
           <button
-            onClick={() => onViewApplicationDetails(applicant.applicationId)}
+            onClick={() => {
+              saveScrollPosition(applicant.applicationId ?? '');
+              onViewApplicationDetails(applicant.applicationId);
+            }}
             className="text-lg font-semibold text-blue-600 hover:text-blue-800 transition-colors"
             title={`Click to view application details for ${applicant.company}`}
             aria-label={`View application details for ${applicant.company}`}
