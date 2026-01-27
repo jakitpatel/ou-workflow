@@ -82,8 +82,8 @@ export function NCRCDashboard() {
   
   // 🔹 Debounced search filters
   const debouncedSearch = useDebounce(q, DEBOUNCE_DELAY);
-  // 🔹 "My Applications" role valu e
-  const myOnlyVal = myOnly ? role : undefined;
+  // 🔹 "My Applications" role value
+  const myOnlyVal = myOnly ? role : false;
   // 🔹 Fetch applications
   /* ================================================================
    * DATA FETCHING
@@ -525,7 +525,7 @@ export function NCRCDashboard() {
                       type="button"
                       onClick={() =>
                         updateSearch({
-                          myOnly: undefined,
+                          myOnly: false,
                           page: 0,
                         })
                       }

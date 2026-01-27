@@ -287,7 +287,7 @@ export async function fetchApplicants({
   statusFilter?: string;
   priorityFilter?: string;
   applicationId?: number;
-  myOnly?: string;
+  myOnly?: string | boolean;
 } = {}): Promise<ApplicantsResponse> {
   const params = buildPaginationParams(page, limit);
 
@@ -301,9 +301,9 @@ export async function fetchApplicants({
     params.append("filter[applicationId]", String(applicationId));
   }
 
-  if (myOnly !== undefined) {
-    params.append("filter[OnlyMyRole]", "true");
-    if(myOnly.toLocaleLowerCase()!== "all"){
+  if (myOnly !== false) {
+    params.append("filter[OnlyMyRoles]", "true");
+    if(typeof myOnly === "string" && myOnly.toLocaleLowerCase()!== "all"){
       params.append("filter[role]", String(myOnly));
     }
   }
