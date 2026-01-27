@@ -21,6 +21,7 @@ export const Route = createFileRoute('/ou-workflow/')({
         status: 'all',
         priority: 'all',
         page: 0,
+        myOnly: true
       },
     })
   },

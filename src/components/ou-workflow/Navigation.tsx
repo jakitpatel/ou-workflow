@@ -96,6 +96,7 @@ export function Navigation({ showMenu = true }: NavigationProps) {
                     status: 'all',
                     priority: 'all',
                     page: 0,
+                    myOnly: true
                   }}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
                     isActiveRoute('ncrc-dashboard')

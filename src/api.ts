@@ -302,7 +302,10 @@ export async function fetchApplicants({
   }
 
   if (myOnly !== undefined) {
-    params.append("filter[OnlyMyRole]", String(myOnly));
+    params.append("filter[OnlyMyRole]", "true");
+    if(myOnly.toLocaleLowerCase()!== "all"){
+      params.append("filter[role]", String(myOnly));
+    }
   }
 
   const response = await fetchWithAuth<ApplicantsResponse>({

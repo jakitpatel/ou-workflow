@@ -499,28 +499,6 @@ export function NCRCDashboard() {
                     role="group"
                     aria-label="Application visibility filter"
                   >
-                    {/* All Apps */}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updateSearch({
-                          myOnly: undefined,
-                          page: 0,
-                        })
-                      }
-                      aria-pressed={!search.myOnly}
-                      className={[
-                        'px-3 py-1.5 text-sm font-medium transition-colors',
-                        !search.myOnly
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white text-gray-700 hover:bg-gray-100',
-                        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
-                      ].join(' ')}
-                      title="Show all applications"
-                    >
-                      All Apps
-                    </button>
-
                     {/* My Apps */}
                     <button
                       type="button"
@@ -541,6 +519,27 @@ export function NCRCDashboard() {
                       title="Show only applications assigned to me"
                     >
                       My Apps
+                    </button>
+                    {/* All Apps */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateSearch({
+                          myOnly: undefined,
+                          page: 0,
+                        })
+                      }
+                      aria-pressed={!search.myOnly}
+                      className={[
+                        'px-3 py-1.5 text-sm font-medium transition-colors',
+                        !search.myOnly
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100',
+                        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
+                      ].join(' ')}
+                      title="Show all applications"
+                    >
+                      All Apps
                     </button>
                   </div>
                 </div>
