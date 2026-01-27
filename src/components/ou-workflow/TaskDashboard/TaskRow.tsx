@@ -50,7 +50,8 @@ const PlantNameButton = memo(({
     type="button"
     onClick={onClick}
     className="text-left group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-    aria-label={`View ${plantName} history - ${applicationCount} applications`}
+    title={`Click to view details for ${plantName}`}
+    aria-label={`View details for ${plantName} - ${applicationCount} applications`}
   >
     <div className="text-base font-bold group-hover:text-blue-600 transition-colors text-gray-900">
       {plantName}
