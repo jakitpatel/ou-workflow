@@ -14,7 +14,7 @@ interface TaskRowProps {
   application: ApplicationTask;
   plantInfo?: PlantInfo;
   handleShowPlantHistory: (plantName: string) => void;
-  handleApplicationTaskAction: (e: React.MouseEvent, application: ApplicationTask) => void;
+  handleApplicationTaskAction: (e: React.MouseEvent<HTMLElement>, application: ApplicationTask) => void;
 }
 
 // Helper Components

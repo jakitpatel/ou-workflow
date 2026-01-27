@@ -373,9 +373,9 @@ export function TaskDashboard() {
     setShowPlantHistory(plantName);
   }, []);
 
-  const handleViewNCRCDashboard = useCallback(() => {
+  /*const handleViewNCRCDashboard = useCallback(() => {
     console.log('Returning to NCRC Dashboard');
-  }, []);
+  }, []);*/
 
   // Render loading state
   if (isLoading) {
@@ -505,7 +505,7 @@ return (
                   <TaskRow
                     key={application.taskInstanceId}
                     application={application}
-                    plantInfo={plantHistory[String(application.plantId)]}
+                    plantInfo={plantHistory[String(application.plantId) as keyof typeof plantHistory] || undefined}
                     handleApplicationTaskAction={handleApplicationTaskAction}
                     handleShowPlantHistory={handleShowPlantHistory}
                   />
