@@ -146,6 +146,13 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
             isCritical={isCritical}
             showAIAssistant={showAIAssistant}
             onViewTasks={handleViewTasks}
+            onViewApplicationDetails={(id) => {
+              saveScrollPosition(id);
+              navigate({
+                to: '/ou-workflow/ncrc-dashboard/$applicationId',
+                params: { applicationId: String(id) }
+              });
+            }}
             onToggleAI={toggleAIAssistant}
           />
         </div>
@@ -203,6 +210,7 @@ interface CardHeaderProps {
   isCritical: boolean;
   showAIAssistant: boolean;
   onViewTasks: (id?: string | number) => void;
+  onViewApplicationDetails: (id?: string | number) => void;
   onToggleAI: () => void;
 }
 
@@ -213,17 +221,28 @@ function CardHeader({
   isCritical,
   showAIAssistant,
   onViewTasks,
+  onViewApplicationDetails,
   onToggleAI,
 }: CardHeaderProps) {
   return (
     <div className="flex justify-between items-start">
       <div className="flex-1">
         <div className="flex items-center flex-wrap gap-2 mb-2">
+          {/*
           <button
             onClick={() => onViewTasks(applicant.applicationId)}
             className="text-lg font-semibold text-blue-600 hover:text-blue-800 transition-colors"
             title={`Click to view tasks for ${applicant.company}`}
             aria-label={`View tasks for ${applicant.company}`}
+          >
+            {applicant.company}
+          </button>
+          */}
+          <button
+            onClick={() => onViewApplicationDetails(applicant.applicationId)}
+            className="text-lg font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+            title={`Click to view application details for ${applicant.company}`}
+            aria-label={`View application details for ${applicant.company}`}
           >
             {applicant.company}
           </button>
