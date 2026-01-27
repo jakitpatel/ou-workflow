@@ -185,6 +185,7 @@ export const TaskRow = memo(({
           priority: prev.priority ?? 'all',
           applicationId: Number(application.applicationId),
           page: 0,
+          myOnly: prev.myOnly ?? true,
         }),
       });
     }
