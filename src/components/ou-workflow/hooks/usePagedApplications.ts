@@ -46,7 +46,7 @@ export function usePagedApplications({
 
     enabled: enabled && !!token,
     placeholderData: keepPreviousData, // ✅ Fixed: proper syntax
-    staleTime: 30_000,
+    //staleTime: 30_000,
     retry: (failureCount, error: any) => {
       if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) {
         return false;

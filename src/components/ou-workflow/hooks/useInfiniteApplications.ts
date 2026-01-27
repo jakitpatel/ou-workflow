@@ -57,7 +57,7 @@ export function useInfiniteApplications({
     },
 
     enabled: enabled && !!token,
-    staleTime: 30_000,
+    //staleTime: 30_000,
     gcTime: 5 * 60 * 1000,
     // ✅ Important: Don't refetch on window focus for infinite queries
     refetchOnWindowFocus: false,
