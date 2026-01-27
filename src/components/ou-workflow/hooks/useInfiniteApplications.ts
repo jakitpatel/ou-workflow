@@ -10,6 +10,7 @@ export function useInfiniteApplications({
   statusFilter,
   priorityFilter,
   applicationId,
+  myOnly,
   limit,
   enabled = true,
 }: {
@@ -17,6 +18,7 @@ export function useInfiniteApplications({
   statusFilter?: string;
   priorityFilter?: string;
   applicationId?: number;
+  myOnly?: string;
   limit?: number;
   enabled?: boolean;
 }) {
@@ -26,7 +28,7 @@ export function useInfiniteApplications({
     queryKey: [
       'applications',
       'infinite',
-      { token, searchTerm, statusFilter, priorityFilter, applicationId },
+      { token, searchTerm, statusFilter, priorityFilter, applicationId, myOnly },
     ],
 
     queryFn: ({ pageParam = 0 }) =>
@@ -36,6 +38,7 @@ export function useInfiniteApplications({
         statusFilter,
         priorityFilter,
         applicationId,
+        myOnly,
         page: pageParam,      // offset
         limit: limit ?? PAGE_LIMIT,
       }),

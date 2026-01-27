@@ -278,6 +278,7 @@ export async function fetchApplicants({
   statusFilter,
   priorityFilter,
   applicationId,
+  myOnly
 }: {
   page?: number;
   limit?: number;
@@ -286,6 +287,7 @@ export async function fetchApplicants({
   statusFilter?: string;
   priorityFilter?: string;
   applicationId?: number;
+  myOnly?: string;
 } = {}): Promise<ApplicantsResponse> {
   const params = buildPaginationParams(page, limit);
 
@@ -297,6 +299,10 @@ export async function fetchApplicants({
 
   if (applicationId !== undefined) {
     params.append("filter[applicationId]", String(applicationId));
+  }
+
+  if (myOnly !== undefined) {
+    params.append("filter[OnlyMyRole]", String(myOnly));
   }
 
   const response = await fetchWithAuth<ApplicantsResponse>({

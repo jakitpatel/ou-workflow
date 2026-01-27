@@ -66,10 +66,10 @@ export function NCRCDashboard() {
   // 🔹 Router hooks
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
-  const { q, status, priority, page, applicationId } = search;
+  const { q, status, priority, page, applicationId, myOnly } = search;
 
   // 🔹 User context
-  const { token, username, paginationMode } = useUser();
+  const { token, username, paginationMode, role } = useUser();
   const queryClient = useQueryClient();
   const errorDialogRef = useRef<ErrorDialogRef>(null);
   // UI states
@@ -82,7 +82,8 @@ export function NCRCDashboard() {
   
   // 🔹 Debounced search filters
   const debouncedSearch = useDebounce(q, DEBOUNCE_DELAY);
-
+  // 🔹 "My Applications" role valu e
+  const myOnlyVal = myOnly ? role : undefined;
   // 🔹 Fetch applications
   /* ================================================================
    * DATA FETCHING
@@ -92,6 +93,7 @@ export function NCRCDashboard() {
     statusFilter: status,
     priorityFilter: priority,
     applicationId,
+    myOnly: myOnlyVal,
     page,
     limit: PAGE_LIMIT,
     enabled: paginationMode === 'paged',
@@ -102,6 +104,7 @@ export function NCRCDashboard() {
     statusFilter: status,
     priorityFilter: priority,
     applicationId,
+    myOnly: myOnlyVal,
     enabled: paginationMode === 'infinite',
   });
 

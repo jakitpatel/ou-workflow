@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { ApplicantProgressBar } from './ApplicantProgressBar';
+import { ApplicationExpandedStage } from './ApplicationExpandedStage';
 import {
   Bell,
   FileText,
@@ -72,6 +73,7 @@ const saveScrollPosition = (applicationId: string | number) => {
 
 export function ApplicantCard({ applicant, handleTaskAction }: Props) {
   const navigate = useNavigate();
+  const [expandedStage, setExpandedStage] = useState<string | null>(null)
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const dashboardSearch = DashboardRoute.useSearch();
 
@@ -127,21 +129,56 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
 
   const toggleAIAssistant = () => setShowAIAssistant((prev) => !prev);
 
+  const handleStageClick = (stageName: string) => {
+    setExpandedStage(expandedStage === stageName ? null : stageName)
+  }
+
   return (
     <div data-app-id={applicant.applicationId} className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all">
-      {/* Header Section */}
-      <CardHeader
-        applicant={applicant}
-        priority={priority}
-        status={status}
-        isCritical={isCritical}
-        showAIAssistant={showAIAssistant}
-        onViewTasks={handleViewTasks}
-        onToggleAI={toggleAIAssistant}
-      />
+      {/* Header + Progress (Horizontal) */}
+      <div className="flex items-start gap-6">
+        {/* Left: Header */}
+        <div className="flex-[2] min-w-[280px] max-w-[420px]">
+          <CardHeader
+            applicant={applicant}
+            priority={priority}
+            status={status}
+            isCritical={isCritical}
+            showAIAssistant={showAIAssistant}
+            onViewTasks={handleViewTasks}
+            onToggleAI={toggleAIAssistant}
+          />
+        </div>
 
-      {/* Progress Bar */}
-      <ApplicantProgressBar applicant={applicant} handleTaskAction={handleTaskAction} />
+        {/* Right: Progress Bar */}
+        <div className="flex-[4] min-w-[420px]">
+          <ApplicantProgressBar
+            applicant={applicant}
+            onStageClick={handleStageClick}
+            expandedStage={expandedStage}
+          />
+        </div>
+        <div className="flex items-center space-x-2 flex-shrink-0">
+          {showAIAssistant && (
+            <button
+              onClick={toggleAIAssistant}
+              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              title="AI Assistant - Powered by Gemini"
+              aria-label="Toggle AI Assistant"
+            >
+              <Bot className="w-4 h-4" aria-hidden="true" />
+            </button>
+          )}
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${status.color}`}
+            aria-label={`Status: ${status.label}`}
+          >
+            {status.label}
+          </span>
+        </div>
+      </div>
+      {/* Expanded Stage Details */}
+      <ApplicationExpandedStage expandedStage={expandedStage} setExpandedStage={setExpandedStage} applicant={applicant} handleTaskAction={handleTaskAction} />
 
       {/* AI Assistant Panel */}
       {showAIAssistant && <AIAssistantPanel applicant={applicant} />}
@@ -179,7 +216,7 @@ function CardHeader({
   onToggleAI,
 }: CardHeaderProps) {
   return (
-    <div className="flex justify-between items-start mb-4">
+    <div className="flex justify-between items-start">
       <div className="flex-1">
         <div className="flex items-center flex-wrap gap-2 mb-2">
           <button
@@ -190,14 +227,18 @@ function CardHeader({
           >
             {applicant.company}
           </button>
+        </div>
 
+        <p className="text-gray-600 text-sm">
+          {applicant.plant} • {applicant.region}
+        </p>
+        <div className="flex items-center flex-wrap gap-2 mb-2">
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${priority.color} ${priority.textColor}`}
             aria-label={`Priority: ${priority.label}`}
           >
             {priority.label}
           </span>
-
           {isCritical && (
             <div className="flex items-center text-red-600" role="alert" aria-label="Critical status">
               <AlertTriangle className="w-4 h-4 mr-1" aria-hidden="true" />
@@ -217,29 +258,6 @@ function CardHeader({
             </div>
           )}
         </div>
-
-        <p className="text-gray-600 text-sm">
-          {applicant.plant} • {applicant.region}
-        </p>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        {showAIAssistant && (
-          <button
-            onClick={onToggleAI}
-            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-            title="AI Assistant - Powered by Gemini"
-            aria-label="Toggle AI Assistant"
-          >
-            <Bot className="w-4 h-4" aria-hidden="true" />
-          </button>
-        )}
-        <span
-          className={`px-3 py-1 rounded-full text-sm font-medium ${status.color}`}
-          aria-label={`Status: ${status.label}`}
-        >
-          {status.label}
-        </span>
       </div>
     </div>
   );
@@ -294,7 +312,7 @@ function AIAssistantPanel({ applicant }: { applicant: Applicant }) {
 
 function CardStats({ applicant }: { applicant: Applicant }) {
   return (
-    <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+    <div className="mt-3 flex items-center justify-between text-sm text-gray-500">
       <div className="flex items-center space-x-4">
         <span className="flex items-center">
           <FileText className="w-4 h-4 mr-1" aria-hidden="true" />
@@ -324,7 +342,7 @@ interface CardActionsProps {
 
 function CardActions({ applicant, onViewTasks, dashboardSearch }: CardActionsProps) {
   return (
-    <div className="mt-4 pt-4 border-t border-gray-100">
+    <div className="mt-3 pt-3 border-t border-gray-100">
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm text-gray-700 font-medium">Next: {applicant.nextAction}</p>
         <div className="flex space-x-2">

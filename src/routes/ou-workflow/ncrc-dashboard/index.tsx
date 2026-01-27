@@ -7,6 +7,7 @@ type DashboardSearch = {
   priority: string
   page: number
   applicationId?: number
+  myOnly?: boolean
 }
 
 export const Route = createFileRoute('/ou-workflow/ncrc-dashboard/')({
@@ -17,6 +18,12 @@ export const Route = createFileRoute('/ou-workflow/ncrc-dashboard/')({
       priority: typeof search.priority === 'string' ? search.priority : 'all',
       page: Number.isFinite(Number(search.page)) ? Number(search.page) : 0,
       applicationId: search.applicationId ? Number(search.applicationId) : undefined,
+      // ✅ myOnlyRole (boolean, URL-safe)
+      myOnly:
+        search.myOnly === true ||
+        search.myOnly === 'true'
+          ? true
+          : undefined,
     }
   },
   component: NCRCDashboard,

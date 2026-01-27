@@ -87,7 +87,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   );
 
   const [stageLayout, setStageLayout] = useState<StageLayout>(
-    stored?.stageLayout ?? 'horizontal'
+    stored?.stageLayout ?? 'mixed'
   );
 
   const [paginationMode, setPaginationMode] = useState<PaginationMode>(
@@ -181,7 +181,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setRole(data.role ?? null);
     setRoles(data.roles ?? null);
     setDelegated(data.delegated ?? null);
-    setStageLayout(data.stageLayout ?? 'horizontal');
+    setStageLayout(data.stageLayout ?? 'mixed');
     setPaginationMode(data.paginationMode ?? 'paged');
     setLoginTime(now);
 
@@ -200,7 +200,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setRoles(null);
     setDelegated(null);
     setLoginTime(null);
-    setStageLayout("horizontal");
+    setStageLayout("mixed");
     setPaginationMode("paged");
 
     clearStoredUser();
