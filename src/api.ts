@@ -617,8 +617,12 @@ export async function fetchProfileLayout({
 
 export async function fetchPrelimApplications() {
   console.log('✅ CORRECT fetchPrelimApplications');
-
-  const res = await fetch('/data/prelim-applications.json');
+  //const baseUrl = resolveApiBaseUrl();
+  const baseUrl = "/dashboard";
+  //const res = await fetch('/data/prelim-applications.json');
+  const prelimurl = baseUrl + '/data/prelim-applications.json';
+  console.log('Fetching prelim data from:', prelimurl);
+  const res = await fetch(prelimurl);
 
   if (!res.ok) {
     throw new Error('Failed to load prelim data');
