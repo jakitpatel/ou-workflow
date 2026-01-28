@@ -614,3 +614,22 @@ export async function fetchProfileLayout({
 
   return response.data;
 }
+
+export async function fetchPrelimApplications() {
+  console.log('✅ CORRECT fetchPrelimApplications');
+
+  const res = await fetch('/data/prelim-applications.json');
+
+  if (!res.ok) {
+    throw new Error('Failed to load prelim data');
+  }
+
+  try {
+    const data = await res.json();
+    console.log('Prelim data loaded:', data);
+    return data;
+  } catch (e) {
+    console.error('❌ JSON parse failed', e);
+    return [];
+  }
+}

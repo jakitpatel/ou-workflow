@@ -151,6 +151,23 @@ function HomePage() {
           </div>
         </section>
 
+        {/* Navigation Cards Section */}
+        <section aria-labelledby="navigation-heading" className="mb-8">
+          <h2 id="navigation-heading" className="sr-only">
+            Navigation Options
+          </h2>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+            <DashboardCard
+              title="Preliminary Dashboard"
+              description="View and manage applications data"
+              icon={BarChart3}
+              to="/ou-workflow/prelim-dashboard"
+              variant="primary"
+            />
+          </div>
+        </section>
+
         {/* Management Actions Section */}
         <section aria-labelledby="management-heading">
           <h2 id="management-heading" className="text-xl font-semibold text-gray-900 mb-4">
