@@ -662,11 +662,24 @@ export async function fetchVectorMatches(payload: any) {
   //const baseUrl = "";
   const baseUrl = "/dashboard";
   let prelimurl = baseUrl + '/data/matchList.json';
+  // Convert payload to query string
+  const params = new URLSearchParams({
+    source: JSON.stringify(payload.source) // or however you want to encode it
+  });
+  
+  const res = await fetch(`${prelimurl}?${params}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    // No body for GET requests
+  })
+
+  /*
   const res = await fetch(prelimurl, {
-    method: 'POST',
+    method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
+    */
 
   if (!res.ok) {
     throw new Error('Vector search failed')
