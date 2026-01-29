@@ -1,0 +1,28 @@
+[
+  {
+      "CompanyID": 1,
+      "match": 100,
+      "category": "Liquid Beverage",
+      "name": "Adirondack Beverages",
+      "website": "www.AdirondackBeverages.com",
+      "city": "Scotia",
+      "country": "",
+      "line2": "",
+      "state": "NY",
+      "street": "701 Patent Parkway",
+      "zip": "12302"
+  },
+  {
+      "CompanyID": 2,
+      "match": 75,
+      "category": "Liquid Beverage",
+      "name": "Adirondack Beverages1",
+      "website": "www.AdirondackBeverages.com",
+      "city": "Scotia",
+      "country": "",
+      "line2": "",
+      "state": "NY",
+      "street": "701 Patent Parkway",
+      "zip": "12302"
+  }
+ ]

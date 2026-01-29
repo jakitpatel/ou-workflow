@@ -1,0 +1,196 @@
+[
+  {
+    "PreliminaryApplicationID": 255,
+    "company": {
+      "category": "Liquid Beverage",
+      "name": "Adirondack Beverages",
+      "website": "tbd",
+      "companyAddresses": [
+        {
+          "city": "Scotia",
+          "country": "",
+          "line2": "",
+          "state": "NY",
+          "street": "701 Patent Parkway",
+          "type": "Billing",
+          "zip": "12302"
+        },
+        {
+          "city": "Scotia",
+          "country": "",
+          "line2": "",
+          "state": "NY",
+          "street": "701 Patent Parkway",
+          "type": "Physical",
+          "zip": "12302"
+        }
+      ],
+      "companyContacts": [
+        {
+          "email": "aprzysiecki@adkbev.com",
+          "name": "Amanda Przysiecki",
+          "phone": "518-688-3241",
+          "role": "Asst Product Development Manager",
+          "type": "Primary Contact"
+        },
+        {
+          "email": "ejess@adkbev.com",
+          "name": "Erina Jess",
+          "phone": "518-688-3258",
+          "role": "Product Development Manager",
+          "type": "Not Primary Contact"
+        },
+        {
+          "email": "adkpayables@adkbev.com",
+          "name": " Accounts Payable",
+          "phone": "000-000-0000",
+          "role": "",
+          "type": "Not Primary Contact"
+        },
+        {
+          "email": "vgailor@adkbev.com",
+          "name": "Valerie Gailor",
+          "phone": "518-370-3621",
+          "type": "Not Primary Contact"
+        },
+        {
+          "email": "adaubney@polarbev.com",
+          "name": "Alison Daubney",
+          "phone": "508-749-2123",
+          "role": "A/P Supervisor",
+          "type": "Not Primary Contact"
+        },
+        {
+          "email": "DMartin@adkbev.com",
+          "name": " ",
+          "phone": "518- 370-3621",
+          "type": "Not Primary Contact"
+        }
+      ]
+    },
+    "plants": [
+      {
+        "location": "Unkown",
+        "name": "Adirondack Beverages-Scotia",
+        "plantAddresses": [
+          {
+            "city": "Scotia",
+            "country": "",
+            "line2": "",
+            "state": "NY",
+            "street": "701 Corporation Park",
+            "type": "Billing",
+            "zip": "12302"
+          },
+          {
+            "city": "Columbus",
+            "country": "",
+            "line2": "",
+            "state": "GA",
+            "street": "1000 10th Avenue - 2nd Floor",
+            "type": "Other Billing",
+            "zip": "31901"
+          },
+          {
+            "city": "Austin",
+            "country": "",
+            "line2": "",
+            "state": "TX",
+            "street": "6500 River Place Blvd.",
+            "type": "Other Billing",
+            "zip": "78730"
+          },
+          {
+            "city": "Dallas",
+            "country": "",
+            "line2": "",
+            "state": "TX",
+            "street": "Attn: Accounts Payable",
+            "type": "Other Billing",
+            "zip": "75354"
+          },
+          {
+            "city": "Scotia",
+            "country": "",
+            "line2": "",
+            "state": "NY",
+            "street": "701 Corporation Park",
+            "type": "Physical",
+            "zip": "12302"
+          }
+        ],
+        "plantContacts": [
+          {
+            "email": "ejess@adkbev.com",
+            "name": "Erina Jess",
+            "phone": "518-688-3258",
+            "role": "",
+            "type": "Not Primary Contact"
+          },
+          {
+            "email": "vgailor@adkbev.com",
+            "name": "Valerie Gailor",
+            "phone": "518-370-3621",
+            "type": "Not Primary Contact"
+          },
+          {
+            "email": "aprzysiecki@adkbev.com",
+            "name": "Amanda Przysiecki",
+            "phone": "518-688-3241",
+            "role": "Asst. Product Development Manager",
+            "type": "Primary Contact"
+          }
+        ]
+      }
+    ],
+    "files": [
+      {
+        "ApplicationID": 255,
+        "CCreatedDate": "2026-01-26T20:46:01.9200000",
+        "CreatedBy": "System",
+        "FileID": 733,
+        "FileName": "Application.pdf",
+        "FilePath": "https://uojca.sharepoint.com/:b:/r/teams/NewAPITeam/Shared%20Documents/NewAPI/dashboard_files/6295465435286943843.pdf?csf=1&web=1&e=Xgiwjd",
+        "FileSize": "",
+        "FileType": "PDF",
+        "IsProcessed": true,
+        "ModifiedBy": "",
+        "RecordCount": 0,
+        "Tag": "",
+        "UploadedDate": "2026-01-26"
+      },
+      {
+        "ApplicationID": 255,
+        "CCreatedDate": "2026-01-26T20:46:01.9200000",
+        "CreatedBy": "System",
+        "FileID": 734,
+        "FileName": "Product.pdf",
+        "FilePath": "https://uojca.sharepoint.com/:b:/r/teams/NewAPITeam/Shared%20Documents/NewAPI/dashboard_files/Bagel%20Chips_Onion_Garlic%20(2).pdf?csf=1&web=1&e=rJAXVr",
+        "FileSize": "",
+        "FileType": "PDF",
+        "IsProcessed": true,
+        "ModifiedBy": "",
+        "RecordCount": 0,
+        "Tag": "",
+        "UploadedDate": "2026-01-26"
+      },
+      {
+        "ApplicationID": 255,
+        "CCreatedDate": "2026-01-26T20:46:01.9200000",
+        "CreatedBy": "System",
+        "FileID": 735,
+        "FileName": "Ingredient.jpg",
+        "FilePath": "https://uojca.sharepoint.com/:i:/r/teams/NewAPITeam/Shared%20Documents/NewAPI/dashboard_files/Crackers%20Box%207-02%20(2).jpg?csf=1&web=1&e=KK1xRb",
+        "FileSize": "",
+        "FileType": "JPG",
+        "IsProcessed": true,
+        "ModifiedBy": "",
+        "RecordCount": 0,
+        "Tag": "",
+        "UploadedDate": "2026-01-26"
+      }
+    ],
+    "status": "New",
+    "submissionDate": "2026-01-26"
+  }
+]

@@ -1,23 +1,53 @@
-// components/ou-workflow/PrelimDashboard/JsonModal.tsx
-import { useEffect, useState } from 'react';
-import { JsonEditorView } from './JsonEditorView';
+import { useState } from 'react'
+import { JsonEditorView } from './JsonEditorView'
+import { VectorResultsTable } from './VectorResultsTable'
+import { fetchVectorMatches, fetchCompanyDetails } from '@/api'
+import { Search } from 'lucide-react'
 
-type Props = {
-  open: boolean;
-  onClose: () => void;
-  data: any;
-};
+export function JsonModal({
+  open,
+  onClose,
+  data,
+  isLoading,
+  error,
+}: any) {
+  const [selectedNode, setSelectedNode] = useState<any>(null)
+  const [vectorResults, setVectorResults] = useState<any[]>([])
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null)
+  const [companyDetails, setCompanyDetails] = useState<any>(null)
+  const [searching, setSearching] = useState(false)
+  const [loadingCompany, setLoadingCompany] = useState(false)
 
-export function JsonModal({ open, onClose, data }: Props) {
-  const [mode, setMode] = useState<'view' | 'tree' | 'diff'>('view');
-  const [edited, setEdited] = useState<any>(data);
+  if (!open) return null
 
-  useEffect(() => {
-    if (data) setEdited(data);
-  }, [data]);
+  const handleFind = async () => {
+    if (selectedNode == null) return
 
-  if (!open || !data) return null;
-  console.log('JsonModal data:', data);
+    setSearching(true)
+    setVectorResults([])
+    setSelectedCompanyId(null)
+    setCompanyDetails(null)
+
+    try {
+      const result = await fetchVectorMatches({ source: selectedNode })
+      setVectorResults(result)
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  const handleSelectCompany = async (companyId: number) => {
+    setSelectedCompanyId(companyId)
+    setLoadingCompany(true)
+
+    try {
+      const details = await fetchCompanyDetails(companyId);
+      setCompanyDetails(details?.[0] ?? null)
+    } finally {
+      setLoadingCompany(false)
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center"
@@ -33,81 +63,55 @@ export function JsonModal({ open, onClose, data }: Props) {
           <button onClick={onClose}>✕</button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-3 border-b pb-2">
-          {['view', 'tree', 'diff'].map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m as any)}
-              className={`px-3 py-1 rounded ${
-                mode === m
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100'
-              }`}
-            >
-              {m === 'tree' ? 'Edit' : m === 'diff' ? 'Compare' : 'View'}
-            </button>
-          ))}
-        </div>
+        {isLoading && (
+          <div className="h-[60vh] flex items-center justify-center">
+            Loading…
+          </div>
+        )}
 
-       {/* Viewer Grid */}
-        <div className="grid grid-cols-3 gap-3 h-[65vh]">
-        {/* Viewer 1 */}
-        <div className="border rounded overflow-auto">
+        {!isLoading && !error && (
+          <div className="grid grid-cols-3 gap-3 h-[65vh]">
+            {/* Left – Preliminary Data */}
             <JsonEditorView
-            mode={mode === 'tree' ? 'tree' : 'view'}
-            value={data}
-            title="Preliminary Data"
+              value={data}
+              title="Preliminary Data"
+              onSelect={setSelectedNode}
+              headerAction={
+                <button
+                  onClick={handleFind}
+                  disabled={selectedNode == null || searching}
+                  className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-600 text-white rounded disabled:opacity-50"
+                >
+                  <Search size={14} />
+                  {searching ? 'Finding…' : 'Find'}
+                </button>
+              }
             />
-        </div>
 
-        {/* Viewer 2 */}
-        <div className="border rounded overflow-auto">
+            {/* Middle – Vector Matches (TABLE) */}
+            <div className="flex flex-col h-full border rounded bg-white">
+              <div className="px-3 py-2 border-b bg-gray-50 text-sm font-semibold">
+                Vector Search Data
+              </div>
+              <VectorResultsTable
+                results={vectorResults}
+                selectedCompanyId={selectedCompanyId}
+                onSelect={handleSelectCompany}
+              />
+            </div>
+
+            {/* Right – KASH DB JSON */}
             <JsonEditorView
-            mode={mode === 'tree' ? 'tree' : 'view'}
-            value={edited}
-            onChange={mode === 'tree' ? setEdited : undefined}
-            title="Vector Search Data"
+              value={
+                loadingCompany
+                  ? { loading: true }
+                  : companyDetails ?? { message: 'Select a company' }
+              }
+              title="KASH DB Data"
             />
-        </div>
-
-        {/* Viewer 3 */}
-        <div className="border rounded overflow-auto">
-            {mode === 'diff' ? (
-            <JsonEditorView
-                mode="diff"
-                value={edited}
-                compareWith={data}
-            />
-            ) : (
-            <JsonEditorView
-                mode="view"
-                value={edited}
-                title="KASH DB Data"
-            />
-            )}
-        </div>
-        </div>
-
-
-        {/* Footer */}
-        {mode === 'tree' && (
-          <div className="flex justify-end gap-2 mt-3">
-            <button
-              onClick={() => setEdited(data)}
-              className="px-3 py-1 border rounded"
-            >
-              Reset
-            </button>
-            <button
-              onClick={() => console.log('SAVE JSON', edited)}
-              className="px-3 py-1 bg-green-600 text-white rounded"
-            >
-              Save Changes
-            </button>
           </div>
         )}
       </div>
     </div>
-  );
+  )
 }

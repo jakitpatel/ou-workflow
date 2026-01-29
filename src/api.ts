@@ -618,9 +618,9 @@ export async function fetchProfileLayout({
 export async function fetchPrelimApplications() {
   console.log('✅ CORRECT fetchPrelimApplications');
   //const baseUrl = resolveApiBaseUrl();
+  //const baseUrl = "";
   const baseUrl = "/dashboard";
-  //const res = await fetch('/data/prelim-applications.json');
-  const prelimurl = baseUrl + '/data/prelim-applications.json';
+  const prelimurl = baseUrl + '/data/prelimApplicationsList.json';
   console.log('Fetching prelim data from:', prelimurl);
   const res = await fetch(prelimurl);
 
@@ -636,4 +636,57 @@ export async function fetchPrelimApplications() {
     console.error('❌ JSON parse failed', e);
     return [];
   }
+}
+
+// Fetches detailed information for a specific preliminary application
+export async function fetchPrelimApplicationDetails(
+  preliminaryApplicationId: number
+) {
+  //const baseUrl = resolveApiBaseUrl();
+  //const baseUrl = "";
+  const baseUrl = "/dashboard";
+  let prelimurl = baseUrl + '/data/prelimApplicationsDetails.json';
+  prelimurl = prelimurl + `?preliminaryApplicationId=${preliminaryApplicationId}`;
+  const res = await fetch(prelimurl);
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch application details')
+  }
+
+  return res.json()
+}
+
+// api/vectorSearch.ts
+export async function fetchVectorMatches(payload: any) {
+  //const baseUrl = resolveApiBaseUrl();
+  //const baseUrl = "";
+  const baseUrl = "/dashboard";
+  let prelimurl = baseUrl + '/data/matchList.json';
+  const res = await fetch(prelimurl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    throw new Error('Vector search failed')
+  }
+
+  return res.json()
+}
+
+// api/company.ts
+export async function fetchCompanyDetails(companyId: number) {
+  //const baseUrl = resolveApiBaseUrl();
+  //const baseUrl = "";
+  const baseUrl = "/dashboard";
+  let prelimurl = baseUrl + '/data/getCompanyDetails.json';
+  prelimurl = prelimurl + `?companyId=${companyId}`;
+  const res = await fetch(prelimurl)
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch company details')
+  }
+
+  return res.json()
 }
