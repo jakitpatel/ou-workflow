@@ -3,6 +3,7 @@ import { JsonEditorView } from './JsonEditorView'
 import { VectorResultsTable } from './VectorResultsTable'
 import { fetchVectorMatches, fetchCompanyDetails } from '@/api'
 import { Search } from 'lucide-react'
+import { useUser } from '@/context/UserContext'
 
 export function JsonModal({
   open,
@@ -17,6 +18,7 @@ export function JsonModal({
   const [companyDetails, setCompanyDetails] = useState<any>(null)
   const [searching, setSearching] = useState(false)
   const [loadingCompany, setLoadingCompany] = useState(false)
+  const { token } = useUser();
 
   if (!open) return null
 
@@ -29,7 +31,7 @@ export function JsonModal({
     setCompanyDetails(null)
 
     try {
-      const result = await fetchVectorMatches({ source: selectedNode })
+      const result = await fetchVectorMatches({ source: selectedNode, token: token ?? undefined })
       setVectorResults(result)
     } finally {
       setSearching(false)

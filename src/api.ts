@@ -615,15 +615,24 @@ export async function fetchProfileLayout({
   return response.data;
 }
 
-export async function fetchPrelimApplications() {
+export async function fetchPrelimApplications({
+  page = 0,
+  limit = 20,
+  token,
+  searchTerm,
+  statusFilter
+}: {
+  page?: number;
+  limit?: number;
+  token?: string | null;
+  searchTerm?: string;
+  statusFilter?: string;
+} = {}): Promise<ApplicantsResponse> {
   console.log('✅ CORRECT fetchPrelimApplications');
-  //const baseUrl = resolveApiBaseUrl();
-  //const baseUrl = "";
-  const baseUrl = "/dashboard";
+  /*const baseUrl = "/dashboard";
   const prelimurl = baseUrl + '/data/prelimApplicationsList.json';
   console.log('Fetching prelim data from:', prelimurl);
   const res = await fetch(prelimurl);
-
   if (!res.ok) {
     throw new Error('Failed to load prelim data');
   }
@@ -636,14 +645,28 @@ export async function fetchPrelimApplications() {
     console.error('❌ JSON parse failed', e);
     return [];
   }
+  */
+  const params = buildPaginationParams(page, limit);
+
+  addFilterParams(params, {
+    "filter[name]": searchTerm,
+    "filter[status]": statusFilter
+  });
+
+  const res = await fetchWithAuth<ApplicantsResponse>({
+    path: `/prelimApplicationsList?${params.toString()}`,
+    token,
+  });
+
+  return res.data;
 }
 
 // Fetches detailed information for a specific preliminary application
 export async function fetchPrelimApplicationDetails(
-  preliminaryApplicationId: number
+  preliminaryApplicationId: number,
+  token?: string | null
 ) {
-  //const baseUrl = resolveApiBaseUrl();
-  //const baseUrl = "";
+  /*
   const baseUrl = "/dashboard";
   let prelimurl = baseUrl + '/data/prelimApplicationsDetails.json';
   prelimurl = prelimurl + `?preliminaryApplicationId=${preliminaryApplicationId}`;
@@ -654,12 +677,20 @@ export async function fetchPrelimApplicationDetails(
   }
 
   return res.json()
+  */
+  const params = new URLSearchParams();
+  params.append("filter[preliminaryApplicationId]", String(preliminaryApplicationId));
+  return await fetchWithAuth<ApplicantsResponse>({
+    path: `/prelimApplicationsDetails?${params.toString()}`,
+    token,
+  });
 }
 
 // api/vectorSearch.ts
-export async function fetchVectorMatches(payload: any) {
-  //const baseUrl = resolveApiBaseUrl();
-  //const baseUrl = "";
+export async function fetchVectorMatches(payload: any,
+  token?: string | null
+) {
+  /*
   const baseUrl = "/dashboard";
   let prelimurl = baseUrl + '/data/matchList.json';
   // Convert payload to query string
@@ -672,26 +703,23 @@ export async function fetchVectorMatches(payload: any) {
     headers: { 'Content-Type': 'application/json' },
     // No body for GET requests
   })
-
-  /*
-  const res = await fetch(prelimurl, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-    */
-
   if (!res.ok) {
     throw new Error('Vector search failed')
   }
 
   return res.json()
+  */
+  return await fetchWithAuth({
+    path: `/matchList`,
+    method: "POST",
+    body: {data: JSON.stringify(payload)},
+    token,
+  });  
 }
 
 // api/company.ts
-export async function fetchCompanyDetails(companyId: number) {
-  //const baseUrl = resolveApiBaseUrl();
-  //const baseUrl = "";
+export async function fetchCompanyDetails(companyId: number, token?: string | null) {
+  /*
   const baseUrl = "/dashboard";
   let prelimurl = baseUrl + '/data/getCompanyDetails.json';
   prelimurl = prelimurl + `?companyId=${companyId}`;
@@ -702,4 +730,11 @@ export async function fetchCompanyDetails(companyId: number) {
   }
 
   return res.json()
+  */
+  const params = new URLSearchParams();
+  params.append("companyId", String(companyId));
+  return await fetchWithAuth<ApplicantsResponse>({
+    path: `/getCompanyDetails?${params.toString()}`,
+    token,
+  });
 }

@@ -42,11 +42,18 @@ export function VectorResultsTable({
               >
                 {/* Company + extra info */}
                 <td className="px-3 py-2">
-                  <div className="font-medium text-gray-800">
-                    {row.name}
+                  <div className="flex items-center gap-2">
+                    <div className="font-medium text-gray-800">
+                      {row.name}
+                    </div>
+
+                    {/* CompanyID badge */}
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
+                      ID: {row.CompanyID}
+                    </span>
                   </div>
 
-                  {/* 🔹 Extra info (small + muted) */}
+                  {/* Extra info */}
                   <div className="mt-0.5 text-xs text-gray-500 leading-snug">
                     {row.street && (
                       <div>
@@ -67,6 +74,7 @@ export function VectorResultsTable({
                     )}
                   </div>
                 </td>
+
 
                 {/* Category */}
                 <td className="px-3 py-2 align-top">
