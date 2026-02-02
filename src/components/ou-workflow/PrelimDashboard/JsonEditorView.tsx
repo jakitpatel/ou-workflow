@@ -29,7 +29,7 @@ export function JsonEditorView({
       statusBar: false,
 
       // ✅ THIS is the correct hook for TREE mode
-      onEvent: (node, event) => {
+      onEvent: (node: any, event: any) => {
         // debug — inspect what the editor sends
         console.log('jsoneditor onEvent:', { node, event })
 

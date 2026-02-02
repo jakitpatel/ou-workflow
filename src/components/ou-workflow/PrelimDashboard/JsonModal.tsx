@@ -1,9 +1,12 @@
-import { useState } from 'react'
-import { JsonEditorView } from './JsonEditorView'
+import { useState, lazy, Suspense } from 'react';
+//import { JsonEditorView } from './JsonEditorView'
+
 import { VectorResultsTable } from './VectorResultsTable'
 import { fetchVectorMatches, fetchCompanyDetails } from '@/api'
 import { Search } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
+
+const JsonEditorView = lazy(() => import('./JsonEditorView').then(module => ({ default: module.JsonEditorView })));
 
 export function JsonModal({
   open,
@@ -74,6 +77,7 @@ export function JsonModal({
         {!isLoading && !error && (
           <div className="grid grid-cols-3 gap-3 h-[65vh]">
             {/* Left – Preliminary Data */}
+            <Suspense fallback={<div className="p-4 text-sm">Loading JSON editor…</div>}>
             <JsonEditorView
               value={data}
               title="Preliminary Data"
@@ -89,7 +93,7 @@ export function JsonModal({
                 </button>
               }
             />
-
+            </Suspense>
             {/* Middle – Vector Matches (TABLE) */}
             <div className="flex flex-col h-full border rounded bg-white">
               <div className="px-3 py-2 border-b bg-gray-50 text-sm font-semibold">
@@ -101,16 +105,18 @@ export function JsonModal({
                 onSelect={handleSelectCompany}
               />
             </div>
-
+            
             {/* Right – KASH DB JSON */}
-            <JsonEditorView
-              value={
-                loadingCompany
-                  ? { loading: true }
-                  : companyDetails ?? { message: 'Select a company' }
-              }
-              title="KASH DB Data"
-            />
+            <Suspense fallback={<div className="p-4 text-sm">Loading JSON editor…</div>}>
+              <JsonEditorView
+                value={
+                  loadingCompany
+                    ? { loading: true }
+                    : companyDetails ?? { message: 'Select a company' }
+                }
+                title="KASH DB Data"
+              />
+            </Suspense>
           </div>
         )}
       </div>

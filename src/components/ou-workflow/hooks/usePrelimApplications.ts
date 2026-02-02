@@ -17,7 +17,7 @@ export function usePrelimApplications({
   limit?: number;
   enabled?: boolean;
 }) {
-  const { token, role } = useUser();
+  const { token } = useUser();
 
   return useQuery({
     queryKey: [
