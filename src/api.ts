@@ -654,7 +654,7 @@ export async function fetchPrelimApplications({
   });
 
   const res = await fetchWithAuth<ApplicantsResponse>({
-    path: `/prelimApplicationsList?${params.toString()}`,
+    path: `/get_prelim_application_details?${params.toString()}`,
     token,
   });
 

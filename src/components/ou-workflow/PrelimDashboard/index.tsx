@@ -149,10 +149,10 @@ export function PrelimDashboard() {
         {Array.isArray(data) && data.length > 0 ? (
           data.map((app: any) => (
             <CompanyCard
-              key={app.PreliminaryApplicationID}
+              key={app.JotFormId}
               company={app}
               onClick={() =>
-                setSelectedId(app.PreliminaryApplicationID)
+                setSelectedId(app.JotFormId)
               }
             />
           ))

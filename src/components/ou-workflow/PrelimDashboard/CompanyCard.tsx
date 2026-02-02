@@ -1,33 +1,36 @@
 // components/CompanyCard.tsx
 type Props = {
   company: {
-    PreliminaryApplicationID: number
-    category?: string
-    name: string
-    website?: string
-    street?: string
-    city?: string
-    state?: string
-    zip?: string
-    country?: string
+    JotFormId: number
+    whichCategory?: string
+    companyName: string
+    companyWebsite?: string
+    companyAddress?: string
+    companyAddress2?: string
+    companyCity?: string
+    companyState?: string
+    ZipPostalCode?: string
+    companyCountry?: string
     status?: string
-    submissionDate?: string
+    submission_date?: string
+    numberOfPlants?: number
   }
   onClick: () => void
 }
 
 export function CompanyCard({ company, onClick }: Props) {
   const hasAddress =
-    company.street || company.city || company.state || company.zip
+    company.companyAddress || company.companyCity || company.companyState || company.ZipPostalCode
 
-  const addressLine = [
-    company.street,
-    company.city,
-    company.state,
-    company.zip,
-  ]
-    .filter(Boolean)
-    .join(', ')
+  const addressParts = [
+    company.companyAddress,
+    company.companyAddress2,
+    company.companyCity,
+    company.companyState,
+    company.ZipPostalCode,
+  ].filter(Boolean)
+
+  const addressLine = addressParts.join(', ')
 
   return (
     <div
@@ -37,7 +40,7 @@ export function CompanyCard({ company, onClick }: Props) {
       {/* First Row */}
       <div className="flex items-center justify-between gap-4">
         <h3 className="text-base font-semibold text-gray-800 truncate">
-          {company.name}
+          {company.companyName}
         </h3>
         <div className="flex items-center gap-2 flex-shrink-0">
           {company.status && (
@@ -45,9 +48,14 @@ export function CompanyCard({ company, onClick }: Props) {
               {company.status}
             </span>
           )}
-          {company.submissionDate && (
+          {company.numberOfPlants !== undefined && company.numberOfPlants > 0 && (
+            <span className="rounded bg-purple-50 px-2 py-0.5 text-xs text-purple-700 whitespace-nowrap">
+              {company.numberOfPlants} {company.numberOfPlants === 1 ? 'Plant' : 'Plants'}
+            </span>
+          )}
+          {company.submission_date && (
             <span className="text-xs text-gray-400 whitespace-nowrap">
-              {new Date(company.submissionDate).toLocaleDateString()}
+              {new Date(company.submission_date).toLocaleDateString()}
             </span>
           )}
         </div>
@@ -56,11 +64,11 @@ export function CompanyCard({ company, onClick }: Props) {
       {/* Second Row */}
       <div className="mt-1 flex items-center justify-between gap-4 text-xs">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          {company.category && (
-            <span className="text-gray-500">{company.category}</span>
+          {company.whichCategory && (
+            <span className="text-gray-500">{company.whichCategory}</span>
           )}
-          {company.website && (
-            <span className="text-blue-600 truncate">{company.website}</span>
+          {company.companyWebsite && (
+            <span className="text-blue-600 truncate">{company.companyWebsite}</span>
           )}
         </div>
         {hasAddress && (
