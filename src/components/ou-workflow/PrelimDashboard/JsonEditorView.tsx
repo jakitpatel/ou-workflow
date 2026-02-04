@@ -78,14 +78,14 @@ export function JsonEditorView({
   }, [value, onSelect])
 
   return (
-    <div className="flex flex-col h-full border rounded bg-white">
+    <div className="flex flex-col h-full border rounded bg-white min-h-0">
       {title && (
         <div className="flex items-center justify-between px-3 py-2 border-b bg-gray-50 text-sm font-semibold">
           <span>{title}</span>
           {headerAction}
         </div>
       )}
-      <div ref={ref} className="flex-1 overflow-auto" />
+      <div ref={ref} className="flex-1 overflow-auto min-h-0" />
     </div>
   )
 }
