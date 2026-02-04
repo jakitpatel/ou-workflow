@@ -149,15 +149,9 @@ export function PrelimDashboard() {
                       min-w-[140px]"
           >
             <option value="all">All Statuses</option>
-            <option value="COMPL">Certified</option>
-            <option value="CONTRACT">Contract Sent</option>
-            <option value="DISP">Dispatched</option>
-            <option value="INC">Incomplete</option>
+            <option value="COMPL">DONE</option>
             <option value="INP">In Progress</option>
-            <option value="INSPECTION">Inspection Scheduled</option>
             <option value="NEW">New</option>
-            <option value="PAYPEND">Payment Pending</option>
-            <option value="REVIEW">Under Review</option>
             <option value="WTH">Withdrawn</option>
           </select>
         </div>
