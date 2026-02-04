@@ -5,6 +5,7 @@ import type {
   ApplicationTask,
   ApplicationDetailResponse,
   UserRoleResponse,
+  PrelimApplicantsResponse,
 } from "./types/application";
 import {
   getAccessToken,
@@ -627,25 +628,9 @@ export async function fetchPrelimApplications({
   token?: string | null;
   searchTerm?: string;
   statusFilter?: string;
-} = {}): Promise<ApplicantsResponse> {
+} = {}): Promise<PrelimApplicantsResponse> {
   console.log('✅ CORRECT fetchPrelimApplications');
-  /*const baseUrl = "/dashboard";
-  const prelimurl = baseUrl + '/data/prelimApplicationsList.json';
-  console.log('Fetching prelim data from:', prelimurl);
-  const res = await fetch(prelimurl);
-  if (!res.ok) {
-    throw new Error('Failed to load prelim data');
-  }
 
-  try {
-    const data = await res.json();
-    console.log('Prelim data loaded:', data);
-    return data;
-  } catch (e) {
-    console.error('❌ JSON parse failed', e);
-    return [];
-  }
-  */
   const params = buildPaginationParams(page, limit);
 
   addFilterParams(params, {
@@ -653,11 +638,17 @@ export async function fetchPrelimApplications({
     "filter[status]": statusFilter
   });
 
-  const res = await fetchWithAuth<ApplicantsResponse>({
-    path: `/get_prelim_application_details?${params.toString()}`,
+  const res = await fetchWithAuth<PrelimApplicantsResponse>({
+    path: `/get_applications_v1?application_type=SUBMISSION&${params.toString()}`,
     token,
   });
 
+  /*
+  return {
+    data: res.data,
+    meta: res.meta || { total_count: res.data.length },
+  } as any;
+   */
   return res.data;
 }
 
