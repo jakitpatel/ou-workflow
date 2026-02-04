@@ -657,22 +657,10 @@ export async function fetchPrelimApplicationDetails(
   preliminaryApplicationId: number,
   token?: string | null
 ) {
-  /*
-  const baseUrl = "/dashboard";
-  let prelimurl = baseUrl + '/data/prelimApplicationsDetails.json';
-  prelimurl = prelimurl + `?preliminaryApplicationId=${preliminaryApplicationId}`;
-  const res = await fetch(prelimurl);
-
-  if (!res.ok) {
-    throw new Error('Failed to fetch application details')
-  }
-
-  return res.json()
-  */
   const params = new URLSearchParams();
-  params.append("filter[preliminaryApplicationId]", String(preliminaryApplicationId));
+  params.append("JotFormId", String(preliminaryApplicationId));
   return await fetchWithAuth<ApplicantsResponse>({
-    path: `/prelimApplicationsDetails?${params.toString()}`,
+    path: `/get_prelim_application_details?${params.toString()}`,
     token,
   });
 }

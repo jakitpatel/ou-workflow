@@ -97,7 +97,8 @@ export function PrelimDashboard() {
   }
 
   // 🔹 Handle card click (for JSON modal)
-  const handleCardClick = (id: number) => {
+  const handleViewApplicationClick = (id: number) => {
+    console.log('View Application clicked for ID:', id)
     setSelectedId(id)
   }
 
@@ -113,7 +114,7 @@ export function PrelimDashboard() {
   return (
     <div className="p-6 space-y-4">
       <h1 className="text-2xl font-bold">
-        Preliminary Applications
+        Preliminary Dashboard
       </h1>
       
       {/* Stats Cards */}
@@ -173,7 +174,7 @@ export function PrelimDashboard() {
               expanded={expandedTaskPanel === String(app.applicationId)}
               setExpanded={setExpandedTaskPanel}
               onPrelimExpandClick={() => handlePrelimExpandClick(app.applicationId)}
-              onClick={() => handleCardClick(app.applicationId)}
+              onViewApplication={() => handleViewApplicationClick(app.companyId)}
               handleTaskAction={handleTaskAction}
             />
           ))
