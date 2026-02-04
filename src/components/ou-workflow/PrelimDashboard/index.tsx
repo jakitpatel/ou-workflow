@@ -167,13 +167,13 @@ export function PrelimDashboard() {
         {Array.isArray(data) && data.length > 0 ? (
           data.map((app: any) => (
             <CompanyCard
-              key={app.JotFormId}
+              key={app.applicationId}
               company={app}
-              isExpanded={selectedId === app.JotFormId}
-              expanded={expandedTaskPanel === String(app.JotFormId)}
+              isExpanded={selectedId === app.applicationId}
+              expanded={expandedTaskPanel === String(app.applicationId)}
               setExpanded={setExpandedTaskPanel}
-              onPrelimExpandClick={() => handlePrelimExpandClick(app.JotFormId)}
-              onClick={() => handleCardClick(app.JotFormId)}
+              onPrelimExpandClick={() => handlePrelimExpandClick(app.applicationId)}
+              onClick={() => handleCardClick(app.applicationId)}
               handleTaskAction={handleTaskAction}
             />
           ))

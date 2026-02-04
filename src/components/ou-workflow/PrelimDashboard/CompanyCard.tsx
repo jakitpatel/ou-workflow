@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { PrelimAppExpandedStageTasks } from './PrelimAppExpandedStageTasks'
+import { Clock } from 'lucide-react';
 
 type Stage = {
   status?: string
@@ -108,6 +109,19 @@ export function CompanyCard({
               </span>
             )}
           </div>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center text-gray-600 bg-gray-100 px-2 py-1 rounded">
+            <Clock className="w-4 h-4 mr-1" aria-hidden="true" />
+            <span className="text-sm font-medium">{company.daysInProcess} days elapsed</span>
+          </div>
+
+          {company?.daysOverdue > 0 && (
+            <div className="flex items-center text-red-600 bg-red-50 px-2 py-1 rounded">
+              <Clock className="w-4 h-4 mr-1" aria-hidden="true" />
+              <span className="text-sm font-medium">{company.daysOverdue} days overdue</span>
+            </div>
+          )}
         </div>
       </div>
 
