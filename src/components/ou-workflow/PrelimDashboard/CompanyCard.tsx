@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { PrelimAppExpandedStageTasks } from './PrelimAppExpandedStageTasks'
 
-// components/CompanyCard.tsx
 type Stage = {
   status?: string
   progress?: number
@@ -10,23 +9,13 @@ type Stage = {
 
 type Props = {
   company: {
-    JotFormId: number
-    companyName: string
-    whichCategory?: string
-    companyWebsite?: string
-    companyAddress?: string
-    companyAddress2?: string
-    companyCity?: string
-    companyState?: string
-    ZipPostalCode?: string
-    companyCountry?: string
+    applicationId: number
+    company: string
     status?: string
-    submission_date?: string
-    numberOfPlants?: number
+    createdDate?: string
     stages?: Record<string, Stage>
   }
   onClick: () => void
-  isExpanded: boolean
   expanded: boolean
   setExpanded: (id: string | null) => void
   handleTaskAction?: (
@@ -60,29 +49,13 @@ export function CompanyCard({
   setExpanded,
   handleTaskAction,
 }: Props) {
-  const hasAddress =
-    company.companyAddress ||
-    company.companyCity ||
-    company.companyState ||
-    company.ZipPostalCode
-
-  const addressLine = [
-    company.companyAddress,
-    company.companyAddress2,
-    company.companyCity,
-    company.companyState,
-    company.ZipPostalCode,
-  ]
-    .filter(Boolean)
-    .join(', ')
-
-  // 🔹 Stages from backend (dynamic)
+  // 🔹 Stages from backend
   const stageEntries = useMemo(
     () => Object.entries(company.stages ?? {}),
     [company.stages]
   )
 
-  // 🔹 Card click (JSON modal)
+  // 🔹 Prevent accidental modal open
   const handleCardClick = (e: React.MouseEvent) => {
     if (
       !(e.target as HTMLElement).closest('button') &&
@@ -94,15 +67,14 @@ export function CompanyCard({
 
   return (
     <div className="rounded-lg border bg-white shadow-sm transition hover:shadow-md">
-      {/* Clickable card area */}
       <div onClick={handleCardClick} className="cursor-pointer p-4">
         {/* Row 1 */}
         <div className="flex items-center justify-between gap-4">
           <h3 className="text-base font-semibold text-gray-800 truncate">
-            {company.companyName}
+            {company.company}
           </h3>
 
-          {/* 🔹 Stage Buttons */}
+          {/* 🔹 Dynamic Stage Buttons */}
           <div className="flex items-center gap-2">
             {stageEntries.map(([stageName, stage]) => (
               <button
@@ -110,7 +82,7 @@ export function CompanyCard({
                 onClick={(e) => {
                   e.stopPropagation()
                   setExpanded(
-                    expanded ? null : String(company.JotFormId)
+                    expanded ? null : String(company.applicationId)
                   )
                 }}
                 className={`px-4 py-1.5 rounded text-xs font-medium text-white transition-all
@@ -130,40 +102,12 @@ export function CompanyCard({
                 {company.status}
               </span>
             )}
-            {company.numberOfPlants ? (
-              <span className="rounded bg-purple-50 px-2 py-0.5 text-xs text-purple-700">
-                {company.numberOfPlants}{' '}
-                {company.numberOfPlants === 1 ? 'Plant' : 'Plants'}
-              </span>
-            ) : null}
-            {company.submission_date && (
+            {company.createdDate && (
               <span className="text-xs text-gray-400">
-                {new Date(company.submission_date).toLocaleDateString()}
+                {new Date(company.createdDate).toLocaleDateString()}
               </span>
             )}
           </div>
-        </div>
-
-        {/* Row 2 */}
-        <div className="mt-1 flex items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            {company.whichCategory && (
-              <span className="text-gray-500">
-                {company.whichCategory}
-              </span>
-            )}
-            {company.companyWebsite && (
-              <span className="text-blue-600 truncate">
-                {company.companyWebsite}
-              </span>
-            )}
-          </div>
-
-          {hasAddress && (
-            <span className="text-gray-600 truncate max-w-xs">
-              {addressLine}
-            </span>
-          )}
         </div>
       </div>
 
@@ -173,7 +117,7 @@ export function CompanyCard({
           <PrelimAppExpandedStageTasks
             expandedStage={stageEntries[0][0]}
             setExpandedStage={(stage) =>
-              setExpanded(stage ? String(company.JotFormId) : null)
+              setExpanded(stage ? String(company.applicationId) : null)
             }
             applicant={company}
             handleTaskAction={handleTaskAction}
