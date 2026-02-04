@@ -287,3 +287,127 @@ export interface ApplicantsResponse {
   };
   status: 'ok' | 'error';
 }
+
+export type PrelimApplicantType = {
+  // Top-level application fields
+  submission_id: string;
+  submission_date: string;
+  JotFormId: number;
+  formName: string;
+  kashrusLink: string;
+  status: string;
+  language: string;
+  
+  // Company information
+  companyName: string;
+  companyAddress: string;
+  companyAddress2?: string;
+  companyCity: string;
+  companyState: string;
+  companyCountry: string;
+  ZipPostalCode: string;
+  companyPhone: string;
+  companyWebsite?: string;
+  
+  // Primary contact
+  IsPrimaryContact: boolean;
+  contactFirst: string;
+  contactLast: string;
+  contactEmail: string;
+  contactPhone: string;
+  
+  // Billing contact
+  billingContact: string;
+  billingContactFirst?: string;
+  billingContactLast?: string;
+  billingContactEmail?: string;
+  billingContactPhone?: string;
+  
+  // Certification info
+  OUcertified: boolean;
+  everCertified: boolean;
+  veganCert: boolean;
+  whichCategory: string;
+  whereDidHear: string;
+  
+  // Co-packing
+  copack: string;
+  listInCopack: boolean;
+  areThere: boolean;
+  
+  // Plants
+  numberOfPlants: number;
+  plants: PlantPrelim[];
+  
+  // File links
+  filelinks?: FileLink[];
+};
+
+export type PlantPrelim = {
+  JotFormId: number;
+  PlantId: number;
+  plantNumber: number;
+  plantName: string;
+  plantAddress: string;
+  plantCity: string;
+  plantState: string;
+  plantCountry: string;
+  plantZip: string;
+  majorCity?: string;
+  
+  // Plant contact
+  contactFirst: string;
+  contactLast: string;
+  contactEmail: string;
+  contactPhone: string;
+  jobTitle: string;
+  
+  // Products & ingredients
+  productDesc?: string;
+  brieflySummarize: string;
+  areAny: boolean;
+  otherProducts: boolean;
+  otherProductCompany?: string;
+  
+  products: Product[];
+  ingredients: Ingredient[];
+};
+
+export type Product = {
+  JotFormProductId: number;
+  JotPlantId: number;
+  productName: string;
+  inHouse: boolean;
+  privateLabel: boolean;
+  privateLabelCo: string;
+  Industrial: boolean;
+  Retail: boolean;
+};
+
+export type Ingredient = {
+  JotFormIngredientId: number;
+  JotPlantId: number;
+  ingredientLabelName: string;
+  brandName: string;
+  manufacturer: string;
+  certifyingAgency: string;
+  rawMaterialCode: string;
+};
+
+export type FileLink = {
+  JotFormFileId: number;
+  JotFormId: number;
+};
+
+export interface PrelimApplicantsResponse {
+  data: PrelimApplicantType[];
+  meta: {
+    async_enabled: boolean;
+    count: number;
+    limit: number;
+    offset: number;
+    processing_time: number;
+    total_count: number;
+  };
+  status: 'ok' | 'error';
+}

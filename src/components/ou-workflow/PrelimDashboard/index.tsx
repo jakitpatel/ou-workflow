@@ -18,15 +18,18 @@ const DEBOUNCE_DELAY = 300; // milliseconds
 export function PrelimDashboard() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
+  
+  // 🔹 Separate states for different purposes
+  const [expandedTaskPanel, setExpandedTaskPanel] = useState<string | null>(null); // For task panel
+  const [selectedId, setSelectedId] = useState<number | null>(null) // For JSON modal
+  
   const { q, status, page } = search;
   const { token } = useUser();
+  
   // 🔹 Debounced search filters
   const debouncedSearch = useDebounce(q, DEBOUNCE_DELAY);
 
   // 🔹 Fetch applications
-  /* ================================================================
-    * DATA FETCHING
-    * ================================================================ */
   const { data = [], isLoading } = usePrelimApplications({
     searchTerm: debouncedSearch,
     statusFilter: status,
@@ -35,9 +38,7 @@ export function PrelimDashboard() {
     enabled: true,
   });
 
-  const [selectedId, setSelectedId] = useState<number | null>(null)
-
-  // 🔹 Fetch details ONLY when an app is selected
+  // 🔹 Fetch details ONLY when an app is selected for JSON modal
   const {
     data: applicationDetails,
     isLoading: isDetailsLoading,
@@ -47,11 +48,10 @@ export function PrelimDashboard() {
     queryFn: () =>
       fetchPrelimApplicationDetails(selectedId as number, token ?? undefined),
     enabled: !!selectedId,
-    // 🔑 unwrap array here
     select: (data: any[]) => data?.[0] ?? null,
   })
 
-    // 🔹 Update search params helper
+  // 🔹 Update search params helper
   const updateSearch = (updates: Partial<typeof search>) => {
     navigate({
       search: (prev) => {
@@ -61,37 +61,52 @@ export function PrelimDashboard() {
     });
   };
 
-  // ==============================
-    // 🔹 CALCULATE STATS
-    // ==============================
-    
-    const applicantStats = useMemo(() => {
-      const normalizedApplicants = data.map(app => ({
-        ...app,
-        status: app.status?.toLowerCase() || ''
-      }));
-  
-      const statusCounts = {
-        new: normalizedApplicants.filter(t => t.status === 'new').length,
-        inProgress: normalizedApplicants.filter(
-          t => t.status === 'inp' || t.status === 'in progress'
-        ).length,
-        withdrawn: normalizedApplicants.filter(
-          t => t.status === 'wth' || t.status === 'withdrawn'
-        ).length,
-        completed: normalizedApplicants.filter(
-          t => ['compl', 'completed', 'certified'].includes(t.status)
-        ).length,
-      };
-  
-      const knownTotal = Object.values(statusCounts).reduce((sum, count) => sum + count, 0);
-  
-      return {
-        total: normalizedApplicants.length,
-        ...statusCounts,
-        others: normalizedApplicants.length - knownTotal,
-      };
+  // 🔹 Calculate stats
+  const applicantStats = useMemo(() => {
+    const normalizedApplicants = data.map(app => ({
+      ...app,
+      status: app.status?.toLowerCase() || ''
+    }));
+
+    const statusCounts = {
+      new: normalizedApplicants.filter(t => t.status === 'new').length,
+      inProgress: normalizedApplicants.filter(
+        t => t.status === 'inp' || t.status === 'in progress'
+      ).length,
+      withdrawn: normalizedApplicants.filter(
+        t => t.status === 'wth' || t.status === 'withdrawn'
+      ).length,
+      completed: normalizedApplicants.filter(
+        t => ['compl', 'completed', 'certified'].includes(t.status)
+      ).length,
+    };
+
+    const knownTotal = Object.values(statusCounts).reduce((sum, count) => sum + count, 0);
+
+    return {
+      total: normalizedApplicants.length,
+      ...statusCounts,
+      others: normalizedApplicants.length - knownTotal,
+    };
   }, [data]);
+
+  // 🔹 Handle task panel expansion (button click)
+  const handlePrelimExpandClick = (id: number) => {
+    const idStr = String(id);
+    setExpandedTaskPanel(expandedTaskPanel === idStr ? null : idStr)
+  }
+
+  // 🔹 Handle card click (for JSON modal)
+  const handleCardClick = (id: number) => {
+    setSelectedId(id)
+  }
+
+  // 🔹 Handle task action (optional - implement based on your needs)
+  const handleTaskAction = (e: React.MouseEvent, application: any, task: any) => {
+    e.stopPropagation()
+    console.log('Task action clicked:', { application, task })
+    // Implement your task action logic here
+  }
 
   if (isLoading) return <p>Loading…</p>
 
@@ -100,14 +115,15 @@ export function PrelimDashboard() {
       <h1 className="text-2xl font-bold">
         Preliminary Applications
       </h1>
-      {/* Stats Cards - Sticky */}
+      
+      {/* Stats Cards */}
       <div className="pb-4">
         <PrelimApplicantStatsCards stats={applicantStats} />
       </div>
-      {/* Filters - Sticky */}
+      
+      {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
         <div className="flex items-center gap-4">
-
           {/* Search */}
           <div className="flex-1">
             <div className="relative">
@@ -117,7 +133,7 @@ export function PrelimDashboard() {
                 placeholder="Search by company, plant, region..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg
                           focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={q}
+                value={q || ''}
                 onChange={(e) => updateSearch({ q: e.target.value, page: 0 })}
               />
             </div>
@@ -125,7 +141,7 @@ export function PrelimDashboard() {
 
           {/* Status */}
           <select
-            value={status}
+            value={status || 'all'}
             onChange={(e) => updateSearch({ status: e.target.value, page: 0 })}
             className="px-4 py-2 border border-gray-300 rounded-lg
                       focus:ring-2 focus:ring-blue-500 focus:border-transparent
@@ -145,15 +161,20 @@ export function PrelimDashboard() {
           </select>
         </div>
       </div>
+      
+      {/* Company Cards */}
       <div className="flex flex-col gap-4">
         {Array.isArray(data) && data.length > 0 ? (
           data.map((app: any) => (
             <CompanyCard
               key={app.JotFormId}
               company={app}
-              onClick={() =>
-                setSelectedId(app.JotFormId)
-              }
+              isExpanded={selectedId === app.JotFormId}
+              expanded={expandedTaskPanel === String(app.JotFormId)}
+              setExpanded={setExpandedTaskPanel}
+              onPrelimExpandClick={() => handlePrelimExpandClick(app.JotFormId)}
+              onClick={() => handleCardClick(app.JotFormId)}
+              handleTaskAction={handleTaskAction}
             />
           ))
         ) : (
@@ -163,6 +184,7 @@ export function PrelimDashboard() {
         )}
       </div>
 
+      {/* JSON Modal */}
       {selectedId && (
         <JsonModal
           open={true}
