@@ -659,10 +659,11 @@ export async function fetchPrelimApplicationDetails(
 ) {
   const params = new URLSearchParams();
   params.append("JotFormId", String(preliminaryApplicationId));
-  return await fetchWithAuth<ApplicantsResponse>({
+  const res =  await fetchWithAuth<ApplicantsResponse>({
     path: `/get_prelim_application_details?${params.toString()}`,
     token,
   });
+  return res.data;
 }
 
 // api/vectorSearch.ts
