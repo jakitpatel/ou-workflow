@@ -87,8 +87,8 @@ export const ConditionalModal: React.FC<Props> = ({
 
     // Invoice Amount
     if (isAction && 
-        taskCategory === "input" && 
-        taskNameLower.includes("assign invoice amount")) {
+        taskCategory === "input"/* && 
+        taskNameLower.includes("assign invoice amount")*/) {
       return 'invoiceAmount';
     }
 
