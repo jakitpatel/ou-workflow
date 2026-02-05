@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMemo, useRef, useState } from 'react'
 import { Search } from 'lucide-react';
 import {
   fetchPrelimApplicationDetails,
+  assignTask, confirmTask
 } from '@/api'
 import { CompanyCard } from '@/components/ou-workflow/PrelimDashboard/CompanyCard'
 import { JsonModal } from '@/components/ou-workflow/PrelimDashboard/JsonModal'
@@ -11,9 +12,31 @@ import { usePrelimApplications } from '@/components/ou-workflow/hooks/usePrelimA
 import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce';
 import { PrelimApplicantStatsCards } from './PrelimApplicantStatsCards';
 import { useUser } from '@/context/UserContext';
+import { ActionModal } from '../modal/ActionModal';
+import { ConditionalModal } from '../modal/ConditionalModal';
+import type { Applicant, Task } from '@/types/application';
+import type { ErrorDialogRef } from '@/components/ErrorDialog';
 
 const PAGE_LIMIT = 20;
 const DEBOUNCE_DELAY = 300; // milliseconds
+// 🎯 Task type definitions
+const TASK_TYPES = {
+  CONFIRM: 'confirm',
+  CONDITIONAL: 'conditional',
+  CONDITION: 'condition',
+  ACTION: 'action',
+  PROGRESS: 'progress',
+} as const;
+
+const TASK_CATEGORIES = {
+  CONFIRMATION: 'confirmation',
+  APPROVAL: 'approval',
+  ASSIGNMENT: 'assignment',
+  SELECTOR: 'selector',
+  INPUT: 'input',
+  SCHEDULING: 'scheduling',
+  PROGRESS_TASK: 'progress_task',
+} as const;
 
 export function PrelimDashboard() {
   const search = Route.useSearch()
@@ -22,9 +45,15 @@ export function PrelimDashboard() {
   // 🔹 Separate states for different purposes
   const [expandedTaskPanel, setExpandedTaskPanel] = useState<string | null>(null); // For task panel
   const [selectedId, setSelectedId] = useState<number | null>(null) // For JSON modal
-  
+  const queryClient = useQueryClient();
+  const errorDialogRef = useRef<ErrorDialogRef>(null);
+  // UI states
+  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+  const [showActionModal, setShowActionModal] = useState<Task | null | boolean>(null);
+  const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null);
+
   const { q, status, page } = search;
-  const { token } = useUser();
+  const { token, username } = useUser();
   
   // 🔹 Debounced search filters
   const debouncedSearch = useDebounce(q, DEBOUNCE_DELAY);
@@ -102,11 +131,177 @@ export function PrelimDashboard() {
     setSelectedId(id)
   }
 
+  // 🎯 Helper to get all tasks from an applicant
+  const getAllTasks = (app: Applicant): Task[] => {
+    if (!app?.stages) return [];
+    return Object.values(app.stages).flatMap(stage => stage.tasks || []);
+  };
+  
+  // 🎯 Status mapping helper
+  const getProgressStatus = (result: string): string => {
+    const statusMap: Record<string, string> = {
+      completed: 'Completed',
+      in_progress: 'In Progress',
+      pending: 'Pending',
+    };
+    return statusMap[result] || '';
+  };
+
+  // 🎯 Role detection helper
+  const detectRole = (preScript?: string): string => {
+    if (!preScript) return "OtherRole";
+    const [, role] = preScript.split(",");
+    return role?.trim().toUpperCase();
+  };
+
+  // ==============================
+  // 🔹 MUTATIONS
+  // ==============================
+  
+  const confirmTaskMutation = useMutation({
+    mutationFn: confirmTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['applications', 'paged'] });
+      queryClient.invalidateQueries({ queryKey: ['applications', 'infinite'] });
+    },
+    onError: (error: any) => {
+      console.error("❌ Failed to confirm task:", error);
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Something went wrong while confirming the task.";
+      errorDialogRef.current?.open(message);
+    }
+  });
+
+  const assignTaskMutation = useMutation({
+    mutationFn: assignTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['applications', 'paged'] });
+      queryClient.invalidateQueries({ queryKey: ['applications', 'infinite'] });
+    },
+    onError: (error: any) => {
+      console.error("❌ Failed to assign task:", error);
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Something went wrong while assigning the task.";
+      errorDialogRef.current?.open(message);
+    },
+  });
+
+  // ==============================
+  // 🔹 SELECTED ACTION
+  // ==============================
+  
+  const selectedAction = useMemo(() => {
+    if (!selectedActionId) return null;
+
+    const [appId, actId] = selectedActionId.split(":");
+    const app = data.find(a => String(a.applicationId) === String(appId));
+    
+    if (!app) return null;
+
+    const actions = getAllTasks(app);
+    const act = actions.find(a => String(a.TaskInstanceId) === String(actId));
+
+    if (!act) return null;
+
+    return { application: app, action: act };
+  }, [selectedActionId, data]);
+
+  // ==============================
+  // 🔹 EXECUTE ACTION
+  // ==============================
+  
+  const executeAction = (assignee: string, action: any, result?: string) => {
+    const taskType = action.taskType?.toLowerCase();
+    const taskCategory = action.taskCategory?.toLowerCase();
+    const taskId = action.TaskInstanceId;
+    console.log("capacity:", action);
+    const baseParams = {
+      taskId,
+      token: token ?? undefined,
+      username: username ?? undefined,
+      capacity: action.capacity ?? undefined,
+    };
+
+    if (taskType === TASK_TYPES.CONFIRM && taskCategory === TASK_CATEGORIES.CONFIRMATION) {
+      confirmTaskMutation.mutate(baseParams);
+    } 
+    else if (
+      (taskType === TASK_TYPES.CONDITIONAL || taskType === TASK_TYPES.CONDITION) && 
+      taskCategory === TASK_CATEGORIES.APPROVAL
+    ) {
+      confirmTaskMutation.mutate({ ...baseParams, result: result ?? undefined });
+    }
+    else if (taskType === TASK_TYPES.ACTION) {
+      if (taskCategory === TASK_CATEGORIES.ASSIGNMENT) {
+        const appId = selectedAction?.application?.applicationId ?? 
+                      action.application?.applicationId ?? 
+                      action.applicationId;
+        const role = detectRole(selectedAction?.action?.PreScript ?? "");
+
+        assignTaskMutation.mutate({
+          appId,
+          taskId,
+          role,
+          assignee,
+          token: token ?? undefined,
+          capacity: action.capacity ?? undefined
+        });
+      } 
+      else if ([TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].includes(taskCategory)) {
+        confirmTaskMutation.mutate({ ...baseParams, result: result ?? undefined });
+      }
+    }
+    else if (taskType === TASK_TYPES.PROGRESS && taskCategory === TASK_CATEGORIES.PROGRESS_TASK) {
+      const status = result ? getProgressStatus(result) : '';
+      confirmTaskMutation.mutate({
+        ...baseParams,
+        result: result ?? undefined,
+        status,
+      });
+    }
+  };
+  // ==============================
+  // 🔹 HANDLE ACTION SELECTION
+  // ==============================
+  
+  const handleSelectAppActions = (applicationId: string | number, actionId: string | number) => {
+    setSelectedActionId(`${applicationId}:${actionId}`);
+  };
+
   // 🔹 Handle task action (optional - implement based on your needs)
-  const handleTaskAction = (e: React.MouseEvent, application: any, task: any) => {
-    e.stopPropagation()
-    console.log('Task action clicked:', { application, task })
+  const handleTaskAction = (e: React.MouseEvent, application: any, action: Task) => {
+    e.stopPropagation();
+    e.preventDefault();
+    console.log('Task action clicked:', { application, action })
     // Implement your task action logic here
+    handleSelectAppActions(application.applicationId, action.TaskInstanceId);
+
+    const actionType = action.taskType?.toLowerCase();
+    const actionCategory = action.taskCategory?.toLowerCase();
+
+    if (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION) {
+      executeAction("Confirmed", action, "yes");
+    } 
+    else if (
+      (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) && 
+      actionCategory === TASK_CATEGORIES.APPROVAL
+    ) {
+      setShowConditionModal(action);
+    } 
+    else if (actionType === TASK_TYPES.ACTION) {
+      if (actionCategory === TASK_CATEGORIES.ASSIGNMENT) {
+        setShowActionModal(action);
+      } else {
+        setShowConditionModal(action);
+      }
+    } 
+    else if (actionType === TASK_TYPES.PROGRESS && actionCategory === TASK_CATEGORIES.PROGRESS_TASK) {
+      setShowConditionModal(action);
+    }
   }
 
   if (isLoading) return <p>Loading…</p>
@@ -189,6 +384,20 @@ export function PrelimDashboard() {
           onClose={() => setSelectedId(null)}
         />
       )}
+
+      {/* Modals */}
+      <ActionModal
+        setShowActionModal={setShowActionModal} 
+        showActionModal={showActionModal}
+        executeAction={executeAction}
+        selectedAction={selectedAction}
+      />
+      <ConditionalModal
+        setShowConditionModal={setShowConditionModal} 
+        showConditionModal={showConditionModal}
+        executeAction={executeAction}
+        selectedAction={selectedAction}
+      />
     </div>
   )
 }
