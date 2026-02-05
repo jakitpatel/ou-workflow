@@ -1,21 +1,16 @@
 import { useMemo } from 'react'
 import { PrelimAppExpandedStageTasks } from './PrelimAppExpandedStageTasks'
 import { Clock } from 'lucide-react';
+import type { Applicant } from '@/types/application';
 
-type Stage = {
+/*type Stage = {
   status?: string
   progress?: number
   tasks?: any[]
-}
+}*/
 
 type Props = {
-  company: {
-    applicationId: number
-    company: string
-    status?: string
-    createdDate?: string
-    stages?: Record<string, Stage>
-  }
+  company: Applicant,
   onViewApplication: () => void
   expanded: boolean
   setExpanded: (id: string | null) => void

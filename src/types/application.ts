@@ -81,6 +81,7 @@ export type Applicant = {
   aiSuggestions?: Record<string, any>;
    /** 👇 New property for applicant files */
   files?: ApplicantFile[];
+  createdDate?: string;
 };
 
 export interface Company {
