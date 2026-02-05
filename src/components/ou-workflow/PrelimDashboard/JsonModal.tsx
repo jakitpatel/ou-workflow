@@ -1,7 +1,6 @@
 import { useState, lazy, Suspense } from 'react';
-//import { JsonEditorView } from './JsonEditorView'
 
-import { VectorResultsTable } from './VectorResultsTable'
+//import { VectorResultsTable } from './VectorResultsTable'
 import { fetchVectorMatches, fetchCompanyDetails } from '@/api'
 import { Search } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
@@ -20,7 +19,7 @@ export function JsonModal({
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null)
   const [companyDetails, setCompanyDetails] = useState<any>(null)
   const [searching, setSearching] = useState(false)
-  const [loadingCompany, setLoadingCompany] = useState(false)
+  //const [loadingCompany, setLoadingCompany] = useState(false)
   const { token } = useUser();
 
   if (!open) return null
@@ -40,7 +39,7 @@ export function JsonModal({
       setSearching(false)
     }
   }
-
+  /*
   const handleSelectCompany = async (companyId: number) => {
     setSelectedCompanyId(companyId)
     setLoadingCompany(true)
@@ -52,7 +51,7 @@ export function JsonModal({
       setLoadingCompany(false)
     }
   }
-
+  */
   return (
     <div
       className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center"
@@ -75,7 +74,7 @@ export function JsonModal({
         )}
 
         {!isLoading && !error && (
-          <div className="grid grid-cols-3 gap-3 h-[65vh]">
+          <div className="grid grid-cols-1 gap-3 h-[65vh]">
             {/* Left – Preliminary Data */}
             <Suspense fallback={<div className="p-4 text-sm">Loading JSON editor…</div>}>
             <JsonEditorView
@@ -95,6 +94,7 @@ export function JsonModal({
             />
             </Suspense>
             {/* Middle – Vector Matches (TABLE) */}
+            {/*
             <div className="flex flex-col h-full border rounded bg-white">
               <div className="px-3 py-2 border-b bg-gray-50 text-sm font-semibold">
                 Vector Search Data
@@ -105,8 +105,9 @@ export function JsonModal({
                 onSelect={handleSelectCompany}
               />
             </div>
-            
+            */}
             {/* Right – KASH DB JSON */}
+            {/*
             <Suspense fallback={<div className="p-4 text-sm">Loading JSON editor…</div>}>
               <JsonEditorView
                 value={
@@ -117,6 +118,7 @@ export function JsonModal({
                 title="KASH DB Data"
               />
             </Suspense>
+            */}
           </div>
         )}
       </div>
