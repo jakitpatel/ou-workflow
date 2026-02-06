@@ -44,11 +44,25 @@ export function ResolvedSection({ resolved, loading }: Props) {
                   {resolved.company.companyName}
                 </div>
                 <div className="text-xs text-gray-500 truncate">
-                  ID: {resolved.company.Id} · {resolved.company.Address}
+                    {/*resolved.company.Id && (*/}
+                        <span className="inline-flex items-center rounded-md bg-yellow-100 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
+                        CompanyID: {resolved.company.Id}
+                        </span>
+                    {/*)}*/}
+                </div>
+                <div className="text-xs text-gray-500 truncate">
+                    {resolved.company.Address}
                 </div>
               </div>
 
               <div className="flex-shrink-0">
+                <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
+                    resolved.company.Id 
+                    ? 'bg-green-50 text-green-700 border-green-200' 
+                    : 'bg-orange-50 text-orange-700 border-orange-200'
+                }`}>
+                    {resolved.company.Id ? 'ASSIGNED' : 'TO BE ASSIGNED'}
+                </span>
                 <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
                   {loading ? '...' : resolved?.plants?.length || 0} plants
                 </span>
@@ -89,12 +103,21 @@ export function ResolvedSection({ resolved, loading }: Props) {
                         {p.plant?.plantName}
                       </div>
                       <div className="flex gap-1.5">
-                        <span className="inline-flex items-center rounded-md bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700 border border-orange-200 whitespace-nowrap">
-                          PENDING CREATION
+                        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
+                            p.ownsID 
+                            ? 'bg-green-50 text-green-700 border-green-200' 
+                            : 'bg-orange-50 text-orange-700 border-orange-200'
+                        }`}>
+                            {p.ownsID ? 'ASSIGNED' : 'TO BE DONE'}
                         </span>
                         {p.ownsID && (
                           <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
                             OWNSID: {p.ownsID}
+                          </span>
+                        )}
+                        {p.WFID && (
+                          <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
+                            WFID: {p.WFID}
                           </span>
                         )}
                       </div>
@@ -103,12 +126,6 @@ export function ResolvedSection({ resolved, loading }: Props) {
                     <div className="text-xs text-gray-500 space-y-0.5">
                       <div>
                         Plant ID: <span className="font-mono">{p.plant?.plantID}</span>
-                        {p.WFID && (
-                          <>
-                            {' · '}
-                            WFID: <span className="font-mono">{p.WFID}</span>
-                          </>
-                        )}
                       </div>
                       {p.plant?.plantAddress && (
                         <div className="text-gray-400 truncate">
