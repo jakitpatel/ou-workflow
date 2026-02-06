@@ -16,27 +16,12 @@ import { ActionModal } from '../modal/ActionModal';
 import { ConditionalModal } from '../modal/ConditionalModal';
 import type { Applicant, Task } from '@/types/application';
 import type { ErrorDialogRef } from '@/components/ErrorDialog';
+import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';
+//import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions';
+import { getAllTasks, getProgressStatus, detectRole } from '@/lib/utils/taskHelpers';
 
 const PAGE_LIMIT = 20;
 const DEBOUNCE_DELAY = 300; // milliseconds
-// 🎯 Task type definitions
-const TASK_TYPES = {
-  CONFIRM: 'confirm',
-  CONDITIONAL: 'conditional',
-  CONDITION: 'condition',
-  ACTION: 'action',
-  PROGRESS: 'progress',
-} as const;
-
-const TASK_CATEGORIES = {
-  CONFIRMATION: 'confirmation',
-  APPROVAL: 'approval',
-  ASSIGNMENT: 'assignment',
-  SELECTOR: 'selector',
-  INPUT: 'input',
-  SCHEDULING: 'scheduling',
-  PROGRESS_TASK: 'progress_task',
-} as const;
 
 export function PrelimDashboard() {
   const search = Route.useSearch()
@@ -131,29 +116,6 @@ export function PrelimDashboard() {
     setSelectedId(id)
   }
 
-  // 🎯 Helper to get all tasks from an applicant
-  const getAllTasks = (app: Applicant): Task[] => {
-    if (!app?.stages) return [];
-    return Object.values(app.stages).flatMap(stage => stage.tasks || []);
-  };
-  
-  // 🎯 Status mapping helper
-  const getProgressStatus = (result: string): string => {
-    const statusMap: Record<string, string> = {
-      completed: 'Completed',
-      in_progress: 'In Progress',
-      pending: 'Pending',
-    };
-    return statusMap[result] || '';
-  };
-
-  // 🎯 Role detection helper
-  const detectRole = (preScript?: string): string => {
-    if (!preScript) return "OtherRole";
-    const [, role] = preScript.split(",");
-    return role?.trim().toUpperCase();
-  };
-
   // ==============================
   // 🔹 MUTATIONS
   // ==============================
@@ -209,10 +171,20 @@ export function PrelimDashboard() {
 
     return { application: app, action: act };
   }, [selectedActionId, data]);
-
+  
   // ==============================
   // 🔹 EXECUTE ACTION
   // ==============================
+  /*
+  const { executeAction, getSelectedAction } = useTaskActions({
+    applications: data,
+    token,
+    username,
+    onError: (msg) => errorDialogRef.current?.open(msg),
+  });
+
+  const selectedAction = getSelectedAction(selectedActionId);
+  */
   
   const executeAction = (assignee: string, action: any, result?: string) => {
     const taskType = action.taskType?.toLowerCase();
@@ -264,6 +236,7 @@ export function PrelimDashboard() {
       });
     }
   };
+  
   // ==============================
   // 🔹 HANDLE ACTION SELECTION
   // ==============================
@@ -363,7 +336,7 @@ export function PrelimDashboard() {
               expanded={expandedTaskPanel === String(app.applicationId)}
               setExpanded={setExpandedTaskPanel}
               onPrelimExpandClick={() => handlePrelimExpandClick(app.applicationId)}
-              onViewApplication={() => handleViewApplicationClick(app.companyId)}
+              onViewApplication={() => handleViewApplicationClick(app.externalReferenceId)}
               handleTaskAction={handleTaskAction}
             />
           ))

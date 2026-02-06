@@ -1,9 +1,9 @@
 import { useState, lazy, Suspense } from 'react';
 
 //import { VectorResultsTable } from './VectorResultsTable'
-import { fetchVectorMatches, fetchCompanyDetails } from '@/api'
+//import { fetchVectorMatches, fetchCompanyDetails } from '@/api'
 import { Search } from 'lucide-react'
-import { useUser } from '@/context/UserContext'
+//import { useUser } from '@/context/UserContext'
 
 const JsonEditorView = lazy(() => import('./JsonEditorView').then(module => ({ default: module.JsonEditorView })));
 
@@ -15,12 +15,12 @@ export function JsonModal({
   error,
 }: any) {
   const [selectedNode, setSelectedNode] = useState<any>(null)
-  const [vectorResults, setVectorResults] = useState<any[]>([])
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null)
-  const [companyDetails, setCompanyDetails] = useState<any>(null)
+  //const [vectorResults, setVectorResults] = useState<any[]>([])
+  //const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null)
+  //const [companyDetails, setCompanyDetails] = useState<any>(null)
   const [searching, setSearching] = useState(false)
   //const [loadingCompany, setLoadingCompany] = useState(false)
-  const { token } = useUser();
+  //const { token } = useUser();
 
   if (!open) return null
 
@@ -28,13 +28,13 @@ export function JsonModal({
     if (selectedNode == null) return
 
     setSearching(true)
-    setVectorResults([])
-    setSelectedCompanyId(null)
-    setCompanyDetails(null)
+    //setVectorResults([])
+    //setSelectedCompanyId(null)
+    //setCompanyDetails(null)
 
     try {
-      const result = await fetchVectorMatches({ source: selectedNode, token: token ?? undefined })
-      setVectorResults(result)
+      //const result = await fetchVectorMatches({ source: selectedNode, token: token ?? undefined })
+      //setVectorResults(result)
     } finally {
       setSearching(false)
     }
