@@ -56,6 +56,16 @@ export function ResolvedSection({ resolved, loading }: Props) {
               </div>
 
               <div className="flex-shrink-0">
+                {resolved.company.processBy && (
+                    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                        {resolved.company.processBy}
+                    </span>
+                )}
+                {resolved.company.ProcessDate && (
+                    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                        {resolved.company.ProcessDate}
+                    </span>
+                )}
                 <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
                     resolved.company.Id 
                     ? 'bg-green-50 text-green-700 border-green-200' 
@@ -103,6 +113,16 @@ export function ResolvedSection({ resolved, loading }: Props) {
                         {p.plant?.plantName}
                       </div>
                       <div className="flex gap-1.5">
+                        {p.plant?.processBy && (
+                            <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                                {p.plant.processBy}
+                            </span>
+                        )}
+                        {p.plant?.processDate && (
+                            <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                                {p.plant.processDate}
+                            </span>
+                        )}
                         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
                             p.ownsID 
                             ? 'bg-green-50 text-green-700 border-green-200' 

@@ -632,6 +632,8 @@ function ensureResolvedSection(app: Applicant): Applicant {
             companyName: app.company,
             Id: String(app.companyId ?? app.externalReferenceId ?? '5'), // Use companyId or external
             Address: 'Company ABC Address', // No address available in fallback
+            processBy: "Shouki.BENJAMIN",
+            ProcessDate: "2026-02-03 15:02:37",
           }
         : undefined,
       plants: [
@@ -641,7 +643,9 @@ function ensureResolvedSection(app: Applicant): Applicant {
               plant: {
                 plantName: app.plant,
                 plantID: String(app.plantId ?? ''),
-                plantAddress: 'Plant ABC Address', // No address available in fallback
+                plantAddress: 'Plant ABC Address', // No address available in fallback,
+                processBy: "Shouki.BENJAMIN",
+                ProcessDate: "2026-02-03 16:02:37"
               },
             },
           ],
