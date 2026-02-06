@@ -630,7 +630,7 @@ function ensureResolvedSection(app: Applicant): Applicant {
       company: app.company
         ? {
             companyName: app.company,
-            Id: String(app.companyId ?? ''),
+            Id: String(app.companyId ?? app.externalReferenceId ?? '5'), // Use companyId or external
             Address: 'Company ABC Address', // No address available in fallback
           }
         : undefined,
