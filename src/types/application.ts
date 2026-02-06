@@ -57,6 +57,27 @@ export type Stage = {
 };
 export type AssignedRole = Record<string, string>;
 
+type ResolvedCompany = {
+  companyName?: string
+  Id?: string
+  Address?: string
+}
+
+type ResolvedPlant = {
+  ownsID?: number
+  WFID?: number
+  plant?: {
+    plantName?: string
+    plantID?: string
+    plantAddress?: string
+  }
+}
+
+export type ResolvedData = {
+  company?: ResolvedCompany
+  plants?: ResolvedPlant[]
+}
+
 export type Applicant = {
   id: number;
   applicationId: number;
@@ -82,6 +103,8 @@ export type Applicant = {
    /** 👇 New property for applicant files */
   files?: ApplicantFile[];
   createdDate?: string;
+  resolved?: ResolvedData;
+  externalReferenceId?: number; // for linking to detailed view, if needed
 };
 
 export interface Company {
