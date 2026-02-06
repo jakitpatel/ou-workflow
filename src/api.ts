@@ -699,7 +699,7 @@ export async function fetchPrelimApplicationDetails(
   token?: string | null
 ) {
   const params = new URLSearchParams();
-  params.append("JotFormId", String(preliminaryApplicationId));
+  params.append("externalReferenceId", String(preliminaryApplicationId));
   const res =  await fetchWithAuth<ApplicantsResponse>({
     path: `/get_prelim_application_details?${params.toString()}`,
     token,
