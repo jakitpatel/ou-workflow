@@ -44,13 +44,18 @@ export function PrelimDashboard() {
   const debouncedSearch = useDebounce(q, DEBOUNCE_DELAY);
 
   // 🔹 Fetch applications
-  const { data = [], isLoading } = usePrelimApplications({
+  const { data:response, isLoading } = usePrelimApplications({
     searchTerm: debouncedSearch,
     statusFilter: status,
     page,
     limit: PAGE_LIMIT,
     enabled: true,
   });
+  console.log("Prelim applications response:", response);
+  // ✅ Extract the actual data array
+  const data = response?.data ?? [];
+  const meta = response?.meta;
+  console.log("Prelim applications data:", data);
 
   // 🔹 Fetch details ONLY when an app is selected for JSON modal
   const {
@@ -327,7 +332,7 @@ export function PrelimDashboard() {
       
       {/* Company Cards */}
       <div className="flex flex-col gap-4">
-        {Array.isArray(data) && data.length > 0 ? (
+        {data.length > 0 ? (
           data.map((app: any) => (
             <CompanyCard
               key={app.applicationId}

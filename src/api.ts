@@ -6,6 +6,7 @@ import type {
   ApplicationDetailResponse,
   UserRoleResponse,
   PrelimApplicantsResponse,
+  Applicant,
 } from "./types/application";
 import {
   getAccessToken,
@@ -616,6 +617,42 @@ export async function fetchProfileLayout({
   return response.data;
 }
 
+// Need to remove at the end, this is just for testing the new API structure and will be replaced by real endpoints later
+// Fallback function - only adds resolved section if it's missing
+function ensureResolvedSection(app: Applicant): Applicant {
+  // If already present → do nothing
+  if (app.resolved) return app
+
+  // Fallback: create a minimal resolved section from existing data
+  return {
+    ...app,
+    resolved: {
+      company: app.company
+        ? {
+            companyName: app.company,
+            Id: String(app.companyId ?? ''),
+            Address: 'Company ABC Address', // No address available in fallback
+          }
+        : undefined,
+      plants: [
+            {
+              ownsID: '123',
+              WFID: '456',
+              plant: {
+                plantName: app.plant,
+                plantID: String(app.plantId ?? ''),
+                plantAddress: 'Plant ABC Address', // No address available in fallback
+              },
+            },
+          ],
+    },
+  }
+}
+
+function normalizeApplications(applications: Applicant[]): Applicant[] {
+  return applications.map(ensureResolvedSection)
+}
+// ============================================================================
 export async function fetchPrelimApplications({
   page = 0,
   limit = 20,
@@ -642,14 +679,14 @@ export async function fetchPrelimApplications({
     path: `/get_applications_v1?application_type=SUBMISSION&${params.toString()}`,
     token,
   });
-
-  /*
+  //console.log('Full response:', res);
+  //console.log('Response data:', res.data);
+  //return res;
+  // Normalize the data array within the response
   return {
-    data: res.data,
-    meta: res.meta || { total_count: res.data.length },
-  } as any;
-   */
-  return res.data;
+    ...res,
+    data: normalizeApplications(res.data),
+  };
 }
 
 // Fetches detailed information for a specific preliminary application
