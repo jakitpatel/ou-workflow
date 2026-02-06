@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { PrelimAppExpandedStageTasks } from './PrelimAppExpandedStageTasks'
 import { Clock } from 'lucide-react';
 import type { Applicant } from '@/types/application';
+import { ResolvedSection } from '@/components/ou-workflow/PrelimDashboard/ResolvedSection';
 
 /*type Stage = {
   status?: string
@@ -145,7 +146,11 @@ export function CompanyCard({
               </button>
             </div>
           </div>
-        </div>
+      </div>
+      <ResolvedSection
+        resolved={company.resolved}
+        loading={false} // set true if you later fetch lazily
+      />
     </div>
   )
 }
