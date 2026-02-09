@@ -21,7 +21,8 @@ type Props = {
   executeAction: (
     id: string,
     action: { id: string; name?: string },
-    value: string
+    value: string,
+    selectedAction: SelectedAction | null
   ) => void;
 };
 
@@ -154,7 +155,7 @@ export const ConditionalModal: React.FC<Props> = ({
     
     setSaving(true);
     try {
-      await executeAction(selectedAction.action.id, selectedAction.action, value);
+      await executeAction(selectedAction.action.id, selectedAction.action, value, selectedAction);
       setShowConditionModal(null);
       // State will be reset by useEffect
     } catch (error) {
@@ -181,7 +182,7 @@ export const ConditionalModal: React.FC<Props> = ({
 
     setSaving(true);
     try {
-      await executeAction(selectedAction.action.id, selectedAction.action, status);
+      await executeAction(selectedAction.action.id, selectedAction.action, status, selectedAction);
       setShowConditionModal(null);
     } catch (error) {
       console.error("Error updating progress:", error);

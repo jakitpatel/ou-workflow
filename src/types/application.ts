@@ -60,7 +60,9 @@ export type AssignedRole = Record<string, string>;
 type ResolvedCompany = {
   companyName?: string
   Id?: string
-  Address?: string
+  Address?: string,
+  processBy?: string,
+  ProcessDate?: string
 }
 
 type ResolvedPlant = {
@@ -69,7 +71,9 @@ type ResolvedPlant = {
   plant?: {
     plantName?: string
     plantID?: string
-    plantAddress?: string
+    plantAddress?: string,
+    processBy?: string,
+    ProcessDate?: string
   }
 }
 

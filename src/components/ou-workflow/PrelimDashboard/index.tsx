@@ -1,10 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useMemo, useRef, useState } from 'react'
 import { Search } from 'lucide-react';
-import {
-  fetchPrelimApplicationDetails,
-  assignTask, confirmTask
-} from '@/api'
+import { fetchPrelimApplicationDetails } from '@/api'
 import { CompanyCard } from '@/components/ou-workflow/PrelimDashboard/CompanyCard'
 import { JsonModal } from '@/components/ou-workflow/PrelimDashboard/JsonModal'
 import { Route } from '@/routes/ou-workflow/prelim-dashboard';
@@ -17,8 +14,7 @@ import { ConditionalModal } from '../modal/ConditionalModal';
 import type { Applicant, Task } from '@/types/application';
 import type { ErrorDialogRef } from '@/components/ErrorDialog';
 import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';
-//import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions';
-import { getAllTasks, getProgressStatus, detectRole } from '@/lib/utils/taskHelpers';
+import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions';
 
 const PAGE_LIMIT = 20;
 const DEBOUNCE_DELAY = 300; // milliseconds
@@ -30,7 +26,6 @@ export function PrelimDashboard() {
   // 🔹 Separate states for different purposes
   const [expandedTaskPanel, setExpandedTaskPanel] = useState<string | null>(null); // For task panel
   const [selectedId, setSelectedId] = useState<number | null>(null) // For JSON modal
-  const queryClient = useQueryClient();
   const errorDialogRef = useRef<ErrorDialogRef>(null);
   // UI states
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
@@ -54,7 +49,10 @@ export function PrelimDashboard() {
   console.log("Prelim applications response:", response);
   // ✅ Extract the actual data array
   const data = response?.data ?? [];
-  const meta = response?.meta;
+
+  //const totalCount = response?.meta?.total_count ?? 0;
+  //const totalPages = Math.ceil(totalCount / PAGE_LIMIT);
+
   console.log("Prelim applications data:", data);
 
   // 🔹 Fetch details ONLY when an app is selected for JSON modal
@@ -120,127 +118,22 @@ export function PrelimDashboard() {
     console.log('View Application clicked for ID:', id)
     setSelectedId(id)
   }
-
+  
   // ==============================
-  // 🔹 MUTATIONS
+  // 🔹 EXECUTE ACTION
   // ==============================
   
-  const confirmTaskMutation = useMutation({
-    mutationFn: confirmTask,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['applications', 'paged'] });
-      queryClient.invalidateQueries({ queryKey: ['applications', 'infinite'] });
-    },
-    onError: (error: any) => {
-      console.error("❌ Failed to confirm task:", error);
-      const message =
-        error?.message ||
-        error?.response?.data?.message ||
-        "Something went wrong while confirming the task.";
-      errorDialogRef.current?.open(message);
-    }
-  });
-
-  const assignTaskMutation = useMutation({
-    mutationFn: assignTask,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['applications', 'paged'] });
-      queryClient.invalidateQueries({ queryKey: ['applications', 'infinite'] });
-    },
-    onError: (error: any) => {
-      console.error("❌ Failed to assign task:", error);
-      const message =
-        error?.message ||
-        error?.response?.data?.message ||
-        "Something went wrong while assigning the task.";
-      errorDialogRef.current?.open(message);
-    },
+  const { executeAction, getSelectedAction } = useTaskActions({
+    applications: data,
+    token: token ?? undefined,
+    username: username ?? undefined,
+    onError: (msg) => errorDialogRef.current?.open(msg),
   });
 
   // ==============================
   // 🔹 SELECTED ACTION
   // ==============================
-  
-  const selectedAction = useMemo(() => {
-    if (!selectedActionId) return null;
-
-    const [appId, actId] = selectedActionId.split(":");
-    const app = data.find(a => String(a.applicationId) === String(appId));
-    
-    if (!app) return null;
-
-    const actions = getAllTasks(app);
-    const act = actions.find(a => String(a.TaskInstanceId) === String(actId));
-
-    if (!act) return null;
-
-    return { application: app, action: act };
-  }, [selectedActionId, data]);
-  
-  // ==============================
-  // 🔹 EXECUTE ACTION
-  // ==============================
-  /*
-  const { executeAction, getSelectedAction } = useTaskActions({
-    applications: data,
-    token,
-    username,
-    onError: (msg) => errorDialogRef.current?.open(msg),
-  });
-
   const selectedAction = getSelectedAction(selectedActionId);
-  */
-  
-  const executeAction = (assignee: string, action: any, result?: string) => {
-    const taskType = action.taskType?.toLowerCase();
-    const taskCategory = action.taskCategory?.toLowerCase();
-    const taskId = action.TaskInstanceId;
-    console.log("capacity:", action);
-    const baseParams = {
-      taskId,
-      token: token ?? undefined,
-      username: username ?? undefined,
-      capacity: action.capacity ?? undefined,
-    };
-
-    if (taskType === TASK_TYPES.CONFIRM && taskCategory === TASK_CATEGORIES.CONFIRMATION) {
-      confirmTaskMutation.mutate(baseParams);
-    } 
-    else if (
-      (taskType === TASK_TYPES.CONDITIONAL || taskType === TASK_TYPES.CONDITION) && 
-      taskCategory === TASK_CATEGORIES.APPROVAL
-    ) {
-      confirmTaskMutation.mutate({ ...baseParams, result: result ?? undefined });
-    }
-    else if (taskType === TASK_TYPES.ACTION) {
-      if (taskCategory === TASK_CATEGORIES.ASSIGNMENT) {
-        const appId = selectedAction?.application?.applicationId ?? 
-                      action.application?.applicationId ?? 
-                      action.applicationId;
-        const role = detectRole(selectedAction?.action?.PreScript ?? "");
-
-        assignTaskMutation.mutate({
-          appId,
-          taskId,
-          role,
-          assignee,
-          token: token ?? undefined,
-          capacity: action.capacity ?? undefined
-        });
-      } 
-      else if ([TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].includes(taskCategory)) {
-        confirmTaskMutation.mutate({ ...baseParams, result: result ?? undefined });
-      }
-    }
-    else if (taskType === TASK_TYPES.PROGRESS && taskCategory === TASK_CATEGORIES.PROGRESS_TASK) {
-      const status = result ? getProgressStatus(result) : '';
-      confirmTaskMutation.mutate({
-        ...baseParams,
-        result: result ?? undefined,
-        status,
-      });
-    }
-  };
   
   // ==============================
   // 🔹 HANDLE ACTION SELECTION
@@ -262,7 +155,7 @@ export function PrelimDashboard() {
     const actionCategory = action.taskCategory?.toLowerCase();
 
     if (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION) {
-      executeAction("Confirmed", action, "yes");
+      executeAction("Confirmed", action, "yes", selectedAction);
     } 
     else if (
       (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) && 

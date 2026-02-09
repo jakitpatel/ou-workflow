@@ -95,7 +95,7 @@ export function ResolvedSection({ resolved, loading }: Props) {
               >
                 {/* Connection Line */}
                 <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-gray-300 to-transparent" 
-                     style={{ height: idx === resolved.plants.length - 1 ? '50%' : '100%' }} 
+                     style={{ height: idx === (resolved.plants?.length ?? 0) - 1 ? '50%' : '100%' }} 
                 />
                 <div className="absolute left-0 top-6 w-4 h-px bg-gray-300" />
                 
@@ -118,9 +118,9 @@ export function ResolvedSection({ resolved, loading }: Props) {
                                 {p.plant.processBy}
                             </span>
                         )}
-                        {p.plant?.processDate && (
+                        {p.plant?.ProcessDate && (
                             <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
-                                {p.plant.processDate}
+                                {p.plant.ProcessDate}
                             </span>
                         )}
                         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
