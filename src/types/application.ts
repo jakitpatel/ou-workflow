@@ -85,7 +85,9 @@ export type ResolvedData = {
 export type Applicant = {
   id: number;
   applicationId: number;
+  companyId?: number;
   company: string;
+  plantId?: number;
   plant: string;
   region: string;
   priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM';
