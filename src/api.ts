@@ -5,7 +5,6 @@ import type {
   ApplicationTask,
   ApplicationDetailResponse,
   UserRoleResponse,
-  PrelimApplicantsResponse,
   Applicant,
 } from "./types/application";
 import {
