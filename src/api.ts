@@ -638,8 +638,8 @@ function ensureResolvedSection(app: Applicant): Applicant {
         : undefined,
       plants: [
             {
-              ownsID: '123',
-              WFID: '456',
+              ownsID: 123,
+              WFID: 456,
               plant: {
                 plantName: app.plant,
                 plantID: String(app.plantId ?? ''),
@@ -669,7 +669,7 @@ export async function fetchPrelimApplications({
   token?: string | null;
   searchTerm?: string;
   statusFilter?: string;
-} = {}): Promise<PrelimApplicantsResponse> {
+} = {}): Promise<ApplicantsResponse> {
   console.log('✅ CORRECT fetchPrelimApplications');
 
   const params = buildPaginationParams(page, limit);
@@ -679,7 +679,7 @@ export async function fetchPrelimApplications({
     "filter[status]": statusFilter
   });
 
-  const res = await fetchWithAuth<PrelimApplicantsResponse>({
+  const res = await fetchWithAuth<ApplicantsResponse>({
     path: `/get_applications_v1?application_type=SUBMISSION&${params.toString()}`,
     token,
   });

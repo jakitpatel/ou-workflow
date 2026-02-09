@@ -49,10 +49,10 @@ export function useTaskActions({
   });
 
   const executeAction = (
-    assignee?: string,
+    assignee: string,
     action: any,
     result?: string,
-    selectedAction: { application: Applicant; action: Task } | null,
+    selectedAction?: { application: Applicant; action: Task } | null,
   ) => {
     const taskType = action.taskType?.toLowerCase();
     const taskCategory = action.taskCategory?.toLowerCase();
