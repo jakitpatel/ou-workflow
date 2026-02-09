@@ -9,9 +9,9 @@ import { usePrelimApplications } from '@/components/ou-workflow/hooks/usePrelimA
 import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce';
 import { PrelimApplicantStatsCards } from './PrelimApplicantStatsCards';
 import { useUser } from '@/context/UserContext';
-import { ActionModal } from '../modal/ActionModal';
-import { ConditionalModal } from '../modal/ConditionalModal';
-import type { Applicant, Task } from '@/types/application';
+import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
+import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
+import type { Task } from '@/types/application';
 import type { ErrorDialogRef } from '@/components/ErrorDialog';
 import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';
 import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions';
@@ -108,10 +108,10 @@ export function PrelimDashboard() {
   }, [data]);
 
   // 🔹 Handle task panel expansion (button click)
-  const handlePrelimExpandClick = (id: number) => {
+  /*const handlePrelimExpandClick = (id: number) => {
     const idStr = String(id);
     setExpandedTaskPanel(expandedTaskPanel === idStr ? null : idStr)
-  }
+  }*/
 
   // 🔹 Handle card click (for JSON modal)
   const handleViewApplicationClick = (id: number) => {
@@ -230,10 +230,10 @@ export function PrelimDashboard() {
             <CompanyCard
               key={app.applicationId}
               company={app}
-              isExpanded={selectedId === app.applicationId}
+              //isExpanded={selectedId === app.applicationId}
               expanded={expandedTaskPanel === String(app.applicationId)}
               setExpanded={setExpandedTaskPanel}
-              onPrelimExpandClick={() => handlePrelimExpandClick(app.applicationId)}
+              //onPrelimExpandClick={() => handlePrelimExpandClick(app.applicationId)}
               onViewApplication={() => handleViewApplicationClick(app.externalReferenceId)}
               handleTaskAction={handleTaskAction}
             />

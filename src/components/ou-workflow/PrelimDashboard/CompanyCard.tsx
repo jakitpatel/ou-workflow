@@ -4,12 +4,6 @@ import { Clock } from 'lucide-react';
 import type { Applicant } from '@/types/application';
 import { ResolvedSection } from '@/components/ou-workflow/PrelimDashboard/ResolvedSection';
 
-/*type Stage = {
-  status?: string
-  progress?: number
-  tasks?: any[]
-}*/
-
 type Props = {
   company: Applicant,
   onViewApplication: () => void
