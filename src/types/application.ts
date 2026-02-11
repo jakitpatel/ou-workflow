@@ -27,6 +27,66 @@ export type WFApplicationMessage = {
   sentDate: string;
   isSystemMessage: boolean;
 };
+export type CompanyFromApplication = {
+  companyName: string;
+  companyAddress: string;
+  companyCity: string;
+  companyCountry: string;
+  companyPhone?: string;
+  ZipPostalCode?: string;
+  numberOfPlants?: number;
+  whichCategory?: string;
+};
+
+export type CompanyMatch = {
+  ID: string;
+  companyName: string;
+  Address: string;
+  City?: string;
+  Country?: string;
+  matchScore?: number;
+  matchReason?: string;
+};
+
+export type CompanySelected = {
+  ID: string;
+  companyName: string;
+  Address: string;
+  City?: string;
+  Country?: string;
+};
+
+export type PlantFromApplication = {
+  plantName: string;
+  plantAddress: string;
+  plantCity: string;
+  plantCountry: string;
+  plantZip?: string;
+  plantNumber?: number;
+  plantPhone?: string;
+};
+
+export type PlantMatch = {
+  PlantID: string;
+  plantName: string;
+  Address: string;
+  City?: string;
+  Country?: string;
+  OWNSID?: string;
+  WFID?: string;
+  matchScore?: number;
+  matchReason?: string;
+};
+
+export type PlantSelected = {
+  PlantID: string;
+  plantName: string;
+  Address: string;
+  City?: string;
+  Country?: string;
+  OWNSID?: string;
+  WFID?: string;
+};
 
 export type Task = {
   TaskInstanceId: number;
@@ -47,7 +107,18 @@ export type Task = {
   capacity?: string;
   completedBy?: string;
   taskCategory?: string;
-  taskRoles?: { taskRole: string }[]
+  taskRoles?: { taskRole: string }[],
+  Result?: string;
+  ResultData?: string;
+  // Company-related fields (for ResolveCompany task)
+  companyFromApplication?: CompanyFromApplication;
+  companyMatchList?: CompanyMatch[];
+  companySelected?: CompanySelected;
+  
+  // Plant-related fields (for ResolvePlant task)
+  plantFromApplication?: PlantFromApplication;
+  plantMatchList?: PlantMatch[];
+  plantSelected?: PlantSelected;
 };
 
 export type Stage = {

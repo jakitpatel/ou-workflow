@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight, Building2, Factory } from 'lucide-react'
-import type { ResolvedData } from '@/types/application'
+import type { Applicant } from '@/types/application'
 
 type Props = {
-  resolved?: ResolvedData
+  application?: Applicant
   loading?: boolean
 }
 
-export function ResolvedSection({ resolved, loading }: Props) {
+export function ResolvedSection({ application, loading }: Props) {
   const [open, setOpen] = useState(true)
+
+  // Extract resolved data from tasks
+  const resolved = extractResolvedData(application)
 
   if (!loading && !resolved) return null
 
@@ -44,34 +47,32 @@ export function ResolvedSection({ resolved, loading }: Props) {
                   {resolved.company.companyName}
                 </div>
                 <div className="text-xs text-gray-500 truncate">
-                    {/*resolved.company.Id && (*/}
-                        <span className="inline-flex items-center rounded-md bg-yellow-100 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
-                        CompanyID: {resolved.company.Id}
-                        </span>
-                    {/*)}*/}
+                  <span className="inline-flex items-center rounded-md bg-yellow-100 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
+                    CompanyID: {resolved.company.Id}
+                  </span>
                 </div>
                 <div className="text-xs text-gray-500 truncate">
-                    {resolved.company.Address}
+                  {resolved.company.Address}
                 </div>
               </div>
 
-              <div className="flex-shrink-0">
-                {resolved.company.processBy && (
-                    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
-                        {resolved.company.processBy}
-                    </span>
+              <div className="flex-shrink-0 flex flex-wrap gap-1.5 justify-end">
+                {resolved.company.executedBy && (
+                  <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                    {resolved.company.executedBy}
+                  </span>
                 )}
-                {resolved.company.ProcessDate && (
-                    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
-                        {resolved.company.ProcessDate}
-                    </span>
+                {resolved.company.CompletedDate && (
+                  <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                    {new Date(resolved.company.CompletedDate).toLocaleString()}
+                  </span>
                 )}
                 <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
-                    resolved.company.Id 
+                  resolved.company.Id 
                     ? 'bg-green-50 text-green-700 border-green-200' 
                     : 'bg-orange-50 text-orange-700 border-orange-200'
                 }`}>
-                    {resolved.company.Id ? 'ASSIGNED' : 'TO BE ASSIGNED'}
+                  {resolved.company.Id ? 'ASSIGNED' : 'TO BE ASSIGNED'}
                 </span>
                 <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
                   {loading ? '...' : resolved?.plants?.length || 0} plants
@@ -112,23 +113,23 @@ export function ResolvedSection({ resolved, loading }: Props) {
                       <div className="text-sm font-medium text-gray-900">
                         {p.plant?.plantName}
                       </div>
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-1.5 flex-wrap justify-end">
                         {p.plant?.processBy && (
-                            <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
-                                {p.plant.processBy}
-                            </span>
+                          <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                            {p.plant.processBy}
+                          </span>
                         )}
                         {p.plant?.ProcessDate && (
-                            <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
-                                {p.plant.ProcessDate}
-                            </span>
+                          <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                            {new Date(p.plant.ProcessDate).toLocaleString()}
+                          </span>
                         )}
                         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
-                            p.ownsID 
+                          p.ownsID 
                             ? 'bg-green-50 text-green-700 border-green-200' 
                             : 'bg-orange-50 text-orange-700 border-orange-200'
                         }`}>
-                            {p.ownsID ? 'ASSIGNED' : 'TO BE DONE'}
+                          {p.ownsID ? 'ASSIGNED' : 'TO BE DONE'}
                         </span>
                         {p.ownsID && (
                           <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
@@ -162,6 +163,42 @@ export function ResolvedSection({ resolved, loading }: Props) {
       )}
     </div>
   )
+}
+
+/* ---------------- Helper Function ---------------- */
+function extractResolvedData(application?: Applicant) {
+  if (!application?.stages?.Preliminary?.tasks) return null
+
+  const tasks = application.stages.Preliminary.tasks
+  
+  // Find ResolveCompany task
+  const companyTask = tasks.find(task => task.name === 'ResolveCompany')
+  
+  // Find all ResolvePlant tasks
+  const plantTasks = tasks.filter(task => task.name === 'ResolvePlant')
+
+  if (!companyTask && plantTasks.length === 0) return null
+
+  return {
+    company: companyTask ? {
+      companyName: companyTask.companySelected?.companyName || companyTask.companyFromApplication?.companyName || '',
+      Id: companyTask.companySelected?.ID || companyTask.Result || '',
+      Address: companyTask.companySelected?.Address || companyTask.companyFromApplication?.companyAddress || '',
+      executedBy: companyTask.executedBy || '',
+      CompletedDate: companyTask.CompletedDate || '',
+    } : undefined,
+    plants: plantTasks.map(task => ({
+      ownsID: task.plantSelected?.OWNSID || '',
+      WFID: task.plantSelected?.WFID || '',
+      plant: {
+        plantName: task.plantSelected?.plantName || task.plantFromApplication?.plantName || '',
+        plantID: task.plantSelected?.PlantID || task.Result || '',
+        plantAddress: task.plantSelected?.Address || task.plantFromApplication?.plantAddress || '',
+        executedBy: task.executedBy || '',
+        CompletedDate: task.CompletedDate || '',
+      }
+    }))
+  }
 }
 
 /* ---------------- Skeletons ---------------- */

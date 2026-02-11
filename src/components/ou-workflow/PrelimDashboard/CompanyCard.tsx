@@ -142,7 +142,7 @@ export function CompanyCard({
           </div>
       </div>
       <ResolvedSection
-        resolved={company.resolved}
+        application={company}
         loading={false} // set true if you later fetch lazily
       />
     </div>

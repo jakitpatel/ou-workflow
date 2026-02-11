@@ -618,6 +618,7 @@ export async function fetchProfileLayout({
 
 // Need to remove at the end, this is just for testing the new API structure and will be replaced by real endpoints later
 // Fallback function - only adds resolved section if it's missing
+/*
 function ensureResolvedSection(app: Applicant): Applicant {
   // If already present → do nothing
   if (app.resolved) return app
@@ -655,6 +656,7 @@ function ensureResolvedSection(app: Applicant): Applicant {
 function normalizeApplications(applications: Applicant[]): Applicant[] {
   return applications.map(ensureResolvedSection)
 }
+*/
 // ============================================================================
 export async function fetchPrelimApplications({
   page = 0,
@@ -684,12 +686,7 @@ export async function fetchPrelimApplications({
   });
   //console.log('Full response:', res);
   //console.log('Response data:', res.data);
-  //return res;
-  // Normalize the data array within the response
-  return {
-    ...res,
-    data: normalizeApplications(res.data),
-  };
+  return res;
 }
 
 // Fetches detailed information for a specific preliminary application
