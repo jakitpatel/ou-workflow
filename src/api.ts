@@ -5,7 +5,6 @@ import type {
   ApplicationTask,
   ApplicationDetailResponse,
   UserRoleResponse,
-  Applicant,
 } from "./types/application";
 import {
   getAccessToken,
@@ -616,47 +615,6 @@ export async function fetchProfileLayout({
   return response.data;
 }
 
-// Need to remove at the end, this is just for testing the new API structure and will be replaced by real endpoints later
-// Fallback function - only adds resolved section if it's missing
-/*
-function ensureResolvedSection(app: Applicant): Applicant {
-  // If already present → do nothing
-  if (app.resolved) return app
-
-  // Fallback: create a minimal resolved section from existing data
-  return {
-    ...app,
-    resolved: {
-      company: app.company
-        ? {
-            companyName: app.company,
-            Id: String(app.companyId ?? app.externalReferenceId ?? '5'), // Use companyId or external
-            Address: 'Company ABC Address', // No address available in fallback
-            processBy: "Shouki.BENJAMIN",
-            ProcessDate: "2026-02-03 15:02:37",
-          }
-        : undefined,
-      plants: [
-            {
-              ownsID: 123,
-              WFID: 456,
-              plant: {
-                plantName: app.plant,
-                plantID: String(app.plantId ?? ''),
-                plantAddress: 'Plant ABC Address', // No address available in fallback,
-                processBy: "Shouki.BENJAMIN",
-                ProcessDate: "2026-02-03 16:02:37"
-              },
-            },
-          ],
-    },
-  }
-}
-
-function normalizeApplications(applications: Applicant[]): Applicant[] {
-  return applications.map(ensureResolvedSection)
-}
-*/
 // ============================================================================
 export async function fetchPrelimApplications({
   page = 0,
