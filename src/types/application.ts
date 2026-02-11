@@ -39,12 +39,12 @@ export type CompanyFromApplication = {
 };
 
 export type CompanyMatch = {
-  ID: string;
+  Id: string;
   companyName: string;
   Address: string;
   City?: string;
   Country?: string;
-  matchScore?: number;
+  matchRating?: number;
   matchReason?: string;
 };
 
@@ -68,13 +68,14 @@ export type PlantFromApplication = {
 
 export type PlantMatch = {
   PlantID: string;
+  Id: string;
   plantName: string;
   Address: string;
   City?: string;
   Country?: string;
   OWNSID?: string;
   WFID?: string;
-  matchScore?: number;
+  matchRating?: number;
   matchReason?: string;
 };
 
