@@ -114,14 +114,14 @@ export function ResolvedSection({ application, loading }: Props) {
                         {p.plant?.plantName}
                       </div>
                       <div className="flex gap-1.5 flex-wrap justify-end">
-                        {p.plant?.processBy && (
+                        {p.plant?.executedBy && (
                           <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
-                            {p.plant.processBy}
+                            {p.plant.executedBy}
                           </span>
                         )}
-                        {p.plant?.ProcessDate && (
+                        {p.plant?.CompletedDate && (
                           <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
-                            {new Date(p.plant.ProcessDate).toLocaleString()}
+                            {new Date(p.plant.CompletedDate).toLocaleString()}
                           </span>
                         )}
                         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
