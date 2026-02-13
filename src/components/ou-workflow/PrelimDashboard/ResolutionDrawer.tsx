@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
-import { X, Building2, Factory, Check, Plus, Edit } from 'lucide-react'
+import { X, Check, Plus, Edit } from 'lucide-react'
 
 type CompanyData = {
   companyName: string
   companyAddress: string
   companyAddress2?: string
   companyCity: string
-  companyState: string
-  ZipPostalCode: string
+  companyState?: string
+  ZipPostalCode?: string
   companyCountry: string
   companyPhone?: string
   companyWebsite?: string
@@ -19,8 +19,8 @@ type PlantData = {
   plantName: string
   plantAddress: string
   plantCity: string
-  plantState: string
-  plantZip: string
+  plantState?: string
+  plantZip?: string
   plantCountry: string
   plantNumber?: number
 }
@@ -78,6 +78,7 @@ export function ResolutionDrawer({
   const isCompany = type === 'company'
   const companyData = data as CompanyData
   const plantData = data as PlantData
+  const headerBgClass = isCompany ? 'bg-[#1e1e2e]' : 'bg-[#312e81]'
 
   const handleMatchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const matchId = e.target.value
@@ -93,6 +94,16 @@ export function ResolutionDrawer({
     if (selectedMatch) {
       onAssign(selectedMatch)
       onClose()
+    }
+  }
+
+  const handleCreateNew = () => {
+    setSelectedMatch(null)
+  }
+
+  const handleConfirmEdit = () => {
+    if (selectedMatch) {
+      onAssign(selectedMatch)
     }
   }
 
@@ -122,7 +133,7 @@ export function ResolutionDrawer({
       {/* ================= Drawer ================= */}
       <div
         className="
-          fixed right-0 top-0 h-full w-full max-w-4xl
+          fixed right-0 top-0 h-full w-full max-w-[780px]
           bg-white shadow-2xl z-50
           translate-x-0
           transition-transform duration-300 ease-in-out
@@ -130,64 +141,82 @@ export function ResolutionDrawer({
         "
       >
         {/* Header */}
-        <div className="bg-indigo-900 text-white px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                {isCompany ? (
-                  <Building2 className="w-5 h-5 text-white" />
-                ) : (
-                  <Factory className="w-5 h-5 text-white" />
-                )}
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold">
+        <div className={`${headerBgClass} text-white px-6 py-[18px]`}>
+          <div className="flex items-start justify-between">
+            <div>
+                <h2 className="text-[19px] font-semibold leading-6">
                   {isCompany ? 'Resolve Company' : 'Resolve Plant'}
                 </h2>
-                <p className="text-sm text-indigo-200">
+                <p className="mt-1 text-sm text-white/80">
                   {isCompany
                     ? companyData.companyName
                     : plantData.plantName}{' '}
-                  — Match {type} to existing or create new
+                  - Match {type} to existing or create new
                 </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
+                    WF 26-00415
+                  </span>
+                  {isCompany ? (
+                    <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
+                      Best match: Co #{selectedMatch?.Id || 'N/A'}
+                    </span>
+                  ) : (
+                    <>
+                      <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
+                        Co #{selectedMatch?.OWNSID || '182456'}
+                      </span>
+                      <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
+                        Best match: Pl #{selectedMatch?.Id || 'N/A'}
+                      </span>
+                    </>
+                  )}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center rounded border border-white/20 bg-white/15 px-3 py-1 text-[12.5px] font-medium text-white/90">
+                    Prior Kosher: No
+                  </span>
+                  <span className="inline-flex items-center rounded border border-white/20 bg-white/15 px-3 py-1 text-[12.5px] font-medium text-white/90">
+                    OU Certified: No
+                  </span>
+                  <span className="inline-flex items-center rounded border border-white/20 bg-white/15 px-3 py-1 text-[12.5px] font-medium text-white/90">
+                    Production: Own Brand
+                  </span>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded-[7px] bg-white/15 text-white transition-colors hover:bg-white/25"
             >
-              <X className="w-5 h-5 text-white" />
+              <X className="h-4 w-4" />
             </button>
-          </div>
-
-          {/* Match Selector */}
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Field Comparison</h3>
-            <select
-              value={selectedMatch?.Id || 'create-new'}
-              onChange={handleMatchChange}
-              className="bg-indigo-800 text-white rounded-lg px-4 py-2 text-sm font-medium border border-indigo-700 focus:outline-none focus:ring-2 focus:ring-white/50"
-            >
-              {matches.map((match, idx) => (
-                <option key={match.Id} value={match.Id}>
-                  Match {idx + 1}:{' '}
-                  {isCompany ? match.companyName : match.plantName} — #
-                  {match.Id} ({match.matchRating}%)
-                </option>
-              ))}
-              <option value="create-new">
-                + No Match — Create New {isCompany ? 'Company' : 'Plant'}
-              </option>
-            </select>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 p-6">
-            <div className="flex-1 overflow-y-auto bg-gray-50">
-                <div className="p-6">
+        <div className="flex-1 overflow-y-auto bg-white px-7 py-7">
+                    <div className="sticky top-0 z-10 -mt-3 mb-4 flex flex-col gap-3 border-b border-gray-100 bg-white py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="text-base font-semibold text-[#1e1e2e]">Field Comparison</h3>
+                    <select
+                      value={selectedMatch?.Id || 'create-new'}
+                      onChange={handleMatchChange}
+                      className="w-full min-w-[220px] rounded-[7px] border border-gray-200 bg-white px-[14px] py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-auto"
+                    >
+                      {matches.map((match, idx) => (
+                        <option key={match.Id} value={match.Id}>
+                          Match {idx + 1}:{' '}
+                          {isCompany ? match.companyName : match.plantName} - #
+                          {match.Id} ({match.matchRating}%)
+                        </option>
+                      ))}
+                      <option value="create-new">
+                        + No Match - Create New {isCompany ? 'Company' : 'Plant'}
+                      </option>
+                    </select>
+                    </div>
+
                     {/* Table Header */}
-                    <div className="grid grid-cols-12 gap-4 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wide px-4">
+                    <div className="grid grid-cols-12 gap-4 mb-2 border-b border-gray-200 bg-gray-50 px-4 py-[14px] text-xs font-semibold uppercase tracking-wide text-gray-500">
                     <div className="col-span-3">Field</div>
                     <div className="col-span-4">Submitted (Application)</div>
                     <div className="col-span-4">Database (Kashrus)</div>
@@ -198,8 +227,8 @@ export function ResolutionDrawer({
                     <>
                         {/* Company Information Section */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4">
-                        <div className="bg-blue-50 px-4 py-2 border-b border-gray-200">
-                            <h4 className="text-sm font-semibold text-blue-900 uppercase tracking-wide">Company Information</h4>
+                        <div className="border-y border-slate-200 bg-slate-100 px-4 py-2">
+                            <h4 className="text-[13.5px] font-semibold tracking-wide text-slate-600">Company Information</h4>
                         </div>
                         
                         <ComparisonRow
@@ -236,15 +265,21 @@ export function ResolutionDrawer({
                             dbValue="Not on file"
                             status="not-on-file"
                         />
+                        <SectionActions
+                          selectedMatch={selectedMatch}
+                          onCreateNew={handleCreateNew}
+                          onConfirmEdit={handleConfirmEdit}
+                          onConfirmMatch={handleConfirmMatch}
+                        />
                         </div>
 
                         {/* Company Contact Section */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4">
-                        <div className="bg-blue-50 px-4 py-2 border-b border-gray-200 flex items-center gap-2">
-                            <span className="inline-flex items-center rounded-md bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
+                        <div className="border-y border-slate-200 bg-slate-100 px-4 py-2 flex items-center gap-2">
+                            <span className="inline-flex items-center rounded bg-blue-100 px-2 py-0.5 text-[11.5px] font-bold uppercase tracking-wide text-blue-800">
                             PRIMARY
                             </span>
-                            <h4 className="text-sm font-semibold text-blue-900 uppercase tracking-wide">Company Contact</h4>
+                            <h4 className="text-[13.5px] font-semibold tracking-wide text-slate-600">Company Contact</h4>
                         </div>
                         
                         <ComparisonRow
@@ -260,14 +295,20 @@ export function ResolutionDrawer({
                             dbValue={selectedMatch ? companyData.companyPhone || '' : "Not on file"}
                             status={selectedMatch ? 'match' : 'not-on-file'}
                         />
+                        <SectionActions
+                          selectedMatch={selectedMatch}
+                          onCreateNew={handleCreateNew}
+                          onConfirmEdit={handleConfirmEdit}
+                          onConfirmMatch={handleConfirmMatch}
+                        />
                         </div>
                     </>
                     ) : (
                     <>
                         {/* Plant Information Section */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4">
-                        <div className="bg-blue-50 px-4 py-2 border-b border-gray-200">
-                            <h4 className="text-sm font-semibold text-blue-900 uppercase tracking-wide">Plant Information</h4>
+                        <div className="border-y border-slate-200 bg-slate-100 px-4 py-2">
+                            <h4 className="text-[13.5px] font-semibold tracking-wide text-slate-600">Plant Information</h4>
                         </div>
                         
                         <ComparisonRow
@@ -297,15 +338,21 @@ export function ResolutionDrawer({
                             dbValue="Not on file"
                             status="not-on-file"
                         />
+                        <SectionActions
+                          selectedMatch={selectedMatch}
+                          onCreateNew={handleCreateNew}
+                          onConfirmEdit={handleConfirmEdit}
+                          onConfirmMatch={handleConfirmMatch}
+                        />
                         </div>
 
                         {/* Plant Contact Section */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4">
-                        <div className="bg-blue-50 px-4 py-2 border-b border-gray-200 flex items-center gap-2">
-                            <span className="inline-flex items-center rounded-md bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
+                        <div className="border-y border-slate-200 bg-slate-100 px-4 py-2 flex items-center gap-2">
+                            <span className="inline-flex items-center rounded bg-blue-100 px-2 py-0.5 text-[11.5px] font-bold uppercase tracking-wide text-blue-800">
                             PRIMARY
                             </span>
-                            <h4 className="text-sm font-semibold text-blue-900 uppercase tracking-wide">Plant Contact</h4>
+                            <h4 className="text-[13.5px] font-semibold tracking-wide text-slate-600">Plant Contact</h4>
                         </div>
                         
                         <ComparisonRow
@@ -335,16 +382,22 @@ export function ResolutionDrawer({
                             dbValue={selectedMatch ? "j.cooper@jojobainc.com" : "Not on file"}
                             status={selectedMatch ? 'mismatch' : 'not-on-file'}
                         />
+                        <SectionActions
+                          selectedMatch={selectedMatch}
+                          onCreateNew={handleCreateNew}
+                          onConfirmEdit={handleConfirmEdit}
+                          onConfirmMatch={handleConfirmMatch}
+                        />
                         </div>
 
                         {/* Marketing Contact Section */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                        <div className="bg-blue-50 px-4 py-2 border-b border-gray-200 flex items-center gap-2">
-                            <span className="inline-flex items-center rounded-md bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
+                        <div className="border-y border-slate-200 bg-slate-100 px-4 py-2 flex items-center gap-2">
+                            <span className="inline-flex items-center rounded bg-violet-100 px-2 py-0.5 text-[11.5px] font-bold uppercase tracking-wide text-violet-700">
                             MARKETING
                             </span>
-                            <h4 className="text-sm font-semibold text-blue-900 uppercase tracking-wide">Contact</h4>
-                            <span className="text-xs text-gray-500 italic">— Not currently in Kashrus</span>
+                            <h4 className="text-[13.5px] font-semibold tracking-wide text-slate-600">Contact</h4>
+                            <span className="text-xs italic text-gray-500">- Not currently in Kashrus</span>
                         </div>
                         
                         <ComparisonRow
@@ -353,61 +406,26 @@ export function ResolutionDrawer({
                             dbValue="No matching contact"
                             status="not-on-file"
                         />
+                        <SectionActions
+                          selectedMatch={selectedMatch}
+                          onCreateNew={handleCreateNew}
+                          onConfirmEdit={handleConfirmEdit}
+                          onConfirmMatch={handleConfirmMatch}
+                        />
                         </div>
                     </>
                     )}
-                </div>
-            </div>
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-4 bg-white">
-          <div className="flex items-center justify-between">
+        <div className="border-t border-gray-200 bg-[#fafbfc] px-6 py-3.5">
+          <div className="flex items-center justify-end">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="rounded-[7px] border border-gray-300 bg-[#f8fafc] px-4 py-2 text-[14px] font-medium text-gray-700 hover:bg-white"
             >
               Cancel
             </button>
-
-            <div className="flex gap-3">
-              <button
-                disabled={selectedMatch !== null}
-                className={`inline-flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-lg ${
-                  selectedMatch === null
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                <Plus className="w-4 h-4" />
-                Create New
-              </button>
-
-              <button
-                disabled={!selectedMatch}
-                className={`inline-flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-lg ${
-                  selectedMatch
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                <Edit className="w-4 h-4" />
-                Confirm & Edit
-              </button>
-
-              <button
-                onClick={handleConfirmMatch}
-                disabled={!selectedMatch}
-                className={`inline-flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-lg ${
-                  selectedMatch
-                    ? 'bg-green-600 text-white hover:bg-green-700'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                <Check className="w-4 h-4" />
-                Confirm Match
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -415,50 +433,122 @@ export function ResolutionDrawer({
   )
 }
 
+function SectionActions({
+  selectedMatch,
+  onCreateNew,
+  onConfirmEdit,
+  onConfirmMatch,
+}: {
+  selectedMatch: Match | null
+  onCreateNew: () => void
+  onConfirmEdit: () => void
+  onConfirmMatch: () => void
+}) {
+  return (
+    <div className="flex justify-end gap-2 border-t border-gray-100 bg-[#f8fafc] px-4 py-2.5">
+      <button
+        onClick={onCreateNew}
+        className="inline-flex items-center gap-1.5 rounded-[7px] border border-indigo-200 bg-indigo-50 px-4 py-1.5 text-[13px] font-semibold text-indigo-600 hover:bg-indigo-100"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        Create New
+      </button>
+
+      <button
+        onClick={onConfirmEdit}
+        disabled={!selectedMatch}
+        className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
+          selectedMatch
+            ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
+            : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+        }`}
+      >
+        <Edit className="h-3.5 w-3.5" />
+        Confirm & Edit
+      </button>
+
+      <button
+        onClick={onConfirmMatch}
+        disabled={!selectedMatch}
+        className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
+          selectedMatch
+            ? 'border-green-600 bg-green-600 text-white hover:bg-green-700'
+            : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+        }`}
+      >
+        <Check className="h-3.5 w-3.5" />
+        Confirm Match
+      </button>
+    </div>
+  )
+}
+
 // Comparison Row Component
-function ComparisonRow({ 
-  field, 
-  appValue, 
-  dbValue, 
-  status 
-}: { 
+function ComparisonRow({
+  field,
+  appValue,
+  dbValue,
+  status,
+}: {
   field: string
   appValue: string
   dbValue: string
   status: ComparisonStatus
 }) {
-  const getStatusColor = () => {
-    if (status === 'match') return 'text-green-600'
-    if (status === 'mismatch') return 'text-red-600'
-    if (status === 'not-on-file') return 'text-orange-500'
-    return 'text-gray-400'
+  const getStatusStyles = () => {
+    if (status === 'match') {
+      return {
+        textClass: 'text-green-700',
+        badgeClass: 'bg-green-100 text-green-600',
+        icon: 'v',
+      }
+    }
+    if (status === 'mismatch') {
+      return {
+        textClass: 'text-red-700',
+        badgeClass: 'bg-red-100 text-red-500',
+        icon: 'x',
+      }
+    }
+    if (status === 'not-on-file') {
+      return {
+        textClass: 'text-blue-700',
+        badgeClass: 'bg-blue-100 text-blue-500',
+        icon: '+',
+      }
+    }
+    return {
+      textClass: 'text-gray-500',
+      badgeClass: 'bg-gray-100 text-gray-400',
+      icon: '.',
+    }
   }
 
-  const getStatusIcon = () => {
-    if (status === 'match') return '✓'
-    if (status === 'mismatch') return '✗'
-    if (status === 'not-on-file') return '+'
-    return ''
-  }
+  const statusStyles = getStatusStyles()
 
   return (
-    <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors">
-      <div className="col-span-3 text-sm font-medium text-gray-700">
+    <div className="grid grid-cols-12 gap-4 border-b border-gray-100 px-4 py-[14px] transition-colors hover:bg-gray-50">
+      <div className="col-span-3 bg-[#fafbfc] text-sm font-medium text-gray-700">
         {field}
       </div>
-      <div className="col-span-4 text-sm text-gray-900">
+      <div className="col-span-4 text-[15px] text-gray-900">
         {appValue || <span className="text-gray-400 italic">Empty</span>}
       </div>
-      <div className="col-span-4 text-sm text-gray-600">
+      <div className="col-span-4 text-[15px] text-gray-600">
         {dbValue === 'Not on file' ? (
           <span className="italic text-gray-400">{dbValue}</span>
         ) : (
           dbValue || <span className="text-gray-400 italic">Empty</span>
         )}
       </div>
-      <div className={`col-span-1 text-center text-lg font-bold ${getStatusColor()}`}>
-        {getStatusIcon()}
+      <div className={`col-span-1 flex items-center justify-center ${statusStyles.textClass}`}>
+        <span
+          className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold ${statusStyles.badgeClass}`}
+        >
+          {statusStyles.icon}
+        </span>
       </div>
     </div>
   )
 }
+

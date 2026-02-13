@@ -4,6 +4,7 @@ import type { Applicant } from '@/types/application'
 import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
 import { ResolutionDrawer } from '@/components/ou-workflow/PrelimDashboard/ResolutionDrawer'
+import type { CompanyFromApplication, PlantFromApplication } from '@/types/application'
 
 type Props = {
   application?: Applicant
@@ -78,6 +79,12 @@ export function ResolvedSection({ application, loading }: Props) {
       type: 'company',
     })
   }
+
+  const companyDrawerData = toCompanyDrawerData(companyTask?.companyFromApplication)
+  const activePlantIndex = drawerState.plantIndex
+  const activePlantTask =
+    activePlantIndex !== undefined ? plantTasks[activePlantIndex] : undefined
+  const plantDrawerData = toPlantDrawerData(activePlantTask?.plantFromApplication)
 
   return (
     <div className="mt-6">
@@ -275,7 +282,7 @@ export function ResolvedSection({ application, loading }: Props) {
           isOpen={drawerState.isOpen}
           onClose={closeDrawer}
           type="company"
-          data={companyTask.companyFromApplication || {}}
+          data={companyDrawerData}
           matches={companyTask.companyMatchList || []}
           onAssign={handleAssignCompany}
           selectedId={resolved?.company?.Id}
@@ -284,18 +291,21 @@ export function ResolvedSection({ application, loading }: Props) {
 
       {drawerState.isOpen &&
         drawerState.type === 'plant' &&
-        drawerState.plantIndex !== undefined &&
-        plantTasks[drawerState.plantIndex] && (
+        activePlantTask && (
           <ResolutionDrawer
             isOpen={drawerState.isOpen}
             onClose={closeDrawer}
             type="plant"
-            data={plantTasks[drawerState.plantIndex].plantFromApplication || {}}
-            matches={plantTasks[drawerState.plantIndex].plantMatchList || []}
+            data={plantDrawerData}
+            matches={activePlantTask.plantMatchList || []}
             onAssign={(match) =>
-              handleAssignPlant(match, plantTasks[drawerState.plantIndex])
+              handleAssignPlant(match, activePlantTask)
             }
-            selectedId={resolved?.plants?.[drawerState.plantIndex]?.plant?.plantID}
+            selectedId={
+              activePlantIndex !== undefined
+                ? resolved?.plants?.[activePlantIndex]?.plant?.plantID
+                : undefined
+            }
           />
         )}
     </div>
@@ -386,4 +396,31 @@ function PlantsSkeleton() {
       ))}
     </div>
   )
+}
+
+function toCompanyDrawerData(data?: CompanyFromApplication) {
+  return {
+    companyName: data?.companyName ?? '',
+    companyAddress: data?.companyAddress ?? '',
+    companyCity: data?.companyCity ?? '',
+    companyState: '',
+    ZipPostalCode: data?.ZipPostalCode ?? '',
+    companyCountry: data?.companyCountry ?? '',
+    companyPhone: data?.companyPhone ?? '',
+    companyWebsite: '',
+    numberOfPlants: data?.numberOfPlants,
+    whichCategory: data?.whichCategory,
+  }
+}
+
+function toPlantDrawerData(data?: PlantFromApplication) {
+  return {
+    plantName: data?.plantName ?? '',
+    plantAddress: data?.plantAddress ?? '',
+    plantCity: data?.plantCity ?? '',
+    plantState: '',
+    plantZip: data?.plantZip ?? '',
+    plantCountry: data?.plantCountry ?? '',
+    plantNumber: data?.plantNumber,
+  }
 }

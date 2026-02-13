@@ -31,6 +31,7 @@ export type CompanyFromApplication = {
   companyName: string;
   companyAddress: string;
   companyCity: string;
+  companyState?: string;
   companyCountry: string;
   companyPhone?: string;
   ZipPostalCode?: string;
@@ -60,6 +61,7 @@ export type PlantFromApplication = {
   plantName: string;
   plantAddress: string;
   plantCity: string;
+  plantState?: string;
   plantCountry: string;
   plantZip?: string;
   plantNumber?: number;
