@@ -295,6 +295,50 @@ export function ResolutionDrawer({
                             dbValue={selectedMatch ? companyData.companyPhone || '' : "Not on file"}
                             status={selectedMatch ? 'match' : 'not-on-file'}
                         />
+                        
+                        <ComparisonRow
+                            field="Email"
+                            appValue=""
+                            dbValue="Not on file"
+                            status="not-on-file"
+                        />
+                        <SectionActions
+                          selectedMatch={selectedMatch}
+                          onCreateNew={handleCreateNew}
+                          onConfirmEdit={handleConfirmEdit}
+                          onConfirmMatch={handleConfirmMatch}
+                        />
+                        </div>
+
+                        {/* Billing Contact Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4">
+                        <div className="border-y border-slate-200 bg-slate-100 px-4 py-2 flex items-center gap-2">
+                            <span className="inline-flex items-center rounded bg-amber-100 px-2 py-0.5 text-[11.5px] font-bold uppercase tracking-wide text-amber-800">
+                            BILLING
+                            </span>
+                            <h4 className="text-[13.5px] font-semibold tracking-wide text-slate-600">Contact</h4>
+                        </div>
+                        
+                        <ComparisonRow
+                            field="Name"
+                            appValue=""
+                            dbValue="Not on file"
+                            status="not-on-file"
+                        />
+                        
+                        <ComparisonRow
+                            field="Phone"
+                            appValue=""
+                            dbValue="Not on file"
+                            status="not-on-file"
+                        />
+                        
+                        <ComparisonRow
+                            field="Email"
+                            appValue=""
+                            dbValue="Not on file"
+                            status="not-on-file"
+                        />
                         <SectionActions
                           selectedMatch={selectedMatch}
                           onCreateNew={handleCreateNew}
@@ -404,6 +448,27 @@ export function ResolutionDrawer({
                             field="Name"
                             appValue="Lisa Park"
                             dbValue="No matching contact"
+                            status="not-on-file"
+                        />
+                        
+                        <ComparisonRow
+                            field="Title"
+                            appValue=""
+                            dbValue="Not on file"
+                            status="not-on-file"
+                        />
+                        
+                        <ComparisonRow
+                            field="Phone"
+                            appValue=""
+                            dbValue="Not on file"
+                            status="not-on-file"
+                        />
+                        
+                        <ComparisonRow
+                            field="Email"
+                            appValue=""
+                            dbValue="Not on file"
                             status="not-on-file"
                         />
                         <SectionActions
