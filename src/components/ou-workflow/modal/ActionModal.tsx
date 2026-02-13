@@ -15,7 +15,8 @@ type Props = {
   executeAction: (
     value: string,
     action: { id: string; name?: string; taskName?: string },
-    result?: string
+    result?: string,
+    selectedAction?: SelectedAction | null
   ) => void;
 };
 
@@ -108,7 +109,7 @@ export const ActionModal: React.FC<Props> = ({
     if (!selectedRc || !selectedAction) return;
     setSaving(true);
     try {
-      await executeAction(selectedRc, selectedAction.action);
+      await executeAction(selectedRc, selectedAction.action, undefined, selectedAction);
     } catch (error) {
       console.error("Error executing action:", error);
     } finally {

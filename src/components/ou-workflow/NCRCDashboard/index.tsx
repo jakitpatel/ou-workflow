@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+//import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
@@ -9,37 +9,21 @@ import { useUser } from '@/context/UserContext'
 import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce';
 import { useInfiniteApplications } from '@/components/ou-workflow/hooks/useInfiniteApplications';
 import { usePagedApplications } from '@/components/ou-workflow/hooks/usePagedApplications';
-import { assignTask, confirmTask } from '@/api';
+//import { assignTask, confirmTask } from '@/api';
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 import type { Applicant, Task } from '@/types/application';
 import { ApplicantStatsCards } from './ApplicantStatsCards';
 import { Route } from '@/routes/ou-workflow/ncrc-dashboard';
+import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';
+import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions';
 
 // 🎯 Constants
 const PAGE_LIMIT = 5;
 const DEBOUNCE_DELAY = 1000;
 //const STORAGE_KEY = 'ncrc-infinite-state';
 
-// 🎯 Task type definitions
-const TASK_TYPES = {
-  CONFIRM: 'confirm',
-  CONDITIONAL: 'conditional',
-  CONDITION: 'condition',
-  ACTION: 'action',
-  PROGRESS: 'progress',
-} as const;
-
-const TASK_CATEGORIES = {
-  CONFIRMATION: 'confirmation',
-  APPROVAL: 'approval',
-  ASSIGNMENT: 'assignment',
-  SELECTOR: 'selector',
-  INPUT: 'input',
-  SCHEDULING: 'scheduling',
-  PROGRESS_TASK: 'progress_task',
-} as const;
-
 // 🎯 Helper to get all tasks from an applicant
+/*
 const getAllTasks = (app: Applicant): Task[] => {
   if (!app?.stages) return [];
   return Object.values(app.stages).flatMap(stage => stage.tasks || []);
@@ -61,7 +45,7 @@ const detectRole = (preScript?: string): string => {
   const [, role] = preScript.split(",");
   return role?.trim().toUpperCase();
 };
-
+*/
 export function NCRCDashboard() {
   // 🔹 Router hooks
   const search = Route.useSearch()
@@ -70,7 +54,7 @@ export function NCRCDashboard() {
 
   // 🔹 User context
   const { token, username, paginationMode } = useUser();
-  const queryClient = useQueryClient();
+  //const queryClient = useQueryClient();
   const errorDialogRef = useRef<ErrorDialogRef>(null);
   // UI states
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
@@ -272,7 +256,7 @@ export function NCRCDashboard() {
   // ==============================
   // 🔹 MUTATIONS
   // ==============================
-  
+  /*
   const confirmTaskMutation = useMutation({
     mutationFn: confirmTask,
     onSuccess: () => {
@@ -304,11 +288,11 @@ export function NCRCDashboard() {
       errorDialogRef.current?.open(message);
     },
   });
-
+  */
   // ==============================
   // 🔹 EXECUTE ACTION
   // ==============================
-  
+  /*
   const executeAction = (assignee: string, action: any, result?: string) => {
     const taskType = action.taskType?.toLowerCase();
     const taskCategory = action.taskCategory?.toLowerCase();
@@ -359,11 +343,19 @@ export function NCRCDashboard() {
       });
     }
   };
+  */
+  const { executeAction, getSelectedAction } = useTaskActions({
+    applications: applicants,
+    token: token ?? undefined,
+    username: username ?? undefined,
+    onError: (msg) => errorDialogRef.current?.open(msg),
+  });
 
   // ==============================
   // 🔹 SELECTED ACTION
   // ==============================
-  
+  const selectedAction = getSelectedAction(selectedActionId);
+  /*
   const selectedAction = useMemo(() => {
     if (!selectedActionId) return null;
 
@@ -379,7 +371,7 @@ export function NCRCDashboard() {
 
     return { application: app, action: act };
   }, [selectedActionId, applicants]);
-
+  */
   // ==============================
   // 🔹 HANDLE ACTION SELECTION
   // ==============================
