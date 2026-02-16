@@ -17,6 +17,8 @@ type DrawerState = {
   plantIndex?: number
 }
 
+const isResolvePlantTask = (taskName?: string) => /^ResolvePlant\d*$/.test(taskName ?? '')
+
 export function ResolvedSection({ application, loading }: Props) {
   const [open, setOpen] = useState(true)
   const [drawerState, setDrawerState] = useState<DrawerState>({
@@ -34,7 +36,7 @@ export function ResolvedSection({ application, loading }: Props) {
   )
   const plantTasks =
     application?.stages?.Preliminary?.tasks?.filter(
-      (task) => task.name === 'ResolvePlant'
+      (task) => isResolvePlantTask(task.name)
     ) || []
 
   const { executeAction } = useTaskActions({
@@ -322,7 +324,7 @@ function extractResolvedData(application?: Applicant) {
   const companyTask = tasks.find((task) => task.name === 'ResolveCompany')
 
   // Find all ResolvePlant tasks
-  const plantTasks = tasks.filter((task) => task.name === 'ResolvePlant')
+  const plantTasks = tasks.filter((task) => isResolvePlantTask(task.name))
 
   if (!companyTask && plantTasks.length === 0) return null
 
