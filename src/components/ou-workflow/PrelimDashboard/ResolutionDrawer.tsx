@@ -13,6 +13,18 @@ type CompanyData = {
   companyWebsite?: string
   numberOfPlants?: number
   whichCategory?: string
+  primaryContact?: {
+    name?: string
+    title?: string
+    phone?: string
+    email?: string
+  }
+  billingContact?: {
+    name?: string
+    title?: string
+    phone?: string
+    email?: string
+  }
 }
 
 type PlantData = {
@@ -23,18 +35,33 @@ type PlantData = {
   plantZip?: string
   plantCountry: string
   plantNumber?: number
+  processDescription?: string
+  primaryContact?: {
+    name?: string
+    title?: string
+    phone?: string
+    email?: string
+  }
+  marketingContact?: {
+    name?: string
+    title?: string
+    phone?: string
+    email?: string
+  }
 }
 
 type Match = {
-  Id: string
+  Id: string | number
   companyName?: string
   plantName?: string
   Address: string
+  City?: string
+  Country?: string
   matchRating?: number
   matchReason?: string
-  OWNSID?: string
-  WFID?: string
-  PlantID?: string
+  OWNSID?: string | number
+  WFID?: string | number
+  PlantID?: string | number
 }
 
 type Props = {
@@ -44,7 +71,7 @@ type Props = {
   data: CompanyData | PlantData
   matches: Match[]
   onAssign: (match: Match) => void
-  selectedId?: string
+  selectedId?: string | number
 }
 
 type ComparisonStatus = 'match' | 'mismatch' | 'not-on-file' | 'empty'
@@ -58,10 +85,18 @@ export function ResolutionDrawer({
   onAssign,
   selectedId,
 }: Props) {
+  const selectedIdNormalized = selectedId != null ? String(selectedId) : undefined
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(
-    matches.find((m) => m.Id === selectedId) ||
+    matches.find((m) => String(m.Id) === selectedIdNormalized) ||
       (matches.length > 0 ? matches[0] : null)
   )
+
+  useEffect(() => {
+    const nextMatch =
+      matches.find((m) => String(m.Id) === selectedIdNormalized) ??
+      (matches.length > 0 ? matches[0] : null)
+    setSelectedMatch(nextMatch)
+  }, [matches, selectedIdNormalized])
 
   /* ================= Scroll Lock (OPTIONAL FIX #1) ================= */
   useEffect(() => {
@@ -85,7 +120,7 @@ export function ResolutionDrawer({
     if (matchId === 'create-new') {
       setSelectedMatch(null)
     } else {
-      const match = matches.find((m) => m.Id === matchId)
+      const match = matches.find((m) => String(m.Id) === matchId)
       setSelectedMatch(match || null)
     }
   }
@@ -198,12 +233,12 @@ export function ResolutionDrawer({
                     <div className="sticky top-0 z-10 -mt-3 mb-4 flex flex-col gap-3 border-b border-gray-100 bg-white py-3 sm:flex-row sm:items-center sm:justify-between">
                     <h3 className="text-base font-semibold text-[#1e1e2e]">Field Comparison</h3>
                     <select
-                      value={selectedMatch?.Id || 'create-new'}
+                      value={selectedMatch ? String(selectedMatch.Id) : 'create-new'}
                       onChange={handleMatchChange}
                       className="w-full min-w-[220px] rounded-[7px] border border-gray-200 bg-white px-[14px] py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-auto"
                     >
                       {matches.map((match, idx) => (
-                        <option key={match.Id} value={match.Id}>
+                        <option key={String(match.Id)} value={String(match.Id)}>
                           Match {idx + 1}:{' '}
                           {isCompany ? match.companyName : match.plantName} - #
                           {match.Id} ({match.matchRating}%)
@@ -255,8 +290,8 @@ export function ResolutionDrawer({
                         <ComparisonRow
                             field="City / State / ZIP"
                             appValue={`${companyData.companyCity}, ${companyData.companyState} ${companyData.ZipPostalCode}`}
-                            dbValue={selectedMatch ? `${companyData.companyCity}, ${companyData.companyState} ${companyData.ZipPostalCode}` : 'Not on file'}
-                            status={selectedMatch ? 'match' : 'not-on-file'}
+                            dbValue={selectedMatch?.City || 'Not on file'}
+                            status={getComparisonStatus(companyData.companyCity, selectedMatch?.City)}
                         />
                         
                         <ComparisonRow
@@ -284,21 +319,28 @@ export function ResolutionDrawer({
                         
                         <ComparisonRow
                             field="Name"
-                            appValue="Sarah Cohen"
-                            dbValue={selectedMatch ? "Sarah Cohen" : "Not on file"}
-                            status={selectedMatch ? 'match' : 'not-on-file'}
+                            appValue={companyData.primaryContact?.name || ''}
+                            dbValue="Not on file"
+                            status="not-on-file"
+                        />
+
+                        <ComparisonRow
+                            field="Title"
+                            appValue={companyData.primaryContact?.title || ''}
+                            dbValue="Not on file"
+                            status="not-on-file"
                         />
                         
                         <ComparisonRow
                             field="Phone"
-                            appValue={companyData.companyPhone || ''}
-                            dbValue={selectedMatch ? companyData.companyPhone || '' : "Not on file"}
-                            status={selectedMatch ? 'match' : 'not-on-file'}
+                            appValue={companyData.primaryContact?.phone || ''}
+                            dbValue="Not on file"
+                            status="not-on-file"
                         />
                         
                         <ComparisonRow
                             field="Email"
-                            appValue=""
+                            appValue={companyData.primaryContact?.email || ''}
                             dbValue="Not on file"
                             status="not-on-file"
                         />
@@ -321,21 +363,28 @@ export function ResolutionDrawer({
                         
                         <ComparisonRow
                             field="Name"
-                            appValue=""
+                            appValue={companyData.billingContact?.name || ''}
+                            dbValue="Not on file"
+                            status="not-on-file"
+                        />
+
+                        <ComparisonRow
+                            field="Title"
+                            appValue={companyData.billingContact?.title || ''}
                             dbValue="Not on file"
                             status="not-on-file"
                         />
                         
                         <ComparisonRow
                             field="Phone"
-                            appValue=""
+                            appValue={companyData.billingContact?.phone || ''}
                             dbValue="Not on file"
                             status="not-on-file"
                         />
                         
                         <ComparisonRow
                             field="Email"
-                            appValue=""
+                            appValue={companyData.billingContact?.email || ''}
                             dbValue="Not on file"
                             status="not-on-file"
                         />
@@ -372,13 +421,13 @@ export function ResolutionDrawer({
                         <ComparisonRow
                             field="City / State / ZIP"
                             appValue={`${plantData.plantCity}, ${plantData.plantState} ${plantData.plantZip}`}
-                            dbValue={selectedMatch ? `${plantData.plantCity}, ${plantData.plantState} ${plantData.plantZip}` : 'Not on file'}
-                            status={selectedMatch ? 'match' : 'not-on-file'}
+                            dbValue={selectedMatch?.City || 'Not on file'}
+                            status={getComparisonStatus(plantData.plantCity, selectedMatch?.City)}
                         />
                         
                         <ComparisonRow
                             field="Process Description"
-                            appValue="Cold-press extraction of jojoba oil from raw seeds; bottling and labeling on-site"
+                            appValue={plantData.processDescription || ''}
                             dbValue="Not on file"
                             status="not-on-file"
                         />
@@ -401,30 +450,30 @@ export function ResolutionDrawer({
                         
                         <ComparisonRow
                             field="Name"
-                            appValue="Tom Wilson"
-                            dbValue={selectedMatch ? "James Cooper" : "Not on file"}
-                            status={selectedMatch ? 'mismatch' : 'not-on-file'}
+                            appValue={plantData.primaryContact?.name || ''}
+                            dbValue="Not on file"
+                            status="not-on-file"
                         />
                         
                         <ComparisonRow
                             field="Title"
-                            appValue="Plant Manager"
-                            dbValue={selectedMatch ? "QA Manager" : "Not on file"}
-                            status={selectedMatch ? 'mismatch' : 'not-on-file'}
+                            appValue={plantData.primaryContact?.title || ''}
+                            dbValue="Not on file"
+                            status="not-on-file"
                         />
                         
                         <ComparisonRow
                             field="Phone"
-                            appValue="(602) 555-0199"
-                            dbValue={selectedMatch ? "602-555-0199" : "Not on file"}
-                            status={selectedMatch ? 'match' : 'not-on-file'}
+                            appValue={plantData.primaryContact?.phone || ''}
+                            dbValue="Not on file"
+                            status="not-on-file"
                         />
                         
                         <ComparisonRow
                             field="Email"
-                            appValue="t.wilson@jojobadesert.com"
-                            dbValue={selectedMatch ? "j.cooper@jojobainc.com" : "Not on file"}
-                            status={selectedMatch ? 'mismatch' : 'not-on-file'}
+                            appValue={plantData.primaryContact?.email || ''}
+                            dbValue="Not on file"
+                            status="not-on-file"
                         />
                         <SectionActions
                           selectedMatch={selectedMatch}
@@ -446,28 +495,28 @@ export function ResolutionDrawer({
                         
                         <ComparisonRow
                             field="Name"
-                            appValue="Lisa Park"
-                            dbValue="No matching contact"
+                            appValue={plantData.marketingContact?.name || ''}
+                            dbValue="Not on file"
                             status="not-on-file"
                         />
                         
                         <ComparisonRow
                             field="Title"
-                            appValue=""
+                            appValue={plantData.marketingContact?.title || ''}
                             dbValue="Not on file"
                             status="not-on-file"
                         />
                         
                         <ComparisonRow
                             field="Phone"
-                            appValue=""
+                            appValue={plantData.marketingContact?.phone || ''}
                             dbValue="Not on file"
                             status="not-on-file"
                         />
                         
                         <ComparisonRow
                             field="Email"
-                            appValue=""
+                            appValue={plantData.marketingContact?.email || ''}
                             dbValue="Not on file"
                             status="not-on-file"
                         />

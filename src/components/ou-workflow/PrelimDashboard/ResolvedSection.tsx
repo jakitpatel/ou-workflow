@@ -4,7 +4,11 @@ import type { Applicant } from '@/types/application'
 import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
 import { ResolutionDrawer } from '@/components/ou-workflow/PrelimDashboard/ResolutionDrawer'
-import type { CompanyFromApplication, PlantFromApplication } from '@/types/application'
+import type {
+  CompanyFromApplication,
+  PlantFromApplication,
+  PlantFromApplicationContact,
+} from '@/types/application'
 
 type Props = {
   application?: Applicant
@@ -352,10 +356,10 @@ function extractResolvedData(application?: Applicant) {
           task.plantSelected?.plantName ||
           task.plantFromApplication?.plantName ||
           '',
-        plantID: task.plantSelected?.PlantID || task.Result || '',
+        plantID: task.plantSelected?.PlantID || task.plantFromApplication?.plantID || '',
         plantAddress:
           task.plantSelected?.Address ||
-          task.plantFromApplication?.plantAddress ||
+          task.plantFromApplication?.Address ||
           '',
         executedBy: task.executedBy || '',
         CompletedDate: task.CompletedDate || '',
@@ -401,28 +405,75 @@ function PlantsSkeleton() {
 }
 
 function toCompanyDrawerData(data?: CompanyFromApplication) {
+  const contacts = data?.companyContacts ?? []
+  const primaryRaw = contacts.find((c) => c.PrimaryCT === 'Y') ?? contacts[0]
+  const billingRaw =
+    contacts.find((c) => c.BillingCT === 'Y') ??
+    contacts.find((c) => c.PrimaryCT !== 'Y')
+
+  const pickFirstNonEmpty = (...values: Array<string | undefined>) =>
+    values.find((value) => (value ?? '').trim() !== '') ?? ''
+
+  const toContact = (contact?: PlantFromApplicationContact) => {
+    if (!contact) return undefined
+    const name = `${contact.FirstName ?? ''} ${contact.LastName ?? ''}`.trim()
+    return {
+      name,
+      title: pickFirstNonEmpty(contact.companytitle, contact.Title),
+      phone: pickFirstNonEmpty(contact.Cell, contact.Voice),
+      email: pickFirstNonEmpty(contact.EMail),
+    }
+  }
+
   return {
     companyName: data?.companyName ?? '',
     companyAddress: data?.companyAddress ?? '',
+    companyAddress2: data?.companyAddress2 ?? '',
     companyCity: data?.companyCity ?? '',
-    companyState: '',
+    companyState: data?.companyState ?? '',
     ZipPostalCode: data?.ZipPostalCode ?? '',
     companyCountry: data?.companyCountry ?? '',
     companyPhone: data?.companyPhone ?? '',
-    companyWebsite: '',
+    companyWebsite: data?.companyWebsite ?? '',
     numberOfPlants: data?.numberOfPlants,
     whichCategory: data?.whichCategory,
+    primaryContact: toContact(primaryRaw),
+    billingContact: toContact(billingRaw),
   }
 }
 
 function toPlantDrawerData(data?: PlantFromApplication) {
+  const contacts = data?.plantContacts ?? []
+  const primaryRaw = contacts.find((c) => c.PrimaryCT === 'Y') ?? contacts[0]
+  const marketingRaw =
+    contacts.find((c) =>
+      (c.companytitle ?? '').toLowerCase().includes('marketing')
+    ) ?? contacts.find((c) => c.PrimaryCT !== 'Y')
+
+  const pickFirstNonEmpty = (...values: Array<string | undefined>) =>
+    values.find((value) => (value ?? '').trim() !== '') ?? ''
+
+  const toContact = (contact?: PlantFromApplicationContact) => {
+    if (!contact) return undefined
+    const name = `${contact.FirstName ?? ''} ${contact.LastName ?? ''}`.trim()
+    return {
+      name,
+      title: pickFirstNonEmpty(contact.companytitle, contact.Title),
+      phone: pickFirstNonEmpty(contact.Cell, contact.Voice),
+      email: pickFirstNonEmpty(contact.EMail),
+    }
+  }
+
   return {
     plantName: data?.plantName ?? '',
-    plantAddress: data?.plantAddress ?? '',
+    plantAddress: data?.plantAddress ?? data?.Address ?? '',
     plantCity: data?.plantCity ?? '',
-    plantState: '',
+    plantState: data?.plantState ?? '',
     plantZip: data?.plantZip ?? '',
     plantCountry: data?.plantCountry ?? '',
     plantNumber: data?.plantNumber,
+    processDescription: data?.brieflySummarize ?? '',
+    primaryContact: toContact(primaryRaw),
+    marketingContact: toContact(marketingRaw),
   }
 }

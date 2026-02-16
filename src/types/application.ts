@@ -30,17 +30,20 @@ export type WFApplicationMessage = {
 export type CompanyFromApplication = {
   companyName: string;
   companyAddress: string;
+  companyAddress2?: string;
   companyCity: string;
   companyState?: string;
   companyCountry: string;
   companyPhone?: string;
+  companyWebsite?: string;
   ZipPostalCode?: string;
   numberOfPlants?: number;
   whichCategory?: string;
+  companyContacts?: PlantFromApplicationContact[];
 };
 
 export type CompanyMatch = {
-  Id: string;
+  Id: string | number;
   companyName: string;
   Address: string;
   City?: string;
@@ -66,11 +69,31 @@ export type PlantFromApplication = {
   plantZip?: string;
   plantNumber?: number;
   plantPhone?: string;
+  Address?: string;
+  plantID?: string | number;
+  brieflySummarize?: string;
+  plantContacts?: PlantFromApplicationContact[];
+};
+
+export type PlantFromApplicationContact = {
+  BillingCT?: string;
+  Cell?: string;
+  EMail?: string;
+  Fax?: string;
+  FirstName?: string;
+  LastName?: string;
+  PrimaryCT?: string;
+  Title?: string;
+  Voice?: string;
+  WebCT?: string;
+  companytitle?: string;
+  owns_ID?: number;
+  pcID?: number;
 };
 
 export type PlantMatch = {
-  PlantID: string;
-  Id: string;
+  PlantID: string | number;
+  Id: string | number;
   plantName: string;
   Address: string;
   City?: string;
