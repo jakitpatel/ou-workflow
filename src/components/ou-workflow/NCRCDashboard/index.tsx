@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-//import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
@@ -9,7 +8,6 @@ import { useUser } from '@/context/UserContext'
 import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce';
 import { useInfiniteApplications } from '@/components/ou-workflow/hooks/useInfiniteApplications';
 import { usePagedApplications } from '@/components/ou-workflow/hooks/usePagedApplications';
-//import { assignTask, confirmTask } from '@/api';
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 import type { Applicant, Task } from '@/types/application';
 import { ApplicantStatsCards } from './ApplicantStatsCards';
@@ -22,30 +20,6 @@ const PAGE_LIMIT = 5;
 const DEBOUNCE_DELAY = 1000;
 //const STORAGE_KEY = 'ncrc-infinite-state';
 
-// 🎯 Helper to get all tasks from an applicant
-/*
-const getAllTasks = (app: Applicant): Task[] => {
-  if (!app?.stages) return [];
-  return Object.values(app.stages).flatMap(stage => stage.tasks || []);
-};
-
-// 🎯 Status mapping helper
-const getProgressStatus = (result: string): string => {
-  const statusMap: Record<string, string> = {
-    completed: 'Completed',
-    in_progress: 'In Progress',
-    pending: 'Pending',
-  };
-  return statusMap[result] || '';
-};
-
-// 🎯 Role detection helper
-const detectRole = (preScript?: string): string => {
-  if (!preScript) return "OtherRole";
-  const [, role] = preScript.split(",");
-  return role?.trim().toUpperCase();
-};
-*/
 export function NCRCDashboard() {
   // 🔹 Router hooks
   const search = Route.useSearch()
@@ -54,7 +28,6 @@ export function NCRCDashboard() {
 
   // 🔹 User context
   const { token, username, paginationMode } = useUser();
-  //const queryClient = useQueryClient();
   const errorDialogRef = useRef<ErrorDialogRef>(null);
   // UI states
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
@@ -253,97 +226,6 @@ export function NCRCDashboard() {
     };
   }, [applicants]);
 
-  // ==============================
-  // 🔹 MUTATIONS
-  // ==============================
-  /*
-  const confirmTaskMutation = useMutation({
-    mutationFn: confirmTask,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['applications', 'paged'] });
-      queryClient.invalidateQueries({ queryKey: ['applications', 'infinite'] });
-    },
-    onError: (error: any) => {
-      console.error("❌ Failed to confirm task:", error);
-      const message =
-        error?.message ||
-        error?.response?.data?.message ||
-        "Something went wrong while confirming the task.";
-      errorDialogRef.current?.open(message);
-    }
-  });
-
-  const assignTaskMutation = useMutation({
-    mutationFn: assignTask,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['applications', 'paged'] });
-      queryClient.invalidateQueries({ queryKey: ['applications', 'infinite'] });
-    },
-    onError: (error: any) => {
-      console.error("❌ Failed to assign task:", error);
-      const message =
-        error?.message ||
-        error?.response?.data?.message ||
-        "Something went wrong while assigning the task.";
-      errorDialogRef.current?.open(message);
-    },
-  });
-  */
-  // ==============================
-  // 🔹 EXECUTE ACTION
-  // ==============================
-  /*
-  const executeAction = (assignee: string, action: any, result?: string) => {
-    const taskType = action.taskType?.toLowerCase();
-    const taskCategory = action.taskCategory?.toLowerCase();
-    const taskId = action.TaskInstanceId;
-    console.log("capacity:", action);
-    const baseParams = {
-      taskId,
-      token: token ?? undefined,
-      username: username ?? undefined,
-      capacity: action.capacity ?? undefined,
-    };
-
-    if (taskType === TASK_TYPES.CONFIRM && taskCategory === TASK_CATEGORIES.CONFIRMATION) {
-      confirmTaskMutation.mutate(baseParams);
-    } 
-    else if (
-      (taskType === TASK_TYPES.CONDITIONAL || taskType === TASK_TYPES.CONDITION) && 
-      taskCategory === TASK_CATEGORIES.APPROVAL
-    ) {
-      confirmTaskMutation.mutate({ ...baseParams, result: result ?? undefined });
-    }
-    else if (taskType === TASK_TYPES.ACTION) {
-      if (taskCategory === TASK_CATEGORIES.ASSIGNMENT) {
-        const appId = selectedAction?.application?.applicationId ?? 
-                      action.application?.applicationId ?? 
-                      action.applicationId;
-        const role = detectRole(selectedAction?.action?.PreScript ?? "");
-
-        assignTaskMutation.mutate({
-          appId,
-          taskId,
-          role,
-          assignee,
-          token: token ?? undefined,
-          capacity: action.capacity ?? undefined
-        });
-      } 
-      else if ([TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].includes(taskCategory)) {
-        confirmTaskMutation.mutate({ ...baseParams, result: result ?? undefined });
-      }
-    }
-    else if (taskType === TASK_TYPES.PROGRESS && taskCategory === TASK_CATEGORIES.PROGRESS_TASK) {
-      const status = result ? getProgressStatus(result) : '';
-      confirmTaskMutation.mutate({
-        ...baseParams,
-        result: result ?? undefined,
-        status,
-      });
-    }
-  };
-  */
   const { executeAction, getSelectedAction } = useTaskActions({
     applications: applicants,
     token: token ?? undefined,
@@ -355,23 +237,7 @@ export function NCRCDashboard() {
   // 🔹 SELECTED ACTION
   // ==============================
   const selectedAction = getSelectedAction(selectedActionId);
-  /*
-  const selectedAction = useMemo(() => {
-    if (!selectedActionId) return null;
 
-    const [appId, actId] = selectedActionId.split(":");
-    const app = applicants.find(a => String(a.applicationId) === String(appId));
-    
-    if (!app) return null;
-
-    const actions = getAllTasks(app);
-    const act = actions.find(a => String(a.TaskInstanceId) === String(actId));
-
-    if (!act) return null;
-
-    return { application: app, action: act };
-  }, [selectedActionId, applicants]);
-  */
   // ==============================
   // 🔹 HANDLE ACTION SELECTION
   // ==============================

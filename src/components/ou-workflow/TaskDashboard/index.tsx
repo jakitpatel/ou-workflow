@@ -13,7 +13,7 @@ import { plantHistory } from './demoData';
 import { useTasks } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
 import { ErrorDialog, type ErrorDialogRef } from '@/components/ErrorDialog';
 import type { ApplicationTask, Task } from '@/types/application';
-
+import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';
 // Types
 type TaskSearchParams = {
   qs?: string;
@@ -36,24 +36,6 @@ const STATUS = {
   PENDING: 'pending',
   COMPLETED: 'completed',
   COMPLETE: 'complete'
-} as const;
-
-const TASK_TYPES = {
-  CONFIRM: 'confirm',
-  CONDITIONAL: 'conditional',
-  CONDITION: 'condition',
-  ACTION: 'action',
-  PROGRESS: 'progress'
-} as const;
-
-const TASK_CATEGORIES = {
-  CONFIRMATION: 'confirmation',
-  APPROVAL: 'approval',
-  SELECTOR: 'selector',
-  INPUT: 'input',
-  SCHEDULING: 'scheduling',
-  PROGRESS_TASK: 'progress_task',
-  ASSIGNMENT: 'assignment'
 } as const;
 
 type DaysFilter = string | number; // 'pending' | 7 | 30;
