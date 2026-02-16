@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react'
 import { X, Check, Plus, Edit } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { getCompanyDetailsFromKASH, getPlantDetailsFromKASH } from '@/api'
+import { useUser } from '@/context/UserContext'
+import type {
+  KashrusAddress,
+  KashrusCompanyDetail,
+  KashrusPlantDetail,
+  PlantFromApplicationContact,
+} from '@/types/application'
 
 type CompanyData = {
   companyName: string
@@ -85,6 +94,7 @@ export function ResolutionDrawer({
   onAssign,
   selectedId,
 }: Props) {
+  const { token } = useUser()
   const selectedIdNormalized = selectedId != null ? String(selectedId) : undefined
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(
     matches.find((m) => String(m.Id) === selectedIdNormalized) ||
@@ -114,6 +124,42 @@ export function ResolutionDrawer({
   const companyData = data as CompanyData
   const plantData = data as PlantData
   const headerBgClass = isCompany ? 'bg-[#1e1e2e]' : 'bg-[#312e81]'
+  const selectedMatchId = selectedMatch?.Id
+
+  const { data: companyDbResponse } = useQuery({
+    queryKey: ['kashrus-company-details', selectedMatchId, token],
+    queryFn: () =>
+      getCompanyDetailsFromKASH({
+        companyID: selectedMatchId as string | number,
+        token: token ?? undefined,
+      }),
+    enabled: isOpen && isCompany && selectedMatchId != null,
+    //staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  })
+
+  const { data: plantDbResponse } = useQuery({
+    queryKey: ['kashrus-plant-details', selectedMatchId, token],
+    queryFn: () =>
+      getPlantDetailsFromKASH({
+        PlantId: selectedMatchId as string | number,
+        token: token ?? undefined,
+      }),
+    enabled: isOpen && !isCompany && selectedMatchId != null,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  })
+
+  const companyDb: KashrusCompanyDetail | undefined = companyDbResponse?.data?.[0]
+  const plantDb: KashrusPlantDetail | undefined = plantDbResponse?.data?.[0]
+
+  const dbCompanyAddress = getPreferredAddress(companyDb?.companyAddresses)
+  const dbPlantAddress = getPreferredAddress(plantDb?.plantAddresses)
+
+  const dbCompanyPrimaryContact = getPrimaryContact(companyDb?.companyContacts)
+  const dbCompanyBillingContact = getBillingContact(companyDb?.companyContacts)
+  const dbPlantPrimaryContact = getPrimaryContact(plantDb?.plantContacts)
+  const dbPlantMarketingContact = getMarketingContact(plantDb?.plantContacts)
 
   const handleMatchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const matchId = e.target.value
@@ -269,8 +315,8 @@ export function ResolutionDrawer({
                         <ComparisonRow
                             field="Company Name"
                             appValue={companyData.companyName}
-                            dbValue={selectedMatch?.companyName || 'Not on file'}
-                            status={getComparisonStatus(companyData.companyName, selectedMatch?.companyName)}
+                            dbValue={companyDb?.companyName || selectedMatch?.companyName || 'Not on file'}
+                            status={getComparisonStatus(companyData.companyName, companyDb?.companyName || selectedMatch?.companyName)}
                         />
                         
                         <ComparisonRow
@@ -283,22 +329,22 @@ export function ResolutionDrawer({
                         <ComparisonRow
                             field="Street Address"
                             appValue={companyData.companyAddress}
-                            dbValue={selectedMatch?.Address || 'Not on file'}
-                            status={getComparisonStatus(companyData.companyAddress, selectedMatch?.Address)}
+                            dbValue={formatAddressStreet(dbCompanyAddress) || selectedMatch?.Address || 'Not on file'}
+                            status={getComparisonStatus(companyData.companyAddress, formatAddressStreet(dbCompanyAddress) || selectedMatch?.Address)}
                         />
                         
                         <ComparisonRow
                             field="City / State / ZIP"
                             appValue={`${companyData.companyCity}, ${companyData.companyState} ${companyData.ZipPostalCode}`}
-                            dbValue={selectedMatch?.City || 'Not on file'}
-                            status={getComparisonStatus(companyData.companyCity, selectedMatch?.City)}
+                            dbValue={formatAddressCityStateZip(dbCompanyAddress) || selectedMatch?.City || 'Not on file'}
+                            status={getComparisonStatus(companyData.companyCity, dbCompanyAddress?.city || selectedMatch?.City)}
                         />
                         
                         <ComparisonRow
                             field="Website"
                             appValue={companyData.companyWebsite || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={companyDb?.companyWebsite || 'Not on file'}
+                            status={getComparisonStatus(companyData.companyWebsite, companyDb?.companyWebsite)}
                         />
                         <SectionActions
                           selectedMatch={selectedMatch}
@@ -320,29 +366,35 @@ export function ResolutionDrawer({
                         <ComparisonRow
                             field="Name"
                             appValue={companyData.primaryContact?.name || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={formatContactName(dbCompanyPrimaryContact) || 'Not on file'}
+                            status={getComparisonStatus(companyData.primaryContact?.name, formatContactName(dbCompanyPrimaryContact))}
                         />
 
                         <ComparisonRow
                             field="Title"
                             appValue={companyData.primaryContact?.title || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={pickFirstNonEmpty(dbCompanyPrimaryContact?.companytitle, dbCompanyPrimaryContact?.Title) || 'Not on file'}
+                            status={getComparisonStatus(
+                              companyData.primaryContact?.title,
+                              pickFirstNonEmpty(dbCompanyPrimaryContact?.companytitle, dbCompanyPrimaryContact?.Title)
+                            )}
                         />
                         
                         <ComparisonRow
                             field="Phone"
                             appValue={companyData.primaryContact?.phone || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={pickFirstNonEmpty(dbCompanyPrimaryContact?.Cell, dbCompanyPrimaryContact?.Voice) || 'Not on file'}
+                            status={getComparisonStatus(
+                              companyData.primaryContact?.phone,
+                              pickFirstNonEmpty(dbCompanyPrimaryContact?.Cell, dbCompanyPrimaryContact?.Voice)
+                            )}
                         />
                         
                         <ComparisonRow
                             field="Email"
                             appValue={companyData.primaryContact?.email || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={pickFirstNonEmpty(dbCompanyPrimaryContact?.EMail) || 'Not on file'}
+                            status={getComparisonStatus(companyData.primaryContact?.email, pickFirstNonEmpty(dbCompanyPrimaryContact?.EMail))}
                         />
                         <SectionActions
                           selectedMatch={selectedMatch}
@@ -364,29 +416,35 @@ export function ResolutionDrawer({
                         <ComparisonRow
                             field="Name"
                             appValue={companyData.billingContact?.name || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={formatContactName(dbCompanyBillingContact) || 'Not on file'}
+                            status={getComparisonStatus(companyData.billingContact?.name, formatContactName(dbCompanyBillingContact))}
                         />
 
                         <ComparisonRow
                             field="Title"
                             appValue={companyData.billingContact?.title || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={pickFirstNonEmpty(dbCompanyBillingContact?.companytitle, dbCompanyBillingContact?.Title) || 'Not on file'}
+                            status={getComparisonStatus(
+                              companyData.billingContact?.title,
+                              pickFirstNonEmpty(dbCompanyBillingContact?.companytitle, dbCompanyBillingContact?.Title)
+                            )}
                         />
                         
                         <ComparisonRow
                             field="Phone"
                             appValue={companyData.billingContact?.phone || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={pickFirstNonEmpty(dbCompanyBillingContact?.Cell, dbCompanyBillingContact?.Voice) || 'Not on file'}
+                            status={getComparisonStatus(
+                              companyData.billingContact?.phone,
+                              pickFirstNonEmpty(dbCompanyBillingContact?.Cell, dbCompanyBillingContact?.Voice)
+                            )}
                         />
                         
                         <ComparisonRow
                             field="Email"
                             appValue={companyData.billingContact?.email || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={pickFirstNonEmpty(dbCompanyBillingContact?.EMail) || 'Not on file'}
+                            status={getComparisonStatus(companyData.billingContact?.email, pickFirstNonEmpty(dbCompanyBillingContact?.EMail))}
                         />
                         <SectionActions
                           selectedMatch={selectedMatch}
@@ -407,29 +465,32 @@ export function ResolutionDrawer({
                         <ComparisonRow
                             field="Plant Name"
                             appValue={plantData.plantName}
-                            dbValue={selectedMatch?.plantName || 'Not on file'}
-                            status={getComparisonStatus(plantData.plantName, selectedMatch?.plantName)}
+                            dbValue={plantDb?.plantName || selectedMatch?.plantName || 'Not on file'}
+                            status={getComparisonStatus(plantData.plantName, plantDb?.plantName || selectedMatch?.plantName)}
                         />
                         
                         <ComparisonRow
                             field="Street Address"
                             appValue={plantData.plantAddress}
-                            dbValue={selectedMatch?.Address || 'Not on file'}
-                            status={getComparisonStatus(plantData.plantAddress, selectedMatch?.Address)}
+                            dbValue={plantDb?.Address || formatAddressStreet(dbPlantAddress) || selectedMatch?.Address || 'Not on file'}
+                            status={getComparisonStatus(
+                              plantData.plantAddress,
+                              plantDb?.Address || formatAddressStreet(dbPlantAddress) || selectedMatch?.Address
+                            )}
                         />
                         
                         <ComparisonRow
                             field="City / State / ZIP"
                             appValue={`${plantData.plantCity}, ${plantData.plantState} ${plantData.plantZip}`}
-                            dbValue={selectedMatch?.City || 'Not on file'}
-                            status={getComparisonStatus(plantData.plantCity, selectedMatch?.City)}
+                            dbValue={formatAddressCityStateZip(dbPlantAddress) || selectedMatch?.City || 'Not on file'}
+                            status={getComparisonStatus(plantData.plantCity, dbPlantAddress?.city || selectedMatch?.City)}
                         />
                         
                         <ComparisonRow
                             field="Process Description"
                             appValue={plantData.processDescription || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={plantDb?.brieflySummarize || 'Not on file'}
+                            status={getComparisonStatus(plantData.processDescription, plantDb?.brieflySummarize)}
                         />
                         <SectionActions
                           selectedMatch={selectedMatch}
@@ -451,29 +512,35 @@ export function ResolutionDrawer({
                         <ComparisonRow
                             field="Name"
                             appValue={plantData.primaryContact?.name || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={formatContactName(dbPlantPrimaryContact) || 'Not on file'}
+                            status={getComparisonStatus(plantData.primaryContact?.name, formatContactName(dbPlantPrimaryContact))}
                         />
                         
                         <ComparisonRow
                             field="Title"
                             appValue={plantData.primaryContact?.title || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={pickFirstNonEmpty(dbPlantPrimaryContact?.companytitle, dbPlantPrimaryContact?.Title) || 'Not on file'}
+                            status={getComparisonStatus(
+                              plantData.primaryContact?.title,
+                              pickFirstNonEmpty(dbPlantPrimaryContact?.companytitle, dbPlantPrimaryContact?.Title)
+                            )}
                         />
                         
                         <ComparisonRow
                             field="Phone"
                             appValue={plantData.primaryContact?.phone || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={pickFirstNonEmpty(dbPlantPrimaryContact?.Cell, dbPlantPrimaryContact?.Voice) || 'Not on file'}
+                            status={getComparisonStatus(
+                              plantData.primaryContact?.phone,
+                              pickFirstNonEmpty(dbPlantPrimaryContact?.Cell, dbPlantPrimaryContact?.Voice)
+                            )}
                         />
                         
                         <ComparisonRow
                             field="Email"
                             appValue={plantData.primaryContact?.email || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={pickFirstNonEmpty(dbPlantPrimaryContact?.EMail) || 'Not on file'}
+                            status={getComparisonStatus(plantData.primaryContact?.email, pickFirstNonEmpty(dbPlantPrimaryContact?.EMail))}
                         />
                         <SectionActions
                           selectedMatch={selectedMatch}
@@ -496,29 +563,35 @@ export function ResolutionDrawer({
                         <ComparisonRow
                             field="Name"
                             appValue={plantData.marketingContact?.name || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={formatContactName(dbPlantMarketingContact) || 'Not on file'}
+                            status={getComparisonStatus(plantData.marketingContact?.name, formatContactName(dbPlantMarketingContact))}
                         />
                         
                         <ComparisonRow
                             field="Title"
                             appValue={plantData.marketingContact?.title || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={pickFirstNonEmpty(dbPlantMarketingContact?.companytitle, dbPlantMarketingContact?.Title) || 'Not on file'}
+                            status={getComparisonStatus(
+                              plantData.marketingContact?.title,
+                              pickFirstNonEmpty(dbPlantMarketingContact?.companytitle, dbPlantMarketingContact?.Title)
+                            )}
                         />
                         
                         <ComparisonRow
                             field="Phone"
                             appValue={plantData.marketingContact?.phone || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={pickFirstNonEmpty(dbPlantMarketingContact?.Cell, dbPlantMarketingContact?.Voice) || 'Not on file'}
+                            status={getComparisonStatus(
+                              plantData.marketingContact?.phone,
+                              pickFirstNonEmpty(dbPlantMarketingContact?.Cell, dbPlantMarketingContact?.Voice)
+                            )}
                         />
                         
                         <ComparisonRow
                             field="Email"
                             appValue={plantData.marketingContact?.email || ''}
-                            dbValue="Not on file"
-                            status="not-on-file"
+                            dbValue={pickFirstNonEmpty(dbPlantMarketingContact?.EMail) || 'Not on file'}
+                            status={getComparisonStatus(plantData.marketingContact?.email, pickFirstNonEmpty(dbPlantMarketingContact?.EMail))}
                         />
                         <SectionActions
                           selectedMatch={selectedMatch}
@@ -544,6 +617,55 @@ export function ResolutionDrawer({
         </div>
       </div>
     </>
+  )
+}
+
+const pickFirstNonEmpty = (...values: Array<string | undefined>) =>
+  values.find((value) => (value ?? '').trim() !== '') ?? ''
+
+const formatAddressStreet = (address?: KashrusAddress) =>
+  [address?.street, address?.line2].filter((v) => (v ?? '').trim() !== '').join(', ')
+
+const formatAddressCityStateZip = (address?: KashrusAddress) => {
+  if (!address) return ''
+  return [address.city, address.state, address.zip]
+    .filter((v) => (v ?? '').trim() !== '')
+    .join(', ')
+}
+
+const getPreferredAddress = (addresses?: KashrusAddress[]) => {
+  if (!addresses?.length) return undefined
+  return (
+    addresses.find((addr) => (addr.type ?? '').toLowerCase() === 'billing') ??
+    addresses[0]
+  )
+}
+
+const formatContactName = (contact?: PlantFromApplicationContact) =>
+  `${contact?.FirstName ?? ''} ${contact?.LastName ?? ''}`.trim()
+
+const getPrimaryContact = (contacts?: PlantFromApplicationContact[]) => {
+  if (!contacts?.length) return undefined
+  return contacts.find((contact) => contact.PrimaryCT === 'Y') ?? contacts[0]
+}
+
+const getBillingContact = (contacts?: PlantFromApplicationContact[]) => {
+  if (!contacts?.length) return undefined
+  return (
+    contacts.find((contact) => contact.BillingCT === 'Y') ??
+    contacts.find((contact) => contact.PrimaryCT !== 'Y') ??
+    contacts[0]
+  )
+}
+
+const getMarketingContact = (contacts?: PlantFromApplicationContact[]) => {
+  if (!contacts?.length) return undefined
+  return (
+    contacts.find((contact) =>
+      (contact.companytitle ?? '').toLowerCase().includes('marketing')
+    ) ??
+    contacts.find((contact) => contact.PrimaryCT !== 'Y') ??
+    contacts[0]
   )
 }
 

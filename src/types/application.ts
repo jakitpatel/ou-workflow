@@ -52,6 +52,45 @@ export type CompanyMatch = {
   matchReason?: string;
 };
 
+export type KashrusAddress = {
+  city?: string;
+  country?: string;
+  line2?: string;
+  state?: string;
+  street?: string;
+  type?: string;
+  zip?: string;
+};
+
+export type KashrusCompanyDetail = {
+  companyName?: string;
+  companyPhone?: string;
+  companyState?: string;
+  companyWebsite?: string;
+  numberOfPlants?: number;
+  whichCategory?: string;
+  companyAddresses?: KashrusAddress[];
+  companyContacts?: PlantFromApplicationContact[];
+};
+
+export type KashrusPlantDetail = {
+  Address?: string;
+  brieflySummarize?: string;
+  plantID?: string | number;
+  plantName?: string;
+  plantNumber?: number;
+  plantAddresses?: KashrusAddress[];
+  plantContacts?: PlantFromApplicationContact[];
+};
+
+export type KashrusCompanyDetailsResponse = {
+  data: KashrusCompanyDetail[];
+};
+
+export type KashrusPlantDetailsResponse = {
+  data: KashrusPlantDetail[];
+};
+
 export type CompanySelected = {
   ID: string;
   companyName: string;

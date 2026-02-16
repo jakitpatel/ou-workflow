@@ -5,6 +5,8 @@ import type {
   ApplicationTask,
   ApplicationDetailResponse,
   UserRoleResponse,
+  KashrusCompanyDetailsResponse,
+  KashrusPlantDetailsResponse,
 } from "./types/application";
 import {
   getAccessToken,
@@ -710,6 +712,38 @@ export async function fetchCompanyDetails(companyId: number, token?: string | nu
   params.append("companyId", String(companyId));
   return await fetchWithAuth<ApplicantsResponse>({
     path: `/getCompanyDetails?${params.toString()}`,
+    token,
+  });
+}
+
+export async function getCompanyDetailsFromKASH({
+  companyID,
+  token,
+}: {
+  companyID: string | number;
+  token?: string | null;
+}): Promise<KashrusCompanyDetailsResponse> {
+  const params = new URLSearchParams();
+  params.append("companyID", String(companyID));
+
+  return await fetchWithAuth<KashrusCompanyDetailsResponse>({
+    path: `/getCompanyDetailsFromKASH?${params.toString()}`,
+    token,
+  });
+}
+
+export async function getPlantDetailsFromKASH({
+  PlantId,
+  token,
+}: {
+  PlantId: string | number;
+  token?: string | null;
+}): Promise<KashrusPlantDetailsResponse> {
+  const params = new URLSearchParams();
+  params.append("PlantId", String(PlantId));
+
+  return await fetchWithAuth<KashrusPlantDetailsResponse>({
+    path: `/getPlantDetailsFromKASH?${params.toString()}`,
     token,
   });
 }
