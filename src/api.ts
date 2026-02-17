@@ -727,7 +727,7 @@ export async function getCompanyDetailsFromKASH({
   params.append("companyID", String(companyID));
 
   return await fetchWithAuth<KashrusCompanyDetailsResponse>({
-    path: `/getCompanyDetailsFromKASH?${params.toString()}`,
+    path: `/get_CompanyDetailsFromKASH?${params.toString()}`,
     token,
   });
 }
@@ -743,7 +743,7 @@ export async function getPlantDetailsFromKASH({
   params.append("PlantId", String(PlantId));
 
   return await fetchWithAuth<KashrusPlantDetailsResponse>({
-    path: `/getPlantDetailsFromKASH?${params.toString()}`,
+    path: `/get_PlantDetailsFromKASH?${params.toString()}`,
     token,
   });
 }
