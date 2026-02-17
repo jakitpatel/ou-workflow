@@ -159,8 +159,8 @@ function HomePage() {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
             <DashboardCard
-              title="Preliminary Dashboard"
-              description="View and manage Preliminary applications data"
+              title="Application Intake Dashboard"
+              description="View and manage Intake applications data"
               icon={BarChart3}
               to="/ou-workflow/prelim-dashboard"
               variant="primary"
