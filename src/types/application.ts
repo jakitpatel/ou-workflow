@@ -39,7 +39,7 @@ export type CompanyFromApplication = {
   ZipPostalCode?: string;
   numberOfPlants?: number;
   whichCategory?: string;
-  companyContacts?: PlantFromApplicationContact[];
+  companyContacts?: CompanyFromApplicationContact[];
 };
 
 export type CompanyMatch = {
@@ -128,6 +128,24 @@ export type PlantFromApplicationContact = {
   companytitle?: string;
   owns_ID?: number;
   pcID?: number;
+};
+
+export type CompanyFromApplicationContact = PlantFromApplicationContact & {
+  IsPrimaryContact?: boolean;
+  billingContact?: string;
+  billingContactEmail?: string;
+  billingContactFirst?: string;
+  billingContactLast?: string;
+  billingContactPhone?: string;
+  contactEmail?: string;
+  contactEmail1?: string;
+  contactFirst?: string;
+  contactFirst1?: string;
+  contactLast?: string;
+  contactLast1?: string;
+  contactPhone?: string;
+  contactPhone1?: string;
+  jobTitle1?: string;
 };
 
 export type PlantMatch = {

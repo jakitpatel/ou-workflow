@@ -394,14 +394,21 @@ export function ResolutionDrawer({
                         
                         <ComparisonRow
                             field="Street Address"
-                            appValue={companyData.companyAddress}
+                            appValue={formatApplicationStreet(companyData.companyAddress, companyData.companyAddress2)}
                             dbValue={formatAddressStreet(dbCompanyAddress) || selectedMatch?.Address || 'Not on file'}
-                            status={getComparisonStatus(companyData.companyAddress, formatAddressStreet(dbCompanyAddress) || selectedMatch?.Address)}
+                            status={getComparisonStatus(
+                              formatApplicationStreet(companyData.companyAddress, companyData.companyAddress2),
+                              formatAddressStreet(dbCompanyAddress) || selectedMatch?.Address
+                            )}
                         />
                         
                         <ComparisonRow
                             field="City / State / ZIP"
-                            appValue={`${companyData.companyCity}, ${companyData.companyState} ${companyData.ZipPostalCode}`}
+                            appValue={formatApplicationCityStateZip(
+                              companyData.companyCity,
+                              companyData.companyState,
+                              companyData.ZipPostalCode
+                            )}
                             dbValue={formatAddressCityStateZip(dbCompanyAddress) || selectedMatch?.City || 'Not on file'}
                             status={getComparisonStatus(companyData.companyCity, dbCompanyAddress?.city || selectedMatch?.City)}
                         />
@@ -547,7 +554,11 @@ export function ResolutionDrawer({
                         
                         <ComparisonRow
                             field="City / State / ZIP"
-                            appValue={`${plantData.plantCity}, ${plantData.plantState} ${plantData.plantZip}`}
+                            appValue={formatApplicationCityStateZip(
+                              plantData.plantCity,
+                              plantData.plantState,
+                              plantData.plantZip
+                            )}
                             dbValue={formatAddressCityStateZip(dbPlantAddress) || selectedMatch?.City || 'Not on file'}
                             status={getComparisonStatus(plantData.plantCity, dbPlantAddress?.city || selectedMatch?.City)}
                         />
@@ -749,6 +760,18 @@ const getPlantName = (plantDb?: PlantDbRecord) =>
 
 const formatAddressStreet = (address?: KashrusAddress) =>
   [address?.street, address?.line2].filter((v) => (v ?? '').trim() !== '').join(', ')
+
+const formatApplicationStreet = (street1?: string, street2?: string) =>
+  [street1, street2].filter((v) => (v ?? '').trim() !== '').join(', ')
+
+const formatApplicationCityStateZip = (
+  city?: string,
+  state?: string,
+  zip?: string
+) => {
+  const cityState = [city, state].filter((v) => (v ?? '').trim() !== '').join(', ')
+  return [cityState, zip].filter((v) => (v ?? '').trim() !== '').join(' ')
+}
 
 const formatAddressCityStateZip = (address?: KashrusAddress) => {
   if (!address) return ''

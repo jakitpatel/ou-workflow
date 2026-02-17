@@ -6,6 +6,7 @@ import { useUser } from '@/context/UserContext'
 import { ResolutionDrawer } from '@/components/ou-workflow/PrelimDashboard/ResolutionDrawer'
 import type {
   CompanyFromApplication,
+  CompanyFromApplicationContact,
   PlantFromApplication,
   PlantFromApplicationContact,
 } from '@/types/application'
@@ -405,23 +406,43 @@ function PlantsSkeleton() {
 }
 
 function toCompanyDrawerData(data?: CompanyFromApplication) {
-  const contacts = data?.companyContacts ?? []
-  const primaryRaw = contacts.find((c) => c.PrimaryCT === 'Y') ?? contacts[0]
+  const contacts = (data?.companyContacts ?? []) as CompanyFromApplicationContact[]
+  const primaryRaw =
+    contacts.find((c) => c.IsPrimaryContact === true) ??
+    contacts.find((c) => c.PrimaryCT === 'Y') ??
+    contacts[0]
   const billingRaw =
-    contacts.find((c) => c.BillingCT === 'Y') ??
-    contacts.find((c) => c.PrimaryCT !== 'Y')
+    contacts.find((c) => (c.billingContact ?? '').trim() !== '') ??
+    contacts.find((c) => (c.billingContactEmail ?? '').trim() !== '') ??
+    contacts.find((c) => (c.billingContactPhone ?? '').trim() !== '')
 
   const pickFirstNonEmpty = (...values: Array<string | undefined>) =>
     values.find((value) => (value ?? '').trim() !== '') ?? ''
 
-  const toContact = (contact?: PlantFromApplicationContact) => {
+  const toPrimaryContact = (contact?: CompanyFromApplicationContact) => {
     if (!contact) return undefined
-    const name = `${contact.FirstName ?? ''} ${contact.LastName ?? ''}`.trim()
+    const name = `${pickFirstNonEmpty(contact.contactFirst, contact.contactFirst1, contact.FirstName)} ${pickFirstNonEmpty(contact.contactLast, contact.contactLast1, contact.LastName)}`.trim()
     return {
       name,
-      title: pickFirstNonEmpty(contact.companytitle, contact.Title),
-      phone: pickFirstNonEmpty(contact.Cell, contact.Voice),
-      email: pickFirstNonEmpty(contact.EMail),
+      title: pickFirstNonEmpty(contact.jobTitle1, contact.companytitle, contact.Title),
+      phone: pickFirstNonEmpty(
+        contact.contactPhone,
+        contact.contactPhone1,
+        contact.Cell,
+        contact.Voice
+      ),
+      email: pickFirstNonEmpty(contact.contactEmail, contact.contactEmail1, contact.EMail),
+    }
+  }
+
+  const toBillingContact = (contact?: CompanyFromApplicationContact) => {
+    if (!contact) return undefined
+    const name = `${pickFirstNonEmpty(contact.billingContactFirst)} ${pickFirstNonEmpty(contact.billingContactLast)}`.trim()
+    return {
+      name,
+      title: pickFirstNonEmpty(contact.billingContact),
+      phone: pickFirstNonEmpty(contact.billingContactPhone),
+      email: pickFirstNonEmpty(contact.billingContactEmail),
     }
   }
 
@@ -437,43 +458,95 @@ function toCompanyDrawerData(data?: CompanyFromApplication) {
     companyWebsite: data?.companyWebsite ?? '',
     numberOfPlants: data?.numberOfPlants,
     whichCategory: data?.whichCategory,
-    primaryContact: toContact(primaryRaw),
-    billingContact: toContact(billingRaw),
+    primaryContact: toPrimaryContact(primaryRaw),
+    billingContact: toBillingContact(billingRaw),
   }
 }
 
 function toPlantDrawerData(data?: PlantFromApplication) {
-  const contacts = data?.plantContacts ?? []
-  const primaryRaw = contacts.find((c) => c.PrimaryCT === 'Y') ?? contacts[0]
-  const marketingRaw =
-    contacts.find((c) =>
-      (c.companytitle ?? '').toLowerCase().includes('marketing')
-    ) ?? contacts.find((c) => c.PrimaryCT !== 'Y')
+  type NewPlantContact = {
+    IsPrimaryContact?: boolean
+    contactFirst?: string
+    contactLast?: string
+    contactPhone?: string
+    contactEmail?: string
+    jobTitle?: string
+  }
+
+  const contacts = (data?.plantContacts ?? []) as Array<
+    PlantFromApplicationContact & NewPlantContact
+  >
+  const primaryRaw =
+    contacts.find((c) => c.IsPrimaryContact === true) ??
+    contacts.find((c) => c.PrimaryCT === 'Y') ??
+    contacts[0]
+  const secondaryRaw =
+    contacts.find((c) => c !== primaryRaw && c.IsPrimaryContact === false) ??
+    contacts.find((c) => c !== primaryRaw && c.PrimaryCT === 'N') ??
+    contacts.find((c) => c !== primaryRaw)
 
   const pickFirstNonEmpty = (...values: Array<string | undefined>) =>
     values.find((value) => (value ?? '').trim() !== '') ?? ''
 
-  const toContact = (contact?: PlantFromApplicationContact) => {
+  const toContact = (contact?: PlantFromApplicationContact & NewPlantContact) => {
     if (!contact) return undefined
-    const name = `${contact.FirstName ?? ''} ${contact.LastName ?? ''}`.trim()
+    const name = `${pickFirstNonEmpty(contact.contactFirst, contact.FirstName)} ${pickFirstNonEmpty(contact.contactLast, contact.LastName)}`.trim()
     return {
       name,
-      title: pickFirstNonEmpty(contact.companytitle, contact.Title),
-      phone: pickFirstNonEmpty(contact.Cell, contact.Voice),
-      email: pickFirstNonEmpty(contact.EMail),
+      title: pickFirstNonEmpty(contact.jobTitle, contact.companytitle, contact.Title),
+      phone: pickFirstNonEmpty(contact.contactPhone, contact.Cell, contact.Voice),
+      email: pickFirstNonEmpty(contact.contactEmail, contact.EMail),
     }
   }
 
+  const parseAddressFromSingleLine = (address?: string) => {
+    const value = (address ?? '').trim()
+    if (!value) {
+      return {
+        street: '',
+        city: '',
+        state: '',
+        zip: '',
+        country: '',
+      }
+    }
+
+    const normalized = value.replace(/\s+/g, ' ')
+    const withCityMatch = normalized.match(
+      /^(.*?),\s*([^,]+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)(?:\s+([A-Za-z]{2,}))?$/
+    )
+
+    if (withCityMatch) {
+      return {
+        street: withCityMatch[1] ?? '',
+        city: withCityMatch[2] ?? '',
+        state: withCityMatch[3] ?? '',
+        zip: withCityMatch[4] ?? '',
+        country: withCityMatch[5] ?? '',
+      }
+    }
+
+    return {
+      street: normalized,
+      city: '',
+      state: '',
+      zip: '',
+      country: '',
+    }
+  }
+
+  const parsedAddress = parseAddressFromSingleLine(data?.Address)
+
   return {
     plantName: data?.plantName ?? '',
-    plantAddress: data?.plantAddress ?? data?.Address ?? '',
-    plantCity: data?.plantCity ?? '',
-    plantState: data?.plantState ?? '',
-    plantZip: data?.plantZip ?? '',
-    plantCountry: data?.plantCountry ?? '',
+    plantAddress: data?.plantAddress ?? parsedAddress.street,
+    plantCity: data?.plantCity ?? parsedAddress.city,
+    plantState: data?.plantState ?? parsedAddress.state,
+    plantZip: data?.plantZip ?? parsedAddress.zip,
+    plantCountry: data?.plantCountry ?? parsedAddress.country,
     plantNumber: data?.plantNumber,
     processDescription: data?.brieflySummarize ?? '',
     primaryContact: toContact(primaryRaw),
-    marketingContact: toContact(marketingRaw),
+    marketingContact: toContact(secondaryRaw),
   }
 }
