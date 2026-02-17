@@ -10,6 +10,72 @@ import type {
   PlantFromApplicationContact,
 } from '@/types/application'
 
+type RawKashrusCompanyAddress = {
+  TYPE?: string
+  STREET1?: string
+  STREET2?: string
+  STREET3?: string
+  CITY?: string
+  STATE?: string
+  ZIP?: string
+  COUNTRY?: string
+}
+
+type RawKashrusCompanyDetails = {
+  NAME?: string
+}
+
+type RawKashrusCompanyContact = PlantFromApplicationContact & {
+  FirstName?: string
+  LastName?: string
+  EMail?: string
+  Cell?: string
+  Voice?: string
+  Title?: string
+  companytitle?: string
+  PrimaryCT?: string
+  BillingCT?: string
+}
+
+type CompanyDbRecord = KashrusCompanyDetail & {
+  companyAddresses?: RawKashrusCompanyAddress[]
+  companyContacts?: RawKashrusCompanyContact[]
+  companytdetails?: RawKashrusCompanyDetails[]
+}
+
+type RawKashrusPlantAddress = {
+  TYPE?: string
+  STREET1?: string
+  STREET2?: string
+  STREET3?: string
+  CITY?: string
+  STATE?: string
+  ZIP?: string
+  COUNTRY?: string
+}
+
+type RawKashrusPlantDetails = {
+  NAME?: string
+}
+
+type RawKashrusPlantContact = PlantFromApplicationContact & {
+  FirstName?: string
+  LastName?: string
+  EMail?: string
+  Cell?: string
+  Voice?: string
+  Title?: string
+  companytitle?: string
+  PrimaryCT?: string
+  BillingCT?: string
+}
+
+type PlantDbRecord = KashrusPlantDetail & {
+  plantAddresses?: RawKashrusPlantAddress[]
+  plantContacts?: RawKashrusPlantContact[]
+  plantdetails?: RawKashrusPlantDetails[]
+}
+
 type CompanyData = {
   companyName: string
   companyAddress: string
@@ -150,16 +216,16 @@ export function ResolutionDrawer({
     refetchOnWindowFocus: false,
   })
 
-  const companyDb: KashrusCompanyDetail | undefined = companyDbResponse?.data?.[0]
-  const plantDb: KashrusPlantDetail | undefined = plantDbResponse?.data?.[0]
+  const companyDb: CompanyDbRecord | undefined = getCompanyDbRecord(companyDbResponse)
+  const plantDb: PlantDbRecord | undefined = getPlantDbRecord(plantDbResponse)
 
-  const dbCompanyAddress = getPreferredAddress(companyDb?.companyAddresses)
-  const dbPlantAddress = getPreferredAddress(plantDb?.plantAddresses)
+  const dbCompanyAddress = getPhysicalAddress(companyDb?.companyAddresses)
+  const dbPlantAddress = getPhysicalAddress(plantDb?.plantAddresses)
 
   const dbCompanyPrimaryContact = getPrimaryContact(companyDb?.companyContacts)
   const dbCompanyBillingContact = getBillingContact(companyDb?.companyContacts)
   const dbPlantPrimaryContact = getPrimaryContact(plantDb?.plantContacts)
-  const dbPlantMarketingContact = getMarketingContact(plantDb?.plantContacts)
+  const dbPlantMarketingContact = getBillingContact(plantDb?.plantContacts)
 
   const handleMatchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const matchId = e.target.value
@@ -315,8 +381,8 @@ export function ResolutionDrawer({
                         <ComparisonRow
                             field="Company Name"
                             appValue={companyData.companyName}
-                            dbValue={companyDb?.companyName || selectedMatch?.companyName || 'Not on file'}
-                            status={getComparisonStatus(companyData.companyName, companyDb?.companyName || selectedMatch?.companyName)}
+                            dbValue={getCompanyName(companyDb) || selectedMatch?.companyName || 'Not on file'}
+                            status={getComparisonStatus(companyData.companyName, getCompanyName(companyDb) || selectedMatch?.companyName)}
                         />
                         
                         <ComparisonRow
@@ -465,8 +531,8 @@ export function ResolutionDrawer({
                         <ComparisonRow
                             field="Plant Name"
                             appValue={plantData.plantName}
-                            dbValue={plantDb?.plantName || selectedMatch?.plantName || 'Not on file'}
-                            status={getComparisonStatus(plantData.plantName, plantDb?.plantName || selectedMatch?.plantName)}
+                            dbValue={getPlantName(plantDb) || selectedMatch?.plantName || 'Not on file'}
+                            status={getComparisonStatus(plantData.plantName, getPlantName(plantDb) || selectedMatch?.plantName)}
                         />
                         
                         <ComparisonRow
@@ -623,6 +689,64 @@ export function ResolutionDrawer({
 const pickFirstNonEmpty = (...values: Array<string | undefined>) =>
   values.find((value) => (value ?? '').trim() !== '') ?? ''
 
+const toYesNo = (value?: string) => (value ?? '').trim().toUpperCase()
+
+const getCompanyDbRecord = (companyDbResponse: unknown): CompanyDbRecord | undefined => {
+  if (Array.isArray(companyDbResponse)) {
+    return companyDbResponse[0] as CompanyDbRecord | undefined
+  }
+
+  if (
+    companyDbResponse &&
+    typeof companyDbResponse === 'object' &&
+    Array.isArray((companyDbResponse as { data?: unknown[] }).data)
+  ) {
+    return (companyDbResponse as { data: CompanyDbRecord[] }).data[0]
+  }
+
+  return undefined
+}
+
+const getPlantDbRecord = (plantDbResponse: unknown): PlantDbRecord | undefined => {
+  if (Array.isArray(plantDbResponse)) {
+    return plantDbResponse[0] as PlantDbRecord | undefined
+  }
+
+  if (
+    plantDbResponse &&
+    typeof plantDbResponse === 'object' &&
+    Array.isArray((plantDbResponse as { data?: unknown[] }).data)
+  ) {
+    return (plantDbResponse as { data: PlantDbRecord[] }).data[0]
+  }
+
+  return undefined
+}
+
+const mapAddress = (address: RawKashrusCompanyAddress): KashrusAddress => ({
+  street: address.STREET1,
+  line2: pickFirstNonEmpty(address.STREET2, address.STREET3),
+  city: address.CITY,
+  state: address.STATE,
+  zip: address.ZIP,
+  country: address.COUNTRY,
+  type: address.TYPE,
+})
+
+const getPhysicalAddress = (addresses?: RawKashrusCompanyAddress[]): KashrusAddress | undefined => {
+  if (!addresses?.length) return undefined
+  const physicalAddress =
+    addresses.find((addr) => (addr.TYPE ?? '').trim().toLowerCase() === 'physical') ??
+    addresses[0]
+  return mapAddress(physicalAddress)
+}
+
+const getCompanyName = (companyDb?: CompanyDbRecord) =>
+  pickFirstNonEmpty(companyDb?.companytdetails?.[0]?.NAME, companyDb?.companyName)
+
+const getPlantName = (plantDb?: PlantDbRecord) =>
+  pickFirstNonEmpty(plantDb?.plantdetails?.[0]?.NAME, plantDb?.plantName)
+
 const formatAddressStreet = (address?: KashrusAddress) =>
   [address?.street, address?.line2].filter((v) => (v ?? '').trim() !== '').join(', ')
 
@@ -633,38 +757,19 @@ const formatAddressCityStateZip = (address?: KashrusAddress) => {
     .join(', ')
 }
 
-const getPreferredAddress = (addresses?: KashrusAddress[]) => {
-  if (!addresses?.length) return undefined
-  return (
-    addresses.find((addr) => (addr.type ?? '').toLowerCase() === 'billing') ??
-    addresses[0]
-  )
-}
-
 const formatContactName = (contact?: PlantFromApplicationContact) =>
   `${contact?.FirstName ?? ''} ${contact?.LastName ?? ''}`.trim()
 
 const getPrimaryContact = (contacts?: PlantFromApplicationContact[]) => {
   if (!contacts?.length) return undefined
-  return contacts.find((contact) => contact.PrimaryCT === 'Y') ?? contacts[0]
+  return contacts.find((contact) => toYesNo(contact.PrimaryCT) === 'Y') ?? contacts[0]
 }
 
 const getBillingContact = (contacts?: PlantFromApplicationContact[]) => {
   if (!contacts?.length) return undefined
   return (
-    contacts.find((contact) => contact.BillingCT === 'Y') ??
-    contacts.find((contact) => contact.PrimaryCT !== 'Y') ??
-    contacts[0]
-  )
-}
-
-const getMarketingContact = (contacts?: PlantFromApplicationContact[]) => {
-  if (!contacts?.length) return undefined
-  return (
-    contacts.find((contact) =>
-      (contact.companytitle ?? '').toLowerCase().includes('marketing')
-    ) ??
-    contacts.find((contact) => contact.PrimaryCT !== 'Y') ??
+    contacts.find((contact) => toYesNo(contact.BillingCT) === 'Y') ??
+    contacts.find((contact) => toYesNo(contact.PrimaryCT) !== 'Y') ??
     contacts[0]
   )
 }
