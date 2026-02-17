@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight, Building2, Factory } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 import type { Applicant } from '@/types/application'
 import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
 import { ResolutionDrawer } from '@/components/ou-workflow/PrelimDashboard/ResolutionDrawer'
+import { Route as DashboardRoute } from '@/routes/ou-workflow/ncrc-dashboard'
 import type {
   CompanyFromApplication,
   CompanyFromApplicationContact,
@@ -26,6 +28,7 @@ const isResolvePlantTask = (taskName?: string) => /^ResolvePlant\d*$/.test(taskN
 
 export function ResolvedSection({ application, loading }: Props) {
   const [open, setOpen] = useState(true)
+  const navigate = useNavigate()
   const [drawerState, setDrawerState] = useState<DrawerState>({
     isOpen: false,
     type: 'company',
@@ -92,6 +95,23 @@ export function ResolvedSection({ application, loading }: Props) {
   const activePlantTask =
     activePlantIndex !== undefined ? plantTasks[activePlantIndex] : undefined
   const plantDrawerData = toPlantDrawerData(activePlantTask?.plantFromApplication)
+
+  const handleWfidClick = (wfid: string | number) => {
+    const applicationId = Number(wfid)
+    if (!Number.isFinite(applicationId)) return
+
+    navigate({
+      to: DashboardRoute.to,
+      search: (prev) => ({
+        q: prev.q ?? '',
+        status: prev.status ?? 'all',
+        priority: prev.priority ?? 'all',
+        applicationId,
+        page: 0,
+        myOnly: prev.myOnly ?? true,
+      }),
+    })
+  }
 
   return (
     <div className="mt-6">
@@ -241,9 +261,13 @@ export function ResolvedSection({ application, loading }: Props) {
                               </span>
                             )}
                             {p.WFID && (
-                              <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => handleWfidClick(p.WFID)}
+                                className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                              >
                                 WFID: {p.WFID}
-                              </span>
+                              </button>
                             )}
                           </div>
                         </div>
