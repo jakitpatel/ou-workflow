@@ -56,7 +56,7 @@ const statCards: StatCard[] = [
   },
   {
     key: 'completed',
-    label: 'CERTIFIED',
+    label: 'COMPLETED',
     colorScheme: {
       bg: 'bg-green-50',
       border: 'border-green-200',

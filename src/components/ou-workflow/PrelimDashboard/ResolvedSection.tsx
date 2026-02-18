@@ -254,7 +254,7 @@ export function ResolvedSection({ application, loading }: Props) {
                                   : 'bg-orange-50 text-orange-700 border-orange-200'
                               }`}
                             >
-                              {p.ownsID ? 'ASSIGNED' : 'TO BE DONE'}
+                              {p.ownsID ? 'ASSIGNED' : 'TO BE ASSIGNED'}
                             </span>
                             {p.ownsID && (
                               <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
@@ -265,6 +265,7 @@ export function ResolvedSection({ application, loading }: Props) {
                               <button
                                 type="button"
                                 onClick={() => handleWfidClick(p.WFID)}
+                                title={`Open workflow details for WFID ${p.WFID}`}
                                 className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                               >
                                 WFID: {p.WFID}
