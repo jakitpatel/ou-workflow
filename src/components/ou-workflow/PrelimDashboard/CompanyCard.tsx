@@ -61,9 +61,16 @@ export function CompanyCard({
       <div className="cursor-pointer">
         {/* Row 1 */}
         <div className="flex items-center justify-between gap-4">
-          <h3 className="text-base font-semibold text-gray-800 truncate">
-            {company.company}
-          </h3>
+          <div className="flex items-center gap-2 min-w-0">
+            <h3 className="text-base font-semibold text-gray-800 truncate">
+              {company.company}
+            </h3>
+            {company.externalReferenceId != null && (
+              <span className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700 flex-shrink-0">
+                Ref: {company.externalReferenceId}
+              </span>
+            )}
+          </div>
 
           {/* 🔹 Dynamic Stage Buttons */}
           <div className="flex items-center gap-2">

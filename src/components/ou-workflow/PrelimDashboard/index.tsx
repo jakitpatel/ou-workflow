@@ -215,7 +215,7 @@ export function PrelimDashboard() {
                       min-w-[140px]"
           >
             <option value="all">All Statuses</option>
-            <option value="COMPL">DONE</option>
+            <option value="COMPL">Completed</option>
             <option value="INP">In Progress</option>
             <option value="NEW">New</option>
             <option value="WTH">Withdrawn</option>
