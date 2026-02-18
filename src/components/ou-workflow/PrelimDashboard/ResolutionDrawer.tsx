@@ -267,9 +267,31 @@ export function ResolutionDrawer({
     if (!dbValue || dbValue === 'Not on file') return 'not-on-file'
     if (!appValue) return 'empty'
 
-    const normalize = (str: string) =>
-      str.toLowerCase().trim().replace(/[^\w\s]/g, '')
-    return normalize(appValue) === normalize(dbValue)
+    const normalizeText = (str: string) =>
+      str
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s]/g, '')
+        .replace(/\s+/g, ' ')
+
+    const normalizePhone = (str: string) => str.replace(/\D/g, '')
+
+    const isPhoneLike = (str: string) => {
+      const trimmed = str.trim()
+      if (!trimmed) return false
+      if (/[a-z]/i.test(trimmed)) return false
+      return normalizePhone(trimmed).length >= 7
+    }
+
+    const appRaw = appValue.trim()
+    const dbRaw = dbValue.trim()
+
+    const areEqual =
+      isPhoneLike(appRaw) && isPhoneLike(dbRaw)
+        ? normalizePhone(appRaw) === normalizePhone(dbRaw)
+        : normalizeText(appRaw) === normalizeText(dbRaw)
+
+    return areEqual
       ? 'match'
       : 'mismatch'
   }
