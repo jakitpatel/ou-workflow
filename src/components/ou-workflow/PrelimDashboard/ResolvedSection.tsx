@@ -25,6 +25,7 @@ type DrawerState = {
 }
 
 const isResolvePlantTask = (taskName?: string) => /^ResolvePlant\d*$/.test(taskName ?? '')
+const isTaskPending = (status?: string) => (status ?? '').trim().toLowerCase() === 'pending'
 
 export function ResolvedSection({ application, loading }: Props) {
   const [open, setOpen] = useState(true)
@@ -317,6 +318,7 @@ export function ResolvedSection({ application, loading }: Props) {
           matches={companyTask.companyMatchList || []}
           onAssign={handleAssignCompany}
           selectedId={resolved?.company?.Id}
+          isActionable={isTaskPending(companyTask.status)}
         />
       )}
 
@@ -337,6 +339,7 @@ export function ResolvedSection({ application, loading }: Props) {
                 ? resolved?.plants?.[activePlantIndex]?.plant?.plantID
                 : undefined
             }
+            isActionable={isTaskPending(activePlantTask.status)}
           />
         )}
     </div>

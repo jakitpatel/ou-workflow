@@ -147,6 +147,7 @@ type Props = {
   matches: Match[]
   onAssign: (match: Match) => void
   selectedId?: string | number
+  isActionable?: boolean
 }
 
 type ComparisonStatus = 'match' | 'mismatch' | 'not-on-file' | 'empty'
@@ -159,6 +160,7 @@ export function ResolutionDrawer({
   matches,
   onAssign,
   selectedId,
+  isActionable = true,
 }: Props) {
   const { token } = useUser()
   const selectedIdNormalized = selectedId != null ? String(selectedId) : undefined
@@ -238,6 +240,7 @@ export function ResolutionDrawer({
   }
 
   const handleConfirmMatch = () => {
+    if (!isActionable) return
     if (selectedMatch) {
       onAssign(selectedMatch)
       onClose()
@@ -245,10 +248,12 @@ export function ResolutionDrawer({
   }
 
   const handleCreateNew = () => {
+    if (!isActionable) return
     setSelectedMatch(null)
   }
 
   const handleConfirmEdit = () => {
+    if (!isActionable) return
     if (selectedMatch) {
       onAssign(selectedMatch)
     }
@@ -424,6 +429,7 @@ export function ResolutionDrawer({
                           onCreateNew={handleCreateNew}
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
+                          isActionable={isActionable}
                         />
                         </div>
 
@@ -474,6 +480,7 @@ export function ResolutionDrawer({
                           onCreateNew={handleCreateNew}
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
+                          isActionable={isActionable}
                         />
                         </div>
 
@@ -524,6 +531,7 @@ export function ResolutionDrawer({
                           onCreateNew={handleCreateNew}
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
+                          isActionable={isActionable}
                         />
                         </div>
                     </>
@@ -574,6 +582,7 @@ export function ResolutionDrawer({
                           onCreateNew={handleCreateNew}
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
+                          isActionable={isActionable}
                         />
                         </div>
 
@@ -624,6 +633,7 @@ export function ResolutionDrawer({
                           onCreateNew={handleCreateNew}
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
+                          isActionable={isActionable}
                         />
                         </div>
 
@@ -675,6 +685,7 @@ export function ResolutionDrawer({
                           onCreateNew={handleCreateNew}
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
+                          isActionable={isActionable}
                         />
                         </div>
                     </>
@@ -802,17 +813,26 @@ function SectionActions({
   onCreateNew,
   onConfirmEdit,
   onConfirmMatch,
+  isActionable,
 }: {
   selectedMatch: Match | null
   onCreateNew: () => void
   onConfirmEdit: () => void
   onConfirmMatch: () => void
+  isActionable: boolean
 }) {
+  const canConfirm = isActionable && !!selectedMatch
+
   return (
     <div className="flex justify-end gap-2 border-t border-gray-100 bg-[#f8fafc] px-4 py-2.5">
       <button
         onClick={onCreateNew}
-        className="inline-flex items-center gap-1.5 rounded-[7px] border border-indigo-200 bg-indigo-50 px-4 py-1.5 text-[13px] font-semibold text-indigo-600 hover:bg-indigo-100"
+        disabled={!isActionable}
+        className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
+          isActionable
+            ? 'border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+            : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+        }`}
       >
         <Plus className="h-3.5 w-3.5" />
         Create New
@@ -820,9 +840,9 @@ function SectionActions({
 
       <button
         onClick={onConfirmEdit}
-        disabled={!selectedMatch}
+        disabled={!canConfirm}
         className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
-          selectedMatch
+          canConfirm
             ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
             : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
         }`}
@@ -833,9 +853,9 @@ function SectionActions({
 
       <button
         onClick={onConfirmMatch}
-        disabled={!selectedMatch}
+        disabled={!canConfirm}
         className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
-          selectedMatch
+          canConfirm
             ? 'border-green-600 bg-green-600 text-white hover:bg-green-700'
             : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
         }`}
