@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from "react"
 import { useMutation } from "@tanstack/react-query"
-import { fetchWithAuth } from "@/api"
+import {
+  createSubmissionApplication,
+  deleteSubmissionApplication,
+  fetchWithAuth,
+} from "@/api"
 import { useUser } from "@/context/UserContext"
 import { X, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
 
 type Props = {
-  mode: "create" | "delete"
+  mode: "create" | "delete" | "create-intake" | "delete-intake"
   isOpen: boolean
   onClose: () => void
 }
@@ -30,6 +34,20 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
 
       if (!/^\d+$/.test(trimmedValue)) {
         throw new Error("Please enter a valid numeric ID")
+      }
+
+      if (mode === "create-intake") {
+        return await createSubmissionApplication({
+          applicationId: Number(trimmedValue),
+          token,
+        })
+      }
+      if (mode === "delete-intake") {
+        return await deleteSubmissionApplication({
+          applicationId: Number(trimmedValue),
+          applicationType: 2,
+          token,
+        })
       }
 
       return await fetchWithAuth({
@@ -134,7 +152,7 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
 
   if (!isOpen) return null
 
-  const isDeleteMode = mode === "delete"
+  const isDeleteMode = mode === "delete" || mode === "delete-intake"
   const fieldLabel = mode === "create" ? "Owner ID" : "Application ID"
 
   return (
@@ -165,7 +183,13 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
 
         {/* Header */}
         <h2 id="dialog-title" className="text-xl font-semibold mb-6 pr-8">
-          {mode === "create" ? "Create Dashboard App" : "Delete Dashboard App"}
+          {mode === "create"
+            ? "Create Dashboard App"
+            : mode === "create-intake"
+            ? "Create Intake Application"
+            : mode === "delete-intake"
+            ? "Delete Intake Application"
+            : "Delete Dashboard App"}
         </h2>
 
         {/* Input Section */}
@@ -259,9 +283,15 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
             {mutation.isPending
               ? mode === "create"
                 ? "Creating..."
+                : mode === "create-intake"
+                ? "Creating..."
                 : "Deleting..."
               : mode === "create"
               ? "Create App"
+              : mode === "create-intake"
+              ? "Create Intake"
+              : mode === "delete-intake"
+              ? "Delete Intake"
               : "Delete App"}
           </button>
         </div>

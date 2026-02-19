@@ -15,7 +15,7 @@ export const Route = createFileRoute('/')({
 });
 
 // Types
-type DialogMode = 'create' | 'delete' | null;
+type DialogMode = 'create' | 'create-intake' | 'delete' | 'delete-intake' | null;
 
 // Card Component
 interface DashboardCardProps {
@@ -95,7 +95,7 @@ function HomePage() {
   const { username, role } = useUser();
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
 
-  const openDialog = useCallback((mode: 'create' | 'delete') => {
+  const openDialog = useCallback((mode: 'create' | 'create-intake' | 'delete' | 'delete-intake') => {
     setDialogMode(mode);
   }, []);
 
@@ -188,6 +188,22 @@ function HomePage() {
               description="Remove an existing dashboard application"
               icon={Trash2}
               onClick={() => openDialog('delete')}
+              variant="danger"
+            />
+
+            <DashboardCard
+              title="Create Intake Application"
+              description="Create a submission application from an Application ID"
+              icon={PlusCircle}
+              onClick={() => openDialog('create-intake')}
+              variant="success"
+            />
+
+            <DashboardCard
+              title="Delete Intake Application"
+              description="Delete a submission application using an Application ID"
+              icon={Trash2}
+              onClick={() => openDialog('delete-intake')}
               variant="danger"
             />
           </div>

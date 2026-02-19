@@ -978,3 +978,39 @@ export async function createOrUpdatePlantFromApplication({
     token,
   });
 }
+
+export async function createSubmissionApplication({
+  applicationId,
+  token
+}: {
+  applicationId: number;
+  token?: string | null;
+  applicationType?: number;
+}): Promise<any> {
+  const params = new URLSearchParams();
+  params.append("applciation_id", String(applicationId));
+
+  return await fetchWithAuth({
+    path: `/createSubmissionApplication?${params.toString()}`,
+    token,
+  });
+}
+
+export async function deleteSubmissionApplication({
+  applicationId,
+  token,
+  applicationType = 2,
+}: {
+  applicationId: number;
+  token?: string | null;
+  applicationType?: number;
+}): Promise<any> {
+  const params = new URLSearchParams();
+  params.append("application_id", String(applicationType));
+  params.append("applicationID", String(applicationId));
+
+  return await fetchWithAuth({
+    path: `/deleteSubmissionApplication?${params.toString()}`,
+    token,
+  });
+}
