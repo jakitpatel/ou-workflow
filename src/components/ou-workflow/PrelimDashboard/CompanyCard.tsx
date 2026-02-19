@@ -146,6 +146,7 @@ export function CompanyCard({
       <ResolvedSection
         application={company}
         loading={false} // set true if you later fetch lazily
+        defaultVisible={normalizeStatus(company.status) !== 'completed'}
       />
     </div>
   )

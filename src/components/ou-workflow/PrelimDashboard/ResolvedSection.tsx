@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronRight, Building2, Factory } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import type { Applicant } from '@/types/application'
@@ -16,6 +16,7 @@ import type {
 type Props = {
   application?: Applicant
   loading?: boolean
+  defaultVisible?: boolean
 }
 
 type DrawerState = {
@@ -27,8 +28,9 @@ type DrawerState = {
 const isResolvePlantTask = (taskName?: string) => /^ResolvePlant\d*$/.test(taskName ?? '')
 const isTaskPending = (status?: string) => (status ?? '').trim().toLowerCase() === 'pending'
 
-export function ResolvedSection({ application, loading }: Props) {
+export function ResolvedSection({ application, loading, defaultVisible = true }: Props) {
   const [open, setOpen] = useState(true)
+  const [isProgressVisible, setIsProgressVisible] = useState(defaultVisible)
   const navigate = useNavigate()
   const [drawerState, setDrawerState] = useState<DrawerState>({
     isOpen: false,
@@ -37,6 +39,10 @@ export function ResolvedSection({ application, loading }: Props) {
 
   const { token, username } = useUser()
   const resolved = extractResolvedData(application)
+
+  useEffect(() => {
+    setIsProgressVisible(defaultVisible)
+  }, [defaultVisible, application?.applicationId])
 
   if (!loading && !resolved) return null
 
@@ -116,6 +122,18 @@ export function ResolvedSection({ application, loading }: Props) {
 
   return (
     <div className="mt-6">
+      <div className="flex justify-end mb-3">
+        <button
+          type="button"
+          onClick={() => setIsProgressVisible((prev) => !prev)}
+          className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+        >
+          {isProgressVisible ? 'Hide Progress' : 'Show Progress'}
+        </button>
+      </div>
+
+      {!isProgressVisible ? null : (
+        <>
       {/* Company Section */}
       {loading ? (
         <CompanySkeleton />
@@ -343,6 +361,8 @@ export function ResolvedSection({ application, loading }: Props) {
             isActionable={isTaskPending(activePlantTask.status)}
           />
         )}
+        </>
+      )}
     </div>
   )
 }
