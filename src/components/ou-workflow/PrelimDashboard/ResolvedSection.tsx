@@ -292,32 +292,31 @@ export function ResolvedSection({ application, loading, defaultVisible = true }:
                           </div>
                         </div>
 
-                        <div className="text-xs text-gray-500 space-y-0.5">
-                          <div>
-                            Plant ID: <span className="font-mono">{p.plant?.plantID}</span>
-                          </div>
-                          {p.plant?.plantAddress && (
-                            <div className="text-gray-400 truncate">
-                              {p.plant.plantAddress}
+                        <div className="mt-1 flex items-start justify-between gap-3">
+                          <div className="text-xs text-gray-500 space-y-0.5 min-w-0">
+                            <div>
+                              Plant ID: <span className="font-mono">{p.plant?.plantID}</span>
                             </div>
-                          )}
+                            {p.plant?.plantAddress && (
+                              <div className="text-gray-400 truncate">
+                                {p.plant.plantAddress}
+                              </div>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openPlantDrawer(idx)
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm flex-shrink-0"
+                          >
+                            <Factory className="w-3.5 h-3.5" />
+                            Resolve ({plantTasks[idx]?.plantMatchList?.length || 0})
+                          </button>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Second Row - Resolve Button */}
-                    <div className="flex justify-end mt-2 ml-11">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          openPlantDrawer(idx)
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
-                      >
-                        <Factory className="w-3.5 h-3.5" />
-                        Resolve ({plantTasks[idx]?.plantMatchList?.length || 0})
-                      </button>
                     </div>
                   </div>
                 </div>
