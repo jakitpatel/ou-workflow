@@ -260,15 +260,17 @@ export function ResolutionDrawer({
     setIsCreatingNew(true)
     try {
       if (isCompany) {
-        await createOrUpdateCompanyFromApplication({
+        const result = await createOrUpdateCompanyFromApplication({
           appValue: companyData,
           token: token ?? undefined,
         })
+        console.log('[ResolutionDrawer] createOrUpdateCompanyFromApplication result:', result)
       } else {
-        await createOrUpdatePlantFromApplication({
+        const result = await createOrUpdatePlantFromApplication({
           appValue: plantData,
           token: token ?? undefined,
         })
+        console.log('[ResolutionDrawer] createOrUpdatePlantFromApplication result:', result)
       }
       toast.success('New record will be created from application data')
       onClose()

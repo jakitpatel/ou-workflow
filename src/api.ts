@@ -764,7 +764,7 @@ type AppPlantValue = {
 const ZERO_SQL_DATE = "0001-01-01 00:00:00";
 
 type CompanyApiAttributes = {
-  COMPANY_ID: number;
+  COMPANY_ID?: number;
   NAME: string;
   LIST: string;
   GP_NOTIFY: number;
@@ -813,7 +813,7 @@ type CompanyApiAttributes = {
 };
 
 type PlantApiAttributes = {
-  PLANT_ID: number;
+  PLANT_ID?: number;
   NAME: string;
   GP_NOTIFY: boolean;
   MULTILINES: string;
@@ -839,14 +839,17 @@ type PlantApiAttributes = {
 
 export function buildCompanyPayloadFromApplication(
   appValue: AppCompanyValue,
-  companyId = 0
+  companyId: number | null = 0
 ): {
   data: { attributes: CompanyApiAttributes; type: "COMPANYTB"; id: "client_generated" };
 } {
+  const includeCompanyId =
+    typeof companyId === "number" && Number.isFinite(companyId) && companyId > 0;
+
   return {
     data: {
       attributes: {
-        COMPANY_ID: companyId,
+        ...(includeCompanyId ? { COMPANY_ID: companyId } : {}),
         NAME: appValue.companyName ?? "",
         LIST: appValue.whichCategory ?? "",
         GP_NOTIFY: 0,
@@ -901,14 +904,17 @@ export function buildCompanyPayloadFromApplication(
 
 export function buildPlantPayloadFromApplication(
   appValue: AppPlantValue,
-  plantId = 0
+  plantId: number | null = 0
 ): {
   data: { attributes: PlantApiAttributes; type: "PLANTTB"; id: "client_generated" };
 } {
+  const includePlantId =
+    typeof plantId === "number" && Number.isFinite(plantId) && plantId > 0;
+
   return {
     data: {
       attributes: {
-        PLANT_ID: plantId,
+        ...(includePlantId ? { PLANT_ID: plantId } : {}),
         NAME: appValue.plantName ?? "",
         GP_NOTIFY: false,
         MULTILINES: appValue.processDescription ?? "",
@@ -943,12 +949,12 @@ export async function createOrUpdateCompanyFromApplication({
   token,
 }: {
   appValue: AppCompanyValue;
-  companyId?: number;
+  companyId?: number | null;
   token?: string | null;
 }): Promise<any> {
   const body = buildCompanyPayloadFromApplication(appValue, companyId);
   return await fetchWithAuth({
-    path: "/api/company",
+    path: "/api/COMPANYTB",
     method: "POST",
     body,
     token,
@@ -961,12 +967,12 @@ export async function createOrUpdatePlantFromApplication({
   token,
 }: {
   appValue: AppPlantValue;
-  plantId?: number;
+  plantId?: number | null;
   token?: string | null;
 }): Promise<any> {
   const body = buildPlantPayloadFromApplication(appValue, plantId);
   return await fetchWithAuth({
-    path: "/api/plant",
+    path: "/api/PLANTTB",
     method: "POST",
     body,
     token,
