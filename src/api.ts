@@ -747,3 +747,228 @@ export async function getPlantDetailsFromKASH({
     token,
   });
 }
+
+type AppCompanyValue = {
+  companyName?: string;
+  whichCategory?: string;
+  billingContact?: {
+    name?: string;
+  };
+};
+
+type AppPlantValue = {
+  plantName?: string;
+  processDescription?: string;
+};
+
+const ZERO_SQL_DATE = "0001-01-01 00:00:00";
+
+type CompanyApiAttributes = {
+  COMPANY_ID: number;
+  NAME: string;
+  LIST: string;
+  GP_NOTIFY: number;
+  PRODUCER: boolean;
+  MARKETER: boolean;
+  SOURCE: boolean;
+  IN_HOUSE: string;
+  PRIVATE_LABEL: string;
+  COPACKER: string;
+  JEWISH_OWNED: string;
+  CORPORATE: string;
+  COMPANY_TYPE: string;
+  INVOICE_TYPE: string;
+  INVOICE_FREQUENCY: string;
+  INVOICE_DTL: string;
+  TIMESTAMP: string;
+  STATUS: string;
+  RC: string;
+  PARENT_CO: string;
+  INVOICE_LAST_DATE: string;
+  COMPANY_BILL_TO_NAME: string;
+  ACTIVE: number;
+  AcquiredFrom: string;
+  UID: string;
+  MoveToGP: string;
+  DefaultPO: string;
+  POexpiry: string;
+  PrivateLabelPO: string;
+  PrivateLabelPOexpiry: string;
+  VisitPO: string;
+  VisitPOexpiry: string;
+  ValidFromTime: string;
+  ValidToTime: string;
+  CHANGESET_ID: number;
+  CATEGORY: string;
+  OLDCOMPANYTYPE: string;
+  BoilerplateInvoiceComment: string;
+  IsPoRequired: boolean;
+  ShouldPropagateCompanyPo: boolean;
+  ShouldPropagateKscPoToPlants: boolean;
+  ShouldPropagateVisitPoToPlants: boolean;
+  PoReason: string;
+  On3rdPartyBilling: boolean;
+  IsTest: boolean;
+  ChometzEmailSentDate: string;
+};
+
+type PlantApiAttributes = {
+  PLANT_ID: number;
+  NAME: string;
+  GP_NOTIFY: boolean;
+  MULTILINES: string;
+  PASSOVER: string;
+  SPECIAL_PROD: string;
+  JEWISH_OWNED: string;
+  PLANT_TYPE: string;
+  PLANT_DIRECTIONS: string;
+  ACTIVE: number;
+  USDA_CODE: string;
+  PlantUID: string;
+  DoNotAttach: string;
+  OtherCertification: string;
+  PrimaryCompany: number;
+  DesignatedRFR: number;
+  ValidFromTime: string;
+  ValidToTime: string;
+  CHANGESET_ID: number;
+  MaxOnSiteVisits: number;
+  MaxVirtualVisits: number;
+  IsDaily: boolean;
+};
+
+export function buildCompanyPayloadFromApplication(
+  appValue: AppCompanyValue,
+  companyId = 0
+): {
+  data: { attributes: CompanyApiAttributes; type: "COMPANYTB"; id: "client_generated" };
+} {
+  return {
+    data: {
+      attributes: {
+        COMPANY_ID: companyId,
+        NAME: appValue.companyName ?? "",
+        LIST: appValue.whichCategory ?? "",
+        GP_NOTIFY: 0,
+        PRODUCER: false,
+        MARKETER: false,
+        SOURCE: false,
+        IN_HOUSE: "",
+        PRIVATE_LABEL: "",
+        COPACKER: "",
+        JEWISH_OWNED: "",
+        CORPORATE: "",
+        COMPANY_TYPE: "",
+        INVOICE_TYPE: "",
+        INVOICE_FREQUENCY: "",
+        INVOICE_DTL: "",
+        TIMESTAMP: new Date().toISOString(),
+        STATUS: "",
+        RC: "",
+        PARENT_CO: "",
+        INVOICE_LAST_DATE: ZERO_SQL_DATE,
+        COMPANY_BILL_TO_NAME: appValue.billingContact?.name ?? "",
+        ACTIVE: 1,
+        AcquiredFrom: "",
+        UID: "",
+        MoveToGP: "",
+        DefaultPO: "",
+        POexpiry: ZERO_SQL_DATE,
+        PrivateLabelPO: "",
+        PrivateLabelPOexpiry: ZERO_SQL_DATE,
+        VisitPO: "",
+        VisitPOexpiry: ZERO_SQL_DATE,
+        ValidFromTime: ZERO_SQL_DATE,
+        ValidToTime: ZERO_SQL_DATE,
+        CHANGESET_ID: 0,
+        CATEGORY: appValue.whichCategory ?? "",
+        OLDCOMPANYTYPE: "",
+        BoilerplateInvoiceComment: "",
+        IsPoRequired: false,
+        ShouldPropagateCompanyPo: false,
+        ShouldPropagateKscPoToPlants: false,
+        ShouldPropagateVisitPoToPlants: false,
+        PoReason: "",
+        On3rdPartyBilling: false,
+        IsTest: false,
+        ChometzEmailSentDate: ZERO_SQL_DATE,
+      },
+      type: "COMPANYTB",
+      id: "client_generated",
+    },
+  };
+}
+
+export function buildPlantPayloadFromApplication(
+  appValue: AppPlantValue,
+  plantId = 0
+): {
+  data: { attributes: PlantApiAttributes; type: "PLANTTB"; id: "client_generated" };
+} {
+  return {
+    data: {
+      attributes: {
+        PLANT_ID: plantId,
+        NAME: appValue.plantName ?? "",
+        GP_NOTIFY: false,
+        MULTILINES: appValue.processDescription ?? "",
+        PASSOVER: "",
+        SPECIAL_PROD: "",
+        JEWISH_OWNED: "",
+        PLANT_TYPE: "",
+        PLANT_DIRECTIONS: "",
+        ACTIVE: 1,
+        USDA_CODE: "",
+        PlantUID: "",
+        DoNotAttach: "",
+        OtherCertification: "",
+        PrimaryCompany: 0,
+        DesignatedRFR: 0,
+        ValidFromTime: ZERO_SQL_DATE,
+        ValidToTime: ZERO_SQL_DATE,
+        CHANGESET_ID: 0,
+        MaxOnSiteVisits: 0,
+        MaxVirtualVisits: 0,
+        IsDaily: false,
+      },
+      type: "PLANTTB",
+      id: "client_generated",
+    },
+  };
+}
+
+export async function createOrUpdateCompanyFromApplication({
+  appValue,
+  companyId = 0,
+  token,
+}: {
+  appValue: AppCompanyValue;
+  companyId?: number;
+  token?: string | null;
+}): Promise<any> {
+  const body = buildCompanyPayloadFromApplication(appValue, companyId);
+  return await fetchWithAuth({
+    path: "/api/company",
+    method: "POST",
+    body,
+    token,
+  });
+}
+
+export async function createOrUpdatePlantFromApplication({
+  appValue,
+  plantId = 0,
+  token,
+}: {
+  appValue: AppPlantValue;
+  plantId?: number;
+  token?: string | null;
+}): Promise<any> {
+  const body = buildPlantPayloadFromApplication(appValue, plantId);
+  return await fetchWithAuth({
+    path: "/api/plant",
+    method: "POST",
+    body,
+    token,
+  });
+}

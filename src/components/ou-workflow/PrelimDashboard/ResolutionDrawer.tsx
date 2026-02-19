@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react'
 import { X, Check, Plus, Edit } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { getCompanyDetailsFromKASH, getPlantDetailsFromKASH } from '@/api'
+import {
+  createOrUpdateCompanyFromApplication,
+  createOrUpdatePlantFromApplication,
+  getCompanyDetailsFromKASH,
+  getPlantDetailsFromKASH,
+} from '@/api'
 import { useUser } from '@/context/UserContext'
+import { toast } from 'sonner'
 import type {
   KashrusAddress,
   KashrusCompanyDetail,
@@ -163,6 +169,7 @@ export function ResolutionDrawer({
   isActionable = true,
 }: Props) {
   const { token } = useUser()
+  const [isCreatingNew, setIsCreatingNew] = useState(false)
   const selectedIdNormalized = selectedId != null ? String(selectedId) : undefined
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(
     matches.find((m) => String(m.Id) === selectedIdNormalized) ||
@@ -247,9 +254,33 @@ export function ResolutionDrawer({
     }
   }
 
-  const handleCreateNew = () => {
+  const handleCreateNew = async () => {
     if (!isActionable) return
     setSelectedMatch(null)
+    setIsCreatingNew(true)
+    try {
+      if (isCompany) {
+        await createOrUpdateCompanyFromApplication({
+          appValue: companyData,
+          token: token ?? undefined,
+        })
+      } else {
+        await createOrUpdatePlantFromApplication({
+          appValue: plantData,
+          token: token ?? undefined,
+        })
+      }
+      toast.success('New record will be created from application data')
+      onClose()
+    } catch (error: any) {
+      const message =
+        error?.details?.message ||
+        error?.message ||
+        'Failed to create record from application data'
+      toast.error(message)
+    } finally {
+      setIsCreatingNew(false)
+    }
   }
 
   const handleConfirmEdit = () => {
@@ -452,6 +483,7 @@ export function ResolutionDrawer({
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
                           isActionable={isActionable}
+                          isCreatingNew={isCreatingNew}
                         />
                         </div>
 
@@ -503,6 +535,7 @@ export function ResolutionDrawer({
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
                           isActionable={isActionable}
+                          isCreatingNew={isCreatingNew}
                         />
                         </div>
 
@@ -554,6 +587,7 @@ export function ResolutionDrawer({
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
                           isActionable={isActionable}
+                          isCreatingNew={isCreatingNew}
                         />
                         </div>
                     </>
@@ -605,6 +639,7 @@ export function ResolutionDrawer({
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
                           isActionable={isActionable}
+                          isCreatingNew={isCreatingNew}
                         />
                         </div>
 
@@ -656,6 +691,7 @@ export function ResolutionDrawer({
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
                           isActionable={isActionable}
+                          isCreatingNew={isCreatingNew}
                         />
                         </div>
 
@@ -708,6 +744,7 @@ export function ResolutionDrawer({
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
                           isActionable={isActionable}
+                          isCreatingNew={isCreatingNew}
                         />
                         </div>
                     </>
@@ -836,28 +873,30 @@ function SectionActions({
   onConfirmEdit,
   onConfirmMatch,
   isActionable,
+  isCreatingNew,
 }: {
   selectedMatch: Match | null
-  onCreateNew: () => void
+  onCreateNew: () => void | Promise<void>
   onConfirmEdit: () => void
   onConfirmMatch: () => void
   isActionable: boolean
+  isCreatingNew: boolean
 }) {
-  const canConfirm = isActionable && !!selectedMatch
+  const canConfirm = isActionable && !!selectedMatch && !isCreatingNew
 
   return (
     <div className="flex justify-end gap-2 border-t border-gray-100 bg-[#f8fafc] px-4 py-2.5">
       <button
         onClick={onCreateNew}
-        disabled={!isActionable}
+        disabled={!isActionable || isCreatingNew}
         className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
-          isActionable
+          isActionable && !isCreatingNew
             ? 'border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
             : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
         }`}
       >
         <Plus className="h-3.5 w-3.5" />
-        Create New
+        {isCreatingNew ? 'Creating...' : 'Create New'}
       </button>
 
       <button
