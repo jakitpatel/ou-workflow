@@ -233,6 +233,47 @@ const clonePlantData = (value?: Partial<PlantData>): PlantData => ({
   },
 })
 
+const normalizeForCompare = (value?: string) => (value ?? '').trim()
+
+const hasChanged = (before?: string, after?: string) =>
+  normalizeForCompare(before) !== normalizeForCompare(after)
+
+const countUpdatedCompanyFields = (before: CompanyData, after: CompanyData) => {
+  const checks = [
+    hasChanged(before.companyName, after.companyName),
+    hasChanged(before.companyAddress, after.companyAddress),
+    hasChanged(before.companyCity, after.companyCity),
+    hasChanged(before.companyWebsite, after.companyWebsite),
+    hasChanged(before.primaryContact?.name, after.primaryContact?.name),
+    hasChanged(before.primaryContact?.title, after.primaryContact?.title),
+    hasChanged(before.primaryContact?.phone, after.primaryContact?.phone),
+    hasChanged(before.primaryContact?.email, after.primaryContact?.email),
+    hasChanged(before.billingContact?.name, after.billingContact?.name),
+    hasChanged(before.billingContact?.title, after.billingContact?.title),
+    hasChanged(before.billingContact?.phone, after.billingContact?.phone),
+    hasChanged(before.billingContact?.email, after.billingContact?.email),
+  ]
+  return checks.filter(Boolean).length
+}
+
+const countUpdatedPlantFields = (before: PlantData, after: PlantData) => {
+  const checks = [
+    hasChanged(before.plantName, after.plantName),
+    hasChanged(before.plantAddress, after.plantAddress),
+    hasChanged(before.plantCity, after.plantCity),
+    hasChanged(before.processDescription, after.processDescription),
+    hasChanged(before.primaryContact?.name, after.primaryContact?.name),
+    hasChanged(before.primaryContact?.title, after.primaryContact?.title),
+    hasChanged(before.primaryContact?.phone, after.primaryContact?.phone),
+    hasChanged(before.primaryContact?.email, after.primaryContact?.email),
+    hasChanged(before.marketingContact?.name, after.marketingContact?.name),
+    hasChanged(before.marketingContact?.title, after.marketingContact?.title),
+    hasChanged(before.marketingContact?.phone, after.marketingContact?.phone),
+    hasChanged(before.marketingContact?.email, after.marketingContact?.email),
+  ]
+  return checks.filter(Boolean).length
+}
+
 export function ResolutionDrawer({
   isOpen,
   onClose,
@@ -380,6 +421,7 @@ export function ResolutionDrawer({
   const handleConfirmMatch = async () => {
     const saved = await saveMatchSelection()
     if (saved) {
+      toast.success('Section confirmed — DB record matched')
       onClose()
     }
   }
@@ -432,8 +474,13 @@ export function ResolutionDrawer({
   }
 
   const handleSaveAndConfirm = async () => {
+    const updatedFieldsCount = isCompany
+      ? countUpdatedCompanyFields(cloneCompanyData(data as CompanyData), companyData)
+      : countUpdatedPlantFields(clonePlantData(data as PlantData), plantData)
+
     const saved = await saveMatchSelection()
     if (saved) {
+      toast.success(`${updatedFieldsCount} field(s) updated and confirmed`)
       setIsEditMode(false)
       onClose()
     }
@@ -1326,7 +1373,7 @@ function ComparisonRow({
           <input
             value={appValue}
             onChange={(e) => onAppValueChange(e.target.value)}
-            className="w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-[14px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded border-[1.5px] border-[#fbbf24] bg-amber-50 px-2.5 py-1.5 text-[14px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
           />
         ) : (
           appValue || <span className="text-gray-400 italic">Empty</span>
