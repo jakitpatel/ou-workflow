@@ -158,6 +158,81 @@ type Props = {
 
 type ComparisonStatus = 'match' | 'mismatch' | 'not-on-file' | 'empty'
 
+const createDefaultCompanyData = (): CompanyData => ({
+  companyName: '',
+  companyAddress: '',
+  companyAddress2: '',
+  companyCity: '',
+  companyState: '',
+  ZipPostalCode: '',
+  companyCountry: '',
+  companyPhone: '',
+  companyWebsite: '',
+  numberOfPlants: undefined,
+  whichCategory: '',
+  primaryContact: {
+    name: '',
+    title: '',
+    phone: '',
+    email: '',
+  },
+  billingContact: {
+    name: '',
+    title: '',
+    phone: '',
+    email: '',
+  },
+})
+
+const createDefaultPlantData = (): PlantData => ({
+  plantName: '',
+  plantAddress: '',
+  plantCity: '',
+  plantState: '',
+  plantZip: '',
+  plantCountry: '',
+  plantNumber: undefined,
+  processDescription: '',
+  primaryContact: {
+    name: '',
+    title: '',
+    phone: '',
+    email: '',
+  },
+  marketingContact: {
+    name: '',
+    title: '',
+    phone: '',
+    email: '',
+  },
+})
+
+const cloneCompanyData = (value?: Partial<CompanyData>): CompanyData => ({
+  ...createDefaultCompanyData(),
+  ...value,
+  primaryContact: {
+    ...createDefaultCompanyData().primaryContact,
+    ...(value?.primaryContact ?? {}),
+  },
+  billingContact: {
+    ...createDefaultCompanyData().billingContact,
+    ...(value?.billingContact ?? {}),
+  },
+})
+
+const clonePlantData = (value?: Partial<PlantData>): PlantData => ({
+  ...createDefaultPlantData(),
+  ...value,
+  primaryContact: {
+    ...createDefaultPlantData().primaryContact,
+    ...(value?.primaryContact ?? {}),
+  },
+  marketingContact: {
+    ...createDefaultPlantData().marketingContact,
+    ...(value?.marketingContact ?? {}),
+  },
+})
+
 export function ResolutionDrawer({
   isOpen,
   onClose,
@@ -170,6 +245,14 @@ export function ResolutionDrawer({
 }: Props) {
   const { token } = useUser()
   const [isCreatingNew, setIsCreatingNew] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editableCompanyData, setEditableCompanyData] = useState<CompanyData>(() =>
+    createDefaultCompanyData()
+  )
+  const [editablePlantData, setEditablePlantData] = useState<PlantData>(() =>
+    createDefaultPlantData()
+  )
   const selectedIdNormalized = selectedId != null ? String(selectedId) : undefined
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(
     matches.find((m) => String(m.Id) === selectedIdNormalized) ||
@@ -182,6 +265,16 @@ export function ResolutionDrawer({
       (matches.length > 0 ? matches[0] : null)
     setSelectedMatch(nextMatch)
   }, [matches, selectedIdNormalized])
+
+  useEffect(() => {
+    if (!isOpen) return
+    if (type === 'company') {
+      setEditableCompanyData(cloneCompanyData(data as CompanyData))
+    } else {
+      setEditablePlantData(clonePlantData(data as PlantData))
+    }
+    setIsEditMode(false)
+  }, [data, isOpen, type])
 
   /* ================= Scroll Lock (OPTIONAL FIX #1) ================= */
   useEffect(() => {
@@ -196,8 +289,8 @@ export function ResolutionDrawer({
   if (!isOpen) return null
 
   const isCompany = type === 'company'
-  const companyData = data as CompanyData
-  const plantData = data as PlantData
+  const companyData = editableCompanyData
+  const plantData = editablePlantData
   const headerBgClass = isCompany ? 'bg-[#1e1e2e]' : 'bg-[#312e81]'
   const selectedMatchId = selectedMatch?.Id
 
@@ -246,16 +339,53 @@ export function ResolutionDrawer({
     }
   }
 
-  const handleConfirmMatch = () => {
-    if (!isActionable) return
-    if (selectedMatch) {
+  const toPositiveNumber = (value: string | number | undefined): number | null => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+  }
+
+  const saveMatchSelection = async () => {
+    if (!isActionable || !selectedMatch) return false
+    setIsSubmitting(true)
+    try {
+      if (isCompany) {
+        const result = await createOrUpdateCompanyFromApplication({
+          appValue: companyData,
+          companyId: toPositiveNumber(selectedMatch.Id) ?? 0,
+          token: token ?? undefined,
+        })
+        console.log('[ResolutionDrawer] createOrUpdateCompanyFromApplication result:', result)
+      } else {
+        const result = await createOrUpdatePlantFromApplication({
+          appValue: plantData,
+          plantId: toPositiveNumber(selectedMatch.Id) ?? 0,
+          token: token ?? undefined,
+        })
+        console.log('[ResolutionDrawer] createOrUpdatePlantFromApplication result:', result)
+      }
       onAssign(selectedMatch)
+      return true
+    } catch (error: any) {
+      const message =
+        error?.details?.message ||
+        error?.message ||
+        'Failed to save application data for selected match'
+      toast.error(message)
+      return false
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleConfirmMatch = async () => {
+    const saved = await saveMatchSelection()
+    if (saved) {
       onClose()
     }
   }
 
   const handleCreateNew = async () => {
-    if (!isActionable) return
+    if (!isActionable || isSubmitting) return
     setSelectedMatch(null)
     setIsCreatingNew(true)
     try {
@@ -288,7 +418,24 @@ export function ResolutionDrawer({
   const handleConfirmEdit = () => {
     if (!isActionable) return
     if (selectedMatch) {
-      onAssign(selectedMatch)
+      setIsEditMode(true)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    if (isCompany) {
+      setEditableCompanyData(cloneCompanyData(data as CompanyData))
+    } else {
+      setEditablePlantData(clonePlantData(data as PlantData))
+    }
+    setIsEditMode(false)
+  }
+
+  const handleSaveAndConfirm = async () => {
+    const saved = await saveMatchSelection()
+    if (saved) {
+      setIsEditMode(false)
+      onClose()
     }
   }
 
@@ -443,6 +590,10 @@ export function ResolutionDrawer({
                             appValue={companyData.companyName}
                             dbValue={getCompanyName(companyDb) || selectedMatch?.companyName || 'Not on file'}
                             status={getComparisonStatus(companyData.companyName, getCompanyName(companyDb) || selectedMatch?.companyName)}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({ ...prev, companyName: value }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -450,27 +601,35 @@ export function ResolutionDrawer({
                             appValue={companyData.companyName}
                             dbValue="Not on file"
                             status="not-on-file"
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({ ...prev, companyName: value }))
+                            }
                         />
                         
                         <ComparisonRow
                             field="Street Address"
-                            appValue={formatApplicationStreet(companyData.companyAddress, companyData.companyAddress2)}
+                            appValue={companyData.companyAddress || ''}
                             dbValue={formatAddressStreet(dbCompanyAddress) || selectedMatch?.Address || 'Not on file'}
                             status={getComparisonStatus(
-                              formatApplicationStreet(companyData.companyAddress, companyData.companyAddress2),
+                              companyData.companyAddress,
                               formatAddressStreet(dbCompanyAddress) || selectedMatch?.Address
                             )}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({ ...prev, companyAddress: value }))
+                            }
                         />
                         
                         <ComparisonRow
                             field="City / State / ZIP"
-                            appValue={formatApplicationCityStateZip(
-                              companyData.companyCity,
-                              companyData.companyState,
-                              companyData.ZipPostalCode
-                            )}
+                            appValue={companyData.companyCity || ''}
                             dbValue={formatAddressCityStateZip(dbCompanyAddress) || selectedMatch?.City || 'Not on file'}
                             status={getComparisonStatus(companyData.companyCity, dbCompanyAddress?.city || selectedMatch?.City)}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({ ...prev, companyCity: value }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -478,14 +637,22 @@ export function ResolutionDrawer({
                             appValue={companyData.companyWebsite || ''}
                             dbValue={companyDb?.companyWebsite || 'Not on file'}
                             status={getComparisonStatus(companyData.companyWebsite, companyDb?.companyWebsite)}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({ ...prev, companyWebsite: value }))
+                            }
                         />
                         <SectionActions
                           selectedMatch={selectedMatch}
                           onCreateNew={handleCreateNew}
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
+                          onCancelEdit={handleCancelEdit}
+                          onSaveAndConfirm={handleSaveAndConfirm}
                           isActionable={isActionable}
                           isCreatingNew={isCreatingNew}
+                          isSubmitting={isSubmitting}
+                          isEditMode={isEditMode}
                         />
                         </div>
 
@@ -503,6 +670,13 @@ export function ResolutionDrawer({
                             appValue={companyData.primaryContact?.name || ''}
                             dbValue={formatContactName(dbCompanyPrimaryContact) || 'Not on file'}
                             status={getComparisonStatus(companyData.primaryContact?.name, formatContactName(dbCompanyPrimaryContact))}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({
+                                ...prev,
+                                primaryContact: { ...prev.primaryContact, name: value },
+                              }))
+                            }
                         />
 
                         <ComparisonRow
@@ -513,6 +687,13 @@ export function ResolutionDrawer({
                               companyData.primaryContact?.title,
                               pickFirstNonEmpty(dbCompanyPrimaryContact?.companytitle, dbCompanyPrimaryContact?.Title)
                             )}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({
+                                ...prev,
+                                primaryContact: { ...prev.primaryContact, title: value },
+                              }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -523,6 +704,13 @@ export function ResolutionDrawer({
                               companyData.primaryContact?.phone,
                               pickFirstNonEmpty(dbCompanyPrimaryContact?.Cell, dbCompanyPrimaryContact?.Voice)
                             )}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({
+                                ...prev,
+                                primaryContact: { ...prev.primaryContact, phone: value },
+                              }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -530,14 +718,25 @@ export function ResolutionDrawer({
                             appValue={companyData.primaryContact?.email || ''}
                             dbValue={pickFirstNonEmpty(dbCompanyPrimaryContact?.EMail) || 'Not on file'}
                             status={getComparisonStatus(companyData.primaryContact?.email, pickFirstNonEmpty(dbCompanyPrimaryContact?.EMail))}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({
+                                ...prev,
+                                primaryContact: { ...prev.primaryContact, email: value },
+                              }))
+                            }
                         />
                         <SectionActions
                           selectedMatch={selectedMatch}
                           onCreateNew={handleCreateNew}
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
+                          onCancelEdit={handleCancelEdit}
+                          onSaveAndConfirm={handleSaveAndConfirm}
                           isActionable={isActionable}
                           isCreatingNew={isCreatingNew}
+                          isSubmitting={isSubmitting}
+                          isEditMode={isEditMode}
                         />
                         </div>
 
@@ -555,6 +754,13 @@ export function ResolutionDrawer({
                             appValue={companyData.billingContact?.name || ''}
                             dbValue={formatContactName(dbCompanyBillingContact) || 'Not on file'}
                             status={getComparisonStatus(companyData.billingContact?.name, formatContactName(dbCompanyBillingContact))}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({
+                                ...prev,
+                                billingContact: { ...prev.billingContact, name: value },
+                              }))
+                            }
                         />
 
                         <ComparisonRow
@@ -565,6 +771,13 @@ export function ResolutionDrawer({
                               companyData.billingContact?.title,
                               pickFirstNonEmpty(dbCompanyBillingContact?.companytitle, dbCompanyBillingContact?.Title)
                             )}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({
+                                ...prev,
+                                billingContact: { ...prev.billingContact, title: value },
+                              }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -575,6 +788,13 @@ export function ResolutionDrawer({
                               companyData.billingContact?.phone,
                               pickFirstNonEmpty(dbCompanyBillingContact?.Cell, dbCompanyBillingContact?.Voice)
                             )}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({
+                                ...prev,
+                                billingContact: { ...prev.billingContact, phone: value },
+                              }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -582,14 +802,25 @@ export function ResolutionDrawer({
                             appValue={companyData.billingContact?.email || ''}
                             dbValue={pickFirstNonEmpty(dbCompanyBillingContact?.EMail) || 'Not on file'}
                             status={getComparisonStatus(companyData.billingContact?.email, pickFirstNonEmpty(dbCompanyBillingContact?.EMail))}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({
+                                ...prev,
+                                billingContact: { ...prev.billingContact, email: value },
+                              }))
+                            }
                         />
                         <SectionActions
                           selectedMatch={selectedMatch}
                           onCreateNew={handleCreateNew}
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
+                          onCancelEdit={handleCancelEdit}
+                          onSaveAndConfirm={handleSaveAndConfirm}
                           isActionable={isActionable}
                           isCreatingNew={isCreatingNew}
+                          isSubmitting={isSubmitting}
+                          isEditMode={isEditMode}
                         />
                         </div>
                     </>
@@ -606,6 +837,10 @@ export function ResolutionDrawer({
                             appValue={plantData.plantName}
                             dbValue={getPlantName(plantDb) || selectedMatch?.plantName || 'Not on file'}
                             status={getComparisonStatus(plantData.plantName, getPlantName(plantDb) || selectedMatch?.plantName)}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditablePlantData((prev) => ({ ...prev, plantName: value }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -616,17 +851,21 @@ export function ResolutionDrawer({
                               plantData.plantAddress,
                               plantDb?.Address || formatAddressStreet(dbPlantAddress) || selectedMatch?.Address
                             )}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditablePlantData((prev) => ({ ...prev, plantAddress: value }))
+                            }
                         />
                         
                         <ComparisonRow
                             field="City / State / ZIP"
-                            appValue={formatApplicationCityStateZip(
-                              plantData.plantCity,
-                              plantData.plantState,
-                              plantData.plantZip
-                            )}
+                            appValue={plantData.plantCity || ''}
                             dbValue={formatAddressCityStateZip(dbPlantAddress) || selectedMatch?.City || 'Not on file'}
                             status={getComparisonStatus(plantData.plantCity, dbPlantAddress?.city || selectedMatch?.City)}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditablePlantData((prev) => ({ ...prev, plantCity: value }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -634,14 +873,22 @@ export function ResolutionDrawer({
                             appValue={plantData.processDescription || ''}
                             dbValue={plantDb?.brieflySummarize || 'Not on file'}
                             status={getComparisonStatus(plantData.processDescription, plantDb?.brieflySummarize)}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditablePlantData((prev) => ({ ...prev, processDescription: value }))
+                            }
                         />
                         <SectionActions
                           selectedMatch={selectedMatch}
                           onCreateNew={handleCreateNew}
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
+                          onCancelEdit={handleCancelEdit}
+                          onSaveAndConfirm={handleSaveAndConfirm}
                           isActionable={isActionable}
                           isCreatingNew={isCreatingNew}
+                          isSubmitting={isSubmitting}
+                          isEditMode={isEditMode}
                         />
                         </div>
 
@@ -659,6 +906,13 @@ export function ResolutionDrawer({
                             appValue={plantData.primaryContact?.name || ''}
                             dbValue={formatContactName(dbPlantPrimaryContact) || 'Not on file'}
                             status={getComparisonStatus(plantData.primaryContact?.name, formatContactName(dbPlantPrimaryContact))}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditablePlantData((prev) => ({
+                                ...prev,
+                                primaryContact: { ...prev.primaryContact, name: value },
+                              }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -669,6 +923,13 @@ export function ResolutionDrawer({
                               plantData.primaryContact?.title,
                               pickFirstNonEmpty(dbPlantPrimaryContact?.companytitle, dbPlantPrimaryContact?.Title)
                             )}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditablePlantData((prev) => ({
+                                ...prev,
+                                primaryContact: { ...prev.primaryContact, title: value },
+                              }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -679,6 +940,13 @@ export function ResolutionDrawer({
                               plantData.primaryContact?.phone,
                               pickFirstNonEmpty(dbPlantPrimaryContact?.Cell, dbPlantPrimaryContact?.Voice)
                             )}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditablePlantData((prev) => ({
+                                ...prev,
+                                primaryContact: { ...prev.primaryContact, phone: value },
+                              }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -686,14 +954,25 @@ export function ResolutionDrawer({
                             appValue={plantData.primaryContact?.email || ''}
                             dbValue={pickFirstNonEmpty(dbPlantPrimaryContact?.EMail) || 'Not on file'}
                             status={getComparisonStatus(plantData.primaryContact?.email, pickFirstNonEmpty(dbPlantPrimaryContact?.EMail))}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditablePlantData((prev) => ({
+                                ...prev,
+                                primaryContact: { ...prev.primaryContact, email: value },
+                              }))
+                            }
                         />
                         <SectionActions
                           selectedMatch={selectedMatch}
                           onCreateNew={handleCreateNew}
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
+                          onCancelEdit={handleCancelEdit}
+                          onSaveAndConfirm={handleSaveAndConfirm}
                           isActionable={isActionable}
                           isCreatingNew={isCreatingNew}
+                          isSubmitting={isSubmitting}
+                          isEditMode={isEditMode}
                         />
                         </div>
 
@@ -712,6 +991,13 @@ export function ResolutionDrawer({
                             appValue={plantData.marketingContact?.name || ''}
                             dbValue={formatContactName(dbPlantMarketingContact) || 'Not on file'}
                             status={getComparisonStatus(plantData.marketingContact?.name, formatContactName(dbPlantMarketingContact))}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditablePlantData((prev) => ({
+                                ...prev,
+                                marketingContact: { ...prev.marketingContact, name: value },
+                              }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -722,6 +1008,13 @@ export function ResolutionDrawer({
                               plantData.marketingContact?.title,
                               pickFirstNonEmpty(dbPlantMarketingContact?.companytitle, dbPlantMarketingContact?.Title)
                             )}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditablePlantData((prev) => ({
+                                ...prev,
+                                marketingContact: { ...prev.marketingContact, title: value },
+                              }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -732,6 +1025,13 @@ export function ResolutionDrawer({
                               plantData.marketingContact?.phone,
                               pickFirstNonEmpty(dbPlantMarketingContact?.Cell, dbPlantMarketingContact?.Voice)
                             )}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditablePlantData((prev) => ({
+                                ...prev,
+                                marketingContact: { ...prev.marketingContact, phone: value },
+                              }))
+                            }
                         />
                         
                         <ComparisonRow
@@ -739,14 +1039,25 @@ export function ResolutionDrawer({
                             appValue={plantData.marketingContact?.email || ''}
                             dbValue={pickFirstNonEmpty(dbPlantMarketingContact?.EMail) || 'Not on file'}
                             status={getComparisonStatus(plantData.marketingContact?.email, pickFirstNonEmpty(dbPlantMarketingContact?.EMail))}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditablePlantData((prev) => ({
+                                ...prev,
+                                marketingContact: { ...prev.marketingContact, email: value },
+                              }))
+                            }
                         />
                         <SectionActions
                           selectedMatch={selectedMatch}
                           onCreateNew={handleCreateNew}
                           onConfirmEdit={handleConfirmEdit}
                           onConfirmMatch={handleConfirmMatch}
+                          onCancelEdit={handleCancelEdit}
+                          onSaveAndConfirm={handleSaveAndConfirm}
                           isActionable={isActionable}
                           isCreatingNew={isCreatingNew}
+                          isSubmitting={isSubmitting}
+                          isEditMode={isEditMode}
                         />
                         </div>
                     </>
@@ -833,18 +1144,6 @@ const getPlantName = (plantDb?: PlantDbRecord) =>
 const formatAddressStreet = (address?: KashrusAddress) =>
   [address?.street, address?.line2].filter((v) => (v ?? '').trim() !== '').join(', ')
 
-const formatApplicationStreet = (street1?: string, street2?: string) =>
-  [street1, street2].filter((v) => (v ?? '').trim() !== '').join(', ')
-
-const formatApplicationCityStateZip = (
-  city?: string,
-  state?: string,
-  zip?: string
-) => {
-  const cityState = [city, state].filter((v) => (v ?? '').trim() !== '').join(', ')
-  return [cityState, zip].filter((v) => (v ?? '').trim() !== '').join(' ')
-}
-
 const formatAddressCityStateZip = (address?: KashrusAddress) => {
   if (!address) return ''
   return [address.city, address.state, address.zip]
@@ -874,58 +1173,98 @@ function SectionActions({
   onCreateNew,
   onConfirmEdit,
   onConfirmMatch,
+  onCancelEdit,
+  onSaveAndConfirm,
   isActionable,
   isCreatingNew,
+  isSubmitting,
+  isEditMode,
 }: {
   selectedMatch: Match | null
   onCreateNew: () => void | Promise<void>
   onConfirmEdit: () => void
-  onConfirmMatch: () => void
+  onConfirmMatch: () => void | Promise<void>
+  onCancelEdit: () => void
+  onSaveAndConfirm: () => void | Promise<void>
   isActionable: boolean
   isCreatingNew: boolean
+  isSubmitting: boolean
+  isEditMode: boolean
 }) {
-  const canConfirm = isActionable && !!selectedMatch && !isCreatingNew
+  const canConfirm = isActionable && !!selectedMatch && !isCreatingNew && !isSubmitting
+  const canCreate = isActionable && !isCreatingNew && !isSubmitting
 
   return (
     <div className="flex justify-end gap-2 border-t border-gray-100 bg-[#f8fafc] px-4 py-2.5">
-      <button
-        onClick={onCreateNew}
-        disabled={!isActionable || isCreatingNew}
-        className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
-          isActionable && !isCreatingNew
-            ? 'border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-            : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
-        }`}
-      >
-        <Plus className="h-3.5 w-3.5" />
-        {isCreatingNew ? 'Creating...' : 'Create New'}
-      </button>
+      {isEditMode ? (
+        <>
+          <button
+            onClick={onCancelEdit}
+            disabled={isSubmitting}
+            className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
+              !isSubmitting
+                ? 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+            }`}
+          >
+            Cancel
+          </button>
 
-      <button
-        onClick={onConfirmEdit}
-        disabled={!canConfirm}
-        className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
-          canConfirm
-            ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
-            : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
-        }`}
-      >
-        <Edit className="h-3.5 w-3.5" />
-        Confirm & Edit
-      </button>
+          <button
+            onClick={onSaveAndConfirm}
+            disabled={!canConfirm}
+            className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
+              canConfirm
+                ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
+                : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+            }`}
+          >
+            <Check className="h-3.5 w-3.5" />
+            {isSubmitting ? 'Saving...' : 'Save & Confirm'}
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            onClick={onCreateNew}
+            disabled={!canCreate}
+            className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
+              canCreate
+                ? 'border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+            }`}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            {isCreatingNew ? 'Creating...' : 'Create New'}
+          </button>
 
-      <button
-        onClick={onConfirmMatch}
-        disabled={!canConfirm}
-        className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
-          canConfirm
-            ? 'border-green-600 bg-green-600 text-white hover:bg-green-700'
-            : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
-        }`}
-      >
-        <Check className="h-3.5 w-3.5" />
-        Confirm Match
-      </button>
+          <button
+            onClick={onConfirmEdit}
+            disabled={!canConfirm}
+            className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
+              canConfirm
+                ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
+                : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+            }`}
+          >
+            <Edit className="h-3.5 w-3.5" />
+            Confirm & Edit
+          </button>
+
+          <button
+            onClick={onConfirmMatch}
+            disabled={!canConfirm}
+            className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
+              canConfirm
+                ? 'border-green-600 bg-green-600 text-white hover:bg-green-700'
+                : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+            }`}
+          >
+            <Check className="h-3.5 w-3.5" />
+            {isSubmitting ? 'Saving...' : 'Confirm Match'}
+          </button>
+        </>
+      )}
     </div>
   )
 }
@@ -936,11 +1275,15 @@ function ComparisonRow({
   appValue,
   dbValue,
   status,
+  editable = false,
+  onAppValueChange,
 }: {
   field: string
   appValue: string
   dbValue: string
   status: ComparisonStatus
+  editable?: boolean
+  onAppValueChange?: (value: string) => void
 }) {
   const getStatusStyles = () => {
     if (status === 'match') {
@@ -979,7 +1322,15 @@ function ComparisonRow({
         {field}
       </div>
       <div className="col-span-4 text-[15px] text-gray-900">
-        {appValue || <span className="text-gray-400 italic">Empty</span>}
+        {editable && onAppValueChange ? (
+          <input
+            value={appValue}
+            onChange={(e) => onAppValueChange(e.target.value)}
+            className="w-full rounded border border-gray-300 bg-white px-2.5 py-1.5 text-[14px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        ) : (
+          appValue || <span className="text-gray-400 italic">Empty</span>
+        )}
       </div>
       <div className="col-span-4 text-[15px] text-gray-600">
         {dbValue === 'Not on file' ? (
