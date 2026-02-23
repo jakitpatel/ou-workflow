@@ -385,6 +385,19 @@ export function ResolutionDrawer({
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null
   }
 
+  const extractCreatedId = (
+    response: any,
+    key: 'companyId' | 'plantId'
+  ): string | number | null => {
+    const directValue = response?.[key]
+    const nestedValue =
+      response?.data?.[key] ??
+      response?.result?.[key] ??
+      response?.payload?.[key]
+    const candidate = directValue ?? nestedValue
+    return candidate == null || candidate === '' ? null : candidate
+  }
+
   const saveMatchSelection = async () => {
     if (!isActionable || !selectedMatch) return false
     setIsSubmitting(true)
@@ -437,12 +450,31 @@ export function ResolutionDrawer({
           token: token ?? undefined,
         })
         console.log('[ResolutionDrawer] createOrUpdateCompanyFromApplication result:', result)
+        const createdCompanyId = extractCreatedId(result, 'companyId')
+        if (createdCompanyId == null) {
+          throw new Error('Company created but companyId was missing from response')
+        }
+        onAssign({
+          Id: createdCompanyId,
+          Address: '',
+          companyName: companyData.companyName,
+        })
       } else {
         const result = await createOrUpdatePlantFromApplication({
           appValue: plantData,
           token: token ?? undefined,
         })
         console.log('[ResolutionDrawer] createOrUpdatePlantFromApplication result:', result)
+        const createdPlantId = extractCreatedId(result, 'plantId')
+        if (createdPlantId == null) {
+          throw new Error('Plant created but plantId was missing from response')
+        }
+        onAssign({
+          Id: createdPlantId,
+          Address: '',
+          plantName: plantData.plantName,
+          PlantID: createdPlantId,
+        })
       }
       toast.success('New record will be created from application data')
       onClose()
