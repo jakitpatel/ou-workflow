@@ -898,8 +898,7 @@ export function buildCompanyPayloadFromApplication(
         ChometzEmailSentDate: ZERO_SQL_DATE,
         */
       },
-      type: "COMPANYTB",
-      id: "client_generated",
+      type: "COMPANYTB"
     },
   };
 }
@@ -941,8 +940,7 @@ export function buildPlantPayloadFromApplication(
         IsDaily: false,
         */
       },
-      type: "PLANTTB",
-      id: "client_generated",
+      type: "PLANTTB"
     },
   };
 }
