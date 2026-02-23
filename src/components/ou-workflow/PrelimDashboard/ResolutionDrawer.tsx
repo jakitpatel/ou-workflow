@@ -381,37 +381,17 @@ export function ResolutionDrawer({
     }
   }
 
-  const toPositiveNumber = (value: string | number | undefined): number | null => {
-    const parsed = Number(value)
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : null
-  }
-
   const saveMatchSelection = async () => {
     if (!isActionable || !selectedMatch) return false
     setIsSubmitting(true)
     try {
-      if (isCompany) {
-        const result = await createOrUpdateCompanyFromApplication({
-          appValue: companyData,
-          companyId: toPositiveNumber(selectedMatch.Id) ?? 0,
-          token: token ?? undefined,
-        })
-        console.log('[ResolutionDrawer] createOrUpdateCompanyFromApplication result:', result)
-      } else {
-        const result = await createOrUpdatePlantFromApplication({
-          appValue: plantData,
-          plantId: toPositiveNumber(selectedMatch.Id) ?? 0,
-          token: token ?? undefined,
-        })
-        console.log('[ResolutionDrawer] createOrUpdatePlantFromApplication result:', result)
-      }
       onAssign(selectedMatch)
       return true
     } catch (error: any) {
       const message =
         error?.details?.message ||
         error?.message ||
-        'Failed to save application data for selected match'
+        'Failed to assign selected match'
       toast.error(message)
       return false
     } finally {
