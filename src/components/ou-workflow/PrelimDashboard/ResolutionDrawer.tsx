@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   createOrUpdateCompanyFromApplication,
   createOrUpdatePlantFromApplication,
+  extractCreatedRecordId,
   getCompanyDetailsFromKASH,
   getPlantDetailsFromKASH,
 } from '@/api'
@@ -385,19 +386,6 @@ export function ResolutionDrawer({
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null
   }
 
-  const extractCreatedId = (
-    response: any,
-    key: 'companyId' | 'plantId'
-  ): string | number | null => {
-    const directValue = response?.[key]
-    const nestedValue =
-      response?.data?.[key] ??
-      response?.result?.[key] ??
-      response?.payload?.[key]
-    const candidate = directValue ?? nestedValue
-    return candidate == null || candidate === '' ? null : candidate
-  }
-
   const saveMatchSelection = async () => {
     if (!isActionable || !selectedMatch) return false
     setIsSubmitting(true)
@@ -450,7 +438,7 @@ export function ResolutionDrawer({
           token: token ?? undefined,
         })
         console.log('[ResolutionDrawer] createOrUpdateCompanyFromApplication result:', result)
-        const createdCompanyId = extractCreatedId(result, 'companyId')
+        const createdCompanyId = extractCreatedRecordId(result, 'companyId')
         if (createdCompanyId == null) {
           throw new Error('Company created but companyId was missing from response')
         }
@@ -465,7 +453,7 @@ export function ResolutionDrawer({
           token: token ?? undefined,
         })
         console.log('[ResolutionDrawer] createOrUpdatePlantFromApplication result:', result)
-        const createdPlantId = extractCreatedId(result, 'plantId')
+        const createdPlantId = extractCreatedRecordId(result, 'plantId')
         if (createdPlantId == null) {
           throw new Error('Plant created but plantId was missing from response')
         }

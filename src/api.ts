@@ -983,6 +983,27 @@ export async function createOrUpdatePlantFromApplication({
   });
 }
 
+export function extractCreatedRecordId(
+  response: any,
+  key?: "companyId" | "plantId"
+): string | number | null {
+  const keyedValue =
+    key == null
+      ? undefined
+      : response?.[key] ??
+        response?.data?.[key] ??
+        response?.result?.[key] ??
+        response?.payload?.[key];
+
+  const jsonApiId = response?.data?.id;
+  const fallbackAttributeId =
+    response?.data?.attributes?.COMPANY_ID ??
+    response?.data?.attributes?.PLANT_ID;
+
+  const candidate = keyedValue ?? jsonApiId ?? fallbackAttributeId;
+  return candidate == null || candidate === "" ? null : candidate;
+}
+
 export async function createSubmissionApplication({
   applicationId,
   token
