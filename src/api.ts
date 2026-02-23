@@ -851,6 +851,10 @@ export function buildCompanyPayloadFromApplication(
       attributes: {
         ...(includeCompanyId ? { COMPANY_ID: companyId } : {}),
         NAME: appValue.companyName ?? "",
+        CATEGORY: appValue.whichCategory ?? "",
+        ACTIVE: 1,
+        STATUS: "",
+        /* will add later when we have more fields in the app form
         LIST: appValue.whichCategory ?? "",
         GP_NOTIFY: 0,
         PRODUCER: false,
@@ -866,12 +870,10 @@ export function buildCompanyPayloadFromApplication(
         INVOICE_FREQUENCY: "",
         INVOICE_DTL: "",
         TIMESTAMP: new Date().toISOString(),
-        STATUS: "",
         RC: "",
         PARENT_CO: "",
         INVOICE_LAST_DATE: ZERO_SQL_DATE,
         COMPANY_BILL_TO_NAME: appValue.billingContact?.name ?? "",
-        ACTIVE: 1,
         AcquiredFrom: "",
         UID: "",
         MoveToGP: "",
@@ -884,7 +886,6 @@ export function buildCompanyPayloadFromApplication(
         ValidFromTime: ZERO_SQL_DATE,
         ValidToTime: ZERO_SQL_DATE,
         CHANGESET_ID: 0,
-        CATEGORY: appValue.whichCategory ?? "",
         OLDCOMPANYTYPE: "",
         BoilerplateInvoiceComment: "",
         IsPoRequired: false,
@@ -895,6 +896,7 @@ export function buildCompanyPayloadFromApplication(
         On3rdPartyBilling: false,
         IsTest: false,
         ChometzEmailSentDate: ZERO_SQL_DATE,
+        */
       },
       type: "COMPANYTB",
       id: "client_generated",
@@ -916,6 +918,8 @@ export function buildPlantPayloadFromApplication(
       attributes: {
         ...(includePlantId ? { PLANT_ID: plantId } : {}),
         NAME: appValue.plantName ?? "",
+        ACTIVE: 1,
+        /* will add later when we have more fields in the app form
         GP_NOTIFY: false,
         MULTILINES: appValue.processDescription ?? "",
         PASSOVER: "",
@@ -923,7 +927,6 @@ export function buildPlantPayloadFromApplication(
         JEWISH_OWNED: "",
         PLANT_TYPE: "",
         PLANT_DIRECTIONS: "",
-        ACTIVE: 1,
         USDA_CODE: "",
         PlantUID: "",
         DoNotAttach: "",
@@ -936,6 +939,7 @@ export function buildPlantPayloadFromApplication(
         MaxOnSiteVisits: 0,
         MaxVirtualVisits: 0,
         IsDaily: false,
+        */
       },
       type: "PLANTTB",
       id: "client_generated",
