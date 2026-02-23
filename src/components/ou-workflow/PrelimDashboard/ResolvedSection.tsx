@@ -46,11 +46,13 @@ export function ResolvedSection({ application, loading, defaultVisible = true }:
 
   if (!loading && !resolved) return null
 
-  const companyTask = application?.stages?.Preliminary?.tasks?.find(
+  const stageTasks = getStageTasks(application)
+
+  const companyTask = stageTasks?.find(
     (task) => task.name === 'ResolveCompany'
   )
   const plantTasks =
-    application?.stages?.Preliminary?.tasks?.filter(
+    stageTasks?.filter(
       (task) => isResolvePlantTask(task.name)
     ) || []
 
@@ -368,9 +370,8 @@ export function ResolvedSection({ application, loading, defaultVisible = true }:
 
 /* ---------------- Helper Function ---------------- */
 function extractResolvedData(application?: Applicant) {
-  if (!application?.stages?.Preliminary?.tasks) return null
-
-  const tasks = application.stages.Preliminary.tasks
+  const tasks = getStageTasks(application)
+  if (!tasks) return null
 
   // Find ResolveCompany task
   const companyTask = tasks.find((task) => task.name === 'ResolveCompany')
@@ -414,6 +415,10 @@ function extractResolvedData(application?: Applicant) {
       },
     })),
   }
+}
+
+function getStageTasks(application?: Applicant) {
+  return application?.stages?.Intake?.tasks
 }
 
 /* ---------------- Skeletons ---------------- */
