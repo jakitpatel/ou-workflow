@@ -198,7 +198,7 @@ function HomePage() {
               onClick={() => openDialog('create-intake')}
               variant="success"
             />
-
+            {/*
             <DashboardCard
               title="Delete Intake Application"
               description="Delete a submission application using an Application ID"
@@ -206,6 +206,7 @@ function HomePage() {
               onClick={() => openDialog('delete-intake')}
               variant="danger"
             />
+            */}
           </div>
         </section>
       </div>

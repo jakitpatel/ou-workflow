@@ -70,6 +70,11 @@ export function CompanyCard({
                 Ref: {company.externalReferenceId}
               </span>
             )}
+            {company.applicationId != null && (
+              <span className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700 flex-shrink-0">
+                AppId: {company.applicationId}
+              </span>
+            )}
           </div>
 
           {/* 🔹 Dynamic Stage Buttons */}
