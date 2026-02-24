@@ -339,6 +339,7 @@ export function ResolvedSection({ application, loading, defaultVisible = true }:
           onAssign={handleAssignCompany}
           selectedId={resolved?.company?.Id}
           isActionable={isTaskPending(companyTask.status)}
+          taskStatus={companyTask.status}
         />
       )}
 
@@ -360,6 +361,7 @@ export function ResolvedSection({ application, loading, defaultVisible = true }:
                 : undefined
             }
             isActionable={isTaskPending(activePlantTask.status)}
+            taskStatus={activePlantTask.status}
           />
         )}
         </>

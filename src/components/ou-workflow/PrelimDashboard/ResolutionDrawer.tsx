@@ -155,6 +155,7 @@ type Props = {
   onAssign: (match: Match) => void
   selectedId?: string | number
   isActionable?: boolean
+  taskStatus?: string
 }
 
 type ComparisonStatus = 'match' | 'mismatch' | 'not-on-file' | 'empty'
@@ -284,6 +285,7 @@ export function ResolutionDrawer({
   onAssign,
   selectedId,
   isActionable = true,
+  taskStatus,
 }: Props) {
   const { token } = useUser()
   const [isCreatingNew, setIsCreatingNew] = useState(false)
@@ -329,6 +331,9 @@ export function ResolutionDrawer({
   }, [isOpen])
 
   if (!isOpen) return null
+
+  const isTaskCompleted = (taskStatus ?? '').trim().toLowerCase() === 'completed'
+  const contactSectionActionable = isActionable || isTaskCompleted
 
   const isCompany = type === 'company'
   const companyData = editableCompanyData
@@ -780,7 +785,7 @@ export function ResolutionDrawer({
                           onConfirmMatch={handleConfirmMatch}
                           onCancelEdit={handleCancelEdit}
                           onSaveAndConfirm={handleSaveAndConfirm}
-                          isActionable={isActionable}
+                          isActionable={contactSectionActionable}
                           isCreatingNew={isCreatingNew}
                           isSubmitting={isSubmitting}
                           isEditMode={isEditMode}
@@ -864,7 +869,7 @@ export function ResolutionDrawer({
                           onConfirmMatch={handleConfirmMatch}
                           onCancelEdit={handleCancelEdit}
                           onSaveAndConfirm={handleSaveAndConfirm}
-                          isActionable={isActionable}
+                          isActionable={contactSectionActionable}
                           isCreatingNew={isCreatingNew}
                           isSubmitting={isSubmitting}
                           isEditMode={isEditMode}
@@ -1016,7 +1021,7 @@ export function ResolutionDrawer({
                           onConfirmMatch={handleConfirmMatch}
                           onCancelEdit={handleCancelEdit}
                           onSaveAndConfirm={handleSaveAndConfirm}
-                          isActionable={isActionable}
+                          isActionable={contactSectionActionable}
                           isCreatingNew={isCreatingNew}
                           isSubmitting={isSubmitting}
                           isEditMode={isEditMode}
@@ -1101,7 +1106,7 @@ export function ResolutionDrawer({
                           onConfirmMatch={handleConfirmMatch}
                           onCancelEdit={handleCancelEdit}
                           onSaveAndConfirm={handleSaveAndConfirm}
-                          isActionable={isActionable}
+                          isActionable={contactSectionActionable}
                           isCreatingNew={isCreatingNew}
                           isSubmitting={isSubmitting}
                           isEditMode={isEditMode}
