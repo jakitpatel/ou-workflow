@@ -952,7 +952,7 @@ function buildCompanyAddressPayloadFromApplication(
       STATE: string;
       ZIP: string;
       COUNTRY: string;
-      TIMESTAMP: string;
+      //TIMESTAMP: string;
       ACTIVE: number;
       S_CheckSum: string;
     };
@@ -978,7 +978,7 @@ function buildCompanyAddressPayloadFromApplication(
         STATE: appValue.companyState ?? "",
         ZIP: appValue.ZipPostalCode ?? "",
         COUNTRY: appValue.companyCountry ?? "",
-        TIMESTAMP: "",
+        //TIMESTAMP: "",
         ACTIVE: 1,
         S_CheckSum: "",
       },
@@ -1004,7 +1004,7 @@ function buildPlantAddressPayloadFromApplication(
       STATE: string;
       ZIP: string;
       COUNTRY: string;
-      TIMESTAMP: string;
+      //TIMESTAMP: string;
       ACTIVE: number;
       S_CheckSum: string;
     };
@@ -1030,7 +1030,7 @@ function buildPlantAddressPayloadFromApplication(
         STATE: appValue.plantState ?? "",
         ZIP: appValue.plantZip ?? "",
         COUNTRY: appValue.plantCountry ?? "",
-        TIMESTAMP: "",
+        //TIMESTAMP: "",
         ACTIVE: 1,
         S_CheckSum: "",
       },
