@@ -915,7 +915,7 @@ export function buildPlantPayloadFromApplication(
   return {
     data: {
       attributes: {
-        ...(includePlantId ? { PLANT_ID: plantId } : {}),
+        ...(includePlantId ? { PLANT_ID: plantId } : {PLANT_ID: 0}),
         NAME: appValue.plantName ?? "",
         ACTIVE: 1,
         /* will add later when we have more fields in the app form
