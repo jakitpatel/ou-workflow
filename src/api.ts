@@ -772,87 +772,25 @@ type AppPlantValue = {
   plantCountry?: string;
 };
 
-const ZERO_SQL_DATE = "0001-01-01 00:00:00";
-
 type CompanyApiAttributes = {
   COMPANY_ID?: number;
   NAME: string;
-  LIST: string;
-  GP_NOTIFY: number;
-  PRODUCER: boolean;
-  MARKETER: boolean;
-  SOURCE: boolean;
-  IN_HOUSE: string;
-  PRIVATE_LABEL: string;
-  COPACKER: string;
-  JEWISH_OWNED: string;
-  CORPORATE: string;
-  COMPANY_TYPE: string;
-  INVOICE_TYPE: string;
-  INVOICE_FREQUENCY: string;
-  INVOICE_DTL: string;
-  TIMESTAMP: string;
-  STATUS: string;
-  RC: string;
-  PARENT_CO: string;
-  INVOICE_LAST_DATE: string;
-  COMPANY_BILL_TO_NAME: string;
-  ACTIVE: number;
-  AcquiredFrom: string;
-  UID: string;
-  MoveToGP: string;
-  DefaultPO: string;
-  POexpiry: string;
-  PrivateLabelPO: string;
-  PrivateLabelPOexpiry: string;
-  VisitPO: string;
-  VisitPOexpiry: string;
-  ValidFromTime: string;
-  ValidToTime: string;
-  CHANGESET_ID: number;
   CATEGORY: string;
-  OLDCOMPANYTYPE: string;
-  BoilerplateInvoiceComment: string;
-  IsPoRequired: boolean;
-  ShouldPropagateCompanyPo: boolean;
-  ShouldPropagateKscPoToPlants: boolean;
-  ShouldPropagateVisitPoToPlants: boolean;
-  PoReason: string;
-  On3rdPartyBilling: boolean;
-  IsTest: boolean;
-  ChometzEmailSentDate: string;
+  ACTIVE: number;
+  STATUS: string;
 };
 
 type PlantApiAttributes = {
-  PLANT_ID?: number;
+  PLANT_ID: number;
   NAME: string;
-  GP_NOTIFY: boolean;
-  MULTILINES: string;
-  PASSOVER: string;
-  SPECIAL_PROD: string;
-  JEWISH_OWNED: string;
-  PLANT_TYPE: string;
-  PLANT_DIRECTIONS: string;
   ACTIVE: number;
-  USDA_CODE: string;
-  PlantUID: string;
-  DoNotAttach: string;
-  OtherCertification: string;
-  PrimaryCompany: number;
-  DesignatedRFR: number;
-  ValidFromTime: string;
-  ValidToTime: string;
-  CHANGESET_ID: number;
-  MaxOnSiteVisits: number;
-  MaxVirtualVisits: number;
-  IsDaily: boolean;
 };
 
 export function buildCompanyPayloadFromApplication(
   appValue: AppCompanyValue,
   companyId: number | null = 0
 ): {
-  data: { attributes: CompanyApiAttributes; type: "COMPANYTB"; id: "client_generated" };
+  data: { attributes: CompanyApiAttributes; type: "COMPANYTB" };
 } {
   const includeCompanyId =
     typeof companyId === "number" && Number.isFinite(companyId) && companyId > 0;
@@ -918,7 +856,7 @@ export function buildPlantPayloadFromApplication(
   appValue: AppPlantValue,
   plantId: number | null = 0
 ): {
-  data: { attributes: PlantApiAttributes; type: "PLANTTB"; id: "client_generated" };
+  data: { attributes: PlantApiAttributes; type: "PLANTTB" };
 } {
   const includePlantId =
     typeof plantId === "number" && Number.isFinite(plantId) && plantId > 0;
