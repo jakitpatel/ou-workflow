@@ -751,6 +751,12 @@ export async function getPlantDetailsFromKASH({
 type AppCompanyValue = {
   companyName?: string;
   whichCategory?: string;
+  companyAddress?: string;
+  companyAddress2?: string;
+  companyCity?: string;
+  companyState?: string;
+  ZipPostalCode?: string;
+  companyCountry?: string;
   billingContact?: {
     name?: string;
   };
@@ -759,6 +765,11 @@ type AppCompanyValue = {
 type AppPlantValue = {
   plantName?: string;
   processDescription?: string;
+  plantAddress?: string;
+  plantCity?: string;
+  plantState?: string;
+  plantZip?: string;
+  plantCountry?: string;
 };
 
 const ZERO_SQL_DATE = "0001-01-01 00:00:00";
@@ -975,6 +986,151 @@ export async function createOrUpdatePlantFromApplication({
   const body = buildPlantPayloadFromApplication(appValue, plantId);
   return await fetchWithAuth({
     path: "/api/PLANTTB",
+    method: "POST",
+    body,
+    token,
+  });
+}
+
+function toPositiveInteger(value: string | number | null | undefined): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : null;
+}
+
+function buildCompanyAddressPayloadFromApplication(
+  appValue: AppCompanyValue,
+  companyId: string | number
+): {
+  data: {
+    attributes: {
+      COMPANY_ID: number;
+      ADDRESS_SEQ_NUM: number;
+      TYPE: string;
+      ATTN: string;
+      STREET1: string;
+      STREET2: string;
+      STREET3: string;
+      CITY: string;
+      STATE: string;
+      ZIP: string;
+      COUNTRY: string;
+      TIMESTAMP: string;
+      ACTIVE: number;
+      S_CheckSum: string;
+    };
+    type: "COMPANYADDRESSTB";
+  };
+} {
+  const parsedCompanyId = toPositiveInteger(companyId);
+  if (parsedCompanyId == null) {
+    throw createApiError("Invalid company id for COMPANYADDRESSTB payload");
+  }
+
+  return {
+    data: {
+      attributes: {
+        COMPANY_ID: parsedCompanyId,
+        ADDRESS_SEQ_NUM: 0,
+        TYPE: "",
+        ATTN: "",
+        STREET1: appValue.companyAddress ?? "",
+        STREET2: appValue.companyAddress2 ?? "",
+        STREET3: "",
+        CITY: appValue.companyCity ?? "",
+        STATE: appValue.companyState ?? "",
+        ZIP: appValue.ZipPostalCode ?? "",
+        COUNTRY: appValue.companyCountry ?? "",
+        TIMESTAMP: "",
+        ACTIVE: 1,
+        S_CheckSum: "",
+      },
+      type: "COMPANYADDRESSTB",
+    },
+  };
+}
+
+function buildPlantAddressPayloadFromApplication(
+  appValue: AppPlantValue,
+  plantId: string | number
+): {
+  data: {
+    attributes: {
+      PLANT_ID: number;
+      ADDRESS_SEQ_NUM: number;
+      TYPE: string;
+      ATTN: string;
+      STREET1: string;
+      STREET2: string;
+      STREET3: string;
+      CITY: string;
+      STATE: string;
+      ZIP: string;
+      COUNTRY: string;
+      TIMESTAMP: string;
+      ACTIVE: number;
+      S_CheckSum: string;
+    };
+    type: "PLANTADDRESSTB";
+  };
+} {
+  const parsedPlantId = toPositiveInteger(plantId);
+  if (parsedPlantId == null) {
+    throw createApiError("Invalid plant id for PLANTADDRESSTB payload");
+  }
+
+  return {
+    data: {
+      attributes: {
+        PLANT_ID: parsedPlantId,
+        ADDRESS_SEQ_NUM: 0,
+        TYPE: "",
+        ATTN: "",
+        STREET1: appValue.plantAddress ?? "",
+        STREET2: "",
+        STREET3: "",
+        CITY: appValue.plantCity ?? "",
+        STATE: appValue.plantState ?? "",
+        ZIP: appValue.plantZip ?? "",
+        COUNTRY: appValue.plantCountry ?? "",
+        TIMESTAMP: "",
+        ACTIVE: 1,
+        S_CheckSum: "",
+      },
+      type: "PLANTADDRESSTB",
+    },
+  };
+}
+
+export async function createCompanyAddressFromApplication({
+  appValue,
+  companyId,
+  token,
+}: {
+  appValue: AppCompanyValue;
+  companyId: string | number;
+  token?: string | null;
+}): Promise<any> {
+  const body = buildCompanyAddressPayloadFromApplication(appValue, companyId);
+  return await fetchWithAuth({
+    path: "/api/COMPANYADDRESSTB",
+    method: "POST",
+    body,
+    token,
+  });
+}
+
+export async function createPlantAddressFromApplication({
+  appValue,
+  plantId,
+  token,
+}: {
+  appValue: AppPlantValue;
+  plantId: string | number;
+  token?: string | null;
+}): Promise<any> {
+  const body = buildPlantAddressPayloadFromApplication(appValue, plantId);
+  return await fetchWithAuth({
+    path: "/api/PLANTADDRESSTB",
     method: "POST",
     body,
     token,

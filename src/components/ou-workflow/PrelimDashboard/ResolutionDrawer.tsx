@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { X, Check, Plus, Edit } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import {
+  createCompanyAddressFromApplication,
   createOrUpdateCompanyFromApplication,
+  createPlantAddressFromApplication,
   createOrUpdatePlantFromApplication,
   extractCreatedRecordId,
   getCompanyDetailsFromKASH,
@@ -427,6 +429,12 @@ export function ResolutionDrawer({
         if (createdCompanyId == null) {
           throw new Error('Company created but companyId was missing from response')
         }
+        const addressResult = await createCompanyAddressFromApplication({
+          appValue: companyData,
+          companyId: createdCompanyId,
+          token: token ?? undefined,
+        })
+        console.log('[ResolutionDrawer] createCompanyAddressFromApplication result:', addressResult)
         onAssign({
           Id: createdCompanyId,
           Address: '',
@@ -442,6 +450,12 @@ export function ResolutionDrawer({
         if (createdPlantId == null) {
           throw new Error('Plant created but plantId was missing from response')
         }
+        const addressResult = await createPlantAddressFromApplication({
+          appValue: plantData,
+          plantId: createdPlantId,
+          token: token ?? undefined,
+        })
+        console.log('[ResolutionDrawer] createPlantAddressFromApplication result:', addressResult)
         onAssign({
           Id: createdPlantId,
           Address: '',
