@@ -91,7 +91,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   );
 
   const [paginationMode, setPaginationMode] = useState<PaginationMode>(
-    stored?.paginationMode ?? 'paged'
+    stored?.paginationMode ?? 'infinite'
   );
 
   // 🔐 Token is owned by auth layer (Cognito callback)
@@ -182,7 +182,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setRoles(data.roles ?? null);
     setDelegated(data.delegated ?? null);
     setStageLayout(data.stageLayout ?? 'mixed');
-    setPaginationMode(data.paginationMode ?? 'paged');
+    setPaginationMode(data.paginationMode ?? 'infinite');
     setLoginTime(now);
 
     // allow state flush before redirect
@@ -201,7 +201,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setDelegated(null);
     setLoginTime(null);
     setStageLayout("mixed");
-    setPaginationMode("paged");
+    setPaginationMode("infinite");
 
     clearStoredUser();
 
