@@ -1105,7 +1105,7 @@ export async function createSubmissionApplication({
   applicationType?: number;
 }): Promise<any> {
   const params = new URLSearchParams();
-  params.append("applciation_id", String(applicationId));
+  params.append("application_id", String(applicationId));
 
   return await fetchWithAuth({
     path: `/createSubmissionApplication?${params.toString()}`,
