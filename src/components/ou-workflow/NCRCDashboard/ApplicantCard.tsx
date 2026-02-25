@@ -242,6 +242,11 @@ function CardHeader({
           >
             {applicant.company}
           </button>
+          {applicant.applicationId != null && (
+            <span className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700 flex-shrink-0">
+              AppId: {applicant.applicationId}
+            </span>
+          )}
         </div>
 
         <p className="text-gray-600 text-sm">
