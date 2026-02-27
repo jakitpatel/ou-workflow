@@ -304,7 +304,15 @@ export function PrelimAppExpandedStageTasks({ expandedStage, setExpandedStage, a
                     >
                       {getStatusLabel(task.status)}
                     </span>
-
+                    {task.status?.toLowerCase() === 'pending' && (
+                      <>
+                        {task.PendingDate && (
+                          <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded font-medium">
+                            {task.PendingDate.split('.')[0]}
+                          </span>
+                        )}
+                      </>
+                    )}
                     {/* Completed Info */}
                     {task.status?.toLowerCase() === 'completed' && (
                       <>
