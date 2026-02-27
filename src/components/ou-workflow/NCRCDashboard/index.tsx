@@ -226,7 +226,7 @@ export function NCRCDashboard() {
     };
   }, [applicants]);
 
-  const { executeAction, getSelectedAction } = useTaskActions({
+  const { executeAction, completeTaskWithResult, getSelectedAction } = useTaskActions({
     applications: applicants,
     token: token ?? undefined,
     username: username ?? undefined,
@@ -274,6 +274,11 @@ export function NCRCDashboard() {
     else if (actionType === TASK_TYPES.PROGRESS && actionCategory === TASK_CATEGORIES.PROGRESS_TASK) {
       setShowConditionModal(action);
     }
+  };
+
+  const handleCancelTask = async (application: Applicant, action: Task, reason: string) => {
+    handleSelectAppActions(application.applicationId, action.TaskInstanceId);
+    completeTaskWithResult(action, reason);
   };
 
   return (
@@ -478,6 +483,7 @@ export function NCRCDashboard() {
                       key={`${applicant.applicationId}-${paginationMode}`}
                       applicant={applicant}
                       handleTaskAction={handleTaskAction}
+                      handleCancelTask={handleCancelTask}
                     />
                   ))
                 ) : (

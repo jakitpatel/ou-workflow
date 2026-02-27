@@ -448,7 +448,17 @@ export async function confirmTask({
   };
 
   if (result) {
-    body.result = result.toUpperCase();
+    const normalizedResult = result.toLowerCase();
+    const standardizedResultValues = new Set([
+      'yes',
+      'no',
+      'completed',
+      'in_progress',
+      'pending',
+    ]);
+    body.result = standardizedResultValues.has(normalizedResult)
+      ? normalizedResult.toUpperCase()
+      : result;
   }
 
   if (status) {

@@ -110,6 +110,17 @@ export function useTaskActions({
     }
   };
 
+  const completeTaskWithResult = (action: Task, result: string, status?: string) => {
+    confirmTaskMutation.mutate({
+      taskId: String(action.TaskInstanceId),
+      token: token ?? undefined,
+      username: username ?? undefined,
+      capacity: action.capacity ?? undefined,
+      result,
+      status,
+    });
+  };
+
   const getSelectedAction = (selectedActionId: string | null) =>
     useMemo(() => {
       if (!selectedActionId) return null;
@@ -128,5 +139,5 @@ export function useTaskActions({
       return { application: app, action };
     }, [selectedActionId, applications]);
 
-  return { executeAction, getSelectedAction };
+  return { executeAction, completeTaskWithResult, getSelectedAction };
 }

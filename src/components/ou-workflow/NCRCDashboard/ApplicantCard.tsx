@@ -2,11 +2,13 @@ import { useState, useMemo } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { ApplicantProgressBar } from './ApplicantProgressBar';
 import { ApplicationExpandedStage } from './ApplicationExpandedStage';
+import { CancelApplicationDialog } from '@/components/ou-workflow/modal/CancelApplicationDialog';
 import {
   Bell,
   FileText,
   Clock,
   Bot,
+  CircleX,
   ClipboardList,
   Package,
   ListTodo,
@@ -22,6 +24,7 @@ import { Route as TaskDashboardWithAppRoute } from '@/routes/ou-workflow/tasks-d
 type Props = {
   applicant: Applicant;
   handleTaskAction: (e: React.MouseEvent, application: Applicant, action: Task) => void;
+  handleCancelTask: (application: Applicant, action: Task, reason: string) => Promise<void> | void;
 };
 
 // Move configs outside component to prevent recreation on each render
@@ -71,10 +74,13 @@ const saveScrollPosition = (applicationId: string | number) => {
   );
 };
 
-export function ApplicantCard({ applicant, handleTaskAction }: Props) {
+export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }: Props) {
   const navigate = useNavigate();
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
   const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
   const dashboardSearch = DashboardRoute.useSearch();
 
   // Memoize computed values
@@ -101,6 +107,21 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
       applicant.stages?.['Inspection']?.tasks?.find((t) => t.name === 'KIM Paid')?.status === 'overdue'
     );
   }, [applicant.overdue, applicant.stages]);
+
+  const pendingCancelTask = useMemo(() => {
+    const globalStageEntry = Object.entries(applicant.stages ?? {}).find(
+      ([stageKey]) => stageKey.toLowerCase() === 'global'
+    );
+    const globalTasks = globalStageEntry?.[1]?.tasks ?? [];
+
+    return (
+      globalTasks.find(
+        (task) =>
+          task?.name?.toLowerCase() === 'cxl' &&
+          task?.status?.toLowerCase() === 'pending'
+      ) ?? null
+    );
+  }, [applicant.stages]);
 
   const handleViewTasks = (applicationId?: string | number) => {
     saveScrollPosition(applicationId ?? '');
@@ -133,6 +154,19 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
     setExpandedStage(expandedStage === stageName ? null : stageName)
   }
 
+  const handleConfirmCancel = async () => {
+    if (!pendingCancelTask || !cancelReason.trim() || isSubmittingCancel) return;
+
+    setIsSubmittingCancel(true);
+    try {
+      await Promise.resolve(handleCancelTask(applicant, pendingCancelTask, cancelReason.trim()));
+      setShowCancelDialog(false);
+      setCancelReason('');
+    } finally {
+      setIsSubmittingCancel(false);
+    }
+  };
+
   return (
     <div data-app-id={applicant.applicationId} className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all">
       {/* Header + Progress (Horizontal) */}
@@ -163,6 +197,16 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
           />
         </div>
         <div className="flex items-center space-x-2 flex-shrink-0">
+          {pendingCancelTask && (
+            <button
+              onClick={() => setShowCancelDialog(true)}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full text-red-600 hover:text-white hover:bg-red-600 border border-red-300 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+              title="Cancel Application"
+              aria-label="Cancel Application"
+            >
+              <CircleX className="w-4 h-4" aria-hidden="true" />
+            </button>
+          )}
           {showAIAssistant && (
             <button
               onClick={toggleAIAssistant}
@@ -186,6 +230,22 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
 
       {/* AI Assistant Panel */}
       {showAIAssistant && <AIAssistantPanel applicant={applicant} />}
+
+      {/* Cancel Application Dialog */}
+      {showCancelDialog && (
+        <CancelApplicationDialog
+          companyName={applicant.company}
+          reason={cancelReason}
+          saving={isSubmittingCancel}
+          onReasonChange={setCancelReason}
+          onClose={() => {
+            if (isSubmittingCancel) return;
+            setShowCancelDialog(false);
+            setCancelReason('');
+          }}
+          onConfirm={handleConfirmCancel}
+        />
+      )}
 
       {/* Stats Section */}
       <CardStats applicant={applicant} />
