@@ -190,11 +190,13 @@ export function ApplicantCard({ applicant, handleTaskAction }: Props) {
       {/* Stats Section */}
       <CardStats applicant={applicant} />
 
-      {/* Actions Section */}
-      <CardActions applicant={applicant} onViewTasks={handleViewTasks} dashboardSearch={dashboardSearch} />
-
-      {/* Documents Section */}
-      <DocumentLinks filesByType={filesByType} />
+      {/* Documents + Actions Section */}
+      <CardFooter
+        applicant={applicant}
+        onViewTasks={handleViewTasks}
+        dashboardSearch={dashboardSearch}
+        filesByType={filesByType}
+      />
     </div>
   );
 }
@@ -360,29 +362,38 @@ interface CardActionsProps {
   dashboardSearch: Record<string, unknown>;
 }
 
+function CardFooter({
+  applicant,
+  onViewTasks,
+  dashboardSearch,
+  filesByType,
+}: CardActionsProps & { filesByType?: Record<string, any> }) {
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-4">
+      <DocumentLinks filesByType={filesByType} />
+      <CardActions applicant={applicant} onViewTasks={onViewTasks} dashboardSearch={dashboardSearch} />
+    </div>
+  );
+}
+
 function CardActions({ applicant, onViewTasks, dashboardSearch }: CardActionsProps) {
   return (
-    <div className="mt-3 pt-3 border-t border-gray-100">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm text-gray-700 font-medium">{/*Next: {applicant.nextAction}*/}</p>
-        <div className="flex space-x-2">
-          <Link
-            to="/ou-workflow/ncrc-dashboard/$applicationId"
-            params={{ applicationId: String(applicant.applicationId) }}
-            search={dashboardSearch}
-            onClick={() => saveScrollPosition(applicant.applicationId)}
-            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            View Details
-          </Link>
-          <button
-            onClick={() => onViewTasks(applicant.applicationId)}
-            className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-          >
-            View Tasks →
-          </button>
-        </div>
-      </div>
+    <div className="flex items-center space-x-2 ml-auto">
+      <Link
+        to="/ou-workflow/ncrc-dashboard/$applicationId"
+        params={{ applicationId: String(applicant.applicationId) }}
+        search={dashboardSearch}
+        onClick={() => saveScrollPosition(applicant.applicationId)}
+        className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      >
+        View Details
+      </Link>
+      <button
+        onClick={() => onViewTasks(applicant.applicationId)}
+        className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+      >
+        View Tasks {'->'}
+      </button>
     </div>
   );
 }
@@ -395,8 +406,8 @@ function DocumentLinks({ filesByType }: { filesByType?: Record<string, any> }) {
   if (availableDocs.length === 0) return null;
 
   return (
-    <div className="flex items-center flex-wrap gap-3 pt-3 border-t border-gray-50">
-      <span className="text-xs text-gray-500 font-medium">Pre-NCRC Documentation:</span>
+    <div className="flex items-center gap-3 min-w-0 overflow-hidden whitespace-nowrap">
+      <span className="text-xs text-gray-500 font-medium shrink-0">Pre-NCRC Documentation:</span>
       {availableDocs.map(({ key, label, icon: Icon }) => {
         const file = filesByType[key];
         return (
@@ -406,7 +417,7 @@ function DocumentLinks({ filesByType }: { filesByType?: Record<string, any> }) {
             target="_blank"
             rel="noopener noreferrer"
             title={file.fileName}
-            className="flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
+            className="flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded whitespace-nowrap"
           >
             <Icon className="w-3 h-3 mr-1" aria-hidden="true" />
             {label}
@@ -418,3 +429,4 @@ function DocumentLinks({ filesByType }: { filesByType?: Record<string, any> }) {
     </div>
   );
 }
+
