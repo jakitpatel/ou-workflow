@@ -47,6 +47,8 @@ export const ConditionalModal: React.FC<Props> = ({
   const [error, setError] = useState("");
   const [scheduledDateTime, setScheduledDateTime] = useState("");
   const [saving, setSaving] = useState(false);
+  // track which option is being saved in default modal so we can show spinner appropriately
+  const [savingValue, setSavingValue] = useState<string | null>(null);
 
   // 🔹 Memoized values to prevent recalculation
   const taskName = useMemo(() => {
@@ -154,6 +156,7 @@ export const ConditionalModal: React.FC<Props> = ({
     if (!selectedAction?.action) return;
     
     setSaving(true);
+    setSavingValue(value);
     try {
       await executeAction(selectedAction.action.id, selectedAction.action, value, selectedAction);
       setShowConditionModal(null);
@@ -163,6 +166,7 @@ export const ConditionalModal: React.FC<Props> = ({
       setError("Failed to save. Please try again.");
     } finally {
       setSaving(false);
+      setSavingValue(null);
     }
   }, [selectedAction, executeAction, setShowConditionModal]);
 
@@ -191,6 +195,15 @@ export const ConditionalModal: React.FC<Props> = ({
       setSaving(false);
     }
   }, [selectedAction, executeAction, setShowConditionModal]);
+
+  // 🔹 default-modal "No" button ref & auto-focus
+  const noButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (modalType === 'default' && showConditionModal && noButtonRef.current) {
+      // focus the No button so it's the default
+      noButtonRef.current.focus();
+    }
+  }, [modalType, showConditionModal]);
 
   // 🔹 CRITICAL: Early return AFTER all hooks
   if (!showConditionModal || !selectedAction) {
@@ -367,19 +380,23 @@ export const ConditionalModal: React.FC<Props> = ({
         {modalType === 'default' && (
           <div className="flex justify-end gap-3">
             <button
+              ref={noButtonRef}
               onClick={() => handleSave("no")}
               disabled={saving}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-40 transition-colors"
+              className={`px-4 py-2 text-sm rounded-lg transition-colors flex items-center gap-2
+                ${savingValue === 'no' && saving ? 'opacity-50' : ''}
+                ${modalType === 'default' ? 'text-white bg-blue-600 hover:bg-blue-700' : ''}`}
             >
+              {savingValue === 'no' && saving && <Spinner />}
               No
             </button>
 
             <button
               onClick={() => handleSave("yes")}
               disabled={saving}
-              className="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 flex items-center gap-2 transition-colors"
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-40 transition-colors"
             >
-              {saving && <Spinner />}
+              {savingValue === 'yes' && saving && <Spinner />}
               Yes
             </button>
           </div>
