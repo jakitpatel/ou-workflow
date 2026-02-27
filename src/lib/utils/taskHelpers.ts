@@ -19,3 +19,10 @@ export const detectRole = (preScript?: string): string => {
   const [, role] = preScript.split(',');
   return role?.trim().toUpperCase();
 };
+
+export const getStatusLabel = (status?: string) => {
+  const s = status?.toLowerCase();
+  if (s === 'pending') return 'Ready';
+  if (s === 'new') return 'Not Ready';
+  return s || 'Unknown';
+};

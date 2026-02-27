@@ -3,6 +3,7 @@ import { UserCog, X } from 'lucide-react'
 import type { Task, Applicant } from '@/types/application'
 import { useUser } from '@/context/UserContext'
 import { useFetchTaskRoles } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
+import { getStatusLabel } from '@/lib/utils/taskHelpers';
 
 type Props = {
   expandedStage: string | null
@@ -301,7 +302,7 @@ export function PrelimAppExpandedStageTasks({ expandedStage, setExpandedStage, a
                         task.status || ''
                       )}`}
                     >
-                      {task.status?.toLowerCase() || 'unknown'}
+                      {getStatusLabel(task.status)}
                     </span>
 
                     {/* Completed Info */}
