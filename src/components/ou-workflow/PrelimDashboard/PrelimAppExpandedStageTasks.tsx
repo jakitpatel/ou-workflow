@@ -306,9 +306,9 @@ export function PrelimAppExpandedStageTasks({ expandedStage, setExpandedStage, a
                     </span>
                     {task.status?.toLowerCase() === 'pending' && (
                       <>
-                        {task.ActiveDate && (
+                        {task.activeStartDate && (
                           <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded font-medium">
-                            {task.ActiveDate.split('.')[0]}
+                            {task.activeStartDate.split('.')[0]}
                           </span>
                         )}
                       </>
