@@ -76,7 +76,7 @@ const saveScrollPosition = (applicationId: string | number) => {
 };
 
 export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }: Props) {
-  const { role, roles } = useUser();
+  const { username, role, roles } = useUser();
   const navigate = useNavigate();
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
   const [showAIAssistant, setShowAIAssistant] = useState(false);
@@ -117,40 +117,62 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
     );
   }, [applicant.overdue, applicant.stages]);
 
+  function normalizeTaskRoles(taskRoles: any): string[] {
+    if (Array.isArray(taskRoles)) {
+      return taskRoles
+        .map((r: any) => (typeof r === 'string' ? r : r?.taskRole))
+        .filter(Boolean)
+        .map((s: string) => s.toLowerCase())
+    }
+    if (typeof taskRoles === 'string') {
+      return [taskRoles.toLowerCase()]
+    }
+    return []
+  }
+
+  const hasCancelPermission = (task: Task | null): boolean => {
+    if (!task) return false
+
+    const taskRoles = normalizeTaskRoles(task.taskRoles)
+    if (taskRoles.length === 0) return false
+
+    const matchingRoles = userRoles
+      .map(r => r.toLowerCase())
+      .filter(r => taskRoles.includes(r))
+
+    if (matchingRoles.length === 0) return false
+
+    const assignedRoles = Array.isArray(applicant?.assignedRoles)
+      ? applicant.assignedRoles
+      : []
+
+    return assignedRoles.some((ar: any) =>
+      matchingRoles.some(
+        role =>
+          ar?.[role.toUpperCase()]?.toLowerCase() === username?.toLowerCase()
+      )
+    )
+  }
+
   const pendingCancelTask = useMemo(() => {
     const globalStageEntry = Object.entries(applicant.stages ?? {}).find(
       ([stageKey]) => stageKey.toLowerCase() === 'global'
-    );
-    const globalTasks = globalStageEntry?.[1]?.tasks ?? [];
-    const normalizeTaskRoles = (taskRoles: unknown): string[] => {
-      if (Array.isArray(taskRoles)) {
-        return taskRoles
-          .map((r: any) => (typeof r === 'string' ? r : r?.taskRole))
-          .filter(Boolean)
-          .map((s: string) => s.toLowerCase());
-      }
-      if (typeof taskRoles === 'string') {
-        return [taskRoles.toLowerCase()];
-      }
-      return [];
-    };
+    )
+
+    const globalTasks = globalStageEntry?.[1]?.tasks ?? []
 
     return (
       globalTasks.find(
-        (task) => {
-          const taskRoles = normalizeTaskRoles(task?.taskRoles);
-          const isRoleAllowed =
-            taskRoles.length > 0 && userRoles.some((userRole) => taskRoles.includes(userRole));
-
-          return (
+        task =>
           task?.name?.toLowerCase() === 'cancel application' &&
-          task?.status?.toLowerCase() === 'pending' &&
-          isRoleAllowed
-          );
-        }
+          task?.status?.toLowerCase() === 'pending'
       ) ?? null
-    );
-  }, [applicant.stages, userRoles]);
+    )
+  }, [applicant.stages])
+
+  const canCancelApplication = useMemo(() => {
+    return hasCancelPermission(pendingCancelTask)
+  }, [pendingCancelTask, applicant.assignedRoles, userRoles, username])
 
   const handleViewTasks = (applicationId?: string | number) => {
     saveScrollPosition(applicationId ?? '');
@@ -184,7 +206,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
   }
 
   const handleConfirmCancel = async () => {
-    if (!pendingCancelTask || !cancelReason.trim() || isSubmittingCancel) return;
+    if (!pendingCancelTask || !canCancelApplication || !cancelReason.trim() || isSubmittingCancel) return;
 
     setIsSubmittingCancel(true);
     try {
@@ -226,16 +248,22 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
           />
         </div>
         <div className="flex items-center space-x-2 flex-shrink-0">
-          {pendingCancelTask && (
-            <button
-              onClick={() => setShowCancelDialog(true)}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-full text-red-600 hover:text-white hover:bg-red-600 border border-red-300 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
-              title="Cancel Application"
-              aria-label="Cancel Application"
-            >
-              <CircleX className="w-4 h-4" aria-hidden="true" />
-            </button>
-          )}
+          <button
+            onClick={() => {
+              if (!canCancelApplication) return;
+              setShowCancelDialog(true);
+            }}
+            disabled={!canCancelApplication}
+            className={`inline-flex items-center justify-center w-8 h-8 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+              canCancelApplication
+                ? 'text-red-600 hover:text-white hover:bg-red-600 border-red-300 focus:ring-red-500'
+                : 'text-gray-400 border-gray-300 cursor-not-allowed focus:ring-gray-400'
+            }`}
+            title={canCancelApplication ? 'Cancel Application' : "You don't have permission to cancel application"}
+            aria-label={canCancelApplication ? 'Cancel Application' : "You don't have permission to cancel application"}
+          >
+            <CircleX className="w-4 h-4" aria-hidden="true" />
+          </button>
           {showAIAssistant && (
             <button
               onClick={toggleAIAssistant}
