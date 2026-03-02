@@ -123,7 +123,7 @@ export function PrelimDashboard() {
   // 🔹 EXECUTE ACTION
   // ==============================
   
-  const { executeAction, getSelectedAction } = useTaskActions({
+  const { executeAction, completeTaskWithResult, getSelectedAction } = useTaskActions({
     applications: data,
     token: token ?? undefined,
     username: username ?? undefined,
@@ -174,6 +174,11 @@ export function PrelimDashboard() {
       setShowConditionModal(action);
     }
   }
+
+  const handleCancelTask = async (application: any, action: Task, reason: string) => {
+    handleSelectAppActions(application.applicationId, action.TaskInstanceId);
+    completeTaskWithResult(action, reason);
+  };
 
   if (isLoading) return <p>Loading…</p>
 
@@ -235,6 +240,7 @@ export function PrelimDashboard() {
               setExpanded={setExpandedTaskPanel}
               //onPrelimExpandClick={() => handlePrelimExpandClick(app.applicationId)}
               onViewApplication={() => handleViewApplicationClick(app.externalReferenceId)}
+              handleCancelTask={handleCancelTask}
               handleTaskAction={handleTaskAction}
             />
           ))
