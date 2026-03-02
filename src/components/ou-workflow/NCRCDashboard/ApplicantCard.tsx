@@ -117,7 +117,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
     return (
       globalTasks.find(
         (task) =>
-          task?.name?.toLowerCase() === 'cxl' &&
+          task?.name?.toLowerCase() === 'cancel application' &&
           task?.status?.toLowerCase() === 'pending'
       ) ?? null
     );

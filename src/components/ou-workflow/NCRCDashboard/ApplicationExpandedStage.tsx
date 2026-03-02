@@ -305,9 +305,9 @@ export function ApplicationExpandedStage({ expandedStage, setExpandedStage, appl
                     </span>
                     {task.status?.toLowerCase() === 'pending' && (
                       <>
-                        {task.PendingDate && (
+                        {task.ActiveDate && (
                           <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded font-medium">
-                            {task.PendingDate.split('.')[0]}
+                            {task.ActiveDate.split('.')[0]}
                           </span>
                         )}
                       </>
