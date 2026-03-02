@@ -20,6 +20,7 @@ import type { Task, Applicant } from '@/types/application';
 import { Route as DashboardRoute } from '@/routes/ou-workflow/ncrc-dashboard';
 import { Route as TaskDashboardRoute } from '@/routes/ou-workflow/tasks-dashboard';
 import { Route as TaskDashboardWithAppRoute } from '@/routes/ou-workflow/tasks-dashboard/$applicationId';
+import { useUser } from '@/context/UserContext';
 
 type Props = {
   applicant: Applicant;
@@ -75,6 +76,7 @@ const saveScrollPosition = (applicationId: string | number) => {
 };
 
 export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }: Props) {
+  const { role, roles } = useUser();
   const navigate = useNavigate();
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
   const [showAIAssistant, setShowAIAssistant] = useState(false);
@@ -101,6 +103,13 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
     }, {} as Record<string, typeof applicant.files[0]>);
   }, [applicant.files]);
 
+  const userRoles = useMemo(() => {
+    if (role?.toUpperCase() === 'ALL') {
+      return (roles ?? []).map((r) => r.name?.toLowerCase()).filter(Boolean);
+    }
+    return role ? [role.toLowerCase()] : [];
+  }, [role, roles]);
+
   const isCritical = useMemo(() => {
     return (
       applicant.overdue ||
@@ -113,15 +122,35 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
       ([stageKey]) => stageKey.toLowerCase() === 'global'
     );
     const globalTasks = globalStageEntry?.[1]?.tasks ?? [];
+    const normalizeTaskRoles = (taskRoles: unknown): string[] => {
+      if (Array.isArray(taskRoles)) {
+        return taskRoles
+          .map((r: any) => (typeof r === 'string' ? r : r?.taskRole))
+          .filter(Boolean)
+          .map((s: string) => s.toLowerCase());
+      }
+      if (typeof taskRoles === 'string') {
+        return [taskRoles.toLowerCase()];
+      }
+      return [];
+    };
 
     return (
       globalTasks.find(
-        (task) =>
+        (task) => {
+          const taskRoles = normalizeTaskRoles(task?.taskRoles);
+          const isRoleAllowed =
+            taskRoles.length > 0 && userRoles.some((userRole) => taskRoles.includes(userRole));
+
+          return (
           task?.name?.toLowerCase() === 'cancel application' &&
-          task?.status?.toLowerCase() === 'pending'
+          task?.status?.toLowerCase() === 'pending' &&
+          isRoleAllowed
+          );
+        }
       ) ?? null
     );
-  }, [applicant.stages]);
+  }, [applicant.stages, userRoles]);
 
   const handleViewTasks = (applicationId?: string | number) => {
     saveScrollPosition(applicationId ?? '');
