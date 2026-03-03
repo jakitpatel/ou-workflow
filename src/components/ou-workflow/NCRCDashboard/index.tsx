@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
+import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal';
 import { Search } from 'lucide-react';
 import { useUser } from '@/context/UserContext'
 //import { useApplications } from '@/components/ou-workflow/hooks/useApplications';
@@ -33,6 +34,7 @@ export function NCRCDashboard() {
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   const [showActionModal, setShowActionModal] = useState<Task | null | boolean>(null);
   const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null);
+  const [showUploadModal, setShowUploadModal] = useState<Task | null | boolean>(null);
   
   // 🔹 Infinite Scrolling States
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -273,6 +275,9 @@ export function NCRCDashboard() {
     } 
     else if (actionType === TASK_TYPES.PROGRESS && actionCategory === TASK_CATEGORIES.PROGRESS_TASK) {
       setShowConditionModal(action);
+    }
+    else if (actionType === TASK_TYPES.UPLOAD && actionCategory === TASK_CATEGORIES.UPLOAD) {
+      setShowUploadModal(action);
     }
   };
 
@@ -546,6 +551,12 @@ export function NCRCDashboard() {
         showConditionModal={showConditionModal}
         executeAction={executeAction}
         selectedAction={selectedAction}
+      />
+      <UploadNdaModal
+        showUploadModal={showUploadModal}
+        setShowUploadModal={setShowUploadModal}
+        selectedAction={selectedAction}
+        completeTaskWithResult={completeTaskWithResult}
       />
       
       {/* Global Error Dialog */}

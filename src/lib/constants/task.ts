@@ -4,6 +4,7 @@ export const TASK_TYPES = {
   CONDITION: 'condition',
   ACTION: 'action',
   PROGRESS: 'progress',
+  UPLOAD: 'upload',
 } as const;
 
 export const TASK_CATEGORIES = {
@@ -14,4 +15,5 @@ export const TASK_CATEGORIES = {
   INPUT: 'input',
   SCHEDULING: 'scheduling',
   PROGRESS_TASK: 'progress_task',
+  UPLOAD: 'upload',
 } as const;
