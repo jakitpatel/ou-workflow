@@ -450,6 +450,11 @@ function AIAssistantPanel({ applicant }: { applicant: Applicant }) {
 }
 
 function CardStats({ applicant }: { applicant: Applicant }) {
+  const withdrawnReason = (applicant as any)?.withdrawn_reason;
+  const isWithdrawn =
+    applicant?.status?.toLowerCase() === 'withdrawn' ||
+    applicant?.status?.toLowerCase() === 'wth';
+
   return (
     <div className="mt-3 flex items-center justify-between text-sm text-gray-500">
       <div className="flex items-center space-x-4">
@@ -463,6 +468,11 @@ function CardStats({ applicant }: { applicant: Applicant }) {
           <span className="sr-only">Notes:</span>
           {applicant.notes} notes
         </span>
+        {isWithdrawn && withdrawnReason && (
+          <span className="flex items-center">
+            <span className="font-medium">Withdrawn Reason:</span>&nbsp;{withdrawnReason}
+          </span>
+        )}
       </div>
       {applicant.lastUpdate && (
         <span className="text-xs">
