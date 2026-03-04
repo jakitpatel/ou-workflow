@@ -556,7 +556,7 @@ export function NCRCDashboard() {
         showUploadModal={showUploadModal}
         setShowUploadModal={setShowUploadModal}
         selectedAction={selectedAction}
-        completeTaskWithResult={completeTaskWithResult}
+        taskInstanceId={selectedAction?.action?.TaskInstanceId}
       />
       
       {/* Global Error Dialog */}

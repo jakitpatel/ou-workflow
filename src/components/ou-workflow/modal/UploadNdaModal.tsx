@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Upload, X } from "lucide-react";
+import { uploadApplicationFile } from "@/api";
+import { useUser } from "@/context/UserContext";
 import type { Applicant, Task } from "@/types/application";
 
 type SelectedAction = {
@@ -10,29 +12,17 @@ type SelectedAction = {
 type Props = {
   showUploadModal: boolean | null | Task;
   selectedAction: SelectedAction | null;
+  taskInstanceId?: string | number | null;
   setShowUploadModal: (val: boolean | null | Task) => void;
-  completeTaskWithResult: (action: Task, result: string, status?: string) => void;
 };
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result ?? "");
-      const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
-      resolve(base64);
-    };
-    reader.onerror = () => reject(new Error("Unable to read file"));
-    reader.readAsDataURL(file);
-  });
-}
 
 export const UploadNdaModal: React.FC<Props> = ({
   showUploadModal,
   selectedAction,
+  taskInstanceId,
   setShowUploadModal,
-  completeTaskWithResult,
 }) => {
+  const { token } = useUser();
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -94,20 +84,30 @@ export const UploadNdaModal: React.FC<Props> = ({
     setSaving(true);
     setError("");
     try {
-      const filedata = await fileToBase64(file);
-      const resultPayload = JSON.stringify({
-        filename: file.name,
-        filedata,
+      await uploadApplicationFile({
+        file,
+        applicationId:
+          selectedAction?.application?.applicationId ??
+          selectedAction?.action?.applicationId,
+        taskInstanceID:
+          taskInstanceId ??
+          selectedAction?.action?.TaskInstanceId ??
+          selectedAction?.action?.taskId,
+        description: taskName,
+        token: token ?? undefined,
       });
-      await completeTaskWithResult(selectedAction.action, resultPayload);
       setShowUploadModal(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Upload NDA failed:", err);
-      setError("Failed to upload and submit the document. Please try again.");
+      setError(
+        err?.message ||
+          err?.error ||
+          "Failed to upload and submit the document. Please try again."
+      );
     } finally {
       setSaving(false);
     }
-  }, [file, selectedAction, completeTaskWithResult, setShowUploadModal]);
+  }, [file, selectedAction, setShowUploadModal, taskInstanceId, taskName, token]);
 
   if (!showUploadModal || !selectedAction) {
     return null;

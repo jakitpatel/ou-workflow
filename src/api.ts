@@ -477,6 +477,84 @@ export async function confirmTask({
 }
 
 /**
+ * Uploads files for an application using multipart/form-data
+ */
+export async function uploadApplicationFile({
+  file,
+  fileUrl,
+  fileName,
+  applicationId,
+  taskInstanceID,
+  description,
+  token,
+}: {
+  file?: File;
+  fileUrl?: string;
+  fileName?: string;
+  applicationId?: string | number | null;
+  taskInstanceID?: string | number | null;
+  description?: string;
+  token?: string | null;
+}): Promise<any> {
+  const baseUrl = resolveApiBaseUrl();
+  const uploadBaseUrl = baseUrl.replace("/api", "");
+  const url = `${uploadBaseUrl}/upload_files`;
+  const accessToken = token ?? getAccessToken();
+
+  const formData = new FormData();
+
+  if (file) {
+    formData.append("file", file, file.name);
+  } else if (fileUrl?.trim()) {
+    formData.append("file_url", fileUrl.trim());
+    const urlFileName = fileName ?? fileUrl.trim().split("/").pop() ?? "linked_file";
+    formData.append("file_name", urlFileName);
+  } else {
+    throw createApiError("Please select a file or provide a URL.", 400);
+  }
+
+  if (applicationId !== "" && applicationId !== null && applicationId !== undefined) {
+    formData.append("application_id", String(applicationId));
+  }
+
+  if (taskInstanceID !== "" && taskInstanceID !== null && taskInstanceID !== undefined) {
+    formData.append("taskInstanceID", String(taskInstanceID));
+  }
+
+  if (description?.trim()) {
+    formData.append("description", description.trim());
+  }
+
+  const requestHeaders: Record<string, string> = {};
+  if (accessToken) {
+    requestHeaders["Authorization"] = `Bearer ${accessToken}`;
+  }
+
+  const requestOptions: RequestInit = {
+    method: "POST",
+    headers: requestHeaders,
+    body: formData,
+  };
+
+  const response = await executeRequest(url, requestOptions, accessToken);
+
+  if (!response.ok) {
+    const errorBody = await parseErrorBody(response);
+    const message =
+      errorBody?.message ||
+      errorBody?.error ||
+      `Request failed: ${response.status} ${response.statusText}`;
+    throw createApiError(message, response.status, errorBody);
+  }
+
+  try {
+    return await response.json();
+  } catch {
+    return await response.text();
+  }
+}
+
+/**
  * Sends a message related to an application
  */
 export async function sendMsgTask({
