@@ -110,14 +110,28 @@ export function useTaskActions({
     }
   };
 
-  const completeTaskWithResult = (action: Task, result: string, status?: string) => {
+  const completeTaskWithResult = (
+    action: Task,
+    result: string,
+    status?: string,
+    completionNotes?: string
+  ) => {
+    const isCancelApplicationTask =
+      action?.name?.toLowerCase().trim() === 'cancel application';
+
+    const finalResult = isCancelApplicationTask ? 'YES' : result;
+    const finalCompletionNotes = isCancelApplicationTask
+      ? completionNotes ?? result
+      : completionNotes;
+
     confirmTaskMutation.mutate({
       taskId: String(action.TaskInstanceId),
       token: token ?? undefined,
       username: username ?? undefined,
       capacity: action.capacity ?? undefined,
-      result,
+      result: finalResult,
       status,
+      completionNotes: finalCompletionNotes,
     });
   };
 

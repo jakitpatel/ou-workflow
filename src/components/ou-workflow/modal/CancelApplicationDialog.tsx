@@ -4,7 +4,7 @@ type CancelApplicationDialogProps = {
   saving: boolean;
   onReasonChange: (value: string) => void;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (reason: string) => void;
 };
 
 export function CancelApplicationDialog({
@@ -45,7 +45,7 @@ export function CancelApplicationDialog({
             No
           </button>
           <button
-            onClick={onConfirm}
+            onClick={() => onConfirm(reason.trim())}
             disabled={saving || !reason.trim()}
             className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
           >

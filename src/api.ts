@@ -417,6 +417,7 @@ export async function assignTask({
 export async function confirmTask({
   taskId,
   result,
+  completionNotes,
   token,
   username,
   status,
@@ -424,6 +425,7 @@ export async function confirmTask({
 }: {
   taskId: string;
   result?: string;
+  completionNotes?: string;
   token?: string | null;
   username?: string;
   status?: string;
@@ -437,7 +439,8 @@ export async function confirmTask({
   };
 
   const completion_notes =
-    (result && completionNotesMap[result]) || "Task completed successfully";
+    completionNotes ??
+    ((result && completionNotesMap[result]) || "Task completed successfully");
 
   // Build request body dynamically
   const body: Record<string, any> = {
