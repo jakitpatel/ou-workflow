@@ -196,7 +196,8 @@ export const UploadNdaModal: React.FC<Props> = ({
             {saving && (
               <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             )}
-            {saving ? "Submitting..." : "Submit"}
+            {!saving && <Upload className="h-4 w-4" />}
+            {saving ? "Uploading..." : "Upload"}
           </button>
         </div>
       </div>
