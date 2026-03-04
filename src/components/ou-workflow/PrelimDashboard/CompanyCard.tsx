@@ -179,8 +179,8 @@ export function CompanyCard({
                   ? 'text-red-600 hover:text-white hover:bg-red-600 border-red-300 focus:ring-red-500'
                   : 'text-gray-400 border-gray-300 cursor-not-allowed focus:ring-gray-400'
               }`}
-              title={canCancelApplication ? 'Cancel Application' : "You don't have permission to cancel application"}
-              aria-label={canCancelApplication ? 'Cancel Application' : "You don't have permission to cancel application"}
+              title={canCancelApplication ? 'Cancel Application' : "You don't have permission to cancel application as it's withdrawn"}
+              aria-label={canCancelApplication ? 'Cancel Application' : "You don't have permission to cancel application as it's withdrawn"}
             >
               <CircleX className="w-4 h-4" aria-hidden="true" />
             </button>
