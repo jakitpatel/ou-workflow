@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Upload, X } from "lucide-react";
 import { uploadApplicationFile } from "@/api";
 import { useUser } from "@/context/UserContext";
@@ -31,7 +30,6 @@ export const UploadNdaModal: React.FC<Props> = ({
   completeTaskWithResult,
 }) => {
   const { token } = useUser();
-  const queryClient = useQueryClient();
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -129,10 +127,15 @@ export const UploadNdaModal: React.FC<Props> = ({
         description: taskName,
         token: token ?? undefined,
       });
-      queryClient.invalidateQueries({ queryKey: ["applications"] });
       if (isComplexUploadTask) {
         setUploaded(true);
       } else {
+        completeTaskWithResult(
+          selectedAction.action,
+          "yes",
+          undefined,
+          "NDA uploaded successfully"
+        );
         setShowUploadModal(null);
       }
       return true;
@@ -153,8 +156,8 @@ export const UploadNdaModal: React.FC<Props> = ({
     taskInstanceId,
     taskName,
     token,
-    queryClient,
     isComplexUploadTask,
+    completeTaskWithResult,
     setShowUploadModal,
   ]);
 

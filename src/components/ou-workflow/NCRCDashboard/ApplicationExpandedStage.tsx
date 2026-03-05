@@ -311,7 +311,9 @@ export function ApplicationExpandedStage({ expandedStage, setExpandedStage, appl
                     {task.status?.toLowerCase() === 'pending' && (
                       <>
                         {task.activeStartDate && (
-                          <span className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded font-medium">
+                          <span className={`px-2 py-1 text-xs rounded font-medium ${getStatusBadgeClass(
+                        task.status || ''
+                      )}`}>
                             {task.activeStartDate.split('.')[0]}
                           </span>
                         )}
