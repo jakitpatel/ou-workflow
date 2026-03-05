@@ -16,7 +16,7 @@ type Props = {
   ) => void
 }
 
-const COMPLETED_STATUSES = ['complete', 'done', 'completed']
+const COMPLETED_STATUSES = ['complete', 'done', 'completed','withdrawn']
 
 // 🔹 Utility functions extracted for clarity
 function normalizeStatus(status?: string): string {
@@ -112,7 +112,7 @@ export function ApplicationExpandedStage({ expandedStage, setExpandedStage, appl
   const mapTaskToAction = (taskItem: Task, application: Applicant) => {
     const status = normalizeStatus(taskItem.status)
     const taskRoles = normalizeTaskRoles(taskItem.taskRoles)
-    
+    const applicationStatus = normalizeStatus(application.status)
     // Default state
     let color = 'bg-gray-300 cursor-not-allowed'
     let disabled = true
@@ -120,6 +120,11 @@ export function ApplicationExpandedStage({ expandedStage, setExpandedStage, appl
     let capacity = "MEMBER";
     // Case 1: Completed tasks
     if (COMPLETED_STATUSES.includes(status)) {
+      color = 'bg-green-400'
+      disabled = true
+    }
+    // Case 1: Completed/ withdrawn applications (all tasks should be disabled)
+    if (COMPLETED_STATUSES.includes(applicationStatus)) {
       color = 'bg-green-400'
       disabled = true
     }

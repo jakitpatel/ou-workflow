@@ -276,7 +276,10 @@ export function NCRCDashboard() {
     else if (actionType === TASK_TYPES.PROGRESS && actionCategory === TASK_CATEGORIES.PROGRESS_TASK) {
       setShowConditionModal(action);
     }
-    else if (actionType === TASK_TYPES.UPLOAD && actionCategory === TASK_CATEGORIES.UPLOAD) {
+    else if (
+      actionCategory === TASK_CATEGORIES.UPLOAD &&
+      [TASK_TYPES.UPLOAD, TASK_TYPES.COMPLEX].includes(actionType as any)
+    ) {
       setShowUploadModal(action);
     }
   };
@@ -557,6 +560,7 @@ export function NCRCDashboard() {
         setShowUploadModal={setShowUploadModal}
         selectedAction={selectedAction}
         taskInstanceId={selectedAction?.action?.TaskInstanceId}
+        completeTaskWithResult={completeTaskWithResult}
       />
       
       {/* Global Error Dialog */}

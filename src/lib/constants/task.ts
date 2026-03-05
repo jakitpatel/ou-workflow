@@ -4,6 +4,7 @@ export const TASK_TYPES = {
   CONDITION: 'condition',
   ACTION: 'action',
   PROGRESS: 'progress',
+  COMPLEX: 'complex',
   UPLOAD: 'upload',
 } as const;
 

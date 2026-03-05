@@ -14,6 +14,12 @@ type Props = {
   selectedAction: SelectedAction | null;
   taskInstanceId?: string | number | null;
   setShowUploadModal: (val: boolean | null | Task) => void;
+  completeTaskWithResult: (
+    action: Task,
+    result: string,
+    status?: string,
+    completionNotes?: string
+  ) => void;
 };
 
 export const UploadNdaModal: React.FC<Props> = ({
@@ -21,12 +27,15 @@ export const UploadNdaModal: React.FC<Props> = ({
   selectedAction,
   taskInstanceId,
   setShowUploadModal,
+  completeTaskWithResult,
 }) => {
   const { token } = useUser();
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [uploaded, setUploaded] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [processingAction, setProcessingAction] = useState<"complete" | "negotiate" | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
 
@@ -39,12 +48,33 @@ export const UploadNdaModal: React.FC<Props> = ({
   }, [selectedAction?.application]);
 
   const taskName = useMemo(() => {
-    return selectedAction?.action?.name || selectedAction?.action?.taskName || "Upload NDA";
-  }, [selectedAction?.action]);
+    const clickedTask = typeof showUploadModal === "object" ? showUploadModal : null;
+    return (
+      clickedTask?.name ||
+      selectedAction?.action?.name ||
+      selectedAction?.action?.taskName ||
+      "Upload NDA"
+    );
+  }, [showUploadModal, selectedAction?.action]);
+
+  const isComplexUploadTask = useMemo(() => {
+    const clickedTask = typeof showUploadModal === "object" ? showUploadModal : null;
+    const taskType =
+      clickedTask?.taskType?.toLowerCase() ||
+      selectedAction?.action?.taskType?.toLowerCase() ||
+      "";
+    const taskCategory =
+      clickedTask?.taskCategory?.toLowerCase() ||
+      selectedAction?.action?.taskCategory?.toLowerCase() ||
+      "";
+
+    return taskType === "complex" && taskCategory === "upload";
+  }, [showUploadModal, selectedAction?.action]);
 
   useEffect(() => {
     if (!showUploadModal) {
       setFile(null);
+      setUploaded(false);
       setError("");
       setIsDragging(false);
     }
@@ -72,13 +102,14 @@ export const UploadNdaModal: React.FC<Props> = ({
   const handleFileSelect = useCallback((selectedFile: File | null | undefined) => {
     if (!selectedFile) return;
     setFile(selectedFile);
+    setUploaded(false);
     setError("");
   }, []);
 
-  const handleSubmit = useCallback(async () => {
+  const uploadSelectedFile = useCallback(async (): Promise<boolean> => {
     if (!file || !selectedAction?.action) {
       setError("Please attach an NDA document.");
-      return;
+      return false;
     }
 
     setSaving(true);
@@ -96,7 +127,8 @@ export const UploadNdaModal: React.FC<Props> = ({
         description: taskName,
         token: token ?? undefined,
       });
-      setShowUploadModal(null);
+      setUploaded(true);
+      return true;
     } catch (err: any) {
       console.error("Upload NDA failed:", err);
       setError(
@@ -104,10 +136,83 @@ export const UploadNdaModal: React.FC<Props> = ({
           err?.error ||
           "Failed to upload and submit the document. Please try again."
       );
+      return false;
     } finally {
       setSaving(false);
     }
-  }, [file, selectedAction, setShowUploadModal, taskInstanceId, taskName, token]);
+  }, [file, selectedAction, taskInstanceId, taskName, token]);
+
+  const openMailSenderWithAttachment = useCallback(async () => {
+    if (!file) {
+      setError("Please attach an NDA document.");
+      return;
+    }
+
+    const subject = `NDA Review - ${companyName}`;
+    const body = `Please review the attached NDA: ${file.name}`;
+
+    try {
+      const maybeNavigator = navigator as Navigator & {
+        canShare?: (data?: ShareData) => boolean;
+      };
+      if (
+        maybeNavigator.share &&
+        maybeNavigator.canShare &&
+        maybeNavigator.canShare({ files: [file] as any })
+      ) {
+        await maybeNavigator.share({
+          title: subject,
+          text: body,
+          files: [file] as any,
+        });
+        return;
+      }
+    } catch (err) {
+      console.warn("Native share failed, falling back to mailto:", err);
+    }
+
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
+      `${body}\n\nAttachment filename: ${file.name}`
+    )}`;
+  }, [file, companyName]);
+
+  const handleComplete = useCallback(async () => {
+    setProcessingAction("complete");
+    try {
+      const ok = uploaded ? true : await uploadSelectedFile();
+      if (!ok) return;
+      await openMailSenderWithAttachment();
+      setShowUploadModal(null);
+    } finally {
+      setProcessingAction(null);
+    }
+  }, [uploaded, uploadSelectedFile, openMailSenderWithAttachment, setShowUploadModal]);
+
+  const handleNegotiate = useCallback(async () => {
+    if (!selectedAction?.action) {
+      setError("Task context is missing.");
+      return;
+    }
+
+    setProcessingAction("negotiate");
+    setSaving(true);
+    setError("");
+    try {
+      completeTaskWithResult(
+        selectedAction.action,
+        "negotiate",
+        undefined,
+        "NDA review marked as negotiate"
+      );
+      setShowUploadModal(null);
+    } catch (err: any) {
+      console.error("Negotiate action failed:", err);
+      setError(err?.message || "Failed to set task as negotiate.");
+    } finally {
+      setSaving(false);
+      setProcessingAction(null);
+    }
+  }, [selectedAction, completeTaskWithResult, setShowUploadModal]);
 
   if (!showUploadModal || !selectedAction) {
     return null;
@@ -189,7 +294,7 @@ export const UploadNdaModal: React.FC<Props> = ({
             Cancel
           </button>
           <button
-            onClick={handleSubmit}
+            onClick={uploadSelectedFile}
             disabled={saving || !file}
             className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
           >
@@ -200,6 +305,31 @@ export const UploadNdaModal: React.FC<Props> = ({
             {saving ? "Uploading..." : "Upload"}
           </button>
         </div>
+
+        {uploaded && isComplexUploadTask && (
+          <div className="flex justify-end gap-3 mt-3">
+            <button
+              onClick={handleNegotiate}
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
+            >
+              {processingAction === "negotiate" && saving && (
+                <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              )}
+              Negotiate
+            </button>
+            <button
+              onClick={handleComplete}
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
+            >
+              {processingAction === "complete" && (
+                <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              )}
+              Complete
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
