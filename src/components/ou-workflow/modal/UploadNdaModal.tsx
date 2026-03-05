@@ -57,7 +57,7 @@ export const UploadNdaModal: React.FC<Props> = ({
     );
   }, [showUploadModal, selectedAction?.action]);
 
-  const isComplexUploadTask = useMemo(() => {
+  const isReviewUploadTask = useMemo(() => {
     const clickedTask = typeof showUploadModal === "object" ? showUploadModal : null;
     const taskType =
       clickedTask?.taskType?.toLowerCase() ||
@@ -68,7 +68,7 @@ export const UploadNdaModal: React.FC<Props> = ({
       selectedAction?.action?.taskCategory?.toLowerCase() ||
       "";
 
-    return taskType === "complex" && taskCategory === "upload";
+    return taskType === "action" && taskCategory === "upload";
   }, [showUploadModal, selectedAction?.action]);
 
   useEffect(() => {
@@ -127,7 +127,7 @@ export const UploadNdaModal: React.FC<Props> = ({
         description: taskName,
         token: token ?? undefined,
       });
-      if (isComplexUploadTask) {
+      if (isReviewUploadTask) {
         setUploaded(true);
       } else {
         completeTaskWithResult(
@@ -156,7 +156,7 @@ export const UploadNdaModal: React.FC<Props> = ({
     taskInstanceId,
     taskName,
     token,
-    isComplexUploadTask,
+    isReviewUploadTask,
     completeTaskWithResult,
     setShowUploadModal,
   ]);
@@ -325,7 +325,7 @@ export const UploadNdaModal: React.FC<Props> = ({
           </button>
         </div>
 
-        {uploaded && isComplexUploadTask && (
+        {uploaded && isReviewUploadTask && (
           <div className="flex justify-end gap-3 mt-3">
             <button
               onClick={handleNegotiate}

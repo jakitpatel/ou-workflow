@@ -266,6 +266,12 @@ export function NCRCDashboard() {
     ) {
       setShowConditionModal(action);
     } 
+    else if (
+      actionCategory === TASK_CATEGORIES.UPLOAD &&
+      [TASK_TYPES.UPLOAD, TASK_TYPES.ACTION].includes(actionType as any)
+    ) {
+      setShowUploadModal(action);
+    }
     else if (actionType === TASK_TYPES.ACTION) {
       if (actionCategory === TASK_CATEGORIES.ASSIGNMENT) {
         setShowActionModal(action);
@@ -275,12 +281,6 @@ export function NCRCDashboard() {
     } 
     else if (actionType === TASK_TYPES.PROGRESS && actionCategory === TASK_CATEGORIES.PROGRESS_TASK) {
       setShowConditionModal(action);
-    }
-    else if (
-      actionCategory === TASK_CATEGORIES.UPLOAD &&
-      [TASK_TYPES.UPLOAD, TASK_TYPES.COMPLEX].includes(actionType as any)
-    ) {
-      setShowUploadModal(action);
     }
   };
 
