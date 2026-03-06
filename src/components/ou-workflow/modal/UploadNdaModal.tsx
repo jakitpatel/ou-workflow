@@ -168,21 +168,32 @@ export const UploadNdaModal: React.FC<Props> = ({
     }
 
     const subject = `NDA Review - ${companyName}`;
-    const body = `Please review the attached NDA: ${file.name}`;
+    let body = `Please review the attached NDA: ${file.name}`;
+    let fileDownloadUrl = `${window.location.origin}/api/applications/${selectedAction?.application?.applicationId}/files/${file.name}`;
+    body = `${body}\n\nDownload: ${fileDownloadUrl}`;
+
+    const safeFileName = file.name?.trim() || "NDA.pdf";
 
     try {
+      // Rebuild file payload so desktop share targets (like Outlook) receive a named, non-empty file object.
+      const shareBlob = await file.arrayBuffer();
+      const shareFile = new File([shareBlob], safeFileName, {
+        type: file.type || "application/octet-stream",
+        lastModified: file.lastModified || Date.now(),
+      });
+
       const maybeNavigator = navigator as Navigator & {
         canShare?: (data?: ShareData) => boolean;
       };
       if (
         maybeNavigator.share &&
         maybeNavigator.canShare &&
-        maybeNavigator.canShare({ files: [file] as any })
+        maybeNavigator.canShare({ files: [shareFile] as any })
       ) {
         await maybeNavigator.share({
           title: subject,
           text: body,
-          files: [file] as any,
+          files: [shareFile] as any,
         });
         return;
       }
@@ -196,16 +207,34 @@ export const UploadNdaModal: React.FC<Props> = ({
   }, [file, companyName]);
 
   const handleComplete = useCallback(async () => {
+    if (!selectedAction?.action) {
+      setError("Task context is missing.");
+      return;
+    }
+
     setProcessingAction("complete");
     try {
       const ok = uploaded ? true : await uploadSelectedFile();
       if (!ok) return;
+      completeTaskWithResult(
+        selectedAction.action,
+        "yes",
+        undefined,
+        "NDA uploaded and marked complete"
+      );
       await openMailSenderWithAttachment();
       setShowUploadModal(null);
     } finally {
       setProcessingAction(null);
     }
-  }, [uploaded, uploadSelectedFile, openMailSenderWithAttachment, setShowUploadModal]);
+  }, [
+    selectedAction,
+    uploaded,
+    uploadSelectedFile,
+    completeTaskWithResult,
+    openMailSenderWithAttachment,
+    setShowUploadModal,
+  ]);
 
   const handleNegotiate = useCallback(async () => {
     if (!selectedAction?.action) {
