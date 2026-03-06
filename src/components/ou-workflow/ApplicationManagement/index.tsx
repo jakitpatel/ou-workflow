@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Upload, CheckCircle, AlertCircle, FileText, Building, Users, Package, Beaker, Send, MessageSquare, AlertTriangle, Check, X, Shield, MessageCircle } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileText, Building, Users, Package, Beaker, Send, MessageSquare, AlertTriangle, Check, X, Shield, MessageCircle, ClipboardList } from 'lucide-react';
 import Overview from './Overview';
 import CompanySection from './CompanySection';
 import ContactsSection from './ContactsSection';
@@ -10,6 +10,7 @@ import FilesList from './FilesList';
 import IngredientMgmt from './Ingredients';
 import QuoteInfo from './QuoteInfo';
 import MessageLog from './MessageLog';
+import TaskEventsPanel from './TaskEventsPanel';
 import type { ApplicationDetail } from '@/types/application';
 
 // Types
@@ -62,6 +63,7 @@ const TABS = [
   { id: 'ingredients', label: 'Ingredients', icon: Beaker },
   { id: 'quote', label: 'Quote', icon: FileText },
   { id: 'activity', label: 'Recent Activity', icon: AlertCircle },
+  { id: 'task-events', label: 'Task Events', icon: ClipboardList },
   { id: 'files', label: 'File Management', icon: Upload },
   { id: 'messages', label: 'Messages', icon: MessageCircle },
 ] as const;
@@ -292,6 +294,14 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
     return statusMap[completionStatus];
   }, [completionStatus]);
 
+  const sortedTaskEvents = useMemo(() => {
+    return [...(application.taskEvents ?? [])].sort((a, b) => {
+      const aTime = new Date(a.ActionDate ?? '').getTime();
+      const bTime = new Date(b.ActionDate ?? '').getTime();
+      return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+    });
+  }, [application.taskEvents]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -442,6 +452,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
             {activeTab === 'ingredients' && <IngredientMgmt application={application} showRecentOnly={showRecentOnly} setShowRecentOnly={setShowRecentOnly} />}
             {activeTab === 'quote' && <QuoteInfo application={application} />}
             {activeTab === 'activity' && <ActivityLog recentActivity={recentActivity} comments={comments} />}
+            {activeTab === 'task-events' && <TaskEventsPanel taskEvents={sortedTaskEvents} />}
             {activeTab === 'files' && <FilesList application={application} />}
             {activeTab === 'messages' && <MessageLog application={application} />}
           </div>
@@ -473,3 +484,4 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
     </div>
   );
 };
+

@@ -343,6 +343,19 @@ export interface PlantContact {
   type: string // "Primary Contact" | "Not Primary Contact" etc.
 }
 
+export interface TaskEvent {
+  Action: string;
+  ActionBy?: string;
+  ActionDate?: string;
+  ActionReason?: string;
+  ApplicationId?: number;
+  Details?: string;
+  NewStatus?: string;
+  PreviousStatus?: string;
+  TaskEventId?: number;
+  TaskInstanceId?: number;
+}
+
 export interface ApplicationDetail {
   applicationId: string;
   status: string;
@@ -363,6 +376,7 @@ export interface ApplicationDetail {
   ingredients?: any[];
   quotes?: QuoteData[]; // <-- added here
   messages?: WFApplicationMessage[];
+  taskEvents?: TaskEvent[];
 }
 
 export interface ApplicationTask {
