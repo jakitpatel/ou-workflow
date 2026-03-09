@@ -172,8 +172,8 @@ export const UploadNdaModal: React.FC<Props> = ({
     let fileDownloadUrl = `${window.location.origin}/api/applications/${selectedAction?.application?.applicationId}/files/${file.name}`;
     body = `${body}\n\nDownload: ${fileDownloadUrl}`;
 
+    /*
     const safeFileName = file.name?.trim() || "NDA.pdf";
-
     try {
       // Rebuild file payload so desktop share targets (like Outlook) receive a named, non-empty file object.
       const shareBlob = await file.arrayBuffer();
@@ -200,7 +200,7 @@ export const UploadNdaModal: React.FC<Props> = ({
     } catch (err) {
       console.warn("Native share failed, falling back to mailto:", err);
     }
-
+    */
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
       `${body}\n\nAttachment filename: ${file.name}`
     )}`;
