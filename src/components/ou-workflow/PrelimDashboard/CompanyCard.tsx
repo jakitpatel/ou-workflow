@@ -170,6 +170,11 @@ export function CompanyCard({
                 key={stageName}
                 onClick={(e) => {
                   e.stopPropagation()
+                  if (expanded && expandedStage === stageName) {
+                    setExpandedStage(null)
+                    setExpanded(null)
+                    return
+                  }
                   setExpanded(String(company.applicationId))
                   setExpandedStage(stageName)
                 }}
@@ -258,9 +263,14 @@ export function CompanyCard({
         <div className="expanded-panel">
           <PrelimAppExpandedStageTasks
             expandedStage={expandedStage}
-            setExpandedStage={(stage) =>
-              stage ? setExpandedStage(stage) : setExpanded(null)
-            }
+            setExpandedStage={(stage) => {
+              if (stage) {
+                setExpandedStage(stage)
+                return
+              }
+              setExpandedStage(null)
+              setExpanded(null)
+            }}
             applicant={company}
             handleTaskAction={handleTaskAction}
           />
