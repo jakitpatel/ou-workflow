@@ -443,7 +443,7 @@ export const ApplicationManagementInterface = ({ application }: Props) => {
           </nav>
 
           {/* Main Content Area */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {activeTab === "overview" && <Overview application={application} allValidationsPassed={allValidationsPassed} />}
             {activeTab === 'company' && <CompanySection application={application} editMode={editMode} />}
             {activeTab === 'contacts' && <ContactsSection application={application} editMode={editMode} />}

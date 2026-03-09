@@ -52,7 +52,7 @@ export default function FilesList({ application }: { application: ApplicationDet
   };
   
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="w-full min-w-0 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <h2 className="text-2xl font-semibold text-gray-900">File Management</h2>
@@ -79,7 +79,7 @@ export default function FilesList({ application }: { application: ApplicationDet
       </div>
 
       {/* Files List Section */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden mb-6">
+      <div className="w-full border border-gray-200 rounded-lg overflow-hidden mb-6">
         <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Uploaded Files</h3>
         </div>
@@ -99,7 +99,7 @@ export default function FilesList({ application }: { application: ApplicationDet
               return (
               <div 
                 key={index} 
-                className="group flex items-center justify-between gap-4 p-4 hover:bg-slate-50/80 transition-colors"
+                className="group flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 p-4 min-w-0 hover:bg-slate-50/80 transition-colors"
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className="flex-shrink-0 rounded-lg bg-slate-100 p-2.5 border border-slate-200">
@@ -117,19 +117,19 @@ export default function FilesList({ application }: { application: ApplicationDet
                       </a>
                     </h3>
                     {(leftMeta.length > 0 || rightMeta.length > 0) && (
-                      <div className="mt-1 flex items-center justify-between gap-3 text-sm text-gray-600 whitespace-nowrap overflow-hidden">
+                      <div className="mt-1 flex items-center justify-between gap-3 text-sm text-gray-600 overflow-hidden min-w-0">
                         <div className="flex items-center gap-2 min-w-0">
                           {leftMeta.map(item => (
-                            <span key={item.label} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 truncate">
-                              <span className="font-semibold text-slate-700">{item.label}:</span>
+                            <span key={item.label} className="inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 truncate">
+                              <span className="font-semibold text-slate-700 shrink-0">{item.label}:</span>
                               <span className="truncate text-slate-600">{item.value}</span>
                             </span>
                           ))}
                         </div>
                         <div className="flex items-center gap-2 min-w-0 justify-end">
                           {rightMeta.map(item => (
-                            <span key={item.label} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 truncate">
-                              <span className="font-semibold text-slate-700">{item.label}:</span>
+                            <span key={item.label} className="inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 truncate">
+                              <span className="font-semibold text-slate-700 shrink-0">{item.label}:</span>
                               <span className="truncate text-slate-600">{item.value}</span>
                             </span>
                           ))}
@@ -139,10 +139,10 @@ export default function FilesList({ application }: { application: ApplicationDet
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                <div className="flex items-center flex-wrap gap-2 xl:gap-3 xl:justify-end xl:ml-4">
                   {/* File Type Badge */}
                   {file.description && (
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                       file.FileType === 'ingredients' ? 'bg-green-100 text-green-800 border border-green-200' :
                       file.FileType === 'products' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
                       file.FileType === 'application' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
@@ -154,12 +154,12 @@ export default function FilesList({ application }: { application: ApplicationDet
                   
                   {/* Processed Badge */}
                   {file.IsProcessed ? (
-                    <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-medium whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-medium">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Processed
                     </span>
                   ) : (
-                    <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-full text-xs font-medium whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-full text-xs font-medium">
                       <AlertCircle className="h-3 w-3 mr-1" />
                       Pending
                     </span>
@@ -168,7 +168,7 @@ export default function FilesList({ application }: { application: ApplicationDet
                   {/* Download Button */}
                   <button
                     onClick={() => downloadFile(file.FileName ?? "", file.FilePath)}
-                    className="flex items-center px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap"
+                    className="flex items-center px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                     title="Download file"
                   >
                     <Download className="h-4 w-4 mr-1" />
