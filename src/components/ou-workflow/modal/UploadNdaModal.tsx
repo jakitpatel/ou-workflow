@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Upload, X } from "lucide-react";
 import { uploadApplicationFile } from "@/api";
 import { useUser } from "@/context/UserContext";
+import { useApplicationDetail } from "@/components/ou-workflow/hooks/useApplicationDetail";
 import type { Applicant, Task } from "@/types/application";
 
 type SelectedAction = {
@@ -38,6 +39,7 @@ export const UploadNdaModal: React.FC<Props> = ({
   const [processingAction, setProcessingAction] = useState<"complete" | "negotiate" | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
+  const [selectedContactEmail, setSelectedContactEmail] = useState("");
 
   const companyName = useMemo(() => {
     return (
@@ -71,14 +73,60 @@ export const UploadNdaModal: React.FC<Props> = ({
     return taskType === "action" && taskCategory === "upload";
   }, [showUploadModal, selectedAction?.action]);
 
+  const applicationId = useMemo(() => {
+    return (
+      selectedAction?.application?.applicationId ??
+      selectedAction?.action?.applicationId ??
+      null
+    );
+  }, [selectedAction]);
+
+  const { data: applicationDetail, isLoading: isApplicationDetailLoading } = useApplicationDetail(
+    showUploadModal && isReviewUploadTask && applicationId != null ? String(applicationId) : undefined
+  );
+
+  const companyContacts = useMemo(() => {
+    const contacts = applicationDetail?.companyContacts ?? [];
+    return contacts.filter(
+      (contact: any) => Boolean(contact?.email) && Boolean(contact?.name)
+    );
+  }, [applicationDetail?.companyContacts]);
+
   useEffect(() => {
     if (!showUploadModal) {
       setFile(null);
       setUploaded(false);
       setError("");
       setIsDragging(false);
+      setSelectedContactEmail("");
     }
   }, [showUploadModal]);
+
+  useEffect(() => {
+    if (!showUploadModal || !isReviewUploadTask || !uploaded) {
+      return;
+    }
+
+    if (companyContacts.length === 0) {
+      setSelectedContactEmail("");
+      return;
+    }
+
+    if (selectedContactEmail && companyContacts.some((c: any) => c.email === selectedContactEmail)) {
+      return;
+    }
+
+    const primaryContact = companyContacts.find(
+      (contact: any) => String(contact.type).toLowerCase() === "primary contact"
+    );
+    setSelectedContactEmail(primaryContact?.email ?? companyContacts[0]?.email ?? "");
+  }, [
+    showUploadModal,
+    isReviewUploadTask,
+    uploaded,
+    companyContacts,
+    selectedContactEmail,
+  ]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -201,15 +249,29 @@ export const UploadNdaModal: React.FC<Props> = ({
       console.warn("Native share failed, falling back to mailto:", err);
     }
     */
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
+    const mailTo = selectedContactEmail?.trim() ?? "";
+    window.location.href = `mailto:${encodeURIComponent(
+      mailTo
+    )}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
       `${body}\n\nAttachment filename: ${file.name}`
     )}`;
-  }, [file, companyName]);
+  }, [file, companyName, selectedContactEmail]);
 
   const handleComplete = useCallback(async () => {
     if (!selectedAction?.action) {
       setError("Task context is missing.");
       return;
+    }
+
+    if (isReviewUploadTask) {
+      if (companyContacts.length === 0) {
+        setError("No company contacts found for this application.");
+        return;
+      }
+      if (!selectedContactEmail) {
+        setError("Please select a contact before completing.");
+        return;
+      }
     }
 
     setProcessingAction("complete");
@@ -229,6 +291,9 @@ export const UploadNdaModal: React.FC<Props> = ({
     }
   }, [
     selectedAction,
+    isReviewUploadTask,
+    companyContacts.length,
+    selectedContactEmail,
     uploaded,
     uploadSelectedFile,
     completeTaskWithResult,
@@ -355,27 +420,56 @@ export const UploadNdaModal: React.FC<Props> = ({
         </div>
 
         {uploaded && isReviewUploadTask && (
-          <div className="flex justify-end gap-3 mt-3">
-            <button
-              onClick={handleNegotiate}
-              disabled={saving}
-              className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
-            >
-              {processingAction === "negotiate" && saving && (
-                <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          <div className="mt-3 space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Contact
+              </label>
+              <select
+                value={selectedContactEmail}
+                onChange={(e) => {
+                  setSelectedContactEmail(e.target.value);
+                  setError("");
+                }}
+                disabled={saving || isApplicationDetailLoading || companyContacts.length === 0}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 disabled:bg-gray-100 disabled:text-gray-500"
+              >
+                <option value="">Select contact</option>
+                {companyContacts.map((contact: any) => (
+                  <option
+                    key={`${contact.email}-${contact.name}`}
+                    value={contact.email}
+                  >
+                    {contact.name}
+                  </option>
+                ))}
+              </select>
+              {isApplicationDetailLoading && (
+                <p className="mt-1 text-xs text-gray-500">Loading contacts...</p>
               )}
-              Negotiate
-            </button>
-            <button
-              onClick={handleComplete}
-              disabled={saving}
-              className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
-            >
-              {processingAction === "complete" && (
-                <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              )}
-              Complete
-            </button>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleNegotiate}
+                disabled={saving}
+                className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
+              >
+                {processingAction === "negotiate" && saving && (
+                  <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                )}
+                Negotiate
+              </button>
+              <button
+                onClick={handleComplete}
+                disabled={saving}
+                className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
+              >
+                {processingAction === "complete" && (
+                  <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                )}
+                Complete
+              </button>
+            </div>
           </div>
         )}
       </div>
