@@ -41,6 +41,8 @@ export default function FilesList({ application }: { application: ApplicationDet
     }
   };
 
+  const hasValue = (value: unknown) => value !== null && value !== undefined && String(value).trim() !== '';
+
   // Calculate statistics
   const stats = {
     total: uploadedFiles.length,
@@ -83,13 +85,24 @@ export default function FilesList({ application }: { application: ApplicationDet
         </div>
         <div className="divide-y divide-gray-200 bg-white">
           {uploadedFiles.length > 0 ? (
-            uploadedFiles.map((file, index) => (
+            uploadedFiles.map((file, index) => {
+              const leftMeta = [
+                { label: 'FileSize', value: file.FileSize },
+                { label: 'FileID', value: file.FileID ?? file.fileId }
+              ].filter(item => hasValue(item.value));
+
+              const rightMeta = [
+                { label: 'Tag', value: file.Tag ?? file.tag },
+                { label: 'CreatedBy', value: file.CreatedBy ?? file.createdBy }
+              ].filter(item => hasValue(item.value));
+
+              return (
               <div 
                 key={index} 
-                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                className="group flex items-center justify-between gap-4 p-4 hover:bg-slate-50/80 transition-colors"
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 rounded-lg bg-slate-100 p-2.5 border border-slate-200">
                     {getFileIcon(file.FileType)}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -98,24 +111,31 @@ export default function FilesList({ application }: { application: ApplicationDet
                         href={file.FilePath}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 hover:underline"
+                        className="text-blue-700 hover:text-blue-900 hover:underline"
                       >
                         {file.FileName}
                       </a>
                     </h3>
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span className="text-sm text-gray-600">{file.FileSize}</span>
-                      <span className="text-gray-400">•</span>
-                      <span className="text-sm text-gray-600">Uploaded {file.UploadedDate}</span>
-                      {file.RecordCount && (
-                        <>
-                          <span className="text-gray-400">•</span>
-                          <span className="text-sm text-green-600 font-medium">
-                            {file.RecordCount} records extracted
-                          </span>
-                        </>
-                      )}
-                    </div>
+                    {(leftMeta.length > 0 || rightMeta.length > 0) && (
+                      <div className="mt-1 flex items-center justify-between gap-3 text-sm text-gray-600 whitespace-nowrap overflow-hidden">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {leftMeta.map(item => (
+                            <span key={item.label} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 truncate">
+                              <span className="font-semibold text-slate-700">{item.label}:</span>
+                              <span className="truncate text-slate-600">{item.value}</span>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-2 min-w-0 justify-end">
+                          {rightMeta.map(item => (
+                            <span key={item.label} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 truncate">
+                              <span className="font-semibold text-slate-700">{item.label}:</span>
+                              <span className="truncate text-slate-600">{item.value}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -156,7 +176,7 @@ export default function FilesList({ application }: { application: ApplicationDet
                   </button>
                 </div>
               </div>
-            ))
+            )})
           ) : (
             <div className="py-12 text-center">
               <div className="text-gray-400">

@@ -281,16 +281,20 @@ export interface Contact { type:string; name:string; phone?:string; email?:strin
 export interface Plant { id:number; plantId:string; name:string; address:any; contact:any; manufacturing:any; otherProducts?:boolean; otherProductsList?:string, otherPlantsProducing?:boolean, otherPlantsLocation?:string }
 
 export interface UploadedFile { 
-  fileId:number; 
+  fileId?:number; 
+  FileID?: number;
   FileType:string; 
   FilePath:string; 
   UploadedDate:string; 
   tag?:string; 
+  Tag?: string;
   IsProcessed?:boolean; 
   RecordCount?:number; 
   description?:string;
   FileName?:string | undefined;
   FileSize?:string | undefined;
+  CreatedBy?: string;
+  createdBy?: string;
 }
 
 export interface QuoteItem {
