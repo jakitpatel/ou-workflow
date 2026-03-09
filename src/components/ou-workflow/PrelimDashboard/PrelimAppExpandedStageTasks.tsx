@@ -195,19 +195,22 @@ export function PrelimAppExpandedStageTasks({ expandedStage, setExpandedStage, a
     }
   }
 
+  const normalizedExpandedStage =
+    expandedStage?.toLowerCase() === 'global' ? null : expandedStage
+
   return (
     <div>
       {/* Expanded Stage Details */}
-      {expandedStage &&
-        applicant?.stages?.[expandedStage]?.tasks?.length > 0 && (
+      {normalizedExpandedStage &&
+        applicant?.stages?.[normalizedExpandedStage]?.tasks?.length > 0 && (
         <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-bold text-gray-900 capitalize text-lg">
-              {expandedStage} Stage Tasks
+              {normalizedExpandedStage} Stage Tasks
             </h4>
             <div className="flex items-center space-x-2">
               <span className="px-2 py-1 rounded-full text-xs font-medium">
-                {applicant.stages[expandedStage]?.progress || '0'}% Complete
+                {applicant.stages[normalizedExpandedStage]?.progress || '0'}% Complete
               </span>
               <button
                 onClick={() => setExpandedStage(null)}
@@ -220,7 +223,7 @@ export function PrelimAppExpandedStageTasks({ expandedStage, setExpandedStage, a
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {applicant.stages[expandedStage].tasks.map((task, index) => {
+            {applicant.stages[normalizedExpandedStage].tasks.map((task, index) => {
               const action = mapTaskToAction(task, applicant)
               task.capacity = action.capacity; // Assign capacity for debugging
               return (

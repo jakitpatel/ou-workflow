@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PrelimAppExpandedStageTasks } from './PrelimAppExpandedStageTasks'
 import { Clock, CircleX } from 'lucide-react'
 import type { Applicant, Task } from '@/types/application'
@@ -50,9 +50,27 @@ export function CompanyCard({
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false)
 
   const stageEntries = useMemo(
-    () => Object.entries(company.stages ?? {}),
+    () =>
+      Object.entries(company.stages ?? {}).filter(
+        ([stageName]) => stageName.toLowerCase() !== 'global'
+      ),
     [company.stages]
   )
+  const [expandedStage, setExpandedStage] = useState<string | null>(
+    stageEntries[0]?.[0] ?? null
+  )
+
+  useEffect(() => {
+    if (stageEntries.length === 0) {
+      setExpandedStage(null)
+      return
+    }
+    setExpandedStage((prev) =>
+      prev && stageEntries.some(([stageName]) => stageName === prev)
+        ? prev
+        : stageEntries[0][0]
+    )
+  }, [stageEntries])
 
   const userRoles = useMemo(() => {
     if (role?.toUpperCase() === 'ALL') {
@@ -147,16 +165,18 @@ export function CompanyCard({
 
           <div className="flex items-center gap-2">
             {stageEntries
-              .filter(([stageName]) => stageName.toLowerCase() !== 'global')
               .map(([stageName, stage]) => (
               <button
                 key={stageName}
                 onClick={(e) => {
                   e.stopPropagation()
-                  setExpanded(expanded ? null : String(company.applicationId))
+                  setExpanded(String(company.applicationId))
+                  setExpandedStage(stageName)
                 }}
                 className={`px-4 py-1.5 rounded text-xs font-medium text-white transition-all ${
-                  expanded ? 'ring-2 ring-blue-400 ring-offset-1' : ''
+                  expanded && expandedStage === stageName
+                    ? 'ring-2 ring-blue-400 ring-offset-1'
+                    : ''
                 }`}
                 style={{ backgroundColor: getStageColor(stage.status) }}
                 title={`View ${stageName} tasks`}
@@ -237,9 +257,9 @@ export function CompanyCard({
       {expanded && stageEntries.length > 0 && (
         <div className="expanded-panel">
           <PrelimAppExpandedStageTasks
-            expandedStage={stageEntries[0][0]}
+            expandedStage={expandedStage}
             setExpandedStage={(stage) =>
-              setExpanded(stage ? String(company.applicationId) : null)
+              stage ? setExpandedStage(stage) : setExpanded(null)
             }
             applicant={company}
             handleTaskAction={handleTaskAction}
