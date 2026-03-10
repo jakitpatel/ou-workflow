@@ -313,8 +313,8 @@ export const UploadNdaModal: React.FC<Props> = ({
     try {
       completeTaskWithResult(
         selectedAction.action,
-        "negotiate",
-        undefined,
+        "",
+        "IN_PROGRESS",
         "NDA review marked as negotiate"
       );
       setShowUploadModal(null);
