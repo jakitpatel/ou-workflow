@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { PrelimAppExpandedStageTasks } from './PrelimAppExpandedStageTasks'
-import { Clock, CircleX } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import type { Applicant, Task } from '@/types/application'
 import { ResolvedSection } from '@/components/ou-workflow/PrelimDashboard/ResolvedSection'
 import { useUser } from '@/context/UserContext'
@@ -246,15 +246,15 @@ export function CompanyCard({
                 setShowCancelDialog(true)
               }}
               disabled={!canCancelApplication}
-              className={`inline-flex items-center justify-center w-8 h-8 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+              className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                 canCancelApplication
-                  ? 'text-red-600 hover:text-white hover:bg-red-600 border-red-300 focus:ring-red-500'
-                  : 'text-gray-400 border-gray-300 cursor-not-allowed focus:ring-gray-400'
+                  ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
+                  : 'bg-red-100 text-red-300 cursor-not-allowed focus:ring-red-200'
               }`}
               title={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
               aria-label={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
             >
-              <CircleX className="w-4 h-4" aria-hidden="true" />
+              Withdraw Application
             </button>
           </div>
         </div>
