@@ -11,7 +11,7 @@ export const useApplicationDetail = (applicationId?: string) => {
       applicationId,
       token: token ?? undefined,     // ✅ null → undefined
     }),
-    staleTime: 1000 * 60 * 2,
+    //staleTime: 1000 * 60 * 2,
     refetchOnWindowFocus: false,
     enabled: !!applicationId && (!!token), // fetch only if appId exists
   });
