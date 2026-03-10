@@ -85,6 +85,7 @@ function getTaskBorderClass(status: string): string {
   
   const borderMap: Record<string, string> = {
     completed: 'border-l-green-500',
+    pending: 'border-l-blue-500',
     in_progress: 'border-l-blue-500',
     overdue: 'border-l-red-500',
     blocked: 'border-l-gray-400'
