@@ -77,6 +77,14 @@ export const ConditionalModal: React.FC<Props> = ({
     return selectedAction?.action?.PreScript || "Enter Invoice Amount";
   }, [selectedAction?.action]);
 
+  const prefersYesByDefault = useMemo(() => {
+    return (
+      taskCategory === "approval" &&
+      taskType === "condition" &&
+      taskName.trim().toLowerCase() === "is inspection needed"
+    );
+  }, [taskCategory, taskType, taskName]);
+
   // 🔹 Determine modal type with useMemo
   const modalType = useMemo((): ModalType => {
     if (!selectedAction?.action) return 'default';
@@ -198,12 +206,19 @@ export const ConditionalModal: React.FC<Props> = ({
 
   // 🔹 default-modal "No" button ref & auto-focus
   const noButtonRef = useRef<HTMLButtonElement>(null);
+  const yesButtonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (modalType === 'default' && showConditionModal && noButtonRef.current) {
-      // focus the No button so it's the default
+    if (modalType !== 'default' || !showConditionModal) return;
+
+    if (prefersYesByDefault && yesButtonRef.current) {
+      yesButtonRef.current.focus();
+      return;
+    }
+
+    if (noButtonRef.current) {
       noButtonRef.current.focus();
     }
-  }, [modalType, showConditionModal]);
+  }, [modalType, showConditionModal, prefersYesByDefault]);
 
   // 🔹 CRITICAL: Early return AFTER all hooks
   if (!showConditionModal || !selectedAction) {
@@ -385,16 +400,25 @@ export const ConditionalModal: React.FC<Props> = ({
               disabled={saving}
               className={`px-4 py-2 text-sm rounded-lg transition-colors flex items-center gap-2
                 ${savingValue === 'no' && saving ? 'opacity-50' : ''}
-                ${modalType === 'default' ? 'text-white bg-blue-600 hover:bg-blue-700' : ''}`}
+                ${
+                  prefersYesByDefault
+                    ? 'text-gray-600 hover:text-gray-800 disabled:opacity-40'
+                    : 'text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40'
+                }`}
             >
               {savingValue === 'no' && saving && <Spinner />}
               No
             </button>
 
             <button
+              ref={yesButtonRef}
               onClick={() => handleSave("yes")}
               disabled={saving}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-40 transition-colors"
+              className={`px-4 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 ${
+                prefersYesByDefault
+                  ? 'text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40'
+                  : 'text-gray-600 hover:text-gray-800 disabled:opacity-40'
+              }`}
             >
               {savingValue === 'yes' && saving && <Spinner />}
               Yes
