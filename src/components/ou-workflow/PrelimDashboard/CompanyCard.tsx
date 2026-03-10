@@ -48,6 +48,8 @@ export function CompanyCard({
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false)
+  const defaultProgressVisible = normalizeStatus(company.status) !== 'completed'
+  const [isProgressVisible, setIsProgressVisible] = useState(defaultProgressVisible)
 
   const stageEntries = useMemo(
     () =>
@@ -71,6 +73,10 @@ export function CompanyCard({
         : stageEntries[0][0]
     )
   }, [stageEntries])
+
+  useEffect(() => {
+    setIsProgressVisible(defaultProgressVisible)
+  }, [defaultProgressVisible, company.applicationId])
 
   const userRoles = useMemo(() => {
     if (role?.toUpperCase() === 'ALL') {
@@ -192,23 +198,6 @@ export function CompanyCard({
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                if (!canCancelApplication) return
-                setShowCancelDialog(true)
-              }}
-              disabled={!canCancelApplication}
-              className={`inline-flex items-center justify-center w-8 h-8 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-                canCancelApplication
-                  ? 'text-red-600 hover:text-white hover:bg-red-600 border-red-300 focus:ring-red-500'
-                  : 'text-gray-400 border-gray-300 cursor-not-allowed focus:ring-gray-400'
-              }`}
-              title={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
-              aria-label={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
-            >
-              <CircleX className="w-4 h-4" aria-hidden="true" />
-            </button>
             {company.status && (
               <span className="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
                 {company.status}
@@ -239,6 +228,33 @@ export function CompanyCard({
               className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
             >
               View Application
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsProgressVisible((prev) => !prev)
+              }}
+              className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+            >
+              {isProgressVisible ? 'Hide Progress' : 'Show Progress'}
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (!canCancelApplication) return
+                setShowCancelDialog(true)
+              }}
+              disabled={!canCancelApplication}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                canCancelApplication
+                  ? 'text-red-600 hover:text-white hover:bg-red-600 border-red-300 focus:ring-red-500'
+                  : 'text-gray-400 border-gray-300 cursor-not-allowed focus:ring-gray-400'
+              }`}
+              title={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
+              aria-label={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
+            >
+              <CircleX className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -279,7 +295,8 @@ export function CompanyCard({
       <ResolvedSection
         application={company}
         loading={false}
-        defaultVisible={normalizeStatus(company.status) !== 'completed'}
+        defaultVisible={defaultProgressVisible}
+        isProgressVisible={isProgressVisible}
       />
     </div>
   )

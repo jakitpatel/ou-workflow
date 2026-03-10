@@ -248,22 +248,6 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
           />
         </div>
         <div className="flex items-center space-x-2 flex-shrink-0">
-          <button
-            onClick={() => {
-              if (!canCancelApplication) return;
-              setShowCancelDialog(true);
-            }}
-            disabled={!canCancelApplication}
-            className={`inline-flex items-center justify-center w-8 h-8 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-              canCancelApplication
-                ? 'text-red-600 hover:text-white hover:bg-red-600 border-red-300 focus:ring-red-500'
-                : 'text-gray-400 border-gray-300 cursor-not-allowed focus:ring-gray-400'
-            }`}
-            title={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
-            aria-label={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
-          >
-            <CircleX className="w-4 h-4" aria-hidden="true" />
-          </button>
           {showAIAssistant && (
             <button
               onClick={toggleAIAssistant}
@@ -313,6 +297,11 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         onViewTasks={handleViewTasks}
         dashboardSearch={dashboardSearch}
         filesByType={filesByType}
+        canCancelApplication={canCancelApplication}
+        onCancelApplication={() => {
+          if (!canCancelApplication) return;
+          setShowCancelDialog(true);
+        }}
       />
     </div>
   );
@@ -487,6 +476,8 @@ interface CardActionsProps {
   applicant: Applicant;
   onViewTasks: (id?: string | number) => void;
   dashboardSearch: Record<string, unknown>;
+  canCancelApplication?: boolean;
+  onCancelApplication?: () => void;
 }
 
 function CardFooter({
@@ -494,16 +485,30 @@ function CardFooter({
   onViewTasks,
   dashboardSearch,
   filesByType,
+  canCancelApplication,
+  onCancelApplication,
 }: CardActionsProps & { filesByType?: Record<string, any> }) {
   return (
     <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-4">
       <DocumentLinks filesByType={filesByType} />
-      <CardActions applicant={applicant} onViewTasks={onViewTasks} dashboardSearch={dashboardSearch} />
+      <CardActions
+        applicant={applicant}
+        onViewTasks={onViewTasks}
+        dashboardSearch={dashboardSearch}
+        canCancelApplication={canCancelApplication}
+        onCancelApplication={onCancelApplication}
+      />
     </div>
   );
 }
 
-function CardActions({ applicant, onViewTasks, dashboardSearch }: CardActionsProps) {
+function CardActions({
+  applicant,
+  onViewTasks,
+  dashboardSearch,
+  canCancelApplication = false,
+  onCancelApplication,
+}: CardActionsProps) {
   return (
     <div className="flex items-center space-x-2 ml-auto">
       <Link
@@ -520,6 +525,19 @@ function CardActions({ applicant, onViewTasks, dashboardSearch }: CardActionsPro
         className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
       >
         View Tasks {'->'}
+      </button>
+      <button
+        onClick={onCancelApplication}
+        disabled={!canCancelApplication}
+        className={`inline-flex items-center justify-center w-8 h-8 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+          canCancelApplication
+            ? 'text-red-600 hover:text-white hover:bg-red-600 border-red-300 focus:ring-red-500'
+            : 'text-gray-400 border-gray-300 cursor-not-allowed focus:ring-gray-400'
+        }`}
+        title={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
+        aria-label={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
+      >
+        <CircleX className="w-4 h-4" aria-hidden="true" />
       </button>
     </div>
   );
