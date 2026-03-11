@@ -23,6 +23,9 @@ type Props = {
 type RcLookupItem = {
   id: string;
   name: string;
+  lookupKey?: string;
+  assigneeValue?: string;
+  personId?: string;
   email?: string;
   userName?: string;
   fullName?: string;
@@ -42,6 +45,7 @@ export const ActionModal: React.FC<Props> = ({
   const dialogRef = useRef<HTMLDivElement>(null);
   const rfrTableBodyRef = useRef<HTMLTableSectionElement>(null);
   const [selectedRc, setSelectedRc] = useState("");
+  const [selectedLookupKey, setSelectedLookupKey] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const [saving, setSaving] = useState(false);
@@ -95,6 +99,7 @@ export const ActionModal: React.FC<Props> = ({
   useEffect(() => {
     if (!showActionModal) {
       setSelectedRc("");
+      setSelectedLookupKey("");
       setSearchTerm("");
       setHighlightedIndex(-1);
     }
@@ -124,6 +129,11 @@ export const ActionModal: React.FC<Props> = ({
     });
   }, [searchTerm, selectlist]);
 
+  const selectLookupItem = (item: RcLookupItem) => {
+    setSelectedRc(item.assigneeValue ?? item.id);
+    setSelectedLookupKey(item.lookupKey ?? item.id);
+  };
+
   useEffect(() => {
     if (!isRfrSelection) {
       return;
@@ -135,7 +145,7 @@ export const ActionModal: React.FC<Props> = ({
     }
 
     const selectedIndex = filteredSelectList.findIndex(
-      (item: RcLookupItem) => item.id === selectedRc
+      (item: RcLookupItem) => (item.lookupKey ?? item.id) === selectedLookupKey
     );
 
     if (selectedIndex >= 0) {
@@ -150,7 +160,7 @@ export const ActionModal: React.FC<Props> = ({
 
       return 0;
     });
-  }, [filteredSelectList, isRfrSelection, selectedRc]);
+  }, [filteredSelectList, isRfrSelection, selectedLookupKey]);
 
   useEffect(() => {
     if (!isRfrSelection || highlightedIndex < 0) {
@@ -223,15 +233,17 @@ export const ActionModal: React.FC<Props> = ({
 
       const candidate =
         filteredSelectList[highlightedIndex] ??
-        filteredSelectList.find((item: RcLookupItem) => item.id === selectedRc) ??
+        filteredSelectList.find(
+          (item: RcLookupItem) => (item.lookupKey ?? item.id) === selectedLookupKey
+        ) ??
         filteredSelectList[0];
 
       if (!candidate) {
         return;
       }
 
-      if (selectedRc !== candidate.id) {
-        setSelectedRc(candidate.id);
+      if ((candidate.lookupKey ?? candidate.id) !== selectedLookupKey) {
+        selectLookupItem(candidate);
         return;
       }
 
@@ -320,16 +332,17 @@ export const ActionModal: React.FC<Props> = ({
                         </tr>
                       ) : (
                         filteredSelectList.map((rc: RcLookupItem, rowIndex: number) => {
-                          const isSelected = selectedRc === rc.id;
+                          const rowLookupKey = rc.lookupKey ?? rc.id;
+                          const isSelected = selectedLookupKey === rowLookupKey;
                           const isHighlighted = highlightedIndex === rowIndex;
 
                           return (
                             <tr
-                              key={rc.id}
+                              key={rowLookupKey}
                               data-rfr-index={rowIndex}
                               onClick={() => {
                                 if (saving) return;
-                                setSelectedRc(rc.id);
+                                selectLookupItem(rc);
                                 setHighlightedIndex(rowIndex);
                               }}
                               onMouseEnter={() => {
@@ -389,14 +402,25 @@ export const ActionModal: React.FC<Props> = ({
           ) : (
             <select
               id="rc-select"
-              value={selectedRc}
+              value={selectedLookupKey}
               disabled={saving}
-              onChange={(e) => setSelectedRc(e.target.value)}
+              onChange={(e) => {
+                const selectedItem = selectlist.find(
+                  (rc: RcLookupItem) => (rc.lookupKey ?? rc.id) === e.target.value
+                );
+
+                if (selectedItem) {
+                  selectLookupItem(selectedItem);
+                } else {
+                  setSelectedRc("");
+                  setSelectedLookupKey("");
+                }
+              }}
               className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
               <option value="">-- Choose --</option>
               {selectlist.map((rc: RcLookupItem) => (
-                <option key={rc.id} value={rc.id}>
+                <option key={rc.lookupKey ?? rc.id} value={rc.lookupKey ?? rc.id}>
                   {rc.name} 
                   {((rc.pct_of_total_apps ?? 0) > 0 ||
                     (rc.pct_of_total_apps_at_work ?? 0) > 0) && (

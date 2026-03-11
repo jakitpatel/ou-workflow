@@ -359,6 +359,13 @@ export async function fetchRoles({
 /**
  * Fetches users by role type (NCRC, RFR, etc.)
  */
+function normalizeLookupText(value: unknown): string {
+  return String(value ?? "")
+    .replace(/[\r\n]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export async function fetchUserByRole({
   token,
   endpoint = "api/vSelectNCRC",
@@ -369,6 +376,9 @@ export async function fetchUserByRole({
   Array<{
     name: string;
     id: string;
+    lookupKey: string;
+    assigneeValue: string;
+    personId?: string;
     email?: string;
     userName?: string;
     fullName?: string;
@@ -390,16 +400,31 @@ export async function fetchUserByRole({
 
   return response.data.map((item: any) => {
     const attributes = item.attributes ?? {};
+    const fullName = normalizeLookupText(
+      attributes.fullName ?? attributes.FullName ?? attributes.RFR ?? item.id
+    );
+    const userName = normalizeLookupText(attributes.userName);
+    const personId = normalizeLookupText(attributes.PERSON_ID ?? item.id);
+    const email = normalizeLookupText(attributes.Email ?? attributes.BusinessEmail);
+    const assigneeValue = userName || personId;
+    const lookupKey =
+      personId ||
+      assigneeValue ||
+      normalizeLookupText(item.links?.self) ||
+      normalizeLookupText(item.id);
 
     return {
-      name: attributes.fullName ?? attributes.FullName ?? attributes.RFR ?? item.id,
-      id: attributes.userName ?? item.id,
-      email: attributes.Email,
-      userName: attributes.userName,
-      fullName: attributes.fullName ?? attributes.FullName,
+      name: fullName,
+      id: assigneeValue,
+      lookupKey,
+      assigneeValue,
+      personId,
+      email,
+      userName,
+      fullName,
       userRole: attributes.UserRole,
       isActive: attributes.IsActive,
-      rfr: attributes.RFR,
+      rfr: normalizeLookupText(attributes.RFR) || fullName,
       pct_of_total_apps: attributes.pct_of_total_apps,
       pct_of_total_apps_at_work: attributes.pct_of_total_apps_at_work,
     };
