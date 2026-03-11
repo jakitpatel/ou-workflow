@@ -6,30 +6,12 @@ export default function FilesList({ application }: { application: ApplicationDet
   const ingredientData = application.ingredients || [];
   const uploadedFiles = application.files || [];
   
-  const downloadFile = async (fileName: string, filePath: string) => {
-    try {
-      const response = await fetch(filePath, {
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Download failed: ${response.statusText}`);
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download failed:', error);
-      alert('Unable to download file. Please make sure you are logged into SharePoint.');
+  const downloadFile = (filePath: string) => {
+    if (!filePath) {
+      return;
     }
+
+    window.open(filePath, "_blank", "noopener,noreferrer");
   };
 
   const getFileIcon = (type: string) => {
@@ -167,11 +149,11 @@ export default function FilesList({ application }: { application: ApplicationDet
                   
                   {/* Download Button */}
                   <button
-                    onClick={() => downloadFile(file.FileName ?? "", file.FilePath)}
-                    className="flex items-center px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    onClick={() => downloadFile(file.FilePath)}
+                    className="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-blue-700 underline-offset-2 transition-colors hover:text-blue-900 hover:underline focus:outline-none"
                     title="Download file"
                   >
-                    <Download className="h-4 w-4 mr-1" />
+                    <Download className="h-4 w-4" />
                     Download
                   </button>
                 </div>
