@@ -41,6 +41,13 @@ export const UploadNdaModal: React.FC<Props> = ({
   const [error, setError] = useState("");
   const [selectedContactEmail, setSelectedContactEmail] = useState("");
 
+  const formatContactLabel = useCallback((contact: any) => {
+    const contactName = String(contact?.name ?? "").trim();
+    const contactType = String(contact?.type ?? "").trim();
+
+    return contactType ? `${contactName} (${contactType})` : contactName;
+  }, []);
+
   const companyName = useMemo(() => {
     return (
       selectedAction?.application?.company ||
@@ -440,7 +447,7 @@ export const UploadNdaModal: React.FC<Props> = ({
                     key={`${contact.email}-${contact.name}`}
                     value={contact.email}
                   >
-                    {contact.name}
+                    {formatContactLabel(contact)}
                   </option>
                 ))}
               </select>
