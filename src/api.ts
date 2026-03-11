@@ -365,7 +365,20 @@ export async function fetchUserByRole({
 }: {
   token?: string | null;
   endpoint?: string;
-} = {}): Promise<Array<{ name: string; id: string }>> {
+} = {}): Promise<
+  Array<{
+    name: string;
+    id: string;
+    email?: string;
+    userName?: string;
+    fullName?: string;
+    userRole?: string;
+    isActive?: boolean;
+    rfr?: string;
+    pct_of_total_apps?: number;
+    pct_of_total_apps_at_work?: number;
+  }>
+> {
   const paginationParams = buildPaginationParams(0, 10000);
   const sortParams = buildSortParams("fullName");
   const params = mergeParams(paginationParams, sortParams);
@@ -376,11 +389,19 @@ export async function fetchUserByRole({
   });
 
   return response.data.map((item: any) => {
+    const attributes = item.attributes ?? {};
+
     return {
-      name: item.attributes.fullName,
-      id: item.attributes.userName,
-      pct_of_total_apps: item.attributes.pct_of_total_apps,
-      pct_of_total_apps_at_work : item.attributes.pct_of_total_apps_at_work,
+      name: attributes.fullName ?? attributes.FullName ?? attributes.RFR ?? item.id,
+      id: attributes.userName ?? item.id,
+      email: attributes.Email,
+      userName: attributes.userName,
+      fullName: attributes.fullName ?? attributes.FullName,
+      userRole: attributes.UserRole,
+      isActive: attributes.IsActive,
+      rfr: attributes.RFR,
+      pct_of_total_apps: attributes.pct_of_total_apps,
+      pct_of_total_apps_at_work: attributes.pct_of_total_apps_at_work,
     };
   });
 }

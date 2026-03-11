@@ -23,6 +23,12 @@ type Props = {
 type RcLookupItem = {
   id: string;
   name: string;
+  email?: string;
+  userName?: string;
+  fullName?: string;
+  userRole?: string;
+  isActive?: boolean;
+  rfr?: string;
   pct_of_total_apps?: number;
   pct_of_total_apps_at_work?: number;
 };
@@ -34,7 +40,10 @@ export const ActionModal: React.FC<Props> = ({
   executeAction,
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const rfrTableBodyRef = useRef<HTMLTableSectionElement>(null);
   const [selectedRc, setSelectedRc] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const [saving, setSaving] = useState(false);
 
   type ActionMeta = {
@@ -67,6 +76,8 @@ export const ActionModal: React.FC<Props> = ({
     isLoading,
   } = useUserListByRole(actionMeta.endpoint, { enabled: !!showActionModal });
 
+  const isRfrSelection = actionMeta.roleType === "RFR";
+
   // 🔹 FIX 3: Extract values safely with useMemo
   const companyName = useMemo(() => {
     return selectedAction?.application?.company || 
@@ -84,8 +95,74 @@ export const ActionModal: React.FC<Props> = ({
   useEffect(() => {
     if (!showActionModal) {
       setSelectedRc("");
+      setSearchTerm("");
+      setHighlightedIndex(-1);
     }
   }, [showActionModal]);
+
+  const filteredSelectList = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return selectlist;
+    }
+
+    return selectlist.filter((item: RcLookupItem) => {
+      const haystack = [
+        item.rfr,
+        item.name,
+        item.fullName,
+        item.userName,
+        item.email,
+        item.userRole,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(normalizedSearch);
+    });
+  }, [searchTerm, selectlist]);
+
+  useEffect(() => {
+    if (!isRfrSelection) {
+      return;
+    }
+
+    if (filteredSelectList.length === 0) {
+      setHighlightedIndex(-1);
+      return;
+    }
+
+    const selectedIndex = filteredSelectList.findIndex(
+      (item: RcLookupItem) => item.id === selectedRc
+    );
+
+    if (selectedIndex >= 0) {
+      setHighlightedIndex(selectedIndex);
+      return;
+    }
+
+    setHighlightedIndex((currentIndex) => {
+      if (currentIndex >= 0 && currentIndex < filteredSelectList.length) {
+        return currentIndex;
+      }
+
+      return 0;
+    });
+  }, [filteredSelectList, isRfrSelection, selectedRc]);
+
+  useEffect(() => {
+    if (!isRfrSelection || highlightedIndex < 0) {
+      return;
+    }
+
+    const activeRow = rfrTableBodyRef.current?.querySelector<HTMLElement>(
+      `[data-rfr-index="${highlightedIndex}"]`
+    );
+
+    activeRow?.scrollIntoView({ block: "nearest" });
+  }, [highlightedIndex, isRfrSelection]);
 
   // ESC key close
   useEffect(() => {
@@ -118,6 +195,50 @@ export const ActionModal: React.FC<Props> = ({
     }
   };
 
+  const handleRfrSearchKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isRfrSelection || saving || filteredSelectList.length === 0) {
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((currentIndex) =>
+        currentIndex < 0
+          ? 0
+          : Math.min(currentIndex + 1, filteredSelectList.length - 1)
+      );
+      return;
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((currentIndex) =>
+        currentIndex <= 0 ? 0 : currentIndex - 1
+      );
+      return;
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+
+      const candidate =
+        filteredSelectList[highlightedIndex] ??
+        filteredSelectList.find((item: RcLookupItem) => item.id === selectedRc) ??
+        filteredSelectList[0];
+
+      if (!candidate) {
+        return;
+      }
+
+      if (selectedRc !== candidate.id) {
+        setSelectedRc(candidate.id);
+        return;
+      }
+
+      await handleSave();
+    }
+  };
+
   // 🔹 FIX 4: Early return AFTER all hooks
   if (!showActionModal || !selectedAction) {
     return null;
@@ -131,7 +252,9 @@ export const ActionModal: React.FC<Props> = ({
       <div
         ref={dialogRef}
         onMouseDown={(e) => e.stopPropagation()}
-        className="relative bg-white rounded-xl shadow-xl p-6 max-w-md w-full animate-scaleIn"
+        className={`relative bg-white rounded-xl shadow-xl p-6 w-full animate-scaleIn ${
+          isRfrSelection ? "max-w-4xl" : "max-w-md"
+        }`}
       >
         {/* X Close button */}
         <button
@@ -155,15 +278,114 @@ export const ActionModal: React.FC<Props> = ({
 
         {/* RC Selection */}
         <div className="mb-6">
-          <label 
-            htmlFor="rc-select"
+          <label
+            htmlFor={isRfrSelection ? "rfr-search" : "rc-select"}
             className="block text-sm font-medium text-gray-700 mb-2"
           >
-            Select Name:
+            {isRfrSelection ? "Select RFR" : "Select Name:"}
           </label>
 
           {isLoading ? (
             <p className="text-sm text-gray-500">Loading {actionMeta.roleType} list...</p>
+          ) : isRfrSelection ? (
+            <div className="space-y-3">
+              <input
+                id="rfr-search"
+                type="text"
+                value={searchTerm}
+                disabled={saving}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={handleRfrSearchKeyDown}
+                placeholder="Search by RFR, full name, username, or email"
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="max-h-80 overflow-y-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium text-gray-600">RFR</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-600">Username</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-600">Email</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-600">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody ref={rfrTableBodyRef}>
+                      {filteredSelectList.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-3 py-6 text-center text-gray-500">
+                            No RFR matches found.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredSelectList.map((rc: RcLookupItem, rowIndex: number) => {
+                          const isSelected = selectedRc === rc.id;
+                          const isHighlighted = highlightedIndex === rowIndex;
+
+                          return (
+                            <tr
+                              key={rc.id}
+                              data-rfr-index={rowIndex}
+                              onClick={() => {
+                                if (saving) return;
+                                setSelectedRc(rc.id);
+                                setHighlightedIndex(rowIndex);
+                              }}
+                              onMouseEnter={() => {
+                                if (!saving) {
+                                  setHighlightedIndex(rowIndex);
+                                }
+                              }}
+                              className={`border-b border-gray-100 cursor-pointer transition-colors ${
+                                isSelected
+                                  ? "bg-blue-100"
+                                  : isHighlighted
+                                  ? "bg-blue-50"
+                                  : "hover:bg-gray-50"
+                              }`}
+                              aria-selected={isSelected}
+                            >
+                              <td className="px-3 py-2 text-gray-900">
+                                <div className="font-medium">{rc.rfr ?? rc.fullName ?? rc.name}</div>
+                                {((rc.pct_of_total_apps ?? 0) > 0 ||
+                                  (rc.pct_of_total_apps_at_work ?? 0) > 0) && (
+                                  <div className="text-xs text-gray-500">
+                                    {(rc.pct_of_total_apps ?? 0) > 0
+                                      ? `${rc.pct_of_total_apps}% total`
+                                      : ""}
+                                    {(rc.pct_of_total_apps ?? 0) > 0 &&
+                                    (rc.pct_of_total_apps_at_work ?? 0) > 0
+                                      ? " | "
+                                      : ""}
+                                    {(rc.pct_of_total_apps_at_work ?? 0) > 0
+                                      ? `${rc.pct_of_total_apps_at_work}% at work`
+                                      : ""}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-gray-700">{rc.userName ?? rc.id}</td>
+                              <td className="px-3 py-2 text-gray-700">{rc.email ?? "-"}</td>
+                              <td className="px-3 py-2">
+                                <span
+                                  className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                                    rc.isActive === false
+                                      ? "bg-red-100 text-red-700"
+                                      : "bg-green-100 text-green-700"
+                                  }`}
+                                >
+                                  {rc.isActive === false ? "Inactive" : "Active"}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           ) : (
             <select
               id="rc-select"
