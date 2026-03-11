@@ -288,9 +288,9 @@ export const ConditionalModal: React.FC<Props> = ({
               onChange={(e) => setFeeValue(e.target.value)}
               className="w-full border rounded-lg px-3 py-2 text-sm mb-6 focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
-              <option value="0">LOW</option>
-              <option value="1">MED</option>
-              <option value="2">HIGH</option>
+              <option value="Fee required and wait for payment">Fee required and wait for payment</option>
+              <option value="Fee required and proceed">Fee required and proceed</option>
+              <option value="No fee required">No fee required</option>
             </select>
 
             <ActionButtons
