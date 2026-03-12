@@ -4,6 +4,7 @@ import { getStatusConfig, getPriorityBorderClass } from './taskHelpers';
 import type { ApplicationTask } from '@/types/application';
 import { useNavigate } from '@tanstack/react-router';
 import { Route as DashboardRoute } from '@/routes/ou-workflow/ncrc-dashboard';
+import { COMPLETED_STATUSES } from '@/lib/utils/taskHelpers';
 
 // Types
 interface PlantInfo {
@@ -65,8 +66,6 @@ const PlantNameButton = memo(({
 ));
 
 PlantNameButton.displayName = 'PlantNameButton';
-
-const COMPLETED_STATUSES = ['complete', 'done', 'completed'];
 
 type ActionButtonProps = {
   taskName: string;

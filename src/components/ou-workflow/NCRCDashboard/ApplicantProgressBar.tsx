@@ -1,6 +1,7 @@
 import React from 'react'
 import type { Applicant } from '@/types/application'
 import { useUser } from '@/context/UserContext'
+import { getStageStatusColor } from '@/lib/utils/taskHelpers'
 
 type Props = {
   applicant: Applicant
@@ -22,14 +23,6 @@ const STAGE_ORDER = [
   { key: 'certification', name: 'Certification' }
 ] as const
 
-const STATUS_COLORS: Record<string, string> = {
-  new: '#808080',
-  completed: '#10b981',
-  in_progress: '#3b82f6',
-  overdue: '#ef4444',
-  blocked: '#9ca3af'
-}
-
 const LAYOUT_CONFIG = {
   leftStages: ['nda', 'inspection'] as const,
   rightStages: ['ingredients', 'products'] as const,
@@ -37,19 +30,6 @@ const LAYOUT_CONFIG = {
   firstStageKey: 'initial' as const,
   lastStageKeys: ['contract', 'certification'] as const
 } as const
-
-// ==========================================
-// Utility Functions
-// ==========================================
-
-function normalizeStatus(status?: string): string {
-  return status?.toLowerCase().trim().replace(/\s+/g, '_') ?? 'unknown'
-}
-
-function getStageColor(status?: string): string {
-  const normalized = normalizeStatus(status)
-  return STATUS_COLORS[normalized] ?? '#d1d5db'
-}
 
 // ==========================================
 // Sub-Components
@@ -70,7 +50,7 @@ function StageButton({ stage, isExpanded, status, onClick, className = '' }: Sta
       className={`px-4 py-1.5 rounded cursor-pointer hover:opacity-80 transition-all ${
         isExpanded ? 'ring-2 ring-blue-400 ring-offset-1' : ''
       } ${className}`}
-      style={{ backgroundColor: getStageColor(status) }}
+      style={{ backgroundColor: getStageStatusColor(status) }}
       title={`Click to see ${stage.name} tasks`}
     >
       <span className="text-white text-xs font-medium truncate">

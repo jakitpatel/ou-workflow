@@ -5,6 +5,7 @@ import type { Applicant, Task } from '@/types/application'
 import { ResolvedSection } from '@/components/ou-workflow/PrelimDashboard/ResolvedSection'
 import { useUser } from '@/context/UserContext'
 import { CancelApplicationDialog } from '@/components/ou-workflow/modal/CancelApplicationDialog'
+import { normalizeStatus, normalizeTaskRoles } from '@/lib/utils/taskHelpers'
 
 type Props = {
   company: Applicant
@@ -26,10 +27,6 @@ const STATUS_COLORS: Record<string, string> = {
   overdue: '#ef4444',
   blocked: '#9ca3af',
   unknown: '#d1d5db',
-}
-
-function normalizeStatus(status?: string): string {
-  return status?.toLowerCase().trim().replace(/\s+/g, '_') ?? 'unknown'
 }
 
 function getStageColor(status?: string): string {
@@ -84,19 +81,6 @@ export function CompanyCard({
     }
     return role ? [role.toLowerCase()] : []
   }, [role, roles])
-
-  function normalizeTaskRoles(taskRoles: any): string[] {
-    if (Array.isArray(taskRoles)) {
-      return taskRoles
-        .map((r: any) => (typeof r === 'string' ? r : r?.taskRole))
-        .filter(Boolean)
-        .map((s: string) => s.toLowerCase())
-    }
-    if (typeof taskRoles === 'string') {
-      return [taskRoles.toLowerCase()]
-    }
-    return []
-  }
 
   const hasCancelPermission = (task: Task | null): boolean => {
     if (!task) return false

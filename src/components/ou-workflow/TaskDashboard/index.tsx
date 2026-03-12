@@ -14,20 +14,24 @@ import { useTasks } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
 import { ErrorDialog, type ErrorDialogRef } from '@/components/ErrorDialog';
 import type { ApplicationTask, Task } from '@/types/application';
 import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';
-// Types
+import {
+  detectRole,
+  getProgressStatus,
+  normalizeStatus,
+} from '@/lib/utils/taskHelpers';
+
 type TaskSearchParams = {
   qs?: string;
   days?: string | number;
 };
 
-// Constants
-const DEBOUNCE_DELAY = 700; // Reduced from 1000ms for better UX
+const DEBOUNCE_DELAY = 700;
 const PRIORITY_ORDER: Record<string, number> = {
   urgent: 0,
   high: 1,
   medium: 2,
   normal: 2,
-  low: 3
+  low: 3,
 };
 
 const STATUS = {
@@ -35,24 +39,19 @@ const STATUS = {
   IN_PROGRESS: 'in_progress',
   PENDING: 'pending',
   COMPLETED: 'completed',
-  COMPLETE: 'complete'
+  COMPLETE: 'complete',
 } as const;
 
-type DaysFilter = string | number; // 'pending' | 7 | 30;
+type DaysFilter = string | number;
 
-// Helper Functions
 const normalizeId = (id: string | number | undefined | null): string => {
   return id != null ? String(id) : '';
-};
-
-const normalizeStatus = (status: string | undefined): string => {
-  return status?.toLowerCase() || '';
 };
 
 const calculateTaskStats = (tasks: ApplicationTask[]) => {
   const userTasks = tasks.map(task => ({
     ...task,
-    status: normalizeStatus(task.status)
+    status: normalizeStatus(task.status),
   }));
 
   return {
@@ -66,35 +65,11 @@ const calculateTaskStats = (tasks: ApplicationTask[]) => {
     completed: userTasks.filter(t => {
       const status = normalizeStatus(t.status);
       return status === STATUS.COMPLETED || status === STATUS.COMPLETE;
-    }).length
+    }).length,
   };
 };
 
-const determineTaskRole = (preScript: string): string => {
-  if (!preScript) return "OtherRole";
-
-  // "api/vSelectRFR,RFR" → ["api/vSelectRFR", "RFR"]
-  const [, role] = preScript.split(",");
-
-  return role?.trim().toUpperCase();
-};
-
-const getStatusFromResult = (result: string): string => {
-  switch (result) {
-    case 'completed':
-      return 'Completed';
-    case 'in_progress':
-      return 'In Progress';
-    case 'pending':
-      return 'Pending';
-    default:
-      return '';
-  }
-};
-
-// Main Component
 export function TaskDashboard() {
-  // Router hooks - Use route-agnostic approach
   const search = useSearch({ strict: false }) as TaskSearchParams;
   const navigate = useNavigate();
   const params = useParams({ strict: false });
@@ -108,14 +83,11 @@ export function TaskDashboard() {
   const [showActionModal, setShowActionModal] = useState<boolean | null | Task>(null);
   const [showConditionModal, setShowConditionModal] = useState<boolean | null | Task>(null);
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
-  // Refs
   const errorDialogRef = useRef<ErrorDialogRef>(null);
 
-  // Context & Hooks
   const { username, role, roles, token } = useUser();
   const queryClient = useQueryClient();
 
-  // Debounce search term
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -124,7 +96,6 @@ export function TaskDashboard() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
-  // Fetch tasks
   const normalizedAppId = useMemo(() => {
     if (typeof applicationId === 'string' || applicationId === undefined) {
       return applicationId;
@@ -136,10 +107,9 @@ export function TaskDashboard() {
     data: tasksplants = [],
     isLoading,
     isError,
-    error
+    error,
   } = useTasks(normalizedAppId, debouncedSearchTerm, daysFilter);
 
-  // Close modals on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element | null;
@@ -158,23 +128,17 @@ export function TaskDashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Calculate stats
-  const taskStats = useMemo(
-    () => calculateTaskStats(tasksplants),
-    [tasksplants]
-  );
+  const taskStats = useMemo(() => calculateTaskStats(tasksplants), [tasksplants]);
 
-  // Filter and sort tasks
   const filteredTasks = useMemo(() => {
     const isAllRole = role?.toUpperCase() === 'ALL';
     const userRoles = isAllRole
       ? (roles ?? []).map(r => r.name?.toLowerCase()).filter(Boolean)
       : role
-      ? [role.toLowerCase()]
-      : [];
+        ? [role.toLowerCase()]
+        : [];
 
-    // Filter by role
-    let filtered = tasksplants.filter(task => {
+    const filtered = tasksplants.filter(task => {
       if (!isAllRole) {
         const taskRole = task.assigneeRole?.toLowerCase();
         return taskRole && userRoles.includes(taskRole);
@@ -182,31 +146,30 @@ export function TaskDashboard() {
       return true;
     });
 
-    // Sort by priority and activity
     return filtered.sort((a, b) => {
       const aPriority = normalizeStatus(a.priority);
       const bPriority = normalizeStatus(b.priority);
-      const priorityDiff = (PRIORITY_ORDER[aPriority] ?? 99) - (PRIORITY_ORDER[bPriority] ?? 99);
-      
+      const priorityDiff =
+        (PRIORITY_ORDER[aPriority] ?? 99) - (PRIORITY_ORDER[bPriority] ?? 99);
+
       if (priorityDiff !== 0) return priorityDiff;
       return (b.daysActive ?? 0) - (a.daysActive ?? 0);
     });
   }, [tasksplants, role, roles]);
 
-  // Mutations
   const confirmTaskMutation = useMutation({
     mutationFn: confirmTask,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasksplants'] });
     },
     onError: (error: any) => {
-      console.error('❌ Failed to confirm task:', error);
+      console.error('Failed to confirm task:', error);
       const message =
         error?.message ||
         error?.response?.data?.message ||
         'Something went wrong while confirming the task.';
       errorDialogRef.current?.open(message);
-    }
+    },
   });
 
   const assignTaskMutation = useMutation({
@@ -215,40 +178,40 @@ export function TaskDashboard() {
       queryClient.invalidateQueries({ queryKey: ['tasksplants'] });
     },
     onError: (error: any) => {
-      console.error('❌ Failed to assign task:', error);
+      console.error('Failed to assign task:', error);
       const message =
         error?.message ||
         error?.response?.data?.message ||
         'Something went wrong while assigning the task.';
       errorDialogRef.current?.open(message);
-    }
+    },
   });
 
-  // Action handlers
   const executeAction = useCallback(
     (assignee: string, action: any, result?: string) => {
       const taskType = action.taskType?.toLowerCase();
       const taskCategory = (action.taskCategory || action.TaskCategory)?.toLowerCase();
       const taskId = action?.TaskInstanceId ?? action?.taskInstanceId;
-      let capacity = "";
-      let assigneeValue = action.assignee;
-      if(assigneeValue.trim() !== '' && assigneeValue.toUpperCase() !== 'NULL'){
-        if(username?.toLowerCase() === assigneeValue.toLowerCase()){
-          capacity = "MEMBER";
+      let capacity = '';
+      const assigneeValue = action.assignee;
+
+      if (assigneeValue.trim() !== '' && assigneeValue.toUpperCase() !== 'NULL') {
+        if (username?.toLowerCase() === assigneeValue.toLowerCase()) {
+          capacity = 'MEMBER';
         } else {
-          capacity = "ASSISTANT";
+          capacity = 'ASSISTANT';
         }
       } else {
-        capacity = "DESIGNATED";
+        capacity = 'DESIGNATED';
       }
+
       const mutationParams = {
         taskId,
         token: token ?? undefined,
         username: username ?? undefined,
-        capacity: capacity
+        capacity,
       };
 
-      // Handle different task types
       if (taskType === TASK_TYPES.CONFIRM && taskCategory === TASK_CATEGORIES.CONFIRMATION) {
         confirmTaskMutation.mutate(mutationParams);
       } else if (
@@ -263,16 +226,15 @@ export function TaskDashboard() {
       } else if (taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.SCHEDULING) {
         confirmTaskMutation.mutate({ ...mutationParams, result });
       } else if (taskType === TASK_TYPES.PROGRESS && taskCategory === TASK_CATEGORIES.PROGRESS_TASK) {
-        const status = result ? getStatusFromResult(result) : '';
+        const status = result ? getProgressStatus(result) : '';
         confirmTaskMutation.mutate({ ...mutationParams, result, status });
       } else if (taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.ASSIGNMENT) {
-        // Fix: Handle both id and applicationId
-        const appId = 
-          selectedAction?.application?.id ?? 
-          selectedAction?.application?.applicationId ?? 
+        const appId =
+          selectedAction?.application?.id ??
+          selectedAction?.application?.applicationId ??
           null;
-        const rawLabel = action?.PreScript; //action?.name ?? action?.taskName ?? '';
-        const roleType = determineTaskRole(rawLabel);
+        const rawLabel = action?.PreScript;
+        const roleType = detectRole(rawLabel);
 
         assignTaskMutation.mutate({
           appId,
@@ -280,7 +242,7 @@ export function TaskDashboard() {
           role: roleType,
           assignee,
           token: token ?? undefined,
-          capacity: capacity
+          capacity,
         });
       }
     },
@@ -296,13 +258,18 @@ export function TaskDashboard() {
 
     const [appId, actId] = selectedActionId.split(':');
 
-    // Fix: Check both id and applicationId fields
     const app = tasksplants.find(
-      a => normalizeId(a.id) === normalizeId(appId) || 
-           normalizeId(a.applicationId) === normalizeId(appId)
+      a =>
+        normalizeId(a.id) === normalizeId(appId) ||
+        normalizeId(a.applicationId) === normalizeId(appId)
     );
     if (!app) {
-      console.warn('No app found for', appId, 'in tasks:', tasksplants.map(t => ({ id: t.id, applicationId: t.applicationId })));
+      console.warn(
+        'No app found for',
+        appId,
+        'in tasks:',
+        tasksplants.map(t => ({ id: t.id, applicationId: t.applicationId }))
+      );
       return null;
     }
 
@@ -322,14 +289,12 @@ export function TaskDashboard() {
 
       console.log('Action clicked for application:', application);
 
-      // Fix: Use applicationId instead of id
       const appId = application.id ?? application.applicationId;
       handleSelectAppActions(appId, application.taskInstanceId);
 
       const actionType = application.taskType?.toLowerCase();
       const actionCategory = application.TaskCategory?.toLowerCase();
 
-      // Route to appropriate modal or execute action
       if (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION) {
         executeAction('Confirmed', application, 'no');
       } else if (
@@ -341,7 +306,9 @@ export function TaskDashboard() {
         setShowActionModal(application);
       } else if (
         actionType === TASK_TYPES.ACTION &&
-        [TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].includes(actionCategory)
+        [TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].includes(
+          actionCategory
+        )
       ) {
         setShowConditionModal(application);
       } else if (actionType === TASK_TYPES.PROGRESS && actionCategory === TASK_CATEGORIES.PROGRESS_TASK) {
@@ -355,14 +322,9 @@ export function TaskDashboard() {
     setShowPlantHistory(plantName);
   }, []);
 
-  /*const handleViewNCRCDashboard = useCallback(() => {
-    console.log('Returning to NCRC Dashboard');
-  }, []);*/
-
-  // Render loading state
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+      <div className="min-h-screen max-w-7xl mx-auto bg-gray-50 p-6">
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
@@ -373,140 +335,133 @@ export function TaskDashboard() {
     );
   }
 
-  // Render error state
   if (isError) {
     return (
-      <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800 font-medium">Error loading tasks</p>
-          <p className="text-red-600 text-sm mt-1">{error?.message || 'An unexpected error occurred'}</p>
+      <div className="min-h-screen max-w-7xl mx-auto bg-gray-50 p-6">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="font-medium text-red-800">Error loading tasks</p>
+          <p className="mt-1 text-sm text-red-600">
+            {error?.message || 'An unexpected error occurred'}
+          </p>
         </div>
       </div>
     );
   }
 
-return (
-  <>
-    {/* Main Content */}
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6">
+  return (
+    <>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="sticky top-16 z-20 bg-gray-50 pb-4">
+            <header className="pt-6 pb-4">
+              <h1 className="text-2xl font-bold text-gray-900">Tasks & Notifications</h1>
+              <p className="mt-1 text-gray-600">
+                Welcome back, {username || 'User'} • Role: {role || 'Not assigned'}
+              </p>
+            </header>
 
-        {/* Sticky Header Section */}
-        <div className="sticky top-16 z-20 bg-gray-50 pb-4">
-          {/* Header */}
-          <header className="pt-6 pb-4">
-            <h1 className="text-2xl font-bold text-gray-900">Tasks & Notifications</h1>
-            <p className="text-gray-600 mt-1">
-              Welcome back, {username || 'User'} • Role: {role || 'Not assigned'}
-            </p>
-          </header>
-
-          {/* Stats */}
-          <div className="pb-4">
-            <TaskStatsCards stats={taskStats} />
-          </div>
-
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex-1">
-              <TaskFilters
-                searchTerm={searchTerm}
-                setSearchTerm={(value) =>
-                  navigate({
-                    search: (prev: TaskSearchParams) => ({
-                      ...prev,
-                      qs: value,
-                    }),
-                  } as any)
-                }
-              />
+            <div className="pb-4">
+              <TaskStatsCards stats={taskStats} />
             </div>
 
-            {/* Days Filter */}
-            <div className="shrink-0">
-              <div className="inline-flex rounded-lg border border-gray-300 overflow-hidden">
-                {(['pending', 7, 30] as DaysFilter[]).map((option, i, arr) => (
-                  <button
-                    key={option}
-                    onClick={() =>
-                      navigate({
-                        search: (prev: TaskSearchParams) => ({
-                          ...prev,
-                          days: option,
-                        }),
-                      } as any)
-                    }
-                    className={[
-                      'px-3 py-1.5 text-sm font-medium transition',
-                      'border-r border-gray-300 last:border-r-0',
-                      daysFilter === option
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-100',
-                      i === 0 && 'rounded-l-lg',
-                      i === arr.length - 1 && 'rounded-r-lg',
-                    ].join(' ')}
-                  >
-                    {option === 'pending' ? 'Pending' : `${option} Days`}
-                  </button>
-                ))}
+            <div className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:flex-row">
+              <div className="flex-1">
+                <TaskFilters
+                  searchTerm={searchTerm}
+                  setSearchTerm={value =>
+                    navigate({
+                      search: (prev: TaskSearchParams) => ({
+                        ...prev,
+                        qs: value,
+                      }),
+                    } as any)
+                  }
+                />
+              </div>
+
+              <div className="shrink-0">
+                <div className="inline-flex overflow-hidden rounded-lg border border-gray-300">
+                  {(['pending', 7, 30] as DaysFilter[]).map((option, i, arr) => (
+                    <button
+                      key={option}
+                      onClick={() =>
+                        navigate({
+                          search: (prev: TaskSearchParams) => ({
+                            ...prev,
+                            days: option,
+                          }),
+                        } as any)
+                      }
+                      className={[
+                        'px-3 py-1.5 text-sm font-medium transition',
+                        'border-r border-gray-300 last:border-r-0',
+                        daysFilter === option
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-gray-700 hover:bg-gray-100',
+                        i === 0 && 'rounded-l-lg',
+                        i === arr.length - 1 && 'rounded-r-lg',
+                      ].join(' ')}
+                    >
+                      {option === 'pending' ? 'Pending' : `${option} Days`}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* ================= TABLE ================= */}
-        <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="max-h-[calc(100vh-20rem)] overflow-y-auto relative">
+          <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div className="relative max-h-[calc(100vh-20rem)] overflow-y-auto">
+              <table className="min-w-full table-fixed">
+                <thead className="sticky top-0 z-10 border-b bg-gray-50">
+                  <tr>
+                    <th className="w-[28%] px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                      Task & Plant
+                    </th>
+                    <th className="w-[16%] px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                      Actions
+                    </th>
+                    <th className="w-[12%] px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                      Role
+                    </th>
+                    <th className="w-[14%] px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                      Assignee
+                    </th>
+                    <th className="w-[15%] px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                      Stage
+                    </th>
+                    <th className="w-[15%] px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
 
-            <table className="min-w-full table-fixed">
-              <thead className="sticky top-0 z-10 bg-gray-50 border-b">
-                <tr>
-                  <th className="w-[28%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Task & Plant
-                  </th>
-                  <th className="w-[16%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Actions
-                  </th>
-                  <th className="w-[12%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Role
-                  </th>
-                  <th className="w-[14%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Assignee
-                  </th>
-                  <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Stage
-                  </th>
-                  <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-gray-200">
-                {filteredTasks.map(application => (
-                  <TaskRow
-                    key={application.taskInstanceId}
-                    application={application}
-                    plantInfo={plantHistory[String(application.plantId) as keyof typeof plantHistory] || undefined}
-                    handleApplicationTaskAction={handleApplicationTaskAction}
-                    handleShowPlantHistory={handleShowPlantHistory}
-                  />
-                ))}
-              </tbody>
-            </table>
-
+                <tbody className="divide-y divide-gray-200">
+                  {filteredTasks.map(application => (
+                    <TaskRow
+                      key={application.taskInstanceId}
+                      application={application}
+                      plantInfo={
+                        plantHistory[String(application.plantId) as keyof typeof plantHistory] ||
+                        undefined
+                      }
+                      handleApplicationTaskAction={handleApplicationTaskAction}
+                      handleShowPlantHistory={handleShowPlantHistory}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-
       </div>
-    </div>
 
-    {/* Modals */}
-    <ActionModal {...{ showActionModal, setShowActionModal, executeAction, selectedAction }} />
-    <ConditionalModal {...{ showConditionModal, setShowConditionModal, executeAction, selectedAction }} />
-    <PlantHistoryModal {...{ showPlantHistory, setShowPlantHistory, plantHistory }} />
-    <ErrorDialog ref={errorDialogRef} />
-  </>
-);
-
+      <ActionModal {...{ showActionModal, setShowActionModal, executeAction, selectedAction }} />
+      <ConditionalModal
+        {...{ showConditionModal, setShowConditionModal, executeAction, selectedAction }}
+      />
+      <PlantHistoryModal {...{ showPlantHistory, setShowPlantHistory, plantHistory }} />
+      <ErrorDialog ref={errorDialogRef} />
+    </>
+  );
 }

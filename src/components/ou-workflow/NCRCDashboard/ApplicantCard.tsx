@@ -20,6 +20,7 @@ import { Route as DashboardRoute } from '@/routes/ou-workflow/ncrc-dashboard';
 import { Route as TaskDashboardRoute } from '@/routes/ou-workflow/tasks-dashboard';
 import { Route as TaskDashboardWithAppRoute } from '@/routes/ou-workflow/tasks-dashboard/$applicationId';
 import { useUser } from '@/context/UserContext';
+import { normalizeTaskRoles } from '@/lib/utils/taskHelpers';
 
 type Props = {
   applicant: Applicant;
@@ -115,19 +116,6 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
       applicant.stages?.['Inspection']?.tasks?.find((t) => t.name === 'KIM Paid')?.status === 'overdue'
     );
   }, [applicant.overdue, applicant.stages]);
-
-  function normalizeTaskRoles(taskRoles: any): string[] {
-    if (Array.isArray(taskRoles)) {
-      return taskRoles
-        .map((r: any) => (typeof r === 'string' ? r : r?.taskRole))
-        .filter(Boolean)
-        .map((s: string) => s.toLowerCase())
-    }
-    if (typeof taskRoles === 'string') {
-      return [taskRoles.toLowerCase()]
-    }
-    return []
-  }
 
   const hasCancelPermission = (task: Task | null): boolean => {
     if (!task) return false
