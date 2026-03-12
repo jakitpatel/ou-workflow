@@ -79,28 +79,67 @@ export default function FilesList({ application }: { application: ApplicationDet
               ].filter(item => hasValue(item.value));
 
               return (
-              <div 
-                key={index} 
-                className="group flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 p-4 min-w-0 hover:bg-slate-50/80 transition-colors"
+              <div
+                key={index}
+                className="group flex items-start gap-4 p-4 min-w-0 hover:bg-slate-50/80 transition-colors"
               >
-                <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="flex items-start gap-4 flex-1 min-w-0">
                   <div className="flex-shrink-0 rounded-lg bg-slate-100 p-2.5 border border-slate-200">
                     {getFileIcon(file.FileType)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-gray-900 truncate">
-                      <a
-                        href={file.FilePath}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-700 hover:text-blue-900 hover:underline"
-                      >
-                        {file.FileName}
-                      </a>
-                    </h3>
-                    {(leftMeta.length > 0 || rightMeta.length > 0) && (
-                      <div className="mt-1 flex items-center justify-between gap-3 text-sm text-gray-600 overflow-hidden min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex flex-col gap-2 min-w-0">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between min-w-0">
+                        <h3 className="min-w-0 flex-1 font-medium text-gray-900 truncate">
+                          <a
+                            href={file.FilePath}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-700 hover:text-blue-900 hover:underline"
+                          >
+                            {file.FileName}
+                          </a>
+                        </h3>
+                        <div className="flex items-center flex-wrap gap-2 sm:justify-end sm:ml-4">
+                          {/* File Type Badge */}
+                          {file.description && (
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                              file.FileType === 'ingredients' ? 'bg-green-100 text-green-800 border border-green-200' :
+                              file.FileType === 'products' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                              file.FileType === 'application' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                              'bg-gray-100 text-gray-800 border border-gray-200'
+                            }`}>
+                              {file.description}
+                            </span>
+                          )}
+
+                          {/* Processed Badge */}
+                          {file.IsProcessed ? (
+                            <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-medium">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Processed
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-full text-xs font-medium">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Pending
+                            </span>
+                          )}
+
+                          {/* Download Button */}
+                          <button
+                            onClick={() => downloadFile(file.FilePath)}
+                            className="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-blue-700 underline-offset-2 transition-colors hover:text-blue-900 hover:underline focus:outline-none"
+                            title="Download file"
+                          >
+                            <Download className="h-4 w-4" />
+                            Download
+                          </button>
+                        </div>
+                      </div>
+                      {(leftMeta.length > 0 || rightMeta.length > 0) && (
+                        <div className="flex flex-col gap-2 text-sm text-gray-600 min-w-0 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex flex-wrap items-center gap-2 min-w-0">
                           {leftMeta.map(item => (
                             <span key={item.label} className="inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 truncate">
                               <span className="font-semibold text-slate-700 shrink-0">{item.label}:</span>
@@ -108,54 +147,18 @@ export default function FilesList({ application }: { application: ApplicationDet
                             </span>
                           ))}
                         </div>
-                        <div className="flex items-center gap-2 min-w-0 justify-end">
-                          {rightMeta.map(item => (
-                            <span key={item.label} className="inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 truncate">
-                              <span className="font-semibold text-slate-700 shrink-0">{item.label}:</span>
-                              <span className="truncate text-slate-600">{item.value}</span>
-                            </span>
-                          ))}
+                          <div className="flex flex-wrap items-center gap-2 min-w-0 sm:justify-end">
+                            {rightMeta.map(item => (
+                              <span key={item.label} className="inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 truncate">
+                                <span className="font-semibold text-slate-700 shrink-0">{item.label}:</span>
+                                <span className="truncate text-slate-600">{item.value}</span>
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center flex-wrap gap-2 xl:gap-3 xl:justify-end xl:ml-4">
-                  {/* File Type Badge */}
-                  {file.description && (
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                      file.FileType === 'ingredients' ? 'bg-green-100 text-green-800 border border-green-200' :
-                      file.FileType === 'products' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
-                      file.FileType === 'application' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                      'bg-gray-100 text-gray-800 border border-gray-200'
-                    }`}>
-                      {file.description}
-                    </span>
-                  )}
-                  
-                  {/* Processed Badge */}
-                  {file.IsProcessed ? (
-                    <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-medium">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Processed
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-full text-xs font-medium">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      Pending
-                    </span>
-                  )}
-                  
-                  {/* Download Button */}
-                  <button
-                    onClick={() => downloadFile(file.FilePath)}
-                    className="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-blue-700 underline-offset-2 transition-colors hover:text-blue-900 hover:underline focus:outline-none"
-                    title="Download file"
-                  >
-                    <Download className="h-4 w-4" />
-                    Download
-                  </button>
                 </div>
               </div>
             )})
