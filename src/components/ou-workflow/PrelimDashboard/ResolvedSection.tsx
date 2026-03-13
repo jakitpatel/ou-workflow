@@ -137,7 +137,7 @@ export function ResolvedSection({
           <div className="mb-4">
             <div className="w-full rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 transition-colors hover:bg-yellow-100 hover:border-yellow-300">
               {/* First Row */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 <button
                   type="button"
                   onClick={() => setOpen(!open)}
@@ -157,58 +157,62 @@ export function ResolvedSection({
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-gray-900 mb-0.5">
-                    {resolved.company.companyName}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-gray-900 mb-0.5">
+                        {resolved.company.companyName}
+                      </div>
+                    </div>
+
+                    <div className="flex-shrink-0 flex flex-wrap gap-1.5 justify-end">
+                      {resolved.company.executedBy && (
+                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                          {resolved.company.executedBy}
+                        </span>
+                      )}
+                      {resolved.company.CompletedDate && (
+                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                          {new Date(resolved.company.CompletedDate).toLocaleString()}
+                        </span>
+                      )}
+                      <span
+                        className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
+                          resolved.company.Id
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : 'bg-orange-50 text-orange-700 border-orange-200'
+                        }`}
+                      >
+                        {resolved.company.Id ? 'ASSIGNED' : 'TO BE ASSIGNED'}
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                        {loading ? '...' : resolved?.plants?.length || 0} plants
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-500 truncate">
-                    <span className="inline-flex items-center rounded-md bg-yellow-100 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
-                      CompanyID: {resolved.company.Id}
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-500 truncate">
-                    {resolved.company.Address}
+
+                  <div className="mt-1 flex items-start justify-between gap-3">
+                    <div className="text-xs text-gray-500 space-y-0.5 min-w-0">
+                      <div>
+                        <span className="inline-flex items-center rounded-md bg-yellow-100 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
+                          CompanyID: {resolved.company.Id}
+                        </span>
+                      </div>
+                      <div className="text-gray-500 truncate">{resolved.company.Address}</div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openCompanyDrawer()
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-yellow-300 bg-white px-3 py-1.5 text-xs font-medium text-yellow-700 hover:bg-yellow-50 transition-colors shadow-sm flex-shrink-0"
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      Resolve Co. ({companyTask?.companyMatchList?.length || 0})
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex-shrink-0 flex flex-wrap gap-1.5 justify-end">
-                  {resolved.company.executedBy && (
-                    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
-                      {resolved.company.executedBy}
-                    </span>
-                  )}
-                  {resolved.company.CompletedDate && (
-                    <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
-                      {new Date(resolved.company.CompletedDate).toLocaleString()}
-                    </span>
-                  )}
-                  <span
-                    className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
-                      resolved.company.Id
-                        ? 'bg-green-50 text-green-700 border-green-200'
-                        : 'bg-orange-50 text-orange-700 border-orange-200'
-                    }`}
-                  >
-                    {resolved.company.Id ? 'ASSIGNED' : 'TO BE ASSIGNED'}
-                  </span>
-                  <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                    {loading ? '...' : resolved?.plants?.length || 0} plants
-                  </span>
-                </div>
-              </div>
-
-              {/* Second Row - Resolve Co. Button */}
-              <div className="flex justify-end mt-2 ml-14">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    openCompanyDrawer()
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-yellow-300 bg-white px-3 py-1.5 text-xs font-medium text-yellow-700 hover:bg-yellow-50 transition-colors shadow-sm"
-                >
-                  <Building2 className="w-3.5 h-3.5" />
-                  Resolve Co. ({companyTask?.companyMatchList?.length || 0})
-                </button>
               </div>
             </div>
           </div>
