@@ -1,290 +1,250 @@
-Welcome to your new TanStack app! 
+# ncrc-app
 
-# Getting Started
+`ncrc-app` is a React + TypeScript workflow application for reviewing and managing NCRC-related applications. It provides authenticated dashboards for:
 
-To run this application:
+- NCRC application review
+- preliminary/intake application review
+- task and notification tracking
+- application detail management, including files, messages, plants, products, ingredients, and task events
+
+This repository is no longer a generic TanStack starter. It is a working business application with Cognito authentication, dynamic API server selection, and multiple review workflows.
+
+## Tech stack
+
+- React 19
+- TypeScript
+- Vite
+- TanStack Router with file-based routes
+- TanStack Query for server state
+- Tailwind CSS 4
+- Radix UI primitives
+- Vitest + Testing Library
+- AWS Cognito PKCE authentication
+
+## What the app does
+
+After login, users land on a home screen that links to the main workflow areas:
+
+- `Application Dashboard`: the primary NCRC dashboard
+- `Tasks & Notifications`: task queue and task-level actions
+- `Application Intake Dashboard`: preliminary/submission application review
+- dashboard management dialogs for creating or deleting dashboard/intake records
+
+Application detail pages expose a richer management UI with tabs such as:
+
+- overview
+- company details
+- company contacts
+- plants
+- products
+- ingredients
+- quote
+- recent activity
+- task events
+- file management
+- messages
+
+## Key runtime behavior
+
+### Authentication
+
+- Protected routing is enforced in `src/routes/__root.tsx`.
+- The app uses AWS Cognito OAuth with PKCE from `src/auth/authService.ts`.
+- Tokens are stored in `sessionStorage`.
+- Unauthenticated users are redirected to `/login`.
+- A local development login path is supported when the selected API server is `http://localhost:3001`.
+
+### API configuration
+
+The app resolves its API base URL dynamically:
+
+1. user-selected server from app context
+2. values exposed on `window.__APP_CONFIG__`
+3. utility fallback
+
+Runtime server options are currently defined in `public/data/config.js` as `API_CLIENT_URL*` values. The login screen lets the user choose one before starting the Cognito flow.
+
+### Routing
+
+The app uses file-based TanStack Router routes under `src/routes`.
+
+Main route groups:
+
+- `/`
+- `/login`
+- `/loginDev`
+- `/profile`
+- `/ou-workflow/ncrc-dashboard`
+- `/ou-workflow/prelim-dashboard`
+- `/ou-workflow/tasks-dashboard`
+- per-application detail routes under dashboard folders
+
+### Build metadata
+
+Before production builds, `scripts/write-build-info.js` updates `src/build-info.json` with:
+
+- incremented patch version
+- build timestamp
+
+This metadata is exposed through `getBuildInfo()` in `src/lib/utils.ts`.
+
+## Getting started
+
+### Prerequisites
+
+- Node.js 20+ recommended
+- npm
+
+### Install
 
 ```bash
 npm install
+```
+
+### Run locally
+
+```bash
+npm run dev
+```
+
+The Vite dev server runs on port `3000`.
+
+You can also use:
+
+```bash
 npm run start
 ```
 
-# Building For Production
+Both `dev` and `start` currently run Vite on port `3000`.
 
-To build this application for production:
-
-```bash
-npm run build
-```
-
-## Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+### Test
 
 ```bash
 npm run test
 ```
 
-## Styling
-
-This project uses CSS for styling.
-
-
-
-
-## Routing
-This project uses [TanStack Router](https://tanstack.com/router). The initial setup is a file based router. Which means that the routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add another a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you use the `<Outlet />` component.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { Outlet, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
-
-import { Link } from "@tanstack/react-router";
-
-export const Route = createRootRoute({
-  component: () => (
-    <>
-      <header>
-        <nav>
-          <Link to="/">Home</Link>
-          <Link to="/about">About</Link>
-        </nav>
-      </header>
-      <Outlet />
-      <TanStackRouterDevtools />
-    </>
-  ),
-})
-```
-
-The `<TanStackRouterDevtools />` component is not required so you can remove it if you don't want it in your layout.
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-const peopleRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/people",
-  loader: async () => {
-    const response = await fetch("https://swapi.dev/api/people");
-    return response.json() as Promise<{
-      results: {
-        name: string;
-      }[];
-    }>;
-  },
-  component: () => {
-    const data = peopleRoute.useLoaderData();
-    return (
-      <ul>
-        {data.results.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    );
-  },
-});
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-### React-Query
-
-React-Query is an excellent addition or alternative to route loading and integrating it into you application is a breeze.
-
-First add your dependencies:
+### Build
 
 ```bash
-npm install @tanstack/react-query @tanstack/react-query-devtools
+npm run build
 ```
 
-Next we'll need to create a query client and provider. We recommend putting those in `main.tsx`.
+Production builds use the base path `/dashboard/`.
 
-```tsx
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-// ...
-
-const queryClient = new QueryClient();
-
-// ...
-
-if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
-
-  root.render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  );
-}
-```
-
-You can also add TanStack Query Devtools to the root route (optional).
-
-```tsx
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-
-const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <Outlet />
-      <ReactQueryDevtools buttonPosition="top-right" />
-      <TanStackRouterDevtools />
-    </>
-  ),
-});
-```
-
-Now you can use `useQuery` to fetch your data.
-
-```tsx
-import { useQuery } from "@tanstack/react-query";
-
-import "./App.css";
-
-function App() {
-  const { data } = useQuery({
-    queryKey: ["people"],
-    queryFn: () =>
-      fetch("https://swapi.dev/api/people")
-        .then((res) => res.json())
-        .then((data) => data.results as { name: string }[]),
-    initialData: [],
-  });
-
-  return (
-    <div>
-      <ul>
-        {data.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-export default App;
-```
-
-You can find out everything you need to know on how to use React-Query in the [React-Query documentation](https://tanstack.com/query/latest/docs/framework/react/overview).
-
-## State Management
-
-Another common requirement for React applications is state management. There are many options for state management in React. TanStack Store provides a great starting point for your project.
-
-First you need to add TanStack Store as a dependency:
+### Preview production build
 
 ```bash
-npm install @tanstack/store
+npm run serve
 ```
 
-Now let's create a simple counter in the `src/App.tsx` file as a demonstration.
+## Available npm scripts
 
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store } from "@tanstack/store";
-import "./App.css";
+- `npm run dev` - start Vite dev server on port 3000
+- `npm run start` - same as `dev`
+- `npm run test` - run Vitest once
+- `npm run build` - generate build info, build the app, then run TypeScript compilation
+- `npm run serve` - preview the built app
 
-const countStore = new Store(0);
+## Project structure
 
-function App() {
-  const count = useStore(countStore);
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
-    </div>
-  );
-}
-
-export default App;
+```text
+ncrc-app/
+|- public/
+|  |- data/config.js              # runtime API server options
+|  |- web.config                  # deployment rewrite/static hosting config
+|- scripts/
+|  |- write-build-info.js         # build version/timestamp generator
+|- src/
+|  |- api.ts                      # API client and endpoint wrappers
+|  |- auth/                       # Cognito config and auth flow
+|  |- components/
+|  |  |- ou-workflow/
+|  |  |  |- ApplicationManagement/
+|  |  |  |- NCRCDashboard/
+|  |  |  |- PrelimDashboard/
+|  |  |  |- TaskDashboard/
+|  |  |  |- hooks/
+|  |  |  |- modal/
+|  |  |- ui/                      # shared UI primitives
+|  |- context/
+|  |  |- UserContext.tsx          # user session, selected API, layout prefs
+|  |- lib/
+|  |  |- constants/
+|  |  |- utils/
+|  |- routes/                     # file-based TanStack routes
+|  |- types/
+|  |- main.tsx                    # app bootstrap
+|- vite.config.ts
+|- vitest.config.ts
+|- tailwind.config.ts
+|- package.json
 ```
 
-One of the many nice features of TanStack Store is the ability to derive state from other state. That derived state will update when the base state updates.
+## Important areas for reviewers
 
-Let's check this out by doubling the count using derived state.
+If you are reviewing the codebase for behavior or future changes, start here:
 
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store, Derived } from "@tanstack/store";
-import "./App.css";
+### 1. App bootstrap
 
-const countStore = new Store(0);
+- `src/main.tsx`
+- `src/routes/__root.tsx`
 
-const doubledStore = new Derived({
-  fn: () => countStore.state * 2,
-  deps: [countStore],
-});
-doubledStore.mount();
+These files show provider setup, router setup, auth gating, global navigation, and toast wiring.
 
-function App() {
-  const count = useStore(countStore);
-  const doubledCount = useStore(doubledStore);
+### 2. Authentication flow
 
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
-      <div>Doubled - {doubledCount}</div>
-    </div>
-  );
-}
+- `src/auth/authService.ts`
+- `src/auth/cognitoConfig.ts`
+- `src/routes/login.tsx`
 
-export default App;
-```
+These files define PKCE login, token refresh, logout, callback handling, and server selection before authentication.
 
-We use the `Derived` class to create a new store that is derived from another store. The `Derived` class has a `mount` method that will start the derived store updating.
+### 3. API integration
 
-Once we've created the derived store we can use it in the `App` component just like we would any other store using the `useStore` hook.
+- `src/api.ts`
+- `src/context/UserContext.tsx`
+- `public/data/config.js`
 
-You can find out everything you need to know on how to use TanStack Store in the [TanStack Store documentation](https://tanstack.com/store/latest).
+These files define how the selected API host is stored, resolved, and used for authenticated requests.
 
-# Demo files
+### 4. Core workflows
 
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
+- `src/components/ou-workflow/NCRCDashboard/`
+- `src/components/ou-workflow/PrelimDashboard/`
+- `src/components/ou-workflow/TaskDashboard/`
+- `src/components/ou-workflow/ApplicationManagement/`
 
-# Learn More
+These folders contain the main business UI and the application review/detail flows.
 
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
+### 5. Route entry points
+
+- `src/routes/ou-workflow/ncrc-dashboard/`
+- `src/routes/ou-workflow/prelim-dashboard/`
+- `src/routes/ou-workflow/tasks-dashboard/`
+
+These route files define search params, route validation, and which top-level feature component is mounted.
+
+## Data flow summary
+
+1. User selects an API server on the login page.
+2. User authenticates through Cognito or uses local-dev login for localhost API mode.
+3. `UserContext` stores session-level app state such as selected API URL, role, stage layout, and pagination mode.
+4. `api.ts` resolves the active base URL and attaches bearer tokens to requests.
+5. Feature hooks/components fetch dashboard or application data and render workflow actions.
+
+## Notes and current implementation details
+
+- `vite.config.ts` uses `/dashboard/` as the production base path and `/` in development.
+- `public/web.config` suggests deployment behind a static host that needs SPA route rewrites.
+- `public/data/*.json` contains mock/reference payloads used during development or prototyping.
+- Some screens still contain demo-style seed data mixed with real API-driven flows, especially inside parts of `ApplicationManagement`.
+
+## Suggested future README additions
+
+If the team wants this document to go further, the next most valuable sections would be:
+
+- environment-specific deployment instructions
+- backend API contract summary
+- role/permission matrix
+- screenshot-based walkthrough of each dashboard
+- testing strategy and coverage expectations
