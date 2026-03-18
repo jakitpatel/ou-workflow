@@ -114,6 +114,7 @@ Implemented:
   - normalized error shape (`AppError`)
 
 ### 5. Create feature-owned API modules
+Status: Completed (March 18, 2026)
 
 Actions:
 - Break `src/api.ts` into domain modules:
@@ -133,7 +134,16 @@ Suggested structure:
 Done when:
 - `src/api.ts` is either removed or replaced with a temporary compatibility re-export layer.
 
+Implemented:
+- Created feature-owned API modules:
+  - `src/features/applications/api/index.ts`
+  - `src/features/tasks/api/index.ts`
+  - `src/features/prelim/api/index.ts`
+  - `src/features/profile/api/index.ts`
+- Replaced `src/api.ts` with a compatibility re-export layer so existing imports continue to work during migration.
+
 ### 6. Normalize request and response typing
+Status: Completed (March 18, 2026)
 
 Actions:
 - Replace broad `any` usage in API functions with typed request/response contracts.
@@ -147,6 +157,19 @@ Examples to address:
 
 Done when:
 - API modules return predictable frontend-friendly types.
+
+Implemented:
+- Added typed request contracts for key feature APIs:
+  - `fetchApplicants`
+  - `fetchApplicationTasks`
+  - `fetchPrelimApplications`
+- Added mapper functions for backend-to-frontend normalization:
+  - `src/features/applications/api/mappers.ts`
+  - `src/features/tasks/api/mappers.ts`
+- Normalized candidate responses through mappers:
+  - applicant list stage key normalization in one mapper (`mapApplicantsResponse`)
+  - application detail shape normalization (`mapApplicationDetailResponse`)
+  - task list key normalization and defaults (`mapApplicationTasksResponse`)
 
 ---
 
