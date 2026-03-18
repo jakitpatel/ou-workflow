@@ -18,6 +18,7 @@ Use this as the working backlog for architectural cleanup, performance hardening
 Goal: make the app safer to change before deeper refactors.
 
 ### 1. Add project standards and guardrails
+Status: Completed (March 18, 2026)
 
 Actions:
 - Add ESLint with TypeScript, React, hooks, and import-order rules.
@@ -37,6 +38,7 @@ Done when:
 - `npm test`
 
 ### 2. Document architectural conventions
+Status: Completed (March 18, 2026)
 
 Actions:
 - Add a short section to `README.md` explaining:
@@ -53,6 +55,7 @@ Done when:
 - New contributors can see the expected structure before editing code.
 
 ### 3. Add a real test bootstrap
+Status: Completed (March 18, 2026)
 
 Actions:
 - Add a shared test setup file for Vitest and Testing Library.
@@ -75,6 +78,8 @@ Goal: remove `src/api.ts` as the central bottleneck.
 
 ### 4. Create a shared HTTP client
 
+Status: Completed (March 18, 2026)
+
 Actions:
 - Move generic fetch logic from `src/api.ts` into a shared module.
 - Centralize:
@@ -95,6 +100,18 @@ Current source:
 
 Done when:
 - No feature endpoint directly owns low-level `fetch` concerns.
+
+Implemented:
+- Added shared transport and error modules:
+  - `src/shared/api/httpClient.ts`
+  - `src/shared/api/errors.ts`
+  - `src/shared/api/types.ts`
+- Rewired `src/api.ts` to use the shared HTTP client for:
+  - base URL resolution
+  - auth header injection
+  - JSON parsing
+  - timeout handling
+  - normalized error shape (`AppError`)
 
 ### 5. Create feature-owned API modules
 

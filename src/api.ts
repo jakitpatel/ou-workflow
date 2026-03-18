@@ -1,4 +1,3 @@
-import { getApiBaseUrl } from "./lib/utils";
 import type {
   ApplicantsResponse,
   ApplicationTasksResponse,
@@ -8,209 +7,24 @@ import type {
   KashrusCompanyDetailsResponse,
   KashrusPlantDetailsResponse,
 } from "./types/application";
+import { getAccessToken } from "@/auth/authService";
 import {
-  getAccessToken,
-  refreshAccessToken,
-  cognitoLogout,
-} from "@/auth/authService";
+  executeRequest,
+  fetchWithAuth,
+  parseErrorBody,
+  resolveApiBaseUrl,
+} from "@/shared/api/httpClient";
+import { createAppError } from "@/shared/api/errors";
+export { fetchWithAuth, registerUserContext } from "@/shared/api/httpClient";
 
 // ============================================================================
 // Types & Interfaces
 // ============================================================================
-
-type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-
-interface FetchOptions {
-  path: string;
-  method?: HttpMethod;
-  body?: any;
-  token?: string | null;
-  headers?: Record<string, string>;
-}
-
-interface ApiError extends Error {
-  status?: number;
-  details?: any;
-}
-
-interface UserContext {
-  apiBaseUrl?: string | null;
-}
-
-// ============================================================================
-// Configuration & Context Management
-// ============================================================================
-
-/**
- * Resolves the API base URL from multiple sources with priority:
- * 1. User context (dynamic selection)
- * 2. Global config window object
- * 3. Environment-based utility fallback
- */
-function resolveApiBaseUrl(): string {
-  try {
-    const userContext = (window as any).__USER_CONTEXT__ as UserContext;
-
-    // Priority 1: User-selected URL from context
-    if (userContext?.apiBaseUrl) {
-      console.debug("[API] Using context URL:", userContext.apiBaseUrl);
-      return userContext.apiBaseUrl;
-    }
-
-    // Priority 2: Global config
-    const config = (window as any).__APP_CONFIG__;
-    if (config) {
-      const servers = Object.keys(config)
-        .filter((key) => key.startsWith("API_CLIENT_URL"))
-        .map((key) => config[key]);
-
-      if (servers.length > 0) {
-        console.debug("[API] Using config URL:", servers[0]);
-        return servers[0];
-      }
-    }
-
-    // Priority 3: Fallback to utility
-    const fallback = getApiBaseUrl();
-    console.debug("[API] Using fallback URL:", fallback);
-    return fallback;
-  } catch (err) {
-    console.warn("[API] Error resolving base URL:", err);
-    return getApiBaseUrl();
-  }
-}
-
-/**
- * Registers user context globally for API URL resolution
- * Should be called once from UserProvider
- */
-export function registerUserContext(ctx: UserContext): void {
-  (window as any).__USER_CONTEXT__ = ctx;
-}
-
-// ============================================================================
-// Core HTTP Client
-// ============================================================================
-
-/**
- * Creates an API error with additional metadata
- */
-function createApiError(
+const createApiError = (
   message: string,
   status?: number,
-  details?: any
-): ApiError {
-  const error = new Error(message) as ApiError;
-  error.status = status;
-  error.details = details;
-  return error;
-}
-
-/**
- * Performs HTTP request with automatic token refresh on 401
- */
-async function executeRequest(
-  url: string,
-  options: RequestInit,
-  token: string | null | undefined
-): Promise<Response> {
-  // First attempt
-  let response = await fetch(url, options);
-
-  // Handle 401 with token refresh
-  if (response.status === 401 && token) {
-    try {
-      console.debug("[API] Token expired, attempting refresh...");
-      const newToken = await refreshAccessToken();
-
-      // Retry with new token
-      const newHeaders = new Headers(options.headers);
-      newHeaders.set("Authorization", `Bearer ${newToken}`);
-
-      response = await fetch(url, {
-        ...options,
-        headers: newHeaders,
-      });
-
-      console.debug("[API] Token refresh successful");
-    } catch (err) {
-      console.error("[API] Token refresh failed:", err);
-      cognitoLogout();
-      throw createApiError("Session expired. Please log in again.", 401);
-    }
-  }
-
-  return response;
-}
-
-/**
- * Parses error response body safely
- */
-async function parseErrorBody(response: Response): Promise<any> {
-  try {
-    return await response.json();
-  } catch {
-    return await response.text().catch(() => null);
-  }
-}
-
-/**
- * Main fetch wrapper with authentication and error handling
- */
-export async function fetchWithAuth<T = any>({
-  path,
-  method = "GET",
-  body,
-  token,
-  headers = {},
-}: FetchOptions): Promise<T> {
-  const baseUrl = resolveApiBaseUrl();
-  const url = `${baseUrl}${path}`;
-  const accessToken = token ?? getAccessToken();
-
-  // Build request headers
-  const requestHeaders: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...headers,
-  };
-
-  if (accessToken) {
-    requestHeaders["Authorization"] = `Bearer ${accessToken}`;
-  }
-
-  // Build request options
-  const requestOptions: RequestInit = {
-    method,
-    headers: requestHeaders,
-    body: body ? JSON.stringify(body) : undefined,
-  };
-
-  try {
-    const response = await executeRequest(url, requestOptions, accessToken);
-
-    // Handle non-OK responses
-    if (!response.ok) {
-      const errorBody = await parseErrorBody(response);
-      const message =
-        errorBody?.message ||
-        errorBody?.error ||
-        `Request failed: ${response.status} ${response.statusText}`;
-
-      throw createApiError(message, response.status, errorBody);
-    }
-
-    return await response.json();
-  } catch (err) {
-    // Re-throw API errors as-is
-    if ((err as ApiError).status) {
-      throw err;
-    }
-
-    // Handle network errors (timeout, CORS, DNS, offline)
-    console.error("[API] Network error:", err);
-    throw err;
-  }
-}
+  details?: unknown,
+) => createAppError(message, { status, details, code: 'API_ERROR' })
 
 // ============================================================================
 // Query Parameter Builders
@@ -586,9 +400,10 @@ export async function uploadApplicationFile({
 
   if (!response.ok) {
     const errorBody = await parseErrorBody(response);
+    const parsedError = errorBody as { message?: string; error?: string } | null;
     const message =
-      errorBody?.message ||
-      errorBody?.error ||
+      parsedError?.message ||
+      parsedError?.error ||
       `Request failed: ${response.status} ${response.statusText}`;
     throw createApiError(message, response.status, errorBody);
   }
