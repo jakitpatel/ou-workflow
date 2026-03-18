@@ -7,8 +7,8 @@ import { Search } from 'lucide-react';
 import { useUser } from '@/context/UserContext'
 //import { useApplications } from '@/components/ou-workflow/hooks/useApplications';
 import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce';
-import { useInfiniteApplications } from '@/components/ou-workflow/hooks/useInfiniteApplications';
-import { usePagedApplications } from '@/components/ou-workflow/hooks/usePagedApplications';
+import { useInfiniteApplications } from '@/features/applications/hooks/useInfiniteApplications';
+import { usePagedApplications } from '@/features/applications/hooks/usePagedApplications';
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 import type { Applicant, Task } from '@/types/application';
 import { ApplicantStatsCards } from './ApplicantStatsCards';

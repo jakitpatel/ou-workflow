@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { X } from "lucide-react";
-import { useUserListByRole } from "@/components/ou-workflow/hooks/useTaskDashboardHooks";
+import { useUserListByRole } from "@/features/tasks/hooks/useTaskQueries";
 import type { Task, Applicant } from "@/types/application";
 
 type SelectedAction = {

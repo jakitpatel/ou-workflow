@@ -205,6 +205,7 @@ Implemented:
 - Removed raw `token` values from query keys and kept token usage in query functions only.
 
 ### 8. Standardize query option defaults
+Status: Completed (March 18, 2026)
 
 Actions:
 - Define feature-specific defaults for:
@@ -221,7 +222,19 @@ Suggested files:
 Done when:
 - Query behavior is intentional and not repeated across hooks.
 
+Implemented:
+- Added shared query defaults module:
+  - `src/shared/api/queryOptions.ts`
+- Added shared query client factory:
+  - `src/shared/api/queryClient.ts`
+- Wired app bootstrap to shared defaults:
+  - `src/main.tsx` now uses `createAppQueryClient()`
+- Migrated repeated per-hook query options to centralized feature defaults for applications, prelim, and task reference lookups.
+- Updated test bootstrap to reuse shared query defaults with test retry overrides:
+  - `src/test/renderWithProviders.tsx`
+
 ### 9. Refactor list/detail hooks by feature
+Status: Completed (March 18, 2026)
 
 Actions:
 - Rewrite hooks so they call feature APIs and query key factories.
@@ -238,6 +251,16 @@ Current candidates:
 
 Done when:
 - Hook responsibilities are clear and consistent.
+
+Implemented:
+- Moved query hooks into feature-owned modules:
+  - `src/features/applications/hooks/*`
+  - `src/features/prelim/hooks/usePrelimApplications.ts`
+  - `src/features/tasks/hooks/useTaskQueries.ts`
+- Extracted shared applications list-query parameter logic to reduce duplication between paged and infinite hooks:
+  - `src/features/applications/hooks/applicationListQuery.ts`
+- Updated consuming screens/components to import feature-owned hooks directly.
+- Kept compatibility layers for existing imports by turning legacy OU workflow hook files into re-exports.
 
 ### 10. Fix mutation invalidation strategy
 

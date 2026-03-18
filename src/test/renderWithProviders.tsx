@@ -10,24 +10,12 @@ import {
   createMemoryHistory,
 } from '@tanstack/react-router'
 import { UserProvider } from '@/context/UserContext'
+import { createTestQueryClient } from '@/shared/api/queryClient'
 
 type ProviderOptions = Omit<RenderOptions, 'wrapper'> & {
   queryClient?: QueryClient
   withRouter?: boolean
   initialEntries?: string[]
-}
-
-function createTestQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-      mutations: {
-        retry: false,
-      },
-    },
-  })
 }
 
 function BaseProviders({

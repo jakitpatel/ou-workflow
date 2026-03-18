@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Upload, X } from "lucide-react";
 import { uploadApplicationFile } from "@/api";
 import { useUser } from "@/context/UserContext";
-import { useApplicationDetail } from "@/components/ou-workflow/hooks/useApplicationDetail";
+import { useApplicationDetail } from "@/features/applications/hooks/useApplicationDetail";
 import type { Applicant, Task } from "@/types/application";
 
 type SelectedAction = {

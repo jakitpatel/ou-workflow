@@ -10,7 +10,7 @@ import { TaskStatsCards } from './TaskStatsCards';
 import { TaskFilters } from './TaskFilters';
 import { TaskRow } from './TaskRow';
 import { plantHistory } from './demoData';
-import { useTasks } from '@/components/ou-workflow/hooks/useTaskDashboardHooks';
+import { useTasks } from '@/features/tasks/hooks/useTaskQueries';
 import { ErrorDialog, type ErrorDialogRef } from '@/components/ErrorDialog';
 import type { ApplicationTask, Task } from '@/types/application';
 import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';

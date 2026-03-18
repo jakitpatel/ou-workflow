@@ -5,7 +5,7 @@ import { fetchPrelimApplicationDetails } from '@/api'
 import { CompanyCard } from '@/components/ou-workflow/PrelimDashboard/CompanyCard'
 import { JsonModal } from '@/components/ou-workflow/PrelimDashboard/JsonModal'
 import { Route } from '@/routes/ou-workflow/prelim-dashboard';
-import { usePrelimApplications } from '@/components/ou-workflow/hooks/usePrelimApplications';
+import { usePrelimApplications } from '@/features/prelim/hooks/usePrelimApplications';
 import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce';
 import { PrelimApplicantStatsCards } from './PrelimApplicantStatsCards';
 import { useUser } from '@/context/UserContext';
@@ -16,6 +16,7 @@ import type { ErrorDialogRef } from '@/components/ErrorDialog';
 import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';
 import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions';
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys';
+import { queryOptionDefaults } from '@/shared/api/queryOptions';
 
 const PAGE_LIMIT = 20;
 const DEBOUNCE_DELAY = 300; // milliseconds
@@ -67,6 +68,7 @@ export function PrelimDashboard() {
       fetchPrelimApplicationDetails(selectedId as number, token ?? undefined),
     enabled: !!selectedId,
     select: (data: any[]) => data?.[0] ?? null,
+    ...queryOptionDefaults.prelimDetail,
   })
 
   // 🔹 Update search params helper

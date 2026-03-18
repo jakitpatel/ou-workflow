@@ -13,6 +13,7 @@ import {
 import { useUser } from '@/context/UserContext'
 import { toast } from 'sonner'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
+import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import type {
   KashrusAddress,
   KashrusCompanyDetail,
@@ -352,8 +353,7 @@ export function ResolutionDrawer({
         token: token ?? undefined,
       }),
     enabled: isOpen && isCompany && selectedMatchId != null,
-    //staleTime: 60_000,
-    refetchOnWindowFocus: false,
+    ...queryOptionDefaults.prelimKashrusDetails,
   })
 
   const { data: plantDbResponse } = useQuery({
@@ -364,8 +364,7 @@ export function ResolutionDrawer({
         token: token ?? undefined,
       }),
     enabled: isOpen && !isCompany && selectedMatchId != null,
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
+    ...queryOptionDefaults.prelimKashrusDetails,
   })
 
   const companyDb: CompanyDbRecord | undefined = getCompanyDbRecord(companyDbResponse)
