@@ -232,6 +232,52 @@ These route files define search params, route validation, and which top-level fe
 4. `api.ts` resolves the active base URL and attaches bearer tokens to requests.
 5. Feature hooks/components fetch dashboard or application data and render workflow actions.
 
+## Architecture conventions
+
+These conventions are required for new work and refactors.
+
+### Route files stay thin
+
+- Keep route files in `src/routes/**` focused on routing concerns only:
+  - route declaration (`createFileRoute`)
+  - search param validation (`validateSearch`)
+  - loader wiring / redirects
+  - mounting a feature screen
+- Do not keep heavy UI state, API mapping logic, or large business workflows inside route files.
+
+### Feature modules own business logic
+
+- Business logic should live in feature modules (target structure: `src/features/<feature>/**`).
+- Keep workflow-specific logic in feature hooks/services, not inside shared UI primitives.
+- Components under `src/components/ui/**` should remain presentational and reusable.
+
+### Server state belongs in TanStack Query
+
+- Remote data fetching, caching, and mutation state must go through TanStack Query.
+- Use `useQuery` for reads and `useMutation` for writes in feature hooks.
+- Avoid ad hoc `useEffect + fetch` patterns in route and screen components.
+
+### Shared API transport stays out of feature UI files
+
+- Low-level transport concerns (base URL resolution, auth headers, timeouts, normalized errors) belong in shared API modules.
+- Feature UI files should call feature hooks/APIs, not raw `fetch`.
+- Keep endpoint contracts and response mapping close to feature API modules, not inline inside JSX components.
+
+### Naming conventions
+
+- Hooks:
+  - Prefix all hooks with `use` (`useApplications`, `useTaskActions`).
+  - Name by domain + intent: `use<Domain><Action|Resource>`.
+- Query hooks:
+  - Prefer names that read as data sources (`useApplicationDetail`, `usePrelimApplications`).
+  - Keep query keys centralized per feature as key factories once introduced.
+- Mutation hooks:
+  - Name by command/action (`useAssignTaskMutation`, `useConfirmTaskMutation`), or group related actions in a clearly named hook (`useTaskActions`).
+- Route search params:
+  - Use a typed `...Search` shape per route (`DashboardSearch`, `PrelimDashboardSearch`).
+  - Keep param names descriptive and stable (`page`, `limit`, `status`, `q`), avoid one-letter names.
+  - Validate and normalize defaults in `validateSearch`.
+
 ## Notes and current implementation details
 
 - `vite.config.ts` uses `/dashboard/` as the production base path and `/` in development.
