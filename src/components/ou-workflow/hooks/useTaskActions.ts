@@ -1,53 +1,31 @@
-import { useMemo } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { assignTask, confirmTask } from '@/api';
-import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';
-import { getAllTasks, getProgressStatus, detectRole } from '@/lib/utils/taskHelpers';
-import type { Applicant, Task } from '@/types/application';
-import { applicationsQueryKeys } from '@/features/applications/model/queryKeys';
+import { useMemo } from 'react'
+import {
+  useAssignTaskMutation,
+  useConfirmTaskMutation,
+} from '@/features/tasks/hooks/useTaskMutations'
+import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
+import { detectRole, getAllTasks, getProgressStatus } from '@/lib/utils/taskHelpers'
+import type { Applicant, Task } from '@/types/application'
 
 type Params = {
-  applications: Applicant[];
-  token?: string;
-  username?: string;
-  onError?: (msg: string) => void;
-};
+  applications: Applicant[]
+  token?: string
+  username?: string
+  onError?: (msg: string) => void
+}
 
-export function useTaskActions({
-  applications,
-  token,
-  username,
-  onError,
-}: Params) {
-  const queryClient = useQueryClient();
+export function useTaskActions({ applications, token, username, onError }: Params) {
+  const confirmTaskMutation = useConfirmTaskMutation({
+    includeApplicationLists: true,
+    includePrelimLists: true,
+    onError: (message) => onError?.(message),
+  })
 
-  const confirmTaskMutation = useMutation({
-    mutationFn: confirmTask,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.all });
-    },
-    onError: (error: any) => {
-      onError?.(
-        error?.message ||
-        error?.response?.data?.message ||
-        'Task confirmation failed'
-      );
-    },
-  });
-
-  const assignTaskMutation = useMutation({
-    mutationFn: assignTask,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.all });
-    },
-    onError: (error: any) => {
-      onError?.(
-        error?.message ||
-        error?.response?.data?.message ||
-        'Task assignment failed'
-      );
-    },
-  });
+  const assignTaskMutation = useAssignTaskMutation({
+    includeApplicationLists: true,
+    includePrelimLists: true,
+    onError: (message) => onError?.(message),
+  })
 
   const executeAction = (
     assignee: string,
@@ -55,27 +33,25 @@ export function useTaskActions({
     result?: string,
     selectedAction?: { application: Applicant; action: Task } | null,
   ) => {
-    const taskType = action.taskType?.toLowerCase();
-    const taskCategory = action.taskCategory?.toLowerCase();
-    const taskId = action.TaskInstanceId;
+    const taskType = action.taskType?.toLowerCase()
+    const taskCategory = action.taskCategory?.toLowerCase()
+    const taskId = action.TaskInstanceId
 
     const baseParams = {
       taskId,
       token: token ?? undefined,
       username: username ?? undefined,
       capacity: action.capacity ?? undefined,
-    };
-
-    if (taskType === TASK_TYPES.CONFIRM) {
-      confirmTaskMutation.mutate(baseParams);
-      return;
     }
 
-    if (
-      [TASK_TYPES.CONDITIONAL, TASK_TYPES.CONDITION].includes(taskType as any)
-    ) {
-      confirmTaskMutation.mutate({ ...baseParams, result: result ?? undefined });
-      return;
+    if (taskType === TASK_TYPES.CONFIRM) {
+      confirmTaskMutation.mutate(baseParams)
+      return
+    }
+
+    if ([TASK_TYPES.CONDITIONAL, TASK_TYPES.CONDITION].includes(taskType as any)) {
+      confirmTaskMutation.mutate({ ...baseParams, result: result ?? undefined })
+      return
     }
 
     if (taskType === TASK_TYPES.ACTION) {
@@ -83,9 +59,9 @@ export function useTaskActions({
         const appId =
           selectedAction?.application?.applicationId ??
           action.application?.applicationId ??
-          action.applicationId;
+          action.applicationId
 
-        const role = detectRole(selectedAction?.action?.PreScript);
+        const role = detectRole(selectedAction?.action?.PreScript)
 
         assignTaskMutation.mutate({
           appId,
@@ -93,13 +69,13 @@ export function useTaskActions({
           role,
           assignee,
           token,
-          capacity: action.capacity ?? undefined
-        });
-        return;
+          capacity: action.capacity ?? undefined,
+        })
+        return
       }
 
-      confirmTaskMutation.mutate({ ...baseParams, result });
-      return;
+      confirmTaskMutation.mutate({ ...baseParams, result })
+      return
     }
 
     if (taskType === TASK_TYPES.PROGRESS) {
@@ -107,23 +83,20 @@ export function useTaskActions({
         ...baseParams,
         result,
         status: getProgressStatus(result ?? ''),
-      });
+      })
     }
-  };
+  }
 
   const completeTaskWithResult = (
     action: Task,
     result: string,
     status?: string,
-    completionNotes?: string
+    completionNotes?: string,
   ) => {
-    const isCancelApplicationTask =
-      action?.name?.toLowerCase().trim() === 'cancel application';
+    const isCancelApplicationTask = action?.name?.toLowerCase().trim() === 'cancel application'
 
-    const finalResult = isCancelApplicationTask ? 'YES' : result;
-    const finalCompletionNotes = isCancelApplicationTask
-      ? completionNotes ?? result
-      : completionNotes;
+    const finalResult = isCancelApplicationTask ? 'YES' : result
+    const finalCompletionNotes = isCancelApplicationTask ? completionNotes ?? result : completionNotes
 
     confirmTaskMutation.mutate({
       taskId: String(action.TaskInstanceId),
@@ -133,26 +106,22 @@ export function useTaskActions({
       result: finalResult,
       status,
       completionNotes: finalCompletionNotes,
-    });
-  };
+    })
+  }
 
   const getSelectedAction = (selectedActionId: string | null) =>
     useMemo(() => {
-      if (!selectedActionId) return null;
-      const [appId, actId] = selectedActionId.split(':');
+      if (!selectedActionId) return null
+      const [appId, actId] = selectedActionId.split(':')
 
-      const app = applications.find(
-        a => String(a.applicationId) === appId
-      );
-      if (!app) return null;
+      const app = applications.find((a) => String(a.applicationId) === appId)
+      if (!app) return null
 
-      const action = getAllTasks(app).find(
-        t => String(t.TaskInstanceId) === actId
-      );
-      if (!action) return null;
+      const action = getAllTasks(app).find((t) => String(t.TaskInstanceId) === actId)
+      if (!action) return null
 
-      return { application: app, action };
-    }, [selectedActionId, applications]);
+      return { application: app, action }
+    }, [selectedActionId, applications])
 
-  return { executeAction, completeTaskWithResult, getSelectedAction };
+  return { executeAction, completeTaskWithResult, getSelectedAction }
 }

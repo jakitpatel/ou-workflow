@@ -263,6 +263,7 @@ Implemented:
 - Kept compatibility layers for existing imports by turning legacy OU workflow hook files into re-exports.
 
 ### 10. Fix mutation invalidation strategy
+Status: Completed (March 18, 2026)
 
 Actions:
 - Replace broad invalidation like `['applications']` with targeted invalidation.
@@ -276,6 +277,21 @@ Current candidates:
 
 Done when:
 - Mutations refresh only what actually changed.
+
+Implemented:
+- Replaced broad mutation invalidation with targeted list scopes:
+  - task mutations now invalidate `tasksQueryKeys.lists()`
+  - optional related invalidation is limited to `applicationsQueryKeys.lists()` and `prelimQueryKeys.lists()`
+- Added focused task mutation hooks:
+  - `src/features/tasks/hooks/useTaskMutations.ts`
+  - split confirm and assign mutation behavior into dedicated hooks
+- Added deterministic cache patching for task-list mutations before refetch:
+  - task status updates on confirm
+  - assignee/role updates on assignment
+- Added focused upload mutation hook and wired upload modal to it:
+  - `src/features/applications/hooks/useUploadApplicationFileMutation.ts`
+- Added focused profile save mutation hook and wired profile route to it:
+  - `src/features/profile/hooks/useSaveProfileLayoutMutation.ts`
 
 ---
 

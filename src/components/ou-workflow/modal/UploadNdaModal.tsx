@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Upload, X } from "lucide-react";
-import { uploadApplicationFile } from "@/api";
 import { useUser } from "@/context/UserContext";
 import { useApplicationDetail } from "@/features/applications/hooks/useApplicationDetail";
+import { useUploadApplicationFileMutation } from "@/features/applications/hooks/useUploadApplicationFileMutation";
 import type { Applicant, Task } from "@/types/application";
 
 type SelectedAction = {
@@ -40,6 +40,9 @@ export const UploadNdaModal: React.FC<Props> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
   const [selectedContactEmail, setSelectedContactEmail] = useState("");
+  const uploadMutation = useUploadApplicationFileMutation({
+    onError: (message) => setError(message),
+  });
 
   const formatContactLabel = useCallback((contact: any) => {
     const contactName = String(contact?.name ?? "").trim();
@@ -170,7 +173,7 @@ export const UploadNdaModal: React.FC<Props> = ({
     setSaving(true);
     setError("");
     try {
-      await uploadApplicationFile({
+      await uploadMutation.mutateAsync({
         file,
         applicationId:
           selectedAction?.application?.applicationId ??
@@ -194,13 +197,7 @@ export const UploadNdaModal: React.FC<Props> = ({
         setShowUploadModal(null);
       }
       return true;
-    } catch (err: any) {
-      console.error("Upload NDA failed:", err);
-      setError(
-        err?.message ||
-          err?.error ||
-          "Failed to upload and submit the document. Please try again."
-      );
+    } catch {
       return false;
     } finally {
       setSaving(false);
@@ -214,6 +211,7 @@ export const UploadNdaModal: React.FC<Props> = ({
     isReviewUploadTask,
     completeTaskWithResult,
     setShowUploadModal,
+    uploadMutation,
   ]);
 
   const openMailSenderWithAttachment = useCallback(async () => {

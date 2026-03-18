@@ -1,23 +1,21 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
+import { Check, Code, Server, Shield, User } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
+import { useSaveProfileLayoutMutation } from '@/features/profile/hooks/useSaveProfileLayoutMutation'
 import { getBuildInfo } from '@/lib/utils'
-import { User, Shield, Server, Code, Check } from 'lucide-react'
-import type {StageLayout, PaginationMode} from '@/types/application';
-import { useMutation } from '@tanstack/react-query';
-import { saveProfileLayout } from '@/api';
+import type { PaginationMode, StageLayout } from '@/types/application'
 
 export const Route = createFileRoute('/profile')({
   component: ProfilePage,
 })
 
-// Info card component for reusability
-function InfoCard({ 
-  icon: Icon, 
-  label, 
-  value, 
-  className = '' 
-}: { 
+function InfoCard({
+  icon: Icon,
+  label,
+  value,
+  className = '',
+}: {
   icon: React.ElementType
   label: string
   value: string | React.ReactNode
@@ -37,12 +35,22 @@ function InfoCard({
 }
 
 function ProfilePage() {
-  const { username, token, role, roles, setRole, apiBaseUrl, stageLayout, setStageLayout, paginationMode, setPaginationMode } = useUser()
+  const {
+    username,
+    token,
+    role,
+    roles,
+    setRole,
+    apiBaseUrl,
+    stageLayout,
+    setStageLayout,
+    paginationMode,
+    setPaginationMode,
+  } = useUser()
   const { version, buildTime } = getBuildInfo()
   const [showRoleChangeSuccess, setShowRoleChangeSuccess] = useState(false)
-  const [showPrefSuccess, setShowPrefSuccess] = useState(false);
+  const [showPrefSuccess, setShowPrefSuccess] = useState(false)
 
-  // Format active role display
   const getActiveRoleDisplay = useCallback(() => {
     if (!role) return 'None selected'
     if (role === 'ALL') {
@@ -52,54 +60,56 @@ function ProfilePage() {
     return role
   }, [role, roles])
 
-  const buildProfileLayout = (): string => {
-    return JSON.stringify({
+  const buildProfileLayout = (): string =>
+    JSON.stringify({
       stageLayout,
       paginationMode,
-    });
-  };
-  // Mutation for confirming task (example usage
-  const saveProfileLayoutMutation = useMutation({
-    mutationFn: () =>
-      saveProfileLayout({
-        token,
-        username: username ?? '',
-        profileLayout: buildProfileLayout(),
-      }),
-    onSuccess: () => {
-      setShowPrefSuccess(true);
-      setTimeout(() => setShowPrefSuccess(false), 2000);
-    },
-    onError: (error: any) => {
-      console.error('❌ Failed to save profile layout:', error);
-    },
-  });
+    })
 
-  // Handle role change with feedback
-  const handleRoleChange = useCallback((selectedValue: string) => {
-    if (selectedValue === role) return // No change
-    
-    if (selectedValue === 'ALL') {
-      setRole('ALL')
-    } else if (selectedValue) {
-      setRole(selectedValue)
-    }
-    
-    // Show success feedback
-    setShowRoleChangeSuccess(true)
-    setTimeout(() => setShowRoleChangeSuccess(false), 2000)
-  }, [role, setRole])
+  const saveProfileLayoutMutation = useSaveProfileLayoutMutation({
+    onSuccess: () => {
+      setShowPrefSuccess(true)
+      setTimeout(() => setShowPrefSuccess(false), 2000)
+    },
+    onError: (error) => {
+      console.error('Failed to save profile layout:', error)
+    },
+  })
+
+  const handleRoleChange = useCallback(
+    (selectedValue: string) => {
+      if (selectedValue === role) return
+
+      if (selectedValue === 'ALL') {
+        setRole('ALL')
+      } else if (selectedValue) {
+        setRole(selectedValue)
+      }
+
+      setShowRoleChangeSuccess(true)
+      setTimeout(() => setShowRoleChangeSuccess(false), 2000)
+    },
+    [role, setRole],
+  )
 
   const handleStageLayoutChange = (value: 'horizontal' | 'mixed') => {
     if (value === stageLayout) return
     setStageLayout(value)
-    saveProfileLayoutMutation.mutate();
+    saveProfileLayoutMutation.mutate({
+      token,
+      username: username ?? '',
+      profileLayout: buildProfileLayout(),
+    })
   }
 
   const handlePaginationModeChange = (value: 'paged' | 'infinite') => {
     if (value === paginationMode) return
     setPaginationMode(value)
-    saveProfileLayoutMutation.mutate();
+    saveProfileLayoutMutation.mutate({
+      token,
+      username: username ?? '',
+      profileLayout: buildProfileLayout(),
+    })
   }
 
   const hasRoles = roles && roles.length > 0
@@ -107,7 +117,6 @@ function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
           <p className="mt-2 text-sm text-gray-600">
@@ -116,26 +125,16 @@ function ProfilePage() {
         </div>
 
         <div className="space-y-6">
-          {/* User Information Card */}
           <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
               <h2 className="text-lg font-semibold text-gray-900">User Information</h2>
             </div>
             <dl className="px-6 py-5 space-y-4">
-              <InfoCard 
-                icon={User} 
-                label="Username" 
-                value={username || 'Not available'} 
-              />
-              <InfoCard 
-                icon={Shield} 
-                label="Active Role" 
-                value={getActiveRoleDisplay()} 
-              />
+              <InfoCard icon={User} label="Username" value={username || 'Not available'} />
+              <InfoCard icon={Shield} label="Active Role" value={getActiveRoleDisplay()} />
             </dl>
           </section>
 
-          {/* Role Selection Card */}
           <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
               <h2 className="text-lg font-semibold text-gray-900">Role Selection</h2>
@@ -143,10 +142,7 @@ function ProfilePage() {
             <div className="px-6 py-5">
               {hasRoles ? (
                 <div className="space-y-3">
-                  <label 
-                    htmlFor="role-select" 
-                    className="block text-sm font-medium text-gray-700"
-                  >
+                  <label htmlFor="role-select" className="block text-sm font-medium text-gray-700">
                     Select your active role
                   </label>
                   <div className="relative">
@@ -166,45 +162,37 @@ function ProfilePage() {
                       ))}
                     </select>
                   </div>
-                  
-                  {/* Success feedback */}
+
                   {showRoleChangeSuccess && (
                     <div className="flex items-center space-x-2 text-sm text-green-600 animate-fade-in">
                       <Check className="w-4 h-4" aria-hidden="true" />
                       <span>Role updated successfully</span>
                     </div>
                   )}
-                  
+
                   <p className="text-xs text-gray-500 mt-2">
                     Changing your role will affect your access permissions
                   </p>
                 </div>
               ) : (
-                <div className="text-sm text-gray-500 py-2">
-                  No roles available
-                </div>
+                <div className="text-sm text-gray-500 py-2">No roles available</div>
               )}
             </div>
           </section>
-          {/* Preferences Card */}
+
           <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Display Preferences
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-900">Display Preferences</h2>
             </div>
 
             <div className="px-6 py-5 space-y-6">
-              {/* Stage Layout */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Application Stage Layout
                 </label>
                 <select
                   value={stageLayout}
-                  onChange={(e) =>
-                    handleStageLayoutChange(e.target.value as StageLayout)
-                  }
+                  onChange={(e) => handleStageLayoutChange(e.target.value as StageLayout)}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
                 >
                   <option value="horizontal">Horizontal (Classic)</option>
@@ -215,16 +203,13 @@ function ProfilePage() {
                 </p>
               </div>
 
-              {/* Pagination Mode */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Application List Pagination
                 </label>
                 <select
                   value={paginationMode}
-                  onChange={(e) =>
-                    handlePaginationModeChange(e.target.value as PaginationMode)
-                  }
+                  onChange={(e) => handlePaginationModeChange(e.target.value as PaginationMode)}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
                 >
                   <option value="paged">Page Controls</option>
@@ -235,7 +220,6 @@ function ProfilePage() {
                 </p>
               </div>
 
-              {/* Success Feedback */}
               {showPrefSuccess && (
                 <div className="flex items-center space-x-2 text-sm text-green-600 animate-fade-in">
                   <Check className="w-4 h-4" />
@@ -245,27 +229,14 @@ function ProfilePage() {
             </div>
           </section>
 
-          {/* System Information Card */}
           <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
               <h2 className="text-lg font-semibold text-gray-900">System Information</h2>
             </div>
             <dl className="px-6 py-5 space-y-4">
-              <InfoCard 
-                icon={Server} 
-                label="API Base URL" 
-                value={apiBaseUrl || 'Not configured'} 
-              />
-              <InfoCard 
-                icon={Code} 
-                label="Build Version" 
-                value={`v${version || 'Unknown'}`} 
-              />
-              <InfoCard 
-                icon={Code} 
-                label="Build Time" 
-                value={buildTime || 'Unknown'} 
-              />
+              <InfoCard icon={Server} label="API Base URL" value={apiBaseUrl || 'Not configured'} />
+              <InfoCard icon={Code} label="Build Version" value={`v${version || 'Unknown'}`} />
+              <InfoCard icon={Code} label="Build Time" value={buildTime || 'Unknown'} />
             </dl>
           </section>
         </div>

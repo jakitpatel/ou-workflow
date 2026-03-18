@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearch, useNavigate, useParams } from '@tanstack/react-router';
-import { assignTask, confirmTask } from '@/api';
 import { useUser } from '@/context/UserContext';
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
@@ -19,7 +17,10 @@ import {
   getProgressStatus,
   normalizeStatus,
 } from '@/lib/utils/taskHelpers';
-import { tasksQueryKeys } from '@/features/tasks/model/queryKeys';
+import {
+  useAssignTaskMutation,
+  useConfirmTaskMutation,
+} from '@/features/tasks/hooks/useTaskMutations';
 
 type TaskSearchParams = {
   qs?: string;
@@ -87,7 +88,6 @@ export function TaskDashboard() {
   const errorDialogRef = useRef<ErrorDialogRef>(null);
 
   const { username, role, roles, token } = useUser();
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -158,32 +158,16 @@ export function TaskDashboard() {
     });
   }, [tasksplants, role, roles]);
 
-  const confirmTaskMutation = useMutation({
-    mutationFn: confirmTask,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tasksQueryKeys.all });
-    },
-    onError: (error: any) => {
-      console.error('Failed to confirm task:', error);
-      const message =
-        error?.message ||
-        error?.response?.data?.message ||
-        'Something went wrong while confirming the task.';
+  const confirmTaskMutation = useConfirmTaskMutation({
+    onError: (message) => {
+      console.error('Failed to confirm task:', message);
       errorDialogRef.current?.open(message);
     },
   });
 
-  const assignTaskMutation = useMutation({
-    mutationFn: assignTask,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tasksQueryKeys.all });
-    },
-    onError: (error: any) => {
-      console.error('Failed to assign task:', error);
-      const message =
-        error?.message ||
-        error?.response?.data?.message ||
-        'Something went wrong while assigning the task.';
+  const assignTaskMutation = useAssignTaskMutation({
+    onError: (message) => {
+      console.error('Failed to assign task:', message);
       errorDialogRef.current?.open(message);
     },
   });
