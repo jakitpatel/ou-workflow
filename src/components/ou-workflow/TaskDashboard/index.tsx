@@ -19,6 +19,7 @@ import {
   getProgressStatus,
   normalizeStatus,
 } from '@/lib/utils/taskHelpers';
+import { tasksQueryKeys } from '@/features/tasks/model/queryKeys';
 
 type TaskSearchParams = {
   qs?: string;
@@ -160,7 +161,7 @@ export function TaskDashboard() {
   const confirmTaskMutation = useMutation({
     mutationFn: confirmTask,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasksplants'] });
+      queryClient.invalidateQueries({ queryKey: tasksQueryKeys.all });
     },
     onError: (error: any) => {
       console.error('Failed to confirm task:', error);
@@ -175,7 +176,7 @@ export function TaskDashboard() {
   const assignTaskMutation = useMutation({
     mutationFn: assignTask,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasksplants'] });
+      queryClient.invalidateQueries({ queryKey: tasksQueryKeys.all });
     },
     onError: (error: any) => {
       console.error('Failed to assign task:', error);

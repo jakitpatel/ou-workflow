@@ -12,6 +12,7 @@ import {
 } from '@/api'
 import { useUser } from '@/context/UserContext'
 import { toast } from 'sonner'
+import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import type {
   KashrusAddress,
   KashrusCompanyDetail,
@@ -344,7 +345,7 @@ export function ResolutionDrawer({
   const selectedMatchId = selectedMatch?.Id
 
   const { data: companyDbResponse } = useQuery({
-    queryKey: ['kashrus-company-details', selectedMatchId, token],
+    queryKey: prelimQueryKeys.kashrusCompanyDetails(selectedMatchId as string | number | undefined),
     queryFn: () =>
       getCompanyDetailsFromKASH({
         companyID: selectedMatchId as string | number,
@@ -356,7 +357,7 @@ export function ResolutionDrawer({
   })
 
   const { data: plantDbResponse } = useQuery({
-    queryKey: ['kashrus-plant-details', selectedMatchId, token],
+    queryKey: prelimQueryKeys.kashrusPlantDetails(selectedMatchId as string | number | undefined),
     queryFn: () =>
       getPlantDetailsFromKASH({
         PlantId: selectedMatchId as string | number,

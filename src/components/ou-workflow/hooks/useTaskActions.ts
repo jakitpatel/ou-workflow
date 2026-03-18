@@ -4,6 +4,7 @@ import { assignTask, confirmTask } from '@/api';
 import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';
 import { getAllTasks, getProgressStatus, detectRole } from '@/lib/utils/taskHelpers';
 import type { Applicant, Task } from '@/types/application';
+import { applicationsQueryKeys } from '@/features/applications/model/queryKeys';
 
 type Params = {
   applications: Applicant[];
@@ -23,7 +24,7 @@ export function useTaskActions({
   const confirmTaskMutation = useMutation({
     mutationFn: confirmTask,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.all });
     },
     onError: (error: any) => {
       onError?.(
@@ -37,7 +38,7 @@ export function useTaskActions({
   const assignTaskMutation = useMutation({
     mutationFn: assignTask,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.all });
     },
     onError: (error: any) => {
       onError?.(

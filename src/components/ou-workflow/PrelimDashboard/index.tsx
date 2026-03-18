@@ -15,6 +15,7 @@ import type { Task } from '@/types/application';
 import type { ErrorDialogRef } from '@/components/ErrorDialog';
 import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';
 import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions';
+import { prelimQueryKeys } from '@/features/prelim/model/queryKeys';
 
 const PAGE_LIMIT = 20;
 const DEBOUNCE_DELAY = 300; // milliseconds
@@ -61,7 +62,7 @@ export function PrelimDashboard() {
     isLoading: isDetailsLoading,
     error,
   } = useQuery({
-    queryKey: ['prelim-application-details', selectedId],
+    queryKey: prelimQueryKeys.detail(selectedId),
     queryFn: () =>
       fetchPrelimApplicationDetails(selectedId as number, token ?? undefined),
     enabled: !!selectedId,

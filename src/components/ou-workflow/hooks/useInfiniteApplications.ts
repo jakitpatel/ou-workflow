@@ -1,9 +1,9 @@
-// hooks/useInfiniteApplications.ts
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { fetchApplicants } from '@/api';
-import { useUser } from '@/context/UserContext';
+import { useInfiniteQuery } from '@tanstack/react-query'
+import { fetchApplicants } from '@/api'
+import { useUser } from '@/context/UserContext'
+import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 
-const PAGE_LIMIT = 5;
+const PAGE_LIMIT = 5
 
 export function useInfiniteApplications({
   searchTerm,
@@ -14,23 +14,27 @@ export function useInfiniteApplications({
   limit,
   enabled = true,
 }: {
-  searchTerm?: string;
-  statusFilter?: string;
-  priorityFilter?: string;
-  applicationId?: number;
-  myOnly?: string | boolean;
-  limit?: number;
-  enabled?: boolean;
+  searchTerm?: string
+  statusFilter?: string
+  priorityFilter?: string
+  applicationId?: number
+  myOnly?: string | boolean
+  limit?: number
+  enabled?: boolean
 }) {
-  const { token, role } = useUser();
+  const { token, role } = useUser()
+  const pageLimit = limit ?? PAGE_LIMIT
 
   return useInfiniteQuery({
-    queryKey: [
-      'applications',
-      'infinite',
-      { token, searchTerm, statusFilter, priorityFilter, applicationId, myOnly },
-    ],
-
+    queryKey: applicationsQueryKeys.infinite({
+      searchTerm,
+      statusFilter,
+      priorityFilter,
+      applicationId,
+      myOnly,
+      role,
+      limit: pageLimit,
+    }),
     queryFn: ({ pageParam = 0 }) =>
       fetchApplicants({
         token: token ?? undefined,
@@ -40,27 +44,19 @@ export function useInfiniteApplications({
         applicationId,
         myOnly,
         role,
-        page: pageParam,      // offset
-        limit: limit ?? PAGE_LIMIT,
+        page: pageParam,
+        limit: pageLimit,
       }),
-
     initialPageParam: 0,
-
     getNextPageParam: (lastPage) => {
-      const { offset, limit, total_count } = lastPage.meta;
-      const nextOffset = offset + limit;
-      
-      // ✅ Extra safety: check both conditions
-      if (nextOffset >= total_count) return undefined;
-      if (lastPage.data.length < limit) return undefined;
-      
-      return nextOffset;
+      const { offset, limit: responseLimit, total_count } = lastPage.meta
+      const nextOffset = offset + responseLimit
+      if (nextOffset >= total_count) return undefined
+      if (lastPage.data.length < responseLimit) return undefined
+      return nextOffset
     },
-
     enabled: enabled && !!token,
-    //staleTime: 30_000,
     gcTime: 5 * 60 * 1000,
-    // ✅ Important: Don't refetch on window focus for infinite queries
     refetchOnWindowFocus: false,
-  });
+  })
 }

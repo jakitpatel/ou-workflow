@@ -178,6 +178,7 @@ Implemented:
 Goal: make TanStack Query predictable and scalable.
 
 ### 7. Introduce query key factories
+Status: Completed (March 18, 2026)
 
 Actions:
 - Add query key factories per feature.
@@ -192,6 +193,16 @@ Suggested files:
 
 Done when:
 - All queries and invalidations use centralized key builders.
+
+Implemented:
+- Added per-feature query key factories:
+  - `src/features/applications/model/queryKeys.ts`
+  - `src/features/tasks/model/queryKeys.ts`
+  - `src/features/prelim/model/queryKeys.ts`
+  - `src/features/profile/model/queryKeys.ts`
+- Migrated dashboard hooks and prelim/task queries to feature query key factories.
+- Updated mutation invalidations to use centralized key builders instead of ad hoc string arrays.
+- Removed raw `token` values from query keys and kept token usage in query functions only.
 
 ### 8. Standardize query option defaults
 

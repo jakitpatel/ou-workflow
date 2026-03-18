@@ -1,47 +1,51 @@
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { fetchApplicants } from '@/api';
-import { useUser } from '@/context/UserContext';
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { fetchApplicants } from '@/api'
+import { useUser } from '@/context/UserContext'
+import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 
 export function useApplications({
   searchTerm,
   statusFilter,
   priorityFilter,
-  offset,  // ✅ Changed from 'page' to 'offset'
+  offset,
   limit,
-  enabled
+  enabled,
 }: {
-  searchTerm?: string;
-  statusFilter?: string;
-  priorityFilter?: string;
-  offset?: number;  // ✅ Changed from 'page'
-  limit?: number;
-  enabled?: boolean;
+  searchTerm?: string
+  statusFilter?: string
+  priorityFilter?: string
+  offset?: number
+  limit?: number
+  enabled?: boolean
 }) {
-  const { token } = useUser();
+  const { token } = useUser()
 
   return useQuery({
-    queryKey: [
-      'applications',
-      { token, searchTerm, statusFilter, priorityFilter, offset, limit },  // ✅ Using offset
-    ],
+    queryKey: applicationsQueryKeys.list({
+      searchTerm,
+      statusFilter,
+      priorityFilter,
+      page: offset,
+      limit,
+    }),
     queryFn: () =>
       fetchApplicants({
         token: token ?? undefined,
         searchTerm,
         statusFilter,
         priorityFilter,
-        page: offset,  // ✅ Pass offset as page to API
+        page: offset,
         limit,
       }),
     placeholderData: keepPreviousData,
     enabled: enabled && !!token,
-    staleTime: 30000, // ✅ Added: Keep data fresh for 30s
-    gcTime: 5 * 60 * 1000, // ✅ Added: Cache for 5 minutes
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000,
     retry: (failureCount, error: any) => {
       if (error?.status && [400, 401, 403, 404, 422].includes(error.status)) {
-        return false;
+        return false
       }
-      return failureCount < 2; // ✅ Allow up to 2 retries
+      return failureCount < 2
     },
-  });
+  })
 }
