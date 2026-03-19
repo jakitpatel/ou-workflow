@@ -498,7 +498,6 @@ function CardActions({
 }: CardActionsProps) {
   const normalizedStatus = applicant?.status?.toLowerCase();
   const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth';
-  const canWithdrawApplication = canCancelApplication && !isWithdrawn;
 
   return (
     <div className="flex items-center space-x-2 ml-auto">
@@ -511,43 +510,30 @@ function CardActions({
       >
         View Details
       </Link>
-      <button
-        onClick={() => onViewTasks(applicant.applicationId)}
-        disabled={isWithdrawn}
-        className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-          isWithdrawn
-            ? 'bg-green-100 text-green-300 cursor-not-allowed focus:ring-green-200'
-            : 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500'
-        }`}
-        title={isWithdrawn ? 'Tasks are disabled because this application is withdrawn.' : 'View Tasks'}
-      >
-        View Tasks {'->'}
-      </button>
-      <button
-        onClick={onCancelApplication}
-        disabled={!canWithdrawApplication}
-        className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-          canWithdrawApplication
-            ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
-            : 'bg-red-100 text-red-300 cursor-not-allowed focus:ring-red-200'
-        }`}
-        title={
-          canWithdrawApplication
-            ? 'Cancel Application'
-            : isWithdrawn
-              ? 'This application is already withdrawn.'
-              : "This application cannot be canceled due to its current status or your permissions."
-        }
-        aria-label={
-          canWithdrawApplication
-            ? 'Cancel Application'
-            : isWithdrawn
-              ? 'This application is already withdrawn.'
-              : "This application cannot be canceled due to its current status or your permissions."
-        }
-      >
-        Withdraw Application
-      </button>
+      {!isWithdrawn && (
+        <button
+          onClick={() => onViewTasks(applicant.applicationId)}
+          className="px-3 py-1 text-sm rounded bg-green-600 text-white hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          title="View Tasks"
+        >
+          View Tasks {'->'}
+        </button>
+      )}
+      {!isWithdrawn && (
+        <button
+          onClick={onCancelApplication}
+          disabled={!canCancelApplication}
+          className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            canCancelApplication
+              ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
+              : 'bg-red-100 text-red-300 cursor-not-allowed focus:ring-red-200'
+          }`}
+          title={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
+          aria-label={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
+        >
+          Withdraw Application
+        </button>
+      )}
     </div>
   );
 }
