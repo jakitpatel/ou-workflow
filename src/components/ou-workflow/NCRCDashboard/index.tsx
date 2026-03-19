@@ -31,7 +31,7 @@ export function NCRCDashboard() {
   const { token, username, paginationMode } = useUser();
   const errorDialogRef = useRef<ErrorDialogRef>(null);
   // UI states
-  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = useState<{ application: Applicant; action: Task } | null>(null);
   const [showActionModal, setShowActionModal] = useState<Task | null | boolean>(null);
   const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null);
   const [showUploadModal, setShowUploadModal] = useState<Task | null | boolean>(null);
@@ -187,7 +187,7 @@ export function NCRCDashboard() {
   ]);
 
   // ==============================
-  // 🔹 RESET PAGE ON MODE SWITCH
+  // ???? RESET PAGE ON MODE SWITCH
   // ==============================
   
   useEffect(() => {
@@ -197,7 +197,7 @@ export function NCRCDashboard() {
   }, [paginationMode]);
 
   // ==============================
-  // 🔹 CALCULATE STATS
+  // ???? CALCULATE STATS
   // ==============================
   
   const applicantStats = useMemo(() => {
@@ -228,7 +228,7 @@ export function NCRCDashboard() {
     };
   }, [applicants]);
 
-  const { executeAction, completeTaskWithResult, getSelectedAction } = useTaskActions({
+  const { executeAction, completeTaskWithResult } = useTaskActions({
     applications: applicants,
     token: token ?? undefined,
     username: username ?? undefined,
@@ -236,29 +236,24 @@ export function NCRCDashboard() {
   });
 
   // ==============================
-  // 🔹 SELECTED ACTION
-  // ==============================
-  const selectedAction = getSelectedAction(selectedActionId);
-
-  // ==============================
-  // 🔹 HANDLE ACTION SELECTION
+  // ???? HANDLE ACTION SELECTION
   // ==============================
   
-  const handleSelectAppActions = (applicationId: string | number, actionId: string | number) => {
-    setSelectedActionId(`${applicationId}:${actionId}`);
+  const handleSelectAppActions = (application: Applicant, action: Task) => {
+    setSelectedAction({ application, action });
   };
 
   const handleTaskAction = (e: React.MouseEvent, application: Applicant, action: Task) => {
     e.stopPropagation();
     e.preventDefault();
     
-    handleSelectAppActions(application.applicationId, action.TaskInstanceId);
+    handleSelectAppActions(application, action);
 
     const actionType = action.taskType?.toLowerCase();
     const actionCategory = action.taskCategory?.toLowerCase();
 
     if (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION) {
-      executeAction("Confirmed", action, "yes");
+      executeAction("Confirmed", action, "yes", { application, action });
     } 
     else if (
       (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) && 
@@ -285,7 +280,7 @@ export function NCRCDashboard() {
   };
 
   const handleCancelTask = async (application: Applicant, action: Task, reason: string) => {
-    handleSelectAppActions(application.applicationId, action.TaskInstanceId);
+    handleSelectAppActions(application, action);
     completeTaskWithResult(action, reason);
   };
 
@@ -568,3 +563,4 @@ export function NCRCDashboard() {
     </>
   );
 }
+

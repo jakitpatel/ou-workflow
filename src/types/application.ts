@@ -403,6 +403,7 @@ export interface ApplicationTask {
   taskName: string;              // e.g., "Send NDA"
   taskDescription: string;       // e.g., "Send the NDA to the client"
   taskType: string;              // e.g., "CONFIRM"
+  PreScript?: string;
   daysActive: number;
   priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM';
   stageName: string;              // e.g., "Send NDA"

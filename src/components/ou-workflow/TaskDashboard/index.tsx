@@ -46,10 +46,6 @@ const STATUS = {
 
 type DaysFilter = string | number;
 
-const normalizeId = (id: string | number | undefined | null): string => {
-  return id != null ? String(id) : '';
-};
-
 const calculateTaskStats = (tasks: ApplicationTask[]) => {
   const userTasks = tasks.map(task => ({
     ...task,
@@ -84,7 +80,7 @@ export function TaskDashboard() {
   const [showPlantHistory, setShowPlantHistory] = useState<string | null>(null);
   const [showActionModal, setShowActionModal] = useState<boolean | null | Task>(null);
   const [showConditionModal, setShowConditionModal] = useState<boolean | null | Task>(null);
-  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = useState<{ application: any; action: any } | null>(null);
   const errorDialogRef = useRef<ErrorDialogRef>(null);
 
   const { username, role, roles, token } = useUser();
@@ -173,7 +169,12 @@ export function TaskDashboard() {
   });
 
   const executeAction = useCallback(
-    (assignee: string, action: any, result?: string) => {
+    (
+      assignee: string,
+      action: any,
+      result?: string,
+      selectedActionArg?: { application: any; action: any } | null
+    ) => {
       const taskType = action.taskType?.toLowerCase();
       const taskCategory = (action.taskCategory || action.TaskCategory)?.toLowerCase();
       const taskId = action?.TaskInstanceId ?? action?.taskInstanceId;
@@ -214,11 +215,13 @@ export function TaskDashboard() {
         const status = result ? getProgressStatus(result) : '';
         confirmTaskMutation.mutate({ ...mutationParams, result, status });
       } else if (taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.ASSIGNMENT) {
-        const appId =
-          selectedAction?.application?.id ??
-          selectedAction?.application?.applicationId ??
-          null;
-        const rawLabel = action?.PreScript;
+        const effectiveSelectedAction = selectedActionArg ?? selectedAction;
+        const rawAppId =
+          effectiveSelectedAction?.application?.applicationId ??
+          effectiveSelectedAction?.application?.id ??
+          action?.applicationId;
+        const appId = rawAppId == null || Number.isNaN(Number(rawAppId)) ? null : Number(rawAppId);
+        const rawLabel = action?.PreScript ?? effectiveSelectedAction?.action?.PreScript;
         const roleType = detectRole(rawLabel);
 
         assignTaskMutation.mutate({
@@ -231,41 +234,12 @@ export function TaskDashboard() {
         });
       }
     },
-    [confirmTaskMutation, assignTaskMutation, token, username]
+    [confirmTaskMutation, assignTaskMutation, token, username, selectedAction]
   );
 
-  const handleSelectAppActions = useCallback((applicationId: string, actionId: string) => {
-    setSelectedActionId(`${applicationId}:${actionId}`);
+  const handleSelectAppActions = useCallback((application: any) => {
+    setSelectedAction({ application, action: application });
   }, []);
-
-  const selectedAction = useMemo(() => {
-    if (!selectedActionId) return null;
-
-    const [appId, actId] = selectedActionId.split(':');
-
-    const app = tasksplants.find(
-      a =>
-        normalizeId(a.id) === normalizeId(appId) ||
-        normalizeId(a.applicationId) === normalizeId(appId)
-    );
-    if (!app) {
-      console.warn(
-        'No app found for',
-        appId,
-        'in tasks:',
-        tasksplants.map(t => ({ id: t.id, applicationId: t.applicationId }))
-      );
-      return null;
-    }
-
-    const act = tasksplants.find(a => normalizeId(a.taskInstanceId) === normalizeId(actId));
-    if (!act) {
-      console.warn('No action found for', actId);
-      return null;
-    }
-
-    return { application: app, action: act };
-  }, [selectedActionId, tasksplants]);
 
   const handleApplicationTaskAction = useCallback(
     (e: React.MouseEvent<HTMLElement>, application: any) => {
@@ -274,8 +248,7 @@ export function TaskDashboard() {
 
       console.log('Action clicked for application:', application);
 
-      const appId = application.id ?? application.applicationId;
-      handleSelectAppActions(appId, application.taskInstanceId);
+      handleSelectAppActions(application);
 
       const actionType = application.taskType?.toLowerCase();
       const actionCategory = application.TaskCategory?.toLowerCase();

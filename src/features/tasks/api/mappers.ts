@@ -9,6 +9,8 @@ type BackendApplicationTask = Partial<ApplicationTask> & {
   TaskName?: string
   taskInstanceId?: number
   TaskInstanceId?: number
+  PreScript?: string
+  preScript?: string
 }
 
 export type BackendApplicationTasksResponse = Omit<ApplicationTasksResponse, 'data'> & {
@@ -44,6 +46,7 @@ export function mapApplicationTasksResponse(
       taskName,
       taskDescription: task.taskDescription ?? '',
       taskType,
+      PreScript: task.PreScript ?? task.preScript ?? '',
       daysActive: task.daysActive ?? 0,
       priority: task.priority ?? 'NORMAL',
       stageName: task.stageName ?? '',

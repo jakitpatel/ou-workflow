@@ -35,7 +35,7 @@ export function useTaskActions({ applications, token, username, onError }: Param
   ) => {
     const taskType = action.taskType?.toLowerCase()
     const taskCategory = action.taskCategory?.toLowerCase()
-    const taskId = action.TaskInstanceId
+    const taskId = String(action?.TaskInstanceId ?? action?.taskInstanceId ?? action?.id ?? '')
 
     const baseParams = {
       taskId,
@@ -53,16 +53,17 @@ export function useTaskActions({ applications, token, username, onError }: Param
       confirmTaskMutation.mutate({ ...baseParams, result: result ?? undefined })
       return
     }
-
     if (taskType === TASK_TYPES.ACTION) {
       if (taskCategory === TASK_CATEGORIES.ASSIGNMENT) {
-        const appId =
+        const rawAppId =
           selectedAction?.application?.applicationId ??
           action.application?.applicationId ??
           action.applicationId
+        const appId =
+          rawAppId == null || Number.isNaN(Number(rawAppId)) ? null : Number(rawAppId)
 
-        const role = detectRole(selectedAction?.action?.PreScript)
-
+        const preScript = action.PreScript ?? selectedAction?.action?.PreScript
+        const role = detectRole(preScript)
         assignTaskMutation.mutate({
           appId,
           taskId,
