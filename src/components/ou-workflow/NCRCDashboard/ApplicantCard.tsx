@@ -157,9 +157,31 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
     )
   }, [applicant.stages])
 
+  const pendingUndoWithdrawTask = useMemo(() => {
+    const globalStageEntry = Object.entries(applicant.stages ?? {}).find(
+      ([stageKey]) => stageKey.toLowerCase() === 'global'
+    )
+
+    const globalTasks = globalStageEntry?.[1]?.tasks ?? []
+
+    return (
+      globalTasks.find((task) => {
+        const taskName = task?.name?.toLowerCase() ?? ''
+        return (
+          task?.status?.toLowerCase() === 'pending' &&
+          taskName.includes('undo') &&
+          (taskName.includes('withdraw') || taskName.includes('cancel'))
+        )
+      }) ?? null
+    )
+  }, [applicant.stages])
+
   const canCancelApplication = useMemo(() => {
     return hasCancelPermission(pendingCancelTask)
   }, [pendingCancelTask, applicant.assignedRoles, userRoles, username])
+  const canUndoWithdrawApplication = useMemo(() => {
+    return hasCancelPermission(pendingUndoWithdrawTask)
+  }, [pendingUndoWithdrawTask, applicant.assignedRoles, userRoles, username])
   const isWithdrawn = useMemo(() => {
     const normalized = applicant?.status?.toLowerCase()
     return normalized === 'withdrawn' || normalized === 'wth'
@@ -198,11 +220,13 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
   }
 
   const handleConfirmCancel = async () => {
-    if (!pendingCancelTask || !canCancelApplication || !cancelReason.trim() || isSubmittingCancel) return;
+    const selectedTask = isWithdrawn ? pendingUndoWithdrawTask : pendingCancelTask;
+    const canSubmitAction = isWithdrawn ? canUndoWithdrawApplication : canCancelApplication;
+    if (!selectedTask || !canSubmitAction || !cancelReason.trim() || isSubmittingCancel) return;
 
     setIsSubmittingCancel(true);
     try {
-      await Promise.resolve(handleCancelTask(applicant, pendingCancelTask, cancelReason.trim()));
+      await Promise.resolve(handleCancelTask(applicant, selectedTask, cancelReason.trim()));
       setShowCancelDialog(false);
       setCancelReason('');
     } finally {
@@ -271,6 +295,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
           companyName={applicant.company}
           reason={cancelReason}
           saving={isSubmittingCancel}
+          actionType={isWithdrawn ? 'undo_withdraw' : 'withdraw'}
           onReasonChange={setCancelReason}
           onClose={() => {
             if (isSubmittingCancel) return;
@@ -291,8 +316,10 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         dashboardSearch={dashboardSearch}
         filesByType={filesByType}
         canCancelApplication={canCancelApplication}
+        canUndoWithdrawApplication={canUndoWithdrawApplication}
         onCancelApplication={() => {
-          if (!canCancelApplication) return;
+          const canOpenDialog = isWithdrawn ? canUndoWithdrawApplication : canCancelApplication;
+          if (!canOpenDialog) return;
           setShowCancelDialog(true);
         }}
       />
@@ -470,6 +497,7 @@ interface CardActionsProps {
   onViewTasks: (id?: string | number) => void;
   dashboardSearch: Record<string, unknown>;
   canCancelApplication?: boolean;
+  canUndoWithdrawApplication?: boolean;
   onCancelApplication?: () => void;
 }
 
@@ -479,6 +507,7 @@ function CardFooter({
   dashboardSearch,
   filesByType,
   canCancelApplication,
+  canUndoWithdrawApplication,
   onCancelApplication,
 }: CardActionsProps & { filesByType?: Record<string, any> }) {
   return (
@@ -489,6 +518,7 @@ function CardFooter({
         onViewTasks={onViewTasks}
         dashboardSearch={dashboardSearch}
         canCancelApplication={canCancelApplication}
+        canUndoWithdrawApplication={canUndoWithdrawApplication}
         onCancelApplication={onCancelApplication}
       />
     </div>
@@ -500,6 +530,7 @@ function CardActions({
   onViewTasks,
   dashboardSearch,
   canCancelApplication = false,
+  canUndoWithdrawApplication = false,
   onCancelApplication,
 }: CardActionsProps) {
   const normalizedStatus = applicant?.status?.toLowerCase();
@@ -538,6 +569,21 @@ function CardActions({
           aria-label={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
         >
           Withdraw Application
+        </button>
+      )}
+      {isWithdrawn && (
+        <button
+          onClick={onCancelApplication}
+          disabled={!canUndoWithdrawApplication}
+          className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            canUndoWithdrawApplication
+              ? 'bg-amber-600 text-white hover:bg-amber-700 focus:ring-amber-500'
+              : 'bg-amber-100 text-amber-300 cursor-not-allowed focus:ring-amber-200'
+          }`}
+          title={canUndoWithdrawApplication ? 'Undo Withdraw Application' : 'Undo withdraw is not available for this application at the moment.'}
+          aria-label={canUndoWithdrawApplication ? 'Undo Withdraw Application' : 'Undo withdraw is not available for this application at the moment.'}
+        >
+          Undo Withdraw Application
         </button>
       )}
     </div>

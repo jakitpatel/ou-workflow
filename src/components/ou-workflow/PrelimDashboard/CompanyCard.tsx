@@ -116,18 +116,42 @@ export function CompanyCard({
     )
   }, [company.stages, company.assignedRoles, userRoles, username])
 
+  const pendingUndoWithdrawTask = useMemo(() => {
+    const globalStageEntry = Object.entries(company.stages ?? {}).find(
+      ([stageKey]) => stageKey.toLowerCase() === 'global'
+    )
+    const globalTasks = globalStageEntry?.[1]?.tasks ?? []
+
+    return (
+      globalTasks.find((task) => {
+        const taskName = task?.name?.toLowerCase() ?? ''
+        return (
+          task?.status?.toLowerCase() === 'pending' &&
+          taskName.includes('undo') &&
+          (taskName.includes('withdraw') || taskName.includes('cancel')) &&
+          hasCancelPermission(task)
+        )
+      }) ?? null
+    )
+  }, [company.stages, company.assignedRoles, userRoles, username])
+
   const canCancelApplication = useMemo(() => {
     return hasCancelPermission(pendingCancelTask)
   }, [pendingCancelTask, company.assignedRoles, userRoles, username])
+  const canUndoWithdrawApplication = useMemo(() => {
+    return hasCancelPermission(pendingUndoWithdrawTask)
+  }, [pendingUndoWithdrawTask, company.assignedRoles, userRoles, username])
   const normalizedStatus = company?.status?.toLowerCase()
   const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth'
 
   const handleConfirmCancel = async () => {
-    if (!pendingCancelTask || !canCancelApplication || !cancelReason.trim() || isSubmittingCancel) return
+    const selectedTask = isWithdrawn ? pendingUndoWithdrawTask : pendingCancelTask
+    const canSubmitAction = isWithdrawn ? canUndoWithdrawApplication : canCancelApplication
+    if (!selectedTask || !canSubmitAction || !cancelReason.trim() || isSubmittingCancel) return
 
     setIsSubmittingCancel(true)
     try {
-      await Promise.resolve(handleCancelTask(company, pendingCancelTask, cancelReason.trim()))
+      await Promise.resolve(handleCancelTask(company, selectedTask, cancelReason.trim()))
       setShowCancelDialog(false)
       setCancelReason('')
     } finally {
@@ -250,6 +274,25 @@ export function CompanyCard({
                 Withdraw Application
               </button>
             )}
+            {isWithdrawn && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (!canUndoWithdrawApplication) return
+                  setShowCancelDialog(true)
+                }}
+                disabled={!canUndoWithdrawApplication}
+                className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  canUndoWithdrawApplication
+                    ? 'bg-amber-600 text-white hover:bg-amber-700 focus:ring-amber-500'
+                    : 'bg-amber-100 text-amber-300 cursor-not-allowed focus:ring-amber-200'
+                }`}
+                title={canUndoWithdrawApplication ? 'Undo Withdraw Application' : 'Undo withdraw is not available for this application at the moment.'}
+                aria-label={canUndoWithdrawApplication ? 'Undo Withdraw Application' : 'Undo withdraw is not available for this application at the moment.'}
+              >
+                Undo Withdraw Application
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -259,6 +302,7 @@ export function CompanyCard({
           companyName={company.company}
           reason={cancelReason}
           saving={isSubmittingCancel}
+          actionType={isWithdrawn ? 'undo_withdraw' : 'withdraw'}
           onReasonChange={setCancelReason}
           onClose={() => {
             if (isSubmittingCancel) return
