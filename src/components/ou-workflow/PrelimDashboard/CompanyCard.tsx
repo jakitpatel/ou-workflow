@@ -119,6 +119,9 @@ export function CompanyCard({
   const canCancelApplication = useMemo(() => {
     return hasCancelPermission(pendingCancelTask)
   }, [pendingCancelTask, company.assignedRoles, userRoles, username])
+  const normalizedStatus = company?.status?.toLowerCase()
+  const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth'
+  const canWithdrawApplication = canCancelApplication && !isWithdrawn
 
   const handleConfirmCancel = async () => {
     if (!pendingCancelTask || !canCancelApplication || !cancelReason.trim() || isSubmittingCancel) return
@@ -226,17 +229,29 @@ export function CompanyCard({
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                if (!canCancelApplication) return
+                if (!canWithdrawApplication) return
                 setShowCancelDialog(true)
               }}
-              disabled={!canCancelApplication}
+              disabled={!canWithdrawApplication}
               className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                canCancelApplication
+                canWithdrawApplication
                   ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
                   : 'bg-red-100 text-red-300 cursor-not-allowed focus:ring-red-200'
               }`}
-              title={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
-              aria-label={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
+              title={
+                canWithdrawApplication
+                  ? 'Cancel Application'
+                  : isWithdrawn
+                    ? 'This application is already withdrawn.'
+                    : "This application cannot be canceled due to its current status or your permissions."
+              }
+              aria-label={
+                canWithdrawApplication
+                  ? 'Cancel Application'
+                  : isWithdrawn
+                    ? 'This application is already withdrawn.'
+                    : "This application cannot be canceled due to its current status or your permissions."
+              }
             >
               Withdraw Application
             </button>

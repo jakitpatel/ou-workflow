@@ -496,6 +496,10 @@ function CardActions({
   canCancelApplication = false,
   onCancelApplication,
 }: CardActionsProps) {
+  const normalizedStatus = applicant?.status?.toLowerCase();
+  const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth';
+  const canWithdrawApplication = canCancelApplication && !isWithdrawn;
+
   return (
     <div className="flex items-center space-x-2 ml-auto">
       <Link
@@ -509,20 +513,38 @@ function CardActions({
       </Link>
       <button
         onClick={() => onViewTasks(applicant.applicationId)}
-        className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+        disabled={isWithdrawn}
+        className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+          isWithdrawn
+            ? 'bg-green-100 text-green-300 cursor-not-allowed focus:ring-green-200'
+            : 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500'
+        }`}
+        title={isWithdrawn ? 'Tasks are disabled because this application is withdrawn.' : 'View Tasks'}
       >
         View Tasks {'->'}
       </button>
       <button
         onClick={onCancelApplication}
-        disabled={!canCancelApplication}
+        disabled={!canWithdrawApplication}
         className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-          canCancelApplication
+          canWithdrawApplication
             ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
             : 'bg-red-100 text-red-300 cursor-not-allowed focus:ring-red-200'
         }`}
-        title={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
-        aria-label={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
+        title={
+          canWithdrawApplication
+            ? 'Cancel Application'
+            : isWithdrawn
+              ? 'This application is already withdrawn.'
+              : "This application cannot be canceled due to its current status or your permissions."
+        }
+        aria-label={
+          canWithdrawApplication
+            ? 'Cancel Application'
+            : isWithdrawn
+              ? 'This application is already withdrawn.'
+              : "This application cannot be canceled due to its current status or your permissions."
+        }
       >
         Withdraw Application
       </button>
