@@ -7,6 +7,7 @@ type Props = {
   applicant: Applicant
   onStageClick: (stageKey: string) => void
   expandedStage: string | null
+  isWithdrawn?: boolean
 }
 
 // ==========================================
@@ -41,17 +42,28 @@ type StageButtonProps = {
   status?: string
   onClick: () => void
   className?: string
+  disabled?: boolean
 }
 
-function StageButton({ stage, isExpanded, status, onClick, className = '' }: StageButtonProps) {
+function StageButton({
+  stage,
+  isExpanded,
+  status,
+  onClick,
+  className = '',
+  disabled = false,
+}: StageButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-1.5 rounded cursor-pointer hover:opacity-80 transition-all ${
-        isExpanded ? 'ring-2 ring-blue-400 ring-offset-1' : ''
+      disabled={disabled}
+      className={`px-4 py-1.5 rounded transition-all ${
+        disabled ? 'cursor-not-allowed opacity-55 grayscale' : 'cursor-pointer hover:opacity-80'
+      } ${
+        !disabled && isExpanded ? 'ring-2 ring-blue-400 ring-offset-1' : ''
       } ${className}`}
-      style={{ backgroundColor: getStageStatusColor(status) }}
-      title={`Click to see ${stage.name} tasks`}
+      style={{ backgroundColor: disabled ? '#9ca3af' : getStageStatusColor(status) }}
+      title={disabled ? 'Stage actions are disabled for withdrawn applications.' : `Click to see ${stage.name} tasks`}
     >
       <span className="text-white text-xs font-medium truncate">
         {stage.name}
@@ -86,9 +98,16 @@ type StageColumnProps = {
   applicant: Applicant
   expandedStage: string | null
   onStageClick: (key: string) => void
+  isWithdrawn?: boolean
 }
 
-function StageColumn({ stages, applicant, expandedStage, onStageClick }: StageColumnProps) {
+function StageColumn({
+  stages,
+  applicant,
+  expandedStage,
+  onStageClick,
+  isWithdrawn = false,
+}: StageColumnProps) {
   return (
     <div className="flex flex-col space-y-2">
       {stages.map((stage) => (
@@ -99,6 +118,7 @@ function StageColumn({ stages, applicant, expandedStage, onStageClick }: StageCo
           status={applicant.stages[stage.key]?.status}
           onClick={() => onStageClick(stage.key)}
           className="w-full"
+          disabled={isWithdrawn}
         />
       ))}
     </div>
@@ -113,9 +133,15 @@ type HorizontalLayoutProps = {
   applicant: Applicant
   expandedStage: string | null
   onStageClick: (key: string) => void
+  isWithdrawn?: boolean
 }
 
-function HorizontalLayout({ applicant, expandedStage, onStageClick }: HorizontalLayoutProps) {
+function HorizontalLayout({
+  applicant,
+  expandedStage,
+  onStageClick,
+  isWithdrawn = false,
+}: HorizontalLayoutProps) {
   return (
     <div className="flex space-x-2">
       {STAGE_ORDER.map((stage) => (
@@ -126,6 +152,7 @@ function HorizontalLayout({ applicant, expandedStage, onStageClick }: Horizontal
           status={applicant.stages[stage.key]?.status}
           onClick={() => onStageClick(stage.key)}
           className="flex-1"
+          disabled={isWithdrawn}
         />
       ))}
     </div>
@@ -136,9 +163,15 @@ type MixedLayoutProps = {
   applicant: Applicant
   expandedStage: string | null
   onStageClick: (key: string) => void
+  isWithdrawn?: boolean
 }
 
-function MixedLayout({ applicant, expandedStage, onStageClick }: MixedLayoutProps) {
+function MixedLayout({
+  applicant,
+  expandedStage,
+  onStageClick,
+  isWithdrawn = false,
+}: MixedLayoutProps) {
   const firstStage = STAGE_ORDER.find((s) => s.key === LAYOUT_CONFIG.firstStageKey)
   const verticalStages = STAGE_ORDER.filter((s) =>
     (LAYOUT_CONFIG.verticalStageKeys as readonly string[]).includes(s.key)
@@ -165,6 +198,7 @@ function MixedLayout({ applicant, expandedStage, onStageClick }: MixedLayoutProp
           status={applicant.stages[firstStage.key]?.status}
           onClick={() => onStageClick(firstStage.key)}
           className="whitespace-nowrap"
+          disabled={isWithdrawn}
         />
       )}
 
@@ -181,12 +215,14 @@ function MixedLayout({ applicant, expandedStage, onStageClick }: MixedLayoutProp
             applicant={applicant}
             expandedStage={expandedStage}
             onStageClick={onStageClick}
+            isWithdrawn={isWithdrawn}
           />
           <StageColumn
             stages={rightStages}
             applicant={applicant}
             expandedStage={expandedStage}
             onStageClick={onStageClick}
+            isWithdrawn={isWithdrawn}
           />
         </div>
       </div>
@@ -203,6 +239,7 @@ function MixedLayout({ applicant, expandedStage, onStageClick }: MixedLayoutProp
               status={applicant.stages[stage.key]?.status}
               onClick={() => onStageClick(stage.key)}
               className="whitespace-nowrap"
+              disabled={isWithdrawn}
             />
             {index < lastStages.length - 1 && <Arrow />}
           </React.Fragment>
@@ -216,7 +253,12 @@ function MixedLayout({ applicant, expandedStage, onStageClick }: MixedLayoutProp
 // Main Component
 // ==========================================
 
-export function ApplicantProgressBar({ applicant, expandedStage, onStageClick }: Props) {
+export function ApplicantProgressBar({
+  applicant,
+  expandedStage,
+  onStageClick,
+  isWithdrawn = false,
+}: Props) {
   const { stageLayout } = useUser()
   const isVerticalLayout = stageLayout === 'mixed'
 
@@ -227,12 +269,14 @@ export function ApplicantProgressBar({ applicant, expandedStage, onStageClick }:
           applicant={applicant}
           expandedStage={expandedStage}
           onStageClick={onStageClick}
+          isWithdrawn={isWithdrawn}
         />
       ) : (
         <HorizontalLayout
           applicant={applicant}
           expandedStage={expandedStage}
           onStageClick={onStageClick}
+          isWithdrawn={isWithdrawn}
         />
       )}
     </div>

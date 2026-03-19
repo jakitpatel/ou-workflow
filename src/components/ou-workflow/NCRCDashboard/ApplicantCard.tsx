@@ -160,6 +160,10 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
   const canCancelApplication = useMemo(() => {
     return hasCancelPermission(pendingCancelTask)
   }, [pendingCancelTask, applicant.assignedRoles, userRoles, username])
+  const isWithdrawn = useMemo(() => {
+    const normalized = applicant?.status?.toLowerCase()
+    return normalized === 'withdrawn' || normalized === 'wth'
+  }, [applicant.status])
 
   const handleViewTasks = (applicationId?: string | number) => {
     saveScrollPosition(applicationId ?? '');
@@ -189,6 +193,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
   const toggleAIAssistant = () => setShowAIAssistant((prev) => !prev);
 
   const handleStageClick = (stageName: string) => {
+    if (isWithdrawn) return;
     setExpandedStage(expandedStage === stageName ? null : stageName)
   }
 
@@ -232,6 +237,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
             applicant={applicant}
             onStageClick={handleStageClick}
             expandedStage={expandedStage}
+            isWithdrawn={isWithdrawn}
           />
         </div>
         <div className="flex items-center space-x-2 flex-shrink-0">

@@ -160,8 +160,10 @@ export function CompanyCard({
               .map(([stageName, stage]) => (
               <button
                 key={stageName}
+                disabled={isWithdrawn}
                 onClick={(e) => {
                   e.stopPropagation()
+                  if (isWithdrawn) return
                   if (expanded && expandedStage === stageName) {
                     setExpandedStage(null)
                     setExpanded(null)
@@ -171,12 +173,16 @@ export function CompanyCard({
                   setExpandedStage(stageName)
                 }}
                 className={`px-4 py-1.5 rounded text-xs font-medium text-white transition-all ${
-                  expanded && expandedStage === stageName
+                  isWithdrawn
+                    ? 'cursor-not-allowed opacity-55 grayscale'
+                    : ''
+                } ${
+                  !isWithdrawn && expanded && expandedStage === stageName
                     ? 'ring-2 ring-blue-400 ring-offset-1'
                     : ''
                 }`}
-                style={{ backgroundColor: getStageColor(stage.status) }}
-                title={`View ${stageName} tasks`}
+                style={{ backgroundColor: isWithdrawn ? '#9ca3af' : getStageColor(stage.status) }}
+                title={isWithdrawn ? 'Stage actions are disabled for withdrawn applications.' : `View ${stageName} tasks`}
               >
                 {stageName}
               </button>
