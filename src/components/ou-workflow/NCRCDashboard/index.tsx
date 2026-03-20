@@ -262,8 +262,14 @@ export function NCRCDashboard() {
       setShowConditionModal(action);
     } 
     else if (
+      actionType === TASK_TYPES.ACTION &&
+      [TASK_CATEGORIES.UPLOAD, TASK_CATEGORIES.EMAIL].includes(actionCategory as any)
+    ) {
+      setShowUploadModal(action);
+    }
+    else if (
       actionCategory === TASK_CATEGORIES.UPLOAD &&
-      [TASK_TYPES.UPLOAD, TASK_TYPES.ACTION].includes(actionType as any)
+      actionType === TASK_TYPES.UPLOAD
     ) {
       setShowUploadModal(action);
     }

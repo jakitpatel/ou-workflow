@@ -3,6 +3,7 @@ import { useSearch, useNavigate, useParams } from '@tanstack/react-router';
 import { useUser } from '@/context/UserContext';
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
+import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal';
 import { PlantHistoryModal } from './PlantHistoryModal';
 import { TaskStatsCards } from './TaskStatsCards';
 import { TaskFilters } from './TaskFilters';
@@ -80,6 +81,7 @@ export function TaskDashboard() {
   const [showPlantHistory, setShowPlantHistory] = useState<string | null>(null);
   const [showActionModal, setShowActionModal] = useState<boolean | null | Task>(null);
   const [showConditionModal, setShowConditionModal] = useState<boolean | null | Task>(null);
+  const [showUploadModal, setShowUploadModal] = useState<boolean | null | Task | ApplicationTask>(null);
   const [selectedAction, setSelectedAction] = useState<{ application: any; action: any } | null>(null);
   const errorDialogRef = useRef<ErrorDialogRef>(null);
 
@@ -241,6 +243,31 @@ export function TaskDashboard() {
     setSelectedAction({ application, action: application });
   }, []);
 
+  const completeTaskWithResult = useCallback(
+    (action: any, result: string, status?: string, completionNotes?: string) => {
+      const taskId = action?.TaskInstanceId ?? action?.taskInstanceId ?? action?.id;
+      const assigneeValue = action?.assignee;
+      let capacity = '';
+
+      if (typeof assigneeValue === 'string' && assigneeValue.trim() !== '' && assigneeValue.toUpperCase() !== 'NULL') {
+        capacity = username?.toLowerCase() === assigneeValue.toLowerCase() ? 'MEMBER' : 'ASSISTANT';
+      } else {
+        capacity = 'DESIGNATED';
+      }
+
+      confirmTaskMutation.mutate({
+        taskId,
+        token: token ?? undefined,
+        username: username ?? undefined,
+        capacity,
+        result,
+        status,
+        completionNotes,
+      });
+    },
+    [confirmTaskMutation, token, username]
+  );
+
   const handleApplicationTaskAction = useCallback(
     (e: React.MouseEvent<HTMLElement>, application: any) => {
       e.stopPropagation();
@@ -251,7 +278,7 @@ export function TaskDashboard() {
       handleSelectAppActions(application);
 
       const actionType = application.taskType?.toLowerCase();
-      const actionCategory = application.TaskCategory?.toLowerCase();
+      const actionCategory = (application.taskCategory || application.TaskCategory)?.toLowerCase();
 
       if (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION) {
         executeAction('Confirmed', application, 'no');
@@ -269,6 +296,16 @@ export function TaskDashboard() {
         )
       ) {
         setShowConditionModal(application);
+      } else if (
+        actionType === TASK_TYPES.ACTION &&
+        [TASK_CATEGORIES.UPLOAD, TASK_CATEGORIES.EMAIL].includes(actionCategory)
+      ) {
+        setShowUploadModal(application);
+      } else if (
+        actionType === TASK_TYPES.UPLOAD &&
+        actionCategory === TASK_CATEGORIES.UPLOAD
+      ) {
+        setShowUploadModal(application);
       } else if (actionType === TASK_TYPES.PROGRESS && actionCategory === TASK_CATEGORIES.PROGRESS_TASK) {
         setShowConditionModal(application);
       }
@@ -417,6 +454,13 @@ export function TaskDashboard() {
       <ActionModal {...{ showActionModal, setShowActionModal, executeAction, selectedAction }} />
       <ConditionalModal
         {...{ showConditionModal, setShowConditionModal, executeAction, selectedAction }}
+      />
+      <UploadNdaModal
+        showUploadModal={showUploadModal}
+        setShowUploadModal={setShowUploadModal}
+        selectedAction={selectedAction}
+        taskInstanceId={selectedAction?.action?.taskInstanceId ?? selectedAction?.action?.TaskInstanceId}
+        completeTaskWithResult={completeTaskWithResult}
       />
       <PlantHistoryModal {...{ showPlantHistory, setShowPlantHistory, plantHistory }} />
       <ErrorDialog ref={errorDialogRef} />

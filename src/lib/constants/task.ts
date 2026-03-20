@@ -12,6 +12,7 @@ export const TASK_CATEGORIES = {
   CONFIRMATION: 'confirmation',
   APPROVAL: 'approval',
   ASSIGNMENT: 'assignment',
+  EMAIL: 'email',
   SELECTOR: 'selector',
   INPUT: 'input',
   SCHEDULING: 'scheduling',

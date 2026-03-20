@@ -3,7 +3,8 @@ import { Upload, X } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 import { useApplicationDetail } from "@/features/applications/hooks/useApplicationDetail";
 import { useUploadApplicationFileMutation } from "@/features/applications/hooks/useUploadApplicationFileMutation";
-import type { Applicant, Task } from "@/types/application";
+import { TASK_CATEGORIES, TASK_TYPES } from "@/lib/constants/task";
+import type { Applicant, ApplicationTask, Task } from "@/types/application";
 
 type SelectedAction = {
   application: Applicant | Task | any;
@@ -11,7 +12,7 @@ type SelectedAction = {
 };
 
 type Props = {
-  showUploadModal: boolean | null | Task;
+  showUploadModal: boolean | null | Task | ApplicationTask;
   selectedAction: SelectedAction | null;
   taskInstanceId?: string | number | null;
   setShowUploadModal: (val: boolean | null | Task) => void;
@@ -60,7 +61,7 @@ export const UploadNdaModal: React.FC<Props> = ({
   }, [selectedAction?.application]);
 
   const taskName = useMemo(() => {
-    const clickedTask = typeof showUploadModal === "object" ? showUploadModal : null;
+    const clickedTask: any = typeof showUploadModal === "object" ? showUploadModal : null;
     return (
       clickedTask?.name ||
       selectedAction?.action?.name ||
@@ -70,17 +71,35 @@ export const UploadNdaModal: React.FC<Props> = ({
   }, [showUploadModal, selectedAction?.action]);
 
   const isReviewUploadTask = useMemo(() => {
-    const clickedTask = typeof showUploadModal === "object" ? showUploadModal : null;
+    const clickedTask: any = typeof showUploadModal === "object" ? showUploadModal : null;
     const taskType =
       clickedTask?.taskType?.toLowerCase() ||
       selectedAction?.action?.taskType?.toLowerCase() ||
       "";
     const taskCategory =
       clickedTask?.taskCategory?.toLowerCase() ||
+      (clickedTask as any)?.TaskCategory?.toLowerCase() ||
       selectedAction?.action?.taskCategory?.toLowerCase() ||
+      selectedAction?.action?.TaskCategory?.toLowerCase() ||
       "";
 
-    return taskType === "action" && taskCategory === "upload";
+    return taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.UPLOAD;
+  }, [showUploadModal, selectedAction?.action]);
+
+  const isEmailActionTask = useMemo(() => {
+    const clickedTask: any = typeof showUploadModal === "object" ? showUploadModal : null;
+    const taskType =
+      clickedTask?.taskType?.toLowerCase() ||
+      selectedAction?.action?.taskType?.toLowerCase() ||
+      "";
+    const taskCategory =
+      clickedTask?.taskCategory?.toLowerCase() ||
+      (clickedTask as any)?.TaskCategory?.toLowerCase() ||
+      selectedAction?.action?.taskCategory?.toLowerCase() ||
+      selectedAction?.action?.TaskCategory?.toLowerCase() ||
+      "";
+
+    return taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.EMAIL;
   }, [showUploadModal, selectedAction?.action]);
 
   const applicationId = useMemo(() => {
@@ -92,7 +111,9 @@ export const UploadNdaModal: React.FC<Props> = ({
   }, [selectedAction]);
 
   const { data: applicationDetail, isLoading: isApplicationDetailLoading } = useApplicationDetail(
-    showUploadModal && isReviewUploadTask && applicationId != null ? String(applicationId) : undefined
+    showUploadModal && (isReviewUploadTask || isEmailActionTask) && applicationId != null
+      ? String(applicationId)
+      : undefined
   );
 
   const companyContacts = useMemo(() => {
@@ -113,7 +134,11 @@ export const UploadNdaModal: React.FC<Props> = ({
   }, [showUploadModal]);
 
   useEffect(() => {
-    if (!showUploadModal || !isReviewUploadTask || !uploaded) {
+    if (!showUploadModal || (!isReviewUploadTask && !isEmailActionTask)) {
+      return;
+    }
+
+    if (isReviewUploadTask && !uploaded) {
       return;
     }
 
@@ -133,6 +158,7 @@ export const UploadNdaModal: React.FC<Props> = ({
   }, [
     showUploadModal,
     isReviewUploadTask,
+    isEmailActionTask,
     uploaded,
     companyContacts,
     selectedContactEmail,
@@ -214,16 +240,23 @@ export const UploadNdaModal: React.FC<Props> = ({
     uploadMutation,
   ]);
 
-  const openMailSenderWithAttachment = useCallback(async () => {
-    if (!file) {
+  const openMailSender = useCallback(async () => {
+    if (isReviewUploadTask && !file) {
       setError("Please attach an NDA document.");
       return;
     }
 
-    const subject = `NDA Review - ${companyName}`;
-    let body = `Please review the attached NDA: ${file.name}`;
-    let fileDownloadUrl = `${window.location.origin}/api/applications/${selectedAction?.application?.applicationId}/files/${file.name}`;
-    body = `${body}\n\nDownload: ${fileDownloadUrl}`;
+    const subject = isEmailActionTask
+      ? `${taskName} - ${companyName}`
+      : `NDA Review - ${companyName}`;
+    let body = isEmailActionTask
+      ? `Please review this request for ${companyName}.`
+      : `Please review the attached NDA: ${file?.name ?? "NDA document"}`;
+
+    if (!isEmailActionTask && file) {
+      const fileDownloadUrl = `${window.location.origin}/api/applications/${selectedAction?.application?.applicationId}/files/${file.name}`;
+      body = `${body}\n\nDownload: ${fileDownloadUrl}`;
+    }
 
     /*
     const safeFileName = file.name?.trim() || "NDA.pdf";
@@ -258,9 +291,9 @@ export const UploadNdaModal: React.FC<Props> = ({
     window.location.href = `mailto:${encodeURIComponent(
       mailTo
     )}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
-      `${body}\n\nAttachment filename: ${file.name}`
+      isEmailActionTask ? body : `${body}\n\nAttachment filename: ${file?.name ?? "NDA document"}`
     )}`;
-  }, [file, companyName, selectedContactEmail]);
+  }, [isReviewUploadTask, file, isEmailActionTask, taskName, companyName, selectedAction?.application?.applicationId, selectedContactEmail]);
 
   const handleComplete = useCallback(async () => {
     if (!selectedAction?.action) {
@@ -268,7 +301,7 @@ export const UploadNdaModal: React.FC<Props> = ({
       return;
     }
 
-    if (isReviewUploadTask) {
+    if (isReviewUploadTask || isEmailActionTask) {
       if (companyContacts.length === 0) {
         setError("No company contacts found for this application.");
         return;
@@ -281,15 +314,25 @@ export const UploadNdaModal: React.FC<Props> = ({
 
     setProcessingAction("complete");
     try {
-      const ok = uploaded ? true : await uploadSelectedFile();
-      if (!ok) return;
-      completeTaskWithResult(
-        selectedAction.action,
-        "yes",
-        undefined,
-        "NDA uploaded and marked complete"
-      );
-      await openMailSenderWithAttachment();
+      if (isReviewUploadTask) {
+        const ok = uploaded ? true : await uploadSelectedFile();
+        if (!ok) return;
+        completeTaskWithResult(
+          selectedAction.action,
+          "yes",
+          undefined,
+          "NDA uploaded and marked complete"
+        );
+      } else if (isEmailActionTask) {
+        completeTaskWithResult(
+          selectedAction.action,
+          "yes",
+          undefined,
+          "Email opened for selected contact"
+        );
+      }
+
+      await openMailSender();
       setShowUploadModal(null);
     } finally {
       setProcessingAction(null);
@@ -297,12 +340,13 @@ export const UploadNdaModal: React.FC<Props> = ({
   }, [
     selectedAction,
     isReviewUploadTask,
+    isEmailActionTask,
     companyContacts.length,
     selectedContactEmail,
     uploaded,
     uploadSelectedFile,
     completeTaskWithResult,
-    openMailSenderWithAttachment,
+    openMailSender,
     setShowUploadModal,
   ]);
 
@@ -360,71 +404,77 @@ export const UploadNdaModal: React.FC<Props> = ({
           Application: <span className="font-medium">{companyName}</span>
         </p>
 
-        <input
-          ref={inputRef}
-          type="file"
-          className="hidden"
-          onChange={(e) => handleFileSelect(e.target.files?.[0])}
-        />
+        {!isEmailActionTask && (
+          <>
+            <input
+              ref={inputRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => handleFileSelect(e.target.files?.[0])}
+            />
 
-        <button
-          type="button"
-          onDragOver={(e) => {
-            e.preventDefault();
-            setIsDragging(true);
-          }}
-          onDragLeave={(e) => {
-            e.preventDefault();
-            setIsDragging(false);
-          }}
-          onDrop={(e) => {
-            e.preventDefault();
-            setIsDragging(false);
-            handleFileSelect(e.dataTransfer.files?.[0]);
-          }}
-          onClick={() => inputRef.current?.click()}
-          disabled={saving}
-          className={`w-full border-2 border-dashed rounded-lg p-5 text-left transition-colors ${
-            isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-blue-400"
-          } ${saving ? "opacity-60 cursor-not-allowed" : ""}`}
-        >
-          <div className="flex items-center gap-3">
-            <Upload className="w-5 h-5 text-blue-600" />
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                {file ? file.name : "Drop NDA here or click to attach"}
-              </p>
-              <p className="text-xs text-gray-500">
-                {file ? `${Math.ceil(file.size / 1024)} KB` : "Any document file"}
-              </p>
-            </div>
-          </div>
-        </button>
+            <button
+              type="button"
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                handleFileSelect(e.dataTransfer.files?.[0]);
+              }}
+              onClick={() => inputRef.current?.click()}
+              disabled={saving}
+              className={`w-full border-2 border-dashed rounded-lg p-5 text-left transition-colors ${
+                isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-blue-400"
+              } ${saving ? "opacity-60 cursor-not-allowed" : ""}`}
+            >
+              <div className="flex items-center gap-3">
+                <Upload className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {file ? file.name : "Drop NDA here or click to attach"}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {file ? `${Math.ceil(file.size / 1024)} KB` : "Any document file"}
+                  </p>
+                </div>
+              </div>
+            </button>
+          </>
+        )}
 
         {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
 
-        <div className="flex justify-end gap-3 mt-6">
-          <button
-            onClick={() => setShowUploadModal(null)}
-            disabled={saving}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 disabled:opacity-40 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={uploadSelectedFile}
-            disabled={saving || !file}
-            className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
-          >
-            {saving && (
-              <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-            )}
-            {!saving && <Upload className="h-4 w-4" />}
-            {saving ? "Uploading..." : "Upload"}
-          </button>
-        </div>
+        {!isEmailActionTask && (
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              onClick={() => setShowUploadModal(null)}
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 disabled:opacity-40 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={uploadSelectedFile}
+              disabled={saving || !file}
+              className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
+            >
+              {saving && (
+                <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              )}
+              {!saving && <Upload className="h-4 w-4" />}
+              {saving ? "Uploading..." : "Upload"}
+            </button>
+          </div>
+        )}
 
-        {uploaded && isReviewUploadTask && (
+        {((uploaded && isReviewUploadTask) || isEmailActionTask) && (
           <div className="mt-3 space-y-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -454,16 +504,18 @@ export const UploadNdaModal: React.FC<Props> = ({
               )}
             </div>
             <div className="flex justify-end gap-3">
-              <button
-                onClick={handleNegotiate}
-                disabled={saving}
-                className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
-              >
-                {processingAction === "negotiate" && saving && (
-                  <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                )}
-                Negotiate
-              </button>
+              {!isEmailActionTask && (
+                <button
+                  onClick={handleNegotiate}
+                  disabled={saving}
+                  className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
+                >
+                  {processingAction === "negotiate" && saving && (
+                    <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  )}
+                  Negotiate
+                </button>
+              )}
               <button
                 onClick={handleComplete}
                 disabled={saving}
