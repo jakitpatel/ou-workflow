@@ -194,6 +194,8 @@ export type Task = {
   taskRoles?: { taskRole: string }[],
   Result?: string;
   ResultData?: string;
+  receivedNotes?: TaskNote[];
+  sentNotes?: TaskNote[];
   // Company-related fields (for ResolveCompany task)
   companyFromApplication?: CompanyFromApplication;
   companyMatchList?: CompanyMatch[];
@@ -203,6 +205,27 @@ export type Task = {
   plantFromApplication?: PlantFromApplication;
   plantMatchList?: PlantMatch[];
   plantSelected?: PlantSelected;
+};
+
+export type TaskNote = {
+  note?: string;
+  text?: string;
+  details?: string;
+  fromTask?: string;
+  from_task?: string;
+  toTask?: string;
+  to_task?: string;
+  fromUser?: string;
+  from_user?: string;
+  fromUserRole?: string;
+  from_user_role?: string;
+  toUser?: string;
+  to_user?: string;
+  toRole?: string;
+  to_role?: string;
+  createdDate?: string;
+  created_date?: string;
+  [key: string]: unknown;
 };
 
 export type Stage = {

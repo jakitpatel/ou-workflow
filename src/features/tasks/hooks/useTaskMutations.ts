@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { assignTask, confirmTask } from '@/features/tasks/api'
+import { assignTask, confirmTask, createTaskNote } from '@/features/tasks/api'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
@@ -144,6 +144,20 @@ export const useAssignTaskMutation = (options: TaskMutationOptions = {}) => {
     },
     onError: (error: unknown) => {
       options.onError?.(resolveMutationErrorMessage(error, 'Task assignment failed'))
+    },
+  })
+}
+
+export const useCreateTaskNoteMutation = (options: TaskMutationOptions = {}) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: createTaskNote,
+    onSuccess: async (_response, _variables) => {
+      await invalidateRelatedLists(queryClient, options)
+    },
+    onError: (error: unknown) => {
+      options.onError?.(resolveMutationErrorMessage(error, 'Task note creation failed'))
     },
   })
 }

@@ -137,3 +137,44 @@ export async function fetchTaskRoles({
     .filter((item: any) => item.attributes?.groupAssignment)
     .map((item: any) => String(item.attributes.RoleCode).toLowerCase())
 }
+
+export async function createTaskNote({
+  taskId,
+  applicationId,
+  note,
+  toType,
+  toRole,
+  toUser,
+  fromUser,
+  fromUserRole,
+  taskEvent,
+  token,
+}: {
+  taskId: string
+  applicationId?: number | null
+  note: string
+  toType: 'MYSELF' | 'ROLE'
+  toRole?: string
+  toUser?: string
+  fromUser?: string
+  fromUserRole?: string
+  taskEvent?: string
+  token?: string | null
+}): Promise<any> {
+  return await fetchWithAuth({
+    path: '/createtasknote',
+    method: 'POST',
+    body: {
+      task_instance_id: taskId,
+      application_id: applicationId,
+      note,
+      to_type: toType,
+      to_role: toRole,
+      to_user: toUser,
+      from_user: fromUser,
+      from_user_role: fromUserRole,
+      task_event: taskEvent,
+    },
+    token,
+  })
+}

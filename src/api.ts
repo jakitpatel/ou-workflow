@@ -14,6 +14,7 @@ export {
 export {
   assignTask,
   confirmTask,
+  createTaskNote,
   fetchApplicationTasks,
   fetchTaskRoles,
 } from '@/features/tasks/api'
