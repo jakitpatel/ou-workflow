@@ -328,7 +328,7 @@ export const UploadNdaModal: React.FC<Props> = ({
           selectedAction.action,
           "yes",
           undefined,
-          "Email opened for selected contact"
+          "Email sent to "+selectedContactEmail
         );
       }
 
