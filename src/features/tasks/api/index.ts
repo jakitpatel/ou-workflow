@@ -197,9 +197,11 @@ export async function fetchTaskNotes({
   token?: string | null
 }): Promise<TaskNote[]> {
   const params = new URLSearchParams()
-  params.set('ApplicationID', String(applicationId ?? ''))
-  params.set('TaskInstanceId', String(taskId))
-  params.set('isPrivate', String(isPrivate))
+  if (applicationId !== null && applicationId !== undefined) {
+    params.append('filter[applicationId]', String(applicationId))
+  }
+  params.append('filter[taskInstanceId]', String(taskId))
+  params.append('filter[isPrivate]', String(isPrivate))
 
   const response = await fetchWithAuth<{
     data?: WFApplicationMessageRecord[]
