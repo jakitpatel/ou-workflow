@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import {
   Inbox,
   MessageSquarePlus,
@@ -6,8 +6,10 @@ import {
   UserCog,
   X,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import type { Task, Applicant, TaskNote } from '@/types/application'
 import { useUser } from '@/context/UserContext'
+import { fetchTaskNotes } from '@/features/tasks/api'
 import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations'
 import {
@@ -36,11 +38,6 @@ type DrawerState = {
   mode: 'received' | 'sent'
   taskName: string
   notes: TaskNote[]
-}
-
-const getTaskNotes = (task: Task, key: 'receivedNotes' | 'sentNotes'): TaskNote[] => {
-  const raw = (task as any)?.[key]
-  return Array.isArray(raw) ? raw : []
 }
 
 const normalizeNoteValue = (value: unknown): string => {
@@ -79,6 +76,9 @@ const getMetaValue = (note: TaskNote, ...keys: string[]): string => {
   }
   return '-'
 }
+
+const getTaskInstanceId = (task: Task): string =>
+  String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '')
 
 function NotesDrawer({
   drawer,
@@ -149,6 +149,10 @@ export function ApplicationExpandedStage({
   const [drawer, setDrawer] = useState<DrawerState | null>(null)
   const [taskForCreateNote, setTaskForCreateNote] = useState<Task | null>(null)
   const [createNoteError, setCreateNoteError] = useState('')
+  const [noteCountsByTask, setNoteCountsByTask] = useState<
+    Record<string, { received: number; sent: number }>
+  >({})
+  const [notesLoadingByKey, setNotesLoadingByKey] = useState<Record<string, boolean>>({})
 
   const createTaskNoteMutation = useCreateTaskNoteMutation({
     includeApplicationLists: true,
@@ -179,6 +183,54 @@ export function ApplicationExpandedStage({
     setCreateNoteError('')
     setTaskForCreateNote(null)
   }
+
+  const handleOpenNotes = useCallback(
+    async (e: React.MouseEvent, task: Task, mode: 'received' | 'sent') => {
+      e.stopPropagation()
+
+      const taskId = getTaskInstanceId(task)
+      if (!taskId) {
+        toast.error('Task instance id not found')
+        return
+      }
+
+      const key = `${taskId}:${mode}`
+      setNotesLoadingByKey(prev => ({ ...prev, [key]: true }))
+
+      try {
+        const notes = await fetchTaskNotes({
+          taskId,
+          applicationId: applicant.applicationId ?? null,
+          isPrivate: mode === 'received',
+          token: token ?? undefined,
+        })
+
+        setNoteCountsByTask(prev => ({
+          ...prev,
+          [taskId]: {
+            received: mode === 'received' ? notes.length : prev[taskId]?.received ?? 0,
+            sent: mode === 'sent' ? notes.length : prev[taskId]?.sent ?? 0,
+          },
+        }))
+
+        setDrawer({
+          mode,
+          taskName: task.name,
+          notes: notes as TaskNote[],
+        })
+      } catch (err: any) {
+        const message =
+          err?.details?.status ||
+          err?.details?.message ||
+          err?.message ||
+          'Failed to fetch notes'
+        toast.error(message)
+      } finally {
+        setNotesLoadingByKey(prev => ({ ...prev, [key]: false }))
+      }
+    },
+    [applicant.applicationId, token],
+  )
 
   return (
     <div>
@@ -320,67 +372,54 @@ export function ApplicationExpandedStage({
 
                     <div className="ml-auto flex items-center gap-1">
                       {(() => {
-                        const receivedNotes = getTaskNotes(task, 'receivedNotes')
-                        const sentNotes = getTaskNotes(task, 'sentNotes')
-                        const hasReceived = receivedNotes.length > 0
-                        const hasSent = sentNotes.length > 0
+                        const taskId = getTaskInstanceId(task)
+                        const receivedCount = noteCountsByTask[taskId]?.received ?? 0
+                        const sentCount = noteCountsByTask[taskId]?.sent ?? 0
+                        const isReceivedLoading = Boolean(notesLoadingByKey[`${taskId}:received`])
+                        const isSentLoading = Boolean(notesLoadingByKey[`${taskId}:sent`])
 
                         return (
                           <>
                             <button
                               type="button"
-                              disabled={!hasReceived}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setDrawer({
-                                  mode: 'received',
-                                  taskName: task.name,
-                                  notes: receivedNotes,
-                                })
-                              }}
-                              className={`group relative rounded p-1 ${
-                                hasReceived
-                                  ? 'text-blue-600 hover:bg-blue-50'
-                                  : 'cursor-not-allowed text-gray-300'
-                              }`}
-                              aria-label="Directed notes"
+                              onClick={(e) => handleOpenNotes(e, task, 'received')}
+                              className="group relative rounded p-1 text-blue-600 hover:bg-blue-50"
+                              aria-label="Private notes"
                               title={
-                                hasReceived
-                                  ? `Directed notes (${receivedNotes.length})`
-                                  : 'No directed notes'
+                                isReceivedLoading
+                                  ? 'Loading private notes...'
+                                  : `Private notes (${receivedCount})`
                               }
                             >
                               <Inbox className="h-4 w-4" />
-                              {hasReceived && (
+                              {isReceivedLoading && (
+                                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-blue-600" />
+                              )}
+                              {receivedCount > 0 && (
                                 <span className="absolute -right-1 -top-1 rounded-full bg-blue-600 px-1 text-[10px] text-white">
-                                  {receivedNotes.length}
+                                  {receivedCount}
                                 </span>
                               )}
                             </button>
 
                             <button
                               type="button"
-                              disabled={!hasSent}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setDrawer({
-                                  mode: 'sent',
-                                  taskName: task.name,
-                                  notes: sentNotes,
-                                })
-                              }}
-                              className={`group relative rounded p-1 ${
-                                hasSent
-                                  ? 'text-emerald-600 hover:bg-emerald-50'
-                                  : 'cursor-not-allowed text-gray-300'
-                              }`}
-                              aria-label="Sent notes"
-                              title={hasSent ? `Sent notes (${sentNotes.length})` : 'No sent notes'}
+                              onClick={(e) => handleOpenNotes(e, task, 'sent')}
+                              className="group relative rounded p-1 text-emerald-600 hover:bg-emerald-50"
+                              aria-label="Public notes"
+                              title={
+                                isSentLoading
+                                  ? 'Loading public notes...'
+                                  : `Public notes (${sentCount})`
+                              }
                             >
                               <SendHorizontal className="h-4 w-4" />
-                              {hasSent && (
+                              {isSentLoading && (
+                                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-emerald-600" />
+                              )}
+                              {sentCount > 0 && (
                                 <span className="absolute -right-1 -top-1 rounded-full bg-emerald-600 px-1 text-[10px] text-white">
-                                  {sentNotes.length}
+                                  {sentCount}
                                 </span>
                               )}
                             </button>

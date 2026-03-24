@@ -155,19 +155,55 @@ export async function createTaskNote({
   fromUser?: string
   token?: string | null
 }): Promise<any> {
-  return await fetchWithAuth({
-    path: '/api/WFApplicationMessages',
-    method: 'POST',
-    body: {
-      TaskInstanceId: taskId,
-      ApplicationID: applicationId,
-      MessageText: note,
-      isPrivate: isPrivate,
-      FromUser: fromUser,
-      MessageType:'Text',
-      Priority: priority,
-      SentDate: new Date().toISOString()
+  const body = {
+    data: {
+      attributes: {
+        TaskInstanceId: taskId,
+        ApplicationID: applicationId,
+        MessageText: note,
+        isPrivate: isPrivate,
+        FromUser: fromUser,
+        MessageType: 'Text',
+        Priority: priority,
+        SentDate: new Date().toISOString(),
+      },
+      type: 'WFApplicationMessage',
     },
+  }
+
+  return await fetchWithAuth({
+    path: '/api/WFApplicationMessage',
+    method: 'POST',
+    body,
     token,
   })
+}
+
+export async function fetchTaskNotes({
+  taskId,
+  applicationId,
+  isPrivate,
+  token,
+}: {
+  taskId: string
+  applicationId?: number | null
+  isPrivate: boolean
+  token?: string | null
+}): Promise<any[]> {
+  const params = new URLSearchParams()
+  params.set('ApplicationID', String(applicationId ?? ''))
+  params.set('TaskInstanceId', String(taskId))
+  params.set('isPrivate', String(isPrivate))
+
+  const response = await fetchWithAuth<any>({
+    path: `/api/WFApplicationMessages?${params.toString()}`,
+    method: 'GET',
+    token,
+  })
+
+  if (Array.isArray(response)) return response
+  if (Array.isArray(response?.data)) return response.data
+  if (Array.isArray(response?.messages)) return response.messages
+  if (Array.isArray(response?.items)) return response.items
+  return []
 }
