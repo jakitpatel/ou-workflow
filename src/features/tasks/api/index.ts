@@ -196,7 +196,7 @@ export async function fetchTaskNotes({
   params.set('isPrivate', String(isPrivate))
 
   const response = await fetchWithAuth<any>({
-    path: `/api/WFApplicationMessages?${params.toString()}`,
+    path: `/api/WFApplicationMessage?${params.toString()}`,
     method: 'GET',
     token,
   })
