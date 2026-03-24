@@ -135,11 +135,6 @@ function NotesDrawer({
 
                 <p className="mt-1 text-sm leading-5 text-slate-900">{getNoteText(note)}</p>
 
-                <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
-                  <span>From task: {getMetaValue(note, 'fromTask', 'from_task')}</span>
-                  <span className="text-slate-300">|</span>
-                  <span>To task: {getMetaValue(note, 'toTask', 'to_task')}</span>
-                </div>
               </article>
             ))}
           </div>
