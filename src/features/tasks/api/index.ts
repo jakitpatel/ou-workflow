@@ -142,38 +142,29 @@ export async function createTaskNote({
   taskId,
   applicationId,
   note,
-  toType,
-  toRole,
-  toUser,
+  isPrivate,
   fromUser,
   fromUserRole,
-  taskEvent,
   token,
 }: {
   taskId: string
   applicationId?: number | null
   note: string
-  toType: 'MYSELF' | 'ROLE'
-  toRole?: string
-  toUser?: string
+  isPrivate: boolean
   fromUser?: string
   fromUserRole?: string
-  taskEvent?: string
   token?: string | null
 }): Promise<any> {
   return await fetchWithAuth({
-    path: '/createtasknote',
+    path: '/api/ApplicationMessages',
     method: 'POST',
     body: {
       task_instance_id: taskId,
       application_id: applicationId,
       note,
-      to_type: toType,
-      to_role: toRole,
-      to_user: toUser,
+      is_private: isPrivate,
       from_user: fromUser,
       from_user_role: fromUserRole,
-      task_event: taskEvent,
     },
     token,
   })

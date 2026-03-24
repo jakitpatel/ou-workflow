@@ -1,19 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { MessageSquarePlus, X } from 'lucide-react'
-
-type RecipientType = 'MYSELF' | 'ROLE'
+import { toast } from 'sonner'
 
 export type CreateTaskNotePayload = {
-  toType: RecipientType
-  toRole?: string
   text: string
-  taskEvent: string
+  isPrivate: boolean
 }
 
 type Props = {
   open: boolean
   taskName: string
-  roleOptions: string[]
   isSubmitting: boolean
   error?: string
   onClose: () => void
@@ -23,26 +19,23 @@ type Props = {
 export function CreateTaskNoteModal({
   open,
   taskName,
-  roleOptions,
   isSubmitting,
   error,
   onClose,
   onSubmit,
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null)
-  const [toType, setToType] = useState<RecipientType>('MYSELF')
-  const [toRole, setToRole] = useState(roleOptions[0] ?? 'LEGAL')
   const [text, setText] = useState('')
+  const [isPrivate, setIsPrivate] = useState(false)
   const [localError, setLocalError] = useState('')
 
   useEffect(() => {
     if (!open) {
-      setToType('MYSELF')
-      setToRole(roleOptions[0] ?? 'LEGAL')
       setText('')
+      setIsPrivate(false)
       setLocalError('')
     }
-  }, [open, roleOptions])
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -55,16 +48,6 @@ export function CreateTaskNoteModal({
     window.addEventListener('keydown', handleEsc)
     return () => window.removeEventListener('keydown', handleEsc)
   }, [isSubmitting, onClose, open])
-
-  const recipientLabel = useMemo(
-    () => (toType === 'MYSELF' ? 'myself' : toRole),
-    [toRole, toType],
-  )
-
-  const taskEvent = useMemo(() => {
-    if (!text.trim()) return ''
-    return `Sent note to ${recipientLabel}: ${text.trim()}`
-  }, [recipientLabel, text])
 
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent) => {
@@ -80,19 +63,25 @@ export function CreateTaskNoteModal({
       setLocalError('Note text is required.')
       return
     }
-    if (toType === 'ROLE' && !toRole.trim()) {
-      setLocalError('Please select a role.')
-      return
-    }
 
     setLocalError('')
-    await onSubmit({
-      toType,
-      toRole: toType === 'ROLE' ? toRole : undefined,
-      text: text.trim(),
-      taskEvent,
-    })
-  }, [onSubmit, taskEvent, text, toRole, toType])
+    try {
+      await onSubmit({
+        text: text.trim(),
+        isPrivate,
+      })
+      toast.success('Note created successfully')
+    } catch (err: any) {
+      const message =
+        err?.details?.status ||
+        err?.details?.message ||
+        err?.message ||
+        error ||
+        'Failed to create note'
+      setLocalError(message)
+      toast.error(message)
+    }
+  }, [error, isPrivate, onSubmit, text])
 
   if (!open) return null
 
@@ -122,32 +111,6 @@ export function CreateTaskNoteModal({
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-700">To whom</label>
-            <select
-              value={toType === 'MYSELF' ? 'MYSELF' : `ROLE:${toRole}`}
-              onChange={(e) => {
-                const value = e.target.value
-                if (value === 'MYSELF') {
-                  setToType('MYSELF')
-                } else {
-                  setToType('ROLE')
-                  setToRole(value.replace('ROLE:', ''))
-                }
-                setLocalError('')
-              }}
-              disabled={isSubmitting}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
-            >
-              <option value="MYSELF">Myself</option>
-              {roleOptions.map((role) => (
-                <option key={role} value={`ROLE:${role}`}>
-                  {role}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
             <label className="mb-1 block text-xs font-medium text-gray-700">Text</label>
             <textarea
               rows={4}
@@ -162,8 +125,18 @@ export function CreateTaskNoteModal({
             />
           </div>
 
-          <div className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
-            Task event: {taskEvent || '-'}
+          <div className="flex items-center gap-2">
+            <input
+              id="is-private-note"
+              type="checkbox"
+              checked={isPrivate}
+              onChange={(e) => setIsPrivate(e.target.checked)}
+              disabled={isSubmitting}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="is-private-note" className="text-sm text-gray-700">
+              Is Private
+            </label>
           </div>
 
           {(localError || error) && (

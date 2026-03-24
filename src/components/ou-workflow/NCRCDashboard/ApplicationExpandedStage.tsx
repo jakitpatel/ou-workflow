@@ -163,19 +163,6 @@ export function ApplicationExpandedStage({
     return role ? [role.toLowerCase()] : []
   }, [role, roles])
 
-  const targetRoleOptions = useMemo(() => {
-    const defaults = ['LEGAL', 'PROD', 'IAR']
-    const fromApplication = Object.values(applicant.stages ?? {})
-      .flatMap(stage => stage.tasks ?? [])
-      .flatMap(task => task.taskRoles ?? [])
-      .map(roleObj =>
-        String(typeof roleObj === 'string' ? roleObj : roleObj?.taskRole ?? '').toUpperCase(),
-      )
-      .filter(Boolean)
-
-    return Array.from(new Set([...defaults, ...fromApplication]))
-  }, [applicant.stages])
-
   const handleCreateNoteSubmit = async (payload: CreateTaskNotePayload) => {
     if (!taskForCreateNote) return
 
@@ -183,12 +170,9 @@ export function ApplicationExpandedStage({
       taskId: String(taskForCreateNote.TaskInstanceId),
       applicationId: applicant.applicationId ?? null,
       note: payload.text,
-      toType: payload.toType,
-      toRole: payload.toRole,
-      toUser: payload.toType === 'MYSELF' ? username ?? undefined : undefined,
+      isPrivate: payload.isPrivate,
       fromUser: username ?? undefined,
       fromUserRole: role?.toUpperCase(),
-      taskEvent: payload.taskEvent,
       token: token ?? undefined,
     })
 
@@ -282,90 +266,6 @@ export function ApplicationExpandedStage({
                         </span>
                       )}
 
-                      <div className="ml-auto flex items-center gap-1">
-                        {(() => {
-                          const receivedNotes = getTaskNotes(task, 'receivedNotes')
-                          const sentNotes = getTaskNotes(task, 'sentNotes')
-                          const hasReceived = receivedNotes.length > 0
-                          const hasSent = sentNotes.length > 0
-
-                          return (
-                            <>
-                              <button
-                                type="button"
-                                disabled={!hasReceived}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setDrawer({
-                                    mode: 'received',
-                                    taskName: task.name,
-                                    notes: receivedNotes,
-                                  })
-                                }}
-                                className={`group relative rounded p-1 ${
-                                  hasReceived
-                                    ? 'text-blue-600 hover:bg-blue-50'
-                                    : 'cursor-not-allowed text-gray-300'
-                                }`}
-                                aria-label="Directed notes"
-                                title={
-                                  hasReceived
-                                    ? `Directed notes (${receivedNotes.length})`
-                                    : 'No directed notes'
-                                }
-                              >
-                                <Inbox className="h-4 w-4" />
-                                {hasReceived && (
-                                  <span className="absolute -right-1 -top-1 rounded-full bg-blue-600 px-1 text-[10px] text-white">
-                                    {receivedNotes.length}
-                                  </span>
-                                )}
-                              </button>
-
-                              <button
-                                type="button"
-                                disabled={!hasSent}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setDrawer({
-                                    mode: 'sent',
-                                    taskName: task.name,
-                                    notes: sentNotes,
-                                  })
-                                }}
-                                className={`group relative rounded p-1 ${
-                                  hasSent
-                                    ? 'text-emerald-600 hover:bg-emerald-50'
-                                    : 'cursor-not-allowed text-gray-300'
-                                }`}
-                                aria-label="Sent notes"
-                                title={hasSent ? `Sent notes (${sentNotes.length})` : 'No sent notes'}
-                              >
-                                <SendHorizontal className="h-4 w-4" />
-                                {hasSent && (
-                                  <span className="absolute -right-1 -top-1 rounded-full bg-emerald-600 px-1 text-[10px] text-white">
-                                    {sentNotes.length}
-                                  </span>
-                                )}
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setCreateNoteError('')
-                                  setTaskForCreateNote(task)
-                                }}
-                                className="rounded p-1 text-indigo-600 hover:bg-indigo-50"
-                                aria-label="Create note"
-                                title="Create note"
-                              >
-                                <MessageSquarePlus className="h-4 w-4" />
-                              </button>
-                            </>
-                          )
-                        })()}
-                      </div>
                     </div>
 
                     <div className="mt-1 flex items-center justify-between">
@@ -417,6 +317,91 @@ export function ApplicationExpandedStage({
                           {task.daysPending} days pending
                         </span>
                       )}
+
+                    <div className="ml-auto flex items-center gap-1">
+                      {(() => {
+                        const receivedNotes = getTaskNotes(task, 'receivedNotes')
+                        const sentNotes = getTaskNotes(task, 'sentNotes')
+                        const hasReceived = receivedNotes.length > 0
+                        const hasSent = sentNotes.length > 0
+
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              disabled={!hasReceived}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setDrawer({
+                                  mode: 'received',
+                                  taskName: task.name,
+                                  notes: receivedNotes,
+                                })
+                              }}
+                              className={`group relative rounded p-1 ${
+                                hasReceived
+                                  ? 'text-blue-600 hover:bg-blue-50'
+                                  : 'cursor-not-allowed text-gray-300'
+                              }`}
+                              aria-label="Directed notes"
+                              title={
+                                hasReceived
+                                  ? `Directed notes (${receivedNotes.length})`
+                                  : 'No directed notes'
+                              }
+                            >
+                              <Inbox className="h-4 w-4" />
+                              {hasReceived && (
+                                <span className="absolute -right-1 -top-1 rounded-full bg-blue-600 px-1 text-[10px] text-white">
+                                  {receivedNotes.length}
+                                </span>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={!hasSent}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setDrawer({
+                                  mode: 'sent',
+                                  taskName: task.name,
+                                  notes: sentNotes,
+                                })
+                              }}
+                              className={`group relative rounded p-1 ${
+                                hasSent
+                                  ? 'text-emerald-600 hover:bg-emerald-50'
+                                  : 'cursor-not-allowed text-gray-300'
+                              }`}
+                              aria-label="Sent notes"
+                              title={hasSent ? `Sent notes (${sentNotes.length})` : 'No sent notes'}
+                            >
+                              <SendHorizontal className="h-4 w-4" />
+                              {hasSent && (
+                                <span className="absolute -right-1 -top-1 rounded-full bg-emerald-600 px-1 text-[10px] text-white">
+                                  {sentNotes.length}
+                                </span>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setCreateNoteError('')
+                                setTaskForCreateNote(task)
+                              }}
+                              className="rounded p-1 text-indigo-600 hover:bg-indigo-50"
+                              aria-label="Create note"
+                              title="Create note"
+                            >
+                              <MessageSquarePlus className="h-4 w-4" />
+                            </button>
+                          </>
+                        )
+                      })()}
+                    </div>
                   </div>
                 </div>
               )
@@ -428,7 +413,6 @@ export function ApplicationExpandedStage({
       <CreateTaskNoteModal
         open={Boolean(taskForCreateNote)}
         taskName={taskForCreateNote?.name ?? ''}
-        roleOptions={targetRoleOptions}
         isSubmitting={createTaskNoteMutation.isPending}
         error={createNoteError}
         onClose={() => {
