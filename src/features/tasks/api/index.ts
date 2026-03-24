@@ -198,9 +198,9 @@ export async function fetchTaskNotes({
 }): Promise<TaskNote[]> {
   const params = new URLSearchParams()
   if (applicationId !== null && applicationId !== undefined) {
-    params.append('filter[applicationId]', String(applicationId))
+    params.append('filter[ApplicationID]', String(applicationId))
   }
-  params.append('filter[taskInstanceId]', String(taskId))
+  params.append('filter[TaskInstanceId]', String(taskId))
   params.append('filter[isPrivate]', String(isPrivate))
 
   const response = await fetchWithAuth<{
