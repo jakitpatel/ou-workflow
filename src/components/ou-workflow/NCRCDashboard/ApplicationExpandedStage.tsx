@@ -171,8 +171,8 @@ export function ApplicationExpandedStage({
       applicationId: applicant.applicationId ?? null,
       note: payload.text,
       isPrivate: payload.isPrivate,
+      priority: payload.priority,
       fromUser: username ?? undefined,
-      fromUserRole: role?.toUpperCase(),
       token: token ?? undefined,
     })
 

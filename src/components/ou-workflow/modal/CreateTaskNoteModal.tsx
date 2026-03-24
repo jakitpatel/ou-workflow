@@ -2,9 +2,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { MessageSquarePlus, X } from 'lucide-react'
 import { toast } from 'sonner'
 
+export type NotePriorityCode = 'CRITICAL' | 'HIGH' | 'LOW' | 'NORMAL'
+
 export type CreateTaskNotePayload = {
   text: string
   isPrivate: boolean
+  priority: NotePriorityCode
 }
 
 type Props = {
@@ -27,12 +30,14 @@ export function CreateTaskNoteModal({
   const dialogRef = useRef<HTMLDivElement>(null)
   const [text, setText] = useState('')
   const [isPrivate, setIsPrivate] = useState(false)
+  const [priority, setPriority] = useState<NotePriorityCode>('NORMAL')
   const [localError, setLocalError] = useState('')
 
   useEffect(() => {
     if (!open) {
       setText('')
       setIsPrivate(false)
+      setPriority('NORMAL')
       setLocalError('')
     }
   }, [open])
@@ -69,6 +74,7 @@ export function CreateTaskNoteModal({
       await onSubmit({
         text: text.trim(),
         isPrivate,
+        priority,
       })
       toast.success('Note created successfully')
     } catch (err: any) {
@@ -81,7 +87,7 @@ export function CreateTaskNoteModal({
       setLocalError(message)
       toast.error(message)
     }
-  }, [error, isPrivate, onSubmit, text])
+  }, [error, isPrivate, onSubmit, priority, text])
 
   if (!open) return null
 
@@ -123,6 +129,21 @@ export function CreateTaskNoteModal({
               placeholder="Enter note..."
               className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
             />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-700">Priority</label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as NotePriorityCode)}
+              disabled={isSubmitting}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900"
+            >
+              <option value="CRITICAL">CRITICAL - Critical Priority</option>
+              <option value="HIGH">HIGH - High Priority</option>
+              <option value="LOW">LOW - Low Priority</option>
+              <option value="NORMAL">NORMAL - Normal Priority</option>
+            </select>
           </div>
 
           <div className="flex items-center gap-2">

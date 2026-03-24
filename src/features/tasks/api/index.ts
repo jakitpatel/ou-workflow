@@ -143,28 +143,30 @@ export async function createTaskNote({
   applicationId,
   note,
   isPrivate,
+  priority,
   fromUser,
-  fromUserRole,
   token,
 }: {
   taskId: string
   applicationId?: number | null
   note: string
   isPrivate: boolean
+  priority: 'CRITICAL' | 'HIGH' | 'LOW' | 'NORMAL'
   fromUser?: string
-  fromUserRole?: string
   token?: string | null
 }): Promise<any> {
   return await fetchWithAuth({
-    path: '/api/ApplicationMessages',
+    path: '/api/WFApplicationMessages',
     method: 'POST',
     body: {
-      task_instance_id: taskId,
-      application_id: applicationId,
-      note,
-      is_private: isPrivate,
-      from_user: fromUser,
-      from_user_role: fromUserRole,
+      TaskInstanceId: taskId,
+      ApplicationID: applicationId,
+      MessageText: note,
+      isPrivate: isPrivate,
+      FromUser: fromUser,
+      MessageType:'Text',
+      Priority: priority,
+      SentDate: new Date().toISOString()
     },
     token,
   })
