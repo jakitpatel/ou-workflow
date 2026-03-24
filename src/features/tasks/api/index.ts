@@ -1,6 +1,12 @@
 import { fetchWithAuth } from '@/shared/api/httpClient'
 import { addFilterParams, buildPaginationParams } from '@/shared/api/queryParams'
-import type { ApplicationTask, UserRoleResponse } from '@/types/application'
+import type {
+  ApplicationTask,
+  TaskNote,
+  UserRoleResponse,
+  WFApplicationMessageAttributes,
+  WFApplicationMessageRecord,
+} from '@/types/application'
 import { mapApplicationTasksResponse, type BackendApplicationTasksResponse } from './mappers'
 
 export async function assignTask({
@@ -189,21 +195,43 @@ export async function fetchTaskNotes({
   applicationId?: number | null
   isPrivate: boolean
   token?: string | null
-}): Promise<any[]> {
+}): Promise<TaskNote[]> {
   const params = new URLSearchParams()
   params.set('ApplicationID', String(applicationId ?? ''))
   params.set('TaskInstanceId', String(taskId))
   params.set('isPrivate', String(isPrivate))
 
-  const response = await fetchWithAuth<any>({
+  const response = await fetchWithAuth<{
+    data?: WFApplicationMessageRecord[]
+    messages?: WFApplicationMessageRecord[]
+    items?: WFApplicationMessageRecord[]
+  } | WFApplicationMessageRecord[]>({
     path: `/api/WFApplicationMessage?${params.toString()}`,
     method: 'GET',
     token,
   })
 
-  if (Array.isArray(response)) return response
-  if (Array.isArray(response?.data)) return response.data
-  if (Array.isArray(response?.messages)) return response.messages
-  if (Array.isArray(response?.items)) return response.items
-  return []
+  const records: WFApplicationMessageRecord[] = Array.isArray(response)
+    ? response
+    : Array.isArray(response?.data)
+    ? response.data
+    : Array.isArray(response?.messages)
+    ? response.messages
+    : Array.isArray(response?.items)
+    ? response.items
+    : []
+
+  return records.map((record) => {
+    const attributes = (record?.attributes ?? {}) as WFApplicationMessageAttributes
+    return {
+      ...attributes,
+      text: attributes.MessageText ?? '',
+      note: attributes.MessageText ?? '',
+      fromUser: attributes.FromUser ?? '',
+      toUser: attributes.ToUser ?? '',
+      createdDate: attributes.SentDate ?? '',
+      fromTask: String(attributes.TaskInstanceId ?? ''),
+      toTask: String(attributes.TaskInstanceId ?? ''),
+    }
+  })
 }

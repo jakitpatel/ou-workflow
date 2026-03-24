@@ -211,6 +211,16 @@ export type TaskNote = {
   note?: string;
   text?: string;
   details?: string;
+  ApplicationID?: number;
+  MessageID?: number;
+  MessageText?: string;
+  MessageType?: string;
+  Priority?: string;
+  SentDate?: string;
+  TaskInstanceId?: number | string;
+  isPrivate?: boolean;
+  FromUser?: string;
+  ToUser?: string;
   fromTask?: string;
   from_task?: string;
   toTask?: string;
@@ -226,6 +236,27 @@ export type TaskNote = {
   createdDate?: string;
   created_date?: string;
   [key: string]: unknown;
+};
+
+export type WFApplicationMessageAttributes = {
+  ApplicationID?: number;
+  FromUser?: string;
+  MessageID?: number;
+  MessageText?: string;
+  MessageType?: string;
+  Priority?: 'CRITICAL' | 'HIGH' | 'LOW' | 'NORMAL' | string;
+  SentDate?: string;
+  TaskInstanceId?: number;
+  ToUser?: string;
+  isPrivate?: boolean;
+};
+
+export type WFApplicationMessageRecord = {
+  attributes?: WFApplicationMessageAttributes;
+  id?: string;
+  links?: { self?: string };
+  relationships?: Record<string, unknown>;
+  type?: string;
 };
 
 export type Stage = {
