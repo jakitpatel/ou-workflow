@@ -1,4 +1,5 @@
-import { X } from 'lucide-react'
+import { useState } from 'react'
+import { Lock, X } from 'lucide-react'
 import type { TaskNote } from '@/types/application'
 
 export type NoteTab = 'private' | 'public'
@@ -61,6 +62,38 @@ const getMetaValue = (note: TaskNote, ...keys: string[]): string => {
   return '-'
 }
 
+const formatNoteDate = (value: string): string => {
+  const cleaned = value.trim()
+  if (!cleaned || cleaned === '-') return '-'
+  const date = new Date(cleaned)
+  if (Number.isNaN(date.getTime())) return cleaned
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date)
+}
+
+const getInitials = (name: string): string => {
+  const value = name.trim()
+  if (!value || value === '-') return 'NA'
+  const parts = value.split(/\s+/).filter(Boolean)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase()
+}
+
+const getNoteId = (note: TaskNote, idx: number): string => {
+  const idCandidate = (note as any)?.MessageID ?? (note as any)?.messageId ?? (note as any)?.id
+  if (idCandidate !== undefined && idCandidate !== null && String(idCandidate).trim()) {
+    return String(idCandidate)
+  }
+  return `note-${idx}`
+}
+
 export function TaskNotesDrawer({
   open,
   applicantCompany,
@@ -83,6 +116,9 @@ export function TaskNotesDrawer({
 }: Props) {
   if (!open) return null
 
+  const [replyOpenById, setReplyOpenById] = useState<Record<string, boolean>>({})
+  const [replyTextById, setReplyTextById] = useState<Record<string, string>>({})
+
   const notes = activeTab === 'private' ? privateNotes : publicNotes
   const isLoading = activeTab === 'private' ? loadingPrivate : loadingPublic
   const canSubmit = composeText.trim().length > 0 && !isSubmitting
@@ -98,7 +134,7 @@ export function TaskNotesDrawer({
             <h3 className="text-lg font-semibold">Task Notes</h3>
             <p className="text-xs text-gray-200">
               {applicantCompany || 'Unknown Company'}
-              {applicationId ? ` · AppId: ${applicationId}` : ''}
+              {applicationId ? ` - AppId: ${applicationId}` : ''}
             </p>
           </div>
           <button
@@ -157,24 +193,94 @@ export function TaskNotesDrawer({
             </div>
           ) : (
             <div className="space-y-2">
-              {notes.map((note, idx) => (
-                <article key={idx} className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex min-w-0 flex-wrap items-center gap-1 text-[11px] text-slate-600">
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5">
-                        From: {getMetaValue(note, 'fromUser', 'from_user')}
-                      </span>
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5">
-                        To: {getMetaValue(note, 'toUser', 'to_user')}
-                      </span>
-                    </div>
-                    <span className="shrink-0 text-[11px] text-slate-500">
-                      {getMetaValue(note, 'createdDate', 'created_date')}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm leading-5 text-slate-900">{getNoteText(note)}</p>
-                </article>
-              ))}
+              {notes.map((note, idx) => {
+                const noteId = getNoteId(note, idx)
+                const fromName = getMetaValue(note, 'fromUser', 'from_user')
+                const fromRole =
+                  getMetaValue(note, 'fromUserRole', 'from_user_role') !== '-'
+                    ? getMetaValue(note, 'fromUserRole', 'from_user_role')
+                    : 'NCRC'
+                const createdAt = formatNoteDate(getMetaValue(note, 'createdDate', 'created_date'))
+                const isReplyOpen = Boolean(replyOpenById[noteId])
+
+                return (
+                  <article key={noteId} className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm">
+                    {activeTab === 'private' ? (
+                      <>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
+                            {getInitials(fromName)}
+                          </div>
+                          <span className="text-sm font-semibold text-slate-900">{fromName}</span>
+                          <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700">
+                            {fromRole}
+                          </span>
+                          <span className="text-[11px] text-slate-500">{createdAt}</span>
+                          <span className="ml-auto inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                            <Lock className="h-3 w-3" />
+                            Private
+                          </span>
+                        </div>
+                        <p className="mt-2 text-sm leading-5 text-slate-900">{getNoteText(note)}</p>
+                        <div className="mt-2" />
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
+                            {getInitials(fromName)}
+                          </div>
+                          <span className="text-sm font-semibold text-slate-900">{fromName}</span>
+                          <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700">
+                            {fromRole}
+                          </span>
+                          <span className="text-[11px] text-slate-500">{createdAt}</span>
+                        </div>
+                        <p className="mt-2 text-sm leading-5 text-slate-900">{getNoteText(note)}</p>
+
+                        {isReplyOpen ? (
+                          <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+                            <div className="flex items-start gap-2">
+                              <textarea
+                                className="min-h-[64px] flex-1 resize-y rounded border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                placeholder="Reply..."
+                                value={replyTextById[noteId] ?? ''}
+                                onChange={(e) =>
+                                  setReplyTextById((prev) => ({ ...prev, [noteId]: e.target.value }))
+                                }
+                              />
+                              <button
+                                type="button"
+                                className="rounded bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                              >
+                                Reply
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setReplyOpenById((prev) => ({ ...prev, [noteId]: !Boolean(prev[noteId]) }))
+                            }
+                            className="rounded px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                          >
+                            ↩ Reply
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded px-2 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+                          >
+                            ✓ Resolve
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </article>
+                )
+              })}
             </div>
           )}
         </div>
