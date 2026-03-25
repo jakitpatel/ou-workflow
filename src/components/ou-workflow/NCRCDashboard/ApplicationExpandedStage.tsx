@@ -4,7 +4,7 @@ import {
   MessageSquarePlus,
   SendHorizontal,
   UserCog,
-  X,
+  X
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Task, Applicant, TaskNote } from '@/types/application'
@@ -13,9 +13,9 @@ import { fetchTaskNotes } from '@/features/tasks/api'
 import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations'
 import {
-  CreateTaskNoteModal,
-  type CreateTaskNotePayload,
-} from '@/components/ou-workflow/modal/CreateTaskNoteModal'
+  TaskNotesDrawer,
+  type NoteTab,
+} from '@/components/ou-workflow/NCRCDashboard/TaskNotesDrawer'
 import {
   getStatusBadgeClass,
   getStatusLabel,
@@ -35,114 +35,13 @@ type Props = {
 }
 
 type DrawerState = {
-  mode: 'received' | 'sent'
+  taskId: string
   taskName: string
-  notes: TaskNote[]
-}
-
-const normalizeNoteValue = (value: unknown): string => {
-  if (typeof value !== 'string') return ''
-  return value.trim()
-}
-
-const getNoteText = (note: TaskNote): string => {
-  const directCandidates = [
-    note.note,
-    note.text,
-    note.details,
-    (note as any)?.message,
-    (note as any)?.content,
-    (note as any)?.note1,
-  ]
-
-  for (const item of directCandidates) {
-    const value = normalizeNoteValue(item)
-    if (value) return value
-  }
-
-  const dynamicNoteKey = Object.keys(note).find((key) => /^note\d*$/i.test(key))
-  if (dynamicNoteKey) {
-    const value = normalizeNoteValue((note as any)[dynamicNoteKey])
-    if (value) return value
-  }
-
-  return '-'
-}
-
-const getMetaValue = (note: TaskNote, ...keys: string[]): string => {
-  for (const key of keys) {
-    const value = normalizeNoteValue((note as any)?.[key])
-    if (value) return value
-  }
-  return '-'
+  activeTab: NoteTab
 }
 
 const getTaskInstanceId = (task: Task): string =>
   String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '')
-
-function NotesDrawer({
-  drawer,
-  onClose,
-}: {
-  drawer: DrawerState | null
-  onClose: () => void
-}) {
-  if (!drawer) return null
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
-      <div
-        className="fixed right-0 top-0 h-full w-full max-w-lg overflow-y-auto bg-white p-4 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-3 flex items-center justify-between border-b border-gray-200 pb-2">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              {drawer.mode === 'received' ? 'Private Notes' : 'Public Notes'}
-            </h3>
-            <p className="text-xs text-gray-600">Task: {drawer.taskName}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-            aria-label="Close notes drawer"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {drawer.notes.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-5 text-center">
-            <p className="text-sm text-gray-500">No notes found.</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {drawer.notes.map((note, idx) => (
-              <article key={idx} className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex min-w-0 flex-wrap items-center gap-1 text-[11px] text-slate-600">
-                    <span className="rounded bg-slate-100 px-1.5 py-0.5">
-                      From: {getMetaValue(note, 'fromUser', 'from_user')}
-                    </span>
-                    <span className="rounded bg-slate-100 px-1.5 py-0.5">
-                      To: {getMetaValue(note, 'toUser', 'to_user')}
-                    </span>
-                  </div>
-                  <span className="shrink-0 text-[11px] text-slate-500">
-                    {getMetaValue(note, 'createdDate', 'created_date')}
-                  </span>
-                </div>
-
-                <p className="mt-1 text-sm leading-5 text-slate-900">{getNoteText(note)}</p>
-
-              </article>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
 export function ApplicationExpandedStage({
   expandedStage,
@@ -153,7 +52,11 @@ export function ApplicationExpandedStage({
   const { username, role, roles, delegated, token } = useUser()
   const { data: taskRolesAll = [] } = useFetchTaskRoles()
   const [drawer, setDrawer] = useState<DrawerState | null>(null)
-  const [taskForCreateNote, setTaskForCreateNote] = useState<Task | null>(null)
+  const [notesByTask, setNotesByTask] = useState<
+    Record<string, { private: TaskNote[]; public: TaskNote[] }>
+  >({})
+  const [composeText, setComposeText] = useState('')
+  const [composePrivate, setComposePrivate] = useState(false)
   const [createNoteError, setCreateNoteError] = useState('')
   const [noteCountsByTask, setNoteCountsByTask] = useState<
     Record<string, { received: number; sent: number }>
@@ -173,57 +76,34 @@ export function ApplicationExpandedStage({
     return role ? [role.toLowerCase()] : []
   }, [role, roles])
 
-  const handleCreateNoteSubmit = async (payload: CreateTaskNotePayload) => {
-    if (!taskForCreateNote) return
-
-    await createTaskNoteMutation.mutateAsync({
-      taskId: String(taskForCreateNote.TaskInstanceId),
-      applicationId: applicant.applicationId ?? null,
-      note: payload.text,
-      isPrivate: payload.isPrivate,
-      priority: payload.priority,
-      fromUser: username ?? undefined,
-      token: token ?? undefined,
-    })
-
-    setCreateNoteError('')
-    setTaskForCreateNote(null)
-  }
-
-  const handleOpenNotes = useCallback(
-    async (e: React.MouseEvent, task: Task, mode: 'received' | 'sent') => {
-      e.stopPropagation()
-
-      const taskId = getTaskInstanceId(task)
-      if (!taskId) {
-        toast.error('Task instance id not found')
-        return
-      }
-
-      const key = `${taskId}:${mode}`
+  const fetchNotesByVisibility = useCallback(
+    async (taskId: string, tab: NoteTab) => {
+      const key = `${taskId}:${tab}`
       setNotesLoadingByKey(prev => ({ ...prev, [key]: true }))
 
       try {
         const notes = await fetchTaskNotes({
           taskId,
           applicationId: applicant.applicationId ?? null,
-          isPrivate: mode === 'received',
+          isPrivate: tab === 'private',
           token: token ?? undefined,
         })
+
+        setNotesByTask(prev => ({
+          ...prev,
+          [taskId]: {
+            private: tab === 'private' ? (notes as TaskNote[]) : prev[taskId]?.private ?? [],
+            public: tab === 'public' ? (notes as TaskNote[]) : prev[taskId]?.public ?? [],
+          },
+        }))
 
         setNoteCountsByTask(prev => ({
           ...prev,
           [taskId]: {
-            received: mode === 'received' ? notes.length : prev[taskId]?.received ?? 0,
-            sent: mode === 'sent' ? notes.length : prev[taskId]?.sent ?? 0,
+            received: tab === 'private' ? notes.length : prev[taskId]?.received ?? 0,
+            sent: tab === 'public' ? notes.length : prev[taskId]?.sent ?? 0,
           },
         }))
-
-        setDrawer({
-          mode,
-          taskName: task.name,
-          notes: notes as TaskNote[],
-        })
       } catch (err: any) {
         const message =
           err?.details?.status ||
@@ -237,6 +117,76 @@ export function ApplicationExpandedStage({
     },
     [applicant.applicationId, token],
   )
+
+  const openNotesDrawer = useCallback(
+    async (e: React.MouseEvent, task: Task, tab: NoteTab) => {
+      e.stopPropagation()
+      const taskId = getTaskInstanceId(task)
+      if (!taskId) {
+        toast.error('Task instance id not found')
+        return
+      }
+
+      setDrawer({
+        taskId,
+        taskName: task.name,
+        activeTab: tab,
+      })
+
+      setCreateNoteError('')
+      setComposePrivate(tab === 'private')
+
+      await Promise.allSettled([
+        fetchNotesByVisibility(taskId, 'private'),
+        fetchNotesByVisibility(taskId, 'public'),
+      ])
+    },
+    [fetchNotesByVisibility],
+  )
+
+  const handleCreateNoteSubmit = useCallback(async () => {
+    if (!drawer) return
+
+    const trimmedText = composeText.trim()
+    if (!trimmedText) {
+      setCreateNoteError('Note text is required')
+      return
+    }
+
+    await createTaskNoteMutation.mutateAsync({
+      taskId: drawer.taskId,
+      applicationId: applicant.applicationId ?? null,
+      note: trimmedText,
+      isPrivate: composePrivate,
+      priority: 'NORMAL',
+      fromUser: username ?? undefined,
+      token: token ?? undefined,
+    })
+
+    setCreateNoteError('')
+    setComposeText('')
+
+    const postedTab: NoteTab = composePrivate ? 'private' : 'public'
+    await fetchNotesByVisibility(drawer.taskId, postedTab)
+
+    setDrawer(prev =>
+      prev
+        ? {
+            ...prev,
+            activeTab: postedTab,
+          }
+        : prev,
+    )
+  }, [
+    applicant.applicationId,
+    composePrivate,
+    composeText,
+    createTaskNoteMutation,
+    drawer,
+    fetchNotesByVisibility,
+    token,
+    username,
+  ])
 
   return (
     <div>
@@ -381,14 +331,14 @@ export function ApplicationExpandedStage({
                         const taskId = getTaskInstanceId(task)
                         const receivedCount = noteCountsByTask[taskId]?.received ?? 0
                         const sentCount = noteCountsByTask[taskId]?.sent ?? 0
-                        const isReceivedLoading = Boolean(notesLoadingByKey[`${taskId}:received`])
-                        const isSentLoading = Boolean(notesLoadingByKey[`${taskId}:sent`])
+                        const isReceivedLoading = Boolean(notesLoadingByKey[`${taskId}:private`])
+                        const isSentLoading = Boolean(notesLoadingByKey[`${taskId}:public`])
 
                         return (
                           <>
                             <button
                               type="button"
-                              onClick={(e) => handleOpenNotes(e, task, 'received')}
+                              onClick={(e) => openNotesDrawer(e, task, 'private')}
                               className="group relative rounded p-1 text-blue-600 hover:bg-blue-50"
                               aria-label="Private notes"
                               title={
@@ -410,7 +360,7 @@ export function ApplicationExpandedStage({
 
                             <button
                               type="button"
-                              onClick={(e) => handleOpenNotes(e, task, 'sent')}
+                              onClick={(e) => openNotesDrawer(e, task, 'public')}
                               className="group relative rounded p-1 text-emerald-600 hover:bg-emerald-50"
                               aria-label="Public notes"
                               title={
@@ -432,11 +382,7 @@ export function ApplicationExpandedStage({
 
                             <button
                               type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setCreateNoteError('')
-                                setTaskForCreateNote(task)
-                              }}
+                              onClick={(e) => openNotesDrawer(e, task, 'public')}
                               className="rounded p-1 text-indigo-600 hover:bg-indigo-50"
                               aria-label="Create note"
                               title="Create note"
@@ -454,17 +400,37 @@ export function ApplicationExpandedStage({
           </div>
         </div>
       )}
-      <NotesDrawer drawer={drawer} onClose={() => setDrawer(null)} />
-      <CreateTaskNoteModal
-        open={Boolean(taskForCreateNote)}
-        taskName={taskForCreateNote?.name ?? ''}
+      <TaskNotesDrawer
+        open={Boolean(drawer)}
+        applicantCompany={applicant.company}
+        applicationId={applicant.applicationId ?? null}
+        taskName={drawer?.taskName ?? ''}
+        activeTab={drawer?.activeTab ?? 'public'}
+        privateNotes={drawer ? notesByTask[drawer.taskId]?.private ?? [] : []}
+        publicNotes={drawer ? notesByTask[drawer.taskId]?.public ?? [] : []}
+        loadingPrivate={drawer ? Boolean(notesLoadingByKey[`${drawer.taskId}:private`]) : false}
+        loadingPublic={drawer ? Boolean(notesLoadingByKey[`${drawer.taskId}:public`]) : false}
+        composeText={composeText}
+        composePrivate={composePrivate}
         isSubmitting={createTaskNoteMutation.isPending}
         error={createNoteError}
         onClose={() => {
           if (createTaskNoteMutation.isPending) return
-          setTaskForCreateNote(null)
+          setDrawer(null)
           setCreateNoteError('')
+          setComposeText('')
         }}
+        onTabChange={(tab) => {
+          setDrawer(prev => (prev ? { ...prev, activeTab: tab } : prev))
+          setComposePrivate(tab === 'private')
+        }}
+        onComposeTextChange={(text) => {
+          setComposeText(text)
+          if (createNoteError) {
+            setCreateNoteError('')
+          }
+        }}
+        onComposePrivateChange={setComposePrivate}
         onSubmit={handleCreateNoteSubmit}
       />
     </div>
