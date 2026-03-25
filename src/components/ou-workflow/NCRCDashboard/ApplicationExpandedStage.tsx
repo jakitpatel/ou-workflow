@@ -43,6 +43,12 @@ type DrawerState = {
 const getTaskInstanceId = (task: Task): string =>
   String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '')
 
+const toSafeCount = (value: unknown): number => {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed < 0) return 0
+  return Math.trunc(parsed)
+}
+
 export function ApplicationExpandedStage({
   expandedStage,
   setExpandedStage,
@@ -362,8 +368,12 @@ export function ApplicationExpandedStage({
                     <div className="ml-auto flex items-center gap-1">
                       {(() => {
                         const taskId = getTaskInstanceId(task)
-                        const receivedCount = noteCountsByTask[taskId]?.received ?? 0
-                        const sentCount = noteCountsByTask[taskId]?.sent ?? 0
+                        const receivedCount =
+                          noteCountsByTask[taskId]?.received ??
+                          toSafeCount(task.IsPrivateNotes ?? (task as any)?.isPrivateNotes)
+                        const sentCount =
+                          noteCountsByTask[taskId]?.sent ??
+                          toSafeCount(task.IsGlobalNotes ?? (task as any)?.isGlobalNotes)
                         const isReceivedLoading = Boolean(notesLoadingByKey[`${taskId}:private`])
                         const isSentLoading = Boolean(notesLoadingByKey[`${taskId}:public`])
 

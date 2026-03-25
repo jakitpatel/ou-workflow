@@ -194,6 +194,10 @@ export type Task = {
   taskRoles?: { taskRole: string }[],
   Result?: string;
   ResultData?: string;
+  IsGlobalNotes?: number;
+  isGlobalNotes?: number;
+  IsPrivateNotes?: number;
+  isPrivateNotes?: number;
   receivedNotes?: TaskNote[];
   sentNotes?: TaskNote[];
   // Company-related fields (for ResolveCompany task)
