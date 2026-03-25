@@ -26,6 +26,27 @@ type Props = {
   onReplySubmit: (params: { parentMessageId: string; text: string }) => Promise<void>
 }
 
+type PublicNoteNode = {
+  note: TaskNote
+  noteId: string
+  parentMessageId: string | null
+  idx: number
+  children: PublicNoteNode[]
+}
+
+type ReplyTone = {
+  rail: string
+  card: string
+  badge: string
+}
+
+const REPLY_TONES: ReplyTone[] = [
+  { rail: 'border-slate-200', card: 'border-slate-200 bg-white', badge: 'bg-blue-50 text-blue-700' },
+  { rail: 'border-emerald-300', card: 'border-emerald-200 bg-emerald-50/40', badge: 'bg-emerald-100 text-emerald-800' },
+  { rail: 'border-amber-300', card: 'border-amber-200 bg-amber-50/45', badge: 'bg-amber-100 text-amber-800' },
+  { rail: 'border-cyan-300', card: 'border-cyan-200 bg-cyan-50/45', badge: 'bg-cyan-100 text-cyan-800' },
+]
+
 const normalizeNoteValue = (value: unknown): string => {
   if (typeof value !== 'string') return ''
   return value.trim()
@@ -103,6 +124,76 @@ const getParentMessageId = (note: TaskNote): string => {
   return ''
 }
 
+const getThreadParentMessageId = (note: TaskNote): string | null => {
+  const candidate =
+    (note as any)?.parentMessageId ??
+    (note as any)?.ParentMessageId ??
+    (note as any)?.parent_message_id
+
+  if (candidate === undefined || candidate === null) return null
+
+  const value = String(candidate).trim()
+  if (!value || value === '0') return null
+  return value
+}
+
+const getSortableTimestamp = (note: TaskNote): number => {
+  const rawDate = getMetaValue(note, 'createdDate', 'created_date', 'SentDate', 'sentDate')
+  const timestamp = rawDate && rawDate !== '-' ? new Date(rawDate).getTime() : Number.NaN
+  if (!Number.isNaN(timestamp)) return timestamp
+
+  const rawMessageId = (note as any)?.MessageID ?? (note as any)?.messageId ?? (note as any)?.id
+  const numericMessageId = Number(rawMessageId)
+  if (!Number.isNaN(numericMessageId)) return numericMessageId
+
+  return Number.MAX_SAFE_INTEGER
+}
+
+const buildPublicNoteThreads = (notes: TaskNote[]): PublicNoteNode[] => {
+  const nodes: PublicNoteNode[] = notes.map((note, idx) => ({
+    note,
+    noteId: getNoteId(note, idx),
+    parentMessageId: getThreadParentMessageId(note),
+    idx,
+    children: [],
+  }))
+
+  const nodeById = new Map<string, PublicNoteNode>(nodes.map((node) => [node.noteId, node]))
+  const roots: PublicNoteNode[] = []
+
+  for (const node of nodes) {
+    const parentId = node.parentMessageId
+    if (!parentId || parentId === node.noteId) {
+      roots.push(node)
+      continue
+    }
+
+    const parent = nodeById.get(parentId)
+    if (!parent) {
+      roots.push(node)
+      continue
+    }
+
+    parent.children.push(node)
+  }
+
+  const sortNodes = (list: PublicNoteNode[]) => {
+    list.sort((a, b) => {
+      const aTime = getSortableTimestamp(a.note)
+      const bTime = getSortableTimestamp(b.note)
+      if (aTime === bTime) return a.idx - b.idx
+      return aTime - bTime
+    })
+
+    for (const node of list) {
+      sortNodes(node.children)
+    }
+  }
+
+  sortNodes(roots)
+  return roots
+}
+
 export function TaskNotesDrawer({
   open,
   applicantCompany,
@@ -133,6 +224,91 @@ export function TaskNotesDrawer({
   const notes = activeTab === 'private' ? privateNotes : publicNotes
   const isLoading = activeTab === 'private' ? loadingPrivate : loadingPublic
   const canSubmit = composeText.trim().length > 0 && !isSubmitting
+  const publicNoteThreads = activeTab === 'public' ? buildPublicNoteThreads(publicNotes) : []
+
+  const renderPublicNode = (node: PublicNoteNode, depth: number) => {
+    const { note, noteId, children } = node
+    const fromName = getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
+    const fromRole =
+      getMetaValue(note, 'fromUserRole', 'from_user_role') !== '-'
+        ? getMetaValue(note, 'fromUserRole', 'from_user_role')
+        : 'NCRC'
+    const createdAt = formatNoteDate(
+      getMetaValue(note, 'createdDate', 'created_date', 'SentDate', 'sentDate')
+    )
+    const isReplyOpen = Boolean(replyOpenById[noteId])
+    const isReplySubmitting = Boolean(replySubmittingById[noteId])
+    const parentMessageId = getParentMessageId(note)
+    const replyText = replyTextById[noteId] ?? ''
+    const canReply = Boolean(parentMessageId) && replyText.trim().length > 0 && !isReplySubmitting
+    const tone = REPLY_TONES[Math.min(depth, REPLY_TONES.length - 1)]
+
+    return (
+      <div key={noteId} className={depth > 0 ? `ml-4 border-l ${tone.rail} pl-3` : ''}>
+        <article className={`rounded-lg border p-2.5 shadow-sm ${tone.card}`}>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
+              {getInitials(fromName)}
+            </div>
+            <span className="text-sm font-semibold text-slate-900">{fromName}</span>
+            <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${tone.badge}`}>
+              {fromRole}
+            </span>
+            <span className="text-[11px] text-slate-500">{createdAt}</span>
+          </div>
+          <p className="mt-2 text-sm leading-5 text-slate-900">{getNoteText(note)}</p>
+
+          {isReplyOpen ? (
+            <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+              <div className="flex items-start gap-2">
+                <textarea
+                  className="min-h-[64px] flex-1 resize-y rounded border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  placeholder="Reply..."
+                  value={replyText}
+                  onChange={(e) => setReplyTextById((prev) => ({ ...prev, [noteId]: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!canReply) return
+                    setReplySubmittingById((prev) => ({ ...prev, [noteId]: true }))
+                    try {
+                      await onReplySubmit({
+                        parentMessageId,
+                        text: replyText.trim(),
+                      })
+                      setReplyTextById((prev) => ({ ...prev, [noteId]: '' }))
+                      setReplyOpenById((prev) => ({ ...prev, [noteId]: false }))
+                    } finally {
+                      setReplySubmittingById((prev) => ({ ...prev, [noteId]: false }))
+                    }
+                  }}
+                  disabled={!canReply}
+                  className="rounded bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isReplySubmitting ? 'Posting...' : 'Reply'}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setReplyOpenById((prev) => ({ ...prev, [noteId]: !Boolean(prev[noteId]) }))}
+              className="rounded px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+            >
+              Reply
+            </button>
+          </div>
+        </article>
+
+        {children.length > 0 ? (
+          <div className="mt-2 space-y-2">{children.map((child) => renderPublicNode(child, depth + 1))}</div>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
@@ -207,24 +383,23 @@ export function TaskNotesDrawer({
             </div>
           ) : (
             <div className="space-y-2">
-              {notes.map((note, idx) => {
-                const noteId = getNoteId(note, idx)
-                const fromName = getMetaValue(note, 'fromUser', 'from_user')
-                const fromRole =
-                  getMetaValue(note, 'fromUserRole', 'from_user_role') !== '-'
-                    ? getMetaValue(note, 'fromUserRole', 'from_user_role')
-                    : 'NCRC'
-                const createdAt = formatNoteDate(getMetaValue(note, 'createdDate', 'created_date'))
-                const isReplyOpen = Boolean(replyOpenById[noteId])
-                const isReplySubmitting = Boolean(replySubmittingById[noteId])
-                const parentMessageId = getParentMessageId(note)
-                const replyText = replyTextById[noteId] ?? ''
-                const canReply = Boolean(parentMessageId) && replyText.trim().length > 0 && !isReplySubmitting
+              {activeTab === 'private'
+                ? notes.map((note, idx) => {
+                    const noteId = getNoteId(note, idx)
+                    const fromName = getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
+                    const fromRole =
+                      getMetaValue(note, 'fromUserRole', 'from_user_role') !== '-'
+                        ? getMetaValue(note, 'fromUserRole', 'from_user_role')
+                        : 'NCRC'
+                    const createdAt = formatNoteDate(
+                      getMetaValue(note, 'createdDate', 'created_date', 'SentDate', 'sentDate')
+                    )
 
-                return (
-                  <article key={noteId} className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm">
-                    {activeTab === 'private' ? (
-                      <>
+                    return (
+                      <article
+                        key={noteId}
+                        className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm"
+                      >
                         <div className="flex flex-wrap items-center gap-2">
                           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
                             {getInitials(fromName)}
@@ -241,79 +416,10 @@ export function TaskNotesDrawer({
                         </div>
                         <p className="mt-2 text-sm leading-5 text-slate-900">{getNoteText(note)}</p>
                         <div className="mt-2" />
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
-                            {getInitials(fromName)}
-                          </div>
-                          <span className="text-sm font-semibold text-slate-900">{fromName}</span>
-                          <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700">
-                            {fromRole}
-                          </span>
-                          <span className="text-[11px] text-slate-500">{createdAt}</span>
-                        </div>
-                        <p className="mt-2 text-sm leading-5 text-slate-900">{getNoteText(note)}</p>
-
-                        {isReplyOpen ? (
-                          <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
-                            <div className="flex items-start gap-2">
-                              <textarea
-                                className="min-h-[64px] flex-1 resize-y rounded border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                                placeholder="Reply..."
-                                value={replyText}
-                                onChange={(e) =>
-                                  setReplyTextById((prev) => ({ ...prev, [noteId]: e.target.value }))
-                                }
-                              />
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  if (!canReply) return
-                                  setReplySubmittingById((prev) => ({ ...prev, [noteId]: true }))
-                                  try {
-                                    await onReplySubmit({
-                                      parentMessageId,
-                                      text: replyText.trim(),
-                                    })
-                                    setReplyTextById((prev) => ({ ...prev, [noteId]: '' }))
-                                    setReplyOpenById((prev) => ({ ...prev, [noteId]: false }))
-                                  } finally {
-                                    setReplySubmittingById((prev) => ({ ...prev, [noteId]: false }))
-                                  }
-                                }}
-                                disabled={!canReply}
-                                className="rounded bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                {isReplySubmitting ? 'Posting...' : 'Reply'}
-                              </button>
-                            </div>
-                          </div>
-                        ) : null}
-
-                        <div className="mt-2 flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setReplyOpenById((prev) => ({ ...prev, [noteId]: !Boolean(prev[noteId]) }))
-                            }
-                            className="rounded px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                          >
-                            ↩ Reply
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded px-2 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
-                          >
-                            ✓ Resolve
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </article>
-                )
-              })}
+                      </article>
+                    )
+                  })
+                : publicNoteThreads.map((node) => renderPublicNode(node, 0))}
             </div>
           )}
         </div>
