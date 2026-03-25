@@ -150,6 +150,7 @@ export async function createTaskNote({
   note,
   isPrivate,
   priority,
+  parentMessageId,
   fromUser,
   token,
 }: {
@@ -157,22 +158,32 @@ export async function createTaskNote({
   applicationId?: number | null
   note: string
   isPrivate: boolean
-  priority: 'CRITICAL' | 'HIGH' | 'LOW' | 'NORMAL'
+  priority?: 'CRITICAL' | 'HIGH' | 'LOW' | 'NORMAL'
+  parentMessageId?: string | number
   fromUser?: string
   token?: string | null
 }): Promise<any> {
+  const attributes: Record<string, unknown> = {
+    TaskInstanceId: taskId,
+    ApplicationID: applicationId,
+    MessageText: note,
+    isPrivate: isPrivate,
+    FromUser: fromUser,
+    MessageType: 'Text',
+    SentDate: new Date().toISOString(),
+  }
+
+  if (priority) {
+    attributes.Priority = priority
+  }
+
+  if (parentMessageId !== undefined && parentMessageId !== null && String(parentMessageId).trim()) {
+    attributes.parentMessageId = parentMessageId
+  }
+
   const body = {
     data: {
-      attributes: {
-        TaskInstanceId: taskId,
-        ApplicationID: applicationId,
-        MessageText: note,
-        isPrivate: isPrivate,
-        FromUser: fromUser,
-        MessageType: 'Text',
-        Priority: priority,
-        SentDate: new Date().toISOString(),
-      },
+      attributes,
       type: 'WFApplicationMessage',
     },
   }

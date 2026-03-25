@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Lock, X } from 'lucide-react'
+import { FileText, Lock, X } from 'lucide-react'
 import type { TaskNote } from '@/types/application'
 
 export type NoteTab = 'private' | 'public'
@@ -23,6 +23,7 @@ type Props = {
   onComposeTextChange: (text: string) => void
   onComposePrivateChange: (value: boolean) => void
   onSubmit: () => void
+  onReplySubmit: (params: { parentMessageId: string; text: string }) => Promise<void>
 }
 
 const normalizeNoteValue = (value: unknown): string => {
@@ -94,6 +95,14 @@ const getNoteId = (note: TaskNote, idx: number): string => {
   return `note-${idx}`
 }
 
+const getParentMessageId = (note: TaskNote): string => {
+  const idCandidate = (note as any)?.MessageID ?? (note as any)?.messageId ?? (note as any)?.id
+  if (idCandidate !== undefined && idCandidate !== null && String(idCandidate).trim()) {
+    return String(idCandidate)
+  }
+  return ''
+}
+
 export function TaskNotesDrawer({
   open,
   applicantCompany,
@@ -113,11 +122,13 @@ export function TaskNotesDrawer({
   onComposeTextChange,
   onComposePrivateChange,
   onSubmit,
+  onReplySubmit,
 }: Props) {
-  if (!open) return null
-
   const [replyOpenById, setReplyOpenById] = useState<Record<string, boolean>>({})
   const [replyTextById, setReplyTextById] = useState<Record<string, string>>({})
+  const [replySubmittingById, setReplySubmittingById] = useState<Record<string, boolean>>({})
+
+  if (!open) return null
 
   const notes = activeTab === 'private' ? privateNotes : publicNotes
   const isLoading = activeTab === 'private' ? loadingPrivate : loadingPublic
@@ -131,7 +142,10 @@ export function TaskNotesDrawer({
       >
         <div className="flex items-start justify-between bg-gray-800 px-4 py-3 text-white">
           <div>
-            <h3 className="text-lg font-semibold">Task Notes</h3>
+            <h3 className="inline-flex items-center gap-2 text-lg font-semibold">
+              <FileText className="h-5 w-5" />
+              <span>Task Notes</span>
+            </h3>
             <p className="text-xs text-gray-200">
               {applicantCompany || 'Unknown Company'}
               {applicationId ? ` - AppId: ${applicationId}` : ''}
@@ -202,6 +216,10 @@ export function TaskNotesDrawer({
                     : 'NCRC'
                 const createdAt = formatNoteDate(getMetaValue(note, 'createdDate', 'created_date'))
                 const isReplyOpen = Boolean(replyOpenById[noteId])
+                const isReplySubmitting = Boolean(replySubmittingById[noteId])
+                const parentMessageId = getParentMessageId(note)
+                const replyText = replyTextById[noteId] ?? ''
+                const canReply = Boolean(parentMessageId) && replyText.trim().length > 0 && !isReplySubmitting
 
                 return (
                   <article key={noteId} className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm">
@@ -244,16 +262,31 @@ export function TaskNotesDrawer({
                               <textarea
                                 className="min-h-[64px] flex-1 resize-y rounded border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                                 placeholder="Reply..."
-                                value={replyTextById[noteId] ?? ''}
+                                value={replyText}
                                 onChange={(e) =>
                                   setReplyTextById((prev) => ({ ...prev, [noteId]: e.target.value }))
                                 }
                               />
                               <button
                                 type="button"
-                                className="rounded bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                                onClick={async () => {
+                                  if (!canReply) return
+                                  setReplySubmittingById((prev) => ({ ...prev, [noteId]: true }))
+                                  try {
+                                    await onReplySubmit({
+                                      parentMessageId,
+                                      text: replyText.trim(),
+                                    })
+                                    setReplyTextById((prev) => ({ ...prev, [noteId]: '' }))
+                                    setReplyOpenById((prev) => ({ ...prev, [noteId]: false }))
+                                  } finally {
+                                    setReplySubmittingById((prev) => ({ ...prev, [noteId]: false }))
+                                  }
+                                }}
+                                disabled={!canReply}
+                                className="rounded bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                               >
-                                Reply
+                                {isReplySubmitting ? 'Posting...' : 'Reply'}
                               </button>
                             </div>
                           </div>

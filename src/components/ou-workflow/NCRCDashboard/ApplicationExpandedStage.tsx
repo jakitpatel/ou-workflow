@@ -188,6 +188,39 @@ export function ApplicationExpandedStage({
     username,
   ])
 
+  const handleReplySubmit = useCallback(
+    async ({ parentMessageId, text }: { parentMessageId: string; text: string }) => {
+      if (!drawer) return
+
+      const trimmedText = text.trim()
+      if (!trimmedText) {
+        setCreateNoteError('Reply text is required')
+        return
+      }
+
+      await createTaskNoteMutation.mutateAsync({
+        taskId: drawer.taskId,
+        applicationId: applicant.applicationId ?? null,
+        note: trimmedText,
+        isPrivate: false,
+        fromUser: username ?? undefined,
+        parentMessageId,
+        token: token ?? undefined,
+      })
+
+      setCreateNoteError('')
+      await fetchNotesByVisibility(drawer.taskId, 'public')
+    },
+    [
+      applicant.applicationId,
+      createTaskNoteMutation,
+      drawer,
+      fetchNotesByVisibility,
+      token,
+      username,
+    ],
+  )
+
   return (
     <div>
       {expandedStage && applicant.stages[expandedStage]?.tasks?.length > 0 && (
@@ -432,6 +465,7 @@ export function ApplicationExpandedStage({
         }}
         onComposePrivateChange={setComposePrivate}
         onSubmit={handleCreateNoteSubmit}
+        onReplySubmit={handleReplySubmit}
       />
     </div>
   )
