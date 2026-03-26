@@ -4,7 +4,6 @@ import { ApplicantProgressBar } from './ApplicantProgressBar';
 import { ApplicationExpandedStage } from './ApplicationExpandedStage';
 import { CancelApplicationDialog } from '@/components/ou-workflow/modal/CancelApplicationDialog';
 import {
-  Bell,
   FileText,
   Clock,
   Bot,
@@ -373,14 +372,12 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
   };
 
   const applicationPrivateCount = useMemo(() => {
-    if (applicationNotes.private.length > 0) return applicationNotes.private.length;
-    return toSafeCount((applicant as any)?.isPrivateNotes);
-  }, [applicant, applicationNotes.private.length]);
+    return toSafeCount((applicant as any)?.privateNotes);
+  }, [applicant]);
 
   const applicationPublicCount = useMemo(() => {
-    if (applicationNotes.public.length > 0) return applicationNotes.public.length;
-    return toSafeCount((applicant as any)?.isGlobalNotes ?? applicant.notes);
-  }, [applicant, applicationNotes.public.length]);
+    return toSafeCount((applicant as any)?.globalNotes);
+  }, [applicant]);
 
   return (
     <div data-app-id={applicant.applicationId} className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all">
@@ -455,7 +452,14 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
       )}
 
       {/* Stats Section */}
-      <CardStats applicant={applicant} />
+      <CardStats
+        applicant={applicant}
+        onOpenApplicationNotes={openApplicationNotesDrawer}
+        applicationPrivateCount={applicationPrivateCount}
+        applicationPublicCount={applicationPublicCount}
+        applicationPrivateLoading={applicationNotesLoadingByTab.private}
+        applicationPublicLoading={applicationNotesLoadingByTab.public}
+      />
 
       {/* Documents + Actions Section */}
       <CardFooter
@@ -465,11 +469,6 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         filesByType={filesByType}
         canCancelApplication={canCancelApplication}
         canUndoWithdrawApplication={canUndoWithdrawApplication}
-        onOpenApplicationNotes={openApplicationNotesDrawer}
-        applicationPrivateCount={applicationPrivateCount}
-        applicationPublicCount={applicationPublicCount}
-        applicationPrivateLoading={applicationNotesLoadingByTab.private}
-        applicationPublicLoading={applicationNotesLoadingByTab.public}
         onCancelApplication={() => {
           const canOpenDialog = isWithdrawn ? canUndoWithdrawApplication : canCancelApplication;
           if (!canOpenDialog) return;
@@ -646,7 +645,23 @@ function AIAssistantPanel({ applicant }: { applicant: Applicant }) {
   );
 }
 
-function CardStats({ applicant }: { applicant: Applicant }) {
+type CardStatsProps = {
+  applicant: Applicant;
+  onOpenApplicationNotes?: (tab: NoteTab) => void | Promise<void>;
+  applicationPrivateCount?: number;
+  applicationPublicCount?: number;
+  applicationPrivateLoading?: boolean;
+  applicationPublicLoading?: boolean;
+};
+
+function CardStats({
+  applicant,
+  onOpenApplicationNotes,
+  applicationPrivateCount = 0,
+  applicationPublicCount = 0,
+  applicationPrivateLoading = false,
+  applicationPublicLoading = false,
+}: CardStatsProps) {
   const withdrawnReason = (applicant as any)?.withdrawn_reason;
   const isWithdrawn =
     applicant?.status?.toLowerCase() === 'withdrawn' ||
@@ -660,11 +675,61 @@ function CardStats({ applicant }: { applicant: Applicant }) {
           <span className="sr-only">Documents:</span>
           {applicant.documents} docs
         </span>
-        <span className="flex items-center">
-          <Bell className="w-4 h-4 mr-1" aria-hidden="true" />
-          <span className="sr-only">Notes:</span>
-          {applicant.notes} notes
-        </span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onOpenApplicationNotes?.('private')}
+            className="group relative rounded p-1 text-blue-600 hover:bg-blue-50"
+            aria-label="Private notes"
+            title={
+              applicationPrivateLoading
+                ? 'Loading private notes...'
+                : `Private notes (${applicationPrivateCount})`
+            }
+          >
+            <Inbox className="h-4 w-4" />
+            {applicationPrivateLoading && (
+              <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-blue-600" />
+            )}
+            {applicationPrivateCount > 0 && (
+              <span className="absolute -right-1 -top-1 rounded-full bg-blue-600 px-1 text-[10px] text-white">
+                {applicationPrivateCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onOpenApplicationNotes?.('public')}
+            className="group relative rounded p-1 text-emerald-600 hover:bg-emerald-50"
+            aria-label="Public notes"
+            title={
+              applicationPublicLoading
+                ? 'Loading public notes...'
+                : `Public notes (${applicationPublicCount})`
+            }
+          >
+            <SendHorizontal className="h-4 w-4" />
+            {applicationPublicLoading && (
+              <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-emerald-600" />
+            )}
+            {applicationPublicCount > 0 && (
+              <span className="absolute -right-1 -top-1 rounded-full bg-emerald-600 px-1 text-[10px] text-white">
+                {applicationPublicCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onOpenApplicationNotes?.('public')}
+            className="rounded p-1 text-indigo-600 hover:bg-indigo-50"
+            aria-label="Create note"
+            title="Create note"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+          </button>
+        </div>
         {isWithdrawn && withdrawnReason && (
           <span className="flex items-center">
             <span className="font-medium">Withdrawn Reason:</span>&nbsp;{withdrawnReason}
@@ -687,11 +752,6 @@ interface CardActionsProps {
   canCancelApplication?: boolean;
   canUndoWithdrawApplication?: boolean;
   onCancelApplication?: () => void;
-  onOpenApplicationNotes?: (tab: NoteTab) => void | Promise<void>;
-  applicationPrivateCount?: number;
-  applicationPublicCount?: number;
-  applicationPrivateLoading?: boolean;
-  applicationPublicLoading?: boolean;
 }
 
 function CardFooter({
@@ -702,11 +762,6 @@ function CardFooter({
   canCancelApplication,
   canUndoWithdrawApplication,
   onCancelApplication,
-  onOpenApplicationNotes,
-  applicationPrivateCount,
-  applicationPublicCount,
-  applicationPrivateLoading,
-  applicationPublicLoading,
 }: CardActionsProps & { filesByType?: Record<string, any> }) {
   return (
     <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-4">
@@ -718,11 +773,6 @@ function CardFooter({
           canCancelApplication={canCancelApplication}
           canUndoWithdrawApplication={canUndoWithdrawApplication}
           onCancelApplication={onCancelApplication}
-          onOpenApplicationNotes={onOpenApplicationNotes}
-          applicationPrivateCount={applicationPrivateCount}
-          applicationPublicCount={applicationPublicCount}
-          applicationPrivateLoading={applicationPrivateLoading}
-          applicationPublicLoading={applicationPublicLoading}
         />
       </div>
     );
@@ -735,72 +785,12 @@ function CardActions({
   canCancelApplication = false,
   canUndoWithdrawApplication = false,
   onCancelApplication,
-  onOpenApplicationNotes,
-  applicationPrivateCount = 0,
-  applicationPublicCount = 0,
-  applicationPrivateLoading = false,
-  applicationPublicLoading = false,
 }: CardActionsProps) {
   const normalizedStatus = applicant?.status?.toLowerCase();
   const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth';
 
   return (
     <div className="flex items-center space-x-2 ml-auto">
-      <div className="mr-1 flex items-center gap-1">
-        <button
-          type="button"
-          onClick={() => onOpenApplicationNotes?.('private')}
-          className="group relative rounded p-1 text-blue-600 hover:bg-blue-50"
-          aria-label="Private notes"
-          title={
-            applicationPrivateLoading
-              ? 'Loading private notes...'
-              : `Private notes (${applicationPrivateCount})`
-          }
-        >
-          <Inbox className="h-4 w-4" />
-          {applicationPrivateLoading && (
-            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-blue-600" />
-          )}
-          {applicationPrivateCount > 0 && (
-            <span className="absolute -right-1 -top-1 rounded-full bg-blue-600 px-1 text-[10px] text-white">
-              {applicationPrivateCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onOpenApplicationNotes?.('public')}
-          className="group relative rounded p-1 text-emerald-600 hover:bg-emerald-50"
-          aria-label="Public notes"
-          title={
-            applicationPublicLoading
-              ? 'Loading public notes...'
-              : `Public notes (${applicationPublicCount})`
-          }
-        >
-          <SendHorizontal className="h-4 w-4" />
-          {applicationPublicLoading && (
-            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-emerald-600" />
-          )}
-          {applicationPublicCount > 0 && (
-            <span className="absolute -right-1 -top-1 rounded-full bg-emerald-600 px-1 text-[10px] text-white">
-              {applicationPublicCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onOpenApplicationNotes?.('public')}
-          className="rounded p-1 text-indigo-600 hover:bg-indigo-50"
-          aria-label="Create note"
-          title="Create note"
-        >
-          <MessageSquarePlus className="h-4 w-4" />
-        </button>
-      </div>
       <Link
         to="/ou-workflow/ncrc-dashboard/$applicationId"
         params={{ applicationId: String(applicant.applicationId) }}
