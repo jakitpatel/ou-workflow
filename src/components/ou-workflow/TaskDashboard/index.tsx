@@ -47,6 +47,14 @@ const STATUS = {
 
 type DaysFilter = string | number;
 
+type InspectionFeeChoice = {
+  inspectionNeeded: 'YES' | 'NO'
+  feeNeeded: 'YES' | 'NO'
+}
+
+const buildInspectionFeeResultData = (value: InspectionFeeChoice): string =>
+  `{inspectionNeeded:${value.inspectionNeeded}, feeNeeded:${value.feeNeeded}}`
+
 const calculateTaskStats = (tasks: ApplicationTask[]) => {
   const userTasks = tasks.map(task => ({
     ...task,
@@ -174,7 +182,7 @@ export function TaskDashboard() {
     (
       assignee: string,
       action: any,
-      result?: string | { inspectionNeeded: 'YES' | 'NO'; feeNeeded: 'YES' | 'NO' },
+      result?: string | InspectionFeeChoice,
       selectedActionArg?: { application: any; action: any } | null
     ) => {
       const taskType = action.taskType?.toLowerCase();
@@ -207,11 +215,11 @@ export function TaskDashboard() {
         [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1].includes(taskCategory)
       ) {
         if (taskCategory === TASK_CATEGORIES.APPROVAL1 && result && typeof result === 'object') {
+          const resultData = buildInspectionFeeResultData(result)
           confirmTaskMutation.mutate({
             ...mutationParams,
-            result: 'YES',
-            inspectionNeeded: result.inspectionNeeded,
-            feeNeeded: result.feeNeeded,
+            result: resultData,
+            resultData,
           });
         } else {
           confirmTaskMutation.mutate({

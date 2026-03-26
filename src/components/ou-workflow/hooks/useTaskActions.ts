@@ -19,6 +19,9 @@ type InspectionFeeChoice = {
   feeNeeded: 'YES' | 'NO'
 }
 
+const buildInspectionFeeResultData = (value: InspectionFeeChoice): string =>
+  `{inspectionNeeded:${value.inspectionNeeded}, feeNeeded:${value.feeNeeded}}`
+
 export function useTaskActions({ applications, token, username, onError }: Params) {
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
@@ -57,11 +60,11 @@ export function useTaskActions({ applications, token, username, onError }: Param
     if ([TASK_TYPES.CONDITIONAL, TASK_TYPES.CONDITION].includes(taskType as any)) {
       const isApproval1 = taskCategory === TASK_CATEGORIES.APPROVAL1
       if (isApproval1 && result && typeof result === 'object') {
+        const resultData = buildInspectionFeeResultData(result)
         confirmTaskMutation.mutate({
           ...baseParams,
-          result: 'YES',
-          inspectionNeeded: result.inspectionNeeded,
-          feeNeeded: result.feeNeeded,
+          result: resultData,
+          resultData,
         })
         return
       }

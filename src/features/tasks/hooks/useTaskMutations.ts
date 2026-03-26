@@ -7,13 +7,12 @@ import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 type ConfirmTaskInput = {
   taskId: string
   result?: string
+  resultData?: string
   completionNotes?: string
   token?: string | null
   username?: string
   status?: string
   capacity?: string
-  inspectionNeeded?: string
-  feeNeeded?: string
 }
 
 type AssignTaskInput = {

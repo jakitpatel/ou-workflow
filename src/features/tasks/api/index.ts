@@ -35,23 +35,21 @@ export async function assignTask({
 export async function confirmTask({
   taskId,
   result,
+  resultData,
   completionNotes,
   token,
   username,
   status,
   capacity,
-  inspectionNeeded,
-  feeNeeded,
 }: {
   taskId: string
   result?: string
+  resultData?: string
   completionNotes?: string
   token?: string | null
   username?: string
   status?: string
   capacity?: string
-  inspectionNeeded?: string
-  feeNeeded?: string
 }): Promise<any> {
   const completionNotesMap: Record<string, string> = {
     completed: 'Task completed successfully',
@@ -88,12 +86,8 @@ export async function confirmTask({
     body.status = status
   }
 
-  if (inspectionNeeded) {
-    body.inspectionNeeded = inspectionNeeded
-  }
-
-  if (feeNeeded) {
-    body.feeNeeded = feeNeeded
+  if (resultData) {
+    body.ResultData = resultData
   }
 
   return await fetchWithAuth({
