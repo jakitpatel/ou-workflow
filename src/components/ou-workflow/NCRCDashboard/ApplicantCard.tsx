@@ -372,11 +372,11 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
   };
 
   const applicationPrivateCount = useMemo(() => {
-    return toSafeCount((applicant as any)?.privateNotes);
+    return toSafeCount((applicant as any)?.IsPrivateNotes);
   }, [applicant]);
 
   const applicationPublicCount = useMemo(() => {
-    return toSafeCount((applicant as any)?.globalNotes);
+    return toSafeCount((applicant as any)?.IsGlobalNotes);
   }, [applicant]);
 
   return (
