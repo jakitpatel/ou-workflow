@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { ApplicantProgressBar } from './ApplicantProgressBar';
 import { ApplicationExpandedStage } from './ApplicationExpandedStage';
@@ -11,16 +11,22 @@ import {
   ClipboardList,
   Package,
   ListTodo,
+  Inbox,
+  MessageSquarePlus,
+  SendHorizontal,
   ExternalLink,
   Sparkles,
   AlertTriangle,
 } from 'lucide-react';
-import type { Task, Applicant } from '@/types/application';
+import type { Task, Applicant, TaskNote } from '@/types/application';
 import { Route as DashboardRoute } from '@/routes/ou-workflow/ncrc-dashboard';
 import { Route as TaskDashboardRoute } from '@/routes/ou-workflow/tasks-dashboard';
 import { Route as TaskDashboardWithAppRoute } from '@/routes/ou-workflow/tasks-dashboard/$applicationId';
 import { useUser } from '@/context/UserContext';
 import { normalizeTaskRoles } from '@/lib/utils/taskHelpers';
+import { fetchTaskNotes } from '@/features/tasks/api';
+import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations';
+import { TaskNotesDrawer, type NoteTab } from '@/components/ou-workflow/NCRCDashboard/TaskNotesDrawer';
 
 type Props = {
   applicant: Applicant;
@@ -75,15 +81,43 @@ const saveScrollPosition = (applicationId: string | number) => {
   );
 };
 
+type ApplicationDrawerState = {
+  activeTab: NoteTab;
+};
+
+const toSafeCount = (value: unknown): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return 0;
+  return Math.trunc(parsed);
+};
+
 export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }: Props) {
-  const { username, role, roles } = useUser();
+  const { username, role, roles, token } = useUser();
   const navigate = useNavigate();
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
+  const [applicationDrawer, setApplicationDrawer] = useState<ApplicationDrawerState | null>(null);
+  const [applicationNotes, setApplicationNotes] = useState<{ private: TaskNote[]; public: TaskNote[] }>({
+    private: [],
+    public: [],
+  });
+  const [applicationNotesLoadingByTab, setApplicationNotesLoadingByTab] = useState<Record<NoteTab, boolean>>({
+    private: false,
+    public: false,
+  });
+  const [applicationComposeText, setApplicationComposeText] = useState('');
+  const [applicationComposePrivate, setApplicationComposePrivate] = useState(false);
+  const [applicationCreateNoteError, setApplicationCreateNoteError] = useState('');
   const dashboardSearch = DashboardRoute.useSearch();
+
+  const createTaskNoteMutation = useCreateTaskNoteMutation({
+    includeApplicationLists: true,
+    includePrelimLists: true,
+    onError: (message) => setApplicationCreateNoteError(message),
+  });
 
   // Memoize computed values
   const status = useMemo(() => {
@@ -187,6 +221,110 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
     return normalized === 'withdrawn' || normalized === 'wth'
   }, [applicant.status])
 
+  const fetchApplicationNotesByVisibility = useCallback(
+    async (tab: NoteTab) => {
+      setApplicationNotesLoadingByTab((prev) => ({ ...prev, [tab]: true }));
+      try {
+        const notes = await fetchTaskNotes({
+          applicationId: applicant.applicationId ?? null,
+          isPrivate: tab === 'private',
+          token: token ?? undefined,
+        });
+
+        setApplicationNotes((prev) => ({
+          ...prev,
+          [tab]: notes as TaskNote[],
+        }));
+      } catch (error: any) {
+        const message =
+          error?.details?.status ||
+          error?.details?.message ||
+          error?.message ||
+          'Failed to fetch notes';
+        setApplicationCreateNoteError(message);
+      } finally {
+        setApplicationNotesLoadingByTab((prev) => ({ ...prev, [tab]: false }));
+      }
+    },
+    [applicant.applicationId, token]
+  );
+
+  const openApplicationNotesDrawer = useCallback(
+    async (tab: NoteTab) => {
+      setApplicationDrawer({ activeTab: tab });
+      setApplicationCreateNoteError('');
+      setApplicationComposePrivate(tab === 'private');
+      await Promise.allSettled([
+        fetchApplicationNotesByVisibility('private'),
+        fetchApplicationNotesByVisibility('public'),
+      ]);
+    },
+    [fetchApplicationNotesByVisibility]
+  );
+
+  const handleApplicationCreateNoteSubmit = useCallback(async () => {
+    if (!applicationDrawer) return;
+    const trimmedText = applicationComposeText.trim();
+    if (!trimmedText) {
+      setApplicationCreateNoteError('Note text is required');
+      return;
+    }
+
+    await createTaskNoteMutation.mutateAsync({
+      applicationId: applicant.applicationId ?? null,
+      note: trimmedText,
+      isPrivate: applicationComposePrivate,
+      priority: 'NORMAL',
+      fromUser: username ?? undefined,
+      token: token ?? undefined,
+    });
+
+    setApplicationCreateNoteError('');
+    setApplicationComposeText('');
+
+    const postedTab: NoteTab = applicationComposePrivate ? 'private' : 'public';
+    await fetchApplicationNotesByVisibility(postedTab);
+    setApplicationDrawer((prev) => (prev ? { ...prev, activeTab: postedTab } : prev));
+  }, [
+    applicant.applicationId,
+    applicationComposePrivate,
+    applicationComposeText,
+    applicationDrawer,
+    createTaskNoteMutation,
+    fetchApplicationNotesByVisibility,
+    token,
+    username,
+  ]);
+
+  const handleApplicationReplySubmit = useCallback(
+    async ({ parentMessageId, text }: { parentMessageId: string; text: string }) => {
+      const trimmedText = text.trim();
+      if (!trimmedText) {
+        setApplicationCreateNoteError('Reply text is required');
+        return;
+      }
+
+      await createTaskNoteMutation.mutateAsync({
+        applicationId: applicant.applicationId ?? null,
+        note: trimmedText,
+        isPrivate: false,
+        fromUser: username ?? undefined,
+        parentMessageId,
+        token: token ?? undefined,
+      });
+
+      setApplicationCreateNoteError('');
+      await fetchApplicationNotesByVisibility('public');
+    },
+    [
+      applicant.applicationId,
+      createTaskNoteMutation,
+      fetchApplicationNotesByVisibility,
+      token,
+      username,
+    ]
+  );
+
   const handleViewTasks = (applicationId?: string | number) => {
     saveScrollPosition(applicationId ?? '');
     // 🔹 No applicationId → base tasks dashboard
@@ -233,6 +371,16 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
       setIsSubmittingCancel(false);
     }
   };
+
+  const applicationPrivateCount = useMemo(() => {
+    if (applicationNotes.private.length > 0) return applicationNotes.private.length;
+    return toSafeCount((applicant as any)?.isPrivateNotes);
+  }, [applicant, applicationNotes.private.length]);
+
+  const applicationPublicCount = useMemo(() => {
+    if (applicationNotes.public.length > 0) return applicationNotes.public.length;
+    return toSafeCount((applicant as any)?.isGlobalNotes ?? applicant.notes);
+  }, [applicant, applicationNotes.public.length]);
 
   return (
     <div data-app-id={applicant.applicationId} className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all">
@@ -317,11 +465,51 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         filesByType={filesByType}
         canCancelApplication={canCancelApplication}
         canUndoWithdrawApplication={canUndoWithdrawApplication}
+        onOpenApplicationNotes={openApplicationNotesDrawer}
+        applicationPrivateCount={applicationPrivateCount}
+        applicationPublicCount={applicationPublicCount}
+        applicationPrivateLoading={applicationNotesLoadingByTab.private}
+        applicationPublicLoading={applicationNotesLoadingByTab.public}
         onCancelApplication={() => {
           const canOpenDialog = isWithdrawn ? canUndoWithdrawApplication : canCancelApplication;
           if (!canOpenDialog) return;
           setShowCancelDialog(true);
         }}
+      />
+      <TaskNotesDrawer
+        open={Boolean(applicationDrawer)}
+        applicantCompany={applicant.company}
+        applicationId={applicant.applicationId ?? null}
+        contextType="application"
+        taskName={applicant.company || `Application ${String(applicant.applicationId ?? '')}`}
+        activeTab={applicationDrawer?.activeTab ?? 'public'}
+        privateNotes={applicationNotes.private}
+        publicNotes={applicationNotes.public}
+        loadingPrivate={applicationNotesLoadingByTab.private}
+        loadingPublic={applicationNotesLoadingByTab.public}
+        composeText={applicationComposeText}
+        composePrivate={applicationComposePrivate}
+        isSubmitting={createTaskNoteMutation.isPending}
+        error={applicationCreateNoteError}
+        onClose={() => {
+          if (createTaskNoteMutation.isPending) return;
+          setApplicationDrawer(null);
+          setApplicationCreateNoteError('');
+          setApplicationComposeText('');
+        }}
+        onTabChange={(tab) => {
+          setApplicationDrawer((prev) => (prev ? { ...prev, activeTab: tab } : prev));
+          setApplicationComposePrivate(tab === 'private');
+        }}
+        onComposeTextChange={(text) => {
+          setApplicationComposeText(text);
+          if (applicationCreateNoteError) {
+            setApplicationCreateNoteError('');
+          }
+        }}
+        onComposePrivateChange={setApplicationComposePrivate}
+        onSubmit={handleApplicationCreateNoteSubmit}
+        onReplySubmit={handleApplicationReplySubmit}
       />
     </div>
   );
@@ -499,6 +687,11 @@ interface CardActionsProps {
   canCancelApplication?: boolean;
   canUndoWithdrawApplication?: boolean;
   onCancelApplication?: () => void;
+  onOpenApplicationNotes?: (tab: NoteTab) => void | Promise<void>;
+  applicationPrivateCount?: number;
+  applicationPublicCount?: number;
+  applicationPrivateLoading?: boolean;
+  applicationPublicLoading?: boolean;
 }
 
 function CardFooter({
@@ -509,6 +702,11 @@ function CardFooter({
   canCancelApplication,
   canUndoWithdrawApplication,
   onCancelApplication,
+  onOpenApplicationNotes,
+  applicationPrivateCount,
+  applicationPublicCount,
+  applicationPrivateLoading,
+  applicationPublicLoading,
 }: CardActionsProps & { filesByType?: Record<string, any> }) {
   return (
     <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-4">
@@ -517,12 +715,17 @@ function CardFooter({
         applicant={applicant}
         onViewTasks={onViewTasks}
         dashboardSearch={dashboardSearch}
-        canCancelApplication={canCancelApplication}
-        canUndoWithdrawApplication={canUndoWithdrawApplication}
-        onCancelApplication={onCancelApplication}
-      />
-    </div>
-  );
+          canCancelApplication={canCancelApplication}
+          canUndoWithdrawApplication={canUndoWithdrawApplication}
+          onCancelApplication={onCancelApplication}
+          onOpenApplicationNotes={onOpenApplicationNotes}
+          applicationPrivateCount={applicationPrivateCount}
+          applicationPublicCount={applicationPublicCount}
+          applicationPrivateLoading={applicationPrivateLoading}
+          applicationPublicLoading={applicationPublicLoading}
+        />
+      </div>
+    );
 }
 
 function CardActions({
@@ -532,12 +735,72 @@ function CardActions({
   canCancelApplication = false,
   canUndoWithdrawApplication = false,
   onCancelApplication,
+  onOpenApplicationNotes,
+  applicationPrivateCount = 0,
+  applicationPublicCount = 0,
+  applicationPrivateLoading = false,
+  applicationPublicLoading = false,
 }: CardActionsProps) {
   const normalizedStatus = applicant?.status?.toLowerCase();
   const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth';
 
   return (
     <div className="flex items-center space-x-2 ml-auto">
+      <div className="mr-1 flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onOpenApplicationNotes?.('private')}
+          className="group relative rounded p-1 text-blue-600 hover:bg-blue-50"
+          aria-label="Private notes"
+          title={
+            applicationPrivateLoading
+              ? 'Loading private notes...'
+              : `Private notes (${applicationPrivateCount})`
+          }
+        >
+          <Inbox className="h-4 w-4" />
+          {applicationPrivateLoading && (
+            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-blue-600" />
+          )}
+          {applicationPrivateCount > 0 && (
+            <span className="absolute -right-1 -top-1 rounded-full bg-blue-600 px-1 text-[10px] text-white">
+              {applicationPrivateCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onOpenApplicationNotes?.('public')}
+          className="group relative rounded p-1 text-emerald-600 hover:bg-emerald-50"
+          aria-label="Public notes"
+          title={
+            applicationPublicLoading
+              ? 'Loading public notes...'
+              : `Public notes (${applicationPublicCount})`
+          }
+        >
+          <SendHorizontal className="h-4 w-4" />
+          {applicationPublicLoading && (
+            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-emerald-600" />
+          )}
+          {applicationPublicCount > 0 && (
+            <span className="absolute -right-1 -top-1 rounded-full bg-emerald-600 px-1 text-[10px] text-white">
+              {applicationPublicCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onOpenApplicationNotes?.('public')}
+          className="rounded p-1 text-indigo-600 hover:bg-indigo-50"
+          aria-label="Create note"
+          title="Create note"
+        >
+          <MessageSquarePlus className="h-4 w-4" />
+        </button>
+      </div>
       <Link
         to="/ou-workflow/ncrc-dashboard/$applicationId"
         params={{ applicationId: String(applicant.applicationId) }}

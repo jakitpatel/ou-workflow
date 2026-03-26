@@ -8,6 +8,7 @@ type Props = {
   open: boolean
   applicantCompany?: string
   applicationId?: number | null
+  contextType?: 'task' | 'application'
   taskName: string
   activeTab: NoteTab
   privateNotes: TaskNote[]
@@ -198,6 +199,7 @@ export function TaskNotesDrawer({
   open,
   applicantCompany,
   applicationId,
+  contextType = 'task',
   taskName,
   activeTab,
   privateNotes,
@@ -220,6 +222,9 @@ export function TaskNotesDrawer({
   const [replySubmittingById, setReplySubmittingById] = useState<Record<string, boolean>>({})
 
   if (!open) return null
+
+  const notesTitle = contextType === 'application' ? 'Application Notes' : 'Task Notes'
+  const currentLabel = contextType === 'application' ? 'Current Application' : 'Current Task'
 
   const notes = activeTab === 'private' ? privateNotes : publicNotes
   const isLoading = activeTab === 'private' ? loadingPrivate : loadingPublic
@@ -320,7 +325,7 @@ export function TaskNotesDrawer({
           <div>
             <h3 className="inline-flex items-center gap-2 text-lg font-semibold">
               <FileText className="h-5 w-5" />
-              <span>Task Notes</span>
+              <span>{notesTitle}</span>
             </h3>
             <p className="text-xs text-gray-200">
               {applicantCompany || 'Unknown Company'}
@@ -330,14 +335,14 @@ export function TaskNotesDrawer({
           <button
             onClick={onClose}
             className="rounded p-1 text-gray-200 hover:bg-gray-700 hover:text-white"
-            aria-label="Close task notes drawer"
+            aria-label={`Close ${notesTitle.toLowerCase()} drawer`}
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Current Task</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{currentLabel}</p>
           <p className="text-sm font-medium text-gray-900">{taskName}</p>
         </div>
 

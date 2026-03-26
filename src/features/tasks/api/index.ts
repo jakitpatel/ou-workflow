@@ -154,7 +154,7 @@ export async function createTaskNote({
   fromUser,
   token,
 }: {
-  taskId: string
+  taskId?: string | null
   applicationId?: number | null
   note: string
   isPrivate: boolean
@@ -164,13 +164,16 @@ export async function createTaskNote({
   token?: string | null
 }): Promise<any> {
   const attributes: Record<string, unknown> = {
-    TaskInstanceId: taskId,
     ApplicationID: applicationId,
     MessageText: note,
     isPrivate: isPrivate,
     FromUser: fromUser,
     MessageType: 'Text',
     SentDate: new Date().toISOString(),
+  }
+
+  if (taskId !== undefined && taskId !== null && String(taskId).trim()) {
+    attributes.TaskInstanceId = String(taskId)
   }
 
   if (priority) {
@@ -202,7 +205,7 @@ export async function fetchTaskNotes({
   isPrivate,
   token,
 }: {
-  taskId: string
+  taskId?: string | null
   applicationId?: number | null
   isPrivate: boolean
   token?: string | null
@@ -211,7 +214,9 @@ export async function fetchTaskNotes({
   if (applicationId !== null && applicationId !== undefined) {
     params.append('filter[ApplicationID]', String(applicationId))
   }
-  params.append('filter[TaskInstanceId]', String(taskId))
+  if (taskId !== undefined && taskId !== null && String(taskId).trim()) {
+    params.append('filter[TaskInstanceId]', String(taskId))
+  }
   params.append('filter[isPrivate]', String(isPrivate))
 
   const response = await fetchWithAuth<{

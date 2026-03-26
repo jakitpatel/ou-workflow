@@ -447,6 +447,7 @@ export function ApplicationExpandedStage({
         open={Boolean(drawer)}
         applicantCompany={applicant.company}
         applicationId={applicant.applicationId ?? null}
+        contextType="task"
         taskName={drawer?.taskName ?? ''}
         activeTab={drawer?.activeTab ?? 'public'}
         privateNotes={drawer ? notesByTask[drawer.taskId]?.private ?? [] : []}
