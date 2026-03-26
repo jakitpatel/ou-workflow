@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { ApplicantProgressBar } from './ApplicantProgressBar';
 import { ApplicationExpandedStage } from './ApplicationExpandedStage';
 import { CancelApplicationDialog } from '@/components/ou-workflow/modal/CancelApplicationDialog';
@@ -18,7 +18,6 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import type { Task, Applicant, TaskNote } from '@/types/application';
-import { Route as DashboardRoute } from '@/routes/ou-workflow/ncrc-dashboard';
 import { Route as TaskDashboardRoute } from '@/routes/ou-workflow/tasks-dashboard';
 import { Route as TaskDashboardWithAppRoute } from '@/routes/ou-workflow/tasks-dashboard/$applicationId';
 import { useUser } from '@/context/UserContext';
@@ -26,6 +25,7 @@ import { normalizeTaskRoles } from '@/lib/utils/taskHelpers';
 import { fetchTaskNotes } from '@/features/tasks/api';
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations';
 import { TaskNotesDrawer, type NoteTab } from '@/components/ou-workflow/NCRCDashboard/TaskNotesDrawer';
+import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer';
 
 type Props = {
   applicant: Applicant;
@@ -110,7 +110,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
   const [applicationComposeText, setApplicationComposeText] = useState('');
   const [applicationComposePrivate, setApplicationComposePrivate] = useState(false);
   const [applicationCreateNoteError, setApplicationCreateNoteError] = useState('');
-  const dashboardSearch = DashboardRoute.useSearch();
+  const [showDetailsDrawer, setShowDetailsDrawer] = useState(false);
 
   const createTaskNoteMutation = useCreateTaskNoteMutation({
     includeApplicationLists: true,
@@ -465,7 +465,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
       <CardFooter
         applicant={applicant}
         onViewTasks={handleViewTasks}
-        dashboardSearch={dashboardSearch}
+        onViewDetails={() => setShowDetailsDrawer(true)}
         filesByType={filesByType}
         canCancelApplication={canCancelApplication}
         canUndoWithdrawApplication={canUndoWithdrawApplication}
@@ -509,6 +509,11 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         onComposePrivateChange={setApplicationComposePrivate}
         onSubmit={handleApplicationCreateNoteSubmit}
         onReplySubmit={handleApplicationReplySubmit}
+      />
+      <ApplicationDetailsDrawer
+        open={showDetailsDrawer}
+        applicationId={applicant.applicationId}
+        onClose={() => setShowDetailsDrawer(false)}
       />
     </div>
   );
@@ -748,7 +753,7 @@ function CardStats({
 interface CardActionsProps {
   applicant: Applicant;
   onViewTasks: (id?: string | number) => void;
-  dashboardSearch: Record<string, unknown>;
+  onViewDetails: () => void;
   canCancelApplication?: boolean;
   canUndoWithdrawApplication?: boolean;
   onCancelApplication?: () => void;
@@ -757,7 +762,7 @@ interface CardActionsProps {
 function CardFooter({
   applicant,
   onViewTasks,
-  dashboardSearch,
+  onViewDetails,
   filesByType,
   canCancelApplication,
   canUndoWithdrawApplication,
@@ -769,7 +774,7 @@ function CardFooter({
       <CardActions
         applicant={applicant}
         onViewTasks={onViewTasks}
-        dashboardSearch={dashboardSearch}
+        onViewDetails={onViewDetails}
           canCancelApplication={canCancelApplication}
           canUndoWithdrawApplication={canUndoWithdrawApplication}
           onCancelApplication={onCancelApplication}
@@ -781,7 +786,7 @@ function CardFooter({
 function CardActions({
   applicant,
   onViewTasks,
-  dashboardSearch,
+  onViewDetails,
   canCancelApplication = false,
   canUndoWithdrawApplication = false,
   onCancelApplication,
@@ -791,15 +796,13 @@ function CardActions({
 
   return (
     <div className="flex items-center space-x-2 ml-auto">
-      <Link
-        to="/ou-workflow/ncrc-dashboard/$applicationId"
-        params={{ applicationId: String(applicant.applicationId) }}
-        search={dashboardSearch}
-        onClick={() => saveScrollPosition(applicant.applicationId)}
+      <button
+        type="button"
+        onClick={onViewDetails}
         className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       >
         View Details
-      </Link>
+      </button>
       {!isWithdrawn && (
         <button
           onClick={() => onViewTasks(applicant.applicationId)}
