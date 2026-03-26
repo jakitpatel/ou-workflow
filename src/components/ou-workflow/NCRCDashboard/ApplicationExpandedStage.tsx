@@ -52,9 +52,21 @@ const toSafeCount = (value: unknown): number => {
 const getGUIDisplayResult = (resultData: unknown): string | null => {
   if (resultData === null || resultData === undefined) return null
 
+  const formatInspectionFeeObject = (value: any): string | null => {
+    if (!value || typeof value !== 'object') return null
+    const inspectionNeeded = value?.inspectionNeeded
+    const feeNeeded = value?.feeNeeded
+    if (inspectionNeeded === undefined || feeNeeded === undefined) return null
+    return `{inspectionNeeded:${String(inspectionNeeded)}, feeNeeded:${String(feeNeeded)}}`
+  }
+
   const readValue = (data: any): string | null => {
     const value = data?.GUIDisplayResult
     if (value === null || value === undefined) return null
+    if (typeof value === 'object') {
+      const formatted = formatInspectionFeeObject(value)
+      if (formatted) return formatted
+    }
     const text = String(value).trim()
     return text ? text : null
   }
@@ -70,6 +82,10 @@ const getGUIDisplayResult = (resultData: unknown): string | null => {
       const parsed = JSON.parse(raw)
       return readValue(parsed)
     } catch {
+      const directObjectMatch = raw.match(/GUIDisplayResult"\s*:\s*(\{[^}]*\})/)
+      if (directObjectMatch?.[1]) {
+        return directObjectMatch[1].trim()
+      }
       return null
     }
   }

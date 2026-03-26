@@ -53,6 +53,9 @@ type InspectionFeeChoice = {
 }
 
 const buildInspectionFeeResultData = (value: InspectionFeeChoice): string =>
+  `{"GUIDisplayResult":{inspectionNeeded:${value.inspectionNeeded}, feeNeeded:${value.feeNeeded}}}`
+
+const buildInspectionFeeResult = (value: InspectionFeeChoice): string =>
   `{inspectionNeeded:${value.inspectionNeeded}, feeNeeded:${value.feeNeeded}}`
 
 const calculateTaskStats = (tasks: ApplicationTask[]) => {
@@ -215,10 +218,11 @@ export function TaskDashboard() {
         [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1].includes(taskCategory)
       ) {
         if (taskCategory === TASK_CATEGORIES.APPROVAL1 && result && typeof result === 'object') {
+          const resultValue = buildInspectionFeeResult(result)
           const resultData = buildInspectionFeeResultData(result)
           confirmTaskMutation.mutate({
             ...mutationParams,
-            result: resultData,
+            result: resultValue,
             resultData,
           });
         } else {
