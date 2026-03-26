@@ -49,6 +49,34 @@ const toSafeCount = (value: unknown): number => {
   return Math.trunc(parsed)
 }
 
+const getGUIDisplayResult = (resultData: unknown): string | null => {
+  if (resultData === null || resultData === undefined) return null
+
+  const readValue = (data: any): string | null => {
+    const value = data?.GUIDisplayResult
+    if (value === null || value === undefined) return null
+    const text = String(value).trim()
+    return text ? text : null
+  }
+
+  if (typeof resultData === 'object') {
+    return readValue(resultData)
+  }
+
+  if (typeof resultData === 'string') {
+    const raw = resultData.trim()
+    if (!raw) return null
+    try {
+      const parsed = JSON.parse(raw)
+      return readValue(parsed)
+    } catch {
+      return null
+    }
+  }
+
+  return null
+}
+
 export function ApplicationExpandedStage({
   expandedStage,
   setExpandedStage,
@@ -364,6 +392,17 @@ export function ApplicationExpandedStage({
                           {task.daysPending} days pending
                         </span>
                       )}
+
+                    {(() => {
+                      const guiDisplayResult = getGUIDisplayResult((task as any)?.ResultData)
+                      if (!guiDisplayResult) return null
+
+                      return (
+                        <span className="rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
+                          {guiDisplayResult}
+                        </span>
+                      )
+                    })()}
 
                     <div className="ml-auto flex items-center gap-1">
                       {(() => {
