@@ -11,7 +11,8 @@ type Props = {
 export function ApplicationDetailsDrawer({ open, applicationId, onClose }: Props) {
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
-  const { data, isLoading, error } = useApplicationDetail(resolvedApplicationId)
+  const activeApplicationId = open ? resolvedApplicationId : undefined
+  const { data, isLoading, error } = useApplicationDetail(activeApplicationId)
 
   if (!open) return null
 
@@ -49,4 +50,3 @@ export function ApplicationDetailsDrawer({ open, applicationId, onClose }: Props
     </div>
   )
 }
-
