@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { X } from "lucide-react";
 import type { Task, Applicant } from "@/types/application";
+import { TASK_CATEGORIES, TASK_TYPES } from "@/lib/constants/task";
 
 type SelectedAction = {
   application: Applicant | Task | any;
@@ -21,12 +22,13 @@ type Props = {
   executeAction: (
     id: string,
     action: { id: string; name?: string },
-    value: string,
+    value: string | { inspectionNeeded: "YES" | "NO"; feeNeeded: "YES" | "NO" },
     selectedAction: SelectedAction | null
   ) => void;
 };
 
 type ModalType = 
+  | 'inspectionFeeNeeded'
   | 'feeStructure' 
   | 'invoiceAmount' 
   | 'scheduling' 
@@ -49,6 +51,8 @@ export const ConditionalModal: React.FC<Props> = ({
   const [saving, setSaving] = useState(false);
   // track which option is being saved in default modal so we can show spinner appropriately
   const [savingValue, setSavingValue] = useState<string | null>(null);
+  const [inspectionNeeded, setInspectionNeeded] = useState(true);
+  const [feeNeeded, setFeeNeeded] = useState(true);
 
   // 🔹 Memoized values to prevent recalculation
   const taskName = useMemo(() => {
@@ -73,6 +77,11 @@ export const ConditionalModal: React.FC<Props> = ({
     return selectedAction?.action?.taskType?.toLowerCase() || "";
   }, [selectedAction?.action]);
 
+  const isInspectionFeeNeededModal = useMemo(() => {
+    return [TASK_TYPES.CONDITION, TASK_TYPES.CONDITIONAL].includes(taskType as any) &&
+      taskCategory === TASK_CATEGORIES.APPROVAL1;
+  }, [taskCategory, taskType]);
+
   const PreScript = useMemo(() => {
     return selectedAction?.action?.PreScript || "Enter Invoice Amount";
   }, [selectedAction?.action]);
@@ -88,6 +97,7 @@ export const ConditionalModal: React.FC<Props> = ({
   // 🔹 Determine modal type with useMemo
   const modalType = useMemo((): ModalType => {
     if (!selectedAction?.action) return 'default';
+    if (isInspectionFeeNeededModal) return 'inspectionFeeNeeded';
 
     const isAction = taskType === "action";
     const isProgress = taskType === "progress";
@@ -118,7 +128,7 @@ export const ConditionalModal: React.FC<Props> = ({
     }
 
     return 'default';
-  }, [taskType, taskCategory, taskName, selectedAction?.action]);
+  }, [isInspectionFeeNeededModal, taskType, taskCategory, taskName, selectedAction?.action]);
 
   // 🔹 Validation helpers
   const isValidInvoice = useMemo(() => {
@@ -136,6 +146,8 @@ export const ConditionalModal: React.FC<Props> = ({
       setInvoiceAmount("");
       setError("");
       setScheduledDateTime("");
+      setInspectionNeeded(true);
+      setFeeNeeded(true);
     }
   }, [showConditionModal]);
 
@@ -160,11 +172,11 @@ export const ConditionalModal: React.FC<Props> = ({
   }, [saving, setShowConditionModal]);
 
   // 🔹 Save handler
-  const handleSave = useCallback(async (value: string) => {
+  const handleSave = useCallback(async (value: string | { inspectionNeeded: "YES" | "NO"; feeNeeded: "YES" | "NO" }) => {
     if (!selectedAction?.action) return;
     
     setSaving(true);
-    setSavingValue(value);
+    setSavingValue(typeof value === 'string' ? value : null);
     try {
       await executeAction(selectedAction.action.id, selectedAction.action, value, selectedAction);
       setShowConditionModal(null);
@@ -389,6 +401,47 @@ export const ConditionalModal: React.FC<Props> = ({
               </button>
             ))}
           </div>
+        )}
+
+        {/* Inspection/Fee Needed Modal */}
+        {modalType === 'inspectionFeeNeeded' && (
+          <>
+            <div className="space-y-3 mb-6">
+              <label className="flex items-center gap-2 text-sm text-gray-800">
+                <input
+                  type="checkbox"
+                  checked={inspectionNeeded}
+                  disabled={saving}
+                  onChange={(e) => setInspectionNeeded(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                Inspection Needed
+              </label>
+
+              <label className="flex items-center gap-2 text-sm text-gray-800">
+                <input
+                  type="checkbox"
+                  checked={feeNeeded}
+                  disabled={saving}
+                  onChange={(e) => setFeeNeeded(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                Fee Needed
+              </label>
+            </div>
+
+            <ActionButtons
+              onCancel={() => setShowConditionModal(null)}
+              onSave={() =>
+                handleSave({
+                  inspectionNeeded: inspectionNeeded ? "YES" : "NO",
+                  feeNeeded: feeNeeded ? "YES" : "NO",
+                })
+              }
+              saving={saving}
+              disabled={saving}
+            />
+          </>
         )}
 
         {/* Default Yes/No Modal */}

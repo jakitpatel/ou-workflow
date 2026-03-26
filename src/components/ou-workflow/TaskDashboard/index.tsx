@@ -174,7 +174,7 @@ export function TaskDashboard() {
     (
       assignee: string,
       action: any,
-      result?: string,
+      result?: string | { inspectionNeeded: 'YES' | 'NO'; feeNeeded: 'YES' | 'NO' },
       selectedActionArg?: { application: any; action: any } | null
     ) => {
       const taskType = action.taskType?.toLowerCase();
@@ -204,18 +204,40 @@ export function TaskDashboard() {
         confirmTaskMutation.mutate(mutationParams);
       } else if (
         (taskType === TASK_TYPES.CONDITIONAL || taskType === TASK_TYPES.CONDITION) &&
-        taskCategory === TASK_CATEGORIES.APPROVAL
+        [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1].includes(taskCategory)
       ) {
-        confirmTaskMutation.mutate({ ...mutationParams, result });
+        if (taskCategory === TASK_CATEGORIES.APPROVAL1 && result && typeof result === 'object') {
+          confirmTaskMutation.mutate({
+            ...mutationParams,
+            result: 'YES',
+            inspectionNeeded: result.inspectionNeeded,
+            feeNeeded: result.feeNeeded,
+          });
+        } else {
+          confirmTaskMutation.mutate({
+            ...mutationParams,
+            result: typeof result === 'string' ? result : undefined,
+          });
+        }
       } else if (taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.SELECTOR) {
-        confirmTaskMutation.mutate({ ...mutationParams, result });
+        confirmTaskMutation.mutate({
+          ...mutationParams,
+          result: typeof result === 'string' ? result : undefined,
+        });
       } else if (taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.INPUT) {
-        confirmTaskMutation.mutate({ ...mutationParams, result });
+        confirmTaskMutation.mutate({
+          ...mutationParams,
+          result: typeof result === 'string' ? result : undefined,
+        });
       } else if (taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.SCHEDULING) {
-        confirmTaskMutation.mutate({ ...mutationParams, result });
+        confirmTaskMutation.mutate({
+          ...mutationParams,
+          result: typeof result === 'string' ? result : undefined,
+        });
       } else if (taskType === TASK_TYPES.PROGRESS && taskCategory === TASK_CATEGORIES.PROGRESS_TASK) {
-        const status = result ? getProgressStatus(result) : '';
-        confirmTaskMutation.mutate({ ...mutationParams, result, status });
+        const stringResult = typeof result === 'string' ? result : '';
+        const status = stringResult ? getProgressStatus(stringResult) : '';
+        confirmTaskMutation.mutate({ ...mutationParams, result: stringResult || undefined, status });
       } else if (taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.ASSIGNMENT) {
         const effectiveSelectedAction = selectedActionArg ?? selectedAction;
         const rawAppId =
@@ -284,7 +306,7 @@ export function TaskDashboard() {
         executeAction('Confirmed', application, 'no');
       } else if (
         (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) &&
-        actionCategory === TASK_CATEGORIES.APPROVAL
+        [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1].includes(actionCategory)
       ) {
         setShowConditionModal(application);
       } else if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.ASSIGNMENT) {

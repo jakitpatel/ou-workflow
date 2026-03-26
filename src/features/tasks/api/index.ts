@@ -40,6 +40,8 @@ export async function confirmTask({
   username,
   status,
   capacity,
+  inspectionNeeded,
+  feeNeeded,
 }: {
   taskId: string
   result?: string
@@ -48,6 +50,8 @@ export async function confirmTask({
   username?: string
   status?: string
   capacity?: string
+  inspectionNeeded?: string
+  feeNeeded?: string
 }): Promise<any> {
   const completionNotesMap: Record<string, string> = {
     completed: 'Task completed successfully',
@@ -82,6 +86,14 @@ export async function confirmTask({
 
   if (status) {
     body.status = status
+  }
+
+  if (inspectionNeeded) {
+    body.inspectionNeeded = inspectionNeeded
+  }
+
+  if (feeNeeded) {
+    body.feeNeeded = feeNeeded
   }
 
   return await fetchWithAuth({

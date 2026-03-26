@@ -257,7 +257,7 @@ export function NCRCDashboard() {
     } 
     else if (
       (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) && 
-      actionCategory === TASK_CATEGORIES.APPROVAL
+      [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1].includes(actionCategory as any)
     ) {
       setShowConditionModal(action);
     } 

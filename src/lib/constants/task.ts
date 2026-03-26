@@ -11,6 +11,7 @@ export const TASK_TYPES = {
 export const TASK_CATEGORIES = {
   CONFIRMATION: 'confirmation',
   APPROVAL: 'approval',
+  APPROVAL1: 'approval1',
   ASSIGNMENT: 'assignment',
   EMAIL: 'email',
   SELECTOR: 'selector',

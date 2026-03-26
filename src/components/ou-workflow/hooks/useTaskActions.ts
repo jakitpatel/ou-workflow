@@ -14,6 +14,11 @@ type Params = {
   onError?: (msg: string) => void
 }
 
+type InspectionFeeChoice = {
+  inspectionNeeded: 'YES' | 'NO'
+  feeNeeded: 'YES' | 'NO'
+}
+
 export function useTaskActions({ applications, token, username, onError }: Params) {
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
@@ -30,7 +35,7 @@ export function useTaskActions({ applications, token, username, onError }: Param
   const executeAction = (
     assignee: string,
     action: any,
-    result?: string,
+    result?: string | InspectionFeeChoice,
     selectedAction?: { application: Applicant; action: Task } | null,
   ) => {
     const taskType = action.taskType?.toLowerCase()
@@ -50,7 +55,21 @@ export function useTaskActions({ applications, token, username, onError }: Param
     }
 
     if ([TASK_TYPES.CONDITIONAL, TASK_TYPES.CONDITION].includes(taskType as any)) {
-      confirmTaskMutation.mutate({ ...baseParams, result: result ?? undefined })
+      const isApproval1 = taskCategory === TASK_CATEGORIES.APPROVAL1
+      if (isApproval1 && result && typeof result === 'object') {
+        confirmTaskMutation.mutate({
+          ...baseParams,
+          result: 'YES',
+          inspectionNeeded: result.inspectionNeeded,
+          feeNeeded: result.feeNeeded,
+        })
+        return
+      }
+
+      confirmTaskMutation.mutate({
+        ...baseParams,
+        result: typeof result === 'string' ? result : undefined,
+      })
       return
     }
     if (taskType === TASK_TYPES.ACTION) {
@@ -75,15 +94,18 @@ export function useTaskActions({ applications, token, username, onError }: Param
         return
       }
 
-      confirmTaskMutation.mutate({ ...baseParams, result })
+      confirmTaskMutation.mutate({
+        ...baseParams,
+        result: typeof result === 'string' ? result : undefined,
+      })
       return
     }
 
     if (taskType === TASK_TYPES.PROGRESS) {
       confirmTaskMutation.mutate({
         ...baseParams,
-        result,
-        status: getProgressStatus(result ?? ''),
+        result: typeof result === 'string' ? result : undefined,
+        status: getProgressStatus(typeof result === 'string' ? result : ''),
       })
     }
   }

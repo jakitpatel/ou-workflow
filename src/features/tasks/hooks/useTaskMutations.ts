@@ -12,6 +12,8 @@ type ConfirmTaskInput = {
   username?: string
   status?: string
   capacity?: string
+  inspectionNeeded?: string
+  feeNeeded?: string
 }
 
 type AssignTaskInput = {
