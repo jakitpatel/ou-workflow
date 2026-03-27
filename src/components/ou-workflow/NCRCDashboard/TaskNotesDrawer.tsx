@@ -145,11 +145,11 @@ const getMentionContext = (text: string, cursor: number): MentionContext | null 
 }
 
 const getMentionLabel = (user: MentionUser): string => {
-  const fullName = user.fullName.trim()
-  if (fullName) return fullName
-
   const fallbackName = `${user.firstName} ${user.lastName}`.trim()
   if (fallbackName) return fallbackName
+  
+  const fullName = user.fullName.trim()
+  if (fullName) return fullName
 
   if (user.userName.trim()) return user.userName.trim()
   if (user.email.trim()) return user.email.trim()

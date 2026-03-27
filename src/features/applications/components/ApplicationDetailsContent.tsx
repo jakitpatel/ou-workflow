@@ -472,9 +472,9 @@ export function ApplicationDetailsContent({ application, mode = 'page' }: Props)
         </div>
       )}
 
-      <div className={mode === 'page' ? 'mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8' : 'min-h-0 flex-1 p-4'}>
+      <div className={mode === 'page' ? 'mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8' : 'min-h-0 flex-1 p-3'}>
         <div className={mode === 'page' ? 'flex' : 'flex h-full min-h-0'}>
-          <nav className={mode === 'page' ? 'mr-8 w-64 space-y-1' : 'mr-4 w-56 shrink-0 space-y-1 overflow-y-auto pr-1'}>
+          <nav className={mode === 'page' ? 'mr-8 w-64 space-y-1' : 'mr-3 w-48 shrink-0 space-y-1 overflow-y-auto pr-1'}>
             {TABS.map(tab => {
               const Icon = tab.icon
               return (
@@ -494,7 +494,7 @@ export function ApplicationDetailsContent({ application, mode = 'page' }: Props)
             })}
           </nav>
 
-          <div className={mode === 'page' ? 'min-w-0 flex-1' : 'min-w-0 flex-1 overflow-y-auto pr-1'}>
+          <div className={mode === 'page' ? 'min-w-0 flex-1' : 'min-w-0 flex-1 overflow-y-auto'}>
             {activeTab === 'overview' && (
               <Overview application={application} allValidationsPassed={allValidationsPassed} />
             )}
@@ -542,4 +542,3 @@ export function ApplicationDetailsContent({ application, mode = 'page' }: Props)
     </div>
   )
 }
-

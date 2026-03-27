@@ -14,6 +14,7 @@ export type MentionUser = {
   fullName: string
   firstName: string
   lastName: string
+  kashLogIn: string
   email: string
   userRole: string
   userName: string
@@ -236,6 +237,9 @@ export async function fetchMentionUsers({
         FullName?: string
         firstName?: string
         lastName?: string
+        FIRST?: string
+        LAST?: string
+        KashLogIn?: string
         Email?: string
         UserRole?: string
         UserName?: string
@@ -251,21 +255,24 @@ export async function fetchMentionUsers({
   return (response.data ?? [])
     .map((item) => {
       const attrs = item.attributes ?? {}
-      const rawId = attrs.Id ?? item.id
+      const kashLogIn = String(attrs.KashLogIn ?? '').trim()
+      const rawId = attrs.Id ?? (kashLogIn || item.id)
       const id = rawId === undefined || rawId === null ? '' : String(rawId).trim()
       const fullName = String(attrs.FullName ?? '').trim()
-      const firstName = String(attrs.firstName ?? '').trim()
-      const lastName = String(attrs.lastName ?? '').trim()
+      const firstName = String(attrs.FIRST ?? attrs.firstName ?? '').trim()
+      const lastName = String(attrs.LAST ?? attrs.lastName ?? '').trim()
+      const isActive = attrs.IsActive === undefined ? true : Boolean(attrs.IsActive)
 
       return {
         id,
         fullName,
         firstName,
         lastName,
+        kashLogIn,
         email: String(attrs.Email ?? '').trim(),
         userRole: String(attrs.UserRole ?? '').trim(),
-        userName: String(attrs.UserName ?? '').trim(),
-        isActive: Boolean(attrs.IsActive),
+        userName: String(attrs.UserName ?? attrs.KashLogIn ?? '').trim(),
+        isActive,
       }
     })
     .filter((user) => user.id && user.isActive)

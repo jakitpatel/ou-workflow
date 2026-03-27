@@ -19,7 +19,7 @@ export function ApplicationDetailsDrawer({ open, applicationId, onClose }: Props
   return (
     <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
       <div
-        className="fixed right-0 top-0 flex h-full w-full max-w-[92vw] flex-col overflow-hidden bg-white shadow-2xl lg:max-w-[88vw]"
+        className="fixed right-0 top-0 flex h-full w-full max-w-[96vw] flex-col overflow-hidden bg-white shadow-2xl lg:max-w-[50vw]"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b bg-gray-800 px-4 py-3 text-white">
