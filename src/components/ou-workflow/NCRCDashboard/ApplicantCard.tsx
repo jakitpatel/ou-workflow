@@ -108,6 +108,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
     public: false,
   });
   const [applicationComposeText, setApplicationComposeText] = useState('');
+  const [applicationComposeToUserId, setApplicationComposeToUserId] = useState<string | null>(null);
   const [applicationComposePrivate, setApplicationComposePrivate] = useState(false);
   const [applicationCreateNoteError, setApplicationCreateNoteError] = useState('');
   const [showDetailsDrawer, setShowDetailsDrawer] = useState(false);
@@ -275,11 +276,13 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
       isPrivate: applicationComposePrivate,
       priority: 'NORMAL',
       fromUser: username ?? undefined,
+      toUser: applicationComposeToUserId ?? undefined,
       token: token ?? undefined,
     });
 
     setApplicationCreateNoteError('');
     setApplicationComposeText('');
+    setApplicationComposeToUserId(null);
 
     const postedTab: NoteTab = applicationComposePrivate ? 'private' : 'public';
     await fetchApplicationNotesByVisibility(postedTab);
@@ -292,6 +295,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
     createTaskNoteMutation,
     fetchApplicationNotesByVisibility,
     token,
+    applicationComposeToUserId,
     username,
   ]);
 
@@ -487,6 +491,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         loadingPrivate={applicationNotesLoadingByTab.private}
         loadingPublic={applicationNotesLoadingByTab.public}
         composeText={applicationComposeText}
+        composeToUserId={applicationComposeToUserId}
         composePrivate={applicationComposePrivate}
         isSubmitting={createTaskNoteMutation.isPending}
         error={applicationCreateNoteError}
@@ -495,6 +500,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
           setApplicationDrawer(null);
           setApplicationCreateNoteError('');
           setApplicationComposeText('');
+          setApplicationComposeToUserId(null);
         }}
         onTabChange={(tab) => {
           setApplicationDrawer((prev) => (prev ? { ...prev, activeTab: tab } : prev));
@@ -506,6 +512,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
             setApplicationCreateNoteError('');
           }
         }}
+        onComposeToUserChange={setApplicationComposeToUserId}
         onComposePrivateChange={setApplicationComposePrivate}
         onSubmit={handleApplicationCreateNoteSubmit}
         onReplySubmit={handleApplicationReplySubmit}

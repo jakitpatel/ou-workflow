@@ -106,6 +106,7 @@ export function ApplicationExpandedStage({
     Record<string, { private: TaskNote[]; public: TaskNote[] }>
   >({})
   const [composeText, setComposeText] = useState('')
+  const [composeToUserId, setComposeToUserId] = useState<string | null>(null)
   const [composePrivate, setComposePrivate] = useState(false)
   const [createNoteError, setCreateNoteError] = useState('')
   const [noteCountsByTask, setNoteCountsByTask] = useState<
@@ -210,11 +211,13 @@ export function ApplicationExpandedStage({
       isPrivate: composePrivate,
       priority: 'NORMAL',
       fromUser: username ?? undefined,
+      toUser: composeToUserId ?? undefined,
       token: token ?? undefined,
     })
 
     setCreateNoteError('')
     setComposeText('')
+    setComposeToUserId(null)
 
     const postedTab: NoteTab = composePrivate ? 'private' : 'public'
     await fetchNotesByVisibility(drawer.taskId, postedTab)
@@ -235,6 +238,7 @@ export function ApplicationExpandedStage({
     drawer,
     fetchNotesByVisibility,
     token,
+    composeToUserId,
     username,
   ])
 
@@ -510,6 +514,7 @@ export function ApplicationExpandedStage({
         loadingPrivate={drawer ? Boolean(notesLoadingByKey[`${drawer.taskId}:private`]) : false}
         loadingPublic={drawer ? Boolean(notesLoadingByKey[`${drawer.taskId}:public`]) : false}
         composeText={composeText}
+        composeToUserId={composeToUserId}
         composePrivate={composePrivate}
         isSubmitting={createTaskNoteMutation.isPending}
         error={createNoteError}
@@ -518,6 +523,7 @@ export function ApplicationExpandedStage({
           setDrawer(null)
           setCreateNoteError('')
           setComposeText('')
+          setComposeToUserId(null)
         }}
         onTabChange={(tab) => {
           setDrawer(prev => (prev ? { ...prev, activeTab: tab } : prev))
@@ -529,6 +535,7 @@ export function ApplicationExpandedStage({
             setCreateNoteError('')
           }
         }}
+        onComposeToUserChange={setComposeToUserId}
         onComposePrivateChange={setComposePrivate}
         onSubmit={handleCreateNoteSubmit}
         onReplySubmit={handleReplySubmit}

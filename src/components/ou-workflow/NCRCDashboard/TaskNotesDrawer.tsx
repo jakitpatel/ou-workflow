@@ -1,5 +1,7 @@
-import { useState } from 'react'
-import { FileText, Lock, X } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
+import { AtSign, FileText, Lock, X } from 'lucide-react'
+import { useMentionUsers } from '@/features/tasks/hooks/useTaskQueries'
+import type { MentionUser } from '@/features/tasks/api'
 import type { TaskNote } from '@/types/application'
 
 export type NoteTab = 'private' | 'public'
@@ -16,12 +18,14 @@ type Props = {
   loadingPrivate: boolean
   loadingPublic: boolean
   composeText: string
+  composeToUserId?: string | null
   composePrivate: boolean
   isSubmitting: boolean
   error?: string
   onClose: () => void
   onTabChange: (tab: NoteTab) => void
   onComposeTextChange: (text: string) => void
+  onComposeToUserChange: (toUserId: string | null) => void
   onComposePrivateChange: (value: boolean) => void
   onSubmit: () => void
   onReplySubmit: (params: { parentMessageId: string; text: string }) => Promise<void>
@@ -117,6 +121,41 @@ const getNoteId = (note: TaskNote, idx: number): string => {
   return `note-${idx}`
 }
 
+type MentionContext = {
+  start: number
+  end: number
+  query: string
+}
+
+const getMentionContext = (text: string, cursor: number): MentionContext | null => {
+  if (!text) return null
+  const safeCursor = Number.isFinite(cursor) ? Math.max(0, Math.min(cursor, text.length)) : text.length
+  const beforeCursor = text.slice(0, safeCursor)
+  const match = beforeCursor.match(/(^|\s)@([^\s@]*)$/)
+  if (!match) return null
+
+  const start = beforeCursor.lastIndexOf('@')
+  if (start < 0) return null
+
+  return {
+    start,
+    end: safeCursor,
+    query: String(match[2] ?? ''),
+  }
+}
+
+const getMentionLabel = (user: MentionUser): string => {
+  const fullName = user.fullName.trim()
+  if (fullName) return fullName
+
+  const fallbackName = `${user.firstName} ${user.lastName}`.trim()
+  if (fallbackName) return fallbackName
+
+  if (user.userName.trim()) return user.userName.trim()
+  if (user.email.trim()) return user.email.trim()
+  return user.id
+}
+
 const getParentMessageId = (note: TaskNote): string => {
   const idCandidate = (note as any)?.MessageID ?? (note as any)?.messageId ?? (note as any)?.id
   if (idCandidate !== undefined && idCandidate !== null && String(idCandidate).trim()) {
@@ -207,21 +246,26 @@ export function TaskNotesDrawer({
   loadingPrivate,
   loadingPublic,
   composeText,
+  composeToUserId,
   composePrivate,
   isSubmitting,
   error,
   onClose,
   onTabChange,
   onComposeTextChange,
+  onComposeToUserChange,
   onComposePrivateChange,
   onSubmit,
   onReplySubmit,
 }: Props) {
+  const composeTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const [replyOpenById, setReplyOpenById] = useState<Record<string, boolean>>({})
   const [replyTextById, setReplyTextById] = useState<Record<string, string>>({})
   const [replySubmittingById, setReplySubmittingById] = useState<Record<string, boolean>>({})
+  const [mentionOpen, setMentionOpen] = useState(false)
+  const [mentionContext, setMentionContext] = useState<MentionContext | null>(null)
 
-  if (!open) return null
+  const { data: mentionUsers = [], isLoading: mentionUsersLoading } = useMentionUsers({ enabled: open })
 
   const notesTitle = contextType === 'application' ? 'Application Notes' : 'Task Notes'
   const currentLabel = contextType === 'application' ? 'Current Application' : 'Current Task'
@@ -230,6 +274,95 @@ export function TaskNotesDrawer({
   const isLoading = activeTab === 'private' ? loadingPrivate : loadingPublic
   const canSubmit = composeText.trim().length > 0 && !isSubmitting
   const publicNoteThreads = activeTab === 'public' ? buildPublicNoteThreads(publicNotes) : []
+  const mentionQuery = mentionContext?.query ?? ''
+
+  const filteredMentionUsers = useMemo(() => {
+    const query = mentionQuery.trim().toLowerCase()
+    if (!query) return mentionUsers
+
+    return mentionUsers.filter((user) => {
+      const searchable = [
+        getMentionLabel(user),
+        user.userRole,
+        user.userName,
+        user.email,
+      ]
+        .join(' ')
+        .toLowerCase()
+
+      return searchable.includes(query)
+    })
+  }, [mentionQuery, mentionUsers])
+
+  const selectedMentionUser = useMemo(() => {
+    if (!composeToUserId) return null
+    return mentionUsers.find((user) => user.id === composeToUserId) ?? null
+  }, [composeToUserId, mentionUsers])
+
+  if (!open) return null
+
+  const openMentionPopupFromText = (nextText: string, cursor: number) => {
+    const context = getMentionContext(nextText, cursor)
+    if (!context) {
+      setMentionContext(null)
+      setMentionOpen(false)
+      return
+    }
+
+    setMentionContext(context)
+    setMentionOpen(true)
+  }
+
+  const handleComposeChange = (nextText: string, cursor: number) => {
+    onComposeTextChange(nextText)
+    openMentionPopupFromText(nextText, cursor)
+  }
+
+  const handleMentionButtonClick = () => {
+    const textarea = composeTextareaRef.current
+    if (!textarea) {
+      setMentionOpen(true)
+      return
+    }
+
+    textarea.focus()
+    const selectionStart = textarea.selectionStart ?? composeText.length
+    const selectionEnd = textarea.selectionEnd ?? composeText.length
+    let nextText = composeText
+    let nextCursor = selectionStart
+
+    const existingContext = getMentionContext(composeText, selectionStart)
+    if (!existingContext) {
+      const before = composeText.slice(0, selectionStart)
+      const after = composeText.slice(selectionEnd)
+      const needsSpace = before.length > 0 && !/\s$/.test(before)
+      const mentionPrefix = `${needsSpace ? ' ' : ''}@`
+
+      nextText = `${before}${mentionPrefix}${after}`
+      nextCursor = before.length + mentionPrefix.length
+      onComposeTextChange(nextText)
+    }
+
+    openMentionPopupFromText(nextText, nextCursor)
+  }
+
+  const handlePickMentionUser = (user: MentionUser) => {
+    const label = getMentionLabel(user)
+    const replacement = `@${label} `
+
+    const context = mentionContext ?? getMentionContext(composeText, composeText.length)
+    if (context) {
+      const updatedText = `${composeText.slice(0, context.start)}${replacement}${composeText.slice(context.end)}`
+      onComposeTextChange(updatedText)
+    } else {
+      const needsSpace = composeText.trim().length > 0 && !/\s$/.test(composeText)
+      onComposeTextChange(`${composeText}${needsSpace ? ' ' : ''}${replacement}`)
+    }
+
+    onComposeToUserChange(user.id)
+    setMentionOpen(false)
+    setMentionContext(null)
+  }
 
   const renderPublicNode = (node: PublicNoteNode, depth: number) => {
     const { note, noteId, children } = node
@@ -431,12 +564,75 @@ export function TaskNotesDrawer({
 
         <div className="border-t border-gray-200 bg-white p-4">
           <div className="mb-1 text-sm font-semibold text-gray-900">Create Note</div>
-          <textarea
-            value={composeText}
-            onChange={(e) => onComposeTextChange(e.target.value)}
-            className="min-h-[84px] w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            placeholder={`Add a ${composePrivate ? 'private' : 'public'} note...`}
-          />
+          <div className="relative">
+            <textarea
+              ref={composeTextareaRef}
+              value={composeText}
+              onChange={(e) => handleComposeChange(e.target.value, e.target.selectionStart ?? e.target.value.length)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape' && mentionOpen) {
+                  setMentionOpen(false)
+                  setMentionContext(null)
+                }
+              }}
+              className="min-h-[84px] w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              placeholder={`Add a ${composePrivate ? 'private' : 'public'} note... (@ to mention)`}
+            />
+            {mentionOpen ? (
+              <div className="absolute bottom-full z-10 mb-1 max-h-52 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
+                {mentionUsersLoading ? (
+                  <div className="px-3 py-2 text-sm text-slate-500">Loading users...</div>
+                ) : filteredMentionUsers.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-slate-500">No users found</div>
+                ) : (
+                  filteredMentionUsers.map((user) => {
+                    const label = getMentionLabel(user)
+                    return (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => handlePickMentionUser(user)}
+                        className="flex w-full items-center gap-2 border-b border-slate-100 px-3 py-2 text-left hover:bg-slate-50"
+                      >
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
+                          {getInitials(label)}
+                        </div>
+                        <span className="text-sm font-medium text-slate-900">{label}</span>
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-700">
+                          {user.userRole || 'User'}
+                        </span>
+                      </button>
+                    )
+                  })
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleMentionButtonClick}
+              className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <AtSign className="h-3.5 w-3.5" />
+              Mention
+            </button>
+            {selectedMentionUser ? (
+              <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                To User: {getMentionLabel(selectedMentionUser)}
+                <button
+                  type="button"
+                  onClick={() => onComposeToUserChange(null)}
+                  className="rounded p-0.5 hover:bg-blue-100"
+                  aria-label="Clear selected mention user"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ) : null}
+          </div>
+
           <div className="mt-2 flex items-center justify-between gap-2">
             <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-gray-700">
               <input

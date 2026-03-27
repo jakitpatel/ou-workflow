@@ -9,6 +9,17 @@ import type {
 } from '@/types/application'
 import { mapApplicationTasksResponse, type BackendApplicationTasksResponse } from './mappers'
 
+export type MentionUser = {
+  id: string
+  fullName: string
+  firstName: string
+  lastName: string
+  email: string
+  userRole: string
+  userName: string
+  isActive: boolean
+}
+
 export async function assignTask({
   appId,
   taskId,
@@ -158,6 +169,7 @@ export async function createTaskNote({
   priority,
   parentMessageId,
   fromUser,
+  toUser,
   token,
 }: {
   taskId?: string | null
@@ -167,6 +179,7 @@ export async function createTaskNote({
   priority?: 'CRITICAL' | 'HIGH' | 'LOW' | 'NORMAL'
   parentMessageId?: string | number
   fromUser?: string
+  toUser?: string | null
   token?: string | null
 }): Promise<any> {
   const attributes: Record<string, unknown> = {
@@ -190,6 +203,10 @@ export async function createTaskNote({
     attributes.parentMessageId = parentMessageId
   }
 
+  if (toUser !== undefined && toUser !== null && String(toUser).trim()) {
+    attributes.ToUser = String(toUser)
+  }
+
   const body = {
     data: {
       attributes,
@@ -203,6 +220,55 @@ export async function createTaskNote({
     body,
     token,
   })
+}
+
+export async function fetchMentionUsers({
+  token,
+}: {
+  token?: string | null
+} = {}): Promise<MentionUser[]> {
+  const response = await fetchWithAuth<{
+    data?: Array<{
+      id?: string | number
+      type?: string
+      attributes?: {
+        Id?: string | number
+        FullName?: string
+        firstName?: string
+        lastName?: string
+        Email?: string
+        UserRole?: string
+        UserName?: string
+        IsActive?: boolean
+      }
+    }>
+  }>({
+    path: '/api/vUsers',
+    method: 'GET',
+    token,
+  })
+
+  return (response.data ?? [])
+    .map((item) => {
+      const attrs = item.attributes ?? {}
+      const rawId = attrs.Id ?? item.id
+      const id = rawId === undefined || rawId === null ? '' : String(rawId).trim()
+      const fullName = String(attrs.FullName ?? '').trim()
+      const firstName = String(attrs.firstName ?? '').trim()
+      const lastName = String(attrs.lastName ?? '').trim()
+
+      return {
+        id,
+        fullName,
+        firstName,
+        lastName,
+        email: String(attrs.Email ?? '').trim(),
+        userRole: String(attrs.UserRole ?? '').trim(),
+        userName: String(attrs.UserName ?? '').trim(),
+        isActive: Boolean(attrs.IsActive),
+      }
+    })
+    .filter((user) => user.id && user.isActive)
 }
 
 export async function fetchTaskNotes({

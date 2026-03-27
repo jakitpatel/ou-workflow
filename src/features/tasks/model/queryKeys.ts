@@ -11,4 +11,5 @@ export const tasksQueryKeys = {
   roleUsers: () => [...tasksQueryKeys.all, 'role-users'] as const,
   roleUserList: (roleType: string) => [...tasksQueryKeys.roleUsers(), roleType] as const,
   roles: () => [...tasksQueryKeys.all, 'roles'] as const,
+  mentionUsers: () => [...tasksQueryKeys.all, 'mention-users'] as const,
 } as const

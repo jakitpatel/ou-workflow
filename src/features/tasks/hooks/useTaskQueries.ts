@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { fetchUserByRole } from '@/features/applications/api'
-import { fetchApplicationTasks, fetchTaskRoles } from '@/features/tasks/api'
+import { fetchApplicationTasks, fetchMentionUsers, fetchTaskRoles } from '@/features/tasks/api'
 import { useUser } from '@/context/UserContext'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
@@ -55,6 +55,21 @@ export function useFetchTaskRoles(): UseQueryResult<string[]> {
         token: token ?? undefined,
       }),
     enabled: !!token,
+    ...queryOptionDefaults.tasksReferenceData,
+  })
+}
+
+export function useMentionUsers(options?: { enabled?: boolean }) {
+  const { token } = useUser()
+  const enabled = !!token && (options?.enabled ?? true)
+
+  return useQuery({
+    queryKey: tasksQueryKeys.mentionUsers(),
+    queryFn: () =>
+      fetchMentionUsers({
+        token: token ?? undefined,
+      }),
+    enabled,
     ...queryOptionDefaults.tasksReferenceData,
   })
 }
