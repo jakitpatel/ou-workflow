@@ -99,13 +99,15 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
   const [cancelReason, setCancelReason] = useState('');
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
   const [applicationDrawer, setApplicationDrawer] = useState<ApplicationDrawerState | null>(null);
-  const [applicationNotes, setApplicationNotes] = useState<{ private: TaskNote[]; public: TaskNote[] }>({
+  const [applicationNotes, setApplicationNotes] = useState<{ private: TaskNote[]; public: TaskNote[]; toMe: TaskNote[] }>({
     private: [],
     public: [],
+    toMe: [],
   });
   const [applicationNotesLoadingByTab, setApplicationNotesLoadingByTab] = useState<Record<NoteTab, boolean>>({
     private: false,
     public: false,
+    toMe: false,
   });
   const [applicationComposeText, setApplicationComposeText] = useState('');
   const [applicationComposeToUserId, setApplicationComposeToUserId] = useState<string | null>(null);
@@ -228,6 +230,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         const notes = await fetchTaskNotes({
           applicationId: applicant.applicationId ?? null,
           isPrivate: tab === 'private',
+          toUser: tab === 'toMe' ? (username ?? undefined) : undefined,
           token: token ?? undefined,
         });
 
@@ -246,7 +249,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         setApplicationNotesLoadingByTab((prev) => ({ ...prev, [tab]: false }));
       }
     },
-    [applicant.applicationId, token]
+    [applicant.applicationId, token, username]
   );
 
   const openApplicationNotesDrawer = useCallback(
@@ -257,6 +260,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
       await Promise.allSettled([
         fetchApplicationNotesByVisibility('private'),
         fetchApplicationNotesByVisibility('public'),
+        fetchApplicationNotesByVisibility('toMe'),
       ]);
     },
     [fetchApplicationNotesByVisibility]
@@ -488,8 +492,10 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         activeTab={applicationDrawer?.activeTab ?? 'public'}
         privateNotes={applicationNotes.private}
         publicNotes={applicationNotes.public}
+        toMeNotes={applicationNotes.toMe}
         loadingPrivate={applicationNotesLoadingByTab.private}
         loadingPublic={applicationNotesLoadingByTab.public}
+        loadingToMe={applicationNotesLoadingByTab.toMe}
         composeText={applicationComposeText}
         composeToUserId={applicationComposeToUserId}
         composePrivate={applicationComposePrivate}

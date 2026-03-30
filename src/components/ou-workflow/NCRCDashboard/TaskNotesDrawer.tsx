@@ -4,7 +4,7 @@ import { useMentionUsers } from '@/features/tasks/hooks/useTaskQueries'
 import type { MentionUser } from '@/features/tasks/api'
 import type { TaskNote } from '@/types/application'
 
-export type NoteTab = 'private' | 'public'
+export type NoteTab = 'private' | 'public' | 'toMe'
 
 type Props = {
   open: boolean
@@ -15,8 +15,10 @@ type Props = {
   activeTab: NoteTab
   privateNotes: TaskNote[]
   publicNotes: TaskNote[]
+  toMeNotes: TaskNote[]
   loadingPrivate: boolean
   loadingPublic: boolean
+  loadingToMe: boolean
   composeText: string
   composeToUserId?: string | null
   composePrivate: boolean
@@ -243,8 +245,10 @@ export function TaskNotesDrawer({
   activeTab,
   privateNotes,
   publicNotes,
+  toMeNotes,
   loadingPrivate,
   loadingPublic,
+  loadingToMe,
   composeText,
   composeToUserId,
   composePrivate,
@@ -270,10 +274,13 @@ export function TaskNotesDrawer({
   const notesTitle = contextType === 'application' ? 'Application Notes' : 'Task Notes'
   const currentLabel = contextType === 'application' ? 'Current Application' : 'Current Task'
 
-  const notes = activeTab === 'private' ? privateNotes : publicNotes
-  const isLoading = activeTab === 'private' ? loadingPrivate : loadingPublic
+  const notes =
+    activeTab === 'private' ? privateNotes : activeTab === 'toMe' ? toMeNotes : publicNotes
+  const isLoading =
+    activeTab === 'private' ? loadingPrivate : activeTab === 'toMe' ? loadingToMe : loadingPublic
   const canSubmit = composeText.trim().length > 0 && !isSubmitting
-  const publicNoteThreads = activeTab === 'public' ? buildPublicNoteThreads(publicNotes) : []
+  const threadedNotes = activeTab === 'toMe' ? toMeNotes : publicNotes
+  const publicNoteThreads = activeTab !== 'private' ? buildPublicNoteThreads(threadedNotes) : []
   const mentionQuery = mentionContext?.query ?? ''
 
   const filteredMentionUsers = useMemo(() => {
@@ -506,6 +513,20 @@ export function TaskNotesDrawer({
             Public Notes
             <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700">
               {publicNotes.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onTabChange('toMe')}
+            className={`rounded-t-md px-3 py-2 text-sm font-medium ${
+              activeTab === 'toMe'
+                ? 'border-b-2 border-indigo-600 text-indigo-700'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            To Me
+            <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">
+              {toMeNotes.length}
             </span>
           </button>
         </div>

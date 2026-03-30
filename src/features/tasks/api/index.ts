@@ -282,11 +282,13 @@ export async function fetchTaskNotes({
   taskId,
   applicationId,
   isPrivate,
+  toUser,
   token,
 }: {
   taskId?: string | null
   applicationId?: number | null
   isPrivate: boolean
+  toUser?: string | null
   token?: string | null
 }): Promise<TaskNote[]> {
   const params = new URLSearchParams()
@@ -297,6 +299,9 @@ export async function fetchTaskNotes({
     params.append('filter[TaskInstanceId]', String(taskId))
   }
   params.append('filter[isPrivate]', String(isPrivate))
+  if (toUser !== undefined && toUser !== null && String(toUser).trim()) {
+    params.append('filter[ToUser]', String(toUser).trim())
+  }
 
   const response = await fetchWithAuth<{
     data?: WFApplicationMessageRecord[]

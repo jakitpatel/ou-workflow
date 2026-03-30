@@ -103,7 +103,7 @@ export function ApplicationExpandedStage({
   const { data: taskRolesAll = [] } = useFetchTaskRoles()
   const [drawer, setDrawer] = useState<DrawerState | null>(null)
   const [notesByTask, setNotesByTask] = useState<
-    Record<string, { private: TaskNote[]; public: TaskNote[] }>
+    Record<string, { private: TaskNote[]; public: TaskNote[]; toMe: TaskNote[] }>
   >({})
   const [composeText, setComposeText] = useState('')
   const [composeToUserId, setComposeToUserId] = useState<string | null>(null)
@@ -137,6 +137,7 @@ export function ApplicationExpandedStage({
           taskId,
           applicationId: applicant.applicationId ?? null,
           isPrivate: tab === 'private',
+          toUser: tab === 'toMe' ? (username ?? undefined) : undefined,
           token: token ?? undefined,
         })
 
@@ -145,6 +146,7 @@ export function ApplicationExpandedStage({
           [taskId]: {
             private: tab === 'private' ? (notes as TaskNote[]) : prev[taskId]?.private ?? [],
             public: tab === 'public' ? (notes as TaskNote[]) : prev[taskId]?.public ?? [],
+            toMe: tab === 'toMe' ? (notes as TaskNote[]) : prev[taskId]?.toMe ?? [],
           },
         }))
 
@@ -166,7 +168,7 @@ export function ApplicationExpandedStage({
         setNotesLoadingByKey(prev => ({ ...prev, [key]: false }))
       }
     },
-    [applicant.applicationId, token],
+    [applicant.applicationId, token, username],
   )
 
   const openNotesDrawer = useCallback(
@@ -190,6 +192,7 @@ export function ApplicationExpandedStage({
       await Promise.allSettled([
         fetchNotesByVisibility(taskId, 'private'),
         fetchNotesByVisibility(taskId, 'public'),
+        fetchNotesByVisibility(taskId, 'toMe'),
       ])
     },
     [fetchNotesByVisibility],
@@ -511,8 +514,10 @@ export function ApplicationExpandedStage({
         activeTab={drawer?.activeTab ?? 'public'}
         privateNotes={drawer ? notesByTask[drawer.taskId]?.private ?? [] : []}
         publicNotes={drawer ? notesByTask[drawer.taskId]?.public ?? [] : []}
+        toMeNotes={drawer ? notesByTask[drawer.taskId]?.toMe ?? [] : []}
         loadingPrivate={drawer ? Boolean(notesLoadingByKey[`${drawer.taskId}:private`]) : false}
         loadingPublic={drawer ? Boolean(notesLoadingByKey[`${drawer.taskId}:public`]) : false}
+        loadingToMe={drawer ? Boolean(notesLoadingByKey[`${drawer.taskId}:toMe`]) : false}
         composeText={composeText}
         composeToUserId={composeToUserId}
         composePrivate={composePrivate}
