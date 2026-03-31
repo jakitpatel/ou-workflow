@@ -20,6 +20,7 @@ import { queryOptionDefaults } from '@/shared/api/queryOptions';
 
 const PAGE_LIMIT = 20;
 const DEBOUNCE_DELAY = 300; // milliseconds
+const SHOW_PRELIM_APPLICANT_STATS_CARDS = false;
 
 export function PrelimDashboard() {
   const search = Route.useSearch()
@@ -192,9 +193,11 @@ export function PrelimDashboard() {
       </h1>
       
       {/* Stats Cards */}
-      <div className="pb-4">
-        <PrelimApplicantStatsCards stats={applicantStats} />
-      </div>
+      {SHOW_PRELIM_APPLICANT_STATS_CARDS && (
+        <div className="pb-4">
+          <PrelimApplicantStatsCards stats={applicantStats} />
+        </div>
+      )}
       
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">

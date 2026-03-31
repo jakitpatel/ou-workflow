@@ -1,658 +1,689 @@
 # NCRC App Architecture Action Plan
 
-This document converts the audit into a concrete implementation sequence. The order is intentional: each step reduces risk for the next one.
+This document reflects the codebase as it exists now, including the completed foundation work, the newer task-notes changes, and the remaining refactors that will have the highest payoff.
 
-Use this as the working backlog for architectural cleanup, performance hardening, and team-scale maintainability.
-
-## How To Use This Plan
-
-- Complete one phase at a time.
-- Do not start large UI rewrites before finishing the shared foundations.
-- Keep each phase mergeable.
-- Prefer adding tests during the same phase as the refactor, not afterward.
+The goal is not to preserve the older audit verbatim. The goal is to keep an accurate working plan the team can execute against today.
 
 ---
 
-## Phase 1: Stabilize The Foundations
+## Current Snapshot
 
-Goal: make the app safer to change before deeper refactors.
+### Completed or largely completed
 
-### 1. Add project standards and guardrails
-Status: Completed (March 18, 2026)
-
-Actions:
-- Add ESLint with TypeScript, React, hooks, and import-order rules.
-- Add a no-`console.log` rule for production code, allowing explicit exceptions for debugging utilities.
-- Add Prettier and consistent formatting scripts.
-- Add `typecheck`, `lint`, and `test` scripts to `package.json`.
-
-Target files:
-- `package.json`
-- `eslint.config.*` or equivalent
-- `.prettierrc`
-- `.prettierignore`
-
-Done when:
-- `npm run lint`
-- `npm run typecheck`
-- `npm test`
-
-### 2. Document architectural conventions
-Status: Completed (March 18, 2026)
-
-Actions:
-- Add a short section to `README.md` explaining:
-  - route files must stay thin
-  - feature modules own business logic
-  - server state belongs in TanStack Query
-  - shared API transport must not live in feature UI files
-- Add naming conventions for hooks, queries, mutations, and route search params.
-
-Target files:
-- `README.md`
-
-Done when:
-- New contributors can see the expected structure before editing code.
-
-### 3. Add a real test bootstrap
-Status: Completed (March 18, 2026)
-
-Actions:
-- Add a shared test setup file for Vitest and Testing Library.
-- Add helper utilities for rendering with providers.
-- Add network mocking strategy for API tests.
-
-Target files:
-- `vitest.config.ts`
-- `src/test/setup.ts`
-- `src/test/renderWithProviders.tsx`
-
-Done when:
-- Feature tests can mount router, query client, and auth context without copy-paste setup.
-
----
-
-## Phase 2: Split The Monolithic API Layer
-
-Goal: remove `src/api.ts` as the central bottleneck.
-
-### 4. Create a shared HTTP client
-
-Status: Completed (March 18, 2026)
-
-Actions:
-- Move generic fetch logic from `src/api.ts` into a shared module.
-- Centralize:
-  - base URL resolution
-  - auth header injection
-  - JSON parsing
-  - timeout handling
-  - normalized error handling
-- Define a single `AppError` shape.
-
-Target files to create:
-- `src/shared/api/httpClient.ts`
-- `src/shared/api/errors.ts`
-- `src/shared/api/types.ts`
-
-Current source:
-- `src/api.ts`
-
-Done when:
-- No feature endpoint directly owns low-level `fetch` concerns.
-
-Implemented:
-- Added shared transport and error modules:
+- Project guardrails exist:
+  - ESLint
+  - Prettier
+  - `typecheck`
+  - Vitest bootstrap
+- Shared API transport exists:
   - `src/shared/api/httpClient.ts`
   - `src/shared/api/errors.ts`
   - `src/shared/api/types.ts`
-- Rewired `src/api.ts` to use the shared HTTP client for:
-  - base URL resolution
-  - auth header injection
-  - JSON parsing
-  - timeout handling
-  - normalized error shape (`AppError`)
+- Feature-owned API modules exist:
+  - `src/features/applications/api`
+  - `src/features/tasks/api`
+  - `src/features/prelim/api`
+  - `src/features/profile/api`
+- Query key factories and shared query defaults exist and are in active use.
+- Feature query/mutation hooks exist for applications, tasks, prelim, and profile.
+- `src/api.ts` is now effectively a compatibility layer, not the main implementation point.
+- The task notes flow has evolved beyond the original plan:
+  - mention users support
+  - threaded public replies
+  - application/task note drawers
+  - new `To Me` tab filtered by `ToUser`
 
-### 5. Create feature-owned API modules
-Status: Completed (March 18, 2026)
+### Partially completed
 
-Actions:
-- Break `src/api.ts` into domain modules:
-  - applications
-  - tasks
-  - prelim
-  - profile
-  - auth/session helpers where needed
-- Move endpoint-specific request builders and response mappers into those modules.
+- Route files are thinner than before, but route protection is still root-level and path-string-based.
+- Auth callback logic moved partly into a route loader, but session ownership is still split across `authService.ts`, route files, and `UserContext`.
+- Some legacy hook compatibility re-exports still exist under `src/components/ou-workflow/hooks`.
+- `ApplicationManagement` is simplified at the entry point, but most detail complexity still lives in large feature UI files.
+- The NCRC dashboard is decomposed more than before, but orchestration is still concentrated in a large screen plus heavy child containers.
 
-Suggested structure:
-- `src/features/applications/api/*`
-- `src/features/tasks/api/*`
-- `src/features/prelim/api/*`
-- `src/features/profile/api/*`
+### Still high risk
 
-Done when:
-- `src/api.ts` is either removed or replaced with a temporary compatibility re-export layer.
-
-Implemented:
-- Created feature-owned API modules:
-  - `src/features/applications/api/index.ts`
-  - `src/features/tasks/api/index.ts`
-  - `src/features/prelim/api/index.ts`
-  - `src/features/profile/api/index.ts`
-- Replaced `src/api.ts` with a compatibility re-export layer so existing imports continue to work during migration.
-
-### 6. Normalize request and response typing
-Status: Completed (March 18, 2026)
-
-Actions:
-- Replace broad `any` usage in API functions with typed request/response contracts.
-- Add mapper functions for backend-to-frontend shape cleanup instead of inline transforms inside components.
-
-Examples to address:
-- `fetchApplicants`
-- `fetchApplicationDetail`
-- `fetchApplicationTasks`
-- `fetchPrelimApplications`
-
-Done when:
-- API modules return predictable frontend-friendly types.
-
-Implemented:
-- Added typed request contracts for key feature APIs:
-  - `fetchApplicants`
-  - `fetchApplicationTasks`
-  - `fetchPrelimApplications`
-- Added mapper functions for backend-to-frontend normalization:
-  - `src/features/applications/api/mappers.ts`
-  - `src/features/tasks/api/mappers.ts`
-- Normalized candidate responses through mappers:
-  - applicant list stage key normalization in one mapper (`mapApplicantsResponse`)
-  - application detail shape normalization (`mapApplicationDetailResponse`)
-  - task list key normalization and defaults (`mapApplicationTasksResponse`)
-
----
-
-## Phase 3: Rebuild Query Architecture
-
-Goal: make TanStack Query predictable and scalable.
-
-### 7. Introduce query key factories
-Status: Completed (March 18, 2026)
-
-Actions:
-- Add query key factories per feature.
-- Stop using ad hoc string keys across hooks.
-- Stop putting raw `token` into query keys.
-
-Suggested files:
-- `src/features/applications/model/queryKeys.ts`
-- `src/features/tasks/model/queryKeys.ts`
-- `src/features/prelim/model/queryKeys.ts`
-- `src/features/profile/model/queryKeys.ts`
-
-Done when:
-- All queries and invalidations use centralized key builders.
-
-Implemented:
-- Added per-feature query key factories:
-  - `src/features/applications/model/queryKeys.ts`
-  - `src/features/tasks/model/queryKeys.ts`
-  - `src/features/prelim/model/queryKeys.ts`
-  - `src/features/profile/model/queryKeys.ts`
-- Migrated dashboard hooks and prelim/task queries to feature query key factories.
-- Updated mutation invalidations to use centralized key builders instead of ad hoc string arrays.
-- Removed raw `token` values from query keys and kept token usage in query functions only.
-
-### 8. Standardize query option defaults
-Status: Completed (March 18, 2026)
-
-Actions:
-- Define feature-specific defaults for:
-  - `staleTime`
-  - `gcTime`
-  - `retry`
-  - `refetchOnWindowFocus`
-- Put shared defaults in one place instead of repeating them in every hook.
-
-Suggested files:
-- `src/shared/api/queryClient.ts`
-- `src/shared/api/queryOptions.ts`
-
-Done when:
-- Query behavior is intentional and not repeated across hooks.
-
-Implemented:
-- Added shared query defaults module:
-  - `src/shared/api/queryOptions.ts`
-- Added shared query client factory:
-  - `src/shared/api/queryClient.ts`
-- Wired app bootstrap to shared defaults:
-  - `src/main.tsx` now uses `createAppQueryClient()`
-- Migrated repeated per-hook query options to centralized feature defaults for applications, prelim, and task reference lookups.
-- Updated test bootstrap to reuse shared query defaults with test retry overrides:
-  - `src/test/renderWithProviders.tsx`
-
-### 9. Refactor list/detail hooks by feature
-Status: Completed (March 18, 2026)
-
-Actions:
-- Rewrite hooks so they call feature APIs and query key factories.
-- Merge overlapping list hooks where possible.
-- Remove duplicated logic between paged and infinite hooks except the pagination strategy itself.
-
-Current candidates:
-- `src/components/ou-workflow/hooks/useApplications.ts`
-- `src/components/ou-workflow/hooks/usePagedApplications.ts`
-- `src/components/ou-workflow/hooks/useInfiniteApplications.ts`
-- `src/components/ou-workflow/hooks/useApplicationDetail.ts`
-- `src/components/ou-workflow/hooks/usePrelimApplications.ts`
-- `src/components/ou-workflow/hooks/useTaskDashboardHooks.ts`
-
-Done when:
-- Hook responsibilities are clear and consistent.
-
-Implemented:
-- Moved query hooks into feature-owned modules:
-  - `src/features/applications/hooks/*`
-  - `src/features/prelim/hooks/usePrelimApplications.ts`
-  - `src/features/tasks/hooks/useTaskQueries.ts`
-- Extracted shared applications list-query parameter logic to reduce duplication between paged and infinite hooks:
-  - `src/features/applications/hooks/applicationListQuery.ts`
-- Updated consuming screens/components to import feature-owned hooks directly.
-- Kept compatibility layers for existing imports by turning legacy OU workflow hook files into re-exports.
-
-### 10. Fix mutation invalidation strategy
-Status: Completed (March 18, 2026)
-
-Actions:
-- Replace broad invalidation like `['applications']` with targeted invalidation.
-- Patch cache directly when mutation results are deterministic.
-- Separate assignment, confirmation, upload, and profile-save mutations into focused hooks.
-
-Current candidates:
-- `src/components/ou-workflow/hooks/useTaskActions.ts`
+- `src/context/UserContext.tsx`
+- `src/auth/authService.ts`
+- `src/routes/__root.tsx`
+- `src/components/ou-workflow/NCRCDashboard/index.tsx`
 - `src/components/ou-workflow/TaskDashboard/index.tsx`
-- `src/routes/profile.tsx`
+- `src/components/ou-workflow/PrelimDashboard/index.tsx`
 
-Done when:
-- Mutations refresh only what actually changed.
+Current size indicators:
 
-Implemented:
-- Replaced broad mutation invalidation with targeted list scopes:
-  - task mutations now invalidate `tasksQueryKeys.lists()`
-  - optional related invalidation is limited to `applicationsQueryKeys.lists()` and `prelimQueryKeys.lists()`
-- Added focused task mutation hooks:
-  - `src/features/tasks/hooks/useTaskMutations.ts`
-  - split confirm and assign mutation behavior into dedicated hooks
-- Added deterministic cache patching for task-list mutations before refetch:
-  - task status updates on confirm
-  - assignee/role updates on assignment
-- Added focused upload mutation hook and wired upload modal to it:
-  - `src/features/applications/hooks/useUploadApplicationFileMutation.ts`
-- Added focused profile save mutation hook and wired profile route to it:
-  - `src/features/profile/hooks/useSaveProfileLayoutMutation.ts`
+- `src/components/ou-workflow/NCRCDashboard/index.tsx`: about 518 lines
+- `src/components/ou-workflow/TaskDashboard/index.tsx`: about 453 lines
+- `src/components/ou-workflow/PrelimDashboard/index.tsx`: about 259 lines
+- `src/context/UserContext.tsx`: about 226 lines
 
 ---
 
-## Phase 4: Refactor Auth And Session Management
+## What Changed Since The Prior Plan
 
-Goal: make Cognito flow robust and easier to reason about.
+The older action plan correctly predicted the first wave of architecture work, but it now overstates completion in some areas and understates newer complexity in others.
 
-### 11. Create a dedicated session manager
+The biggest differences today are:
+
+- API and query architecture are in much better shape than the old bottlenecks suggested.
+- Auth/session boundaries are still blurry even though parts of the callback flow were improved.
+- Route protection still depends on pathname checks in `src/routes/__root.tsx`.
+- Screen-level orchestration remains heavy in the three major dashboard screens.
+- Task notes are now a meaningful mini-domain and should be treated as one, not as incidental UI state spread across multiple components.
+
+---
+
+## Updated Phases
+
+## Phase 1: Close The Remaining Foundation Gaps
+
+Status: In progress
+
+Goal: finish the cleanup that should happen before larger UI refactors.
+
+### 1. Keep standards current and enforced
+
+Status: Completed, maintain only
+
+Keep:
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test`
+- formatting rules and import ordering
+
+Add next:
+
+- tighten lint rules around stray `console.*` in app code
+- add a small CI gate if one is not already enforcing lint, typecheck, and tests
+
+### 2. Refresh architecture docs to match reality
+
+Status: Partially completed
+
+The README still describes some older structure in places, including `src/api.ts` as if it were still a primary integration layer.
 
 Actions:
-- Extract token storage and refresh behavior from `authService.ts`.
-- Centralize:
-  - access token retrieval
-  - refresh token retrieval
-  - expiry checks
-  - refresh locking to prevent parallel refresh calls
-  - session clearing
 
-Suggested files:
+- update `README.md` to describe the shared API transport plus feature-owned APIs
+- document the compatibility-layer status of `src/api.ts`
+- document that auth/session and route-layout work are still active refactor areas
+
+Done when:
+
+- contributor docs match the actual code path new changes should follow
+
+---
+
+## Phase 2: Finish Auth And Session Refactoring
+
+Status: Not completed
+
+Goal: move from "working" auth to a clear, single-owner session model.
+
+Why this is now the top priority:
+
+- `UserContext` still owns both identity/session data and UI preferences
+- `authService.ts` still owns token parsing, refresh, callback handling, storage mutation, redirect logic, and fetch retry behavior
+- `__root.tsx` still performs auth gating with pathname suffix checks
+- login screens duplicate most of their logic
+
+### 3. Introduce a dedicated session manager
+
+Status: Not started
+
+Actions:
+
+- create a session module under `src/features/auth/model`
+- centralize:
+  - token reads and writes
+  - expiry checks
+  - refresh-token flow
+  - refresh deduping/locking
+  - auth redirect persistence
+  - callback flags and cleanup
+- move token storage and refresh logic out of `authService.ts`
+
+Likely files:
+
 - `src/features/auth/model/sessionManager.ts`
 - `src/features/auth/model/tokenStorage.ts`
 
 Done when:
-- Auth state is managed in one place instead of across route files, context, and API utilities.
 
-### 12. Simplify OAuth callback flow
+- session behavior can be explained from one module without jumping between route files, auth service, and context
+
+### 4. Shrink `UserContext` to app-session surface only
+
+Status: Not started
+
+Current issue:
+
+- `UserContext` mixes:
+  - username and roles
+  - API base URL
+  - stage layout
+  - pagination mode
+  - login/logout orchestration
+  - profile-layout hydration
 
 Actions:
-- Remove duplicated callback flags where possible.
-- Keep route loader responsible for auth exchange.
-- Keep component responsibility limited to rendering and minimal post-login transition.
 
-Current files:
-- `src/routes/cognito-directcallback.tsx`
-- `src/auth/authService.ts`
+- split auth/session state from user-preference state
+- move layout preferences into either:
+  - a dedicated preferences provider
+  - a profile/preferences feature module
+- keep `UserContext` or a renamed auth provider focused on identity/session only
 
-Done when:
-- Callback flow can be followed end-to-end without storage-flag guessing.
+Target files:
 
-### 13. Split auth state from user preferences
-
-Actions:
-- Reduce `UserContext` scope.
-- Move preferences like `stageLayout`, `paginationMode`, and possibly `apiBaseUrl` into separate providers or feature state modules.
-- Keep auth provider focused on identity/session only.
-
-Current file:
 - `src/context/UserContext.tsx`
+- `src/routes/profile.tsx`
 
 Done when:
-- Auth state changes do not force unrelated preference re-renders.
+
+- preference changes do not need the same provider surface as auth/session changes
+
+### 5. Simplify login and callback flow
+
+Status: Partially completed
+
+Current issue:
+
+- `/login` and `/loginDev` are nearly identical
+- callback state still relies on multiple storage flags
+- logging and side effects are still spread across the route and service layers
+
+Actions:
+
+- unify `/login` and `/loginDev` if both are still needed
+- keep the callback route responsible for orchestration, but move low-level session mutation into the session manager
+- remove redundant flags where possible:
+  - `oauth_handled`
+  - `cognito_callback_done`
+  - ad hoc redirect state keys
+
+Done when:
+
+- the auth flow is understandable as:
+  - login intent
+  - callback exchange
+  - session persistence
+  - redirect restore
 
 ---
 
-## Phase 5: Rework The Route Architecture
+## Phase 3: Replace Root-Level Pathname Auth Checks With Route Layouts
 
-Goal: use TanStack Router as an actual application composition layer.
+Status: Not started
 
-### 14. Introduce public and authenticated route layouts
+Goal: use TanStack Router as the composition boundary instead of string-matching paths.
+
+Current issue:
+
+- `src/routes/__root.tsx` uses `endsWith('/login')`, `endsWith('/cognito-directcallback')`, and similar checks
+- nav rendering and auth gating are coupled to pathname string checks
+
+### 6. Introduce public and authenticated route groups
 
 Actions:
-- Replace root-level pathname suffix checks with layout-based route protection.
-- Create separate route groups for:
-  - public auth routes
-  - authenticated app routes
 
-Suggested route shape:
+- create separate route layouts for:
+  - public auth routes
+  - authenticated application routes
+- move nav rendering into the authenticated layout
+- move auth redirects out of root pathname inspection
+
+Suggested shape:
+
 - `src/routes/__root.tsx`
 - `src/routes/_public/*`
 - `src/routes/_authed/*`
 
 Done when:
-- Route protection no longer depends on string matching like `endsWith('/login')`.
 
-### 15. Move route-level data orchestration into loaders where it helps
+- auth gating and shell layout are route-structure-driven, not string-driven
+
+### 7. Move route-level orchestration into loaders where it helps
+
+Status: Partially completed
+
+Current state:
+
+- callback route already uses a loader
+- dashboard routes are still mostly thin mount points without stronger data-entry boundaries
 
 Actions:
-- Prefetch critical detail data in route loaders.
-- Keep search param validation in route files.
-- Pass route context cleanly into feature screens.
 
-Current candidates:
+- add or refine route loaders for critical detail screens where prefetching improves UX
+- keep route files responsible for:
+  - search param validation
+  - redirects
+  - data entry
+  - mounting the feature screen
+
+Likely candidates:
+
 - `src/routes/ou-workflow/ncrc-dashboard/index.tsx`
 - `src/routes/ou-workflow/ncrc-dashboard/$applicationId/index.tsx`
 - `src/routes/ou-workflow/tasks-dashboard/$applicationId.tsx`
 - `src/routes/profile.tsx`
 
 Done when:
-- Route files compose data entry, feature screen, and navigation concerns without owning heavy UI logic.
 
-### 16. Add route-level lazy loading
+- route files remain thin without pushing all coordination back into giant screen components
 
-Actions:
-- Split large dashboards and detail views with lazy imports.
-- Keep initial bundle focused on login, auth bootstrap, and shell layout.
+### 8. Add route-level lazy loading
 
-Heavy files to target:
-- `src/components/ou-workflow/NCRCDashboard/index.tsx`
-- `src/components/ou-workflow/TaskDashboard/index.tsx`
-- `src/components/ou-workflow/PrelimDashboard/index.tsx`
-- `src/components/ou-workflow/ApplicationManagement/index.tsx`
-
-Done when:
-- Dashboard code is not all loaded on first app boot.
-
----
-
-## Phase 6: Break Large Screens Into Feature Containers
-
-Goal: make screens maintainable for multiple developers.
-
-### 17. Refactor NCRC dashboard into container + presentational pieces
+Status: Not started, except small local lazy usage in prelim JSON editor
 
 Actions:
-- Split:
-  - filter/search state
-  - query orchestration
-  - stats derivation
-  - pagination/infinite-scroll logic
-  - modal state
-  - applicant list rendering
-- Keep screen component focused on composition.
 
-Current file:
-- `src/components/ou-workflow/NCRCDashboard/index.tsx`
-
-Suggested feature structure:
-- `src/features/applications/screens/NcrcDashboardScreen.tsx`
-- `src/features/applications/components/ApplicationFilters.tsx`
-- `src/features/applications/components/ApplicationList.tsx`
-- `src/features/applications/components/ApplicationStats.tsx`
-- `src/features/applications/hooks/useApplicationDashboardState.ts`
-
-Done when:
-- The main screen file is significantly smaller and easier to review.
-
-### 18. Refactor task dashboard the same way
-
-Actions:
-- Remove duplicated mutation logic already similar to `useTaskActions`.
-- Separate task filtering, row rendering, modal orchestration, and stats derivation.
-
-Current file:
-- `src/components/ou-workflow/TaskDashboard/index.tsx`
-
-Done when:
-- Task actions are handled by focused hooks, not by a single large component.
-
-### 19. Refactor prelim dashboard into a real feature module
-
-Actions:
-- Separate:
-  - intake list query
-  - selected application detail query
-  - stats calculation
-  - action handling
-  - modal orchestration
-- Remove debug logs from render paths.
-
-Current file:
-- `src/components/ou-workflow/PrelimDashboard/index.tsx`
-
-Done when:
-- Prelim workflow logic is isolated and testable.
-
-### 20. Refactor application management interface into domain panels
-
-Actions:
-- Split `ApplicationManagement/index.tsx` by tab or panel domain.
-- Remove placeholder or local-only workflow state if it should be server-backed.
-- Keep each panel self-contained and typed.
-
-Current files:
-- `src/components/ou-workflow/ApplicationManagement/index.tsx`
-- `src/components/ou-workflow/ApplicationManagement/*`
-
-Done when:
-- Team members can work on files/messages/products/ingredients independently with minimal merge conflict risk.
-
----
-
-## Phase 7: Improve Rendering Performance
-
-Goal: reduce rerenders and make large datasets practical.
-
-### 21. Add virtualization for large lists and tables
-
-Actions:
-- Virtualize applicant lists and task tables where row counts can grow large.
-- Keep sticky headers and filters outside the virtualized region.
+- lazy load large screen entry points
+- keep boot path focused on login, callback, router shell, and shared providers
 
 Targets:
-- NCRC dashboard applicant list
-- task dashboard table
-- any large product or ingredient tables
+
+- `src/components/ou-workflow/NCRCDashboard/index.tsx`
+- `src/components/ou-workflow/TaskDashboard/index.tsx`
+- `src/components/ou-workflow/PrelimDashboard/index.tsx`
+- application detail screen entry points where bundle size matters
 
 Done when:
-- Large result sets remain responsive.
 
-### 22. Tighten rerender boundaries
-
-Actions:
-- Memoize expensive derived values only after component splitting.
-- Use stable props for row items and cards.
-- Avoid top-level screen state that causes every row to rerender.
-
-Done when:
-- Modal toggles, filter typing, and local state changes do not rerender the entire dashboard tree.
-
-### 23. Remove repeated API calls and over-fetching
-
-Actions:
-- Audit detail screens for repeated query calls on mount.
-- Prefetch where navigation patterns are known.
-- Ensure list stats are not causing separate redundant requests if they can be derived from fetched data.
-
-Done when:
-- The same route transition does not trigger multiple equivalent requests.
+- dashboard code is not part of the initial app boot bundle by default
 
 ---
 
-## Phase 8: Define UI System Boundaries
+## Phase 4: Refactor The Three Large Workflow Screens
 
-Goal: stop dashboard UI from becoming copy-paste driven.
+Status: In progress
 
-### 24. Create reusable app-shell components
+Goal: reduce screen-level orchestration density and make ownership clearer for multiple developers.
+
+### 9. Refactor NCRC dashboard into a true feature screen
+
+Status: Partially completed
+
+Current state:
+
+- the screen already composes smaller UI pieces
+- query hooks are feature-owned
+- but the top-level screen still owns too much:
+  - search state
+  - pagination mode logic
+  - infinite-scroll orchestration
+  - scroll restore
+  - stats derivation
+  - modal orchestration
+  - route search syncing
 
 Actions:
-- Extract reusable patterns for:
+
+- move dashboard state/orchestration into a feature hook
+- keep the screen component mainly responsible for composition
+- isolate:
+  - search/filter state
+  - pagination/infinite mode behavior
+  - stats derivation
+  - modal orchestration
+
+Suggested structure:
+
+- `src/features/applications/screens/NcrcDashboardScreen.tsx`
+- `src/features/applications/hooks/useApplicationDashboardState.ts`
+- `src/features/applications/components/ApplicationFilters.tsx`
+- `src/features/applications/components/ApplicationList.tsx`
+
+Done when:
+
+- the NCRC screen becomes much smaller and easier to review
+
+### 10. Extract task notes into a small feature module
+
+Status: Newly needed
+
+Why this matters now:
+
+- task/application notes are no longer a simple drawer with two arrays
+- they now include:
+  - private notes
+  - public notes
+  - `To Me` notes
+  - mention lookups
+  - threaded public replies
+  - create-note and reply mutations
+  - application-context notes and task-context notes
+
+Current issue:
+
+- note fetch/orchestration logic is duplicated between:
+  - `src/components/ou-workflow/NCRCDashboard/ApplicantCard.tsx`
+  - `src/components/ou-workflow/NCRCDashboard/ApplicationExpandedStage.tsx`
+
+Actions:
+
+- introduce a dedicated notes hook or feature service for drawer state
+- centralize tab loading logic and note-fetch parameter construction
+- separate presentational drawer UI from note orchestration
+- define clearer types for note tab state and note thread mapping
+
+Suggested structure:
+
+- `src/features/tasks/notes/useTaskNotesDrawerState.ts`
+- `src/features/tasks/notes/mappers.ts`
+- `src/features/tasks/components/TaskNotesDrawer.tsx`
+
+Done when:
+
+- application notes and task notes reuse one orchestration path instead of copy-pasted loading logic
+
+### 11. Refactor task dashboard the same way
+
+Status: Partially completed
+
+Current state:
+
+- task queries and mutations are in feature hooks
+- but the screen still owns:
+  - debounce logic
+  - filtering and sorting
+  - modal orchestration
+  - action dispatch branching
+  - table rendering composition
+
+Actions:
+
+- extract a task-dashboard state hook
+- move action dispatch branching behind focused command helpers
+- keep the screen responsible for layout, not business branching
+
+Done when:
+
+- `src/components/ou-workflow/TaskDashboard/index.tsx` is mostly a composition shell
+
+### 12. Refactor prelim dashboard into a feature-owned screen
+
+Status: Partially completed
+
+Current issue:
+
+- it still mixes feature hooks with direct query usage and debug logging
+- detail fetching still uses `fetchPrelimApplicationDetails` from the compatibility layer
+- selected modal/detail orchestration is still local to the screen
+
+Actions:
+
+- move prelim detail fetching behind a feature-owned hook
+- remove render-path debug logs
+- split list state, detail-modal state, and action orchestration
+
+Done when:
+
+- the prelim screen follows the same architecture as applications/tasks
+
+---
+
+## Phase 5: Tighten Feature Boundaries And Remove Compatibility Layers
+
+Status: Not completed
+
+Goal: finish the migration so old import paths stop shaping new work.
+
+### 13. Remove transitional hook re-exports
+
+Status: Not started
+
+Current examples:
+
+- `src/components/ou-workflow/hooks/useApplications.ts`
+- `src/components/ou-workflow/hooks/usePagedApplications.ts`
+- `src/components/ou-workflow/hooks/useInfiniteApplications.ts`
+- `src/components/ou-workflow/hooks/useTaskDashboardHooks.ts`
+
+Actions:
+
+- migrate remaining imports to feature-owned hook modules
+- delete transitional re-export files once no call sites remain
+
+Done when:
+
+- new code never imports workflow hooks from compatibility locations
+
+### 14. Reduce `src/api.ts` usage further
+
+Status: Partially completed
+
+Current issue:
+
+- the compatibility layer still appears in real code paths, for example from `UserContext` and prelim detail fetches
+
+Actions:
+
+- replace remaining `@/api` imports with feature or shared-module imports
+- keep `src/api.ts` only as a short-lived migration shim
+- remove it completely once call sites are gone
+
+Done when:
+
+- feature code imports feature APIs directly
+
+---
+
+## Phase 6: Improve Rendering Performance After The Splits
+
+Status: Not started
+
+Goal: optimize once component boundaries are better.
+
+### 15. Add virtualization where data volume justifies it
+
+Targets:
+
+- NCRC applicant list
+- task dashboard table
+- large product and ingredient tables
+
+Done when:
+
+- large result sets remain responsive without requiring broad memoization
+
+### 16. Tighten rerender boundaries
+
+Actions:
+
+- optimize after state is extracted from giant screen components
+- keep row/card props stable
+- prevent modal state from rerendering entire screen trees
+
+Done when:
+
+- local UI interactions do not cascade through whole dashboards
+
+### 17. Audit over-fetching and repeated requests
+
+Actions:
+
+- review detail fetches and repeated mount-time queries
+- prefetch predictable navigations where helpful
+- ensure stats are derived from fetched list data when possible
+
+Done when:
+
+- route transitions no longer issue obviously duplicate requests
+
+---
+
+## Phase 7: Strengthen The UI System Boundary
+
+Status: Not started
+
+Goal: prevent copy-paste dashboard UI from spreading further.
+
+### 18. Extract reusable app-shell patterns
+
+Actions:
+
+- standardize:
   - page headers
   - filter bars
   - stats cards
   - empty states
-  - loading blocks
+  - loading panels
   - error panels
 
 Suggested location:
+
 - `src/shared/ui/app-shell/*`
 
 Done when:
-- Workflow screens use a common layout language without duplicating markup.
 
-### 25. Separate container and presentational components
+- workflow screens share a consistent shell without cloning markup
+
+### 19. Keep container and presentational components separate
 
 Actions:
-- Presentational components should receive typed props and avoid direct data-fetching.
-- Container components should own hooks and server interactions.
+
+- UI-only components should receive typed props
+- data-fetching and mutation ownership should stay in feature containers/hooks
 
 Done when:
-- UI components can be reused and tested without router/query setup.
+
+- presentational pieces can be tested without router/query/auth setup
 
 ---
 
-## Phase 9: Expand Test Coverage Around Risky Paths
+## Phase 8: Expand Test Coverage Around High-Risk Paths
 
-Goal: protect business workflows during refactors.
+Status: Started, but minimal coverage today
 
-### 26. Add tests for query and mutation hooks
+Current state:
+
+- test bootstrap exists
+- provider-based test render helper exists
+- current visible coverage is still very light
+
+### 20. Add hook tests for core data flows
 
 Actions:
-- Test successful and failing states for:
-  - application list hooks
+
+- cover:
+  - applications list hooks
   - application detail hooks
-  - task list hooks
-  - assignment/confirmation mutations
+  - tasks list hooks
+  - key task mutations
+  - prelim detail/query hooks once extracted
 
 Done when:
-- Core workflow hooks have regression coverage.
 
-### 27. Add route/auth integration tests
+- query and mutation behavior has regression coverage around success and failure paths
+
+### 21. Add auth and route integration tests
 
 Actions:
-- Test:
+
+- cover:
   - unauthenticated redirect behavior
-  - callback success path
-  - callback failure path
-  - session restoration on reload
+  - callback success
+  - callback failure
+  - session restore behavior
+  - public vs authenticated layout routing
 
 Done when:
-- Auth regressions are caught before release.
 
-### 28. Add critical workflow screen tests
+- auth regressions are caught before release
 
-Actions:
-- Cover:
-  - NCRC dashboard filters
-  - prelim detail modal loading
-  - task action flows
-  - profile preference save behavior
+### 22. Add workflow screen tests
+
+Highest-value targets:
+
+- NCRC dashboard filter/search behavior
+- task dashboard action flows
+- task notes drawer behavior, including `To Me`
+- prelim detail modal loading
+- profile preference save behavior
 
 Done when:
-- Highest-risk user flows are exercised by tests.
+
+- the riskiest workflow paths are protected during refactors
 
 ---
 
-## Phase 10: Final Cleanup And Compatibility Removal
+## Phase 9: Final Cleanup
 
-Goal: finish the migration cleanly.
+Status: Not started
 
-### 29. Remove temporary compatibility layers
-
-Actions:
-- Delete transitional re-exports and unused hooks after all call sites are migrated.
-- Remove dead components and unused utility functions.
-
-Done when:
-- The codebase reflects the new structure without old-path leftovers.
-
-### 30. Update README and contributor docs
+### 23. Remove dead code and stale debug output
 
 Actions:
-- Document:
+
+- remove leftover `console.log` and stale inline comments from production paths
+- clean up obsolete auth comments and dead alternate implementations
+- remove demo-only code where real feature code already replaced it
+
+### 24. Finish documentation cleanup
+
+Actions:
+
+- update `README.md`
+- document:
   - final folder structure
-  - how to add a new feature module
-  - how to add a query/mutation
-  - how to protect a route
-  - how to write a test with providers
+  - how to add a query
+  - how to add a mutation
+  - how route protection works
+  - where preferences vs auth/session state live
 
 Done when:
-- The repository explains the architecture it expects.
+
+- the repository describes the architecture it actually expects
 
 ---
 
-## Recommended Implementation Order Summary
+## Recommended Order From Here
 
-1. Add linting, formatting, scripts, and test bootstrap.
-2. Split `src/api.ts` into shared transport plus feature API modules.
-3. Add query key factories and standardized query defaults.
-4. Refactor query hooks and mutation invalidation.
-5. Rebuild auth/session management and reduce `UserContext` scope.
-6. Introduce authenticated/public route layouts and route-level lazy loading.
-7. Refactor NCRC dashboard.
-8. Refactor task dashboard.
-9. Refactor prelim dashboard.
-10. Refactor application management into panel modules.
-11. Add virtualization and rerender optimizations.
-12. Expand tests around auth, queries, mutations, and workflows.
-13. Remove compatibility code and update docs.
+1. Finish auth/session refactor.
+2. Replace root pathname auth checks with route layouts.
+3. Extract NCRC dashboard orchestration into a feature-state layer.
+4. Extract task notes into a dedicated feature module.
+5. Refactor task dashboard screen orchestration.
+6. Refactor prelim dashboard screen orchestration.
+7. Remove compatibility hook re-exports and remaining `src/api.ts` call sites.
+8. Add route/auth/workflow tests around the new structure.
+9. Do performance work after the screen and notes splits settle.
+10. Finish docs and dead-code cleanup.
 
 ---
 
-## Highest-Value Files To Tackle First
+## Highest-Value Files To Tackle Next
 
-- `src/api.ts`
 - `src/context/UserContext.tsx`
 - `src/auth/authService.ts`
 - `src/routes/__root.tsx`
+- `src/routes/login.tsx`
+- `src/routes/loginDev.tsx`
 - `src/routes/cognito-directcallback.tsx`
 - `src/components/ou-workflow/NCRCDashboard/index.tsx`
+- `src/components/ou-workflow/NCRCDashboard/ApplicantCard.tsx`
+- `src/components/ou-workflow/NCRCDashboard/ApplicationExpandedStage.tsx`
+- `src/components/ou-workflow/NCRCDashboard/TaskNotesDrawer.tsx`
 - `src/components/ou-workflow/TaskDashboard/index.tsx`
 - `src/components/ou-workflow/PrelimDashboard/index.tsx`
-- `src/components/ou-workflow/ApplicationManagement/index.tsx`
 
 ---
 
-## Suggested Working Method
+## Working Method
 
-For each phase:
-- make the structural change
-- migrate one feature at a time
-- add or update tests
-- remove dead code before moving on
+For each refactor slice:
 
-Do not try to do all dashboards at once. Finish one vertical slice completely, then move to the next.
+- make one structural change at a time
+- migrate consuming code fully for that slice
+- add tests in the same slice
+- remove dead compatibility code before moving on where practical
+
+Do not try to refactor auth, routing, and all dashboards at once. The best vertical sequence now is:
+
+1. auth/session
+2. route layouts
+3. NCRC dashboard plus notes
+4. task dashboard
+5. prelim dashboard

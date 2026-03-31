@@ -19,6 +19,7 @@ import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions';
 // 🎯 Constants
 const PAGE_LIMIT = 5;
 const DEBOUNCE_DELAY = 1000;
+const SHOW_APPLICANT_STATS_CARDS = false;
 //const STORAGE_KEY = 'ncrc-infinite-state';
 
 export function NCRCDashboard() {
@@ -304,9 +305,11 @@ export function NCRCDashboard() {
             </div>
 
             {/* Stats Cards - Sticky */}
-            <div className="pb-4">
-              <ApplicantStatsCards stats={applicantStats} />
-            </div>
+            {SHOW_APPLICANT_STATS_CARDS && (
+              <div className="pb-4">
+                <ApplicantStatsCards stats={applicantStats} />
+              </div>
+            )}
 
             {/* Filters - Sticky */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
