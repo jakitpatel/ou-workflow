@@ -48,11 +48,19 @@ Application detail pages expose a richer management UI with tabs such as:
 
 ### Authentication
 
-- Protected routing is enforced in `src/routes/__root.tsx`.
-- The app uses AWS Cognito OAuth with PKCE from `src/auth/authService.ts`.
+- Protected routing is enforced in [`src/routes/__root.tsx`](src/routes/__root.tsx).
+- The app uses AWS Cognito OAuth with PKCE from [`src/auth/authService.ts`](src/auth/authService.ts).
+- OAuth callback handling currently runs through [`src/routes/cognito-directcallback.tsx`](src/routes/cognito-directcallback.tsx) plus `authService`.
 - Tokens are stored in `sessionStorage`.
 - Unauthenticated users are redirected to `/login`.
 - A local development login path is supported when the selected API server is `http://localhost:3001`.
+
+Auth and session ownership are still an active refactor area. Today, responsibility is split across:
+
+- [`src/auth/authService.ts`](src/auth/authService.ts)
+- [`src/context/UserContext.tsx`](src/context/UserContext.tsx)
+- [`src/routes/cognito-directcallback.tsx`](src/routes/cognito-directcallback.tsx)
+- [`src/routes/__root.tsx`](src/routes/__root.tsx)
 
 ### API configuration
 
@@ -63,6 +71,25 @@ The app resolves its API base URL dynamically:
 3. utility fallback
 
 Runtime server options are currently defined in `public/data/config.js` as `API_CLIENT_URL*` values. The login screen lets the user choose one before starting the Cognito flow.
+
+### API architecture
+
+The main API path is no longer `src/api.ts`.
+
+Current architecture:
+
+- shared transport and request helpers live in `src/shared/api/`
+- domain-specific API modules live in `src/features/*/api`
+- query defaults and key infrastructure live in shared API/query modules
+- feature hooks consume those modules and are the preferred integration point for UI code
+
+`src/api.ts` is now primarily a compatibility layer that re-exports shared and feature-owned APIs for older call sites. New code should prefer direct imports from:
+
+- `@/shared/api/httpClient`
+- `@/features/applications/api`
+- `@/features/tasks/api`
+- `@/features/prelim/api`
+- `@/features/profile/api`
 
 ### Routing
 
@@ -78,6 +105,8 @@ Main route groups:
 - `/ou-workflow/prelim-dashboard`
 - `/ou-workflow/tasks-dashboard`
 - per-application detail routes under dashboard folders
+
+Route files are thinner than before, but route protection and shell rendering are still driven from the root route using pathname checks. Route-layout-based auth boundaries are still planned work.
 
 ### Build metadata
 
@@ -155,23 +184,30 @@ ncrc-app/
 |- scripts/
 |  |- write-build-info.js         # build version/timestamp generator
 |- src/
-|  |- api.ts                      # API client and endpoint wrappers
-|  |- auth/                       # Cognito config and auth flow
+|  |- api.ts                      # compatibility re-export layer for older imports
+|  |- auth/                       # Cognito config and auth flow helpers
 |  |- components/
 |  |  |- ou-workflow/
 |  |  |  |- ApplicationManagement/
 |  |  |  |- NCRCDashboard/
 |  |  |  |- PrelimDashboard/
 |  |  |  |- TaskDashboard/
-|  |  |  |- hooks/
+|  |  |  |- hooks/                # transitional compatibility hooks still present
 |  |  |  |- modal/
 |  |  |- ui/                      # shared UI primitives
 |  |- context/
-|  |  |- UserContext.tsx          # user session, selected API, layout prefs
+|  |  |- UserContext.tsx          # mixed session, API selection, and UI preferences
+|  |- features/
+|  |  |- applications/
+|  |  |- prelim/
+|  |  |- profile/
+|  |  |- tasks/
 |  |- lib/
 |  |  |- constants/
 |  |  |- utils/
 |  |- routes/                     # file-based TanStack routes
+|  |- shared/
+|  |  |- api/                     # transport, errors, query defaults, shared types
 |  |- types/
 |  |- main.tsx                    # app bootstrap
 |- vite.config.ts
@@ -184,7 +220,7 @@ ncrc-app/
 
 If you are reviewing the codebase for behavior or future changes, start here:
 
-### 1. App bootstrap
+### 1. App bootstrap and route gating
 
 - `src/main.tsx`
 - `src/routes/__root.tsx`
@@ -196,18 +232,39 @@ These files show provider setup, router setup, auth gating, global navigation, a
 - `src/auth/authService.ts`
 - `src/auth/cognitoConfig.ts`
 - `src/routes/login.tsx`
+- `src/routes/loginDev.tsx`
+- `src/routes/cognito-directcallback.tsx`
+- `src/routes/cognito-logout.tsx`
 
 These files define PKCE login, token refresh, logout, callback handling, and server selection before authentication.
 
-### 3. API integration
+### 3. Shared API transport
+
+- `src/shared/api/httpClient.ts`
+- `src/shared/api/errors.ts`
+- `src/shared/api/queryClient.ts`
+- `src/shared/api/queryOptions.ts`
+
+These files define the base request behavior, error handling, and query defaults shared across feature modules.
+
+### 4. Feature-owned APIs and hooks
+
+- `src/features/applications/`
+- `src/features/tasks/`
+- `src/features/prelim/`
+- `src/features/profile/`
+
+These folders are the main place for domain API modules, query hooks, and feature logic. This is the preferred path for new data work.
+
+### 5. Compatibility surfaces still being retired
 
 - `src/api.ts`
+- `src/components/ou-workflow/hooks/`
 - `src/context/UserContext.tsx`
-- `public/data/config.js`
 
-These files define how the selected API host is stored, resolved, and used for authenticated requests.
+These areas still support real app behavior, but they should not be treated as the long-term architecture target.
 
-### 4. Core workflows
+### 6. Core workflows
 
 - `src/components/ou-workflow/NCRCDashboard/`
 - `src/components/ou-workflow/PrelimDashboard/`
@@ -216,7 +273,7 @@ These files define how the selected API host is stored, resolved, and used for a
 
 These folders contain the main business UI and the application review/detail flows.
 
-### 5. Route entry points
+### 7. Route entry points
 
 - `src/routes/ou-workflow/ncrc-dashboard/`
 - `src/routes/ou-workflow/prelim-dashboard/`
@@ -229,8 +286,9 @@ These route files define search params, route validation, and which top-level fe
 1. User selects an API server on the login page.
 2. User authenticates through Cognito or uses local-dev login for localhost API mode.
 3. `UserContext` stores session-level app state such as selected API URL, role, stage layout, and pagination mode.
-4. `api.ts` resolves the active base URL and attaches bearer tokens to requests.
-5. Feature hooks/components fetch dashboard or application data and render workflow actions.
+4. Shared HTTP transport resolves the active base URL and attaches bearer tokens to requests.
+5. Feature API modules and feature hooks fetch dashboard or application data and render workflow actions.
+6. Some older paths still reach the same behavior through `src/api.ts` compatibility re-exports.
 
 ## Architecture conventions
 
@@ -247,7 +305,7 @@ These conventions are required for new work and refactors.
 
 ### Feature modules own business logic
 
-- Business logic should live in feature modules (target structure: `src/features/<feature>/**`).
+- Business logic should live in feature modules under `src/features/<feature>/**`.
 - Keep workflow-specific logic in feature hooks/services, not inside shared UI primitives.
 - Components under `src/components/ui/**` should remain presentational and reusable.
 
@@ -259,9 +317,15 @@ These conventions are required for new work and refactors.
 
 ### Shared API transport stays out of feature UI files
 
-- Low-level transport concerns (base URL resolution, auth headers, timeouts, normalized errors) belong in shared API modules.
+- Low-level transport concerns such as base URL resolution, auth headers, timeouts, and normalized errors belong in shared API modules.
 - Feature UI files should call feature hooks/APIs, not raw `fetch`.
 - Keep endpoint contracts and response mapping close to feature API modules, not inline inside JSX components.
+
+### Compatibility imports are transitional
+
+- Avoid adding new imports from `@/api` unless you are explicitly working in a migration shim.
+- Prefer direct imports from shared or feature-owned modules.
+- If you touch a compatibility call site for meaningful work, consider migrating it as part of the same change.
 
 ### Naming conventions
 
@@ -284,6 +348,7 @@ These conventions are required for new work and refactors.
 - `public/web.config` suggests deployment behind a static host that needs SPA route rewrites.
 - `public/data/*.json` contains mock/reference payloads used during development or prototyping.
 - Some screens still contain demo-style seed data mixed with real API-driven flows, especially inside parts of `ApplicationManagement`.
+- `UserContext`, `authService`, and root-route auth checks are still active refactor targets, so documentation here reflects the current state rather than the final intended state.
 
 ## Suggested future README additions
 

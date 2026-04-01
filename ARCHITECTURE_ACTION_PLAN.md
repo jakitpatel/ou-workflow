@@ -99,19 +99,19 @@ Add next:
 
 ### 2. Refresh architecture docs to match reality
 
-Status: Partially completed
+Status: Completed
 
-The README still describes some older structure in places, including `src/api.ts` as if it were still a primary integration layer.
+The README now reflects the current architecture, including the shared API transport, feature-owned API modules, the compatibility-layer role of `src/api.ts`, and the fact that auth/session and route-layout refactors are still active work.
 
-Actions:
+Completed:
 
-- update `README.md` to describe the shared API transport plus feature-owned APIs
-- document the compatibility-layer status of `src/api.ts`
-- document that auth/session and route-layout work are still active refactor areas
+- updated `README.md` to describe the shared API transport plus feature-owned APIs
+- documented the compatibility-layer status of `src/api.ts`
+- documented that auth/session and route-layout work are still active refactor areas
 
-Done when:
+Done:
 
-- contributor docs match the actual code path new changes should follow
+- contributor docs now match the actual code path new changes should follow
 
 ---
 

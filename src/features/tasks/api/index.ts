@@ -292,40 +292,15 @@ export async function fetchTaskNotes({
   token?: string | null
 }): Promise<TaskNote[]> {
   const params = new URLSearchParams()
-  const filters: Array<{ name: string; op: 'eq' | 'like'; val: string | number | boolean }> = []
-
   if (applicationId !== null && applicationId !== undefined) {
-    filters.push({
-      name: 'ApplicationID',
-      op: 'eq',
-      val: applicationId,
-    })
+    params.append('filter[ApplicationID]', String(applicationId))
   }
-
   if (taskId !== undefined && taskId !== null && String(taskId).trim()) {
-    filters.push({
-      name: 'TaskInstanceId',
-      op: 'eq',
-      val: String(taskId).trim(),
-    })
+    params.append('filter[TaskInstanceId]', String(taskId))
   }
-
-  filters.push({
-    name: 'isPrivate',
-    op: 'eq',
-    val: isPrivate,
-  })
-
+  params.append('filter[isPrivate]', String(isPrivate))
   if (toUser !== undefined && toUser !== null && String(toUser).trim()) {
-    filters.push({
-      name: 'ToUser',
-      op: 'like',
-      val: `%${String(toUser).trim()}%`,
-    })
-  }
-
-  if (filters.length > 0) {
-    params.append('filter', JSON.stringify(filters))
+    params.append('filter[ToUser]', String(toUser).trim())
   }
 
   const response = await fetchWithAuth<{
