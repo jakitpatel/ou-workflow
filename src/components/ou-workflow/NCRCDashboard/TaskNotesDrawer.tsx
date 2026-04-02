@@ -24,6 +24,12 @@ type Props = {
   composePrivate: boolean
   isSubmitting: boolean
   error?: string
+  notesTitleOverride?: string
+  currentLabelOverride?: string
+  toMeTabLabel?: string
+  singleTabMode?: boolean
+  hideComposer?: boolean
+  hidePrivacyToggle?: boolean
   onClose: () => void
   onTabChange: (tab: NoteTab) => void
   onComposeTextChange: (text: string) => void
@@ -254,6 +260,12 @@ export function TaskNotesDrawer({
   composePrivate,
   isSubmitting,
   error,
+  notesTitleOverride,
+  currentLabelOverride,
+  toMeTabLabel = 'To Me',
+  singleTabMode = false,
+  hideComposer = false,
+  hidePrivacyToggle = false,
   onClose,
   onTabChange,
   onComposeTextChange,
@@ -269,10 +281,14 @@ export function TaskNotesDrawer({
   const [mentionOpen, setMentionOpen] = useState(false)
   const [mentionContext, setMentionContext] = useState<MentionContext | null>(null)
 
-  const { data: mentionUsers = [], isLoading: mentionUsersLoading } = useMentionUsers({ enabled: open })
+  const { data: mentionUsers = [], isLoading: mentionUsersLoading } = useMentionUsers({
+    enabled: open && !hideComposer,
+  })
 
-  const notesTitle = contextType === 'application' ? 'Application Notes' : 'Task Notes'
-  const currentLabel = contextType === 'application' ? 'Current Application' : 'Current Task'
+  const notesTitle =
+    notesTitleOverride ?? (contextType === 'application' ? 'Application Notes' : 'Task Notes')
+  const currentLabel =
+    currentLabelOverride ?? (contextType === 'application' ? 'Current Application' : 'Current Task')
 
   const notes =
     activeTab === 'private' ? privateNotes : activeTab === 'toMe' ? toMeNotes : publicNotes
@@ -487,48 +503,63 @@ export function TaskNotesDrawer({
         </div>
 
         <div className="border-b border-gray-200 px-2">
-          <button
-            type="button"
-            onClick={() => onTabChange('private')}
-            className={`mr-1 rounded-t-md px-3 py-2 text-sm font-medium ${
-              activeTab === 'private'
-                ? 'border-b-2 border-blue-600 text-blue-700'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Private Notes
-            <span className="ml-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
-              {privateNotes.length}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onTabChange('public')}
-            className={`rounded-t-md px-3 py-2 text-sm font-medium ${
-              activeTab === 'public'
-                ? 'border-b-2 border-emerald-600 text-emerald-700'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Public Notes
-            <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700">
-              {publicNotes.length}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onTabChange('toMe')}
-            className={`rounded-t-md px-3 py-2 text-sm font-medium ${
-              activeTab === 'toMe'
-                ? 'border-b-2 border-indigo-600 text-indigo-700'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            To Me
-            <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">
-              {toMeNotes.length}
-            </span>
-          </button>
+          {singleTabMode ? (
+            <button
+              type="button"
+              onClick={() => onTabChange('toMe')}
+              className="rounded-t-md border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-700"
+            >
+              {toMeTabLabel}
+              <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">
+                {toMeNotes.length}
+              </span>
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => onTabChange('private')}
+                className={`mr-1 rounded-t-md px-3 py-2 text-sm font-medium ${
+                  activeTab === 'private'
+                    ? 'border-b-2 border-blue-600 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Private Notes
+                <span className="ml-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
+                  {privateNotes.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onTabChange('public')}
+                className={`rounded-t-md px-3 py-2 text-sm font-medium ${
+                  activeTab === 'public'
+                    ? 'border-b-2 border-emerald-600 text-emerald-700'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Public Notes
+                <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700">
+                  {publicNotes.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onTabChange('toMe')}
+                className={`rounded-t-md px-3 py-2 text-sm font-medium ${
+                  activeTab === 'toMe'
+                    ? 'border-b-2 border-indigo-600 text-indigo-700'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {toMeTabLabel}
+                <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">
+                  {toMeNotes.length}
+                </span>
+              </button>
+            </>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
@@ -583,52 +614,53 @@ export function TaskNotesDrawer({
           )}
         </div>
 
-        <div className="border-t border-gray-200 bg-white p-4">
-          <div className="mb-1 text-sm font-semibold text-gray-900">Create Note</div>
-          <div className="relative">
-            <textarea
-              ref={composeTextareaRef}
-              value={composeText}
-              onChange={(e) => handleComposeChange(e.target.value, e.target.selectionStart ?? e.target.value.length)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape' && mentionOpen) {
-                  setMentionOpen(false)
-                  setMentionContext(null)
-                }
-              }}
-              className="min-h-[84px] w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              placeholder={`Add a ${composePrivate ? 'private' : 'public'} note... (@ to mention)`}
-            />
-            {mentionOpen ? (
-              <div className="absolute bottom-full z-10 mb-1 max-h-52 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
-                {mentionUsersLoading ? (
-                  <div className="px-3 py-2 text-sm text-slate-500">Loading users...</div>
-                ) : filteredMentionUsers.length === 0 ? (
-                  <div className="px-3 py-2 text-sm text-slate-500">No users found</div>
-                ) : (
-                  filteredMentionUsers.map((user) => {
-                    const label = getMentionLabel(user)
-                    return (
-                      <button
-                        key={user.id}
-                        type="button"
-                        onClick={() => handlePickMentionUser(user)}
-                        className="flex w-full items-center gap-2 border-b border-slate-100 px-3 py-2 text-left hover:bg-slate-50"
-                      >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
-                          {getInitials(label)}
-                        </div>
-                        <span className="text-sm font-medium text-slate-900">{label}</span>
-                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-700">
-                          {user.userRole || 'User'}
-                        </span>
-                      </button>
-                    )
-                  })
-                )}
-              </div>
-            ) : null}
-          </div>
+        {!hideComposer ? (
+          <div className="border-t border-gray-200 bg-white p-4">
+            <div className="mb-1 text-sm font-semibold text-gray-900">Create Note</div>
+            <div className="relative">
+              <textarea
+                ref={composeTextareaRef}
+                value={composeText}
+                onChange={(e) => handleComposeChange(e.target.value, e.target.selectionStart ?? e.target.value.length)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape' && mentionOpen) {
+                    setMentionOpen(false)
+                    setMentionContext(null)
+                  }
+                }}
+                className="min-h-[84px] w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                placeholder={`Add a ${composePrivate ? 'private' : 'public'} note... (@ to mention)`}
+              />
+              {mentionOpen ? (
+                <div className="absolute bottom-full z-10 mb-1 max-h-52 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
+                  {mentionUsersLoading ? (
+                    <div className="px-3 py-2 text-sm text-slate-500">Loading users...</div>
+                  ) : filteredMentionUsers.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-slate-500">No users found</div>
+                  ) : (
+                    filteredMentionUsers.map((user) => {
+                      const label = getMentionLabel(user)
+                      return (
+                        <button
+                          key={user.id}
+                          type="button"
+                          onClick={() => handlePickMentionUser(user)}
+                          className="flex w-full items-center gap-2 border-b border-slate-100 px-3 py-2 text-left hover:bg-slate-50"
+                        >
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
+                            {getInitials(label)}
+                          </div>
+                          <span className="text-sm font-medium text-slate-900">{label}</span>
+                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-700">
+                            {user.userRole || 'User'}
+                          </span>
+                        </button>
+                      )
+                    })
+                  )}
+                </div>
+              ) : null}
+            </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <button
@@ -655,15 +687,19 @@ export function TaskNotesDrawer({
           </div>
 
           <div className="mt-2 flex items-center justify-between gap-2">
-            <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-gray-700">
-              <input
-                type="checkbox"
-                checked={composePrivate}
-                onChange={(e) => onComposePrivateChange(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              {composePrivate ? 'Private note' : 'Public note'}
-            </label>
+            {!hidePrivacyToggle ? (
+              <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={composePrivate}
+                  onChange={(e) => onComposePrivateChange(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                {composePrivate ? 'Private note' : 'Public note'}
+              </label>
+            ) : (
+              <span />
+            )}
             <button
               type="button"
               onClick={onSubmit}
@@ -674,7 +710,8 @@ export function TaskNotesDrawer({
             </button>
           </div>
           {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
-        </div>
+          </div>
+        ) : null}
       </div>
     </div>
   )

@@ -287,7 +287,7 @@ export async function fetchTaskNotes({
 }: {
   taskId?: string | null
   applicationId?: number | null
-  isPrivate: boolean
+  isPrivate?: boolean
   toUser?: string | null
   token?: string | null
 }): Promise<TaskNote[]> {
@@ -298,7 +298,9 @@ export async function fetchTaskNotes({
   if (taskId !== undefined && taskId !== null && String(taskId).trim()) {
     params.append('filter[TaskInstanceId]', String(taskId))
   }
-  params.append('filter[isPrivate]', String(isPrivate))
+  if (typeof isPrivate === 'boolean') {
+    params.append('filter[isPrivate]', String(isPrivate))
+  }
   if (toUser !== undefined && toUser !== null && String(toUser).trim()) {
     params.append(
       'filter',

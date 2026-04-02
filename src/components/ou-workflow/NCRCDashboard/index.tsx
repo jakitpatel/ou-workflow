@@ -3,15 +3,17 @@ import { ApplicantCard } from './ApplicantCard'
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
 import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal';
-import { Search } from 'lucide-react';
+import { MessageSquareText, Search } from 'lucide-react';
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
+import { TaskNotesDrawer } from './TaskNotesDrawer'
 //import { useApplications } from '@/components/ou-workflow/hooks/useApplications';
 import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce';
 import { useInfiniteApplications } from '@/features/applications/hooks/useInfiniteApplications';
 import { usePagedApplications } from '@/features/applications/hooks/usePagedApplications';
+import { fetchTaskNotes } from '@/features/tasks/api';
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
-import type { Applicant, Task } from '@/types/application';
+import type { Applicant, Task, TaskNote } from '@/types/application';
 import { ApplicantStatsCards } from './ApplicantStatsCards';
 import { Route } from '@/routes/ou-workflow/ncrc-dashboard';
 import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';
@@ -38,6 +40,10 @@ export function NCRCDashboard() {
   const [showActionModal, setShowActionModal] = useState<Task | null | boolean>(null);
   const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null);
   const [showUploadModal, setShowUploadModal] = useState<Task | null | boolean>(null);
+  const [myNotesOpen, setMyNotesOpen] = useState(false);
+  const [myNotes, setMyNotes] = useState<TaskNote[]>([]);
+  const [myNotesLoading, setMyNotesLoading] = useState(false);
+  const [myNotesError, setMyNotesError] = useState('');
   
   // 🔹 Infinite Scrolling States
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -293,6 +299,35 @@ export function NCRCDashboard() {
     completeTaskWithResult(action, reason);
   };
 
+  const openMyNotesDrawer = async () => {
+    setMyNotesOpen(true);
+    setMyNotesError('');
+
+    if (!username?.trim()) {
+      setMyNotes([]);
+      setMyNotesError('Logged in username is not available.');
+      return;
+    }
+
+    setMyNotesLoading(true);
+    try {
+      const notes = await fetchTaskNotes({
+        toUser: username.trim(),
+        token: token ?? undefined,
+      });
+      setMyNotes(notes);
+    } catch (error: any) {
+      const message =
+        error?.details?.status ||
+        error?.details?.message ||
+        error?.message ||
+        'Failed to fetch notes';
+      setMyNotesError(message);
+    } finally {
+      setMyNotesLoading(false);
+    }
+  };
+
   return (
     <>
       {/* Main Content - Single browser scroll, navigation accounts for fixed nav height */}
@@ -301,9 +336,21 @@ export function NCRCDashboard() {
           {/* Sticky Header Section - Sticks below fixed nav */}
           <div className="sticky top-16 z-20 bg-gray-50 pb-4">
             {/* Header */}
-            <div className="pt-6 pb-4">
-              <h2 className="text-2xl font-bold text-gray-900">Application Dashboard</h2>
-              <p className="text-gray-600">Executive Overview - Certification Management</p>
+            <div className="flex items-start justify-between gap-4 pt-6 pb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Application Dashboard</h2>
+                <p className="text-gray-600">Executive Overview - Certification Management</p>
+              </div>
+              <button
+                type="button"
+                onClick={openMyNotesDrawer}
+                className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm transition-colors hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                title={username ? `View notes for ${username}` : 'View my notes'}
+                aria-label={username ? `View notes for ${username}` : 'View my notes'}
+              >
+                <MessageSquareText className="h-4 w-4" />
+                My Notes
+              </button>
             </div>
 
             {/* Stats Cards - Sticky */}
@@ -571,6 +618,39 @@ export function NCRCDashboard() {
       
       {/* Global Error Dialog */}
       <ErrorDialog ref={errorDialogRef} />
+      <TaskNotesDrawer
+        open={myNotesOpen}
+        applicantCompany="My Notes"
+        contextType="application"
+        taskName={username?.trim() || 'Current User'}
+        activeTab="toMe"
+        privateNotes={[]}
+        publicNotes={[]}
+        toMeNotes={myNotes}
+        loadingPrivate={false}
+        loadingPublic={false}
+        loadingToMe={myNotesLoading}
+        composeText=""
+        composePrivate={false}
+        isSubmitting={false}
+        error={myNotesError}
+        notesTitleOverride="My Notes"
+        currentLabelOverride="Logged In User"
+        toMeTabLabel="My Notes"
+        singleTabMode
+        hideComposer
+        hidePrivacyToggle
+        onClose={() => {
+          setMyNotesOpen(false);
+          setMyNotesError('');
+        }}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={async () => {}}
+      />
     </>
   );
 }
