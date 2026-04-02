@@ -58,7 +58,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['scripts/**/*.{js,ts}', 'src/auth/authInit.js'],
+    files: ['scripts/**/*.{js,ts}'],
     rules: {
       'no-console': 'off',
     },
