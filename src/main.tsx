@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { Toaster } from 'sonner'
+import { AppPreferencesProvider } from '@/context/AppPreferencesContext.tsx'
 import { UserProvider } from '@/context/UserContext.tsx'
 import { createAppQueryClient } from '@/shared/api/queryClient'
 
@@ -42,8 +43,10 @@ if (rootElement && !rootElement.innerHTML) {
     <StrictMode>
       <QueryClientProvider client={queryClient}>
         <UserProvider>
-          <RouterProvider router={router} />
-          <Toaster position="top-right" />
+          <AppPreferencesProvider>
+            <RouterProvider router={router} />
+            <Toaster position="top-right" />
+          </AppPreferencesProvider>
         </UserProvider>
       </QueryClientProvider>
     </StrictMode>,

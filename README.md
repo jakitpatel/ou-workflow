@@ -59,6 +59,7 @@ Auth and session ownership are still an active refactor area. Today, responsibil
 
 - [`src/auth/authService.ts`](src/auth/authService.ts)
 - [`src/context/UserContext.tsx`](src/context/UserContext.tsx)
+- [`src/context/AppPreferencesContext.tsx`](src/context/AppPreferencesContext.tsx)
 - [`src/routes/cognito-directcallback.tsx`](src/routes/cognito-directcallback.tsx)
 - [`src/routes/__root.tsx`](src/routes/__root.tsx)
 
@@ -99,7 +100,6 @@ Main route groups:
 
 - `/`
 - `/login`
-- `/loginDev`
 - `/profile`
 - `/ou-workflow/ncrc-dashboard`
 - `/ou-workflow/prelim-dashboard`
@@ -196,7 +196,8 @@ ncrc-app/
 |  |  |  |- modal/
 |  |  |- ui/                      # shared UI primitives
 |  |- context/
-|  |  |- UserContext.tsx          # mixed session, API selection, and UI preferences
+|  |  |- UserContext.tsx          # session identity and auth state
+|  |  |- AppPreferencesContext.tsx # API selection and UI display preferences
 |  |- features/
 |  |  |- applications/
 |  |  |- prelim/
@@ -232,7 +233,6 @@ These files show provider setup, router setup, auth gating, global navigation, a
 - `src/auth/authService.ts`
 - `src/auth/cognitoConfig.ts`
 - `src/routes/login.tsx`
-- `src/routes/loginDev.tsx`
 - `src/routes/cognito-directcallback.tsx`
 - `src/routes/cognito-logout.tsx`
 
@@ -261,6 +261,7 @@ These folders are the main place for domain API modules, query hooks, and featur
 - `src/api.ts`
 - `src/components/ou-workflow/hooks/`
 - `src/context/UserContext.tsx`
+- `src/context/AppPreferencesContext.tsx`
 
 These areas still support real app behavior, but they should not be treated as the long-term architecture target.
 
@@ -285,10 +286,11 @@ These route files define search params, route validation, and which top-level fe
 
 1. User selects an API server on the login page.
 2. User authenticates through Cognito or uses local-dev login for localhost API mode.
-3. `UserContext` stores session-level app state such as selected API URL, role, stage layout, and pagination mode.
-4. Shared HTTP transport resolves the active base URL and attaches bearer tokens to requests.
-5. Feature API modules and feature hooks fetch dashboard or application data and render workflow actions.
-6. Some older paths still reach the same behavior through `src/api.ts` compatibility re-exports.
+3. `UserContext` stores session identity such as username, active role, delegated roles, and token access.
+4. `AppPreferencesContext` stores selected API URL plus display preferences such as stage layout and pagination mode.
+5. Shared HTTP transport resolves the active base URL and attaches bearer tokens to requests.
+6. Feature API modules and feature hooks fetch dashboard or application data and render workflow actions.
+7. Some older paths still reach the same behavior through `src/api.ts` compatibility re-exports.
 
 ## Architecture conventions
 
@@ -348,7 +350,7 @@ These conventions are required for new work and refactors.
 - `public/web.config` suggests deployment behind a static host that needs SPA route rewrites.
 - `public/data/*.json` contains mock/reference payloads used during development or prototyping.
 - Some screens still contain demo-style seed data mixed with real API-driven flows, especially inside parts of `ApplicationManagement`.
-- `UserContext`, `authService`, and root-route auth checks are still active refactor targets, so documentation here reflects the current state rather than the final intended state.
+- `authService`, route callback handling, and root-route auth checks are still active refactor targets, while `UserContext` has been narrowed to session identity and `AppPreferencesContext` now owns API/display preferences.
 
 ## Suggested future README additions
 

@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useState } from 'react'
 import { Check, Code, Server, Shield, User } from 'lucide-react'
+import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { useSaveProfileLayoutMutation } from '@/features/profile/hooks/useSaveProfileLayoutMutation'
 import { getBuildInfo } from '@/lib/utils'
@@ -41,12 +42,9 @@ function ProfilePage() {
     role,
     roles,
     setRole,
-    apiBaseUrl,
-    stageLayout,
-    setStageLayout,
-    paginationMode,
-    setPaginationMode,
   } = useUser()
+  const { apiBaseUrl, stageLayout, setStageLayout, paginationMode, setPaginationMode } =
+    useAppPreferences()
   const { version, buildTime } = getBuildInfo()
   const [showRoleChangeSuccess, setShowRoleChangeSuccess] = useState(false)
   const [showPrefSuccess, setShowPrefSuccess] = useState(false)

@@ -9,6 +9,7 @@ import {
   createRouter,
   createMemoryHistory,
 } from '@tanstack/react-router'
+import { AppPreferencesProvider } from '@/context/AppPreferencesContext'
 import { UserProvider } from '@/context/UserContext'
 import { createTestQueryClient } from '@/shared/api/queryClient'
 
@@ -27,7 +28,9 @@ function BaseProviders({
 }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <UserProvider>{children}</UserProvider>
+      <UserProvider>
+        <AppPreferencesProvider>{children}</AppPreferencesProvider>
+      </UserProvider>
     </QueryClientProvider>
   )
 }

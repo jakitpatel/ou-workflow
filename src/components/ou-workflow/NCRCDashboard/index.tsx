@@ -4,6 +4,7 @@ import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
 import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal';
 import { Search } from 'lucide-react';
+import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 //import { useApplications } from '@/components/ou-workflow/hooks/useApplications';
 import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce';
@@ -29,7 +30,8 @@ export function NCRCDashboard() {
   const { q, status, priority, page, applicationId, myOnly } = search;
 
   // 🔹 User context
-  const { token, username, paginationMode } = useUser();
+  const { token, username } = useUser();
+  const { paginationMode } = useAppPreferences();
   const errorDialogRef = useRef<ErrorDialogRef>(null);
   // UI states
   const [selectedAction, setSelectedAction] = useState<{ application: Applicant; action: Task } | null>(null);

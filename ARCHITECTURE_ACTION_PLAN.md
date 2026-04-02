@@ -36,7 +36,7 @@ The goal is not to preserve the older audit verbatim. The goal is to keep an acc
 ### Partially completed
 
 - Route files are thinner than before, but route protection is still root-level and path-string-based.
-- Auth callback logic moved partly into a route loader, but session ownership is still split across `authService.ts`, route files, and `UserContext`.
+- Auth/session ownership is much cleaner now, with callback exchange and session creation centered in the session manager, but route gating and shell layout still live in `src/routes/__root.tsx`.
 - Some legacy hook compatibility re-exports still exist under `src/components/ou-workflow/hooks`.
 - `ApplicationManagement` is simplified at the entry point, but most detail complexity still lives in large feature UI files.
 - The NCRC dashboard is decomposed more than before, but orchestration is still concentrated in a large screen plus heavy child containers.
@@ -66,7 +66,7 @@ The older action plan correctly predicted the first wave of architecture work, b
 The biggest differences today are:
 
 - API and query architecture are in much better shape than the old bottlenecks suggested.
-- Auth/session boundaries are still blurry even though parts of the callback flow were improved.
+- Auth/session boundaries are much clearer now; the bigger remaining issue is route-level auth/layout composition in `src/routes/__root.tsx`.
 - Route protection still depends on pathname checks in `src/routes/__root.tsx`.
 - Screen-level orchestration remains heavy in the three major dashboard screens.
 - Task notes are now a meaningful mini-domain and should be treated as one, not as incidental UI state spread across multiple components.
@@ -117,7 +117,7 @@ Done:
 
 ## Phase 2: Finish Auth And Session Refactoring
 
-Status: Not completed
+Status: Completed for the current auth/session refactor slice
 
 Goal: move from "working" auth to a clear, single-owner session model.
 
@@ -125,12 +125,11 @@ Why this is now the top priority:
 
 - `UserContext` still owns both identity/session data and UI preferences
 - `authService.ts` still owns token parsing, refresh, callback handling, storage mutation, redirect logic, and fetch retry behavior
-- `__root.tsx` still performs auth gating with pathname suffix checks
 - login screens duplicate most of their logic
 
 ### 3. Introduce a dedicated session manager
 
-Status: Not started
+Status: Completed
 
 Actions:
 
@@ -144,18 +143,26 @@ Actions:
   - callback flags and cleanup
 - move token storage and refresh logic out of `authService.ts`
 
+Progress so far:
+
+- introduced `src/features/auth/model/tokenStorage.ts`
+- introduced `src/features/auth/model/sessionManager.ts`
+- moved token storage, callback flags, redirect persistence, and refresh handling behind the new session layer
+- updated the callback route to use session-manager-owned callback/redirect state
+- moved callback user loading and local-dev session creation into the session-manager layer
+
 Likely files:
 
 - `src/features/auth/model/sessionManager.ts`
 - `src/features/auth/model/tokenStorage.ts`
 
-Done when:
+Done:
 
-- session behavior can be explained from one module without jumping between route files, auth service, and context
+- session behavior can now be explained primarily from `src/features/auth/model/sessionManager.ts` plus token storage helpers, without jumping between route files and context ownership
 
 ### 4. Shrink `UserContext` to app-session surface only
 
-Status: Not started
+Status: Completed
 
 Current issue:
 
@@ -175,24 +182,35 @@ Actions:
   - a profile/preferences feature module
 - keep `UserContext` or a renamed auth provider focused on identity/session only
 
+Completed:
+
+- introduced `src/context/AppPreferencesContext.tsx` for API base URL and display preferences
+- moved `apiBaseUrl`, `stageLayout`, and `paginationMode` out of `UserContext`
+- kept profile-layout hydration with the preferences provider instead of the auth/session provider
+- updated login, profile, navigation, dashboard, and test wiring to consume app preferences separately
+
 Target files:
 
 - `src/context/UserContext.tsx`
 - `src/routes/profile.tsx`
 
-Done when:
+Done:
 
-- preference changes do not need the same provider surface as auth/session changes
+- preference changes no longer need the same provider surface as auth/session changes
 
 ### 5. Simplify login and callback flow
 
-Status: Partially completed
+Status: Completed
 
 Current issue:
 
-- `/login` and `/loginDev` are nearly identical
+- the app uses `/login` as the real login entry point, with localhost dev login behavior still handled inside that route
 - callback state still relies on multiple storage flags
 - logging and side effects are still spread across the route and service layers
+
+Next step:
+
+- move from the current split callback flags toward a smaller single-owner callback/session lifecycle inside the session manager
 
 Actions:
 
@@ -203,6 +221,26 @@ Actions:
   - `cognito_callback_done`
   - ad hoc redirect state keys
 
+Progress so far:
+
+- `/login` remains the single active login route
+- removed the duplicate `cognito_callback_done` flag and kept callback completion on a single session-manager-owned callback state path
+- moved callback token exchange and callback-state handling further into `src/features/auth/model/sessionManager.ts`
+- simplified `src/routes/cognito-directcallback.tsx` so it relies on the session manager instead of maintaining a second callback-complete lifecycle
+- moved callback user-session mapping out of `src/routes/cognito-directcallback.tsx` and into the auth layer
+- trimmed callback-route logging so the route stays focused on redirect/render orchestration
+- moved callback user loading helpers into `src/features/auth/model/sessionManager.ts`
+- moved local-dev login session setup out of `src/routes/login.tsx` and into `src/features/auth/model/sessionManager.ts`
+- reduced the remaining duplication between `handleOAuthCallback()` and `loadAuthenticatedSessionUser()` in `src/auth/authService.ts` by routing both through one shared callback-loading helper
+- moved the route-facing Cognito callback session loader out of `src/auth/authService.ts`, so `src/routes/cognito-directcallback.tsx` now loads callback sessions directly from the session-manager layer
+- extracted shared Cognito callback/logout URL and authorization-code exchange helpers so `src/auth/authService.ts` stays focused on PKCE redirect initiation, logout wiring, and authenticated fetch behavior
+- removed low-signal auth/session debug logging from the active SPA auth path, including callback URL/token payload logging and redirect-init logging
+- retired the unsupported `src/auth/authInit.js` Cognito test bootstrap and removed the compatibility-only `handleOAuthCallback()` and `initAuth()` wrappers from `src/auth/authService.ts`
+
+Next step:
+
+- hand off the remaining auth-gating/layout work to Phase 3, since the callback/login flow is now centered on route loaders plus the session manager
+
 Done when:
 
 - the auth flow is understandable as:
@@ -211,11 +249,15 @@ Done when:
   - session persistence
   - redirect restore
 
+Done:
+
+- the remaining auth concern is no longer session ownership; it is route/layout composition in `src/routes/__root.tsx`
+
 ---
 
 ## Phase 3: Replace Root-Level Pathname Auth Checks With Route Layouts
 
-Status: Not started
+Status: In progress
 
 Goal: use TanStack Router as the composition boundary instead of string-matching paths.
 
@@ -224,7 +266,15 @@ Current issue:
 - `src/routes/__root.tsx` uses `endsWith('/login')`, `endsWith('/cognito-directcallback')`, and similar checks
 - nav rendering and auth gating are coupled to pathname string checks
 
+Why this is now the next priority:
+
+- the auth/session internals are now mostly centered in `src/features/auth/model/sessionManager.ts`
+- the main remaining auth-related architectural problem is that public vs authenticated behavior is still decided in the root route via pathname suffix checks
+- `src/routes/__root.tsx` still mixes shell rendering, public-route exceptions, and auth redirect behavior
+
 ### 6. Introduce public and authenticated route groups
+
+Status: Not started
 
 Actions:
 
@@ -250,7 +300,7 @@ Status: Partially completed
 
 Current state:
 
-- callback route already uses a loader
+- callback route already uses a loader and now gets its session user from the session-manager layer
 - dashboard routes are still mostly thin mount points without stronger data-entry boundaries
 
 Actions:
@@ -641,16 +691,15 @@ Done when:
 
 ## Recommended Order From Here
 
-1. Finish auth/session refactor.
-2. Replace root pathname auth checks with route layouts.
-3. Extract NCRC dashboard orchestration into a feature-state layer.
-4. Extract task notes into a dedicated feature module.
-5. Refactor task dashboard screen orchestration.
-6. Refactor prelim dashboard screen orchestration.
-7. Remove compatibility hook re-exports and remaining `src/api.ts` call sites.
-8. Add route/auth/workflow tests around the new structure.
-9. Do performance work after the screen and notes splits settle.
-10. Finish docs and dead-code cleanup.
+1. Replace root pathname auth checks with route layouts.
+2. Extract NCRC dashboard orchestration into a feature-state layer.
+3. Extract task notes into a dedicated feature module.
+4. Refactor task dashboard screen orchestration.
+5. Refactor prelim dashboard screen orchestration.
+6. Remove compatibility hook re-exports and remaining `src/api.ts` call sites.
+7. Add route/auth/workflow tests around the new structure.
+8. Do performance work after the screen and notes splits settle.
+9. Finish docs and dead-code cleanup.
 
 ---
 
@@ -660,7 +709,6 @@ Done when:
 - `src/auth/authService.ts`
 - `src/routes/__root.tsx`
 - `src/routes/login.tsx`
-- `src/routes/loginDev.tsx`
 - `src/routes/cognito-directcallback.tsx`
 - `src/components/ou-workflow/NCRCDashboard/index.tsx`
 - `src/components/ou-workflow/NCRCDashboard/ApplicantCard.tsx`
@@ -682,8 +730,8 @@ For each refactor slice:
 
 Do not try to refactor auth, routing, and all dashboards at once. The best vertical sequence now is:
 
-1. auth/session
-2. route layouts
-3. NCRC dashboard plus notes
-4. task dashboard
-5. prelim dashboard
+1. route layouts
+2. NCRC dashboard plus notes
+3. task dashboard
+4. prelim dashboard
+5. remaining compatibility cleanup and tests

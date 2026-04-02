@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { useUser } from '@/context/UserContext'
+import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { renderWithProviders } from '@/test/renderWithProviders'
 
 function QueryAndUserExample() {
-  const { stageLayout } = useUser()
+  const { stageLayout } = useAppPreferences()
 
   const { data } = useQuery({
     queryKey: ['example', 'greeting'],

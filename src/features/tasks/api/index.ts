@@ -300,7 +300,14 @@ export async function fetchTaskNotes({
   }
   params.append('filter[isPrivate]', String(isPrivate))
   if (toUser !== undefined && toUser !== null && String(toUser).trim()) {
-    params.append('filter[ToUser]', String(toUser).trim())
+    params.append(
+      'filter',
+      JSON.stringify({
+        name: 'ToUser',
+        op: 'like',
+        val: String(toUser).trim(),
+      }),
+    )
   }
 
   const response = await fetchWithAuth<{

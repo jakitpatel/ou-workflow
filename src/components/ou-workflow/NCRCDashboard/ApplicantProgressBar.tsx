@@ -1,6 +1,6 @@
 import React from 'react'
+import { useAppPreferences } from '@/context/AppPreferencesContext'
 import type { Applicant } from '@/types/application'
-import { useUser } from '@/context/UserContext'
 import { getStageStatusColor } from '@/lib/utils/taskHelpers'
 
 type Props = {
@@ -259,7 +259,7 @@ export function ApplicantProgressBar({
   onStageClick,
   isWithdrawn = false,
 }: Props) {
-  const { stageLayout } = useUser()
+  const { stageLayout } = useAppPreferences()
   const isVerticalLayout = stageLayout === 'mixed'
 
   return (

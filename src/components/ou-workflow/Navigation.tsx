@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Bell, User, BarChart3, ClipboardList, LogOut, Settings } from 'lucide-react'
+import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 
@@ -18,7 +19,8 @@ type NavigationProps = {
 
 export function Navigation({ showMenu = true }: NavigationProps) {
   const location = useRouterState({ select: (s) => s.location.pathname })
-  const { username, role, logout, apiBaseUrl } = useUser()
+  const { username, role, logout } = useUser()
+  const { apiBaseUrl } = useAppPreferences()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
