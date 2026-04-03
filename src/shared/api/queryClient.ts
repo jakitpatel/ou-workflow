@@ -6,6 +6,8 @@ export const createAppQueryClient = () =>
     defaultOptions: appQueryDefaultOptions,
   })
 
+export const appQueryClient = createAppQueryClient()
+
 export const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {

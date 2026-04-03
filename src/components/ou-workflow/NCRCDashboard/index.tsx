@@ -15,7 +15,7 @@ import { fetchTaskNotes } from '@/features/tasks/api';
 import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
 import type { Applicant, Task, TaskNote } from '@/types/application';
 import { ApplicantStatsCards } from './ApplicantStatsCards';
-import { Route } from '@/routes/ou-workflow/ncrc-dashboard';
+import { Route } from '@/routes/_authed/ou-workflow/ncrc-dashboard';
 import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';
 import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions';
 

@@ -261,20 +261,28 @@ Status: In progress
 
 Goal: use TanStack Router as the composition boundary instead of string-matching paths.
 
-Current issue:
+Current status:
 
-- `src/routes/__root.tsx` uses `endsWith('/login')`, `endsWith('/cognito-directcallback')`, and similar checks
-- nav rendering and auth gating are coupled to pathname string checks
+- root-level pathname auth checks have been removed
+- public auth routes now live under `src/routes/_public/*`
+- authenticated app routes now live under `src/routes/_authed/*`
+- nav rendering and auth gating are now handled by the authenticated layout instead of `src/routes/__root.tsx`
+- the first authenticated route-level lazy split is now in place for the NCRC dashboard route
+- the second authenticated route-level lazy split is now in place for the task dashboard route
+- the third authenticated route-level lazy split is now in place for the prelim dashboard route
+- the first authenticated detail-route loader boundary is now in place for the NCRC application detail route
+- the second authenticated detail-route loader boundary is now in place for the task-dashboard application-detail route
+- the main remaining work in this phase is extending loader boundaries to the remaining detail-oriented routes and then evaluating whether those detail routes should also be lazy-loaded
 
 Why this is now the next priority:
 
 - the auth/session internals are now mostly centered in `src/features/auth/model/sessionManager.ts`
-- the main remaining auth-related architectural problem is that public vs authenticated behavior is still decided in the root route via pathname suffix checks
-- `src/routes/__root.tsx` still mixes shell rendering, public-route exceptions, and auth redirect behavior
+- route composition now follows router structure, but some route files are still thin pass-through mounts rather than stronger data-entry boundaries
+- the next payoff is shifting more orchestration into route loaders and lazy route entry points
 
 ### 6. Introduce public and authenticated route groups
 
-Status: Not started
+Status: Completed
 
 Actions:
 
@@ -290,6 +298,16 @@ Suggested shape:
 - `src/routes/_public/*`
 - `src/routes/_authed/*`
 
+Completed:
+
+- simplified `src/routes/__root.tsx` to a plain root outlet
+- added `src/routes/_public.tsx` for login, callback, and logout flows
+- added `src/routes/_authed.tsx` for authenticated app routes
+- moved nav rendering into the authenticated layout
+- moved auth redirect behavior out of root pathname inspection
+- migrated existing app and auth route files into the new route groups
+- updated route-module imports in dashboard components to the new grouped route paths
+
 Done when:
 
 - auth gating and shell layout are route-structure-driven, not string-driven
@@ -301,7 +319,10 @@ Status: Partially completed
 Current state:
 
 - callback route already uses a loader and now gets its session user from the session-manager layer
-- dashboard routes are still mostly thin mount points without stronger data-entry boundaries
+- route groups now handle public vs authenticated composition cleanly
+- the NCRC application detail route now prefetches through a route loader and hands resolved data directly to the page component
+- the task-dashboard application-detail route now prefetches its route-scoped task list through a route loader
+- some remaining routes are still thin mount points without stronger data-entry boundaries
 
 Actions:
 
@@ -314,10 +335,14 @@ Actions:
 
 Likely candidates:
 
-- `src/routes/ou-workflow/ncrc-dashboard/index.tsx`
-- `src/routes/ou-workflow/ncrc-dashboard/$applicationId/index.tsx`
-- `src/routes/ou-workflow/tasks-dashboard/$applicationId.tsx`
-- `src/routes/profile.tsx`
+- `src/routes/_authed/ou-workflow/ncrc-dashboard/index.tsx`
+- `src/routes/_authed/ou-workflow/ncrc-dashboard/$applicationId/index.tsx`
+- `src/routes/_authed/ou-workflow/tasks-dashboard/$applicationId.tsx`
+- `src/routes/_authed/profile.tsx`
+
+Next step:
+
+- extend the same route-loader pattern to `src/routes/_authed/profile.tsx` or evaluate lazy loading for the authenticated detail routes now that both major workflow detail entry points have stronger route-owned data entry
 
 Done when:
 
@@ -325,7 +350,7 @@ Done when:
 
 ### 8. Add route-level lazy loading
 
-Status: Not started, except small local lazy usage in prelim JSON editor
+Status: In progress
 
 Actions:
 
@@ -338,6 +363,25 @@ Targets:
 - `src/components/ou-workflow/TaskDashboard/index.tsx`
 - `src/components/ou-workflow/PrelimDashboard/index.tsx`
 - application detail screen entry points where bundle size matters
+
+Completed:
+
+- moved `src/routes/_authed/ou-workflow/ncrc-dashboard/index.tsx` to route-level lazy loading using `index.lazy.tsx`
+- verified the build emits a separate lazy chunk for the NCRC dashboard route entry
+- moved `src/routes/_authed/ou-workflow/tasks-dashboard/index.tsx` to route-level lazy loading using `index.lazy.tsx`
+- verified the build emits a separate lazy chunk for the task dashboard route entry
+- moved `src/routes/_authed/ou-workflow/prelim-dashboard/index.tsx` to route-level lazy loading using `index.lazy.tsx`
+- verified the build emits a separate lazy chunk for the prelim dashboard route entry
+
+Remaining:
+
+- evaluate whether `src/routes/_authed/ou-workflow/ncrc-dashboard/$applicationId/index.tsx` should be lazy-loaded after loader work is strengthened
+- evaluate whether `src/routes/_authed/ou-workflow/tasks-dashboard/$applicationId.tsx` should be lazy-loaded after loader work is strengthened
+- evaluate whether prelim detail-oriented route entry points need lazy loading after loader work is strengthened
+
+Next step:
+
+- shift the next Phase 3 slice to route-loader boundaries, most likely starting with `src/routes/_authed/ou-workflow/ncrc-dashboard/$applicationId/index.tsx` or `src/routes/_authed/ou-workflow/tasks-dashboard/$applicationId.tsx`
 
 Done when:
 

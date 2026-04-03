@@ -12,7 +12,7 @@ interface LoaderData {
   user: AuthenticatedSessionUser;
 }
 
-export const Route = createFileRoute("/cognito-directcallback")({
+export const Route = createFileRoute("/_public/cognito-directcallback")({
   loader: async (): Promise<LoaderData> => {
     try {
       const user = await loadAuthenticatedSessionUserFromCognitoCallback({

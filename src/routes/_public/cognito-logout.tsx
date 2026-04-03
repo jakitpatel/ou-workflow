@@ -10,7 +10,7 @@ import { clearTokens } from "@/auth/authService"
  * 2. Use full page reload to ensure UserContext re-initializes cleanly
  * 3. Proper cleanup to prevent state inconsistencies
  */
-export const Route = createFileRoute("/cognito-logout")({
+export const Route = createFileRoute("/_public/cognito-logout")({
   beforeLoad: () => {
     // 1) Clear user tokens/session immediately
     clearTokens()

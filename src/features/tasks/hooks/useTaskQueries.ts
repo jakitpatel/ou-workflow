@@ -5,6 +5,31 @@ import { useUser } from '@/context/UserContext'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 
+export const getTasksQueryOptions = ({
+  applicationId,
+  searchTerm,
+  daysFilter = 'pending',
+  token,
+}: {
+  applicationId?: string
+  searchTerm?: string
+  daysFilter?: string | number | undefined
+  token?: string | null
+}) => ({
+  queryKey: tasksQueryKeys.list({
+    applicationId,
+    searchTerm,
+    daysFilter,
+  }),
+  queryFn: () =>
+    fetchApplicationTasks({
+      token: token ?? undefined,
+      applicationId,
+      searchTerm,
+      days: daysFilter === 'pending' ? undefined : daysFilter,
+    }),
+})
+
 export function useTasks(
   applicationId?: string,
   searchTerm?: string,
@@ -13,18 +38,12 @@ export function useTasks(
   const { token } = useUser()
 
   return useQuery({
-    queryKey: tasksQueryKeys.list({
+    ...getTasksQueryOptions({
       applicationId,
       searchTerm,
       daysFilter,
+      token,
     }),
-    queryFn: () =>
-      fetchApplicationTasks({
-        token: token ?? undefined,
-        applicationId,
-        searchTerm,
-        days: daysFilter === 'pending' ? undefined : daysFilter,
-      }),
     enabled: !!token,
   })
 }

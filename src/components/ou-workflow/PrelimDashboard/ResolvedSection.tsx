@@ -5,7 +5,7 @@ import type { Applicant } from '@/types/application'
 import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
 import { ResolutionDrawer } from '@/components/ou-workflow/PrelimDashboard/ResolutionDrawer'
-import { Route as DashboardRoute } from '@/routes/ou-workflow/ncrc-dashboard'
+import { Route as DashboardRoute } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
 import type {
   CompanyFromApplication,
   CompanyFromApplicationContact,

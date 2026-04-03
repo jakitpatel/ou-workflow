@@ -7,7 +7,7 @@ import { useSaveProfileLayoutMutation } from '@/features/profile/hooks/useSavePr
 import { getBuildInfo } from '@/lib/utils'
 import type { PaginationMode, StageLayout } from '@/types/application'
 
-export const Route = createFileRoute('/profile')({
+export const Route = createFileRoute('/_authed/profile')({
   component: ProfilePage,
 })
 

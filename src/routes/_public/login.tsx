@@ -28,7 +28,7 @@ const LOCAL_DEV_ACCESS_TOKEN =
 const LOCAL_DEV_ID_TOKEN =
   "eyJhbGciOiJub25lIn0.eyJzdWIiOiJkZW1vLXVzZXIiLCJlbWFpbCI6ImRlbW9AZXhhbXBsZS5jb20iLCJ1c2VyX2lkIjoiZGVtb191c2VyIiwicm9sZXMiOlsiQURNSU4iLCJVU0VSIl0sImV4cCI6MTk0NDc3NjgwMH0.";
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute("/_public/login")({
   beforeLoad: () => {
     if (isAuthenticated()) {
       throw redirect({ to: "/" });

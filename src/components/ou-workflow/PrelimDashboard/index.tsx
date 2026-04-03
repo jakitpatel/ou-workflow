@@ -4,7 +4,7 @@ import { Search } from 'lucide-react';
 import { fetchPrelimApplicationDetails } from '@/api'
 import { CompanyCard } from '@/components/ou-workflow/PrelimDashboard/CompanyCard'
 import { JsonModal } from '@/components/ou-workflow/PrelimDashboard/JsonModal'
-import { Route } from '@/routes/ou-workflow/prelim-dashboard';
+import { Route } from '@/routes/_authed/ou-workflow/prelim-dashboard';
 import { usePrelimApplications } from '@/features/prelim/hooks/usePrelimApplications';
 import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce';
 import { PrelimApplicantStatsCards } from './PrelimApplicantStatsCards';

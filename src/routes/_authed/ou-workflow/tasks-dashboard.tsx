@@ -1,7 +1,6 @@
-// routes/ou-workflow/tasks-dashboard.tsx (or _tasks-dashboard.tsx)
 import { Outlet, createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/ou-workflow/tasks-dashboard')({
+export const Route = createFileRoute('/_authed/ou-workflow/tasks-dashboard')({
   validateSearch: (search) => ({
     qs: typeof search.qs === 'string' ? search.qs : '',
     days:

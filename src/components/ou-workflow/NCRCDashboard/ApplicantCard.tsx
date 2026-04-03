@@ -18,8 +18,8 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import type { Task, Applicant, TaskNote } from '@/types/application';
-import { Route as TaskDashboardRoute } from '@/routes/ou-workflow/tasks-dashboard';
-import { Route as TaskDashboardWithAppRoute } from '@/routes/ou-workflow/tasks-dashboard/$applicationId';
+import { Route as TaskDashboardRoute } from '@/routes/_authed/ou-workflow/tasks-dashboard';
+import { Route as TaskDashboardWithAppRoute } from '@/routes/_authed/ou-workflow/tasks-dashboard/$applicationId';
 import { useUser } from '@/context/UserContext';
 import { normalizeTaskRoles } from '@/lib/utils/taskHelpers';
 import { fetchTaskNotes } from '@/features/tasks/api';

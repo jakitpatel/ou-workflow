@@ -5,14 +5,14 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { Toaster } from 'sonner'
 import { AppPreferencesProvider } from '@/context/AppPreferencesContext.tsx'
 import { UserProvider } from '@/context/UserContext.tsx'
-import { createAppQueryClient } from '@/shared/api/queryClient'
+import { appQueryClient } from '@/shared/api/queryClient'
 
 import './index.css'
 import reportWebVitals from './reportWebVitals.ts'
 import { routeTree } from './routeTree.gen'
 
-// Create a QueryClient instance for React Query
-export const queryClient = createAppQueryClient()
+// Shared app QueryClient instance
+export const queryClient = appQueryClient
 
 // Create a new router instance
 const router = createRouter({

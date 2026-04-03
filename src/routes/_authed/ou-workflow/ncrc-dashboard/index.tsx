@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { NCRCDashboard } from '@/components/ou-workflow/NCRCDashboard'
 
 type DashboardSearch = {
   q: string
@@ -10,7 +9,7 @@ type DashboardSearch = {
   myOnly: boolean
 }
 
-export const Route = createFileRoute('/ou-workflow/ncrc-dashboard/')({
+export const Route = createFileRoute('/_authed/ou-workflow/ncrc-dashboard/')({
   validateSearch: (search): DashboardSearch => {
     return {
       q: typeof search.q === 'string' ? search.q : '',
@@ -21,5 +20,4 @@ export const Route = createFileRoute('/ou-workflow/ncrc-dashboard/')({
       myOnly: !(search.myOnly === false || search.myOnly === 'false'),
     }
   },
-  component: NCRCDashboard,
 })

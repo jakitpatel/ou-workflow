@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import DashboardAppDialog from '@/components/ou-workflow/modal/DashboardAppDialog';
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute('/_authed/')({
   component: HomePage,
 });
 
