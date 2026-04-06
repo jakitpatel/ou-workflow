@@ -23,6 +23,7 @@ import { Route as TaskDashboardWithAppRoute } from '@/routes/_authed/ou-workflow
 import { useUser } from '@/context/UserContext';
 import { normalizeTaskRoles } from '@/lib/utils/taskHelpers';
 import { fetchTaskNotes } from '@/features/tasks/api';
+import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries';
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations';
 import { TaskNotesDrawer, type NoteTab } from '@/components/ou-workflow/NCRCDashboard/TaskNotesDrawer';
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer';
@@ -92,6 +93,7 @@ const toSafeCount = (value: unknown): number => {
 
 export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }: Props) {
   const { username, role, roles, token } = useUser();
+  const { data: taskRolesAll = [] } = useFetchTaskRoles();
   const navigate = useNavigate();
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
   const [showAIAssistant, setShowAIAssistant] = useState(false);
@@ -159,6 +161,10 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
     const taskRoles = normalizeTaskRoles(task.taskRoles)
     if (taskRoles.length === 0) return false
 
+    const hasIncludedRole = taskRolesAll.some(role => taskRoles.includes(role))
+
+    if (hasIncludedRole) return true
+
     const matchingRoles = userRoles
       .map(r => r.toLowerCase())
       .filter(r => taskRoles.includes(r))
@@ -214,10 +220,10 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
 
   const canCancelApplication = useMemo(() => {
     return hasCancelPermission(pendingCancelTask)
-  }, [pendingCancelTask, applicant.assignedRoles, userRoles, username])
+  }, [pendingCancelTask, applicant.assignedRoles, taskRolesAll, userRoles, username])
   const canUndoWithdrawApplication = useMemo(() => {
     return hasCancelPermission(pendingUndoWithdrawTask)
-  }, [pendingUndoWithdrawTask, applicant.assignedRoles, userRoles, username])
+  }, [pendingUndoWithdrawTask, applicant.assignedRoles, taskRolesAll, userRoles, username])
   const isWithdrawn = useMemo(() => {
     const normalized = applicant?.status?.toLowerCase()
     return normalized === 'withdrawn' || normalized === 'wth'
@@ -834,8 +840,8 @@ function CardActions({
               ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
               : 'bg-red-100 text-red-300 cursor-not-allowed focus:ring-red-200'
           }`}
-          title={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
-          aria-label={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
+          title={canCancelApplication ? 'Withdraw Application' : "This application cannot be canceled due to its current status or your permissions."}
+          aria-label={canCancelApplication ? 'Withdraw Application' : "This application cannot be canceled due to its current status or your permissions."}
         >
           Withdraw Application
         </button>

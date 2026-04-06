@@ -5,6 +5,7 @@ import type { Applicant, Task } from '@/types/application'
 import { ResolvedSection } from '@/components/ou-workflow/PrelimDashboard/ResolvedSection'
 import { useUser } from '@/context/UserContext'
 import { CancelApplicationDialog } from '@/components/ou-workflow/modal/CancelApplicationDialog'
+import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
 import { normalizeStatus, normalizeTaskRoles } from '@/lib/utils/taskHelpers'
 
 type Props = {
@@ -42,6 +43,7 @@ export function CompanyCard({
   handleCancelTask,
 }: Props) {
   const { username, role, roles } = useUser()
+  const { data: taskRolesAll = [] } = useFetchTaskRoles()
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false)
@@ -88,6 +90,9 @@ export function CompanyCard({
     const taskRoles = normalizeTaskRoles(task.taskRoles)
     if (taskRoles.length === 0) return false
 
+    const hasIncludedRole = taskRolesAll.some(role => taskRoles.includes(role))
+    if (hasIncludedRole) return true
+
     const matchingRoles = userRoles.filter((r) => taskRoles.includes(r))
     if (matchingRoles.length === 0) return false
 
@@ -114,7 +119,7 @@ export function CompanyCard({
           hasCancelPermission(task)
       ) ?? null
     )
-  }, [company.stages, company.assignedRoles, userRoles, username])
+  }, [company.stages, company.assignedRoles, taskRolesAll, userRoles, username])
 
   const pendingUndoWithdrawTask = useMemo(() => {
     const globalStageEntry = Object.entries(company.stages ?? {}).find(
@@ -133,14 +138,14 @@ export function CompanyCard({
         )
       }) ?? null
     )
-  }, [company.stages, company.assignedRoles, userRoles, username])
+  }, [company.stages, company.assignedRoles, taskRolesAll, userRoles, username])
 
   const canCancelApplication = useMemo(() => {
     return hasCancelPermission(pendingCancelTask)
-  }, [pendingCancelTask, company.assignedRoles, userRoles, username])
+  }, [pendingCancelTask, company.assignedRoles, taskRolesAll, userRoles, username])
   const canUndoWithdrawApplication = useMemo(() => {
     return hasCancelPermission(pendingUndoWithdrawTask)
-  }, [pendingUndoWithdrawTask, company.assignedRoles, userRoles, username])
+  }, [pendingUndoWithdrawTask, company.assignedRoles, taskRolesAll, userRoles, username])
   const normalizedStatus = company?.status?.toLowerCase()
   const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth'
 

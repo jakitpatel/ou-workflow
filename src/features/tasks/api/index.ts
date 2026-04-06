@@ -158,7 +158,10 @@ export async function fetchTaskRoles({
   })
 
   return response.data
-    .filter((item: any) => item.attributes?.groupAssignment)
+    .filter((item: any) => {
+      const attributes = item.attributes ?? {}
+      return Boolean(attributes.groupAssignment ?? attributes.groupAssigment)
+    })
     .map((item: any) => String(item.attributes.RoleCode).toLowerCase())
 }
 
