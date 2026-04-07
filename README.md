@@ -1,36 +1,37 @@
 # ncrc-app
 
-`ncrc-app` is a React + TypeScript workflow application for reviewing and managing NCRC-related applications. It provides authenticated dashboards for:
+`ncrc-app` is a React + TypeScript workflow application for NCRC application review and operations. It includes authenticated dashboards for:
 
 - NCRC application review
-- preliminary/intake application review
-- task and notification tracking
-- application detail management, including files, messages, plants, products, ingredients, and task events
+- preliminary intake review
+- task and notification handling
+- application detail management across files, plants, products, ingredients, messages, quote data, and task events
 
-This repository is no longer a generic TanStack starter. It is a working business application with Cognito authentication, dynamic API server selection, and multiple review workflows.
+This repository is a real business app, not a starter template. The current codebase uses Cognito-based authentication, TanStack Router route groups, TanStack Query for server state, feature-owned API modules, and a shared transport layer.
 
-## Tech stack
+## Tech Stack
 
 - React 19
 - TypeScript
 - Vite
 - TanStack Router with file-based routes
-- TanStack Query for server state
+- TanStack Query
 - Tailwind CSS 4
 - Radix UI primitives
 - Vitest + Testing Library
-- AWS Cognito PKCE authentication
+- AWS Cognito OAuth with PKCE
 
-## What the app does
+## Main Workflows
 
-After login, users land on a home screen that links to the main workflow areas:
+After login, the authenticated home page links to:
 
-- `Application Dashboard`: the primary NCRC dashboard
-- `Tasks & Notifications`: task queue and task-level actions
-- `Application Intake Dashboard`: preliminary/submission application review
-- dashboard management dialogs for creating or deleting dashboard/intake records
+- `Application Dashboard` at `/ou-workflow/ncrc-dashboard`
+- `Tasks & Notifications` at `/ou-workflow/tasks-dashboard`
+- `Application Intake Dashboard` at `/ou-workflow/prelim-dashboard`
 
-Application detail pages expose a richer management UI with tabs such as:
+Users can also open dashboard-management dialogs from the home page for create/delete workflow actions.
+
+Application detail screens expose richer management areas such as:
 
 - overview
 - company details
@@ -44,80 +45,159 @@ Application detail pages expose a richer management UI with tabs such as:
 - file management
 - messages
 
-## Key runtime behavior
-
-### Authentication
-
-- Protected routing is enforced in [`src/routes/__root.tsx`](src/routes/__root.tsx).
-- The app uses AWS Cognito OAuth with PKCE from [`src/auth/authService.ts`](src/auth/authService.ts).
-- OAuth callback handling currently runs through [`src/routes/cognito-directcallback.tsx`](src/routes/cognito-directcallback.tsx) plus `authService`.
-- Tokens are stored in `sessionStorage`.
-- Unauthenticated users are redirected to `/login`.
-- A local development login path is supported when the selected API server is `http://localhost:3001`.
-
-Auth and session ownership are still an active refactor area. Today, responsibility is split across:
-
-- [`src/auth/authService.ts`](src/auth/authService.ts)
-- [`src/context/UserContext.tsx`](src/context/UserContext.tsx)
-- [`src/context/AppPreferencesContext.tsx`](src/context/AppPreferencesContext.tsx)
-- [`src/routes/cognito-directcallback.tsx`](src/routes/cognito-directcallback.tsx)
-- [`src/routes/__root.tsx`](src/routes/__root.tsx)
-
-### API configuration
-
-The app resolves its API base URL dynamically:
-
-1. user-selected server from app context
-2. values exposed on `window.__APP_CONFIG__`
-3. utility fallback
-
-Runtime server options are currently defined in `public/data/config.js` as `API_CLIENT_URL*` values. The login screen lets the user choose one before starting the Cognito flow.
-
-### API architecture
-
-The main API path is no longer `src/api.ts`.
-
-Current architecture:
-
-- shared transport and request helpers live in `src/shared/api/`
-- domain-specific API modules live in `src/features/*/api`
-- query defaults and key infrastructure live in shared API/query modules
-- feature hooks consume those modules and are the preferred integration point for UI code
-
-`src/api.ts` is now primarily a compatibility layer that re-exports shared and feature-owned APIs for older call sites. New code should prefer direct imports from:
-
-- `@/shared/api/httpClient`
-- `@/features/applications/api`
-- `@/features/tasks/api`
-- `@/features/prelim/api`
-- `@/features/profile/api`
+## Current Architecture
 
 ### Routing
 
-The app uses file-based TanStack Router routes under `src/routes`.
+The app uses TanStack Router file-based routes under [src/routes](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes).
 
-Main route groups:
+Current route layout:
 
-- `/`
-- `/login`
-- `/profile`
-- `/ou-workflow/ncrc-dashboard`
-- `/ou-workflow/prelim-dashboard`
-- `/ou-workflow/tasks-dashboard`
-- per-application detail routes under dashboard folders
+- [src/routes/__root.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/__root.tsx): plain root outlet
+- [src/routes/_public.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_public.tsx): public auth route group
+- [src/routes/_authed.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_authed.tsx): authenticated layout, auth gating, and navigation shell
 
-Route files are thinner than before, but route protection and shell rendering are still driven from the root route using pathname checks. Route-layout-based auth boundaries are still planned work.
+Public auth routes live under:
 
-### Build metadata
+- [src/routes/_public/login.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_public/login.tsx)
+- [src/routes/_public/cognito-directcallback.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_public/cognito-directcallback.tsx)
+- [src/routes/_public/cognito-logout.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_public/cognito-logout.tsx)
 
-Before production builds, `scripts/write-build-info.js` updates `src/build-info.json` with:
+Authenticated routes live under:
 
-- incremented patch version
-- build timestamp
+- [src/routes/_authed/index.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_authed/index.tsx)
+- [src/routes/_authed/profile.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_authed/profile.tsx)
+- [src/routes/_authed/ou-workflow/**](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_authed/ou-workflow)
 
-This metadata is exposed through `getBuildInfo()` in `src/lib/utils.ts`.
+Large workflow dashboards are lazy-loaded at the route level:
 
-## Getting started
+- [src/routes/_authed/ou-workflow/ncrc-dashboard/index.lazy.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_authed/ou-workflow/ncrc-dashboard/index.lazy.tsx)
+- [src/routes/_authed/ou-workflow/tasks-dashboard/index.lazy.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_authed/ou-workflow/tasks-dashboard/index.lazy.tsx)
+- [src/routes/_authed/ou-workflow/prelim-dashboard/index.lazy.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_authed/ou-workflow/prelim-dashboard/index.lazy.tsx)
+
+Loader-based detail entry points currently exist for:
+
+- the NCRC application detail route
+- the task-dashboard application task route
+- the Cognito callback route
+
+### Auth And Session
+
+The current auth/session split is:
+
+- [src/auth/authService.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/auth/authService.ts): PKCE login/logout helpers and authenticated fetch facade exports
+- [src/features/auth/model/sessionManager.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/auth/model/sessionManager.ts): token/session ownership, callback completion, token parsing, refresh flow, redirect persistence
+- [src/features/auth/model/tokenStorage.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/auth/model/tokenStorage.ts): session storage helpers
+- [src/context/UserContext.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/context/UserContext.tsx): session identity in React context
+- [src/context/AppPreferencesContext.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/context/AppPreferencesContext.tsx): API selection and display preferences
+
+Unauthenticated users are redirected by [src/routes/_authed.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_authed.tsx).
+
+The login screen supports:
+
+- Cognito login
+- local-dev session setup when the selected API server is `http://localhost:3001`
+
+### API And Data Access
+
+Preferred architecture:
+
+- shared transport and request utilities in [src/shared/api](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/shared/api)
+- domain APIs in [src/features/applications/api](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/api), [src/features/tasks/api](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/tasks/api), [src/features/prelim/api](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/prelim/api), and [src/features/profile/api](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/profile/api)
+- query hooks in feature folders under `src/features/*/hooks`
+- query keys in feature model folders
+
+Important shared files:
+
+- [src/shared/api/httpClient.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/shared/api/httpClient.ts)
+- [src/shared/api/errors.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/shared/api/errors.ts)
+- [src/shared/api/queryClient.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/shared/api/queryClient.ts)
+- [src/shared/api/queryOptions.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/shared/api/queryOptions.ts)
+- [src/shared/api/queryParams.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/shared/api/queryParams.ts)
+
+`src/api.ts` still exists, but it is a compatibility layer for older imports. New code should avoid `@/api` and import from shared or feature modules directly.
+
+### UI Ownership
+
+The UI is currently split across:
+
+- [src/components/ui](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ui): reusable primitive components
+- [src/components/ou-workflow](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow): workflow screens and workflow-specific UI
+- [src/features/applications/components](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/components): newer feature-owned detail components
+
+The app is mid-migration from workflow-folder ownership toward stronger feature ownership. Some compatibility hook surfaces still remain in [src/components/ou-workflow/hooks](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/hooks).
+
+## Project Structure
+
+```text
+ncrc-app/
+|- public/
+|  |- data/config.js
+|  |- web.config
+|- scripts/
+|  |- write-build-info.js
+|- src/
+|  |- api.ts
+|  |- auth/
+|  |- components/
+|  |  |- ou-workflow/
+|  |  |  |- ApplicationManagement/
+|  |  |  |- NCRCDashboard/
+|  |  |  |- PrelimDashboard/
+|  |  |  |- TaskDashboard/
+|  |  |  |- hooks/
+|  |  |  |- modal/
+|  |  |- ui/
+|  |- context/
+|  |- features/
+|  |  |- applications/
+|  |  |- auth/
+|  |  |- prelim/
+|  |  |- profile/
+|  |  |- tasks/
+|  |- lib/
+|  |- routes/
+|  |  |- __root.tsx
+|  |  |- _public.tsx
+|  |  |- _authed.tsx
+|  |  |- _public/
+|  |  |- _authed/
+|  |- shared/
+|  |  |- api/
+|  |- test/
+|  |- types/
+|  |- main.tsx
+|- ARCHITECTURE_ACTION_PLAN.md
+|- package.json
+|- vite.config.ts
+|- vitest.config.ts
+```
+
+## Runtime Behavior
+
+### API Base URL Resolution
+
+The app resolves its API base URL in this order:
+
+1. user-selected value stored in app preferences
+2. runtime config from `window.__APP_CONFIG__`
+3. utility fallback
+
+Key files:
+
+- [public/data/config.js](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/public/data/config.js)
+- [src/context/AppPreferencesContext.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/context/AppPreferencesContext.tsx)
+- [src/shared/api/httpClient.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/shared/api/httpClient.ts)
+
+### Build Metadata
+
+Before builds, [scripts/write-build-info.js](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/scripts/write-build-info.js) writes `src/build-info.json`, which is then read by [src/lib/utils.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/lib/utils.ts).
+
+### Navigation Shell
+
+Authenticated navigation is rendered by [src/components/ou-workflow/Navigation.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/Navigation.tsx) from the `_authed` layout.
+
+## Getting Started
 
 ### Prerequisites
 
@@ -130,7 +210,7 @@ This metadata is exposed through `getBuildInfo()` in `src/lib/utils.ts`.
 npm install
 ```
 
-### Run locally
+### Run Locally
 
 ```bash
 npm run dev
@@ -138,13 +218,19 @@ npm run dev
 
 The Vite dev server runs on port `3000`.
 
-You can also use:
+`npm run start` currently runs the same Vite command.
+
+### Typecheck
 
 ```bash
-npm run start
+npm run typecheck
 ```
 
-Both `dev` and `start` currently run Vite on port `3000`.
+### Lint
+
+```bash
+npm run lint
+```
 
 ### Test
 
@@ -160,204 +246,109 @@ npm run build
 
 Production builds use the base path `/dashboard/`.
 
-### Preview production build
+### Preview The Production Build
 
 ```bash
 npm run serve
 ```
 
-## Available npm scripts
+## Available npm Scripts
 
-- `npm run dev` - start Vite dev server on port 3000
+- `npm run dev` - start Vite on port 3000
 - `npm run start` - same as `dev`
+- `npm run build` - run the Vite build and TypeScript compilation
+- `npm run serve` - preview the build output
 - `npm run test` - run Vitest once
-- `npm run build` - generate build info, build the app, then run TypeScript compilation
-- `npm run serve` - preview the built app
+- `npm run typecheck` - run TypeScript without emitting
+- `npm run lint` - run ESLint
+- `npm run format` - run Prettier write mode
+- `npm run format:check` - run Prettier check mode
 
-## Project structure
+## Recommended Places To Start Reading
 
-```text
-ncrc-app/
-|- public/
-|  |- data/config.js              # runtime API server options
-|  |- web.config                  # deployment rewrite/static hosting config
-|- scripts/
-|  |- write-build-info.js         # build version/timestamp generator
-|- src/
-|  |- api.ts                      # compatibility re-export layer for older imports
-|  |- auth/                       # Cognito config and auth flow helpers
-|  |- components/
-|  |  |- ou-workflow/
-|  |  |  |- ApplicationManagement/
-|  |  |  |- NCRCDashboard/
-|  |  |  |- PrelimDashboard/
-|  |  |  |- TaskDashboard/
-|  |  |  |- hooks/                # transitional compatibility hooks still present
-|  |  |  |- modal/
-|  |  |- ui/                      # shared UI primitives
-|  |- context/
-|  |  |- UserContext.tsx          # session identity and auth state
-|  |  |- AppPreferencesContext.tsx # API selection and UI display preferences
-|  |- features/
-|  |  |- applications/
-|  |  |- prelim/
-|  |  |- profile/
-|  |  |- tasks/
-|  |- lib/
-|  |  |- constants/
-|  |  |- utils/
-|  |- routes/                     # file-based TanStack routes
-|  |- shared/
-|  |  |- api/                     # transport, errors, query defaults, shared types
-|  |- types/
-|  |- main.tsx                    # app bootstrap
-|- vite.config.ts
-|- vitest.config.ts
-|- tailwind.config.ts
-|- package.json
-```
+### App Bootstrap
 
-## Important areas for reviewers
+- [src/main.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/main.tsx)
+- [src/routes/__root.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/__root.tsx)
+- [src/routes/_authed.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_authed.tsx)
 
-If you are reviewing the codebase for behavior or future changes, start here:
+### Auth Flow
 
-### 1. App bootstrap and route gating
+- [src/auth/authService.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/auth/authService.ts)
+- [src/features/auth/model/sessionManager.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/auth/model/sessionManager.ts)
+- [src/routes/_public/login.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_public/login.tsx)
+- [src/routes/_public/cognito-directcallback.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_public/cognito-directcallback.tsx)
 
-- `src/main.tsx`
-- `src/routes/__root.tsx`
+### Shared Data Layer
 
-These files show provider setup, router setup, auth gating, global navigation, and toast wiring.
+- [src/shared/api/httpClient.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/shared/api/httpClient.ts)
+- [src/shared/api/queryClient.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/shared/api/queryClient.ts)
+- [src/shared/api/queryOptions.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/shared/api/queryOptions.ts)
 
-### 2. Authentication flow
+### Feature Domains
 
-- `src/auth/authService.ts`
-- `src/auth/cognitoConfig.ts`
-- `src/routes/login.tsx`
-- `src/routes/cognito-directcallback.tsx`
-- `src/routes/cognito-logout.tsx`
+- [src/features/applications](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications)
+- [src/features/tasks](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/tasks)
+- [src/features/prelim](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/prelim)
+- [src/features/profile](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/profile)
 
-These files define PKCE login, token refresh, logout, callback handling, and server selection before authentication.
+### Main Workflow Screens
 
-### 3. Shared API transport
+- [src/components/ou-workflow/NCRCDashboard](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard)
+- [src/components/ou-workflow/TaskDashboard](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/TaskDashboard)
+- [src/components/ou-workflow/PrelimDashboard](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/PrelimDashboard)
+- [src/components/ou-workflow/ApplicationManagement](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/ApplicationManagement)
 
-- `src/shared/api/httpClient.ts`
-- `src/shared/api/errors.ts`
-- `src/shared/api/queryClient.ts`
-- `src/shared/api/queryOptions.ts`
+## Conventions For New Work
 
-These files define the base request behavior, error handling, and query defaults shared across feature modules.
+### Keep Route Files Thin
 
-### 4. Feature-owned APIs and hooks
+Route files should mainly own:
 
-- `src/features/applications/`
-- `src/features/tasks/`
-- `src/features/prelim/`
-- `src/features/profile/`
+- route declaration
+- search param normalization
+- redirects
+- loader wiring
+- mounting a feature screen
 
-These folders are the main place for domain API modules, query hooks, and feature logic. This is the preferred path for new data work.
+Heavy UI state and business logic should not accumulate in route files.
 
-### 5. Compatibility surfaces still being retired
+### Prefer Feature-Owned Data Access
+
+- add new endpoint logic in `src/features/<feature>/api`
+- add query/mutation hooks in `src/features/<feature>/hooks`
+- keep query keys in feature model folders
+- use shared API helpers for transport, params, and normalized errors
+
+### Avoid New `@/api` Imports
+
+`src/api.ts` is still present for migration compatibility. New code should import directly from feature/shared modules.
+
+### Keep Shared UI Primitive
+
+Components in `src/components/ui` should remain reusable and presentational. Workflow-specific business behavior should stay in workflow or feature modules.
+
+## Testing Status
+
+Testing infrastructure exists, but coverage is still light.
+
+Current visible setup:
+
+- [src/test/setup.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/test/setup.ts)
+- [src/test/renderWithProviders.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/test/renderWithProviders.tsx)
+
+The current architecture plan in [ARCHITECTURE_ACTION_PLAN.md](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/ARCHITECTURE_ACTION_PLAN.md) tracks the next test priorities.
+
+## Known Active Migration Areas
+
+These are still in transition and should be treated carefully during refactors:
 
 - `src/api.ts`
-- `src/components/ou-workflow/hooks/`
-- `src/context/UserContext.tsx`
-- `src/context/AppPreferencesContext.tsx`
+- `src/components/ou-workflow/hooks/*`
+- large workflow screen containers in NCRC, Tasks, and Prelim
+- task notes orchestration
+- prelim flow cleanup
 
-These areas still support real app behavior, but they should not be treated as the long-term architecture target.
+## Related Planning Doc
 
-### 6. Core workflows
-
-- `src/components/ou-workflow/NCRCDashboard/`
-- `src/components/ou-workflow/PrelimDashboard/`
-- `src/components/ou-workflow/TaskDashboard/`
-- `src/components/ou-workflow/ApplicationManagement/`
-
-These folders contain the main business UI and the application review/detail flows.
-
-### 7. Route entry points
-
-- `src/routes/ou-workflow/ncrc-dashboard/`
-- `src/routes/ou-workflow/prelim-dashboard/`
-- `src/routes/ou-workflow/tasks-dashboard/`
-
-These route files define search params, route validation, and which top-level feature component is mounted.
-
-## Data flow summary
-
-1. User selects an API server on the login page.
-2. User authenticates through Cognito or uses local-dev login for localhost API mode.
-3. `UserContext` stores session identity such as username, active role, delegated roles, and token access.
-4. `AppPreferencesContext` stores selected API URL plus display preferences such as stage layout and pagination mode.
-5. Shared HTTP transport resolves the active base URL and attaches bearer tokens to requests.
-6. Feature API modules and feature hooks fetch dashboard or application data and render workflow actions.
-7. Some older paths still reach the same behavior through `src/api.ts` compatibility re-exports.
-
-## Architecture conventions
-
-These conventions are required for new work and refactors.
-
-### Route files stay thin
-
-- Keep route files in `src/routes/**` focused on routing concerns only:
-  - route declaration (`createFileRoute`)
-  - search param validation (`validateSearch`)
-  - loader wiring / redirects
-  - mounting a feature screen
-- Do not keep heavy UI state, API mapping logic, or large business workflows inside route files.
-
-### Feature modules own business logic
-
-- Business logic should live in feature modules under `src/features/<feature>/**`.
-- Keep workflow-specific logic in feature hooks/services, not inside shared UI primitives.
-- Components under `src/components/ui/**` should remain presentational and reusable.
-
-### Server state belongs in TanStack Query
-
-- Remote data fetching, caching, and mutation state must go through TanStack Query.
-- Use `useQuery` for reads and `useMutation` for writes in feature hooks.
-- Avoid ad hoc `useEffect + fetch` patterns in route and screen components.
-
-### Shared API transport stays out of feature UI files
-
-- Low-level transport concerns such as base URL resolution, auth headers, timeouts, and normalized errors belong in shared API modules.
-- Feature UI files should call feature hooks/APIs, not raw `fetch`.
-- Keep endpoint contracts and response mapping close to feature API modules, not inline inside JSX components.
-
-### Compatibility imports are transitional
-
-- Avoid adding new imports from `@/api` unless you are explicitly working in a migration shim.
-- Prefer direct imports from shared or feature-owned modules.
-- If you touch a compatibility call site for meaningful work, consider migrating it as part of the same change.
-
-### Naming conventions
-
-- Hooks:
-  - Prefix all hooks with `use` (`useApplications`, `useTaskActions`).
-  - Name by domain + intent: `use<Domain><Action|Resource>`.
-- Query hooks:
-  - Prefer names that read as data sources (`useApplicationDetail`, `usePrelimApplications`).
-  - Keep query keys centralized per feature as key factories once introduced.
-- Mutation hooks:
-  - Name by command/action (`useAssignTaskMutation`, `useConfirmTaskMutation`), or group related actions in a clearly named hook (`useTaskActions`).
-- Route search params:
-  - Use a typed `...Search` shape per route (`DashboardSearch`, `PrelimDashboardSearch`).
-  - Keep param names descriptive and stable (`page`, `limit`, `status`, `q`), avoid one-letter names.
-  - Validate and normalize defaults in `validateSearch`.
-
-## Notes and current implementation details
-
-- `vite.config.ts` uses `/dashboard/` as the production base path and `/` in development.
-- `public/web.config` suggests deployment behind a static host that needs SPA route rewrites.
-- `public/data/*.json` contains mock/reference payloads used during development or prototyping.
-- Some screens still contain demo-style seed data mixed with real API-driven flows, especially inside parts of `ApplicationManagement`.
-- `authService`, route callback handling, and root-route auth checks are still active refactor targets, while `UserContext` has been narrowed to session identity and `AppPreferencesContext` now owns API/display preferences.
-
-## Suggested future README additions
-
-If the team wants this document to go further, the next most valuable sections would be:
-
-- environment-specific deployment instructions
-- backend API contract summary
-- role/permission matrix
-- screenshot-based walkthrough of each dashboard
-- testing strategy and coverage expectations
+The current phased execution plan lives in [ARCHITECTURE_ACTION_PLAN.md](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/ARCHITECTURE_ACTION_PLAN.md).

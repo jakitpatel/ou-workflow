@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useRef, useState } from 'react'
 import { Search } from 'lucide-react';
-import { fetchPrelimApplicationDetails } from '@/api'
+import { fetchPrelimApplicationDetails } from '@/features/prelim/api'
 import { CompanyCard } from '@/components/ou-workflow/PrelimDashboard/CompanyCard'
 import { JsonModal } from '@/components/ou-workflow/PrelimDashboard/JsonModal'
 import { Route } from '@/routes/_authed/ou-workflow/prelim-dashboard';
@@ -49,14 +49,12 @@ export function PrelimDashboard() {
     limit: PAGE_LIMIT,
     enabled: true,
   });
-  console.log("Prelim applications response:", response);
   // ✅ Extract the actual data array
   const data = response?.data ?? [];
 
   //const totalCount = response?.meta?.total_count ?? 0;
   //const totalPages = Math.ceil(totalCount / PAGE_LIMIT);
 
-  console.log("Prelim applications data:", data);
 
   // 🔹 Fetch details ONLY when an app is selected for JSON modal
   const {
@@ -119,7 +117,6 @@ export function PrelimDashboard() {
 
   // 🔹 Handle card click (for JSON modal)
   const handleViewApplicationClick = (id: number) => {
-    console.log('View Application clicked for ID:', id)
     setSelectedId(id)
   }
   
@@ -151,8 +148,6 @@ export function PrelimDashboard() {
   const handleTaskAction = (e: React.MouseEvent, application: any, action: Task) => {
     e.stopPropagation();
     e.preventDefault();
-    console.log('Task action clicked:', { application, action })
-    // Implement your task action logic here
     handleSelectAppActions(application.applicationId, action.TaskInstanceId);
 
     const actionType = action.taskType?.toLowerCase();

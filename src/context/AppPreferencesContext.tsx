@@ -6,7 +6,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { registerUserContext, fetchProfileLayout } from "@/api";
 import { useUser } from "@/context/UserContext";
 import {
   clearStoredAppPreferences,
@@ -15,6 +14,8 @@ import {
   saveStoredAppPreferences,
   type StoredAppPreferences,
 } from "@/context/appPreferencesStorage";
+import { fetchProfileLayout } from "@/features/profile/api";
+import { registerUserContext } from "@/shared/api/httpClient";
 import type { PaginationMode, StageLayout } from "@/types/application";
 
 type AppPreferencesContextType = StoredAppPreferences & {

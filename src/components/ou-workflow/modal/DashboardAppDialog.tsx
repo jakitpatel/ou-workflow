@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react"
 import { useMutation } from "@tanstack/react-query"
+import { useUser } from "@/context/UserContext"
 import {
   createSubmissionApplication,
   deleteSubmissionApplication,
-  fetchWithAuth,
-} from "@/api"
-import { useUser } from "@/context/UserContext"
+} from "@/features/prelim/api"
+import { fetchWithAuth } from "@/shared/api/httpClient"
 import { X, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
 

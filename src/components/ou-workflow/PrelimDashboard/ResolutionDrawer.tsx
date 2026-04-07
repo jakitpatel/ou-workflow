@@ -7,9 +7,11 @@ import {
   createPlantAddressFromApplication,
   createOrUpdatePlantFromApplication,
   extractCreatedRecordId,
+} from '@/features/prelim/api'
+import {
   getCompanyDetailsFromKASH,
   getPlantDetailsFromKASH,
-} from '@/api'
+} from '@/features/applications/api'
 import { useUser } from '@/context/UserContext'
 import { toast } from 'sonner'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
@@ -424,17 +426,15 @@ export function ResolutionDrawer({
           appValue: companyData,
           token: token ?? undefined,
         })
-        console.log('[ResolutionDrawer] createOrUpdateCompanyFromApplication result:', result)
         const createdCompanyId = extractCreatedRecordId(result, 'companyId')
         if (createdCompanyId == null) {
           throw new Error('Company created but companyId was missing from response')
         }
-        const addressResult = await createCompanyAddressFromApplication({
+        await createCompanyAddressFromApplication({
           appValue: companyData,
           companyId: createdCompanyId,
           token: token ?? undefined,
         })
-        console.log('[ResolutionDrawer] createCompanyAddressFromApplication result:', addressResult)
         onAssign({
           Id: createdCompanyId,
           Address: '',
@@ -445,17 +445,15 @@ export function ResolutionDrawer({
           appValue: plantData,
           token: token ?? undefined,
         })
-        console.log('[ResolutionDrawer] createOrUpdatePlantFromApplication result:', result)
         const createdPlantId = extractCreatedRecordId(result, 'plantId')
         if (createdPlantId == null) {
           throw new Error('Plant created but plantId was missing from response')
         }
-        const addressResult = await createPlantAddressFromApplication({
+        await createPlantAddressFromApplication({
           appValue: plantData,
           plantId: createdPlantId,
           token: token ?? undefined,
         })
-        console.log('[ResolutionDrawer] createPlantAddressFromApplication result:', addressResult)
         onAssign({
           Id: createdPlantId,
           Address: '',
