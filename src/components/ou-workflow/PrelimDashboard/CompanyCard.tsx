@@ -273,10 +273,10 @@ export function CompanyCard({
                     ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
                     : 'bg-red-100 text-red-300 cursor-not-allowed focus:ring-red-200'
                 }`}
-                title={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
-                aria-label={canCancelApplication ? 'Cancel Application' : "This application cannot be canceled due to its current status or your permissions."}
+                title={canCancelApplication ? 'Cancel Submission' : "This submission cannot be canceled due to its current status or your permissions."}
+                aria-label={canCancelApplication ? 'Cancel Submission' : "This submission cannot be canceled due to its current status or your permissions."}
               >
-                Withdraw Application
+                Cancel Submission
               </button>
             )}
             {isWithdrawn && (
@@ -292,10 +292,10 @@ export function CompanyCard({
                     ? 'bg-amber-600 text-white hover:bg-amber-700 focus:ring-amber-500'
                     : 'bg-amber-100 text-amber-300 cursor-not-allowed focus:ring-amber-200'
                 }`}
-                title={canUndoWithdrawApplication ? 'Undo Withdraw Application' : 'Undo withdraw is not available for this application at the moment.'}
-                aria-label={canUndoWithdrawApplication ? 'Undo Withdraw Application' : 'Undo withdraw is not available for this application at the moment.'}
+                title={canUndoWithdrawApplication ? 'Undo Cancel Submission' : 'Undo cancel is not available for this submission at the moment.'}
+                aria-label={canUndoWithdrawApplication ? 'Undo Cancel Submission' : 'Undo cancel is not available for this submission at the moment.'}
               >
-                Undo Withdraw Application
+                Undo Cancel Submission
               </button>
             )}
           </div>
