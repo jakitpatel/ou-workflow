@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { ApplicantProgressBar } from './ApplicantProgressBar';
 import { ApplicationExpandedStage } from './ApplicationExpandedStage';
@@ -17,15 +17,15 @@ import {
   Sparkles,
   AlertTriangle,
 } from 'lucide-react';
-import type { Task, Applicant, TaskNote } from '@/types/application';
+import type { Task, Applicant } from '@/types/application';
 import { Route as TaskDashboardRoute } from '@/routes/_authed/ou-workflow/tasks-dashboard';
 import { Route as TaskDashboardWithAppRoute } from '@/routes/_authed/ou-workflow/tasks-dashboard/$applicationId';
 import { useUser } from '@/context/UserContext';
 import { normalizeTaskRoles } from '@/lib/utils/taskHelpers';
-import { fetchTaskNotes } from '@/features/tasks/api';
 import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries';
-import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations';
-import { TaskNotesDrawer, type NoteTab } from '@/components/ou-workflow/NCRCDashboard/TaskNotesDrawer';
+import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState';
+import type { NoteTab } from '@/features/tasks/notes/types';
+import { TaskNotesDrawer } from '@/components/ou-workflow/NCRCDashboard/TaskNotesDrawer';
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer';
 
 type Props = {
@@ -81,10 +81,6 @@ const saveScrollPosition = (applicationId: string | number) => {
   );
 };
 
-type ApplicationDrawerState = {
-  activeTab: NoteTab;
-};
-
 const toSafeCount = (value: unknown): number => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) return 0;
@@ -92,7 +88,7 @@ const toSafeCount = (value: unknown): number => {
 };
 
 export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }: Props) {
-  const { username, role, roles, token } = useUser();
+  const { username, role, roles } = useUser();
   const { data: taskRolesAll = [] } = useFetchTaskRoles();
   const navigate = useNavigate();
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
@@ -100,27 +96,10 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
-  const [applicationDrawer, setApplicationDrawer] = useState<ApplicationDrawerState | null>(null);
-  const [applicationNotes, setApplicationNotes] = useState<{ private: TaskNote[]; public: TaskNote[]; toMe: TaskNote[] }>({
-    private: [],
-    public: [],
-    toMe: [],
-  });
-  const [applicationNotesLoadingByTab, setApplicationNotesLoadingByTab] = useState<Record<NoteTab, boolean>>({
-    private: false,
-    public: false,
-    toMe: false,
-  });
-  const [applicationComposeText, setApplicationComposeText] = useState('');
-  const [applicationComposeToUserId, setApplicationComposeToUserId] = useState<string | null>(null);
-  const [applicationComposePrivate, setApplicationComposePrivate] = useState(false);
-  const [applicationCreateNoteError, setApplicationCreateNoteError] = useState('');
   const [showDetailsDrawer, setShowDetailsDrawer] = useState(false);
-
-  const createTaskNoteMutation = useCreateTaskNoteMutation({
-    includeApplicationLists: true,
-    includePrelimLists: true,
-    onError: (message) => setApplicationCreateNoteError(message),
+  const applicationNotesContextKey = `application:${String(applicant.applicationId ?? 'unknown')}`;
+  const applicationNotes = useTaskNotesDrawerState({
+    applicationId: applicant.applicationId ?? null,
   });
 
   // Memoize computed values
@@ -229,115 +208,6 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
     return normalized === 'withdrawn' || normalized === 'wth'
   }, [applicant.status])
 
-  const fetchApplicationNotesByVisibility = useCallback(
-    async (tab: NoteTab) => {
-      setApplicationNotesLoadingByTab((prev) => ({ ...prev, [tab]: true }));
-      try {
-        const notes = await fetchTaskNotes({
-          applicationId: applicant.applicationId ?? null,
-          isPrivate: tab === 'private',
-          toUser: tab === 'toMe' ? (username ?? undefined) : undefined,
-          token: token ?? undefined,
-        });
-
-        setApplicationNotes((prev) => ({
-          ...prev,
-          [tab]: notes as TaskNote[],
-        }));
-      } catch (error: any) {
-        const message =
-          error?.details?.status ||
-          error?.details?.message ||
-          error?.message ||
-          'Failed to fetch notes';
-        setApplicationCreateNoteError(message);
-      } finally {
-        setApplicationNotesLoadingByTab((prev) => ({ ...prev, [tab]: false }));
-      }
-    },
-    [applicant.applicationId, token, username]
-  );
-
-  const openApplicationNotesDrawer = useCallback(
-    async (tab: NoteTab) => {
-      setApplicationDrawer({ activeTab: tab });
-      setApplicationCreateNoteError('');
-      setApplicationComposePrivate(tab === 'private');
-      await Promise.allSettled([
-        fetchApplicationNotesByVisibility('private'),
-        fetchApplicationNotesByVisibility('public'),
-        fetchApplicationNotesByVisibility('toMe'),
-      ]);
-    },
-    [fetchApplicationNotesByVisibility]
-  );
-
-  const handleApplicationCreateNoteSubmit = useCallback(async () => {
-    if (!applicationDrawer) return;
-    const trimmedText = applicationComposeText.trim();
-    if (!trimmedText) {
-      setApplicationCreateNoteError('Note text is required');
-      return;
-    }
-
-    await createTaskNoteMutation.mutateAsync({
-      applicationId: applicant.applicationId ?? null,
-      note: trimmedText,
-      isPrivate: applicationComposePrivate,
-      priority: 'NORMAL',
-      fromUser: username ?? undefined,
-      toUser: applicationComposeToUserId ?? undefined,
-      token: token ?? undefined,
-    });
-
-    setApplicationCreateNoteError('');
-    setApplicationComposeText('');
-    setApplicationComposeToUserId(null);
-
-    const postedTab: NoteTab = applicationComposePrivate ? 'private' : 'public';
-    await fetchApplicationNotesByVisibility(postedTab);
-    setApplicationDrawer((prev) => (prev ? { ...prev, activeTab: postedTab } : prev));
-  }, [
-    applicant.applicationId,
-    applicationComposePrivate,
-    applicationComposeText,
-    applicationDrawer,
-    createTaskNoteMutation,
-    fetchApplicationNotesByVisibility,
-    token,
-    applicationComposeToUserId,
-    username,
-  ]);
-
-  const handleApplicationReplySubmit = useCallback(
-    async ({ parentMessageId, text }: { parentMessageId: string; text: string }) => {
-      const trimmedText = text.trim();
-      if (!trimmedText) {
-        setApplicationCreateNoteError('Reply text is required');
-        return;
-      }
-
-      await createTaskNoteMutation.mutateAsync({
-        applicationId: applicant.applicationId ?? null,
-        note: trimmedText,
-        isPrivate: false,
-        fromUser: username ?? undefined,
-        parentMessageId,
-        token: token ?? undefined,
-      });
-
-      setApplicationCreateNoteError('');
-      await fetchApplicationNotesByVisibility('public');
-    },
-    [
-      applicant.applicationId,
-      createTaskNoteMutation,
-      fetchApplicationNotesByVisibility,
-      token,
-      username,
-    ]
-  );
-
   const handleViewTasks = (applicationId?: string | number) => {
     saveScrollPosition(applicationId ?? '');
     // 🔹 No applicationId → base tasks dashboard
@@ -386,12 +256,18 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
   };
 
   const applicationPrivateCount = useMemo(() => {
-    return toSafeCount((applicant as any)?.IsPrivateNotes);
-  }, [applicant]);
+    return (
+      applicationNotes.getCounts(applicationNotesContextKey).private ||
+      toSafeCount((applicant as any)?.IsPrivateNotes)
+    );
+  }, [applicant, applicationNotes, applicationNotesContextKey]);
 
   const applicationPublicCount = useMemo(() => {
-    return toSafeCount((applicant as any)?.IsGlobalNotes);
-  }, [applicant]);
+    return (
+      applicationNotes.getCounts(applicationNotesContextKey).public ||
+      toSafeCount((applicant as any)?.IsGlobalNotes)
+    );
+  }, [applicant, applicationNotes, applicationNotesContextKey]);
 
   return (
     <div data-app-id={applicant.applicationId} className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all">
@@ -468,11 +344,17 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
       {/* Stats Section */}
       <CardStats
         applicant={applicant}
-        onOpenApplicationNotes={openApplicationNotesDrawer}
+        onOpenApplicationNotes={(tab) =>
+          applicationNotes.openDrawer({
+            contextKey: applicationNotesContextKey,
+            taskName: applicant.company || `Application ${String(applicant.applicationId ?? '')}`,
+            tab,
+          })
+        }
         applicationPrivateCount={applicationPrivateCount}
         applicationPublicCount={applicationPublicCount}
-        applicationPrivateLoading={applicationNotesLoadingByTab.private}
-        applicationPublicLoading={applicationNotesLoadingByTab.public}
+        applicationPrivateLoading={applicationNotes.isLoading(applicationNotesContextKey, 'private')}
+        applicationPublicLoading={applicationNotes.isLoading(applicationNotesContextKey, 'public')}
       />
 
       {/* Documents + Actions Section */}
@@ -490,44 +372,30 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         }}
       />
       <TaskNotesDrawer
-        open={Boolean(applicationDrawer)}
+        open={Boolean(applicationNotes.drawer)}
         applicantCompany={applicant.company}
         applicationId={applicant.applicationId ?? null}
         contextType="application"
         taskName={applicant.company || `Application ${String(applicant.applicationId ?? '')}`}
-        activeTab={applicationDrawer?.activeTab ?? 'public'}
-        privateNotes={applicationNotes.private}
-        publicNotes={applicationNotes.public}
-        toMeNotes={applicationNotes.toMe}
-        loadingPrivate={applicationNotesLoadingByTab.private}
-        loadingPublic={applicationNotesLoadingByTab.public}
-        loadingToMe={applicationNotesLoadingByTab.toMe}
-        composeText={applicationComposeText}
-        composeToUserId={applicationComposeToUserId}
-        composePrivate={applicationComposePrivate}
-        isSubmitting={createTaskNoteMutation.isPending}
-        error={applicationCreateNoteError}
-        onClose={() => {
-          if (createTaskNoteMutation.isPending) return;
-          setApplicationDrawer(null);
-          setApplicationCreateNoteError('');
-          setApplicationComposeText('');
-          setApplicationComposeToUserId(null);
-        }}
-        onTabChange={(tab) => {
-          setApplicationDrawer((prev) => (prev ? { ...prev, activeTab: tab } : prev));
-          setApplicationComposePrivate(tab === 'private');
-        }}
-        onComposeTextChange={(text) => {
-          setApplicationComposeText(text);
-          if (applicationCreateNoteError) {
-            setApplicationCreateNoteError('');
-          }
-        }}
-        onComposeToUserChange={setApplicationComposeToUserId}
-        onComposePrivateChange={setApplicationComposePrivate}
-        onSubmit={handleApplicationCreateNoteSubmit}
-        onReplySubmit={handleApplicationReplySubmit}
+        activeTab={applicationNotes.drawer?.activeTab ?? 'public'}
+        privateNotes={applicationNotes.activeNotes.private}
+        publicNotes={applicationNotes.activeNotes.public}
+        toMeNotes={applicationNotes.activeNotes.toMe}
+        loadingPrivate={applicationNotes.activeLoading.private}
+        loadingPublic={applicationNotes.activeLoading.public}
+        loadingToMe={applicationNotes.activeLoading.toMe}
+        composeText={applicationNotes.composeText}
+        composeToUserId={applicationNotes.composeToUserId}
+        composePrivate={applicationNotes.composePrivate}
+        isSubmitting={applicationNotes.isSubmitting}
+        error={applicationNotes.error}
+        onClose={applicationNotes.closeDrawer}
+        onTabChange={applicationNotes.setActiveTab}
+        onComposeTextChange={applicationNotes.setComposeText}
+        onComposeToUserChange={applicationNotes.setComposeToUserId}
+        onComposePrivateChange={applicationNotes.setComposePrivate}
+        onSubmit={applicationNotes.submitNote}
+        onReplySubmit={applicationNotes.submitReply}
       />
       <ApplicationDetailsDrawer
         open={showDetailsDrawer}

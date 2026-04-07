@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from 'react'
 import { AtSign, FileText, Lock, X } from 'lucide-react'
 import { useMentionUsers } from '@/features/tasks/hooks/useTaskQueries'
+import type { NoteTab } from '@/features/tasks/notes/types'
 import type { MentionUser } from '@/features/tasks/api'
 import type { TaskNote } from '@/types/application'
 
-export type NoteTab = 'private' | 'public' | 'toMe'
+export type { NoteTab } from '@/features/tasks/notes/types'
 
 type Props = {
   open: boolean

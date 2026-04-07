@@ -51,7 +51,7 @@ The biggest remaining issues are no longer "missing architecture." They are conc
 - `src/api.ts` is now much smaller in live usage, but it still exists as a migration shim until commented or residual call sites are cleaned up fully.
 - `src/components/ou-workflow/hooks/*` still contains compatibility hooks used by active screens.
 - `AppPreferencesContext` now imports directly from feature/shared modules, and the main workflow runtime paths touched in Phase 1 no longer depend on `@/api`.
-- Task notes are UI-rich but not yet extracted into a focused feature module.
+- Task notes now have a shared feature-owned state hook, though the drawer UI itself still lives in the NCRC workflow component folder.
 - Prelim workflow no longer depends on `@/api` in its active dashboard/drawer paths, but it still carries broader screen-orchestration and logging cleanup work.
 
 ### Highest-risk files right now
@@ -105,12 +105,16 @@ This means `src/api.ts` is now mostly a residual migration shim rather than a de
 
 ### 2. Notes orchestration is duplicated across the NCRC flow
 
-The main duplication is between:
+This was the main duplication point between:
 
 - [src/components/ou-workflow/NCRCDashboard/ApplicantCard.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard/ApplicantCard.tsx)
 - [src/components/ou-workflow/NCRCDashboard/ApplicationExpandedStage.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard/ApplicationExpandedStage.tsx)
 
-The shared UI exists in [src/components/ou-workflow/NCRCDashboard/TaskNotesDrawer.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard/TaskNotesDrawer.tsx), but the fetch/load/reply/create-note logic is still duplicated.
+Current status:
+
+- shared fetch/load/reply/create-note orchestration now lives in [src/features/tasks/notes/useTaskNotesDrawerState.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/tasks/notes/useTaskNotesDrawerState.ts)
+- both NCRC entry points now reuse that shared state hook
+- the remaining follow-up is deciding whether the drawer UI should also move under `src/features/tasks`
 
 ### 3. Prelim flow has the most obvious cleanup debt
 
@@ -217,11 +221,13 @@ Done when:
 
 ## Phase 2: Extract Task Notes Into A Real Feature Slice
 
-Status: Not started
+Status: Completed for the shared-state extraction slice
 
 Goal: eliminate duplicated note orchestration and make notes/refetch/reply behavior testable.
 
 ### 3. Create a notes-state hook for application/task note drawers
+
+Status: Completed
 
 Actions:
 
@@ -239,12 +245,28 @@ Suggested structure:
 - `src/features/tasks/notes/mappers.ts`
 - `src/features/tasks/components/TaskNotesDrawer.tsx`
 
+Completed:
+
+- added [src/features/tasks/notes/types.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/tasks/notes/types.ts)
+- added [src/features/tasks/notes/useTaskNotesDrawerState.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/tasks/notes/useTaskNotesDrawerState.ts)
+- centralized shared note loading, drawer tab state, compose state, create-note flow, reply flow, and fetched note counts
+- preserved the existing drawer UI surface so behavior changes stay low-risk
+
 ### 4. Migrate both NCRC note entry points to the shared notes feature
+
+Status: Completed
 
 Targets:
 
 - [src/components/ou-workflow/NCRCDashboard/ApplicantCard.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard/ApplicantCard.tsx)
 - [src/components/ou-workflow/NCRCDashboard/ApplicationExpandedStage.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard/ApplicationExpandedStage.tsx)
+
+Completed:
+
+- [src/components/ou-workflow/NCRCDashboard/ApplicantCard.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard/ApplicantCard.tsx) now uses the shared notes-state hook for application-level notes
+- [src/components/ou-workflow/NCRCDashboard/ApplicationExpandedStage.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard/ApplicationExpandedStage.tsx) now uses the shared notes-state hook for task-level notes
+- note counts still fall back to existing backend-provided counters until fresh data is loaded, preserving the current UI behavior
+- `npm run typecheck` passes after the extraction
 
 Done when:
 
@@ -518,13 +540,12 @@ Actions:
 
 ## Recommended Execution Order
 
-1. Extract the task-notes feature slice and migrate both NCRC note entry points.
-2. Shrink the NCRC dashboard container into a feature-state pattern.
-3. Refactor the task dashboard container and related action orchestration.
-4. Clean up the remaining prelim screen orchestration and polish.
-5. Remove compatibility workflow hooks and remaining `src/api.ts` residuals.
-6. Add route/auth/notes/dashboard tests around the new structure.
-7. Do performance and app-shell work after the structural refactors settle.
+1. Shrink the NCRC dashboard container into a feature-state pattern.
+2. Refactor the task dashboard container and related action orchestration.
+3. Clean up the remaining prelim screen orchestration and polish.
+4. Remove compatibility workflow hooks and remaining `src/api.ts` residuals.
+5. Add route/auth/notes/dashboard tests around the new structure.
+6. Do performance and app-shell work after the structural refactors settle.
 
 ---
 
@@ -532,11 +553,11 @@ Actions:
 
 If we want the next practical batch of work to be low-risk and high-payoff, it should be:
 
-1. Task-notes feature extraction.
-2. NCRC dashboard state extraction.
-3. Task dashboard state extraction.
+1. NCRC dashboard state extraction.
+2. Task dashboard state extraction.
+3. Prelim orchestration cleanup.
 
-That sequence shifts us from compatibility cleanup into the highest-value duplication and large-screen refactors.
+That sequence keeps momentum after the compatibility and notes work, and now targets the biggest remaining screen-level coordination hotspots.
 
 ---
 
