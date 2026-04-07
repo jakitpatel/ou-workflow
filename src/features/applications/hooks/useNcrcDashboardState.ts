@@ -226,6 +226,7 @@ export function useNcrcDashboardState({
     setMyNotesLoading(true)
     try {
       const notes = await fetchTaskNotes({
+        isPrivate: false,
         toUser: username.trim(),
         token: token ?? undefined,
       })

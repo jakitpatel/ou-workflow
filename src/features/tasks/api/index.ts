@@ -295,25 +295,41 @@ export async function fetchTaskNotes({
   token?: string | null
 }): Promise<TaskNote[]> {
   const params = new URLSearchParams()
+  const filters: Array<{ name: string; op: 'eq' | 'like'; val: string | boolean }> = []
+
   if (applicationId !== null && applicationId !== undefined) {
-    params.append('filter[ApplicationID]', String(applicationId))
+    filters.push({
+      name: 'ApplicationID',
+      op: 'eq',
+      val: String(applicationId),
+    })
   }
   if (taskId !== undefined && taskId !== null && String(taskId).trim()) {
-    params.append('filter[TaskInstanceId]', String(taskId))
+    filters.push({
+      name: 'TaskInstanceId',
+      op: 'eq',
+      val: String(taskId).trim(),
+    })
   }
   if (typeof isPrivate === 'boolean') {
-    params.append('filter[isPrivate]', String(isPrivate))
+    filters.push({
+      name: 'isPrivate',
+      op: 'eq',
+      val: isPrivate,
+    })
   }
   if (toUser !== undefined && toUser !== null && String(toUser).trim()) {
-    params.append(
-      'filter',
-      JSON.stringify({
-        name: 'ToUser',
-        op: 'like',
-        val: String(toUser).trim(),
-      }),
-    )
+    filters.push({
+      name: 'ToUser',
+      op: 'like',
+      val: String(toUser).trim(),
+    })
   }
+
+  if (filters.length > 0) {
+    params.append('filter', JSON.stringify({ and: filters }))
+  }
+  params.append('sort', '-MessageID')
 
   const response = await fetchWithAuth<{
     data?: WFApplicationMessageRecord[]
