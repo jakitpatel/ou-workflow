@@ -67,7 +67,7 @@ The biggest remaining issues are no longer "missing architecture." They are conc
 
 ### Size indicators
 
-- `src/components/ou-workflow/NCRCDashboard/index.tsx`: about 600 lines
+- `src/components/ou-workflow/NCRCDashboard/index.tsx`: about 203 lines
 - `src/components/ou-workflow/TaskDashboard/index.tsx`: about 453 lines
 - `src/components/ou-workflow/PrelimDashboard/index.tsx`: about 262 lines
 - `src/context/UserContext.tsx`: about 122 lines
@@ -276,11 +276,13 @@ Done when:
 
 ## Phase 3: Shrink The NCRC Dashboard Container
 
-Status: In progress
+Status: In progress, with state and UI-section extraction completed for the main container
 
 Goal: move orchestration out of the 600-line dashboard entry and make the route/component boundary clearer.
 
 ### 5. Extract dashboard state and coordination from `NCRCDashboard/index.tsx`
+
+Status: Completed for the first state-extraction slice
 
 Current responsibilities still mixed in the screen:
 
@@ -303,9 +305,24 @@ Suggested structure:
 - `src/features/applications/hooks/useNcrcDashboardState.ts`
 - `src/features/applications/components/*`
 
+Completed in this slice:
+
+- added [src/features/applications/hooks/useNcrcDashboardState.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/hooks/useNcrcDashboardState.ts)
+- moved route-search syncing, debounced filters, paged/infinite query selection, scroll restore, infinite sentinel loading, dashboard stats derivation, and "My Notes" drawer state into the shared dashboard hook
+- added [src/features/applications/components/NcrcDashboardControls.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/components/NcrcDashboardControls.tsx) for the header, filter bar, paged loading/error state, and paged pagination shell
+- added [src/features/applications/components/NcrcDashboardListSection.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/components/NcrcDashboardListSection.tsx) for the applicant list, empty state, and infinite-loading shell
+- reduced [src/components/ou-workflow/NCRCDashboard/index.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard/index.tsx) from about 600 lines to about 203 lines by keeping it focused on section composition plus task-action modal branching
+- preserved the existing task action, paging, infinite scrolling, and "My Notes" behavior surface while moving the coordination logic out of the render container
+- `npm run typecheck` passes after the extraction
+
 Done when:
 
 - the screen mainly composes child sections instead of coordinating all behavior itself
+
+Next follow-up inside Phase 3:
+
+- decide whether the "My Notes" drawer trigger and drawer shell should stay in the dashboard container or move into a feature-owned section
+- optionally move task-action modal branching behind an NCRC-specific command/helper if we want the container to become almost entirely declarative
 
 ---
 
@@ -468,6 +485,13 @@ Highest-value targets:
 - prelim detail modal loading
 - profile preference persistence
 
+Progress so far:
+
+- added focused notes interaction coverage for the shared notes state hook in [src/features/tasks/notes/useTaskNotesDrawerState.test.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/tasks/notes/useTaskNotesDrawerState.test.tsx)
+- added drawer reply interaction coverage in [src/components/ou-workflow/NCRCDashboard/TaskNotesDrawer.test.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard/TaskNotesDrawer.test.tsx)
+- `npm run typecheck` passes with the new tests
+- focused Vitest runs pass for the new notes interaction tests
+
 Done when:
 
 - the next refactor slices can ship with meaningful regression protection
@@ -540,11 +564,11 @@ Actions:
 
 ## Recommended Execution Order
 
-1. Shrink the NCRC dashboard container into a feature-state pattern.
-2. Refactor the task dashboard container and related action orchestration.
-3. Clean up the remaining prelim screen orchestration and polish.
-4. Remove compatibility workflow hooks and remaining `src/api.ts` residuals.
-5. Add route/auth/notes/dashboard tests around the new structure.
+1. Refactor the task dashboard container and related action orchestration.
+2. Clean up the remaining prelim screen orchestration and polish.
+3. Remove compatibility workflow hooks and remaining `src/api.ts` residuals.
+4. Add route/auth/notes/dashboard tests around the new structure.
+5. Revisit the remaining NCRC modal/drawer wiring only if we want to make the screen nearly declarative.
 6. Do performance and app-shell work after the structural refactors settle.
 
 ---
@@ -553,9 +577,9 @@ Actions:
 
 If we want the next practical batch of work to be low-risk and high-payoff, it should be:
 
-1. NCRC dashboard state extraction.
-2. Task dashboard state extraction.
-3. Prelim orchestration cleanup.
+1. Task dashboard state extraction.
+2. Prelim orchestration cleanup.
+3. NCRC modal/drawer ownership cleanup if we want one more Phase 3 polish slice.
 
 That sequence keeps momentum after the compatibility and notes work, and now targets the biggest remaining screen-level coordination hotspots.
 

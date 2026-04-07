@@ -1,609 +1,179 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ApplicantCard } from './ApplicantCard'
-import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
-import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
-import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal';
-import { MessageSquareText, Search } from 'lucide-react';
-import { useAppPreferences } from '@/context/AppPreferencesContext'
-import { useUser } from '@/context/UserContext'
+import React, { useRef, useState } from 'react'
 import { TaskNotesDrawer } from './TaskNotesDrawer'
-//import { useApplications } from '@/components/ou-workflow/hooks/useApplications';
-import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce';
-import { useInfiniteApplications } from '@/features/applications/hooks/useInfiniteApplications';
-import { usePagedApplications } from '@/features/applications/hooks/usePagedApplications';
-import { fetchTaskNotes } from '@/features/tasks/api';
-import { ErrorDialog, type ErrorDialogRef } from "@/components/ErrorDialog";
-import type { Applicant, Task, TaskNote } from '@/types/application';
-import { ApplicantStatsCards } from './ApplicantStatsCards';
-import { Route } from '@/routes/_authed/ou-workflow/ncrc-dashboard';
-import { TASK_TYPES, TASK_CATEGORIES } from '@/lib/constants/task';
-import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions';
+import { ErrorDialog, type ErrorDialogRef } from '@/components/ErrorDialog'
+import { ActionModal } from '@/components/ou-workflow/modal/ActionModal'
+import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal'
+import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal'
+import { NcrcDashboardControls } from '@/features/applications/components/NcrcDashboardControls'
+import { NcrcDashboardListSection } from '@/features/applications/components/NcrcDashboardListSection'
+import { useNcrcDashboardState } from '@/features/applications/hooks/useNcrcDashboardState'
+import { useUser } from '@/context/UserContext'
+import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
+import { Route } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
+import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions'
+import type { Applicant, Task } from '@/types/application'
 
-// 🎯 Constants
-const PAGE_LIMIT = 5;
-const DEBOUNCE_DELAY = 1000;
-const SHOW_APPLICANT_STATS_CARDS = false;
-//const STORAGE_KEY = 'ncrc-infinite-state';
+const SHOW_APPLICANT_STATS_CARDS = false
 
 export function NCRCDashboard() {
-  // 🔹 Router hooks
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
-  const { q, status, priority, page, applicationId, myOnly } = search;
+  const { token, username } = useUser()
+  const errorDialogRef = useRef<ErrorDialogRef>(null)
 
-  // 🔹 User context
-  const { token, username } = useUser();
-  const { paginationMode } = useAppPreferences();
-  const errorDialogRef = useRef<ErrorDialogRef>(null);
-  // UI states
-  const [selectedAction, setSelectedAction] = useState<{ application: Applicant; action: Task } | null>(null);
-  const [showActionModal, setShowActionModal] = useState<Task | null | boolean>(null);
-  const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null);
-  const [showUploadModal, setShowUploadModal] = useState<Task | null | boolean>(null);
-  const [myNotesOpen, setMyNotesOpen] = useState(false);
-  const [myNotes, setMyNotes] = useState<TaskNote[]>([]);
-  const [myNotesLoading, setMyNotesLoading] = useState(false);
-  const [myNotesError, setMyNotesError] = useState('');
-  
-  // 🔹 Infinite Scrolling States
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  
-  // 🔹 Debounced search filters
-  const debouncedSearch = useDebounce(q, DEBOUNCE_DELAY);
+  const [selectedAction, setSelectedAction] = useState<{
+    application: Applicant
+    action: Task
+  } | null>(null)
+  const [showActionModal, setShowActionModal] = useState<Task | null | boolean>(null)
+  const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null)
+  const [showUploadModal, setShowUploadModal] = useState<Task | null | boolean>(null)
 
-  // 🔹 Fetch applications
-  /* ================================================================
-   * DATA FETCHING
-   * ================================================================ */
-  const pagedQuery = usePagedApplications({
-    searchTerm: debouncedSearch,
-    statusFilter: status,
-    priorityFilter: priority,
-    applicationId,
-    myOnly,
+  const {
+    q,
+    status,
+    priority,
     page,
-    limit: PAGE_LIMIT,
-    enabled: paginationMode === 'paged',
-  });
-
-  const infiniteQuery = useInfiniteApplications({
-    searchTerm: debouncedSearch,
-    statusFilter: status,
-    priorityFilter: priority,
-    applicationId,
     myOnly,
-    enabled: paginationMode === 'infinite',
-  });
-
-  const isLoading =
-    paginationMode === 'paged'
-      ? pagedQuery.isLoading
-      : infiniteQuery.isLoading;
-
-  const isError =
-    paginationMode === 'paged'
-      ? pagedQuery.isError
-      : infiniteQuery.isError;
-
-  const error =
-    paginationMode === 'paged'
-      ? pagedQuery.error
-      : infiniteQuery.error;
-      
-  // 🔹 Update search params helper
-  const updateSearch = (updates: Partial<typeof search>) => {
-    navigate({
-      search: (prev) => {
-        const next = { ...prev, ...updates };
-        return JSON.stringify(prev) === JSON.stringify(next) ? prev : next;
-      },
-    });
-  };
-
-  // 🔹 Get applicants based on mode
-  const applicants: Applicant[] =
-    paginationMode === 'paged'
-      ? pagedQuery.data?.data ?? []
-      : infiniteQuery.data?.pages.flatMap(p => p.data) ?? [];
-
-  const totalCount =
-    paginationMode === 'paged'
-      ? pagedQuery.data?.meta?.total_count ?? 0
-      : infiniteQuery.data?.pages?.[0]?.meta?.total_count ?? 0;
-
-  const totalPages = Math.ceil(totalCount / PAGE_LIMIT);
-
-  // 🔹 Pagination handlers
-  const handleFirst = () => updateSearch({ page: 0 })
-  const handlePrev = () => updateSearch({ page: Math.max(page - PAGE_LIMIT, 0) });
-  const handleNext = () => updateSearch({ page: (page + PAGE_LIMIT < totalCount ? page + PAGE_LIMIT : page) });
-  const handleLast = () => updateSearch({ page: (totalPages - 1) * PAGE_LIMIT });
-
-  // ✅ Restore scroll position ONLY for paged mode
-  useEffect(() => {
-    if (paginationMode !== 'paged') return;
-
-    const savedScroll = sessionStorage.getItem('ncrc-paged-scroll');
-    if (!savedScroll) return;
-
-    requestAnimationFrame(() => {
-      window.scrollTo(0, Number(savedScroll));
-      sessionStorage.removeItem('ncrc-paged-scroll');
-    });
-  }, [paginationMode]);
-
-  // Restore scroll position on mount for Infinite mode
-  useEffect(() => {
-    if (paginationMode !== 'infinite') return;
-    if (!infiniteQuery.data) return;
-
-    const raw = sessionStorage.getItem('ncrc-infinite-scroll');
-    if (!raw) return;
-
-    const { scrollY, anchorId } = JSON.parse(raw);
-
-    // Wait for DOM + cards to render
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (anchorId) {
-          const el = document.querySelector(
-            `[data-app-id="${anchorId}"]`
-          ) as HTMLElement | null;
-
-          if (el) {
-            el.scrollIntoView({ block: 'center', behavior: 'auto' });
-          } else {
-            window.scrollTo(0, scrollY ?? 0);
-          }
-        } else {
-          window.scrollTo(0, scrollY ?? 0);
-        }
-
-        sessionStorage.removeItem('ncrc-infinite-scroll');
-      });
-    });
-  }, [paginationMode, infiniteQuery.data]);
-
-
-  /* ================================================================
-   * INTERSECTION OBSERVER (INFINITE ONLY)
-   * ================================================================ */
-  useEffect(() => {
-    if (paginationMode !== 'infinite') return;
-    if (!sentinelRef.current) return;
-    if (!infiniteQuery.hasNextPage) return;
-
-    const observer = new IntersectionObserver(
-      entries => {
-        if (
-          entries[0].isIntersecting &&
-          infiniteQuery.hasNextPage &&
-          !infiniteQuery.isFetchingNextPage
-        ) {
-          infiniteQuery.fetchNextPage();
-        }
-      },
-      { rootMargin: '300px' }
-    );
-
-    observer.observe(sentinelRef.current);
-    return () => observer.disconnect();
-  }, [
     paginationMode,
-    infiniteQuery.hasNextPage,
-    infiniteQuery.fetchNextPage,
-    infiniteQuery.isFetchingNextPage
-  ]);
-
-  // ==============================
-  // ???? RESET PAGE ON MODE SWITCH
-  // ==============================
-  
-  useEffect(() => {
-    if (paginationMode === 'paged' && page !== 0) {
-      updateSearch({ page: 0 });
-    }
-  }, [paginationMode]);
-
-  // ==============================
-  // ???? CALCULATE STATS
-  // ==============================
-  
-  const applicantStats = useMemo(() => {
-    const normalizedApplicants = applicants.map(app => ({
-      ...app,
-      status: app.status?.toLowerCase() || ''
-    }));
-
-    const statusCounts = {
-      new: normalizedApplicants.filter(t => t.status === 'new').length,
-      inProgress: normalizedApplicants.filter(
-        t => t.status === 'inp' || t.status === 'in progress'
-      ).length,
-      withdrawn: normalizedApplicants.filter(
-        t => t.status === 'wth' || t.status === 'withdrawn'
-      ).length,
-      completed: normalizedApplicants.filter(
-        t => ['compl', 'completed', 'certified'].includes(t.status)
-      ).length,
-    };
-
-    const knownTotal = Object.values(statusCounts).reduce((sum, count) => sum + count, 0);
-
-    return {
-      total: normalizedApplicants.length,
-      ...statusCounts,
-      others: normalizedApplicants.length - knownTotal,
-    };
-  }, [applicants]);
+    isLoading,
+    isError,
+    error,
+    applicants,
+    totalCount,
+    totalPages,
+    applicantStats,
+    infiniteQuery,
+    sentinelRef,
+    myNotesOpen,
+    myNotes,
+    myNotesLoading,
+    myNotesError,
+    updateSearch,
+    handleFirst,
+    handlePrev,
+    handleNext,
+    handleLast,
+    openMyNotesDrawer,
+    closeMyNotesDrawer,
+  } = useNcrcDashboardState({
+    search,
+    navigate,
+  })
 
   const { executeAction, completeTaskWithResult } = useTaskActions({
     applications: applicants,
     token: token ?? undefined,
     username: username ?? undefined,
-    onError: (msg) => errorDialogRef.current?.open(msg),
-  });
+    onError: (message) => errorDialogRef.current?.open(message),
+  })
 
-  // ==============================
-  // ???? HANDLE ACTION SELECTION
-  // ==============================
-  
   const handleSelectAppActions = (application: Applicant, action: Task) => {
-    setSelectedAction({ application, action });
-  };
+    setSelectedAction({ application, action })
+  }
 
-  const handleTaskAction = (e: React.MouseEvent, application: Applicant, action: Task) => {
-    e.stopPropagation();
-    e.preventDefault();
-    
-    handleSelectAppActions(application, action);
+  const handleTaskAction = (event: React.MouseEvent, application: Applicant, action: Task) => {
+    event.stopPropagation()
+    event.preventDefault()
 
-    const actionType = action.taskType?.toLowerCase();
-    const actionCategory = action.taskCategory?.toLowerCase();
+    handleSelectAppActions(application, action)
+
+    const actionType = action.taskType?.toLowerCase()
+    const actionCategory = action.taskCategory?.toLowerCase()
 
     if (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION) {
-      executeAction("Confirmed", action, "yes", { application, action });
-    } 
-    else if (
-      (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) && 
+      executeAction('Confirmed', action, 'yes', { application, action })
+      return
+    }
+
+    if (
+      (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) &&
       [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1].includes(actionCategory as any)
     ) {
-      setShowConditionModal(action);
-    } 
-    else if (
-      actionType === TASK_TYPES.ACTION &&
-      [TASK_CATEGORIES.UPLOAD, TASK_CATEGORIES.EMAIL].includes(actionCategory as any)
-    ) {
-      setShowUploadModal(action);
+      setShowConditionModal(action)
+      return
     }
-    else if (
-      actionCategory === TASK_CATEGORIES.UPLOAD &&
-      actionType === TASK_TYPES.UPLOAD
+
+    if (
+      (actionType === TASK_TYPES.ACTION &&
+        [TASK_CATEGORIES.UPLOAD, TASK_CATEGORIES.EMAIL].includes(actionCategory as any)) ||
+      (actionCategory === TASK_CATEGORIES.UPLOAD && actionType === TASK_TYPES.UPLOAD)
     ) {
-      setShowUploadModal(action);
+      setShowUploadModal(action)
+      return
     }
-    else if (actionType === TASK_TYPES.ACTION) {
+
+    if (actionType === TASK_TYPES.ACTION) {
       if (actionCategory === TASK_CATEGORIES.ASSIGNMENT) {
-        setShowActionModal(action);
+        setShowActionModal(action)
       } else {
-        setShowConditionModal(action);
+        setShowConditionModal(action)
       }
-    } 
-    else if (actionType === TASK_TYPES.PROGRESS && actionCategory === TASK_CATEGORIES.PROGRESS_TASK) {
-      setShowConditionModal(action);
+      return
     }
-  };
+
+    if (actionType === TASK_TYPES.PROGRESS && actionCategory === TASK_CATEGORIES.PROGRESS_TASK) {
+      setShowConditionModal(action)
+    }
+  }
 
   const handleCancelTask = async (application: Applicant, action: Task, reason: string) => {
-    handleSelectAppActions(application, action);
-    completeTaskWithResult(action, reason);
-  };
-
-  const openMyNotesDrawer = async () => {
-    setMyNotesOpen(true);
-    setMyNotesError('');
-
-    if (!username?.trim()) {
-      setMyNotes([]);
-      setMyNotesError('Logged in username is not available.');
-      return;
-    }
-
-    setMyNotesLoading(true);
-    try {
-      const notes = await fetchTaskNotes({
-        toUser: username.trim(),
-        token: token ?? undefined,
-      });
-      setMyNotes(notes);
-    } catch (error: any) {
-      const message =
-        error?.details?.status ||
-        error?.details?.message ||
-        error?.message ||
-        'Failed to fetch notes';
-      setMyNotesError(message);
-    } finally {
-      setMyNotesLoading(false);
-    }
-  };
+    handleSelectAppActions(application, action)
+    completeTaskWithResult(action, reason)
+  }
 
   return (
     <>
-      {/* Main Content - Single browser scroll, navigation accounts for fixed nav height */}
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-6">
-          {/* Sticky Header Section - Sticks below fixed nav */}
-          <div className="sticky top-16 z-20 bg-gray-50 pb-4">
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4 pt-6 pb-4">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Application Dashboard</h2>
-                <p className="text-gray-600">Executive Overview - Certification Management</p>
-              </div>
-              <button
-                type="button"
-                onClick={openMyNotesDrawer}
-                className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm transition-colors hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                title={username ? `View notes for ${username}` : 'View my notes'}
-                aria-label={username ? `View notes for ${username}` : 'View my notes'}
-              >
-                <MessageSquareText className="h-4 w-4" />
-                My Notes
-              </button>
-            </div>
+          <NcrcDashboardControls
+            q={q}
+            status={status}
+            priority={priority}
+            page={page}
+            myOnly={myOnly}
+            totalCount={totalCount}
+            totalPages={totalPages}
+            paginationMode={paginationMode}
+            isLoading={isLoading}
+            isError={isError}
+            error={error}
+            username={username}
+            showApplicantStats={SHOW_APPLICANT_STATS_CARDS}
+            applicantStats={applicantStats}
+            onOpenMyNotes={openMyNotesDrawer}
+            onUpdateSearch={updateSearch}
+            onFirstPage={handleFirst}
+            onPrevPage={handlePrev}
+            onNextPage={handleNext}
+            onLastPage={handleLast}
+          />
 
-            {/* Stats Cards - Sticky */}
-            {SHOW_APPLICANT_STATS_CARDS && (
-              <div className="pb-4">
-                <ApplicantStatsCards stats={applicantStats} />
-              </div>
-            )}
-
-            {/* Filters - Sticky */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
-              <div className="flex items-center gap-4">
-
-                {/* Search */}
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="text"
-                      placeholder="Search by company, plant, region..."
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg
-                                focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={q}
-                      onChange={(e) => updateSearch({ q: e.target.value, page: 0 })}
-                    />
-                  </div>
-                </div>
-
-                {/* Status */}
-                <select
-                  value={status}
-                  onChange={(e) => updateSearch({ status: e.target.value, page: 0 })}
-                  className="px-4 py-2 border border-gray-300 rounded-lg
-                            focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                            min-w-[140px]"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="COMPL">Certified</option>
-                  <option value="CONTRACT">Contract Sent</option>
-                  <option value="DISP">Dispatched</option>
-                  <option value="INC">Incomplete</option>
-                  <option value="INP">In Progress</option>
-                  <option value="INSPECTION">Inspection Scheduled</option>
-                  <option value="NEW">New</option>
-                  <option value="PAYPEND">Payment Pending</option>
-                  <option value="REVIEW">Under Review</option>
-                  <option value="WTH">Withdrawn</option>
-                </select>
-
-                {/* Priority */}
-                <select
-                  value={priority}
-                  onChange={(e) => updateSearch({ priority: e.target.value, page: 0 })}
-                  className="px-4 py-2 border border-gray-300 rounded-lg
-                            focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                            min-w-[120px]"
-                >
-                  <option value="all">All Priorities</option>
-                  <option value="urgent">Urgent</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
-
-                {/* All Apps | My Apps segmented control */}
-                <div className="ml-auto flex items-center border-gray-200">
-                  <div
-                    className="inline-flex rounded-lg border border-gray-300 overflow-hidden"
-                    role="group"
-                    aria-label="Application visibility filter"
-                  >
-                    {/* My Apps */}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updateSearch({
-                          myOnly: true,
-                          page: 0,
-                        })
-                      }
-                      aria-pressed={Boolean(search.myOnly)}
-                      className={[
-                        'px-3 py-1.5 text-sm font-medium transition-colors border-l border-gray-300',
-                        search.myOnly
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white text-gray-700 hover:bg-gray-100',
-                        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
-                      ].join(' ')}
-                      title="Show only applications assigned to me"
-                    >
-                      My Apps
-                    </button>
-                    {/* All Apps */}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updateSearch({
-                          myOnly: false,
-                          page: 0,
-                        })
-                      }
-                      aria-pressed={!search.myOnly}
-                      className={[
-                        'px-3 py-1.5 text-sm font-medium transition-colors',
-                        !search.myOnly
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white text-gray-700 hover:bg-gray-100',
-                        'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1',
-                      ].join(' ')}
-                      title="Show all applications"
-                    >
-                      All Apps
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-
-            {/* Loading/Error States */}
-            {isLoading && paginationMode === 'paged' && (
-              <div className="text-gray-500 mb-4">Loading applicants...</div>
-            )}
-            {isError && (
-              <div className="text-center py-4 mb-4 bg-red-50 rounded-lg border border-red-200">
-                <div className="text-red-600 font-semibold">Error loading applications</div>
-                <div className="text-gray-600 mt-2">{(error as Error).message}</div>
-              </div>
-            )}
-
-            {/* Pagination Controls - Sticky */}
-            {paginationMode === 'paged' && !isError && (
-              <div className="flex items-center justify-between bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3">
-                <div className="text-gray-600 text-sm">
-                  Showing {page + 1}–{Math.min(page + PAGE_LIMIT, totalCount)} of {totalCount} applications
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={handleFirst}
-                    disabled={page === 0}
-                    className="px-3 py-1.5 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm font-medium"
-                  >
-                    First
-                  </button>
-                  <button
-                    onClick={handlePrev}
-                    disabled={page === 0}
-                    className="px-3 py-1.5 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm font-medium"
-                  >
-                    Prev
-                  </button>
-                  <span className="text-sm font-medium px-3 py-1.5 bg-gray-50 rounded-md">
-                    Page {Math.floor(page / PAGE_LIMIT) + 1} of {totalPages}
-                  </span>
-                  <button
-                    onClick={handleNext}
-                    disabled={page + PAGE_LIMIT >= totalCount}
-                    className="px-3 py-1.5 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm font-medium"
-                  >
-                    Next
-                  </button>
-                  <button
-                    onClick={handleLast}
-                    disabled={page + PAGE_LIMIT >= totalCount}
-                    className="px-3 py-1.5 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors text-sm font-medium"
-                  >
-                    Last
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Applications List - Regular Flow (uses browser scroll) */}
-          <div className="pb-8">
-            {/* Initial Loading for Infinite Mode */}
-            {paginationMode === 'infinite' && infiniteQuery.isLoading && !infiniteQuery.data && (
-              <div className="text-center py-12">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-                <p className="text-gray-500 mt-4">Loading applications...</p>
-              </div>
-            )}
-
-            {/* Applicants List */}
-            {!isError && (
-              <div className="space-y-4">
-                {applicants.length > 0 ? (
-                  applicants.map((applicant: Applicant) => (
-                    <ApplicantCard
-                      key={`${applicant.applicationId}-${paginationMode}`}
-                      applicant={applicant}
-                      handleTaskAction={handleTaskAction}
-                      handleCancelTask={handleCancelTask}
-                    />
-                  ))
-                ) : (
-                  !isLoading && (
-                    <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-                      <div className="max-w-md mx-auto">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Search className="w-8 h-8 text-gray-400" />
-                        </div>
-                        <p className="text-gray-900 text-lg font-medium mb-2">No applications found</p>
-                        <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
-            )}
-
-            {/* Infinite Scroll States */}
-            {paginationMode === 'infinite' && !isError && (
-              <>
-                {/* Sentinel for triggering next page */}
-                {infiniteQuery.hasNextPage && (
-                  <div ref={sentinelRef} className="h-1" />
-                )}
-
-                {/* Loading next page */}
-                {infiniteQuery.isFetchingNextPage && (
-                  <div className="text-center py-8">
-                    <div className="inline-block h-6 w-6 animate-spin rounded-full border-3 border-solid border-blue-500 border-r-transparent"></div>
-                    <p className="text-gray-500 mt-2 text-sm">Loading more applications...</p>
-                  </div>
-                )}
-
-                {/* End of list */}
-                {!infiniteQuery.hasNextPage && applicants.length > 0 && !infiniteQuery.isFetchingNextPage && (
-                  <div className="text-center py-8 mt-6">
-                    <div className="inline-block px-4 py-2 bg-gray-100 rounded-full">
-                      <p className="text-gray-600 text-sm font-medium">
-                        All {applicants.length} applications loaded
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+          <NcrcDashboardListSection
+            applicants={applicants}
+            paginationMode={paginationMode}
+            isLoading={isLoading}
+            isError={isError}
+            isInfiniteInitialLoading={
+              paginationMode === 'infinite' && infiniteQuery.isLoading && !infiniteQuery.data
+            }
+            hasNextPage={Boolean(infiniteQuery.hasNextPage)}
+            isFetchingNextPage={infiniteQuery.isFetchingNextPage}
+            sentinelRef={sentinelRef}
+            onTaskAction={handleTaskAction}
+            onCancelTask={handleCancelTask}
+          />
         </div>
       </div>
 
-      {/* Modals */}
       <ActionModal
-        setShowActionModal={setShowActionModal} 
+        setShowActionModal={setShowActionModal}
         showActionModal={showActionModal}
         executeAction={executeAction}
         selectedAction={selectedAction}
       />
       <ConditionalModal
-        setShowConditionModal={setShowConditionModal} 
+        setShowConditionModal={setShowConditionModal}
         showConditionModal={showConditionModal}
         executeAction={executeAction}
         selectedAction={selectedAction}
@@ -615,8 +185,7 @@ export function NCRCDashboard() {
         taskInstanceId={selectedAction?.action?.TaskInstanceId}
         completeTaskWithResult={completeTaskWithResult}
       />
-      
-      {/* Global Error Dialog */}
+
       <ErrorDialog ref={errorDialogRef} />
       <TaskNotesDrawer
         open={myNotesOpen}
@@ -640,10 +209,7 @@ export function NCRCDashboard() {
         singleTabMode
         hideComposer
         hidePrivacyToggle
-        onClose={() => {
-          setMyNotesOpen(false);
-          setMyNotesError('');
-        }}
+        onClose={closeMyNotesDrawer}
         onTabChange={() => {}}
         onComposeTextChange={() => {}}
         onComposeToUserChange={() => {}}
@@ -652,6 +218,5 @@ export function NCRCDashboard() {
         onReplySubmit={async () => {}}
       />
     </>
-  );
+  )
 }
-
