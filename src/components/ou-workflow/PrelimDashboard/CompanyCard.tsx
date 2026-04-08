@@ -107,14 +107,14 @@ export function CompanyCard({
 
   const pendingCancelTask = useMemo(() => {
     const globalStageEntry = Object.entries(company.stages ?? {}).find(
-      ([stageKey]) => stageKey.toLowerCase() === 'global'
+      ([stageKey]) => stageKey.toLowerCase() === 'globalsubmission'
     )
     const globalTasks = globalStageEntry?.[1]?.tasks ?? []
 
     return (
       globalTasks.find(
         (task) =>
-          task?.name?.toLowerCase() === 'cancel application' &&
+          task?.name?.toLowerCase() === 'cancel submission' &&
           task?.status?.toLowerCase() === 'pending' &&
           hasCancelPermission(task)
       ) ?? null
@@ -123,7 +123,7 @@ export function CompanyCard({
 
   const pendingUndoWithdrawTask = useMemo(() => {
     const globalStageEntry = Object.entries(company.stages ?? {}).find(
-      ([stageKey]) => stageKey.toLowerCase() === 'global'
+      ([stageKey]) => stageKey.toLowerCase() === 'globalsubmission'
     )
     const globalTasks = globalStageEntry?.[1]?.tasks ?? []
 
@@ -134,6 +134,7 @@ export function CompanyCard({
           task?.status?.toLowerCase() === 'pending' &&
           taskName.includes('undo') &&
           (taskName.includes('withdraw') || taskName.includes('cancel')) &&
+          taskName.includes('submission') &&
           hasCancelPermission(task)
         )
       }) ?? null
