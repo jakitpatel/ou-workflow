@@ -1,6 +1,6 @@
 # NCRC App Architecture Action Plan
 
-This plan reflects the codebase as of April 7, 2026. It is meant to be an execution guide for the next refactor and stabilization slices, not a historical audit.
+This plan reflects the codebase as of April 8, 2026. It is meant to be an execution guide for the next refactor and stabilization slices, not a historical audit.
 
 The architecture has improved a lot already:
 
@@ -13,9 +13,10 @@ The architecture has improved a lot already:
 The biggest remaining issues are no longer "missing architecture." They are concentrated in a smaller set of high-impact areas:
 
 - compatibility imports that still shape runtime paths
-- large workflow screen containers
+- prelim screen orchestration and workflow-specific coordination
+- transitional workflow hooks that still bridge feature code back through `components/ou-workflow/hooks`
 - duplicated task-notes orchestration
-- prelim flow cleanup
+- production-path debug and local-dev-only runtime behavior
 - very light automated test coverage
 
 ---
@@ -52,15 +53,17 @@ The biggest remaining issues are no longer "missing architecture." They are conc
 - `src/components/ou-workflow/hooks/*` still contains compatibility hooks used by active screens.
 - `AppPreferencesContext` now imports directly from feature/shared modules, and the main workflow runtime paths touched in Phase 1 no longer depend on `@/api`.
 - Task notes now have a shared feature-owned state hook, though the drawer UI itself still lives in the NCRC workflow component folder.
-- Prelim workflow no longer depends on `@/api` in its active dashboard/drawer paths, but it still carries broader screen-orchestration and logging cleanup work.
+- Task dashboard state and modal coordination now live behind a feature-owned hook, but the modal contracts still bridge through older workflow component surfaces.
+- Prelim workflow no longer depends on `@/api` in its active dashboard/drawer paths, but it still carries broader screen-orchestration, legacy-hook, and logging cleanup work.
 
 ### Highest-risk files right now
 
 - [src/components/ou-workflow/NCRCDashboard/index.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard/index.tsx)
 - [src/components/ou-workflow/NCRCDashboard/ApplicantCard.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard/ApplicantCard.tsx)
 - [src/components/ou-workflow/NCRCDashboard/ApplicationExpandedStage.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard/ApplicationExpandedStage.tsx)
-- [src/components/ou-workflow/TaskDashboard/index.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/TaskDashboard/index.tsx)
 - [src/components/ou-workflow/PrelimDashboard/index.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/PrelimDashboard/index.tsx)
+- [src/components/ou-workflow/PrelimDashboard/ResolvedSection.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/PrelimDashboard/ResolvedSection.tsx)
+- [src/components/ou-workflow/hooks/useTaskActions.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/hooks/useTaskActions.ts)
 - [src/context/AppPreferencesContext.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/context/AppPreferencesContext.tsx)
 - [src/shared/api/httpClient.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/shared/api/httpClient.ts)
 - [src/routes/_public/login.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_public/login.tsx)
@@ -68,7 +71,7 @@ The biggest remaining issues are no longer "missing architecture." They are conc
 ### Size indicators
 
 - `src/components/ou-workflow/NCRCDashboard/index.tsx`: about 203 lines
-- `src/components/ou-workflow/TaskDashboard/index.tsx`: about 453 lines
+- `src/components/ou-workflow/TaskDashboard/index.tsx`: about 167 lines
 - `src/components/ou-workflow/PrelimDashboard/index.tsx`: about 262 lines
 - `src/context/UserContext.tsx`: about 122 lines
 - `src/context/AppPreferencesContext.tsx`: about 112 lines
@@ -116,14 +119,17 @@ Current status:
 - both NCRC entry points now reuse that shared state hook
 - the remaining follow-up is deciding whether the drawer UI should also move under `src/features/tasks`
 
+This is no longer one of the highest-priority structural risks compared with prelim orchestration and transitional hook cleanup.
+
 ### 3. Prelim flow has the most obvious cleanup debt
 
 Observed issues:
 
-- legacy compatibility leftovers and broader screen-level cleanup
-- render-path debug logging
-- direct detail fetch from compatibility layer
-- task action bridging through older workflow-level hooks
+- legacy compatibility hook usage (`useDebounce`, `useTaskActions`)
+- screen-owned filter/search/detail/modal orchestration
+- task action branching still sitting directly in the screen
+- residual render/action debug logging in prelim-related files
+- prelim resolution behavior still bridged through older workflow-level hooks
 
 Key files:
 
@@ -137,7 +143,8 @@ Current visible setup:
 
 - [src/test/setup.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/test/setup.ts)
 - [src/test/renderWithProviders.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/test/renderWithProviders.tsx)
-- one example test only
+- focused tests exist for shared task notes state and the NCRC notes drawer
+- one generic example test still exists as a basic scaffold
 
 This is enough to start, but not enough to protect refactors in auth, routing, notes, or dashboard flows.
 
@@ -147,6 +154,7 @@ Notable examples include:
 
 - `console.log` in [src/features/prelim/api/index.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/prelim/api/index.ts)
 - multiple debug logs in prelim UI files
+- `console.log` in [src/components/ou-workflow/ApplicationManagement/QuoteInfo.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/ApplicationManagement/QuoteInfo.tsx)
 - hardcoded local-dev tokens in [src/routes/_public/login.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_public/login.tsx)
 - API transport debug logging in [src/shared/api/httpClient.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/shared/api/httpClient.ts)
 
@@ -328,11 +336,13 @@ Next follow-up inside Phase 3:
 
 ## Phase 4: Refactor The Task Dashboard Into A Feature Screen
 
-Status: In progress
+Status: Completed for the first feature-screen extraction slice
 
 Goal: reduce branching and UI orchestration in the task dashboard.
 
 ### 6. Extract task-dashboard state and action coordination
+
+Status: Completed for the first state-extraction slice
 
 Current issues:
 
@@ -356,6 +366,15 @@ Done when:
 
 - the screen is mainly layout and composition
 
+Completed in this slice:
+
+- added [src/features/tasks/hooks/useTaskDashboardState.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/tasks/hooks/useTaskDashboardState.ts)
+- moved route-search reading, debounced task query inputs, visible-task filtering, task stats derivation, plant-history dismissal behavior, modal state, and task-action branching into the shared feature hook
+- reduced [src/components/ou-workflow/TaskDashboard/index.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/TaskDashboard/index.tsx) to a composition shell around the existing stats, filters, table rows, and modals
+- removed the low-signal task action debug log from the active screen handler during the extraction
+- preserved the current task table and modal behavior surface while making the coordination logic feature-owned
+- `npm run -s typecheck` passes after the extraction
+
 ---
 
 ## Phase 5: Clean Up And Stabilize The Prelim Workflow
@@ -366,13 +385,25 @@ Goal: make prelim match the applications/tasks feature architecture.
 
 ### 7. Remove compatibility imports and debug logging from the prelim flow
 
+Status: Completed for the current cleanup slice
+
 Actions:
 
 - replace remaining `@/api` imports with direct feature/shared imports
 - remove debug logs from render and action paths
 - stop fetching prelim details through the compatibility layer
 
+Completed in this slice:
+
+- removed the production-path `console.log` from [src/features/prelim/api/index.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/prelim/api/index.ts)
+- removed the JSON editor event debug log from [src/components/ou-workflow/PrelimDashboard/JsonEditorView.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/PrelimDashboard/JsonEditorView.tsx)
+- removed the commented legacy `@/api` import from [src/components/ou-workflow/PrelimDashboard/JsonModal.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/PrelimDashboard/JsonModal.tsx)
+- active prelim detail fetching remains on direct feature-owned API imports after the earlier extraction work
+- `npm run -s typecheck` passes after the cleanup
+
 ### 8. Extract prelim detail and action orchestration
+
+Status: Completed for the first state-extraction slice
 
 Actions:
 
@@ -389,6 +420,14 @@ Primary files:
 Done when:
 
 - prelim follows the same import and state-ownership conventions as the other major workflows
+
+Completed in this slice:
+
+- added [src/features/prelim/hooks/usePrelimDashboardState.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/prelim/hooks/usePrelimDashboardState.ts)
+- moved debounced search input handling, prelim list querying, detail modal querying, applicant stats derivation, selected-action state, modal visibility, and cancel/task dispatch orchestration into the feature hook
+- reduced [src/components/ou-workflow/PrelimDashboard/index.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/PrelimDashboard/index.tsx) to a composition shell around filters, cards, JSON modal, and task modals
+- preserved the current `ActionModal` and `ConditionalModal` behavior while moving the coordination logic out of the render container
+- `npm run -s typecheck` passes after the extraction
 
 ---
 
@@ -564,12 +603,11 @@ Actions:
 
 ## Recommended Execution Order
 
-1. Refactor the task dashboard container and related action orchestration.
-2. Clean up the remaining prelim screen orchestration and polish.
-3. Remove compatibility workflow hooks and remaining `src/api.ts` residuals.
-4. Add route/auth/notes/dashboard tests around the new structure.
-5. Revisit the remaining NCRC modal/drawer wiring only if we want to make the screen nearly declarative.
-6. Do performance and app-shell work after the structural refactors settle.
+1. Clean up the remaining prelim screen orchestration and polish.
+2. Remove compatibility workflow hooks and remaining `src/api.ts` residuals.
+3. Add route/auth/notes/dashboard tests around the new structure.
+4. Revisit the remaining NCRC modal/drawer wiring only if we want to make the screen nearly declarative.
+5. Do performance and app-shell work after the structural refactors settle.
 
 ---
 
@@ -577,11 +615,11 @@ Actions:
 
 If we want the next practical batch of work to be low-risk and high-payoff, it should be:
 
-1. Task dashboard state extraction.
-2. Prelim orchestration cleanup.
+1. Prelim orchestration cleanup.
+2. Transitional workflow hook retirement, starting with `useDebounce` and `useTaskActions`.
 3. NCRC modal/drawer ownership cleanup if we want one more Phase 3 polish slice.
 
-That sequence keeps momentum after the compatibility and notes work, and now targets the biggest remaining screen-level coordination hotspots.
+That sequence keeps momentum after the compatibility, notes, and task-dashboard work, and now targets the biggest remaining workflow-specific coordination hotspots.
 
 ---
 
