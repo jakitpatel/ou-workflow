@@ -53,7 +53,9 @@ export function CompanyCard({
   const stageEntries = useMemo(
     () =>
       Object.entries(company.stages ?? {}).filter(
-        ([stageName]) => stageName.toLowerCase() !== 'global'
+        ([stageName]) =>
+          stageName.toLowerCase() !== 'global' &&
+          stageName.toLowerCase() !== 'globalsubmission'
       ),
     [company.stages]
   )

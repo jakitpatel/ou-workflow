@@ -38,7 +38,10 @@ export function PrelimAppExpandedStageTasks({
   }, [role, roles])
 
   const normalizedExpandedStage =
-    expandedStage?.toLowerCase() === 'global' ? null : expandedStage
+    expandedStage?.toLowerCase() === 'globalsubmission' ||
+    expandedStage?.toLowerCase() === 'global'
+      ? null
+      : expandedStage
 
   return (
     <div>
