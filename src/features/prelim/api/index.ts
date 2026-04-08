@@ -160,8 +160,6 @@ export async function fetchPrelimApplications({
   searchTerm,
   statusFilter,
 }: FetchPrelimApplicationsRequest = {}): Promise<ApplicantsResponse> {
-  console.log('CORRECT fetchPrelimApplications')
-
   const params = buildPaginationParams(page, limit)
 
   addFilterParams(params, {

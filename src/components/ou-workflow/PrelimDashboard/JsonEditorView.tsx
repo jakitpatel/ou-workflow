@@ -27,37 +27,29 @@ export function JsonEditorView({
       search: true,
       navigationBar: true,
       statusBar: false,
-
-      // ✅ THIS is the correct hook for TREE mode
       onEvent: (node: any, event: any) => {
-        // debug — inspect what the editor sends
-        console.log('jsoneditor onEvent:', { node, event })
-
+        void event
         if (!node) return
 
         try {
-          // Preferred: use node.getValue() (returns the full JSON subtree for that node)
           let selected: any = undefined
           if (typeof (node as any).getValue === 'function') {
             selected = (node as any).getValue()
           }
 
-          // Fallback: if node.path exists, traverse the editor's root JSON to that path
           if (selected === undefined && (node as any).path && editorRef.current) {
             const root = editorRef.current.get()
             const path = (node as any).path as Array<string | number>
             selected = path.reduce(
               (acc: any, key) => (acc != null ? acc[key as any] : undefined),
-              root
+              root,
             )
           }
 
-          // Last fallback: use node.value if it's an object/primitive
           if (selected === undefined && (node as any).value !== undefined) {
             selected = (node as any).value
           }
 
-          // If nothing found, pass the raw node so the caller can inspect it
           if (selected === undefined) selected = node
 
           onSelect?.(selected)

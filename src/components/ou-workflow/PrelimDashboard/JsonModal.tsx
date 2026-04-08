@@ -1,7 +1,6 @@
 import { useState, lazy, Suspense } from 'react';
 
 //import { VectorResultsTable } from './VectorResultsTable'
-//import { fetchVectorMatches, fetchCompanyDetails } from '@/api'
 import { Search } from 'lucide-react'
 //import { useUser } from '@/context/UserContext'
 
