@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { TaskNotesDrawer } from '@/components/ou-workflow/NCRCDashboard/TaskNotesDrawer'
+import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
 import { renderWithProviders } from '@/test/renderWithProviders'
 import type { TaskNote } from '@/types/application'
 

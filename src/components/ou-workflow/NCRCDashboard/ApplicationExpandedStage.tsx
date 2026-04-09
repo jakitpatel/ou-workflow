@@ -13,7 +13,7 @@ import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
 import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState'
 import {
   TaskNotesDrawer,
-} from '@/components/ou-workflow/NCRCDashboard/TaskNotesDrawer'
+} from '@/features/tasks/notes/TaskNotesDrawer'
 import {
   getStatusBadgeClass,
   getStatusLabel,

@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { ApplicantProgressBar } from './ApplicantProgressBar';
 import { ApplicationExpandedStage } from './ApplicationExpandedStage';
 import { CancelApplicationDialog } from '@/components/ou-workflow/modal/CancelApplicationDialog';
+import { ApplicantProgressBar } from '@/features/applications/components/ApplicantProgressBar';
 import {
   FileText,
   Clock,
@@ -25,7 +25,7 @@ import { normalizeTaskRoles } from '@/lib/utils/taskHelpers';
 import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries';
 import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState';
 import type { NoteTab } from '@/features/tasks/notes/types';
-import { TaskNotesDrawer } from '@/components/ou-workflow/NCRCDashboard/TaskNotesDrawer';
+import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer';
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer';
 
 type Props = {

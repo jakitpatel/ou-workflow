@@ -1,5 +1,5 @@
 import { MessageSquareText, Search } from 'lucide-react'
-import { ApplicantStatsCards } from '@/components/ou-workflow/NCRCDashboard/ApplicantStatsCards'
+import { ApplicantStatsCards } from '@/features/applications/components/ApplicantStatsCards'
 
 const PAGE_SIZE = 5
 
