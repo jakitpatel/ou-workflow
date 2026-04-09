@@ -529,7 +529,7 @@ Status: Completed for `useDebounce` and `useTaskActions`
 
 ## Phase 2: Make Screen Ownership Match Feature Ownership
 
-Status: Highest priority
+Status: Completed for route-facing screen entry ownership
 
 ### Goals
 
@@ -546,6 +546,24 @@ Status: Highest priority
 ### Done when
 
 - route files import screens from `features/*/screens`
+
+### Completed in this slice
+
+- added `src/features/applications/screens/NcrcDashboardScreen.tsx`
+- added `src/features/applications/screens/ApplicationDetailScreen.tsx`
+- added `src/features/tasks/screens/TaskDashboardScreen.tsx`
+- added `src/features/prelim/screens/PrelimDashboardScreen.tsx`
+- updated the NCRC dashboard route to import `NcrcDashboardScreen`
+- updated both task dashboard routes to import `TaskDashboardScreen`
+- updated the prelim dashboard route to import `PrelimDashboardScreen`
+- updated the NCRC application detail route to render `ApplicationDetailScreen`
+- `npm run -s typecheck` passes after the screen-ownership move
+
+### Remaining follow-up
+
+- deeper presentational and section components still live under `src/components/ou-workflow`
+- `src/features/applications/components/ApplicationDetailsContent.tsx` still imports many workflow-era detail sections
+- this phase achieved route-facing feature ownership without attempting a risky full UI file move in one slice
 
 ## Phase 3: Harden Routing For Production
 

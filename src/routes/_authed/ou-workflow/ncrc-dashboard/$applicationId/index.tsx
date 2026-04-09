@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { getAccessToken } from '@/auth/authService'
-import { ApplicationManagementInterface } from '@/components/ou-workflow/ApplicationManagement'
 import { getApplicationDetailQueryOptions } from '@/features/applications/hooks/useApplicationDetail'
+import { ApplicationDetailScreen } from '@/features/applications/screens/ApplicationDetailScreen'
 import { appQueryClient } from '@/shared/api/queryClient'
 
 export const Route = createFileRoute('/_authed/ou-workflow/ncrc-dashboard/$applicationId/')({
@@ -25,5 +25,5 @@ export const Route = createFileRoute('/_authed/ou-workflow/ncrc-dashboard/$appli
 function ApplicationDetailPage() {
   const data = Route.useLoaderData()
 
-  return <ApplicationManagementInterface application={data} />
+  return <ApplicationDetailScreen application={data} />
 }

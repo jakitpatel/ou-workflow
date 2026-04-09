@@ -1,6 +1,6 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
-import { PrelimDashboard } from '@/components/ou-workflow/PrelimDashboard'
+import { PrelimDashboardScreen } from '@/features/prelim/screens/PrelimDashboardScreen'
 
 export const Route = createLazyFileRoute('/_authed/ou-workflow/prelim-dashboard/')({
-  component: PrelimDashboard,
+  component: PrelimDashboardScreen,
 })

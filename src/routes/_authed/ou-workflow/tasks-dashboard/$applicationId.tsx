@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { getAccessToken } from '@/auth/authService'
-import { TaskDashboard } from '@/components/ou-workflow/TaskDashboard'
 import { getTasksQueryOptions } from '@/features/tasks/hooks/useTaskQueries'
+import { TaskDashboardScreen } from '@/features/tasks/screens/TaskDashboardScreen'
 import { appQueryClient } from '@/shared/api/queryClient'
 
 const normalizeTaskSearch = (search: Record<string, unknown>) => ({
@@ -32,5 +32,5 @@ export const Route = createFileRoute(
     )
   },
   pendingComponent: () => <div className="p-8">Loading tasks...</div>,
-  component: TaskDashboard,
+  component: TaskDashboardScreen,
 })

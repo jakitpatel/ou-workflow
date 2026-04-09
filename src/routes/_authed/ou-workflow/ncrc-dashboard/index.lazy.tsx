@@ -1,6 +1,6 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
-import { NCRCDashboard } from '@/components/ou-workflow/NCRCDashboard'
+import { NcrcDashboardScreen } from '@/features/applications/screens/NcrcDashboardScreen'
 
 export const Route = createLazyFileRoute('/_authed/ou-workflow/ncrc-dashboard/')({
-  component: NCRCDashboard,
+  component: NcrcDashboardScreen,
 })
