@@ -7,10 +7,10 @@ import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal'
 import { NcrcDashboardControls } from '@/features/applications/components/NcrcDashboardControls'
 import { NcrcDashboardListSection } from '@/features/applications/components/NcrcDashboardListSection'
 import { useNcrcDashboardState } from '@/features/applications/hooks/useNcrcDashboardState'
+import { useTaskActions } from '@/features/tasks/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { Route } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
-import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions'
 import type { Applicant, Task } from '@/types/application'
 
 const SHOW_APPLICANT_STATS_CARDS = false

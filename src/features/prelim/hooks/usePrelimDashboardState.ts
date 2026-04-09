@@ -5,12 +5,15 @@ import { useUser } from '@/context/UserContext'
 import { fetchPrelimApplicationDetails } from '@/features/prelim/api'
 import { usePrelimApplications } from '@/features/prelim/hooks/usePrelimApplications'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
+import {
+  useTaskActions,
+  type SelectedTaskAction,
+} from '@/features/tasks/hooks/useTaskActions'
+import { useDebounce } from '@/hooks/useDebounce'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { Route } from '@/routes/_authed/ou-workflow/prelim-dashboard'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import type { Task } from '@/types/application'
-import { useTaskActions } from '@/components/ou-workflow/hooks/useTaskActions'
-import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce'
 
 const PAGE_LIMIT = 20
 const DEBOUNCE_DELAY = 300
@@ -85,14 +88,17 @@ export function usePrelimDashboardState() {
     })
   }
 
-  const { executeAction, completeTaskWithResult, getSelectedAction } = useTaskActions({
+  const { executeAction, completeTaskWithResult, resolveSelectedAction } = useTaskActions({
     applications,
     token: token ?? undefined,
     username: username ?? undefined,
     onError: (message) => errorDialogRef.current?.open(message),
   })
 
-  const selectedAction = getSelectedAction(selectedActionId)
+  const selectedAction = useMemo<SelectedTaskAction | null>(
+    () => resolveSelectedAction(selectedActionId),
+    [resolveSelectedAction, selectedActionId],
+  )
 
   const selectAction = (applicationId: string | number, actionId: string | number) => {
     setSelectedActionId(`${applicationId}:${actionId}`)

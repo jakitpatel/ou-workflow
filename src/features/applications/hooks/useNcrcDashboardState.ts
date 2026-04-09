@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
-import { useDebounce } from '@/components/ou-workflow/hooks/useDebounce'
 import { useInfiniteApplications } from '@/features/applications/hooks/useInfiniteApplications'
 import { usePagedApplications } from '@/features/applications/hooks/usePagedApplications'
 import { fetchTaskNotes } from '@/features/tasks/api'
+import { useDebounce } from '@/hooks/useDebounce'
 import type { Applicant, TaskNote } from '@/types/application'
 
 const PAGE_LIMIT = 5

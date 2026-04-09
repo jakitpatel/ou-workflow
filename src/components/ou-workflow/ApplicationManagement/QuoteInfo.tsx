@@ -5,9 +5,7 @@ import { AlertTriangle } from "lucide-react";
 //type ValidationChecks = { quote?: ValidationCheck; [key: string]: ValidationCheck | undefined };
 
 export default function QuoteInfo({ application }: { application: ApplicationDetail }) {
-  console.log("Application Data:", application);
   const quoteData = application.quotes || [];
-  console.log("quote Data:", quoteData);
 
   function formatUSD(amount: number | string) {
     const num = Number(amount) || 0;
