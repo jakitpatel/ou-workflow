@@ -7,7 +7,7 @@
 - task and notification handling
 - application detail management across files, plants, products, ingredients, messages, quote data, and task events
 
-This repository is a real business app, not a starter template. The current codebase uses Cognito-based authentication, TanStack Router route groups, TanStack Query for server state, feature-owned API modules, and a shared transport layer.
+This repository is a real business app, not a starter template. The current codebase uses Cognito-based authentication, TanStack Router route groups, TanStack Query for server state, feature-owned screen and data modules, and an app-level bootstrap layer for router/providers.
 
 ## Tech Stack
 
@@ -53,7 +53,7 @@ The app uses TanStack Router file-based routes under [src/routes](c:/Users/Jakit
 
 Current route layout:
 
-- [src/routes/__root.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/__root.tsx): plain root outlet
+- [src/routes/__root.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/__root.tsx): root outlet plus root-level route error boundary
 - [src/routes/_public.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_public.tsx): public auth route group
 - [src/routes/_authed.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_authed.tsx): authenticated layout, auth gating, and navigation shell
 
@@ -81,6 +81,20 @@ Loader-based detail entry points currently exist for:
 - the task-dashboard application task route
 - the Cognito callback route
 
+Current production-hardening status:
+
+- loader-backed routes now use route-level `errorComponent` where appropriate
+- the root route has a reusable fallback wired through [src/components/feedback/RouteErrorView.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/feedback/RouteErrorView.tsx)
+- route files now mount feature-owned screen entry files instead of importing workflow screens directly
+
+### App Bootstrap
+
+App bootstrap is now split into dedicated app-level modules:
+
+- [src/app/router/createAppRouter.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/app/router/createAppRouter.ts): router creation, route tree wiring, and router type registration
+- [src/app/providers/AppProviders.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/app/providers/AppProviders.tsx): QueryClient, user, preferences, router, and toaster composition
+- [src/main.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/main.tsx): minimal render entry point
+
 ### Auth And Session
 
 The current auth/session split is:
@@ -97,6 +111,8 @@ The login screen supports:
 
 - Cognito login
 - local-dev session setup when the selected API server is `http://localhost:3001`
+
+Note: the localhost login path intentionally remains available for current testing workflow.
 
 ### API And Data Access
 
@@ -122,10 +138,21 @@ Important shared files:
 The UI is currently split across:
 
 - [src/components/ui](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ui): reusable primitive components
+- [src/components/feedback](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/feedback): shared route and app feedback shells
 - [src/components/ou-workflow](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow): workflow screens and workflow-specific UI
-- [src/features/applications/components](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/components): newer feature-owned detail components
+- [src/features/*/screens](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features): feature-owned route-facing screen entry files
+- [src/features/applications/components](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/components): newer feature-owned detail components and dashboard sections
 
-The app is mid-migration from workflow-folder ownership toward stronger feature ownership. Some compatibility hook surfaces still remain in [src/components/ou-workflow/hooks](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/hooks).
+The app is still mid-migration from workflow-folder ownership toward stronger feature ownership, but route-facing screen ownership has already moved into:
+
+- [src/features/applications/screens](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/screens)
+- [src/features/tasks/screens](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/tasks/screens)
+- [src/features/prelim/screens](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/prelim/screens)
+
+The old workflow hook layer has been retired for the active `useDebounce` and `useTaskActions` paths. Those now live in:
+
+- [src/hooks/useDebounce.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/hooks/useDebounce.ts)
+- [src/features/tasks/hooks/useTaskActions.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/tasks/hooks/useTaskActions.ts)
 
 ## Project Structure
 
@@ -137,24 +164,33 @@ ncrc-app/
 |- scripts/
 |  |- write-build-info.js
 |- src/
+|  |- app/
+|  |  |- providers/
+|  |  |  |- AppProviders.tsx
+|  |  |- router/
+|  |  |  |- createAppRouter.ts
 |  |- api.ts
 |  |- auth/
 |  |- components/
+|  |  |- feedback/
 |  |  |- ou-workflow/
 |  |  |  |- ApplicationManagement/
 |  |  |  |- NCRCDashboard/
 |  |  |  |- PrelimDashboard/
 |  |  |  |- TaskDashboard/
-|  |  |  |- hooks/
 |  |  |  |- modal/
 |  |  |- ui/
 |  |- context/
 |  |- features/
 |  |  |- applications/
+|  |  |  |- screens/
 |  |  |- auth/
 |  |  |- prelim/
+|  |  |  |- screens/
 |  |  |- profile/
 |  |  |- tasks/
+|  |  |  |- screens/
+|  |- hooks/
 |  |- lib/
 |  |- routes/
 |  |  |- __root.tsx
@@ -269,6 +305,8 @@ npm run serve
 ### App Bootstrap
 
 - [src/main.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/main.tsx)
+- [src/app/providers/AppProviders.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/app/providers/AppProviders.tsx)
+- [src/app/router/createAppRouter.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/app/router/createAppRouter.ts)
 - [src/routes/__root.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/__root.tsx)
 - [src/routes/_authed.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/routes/_authed.tsx)
 
@@ -294,10 +332,10 @@ npm run serve
 
 ### Main Workflow Screens
 
-- [src/components/ou-workflow/NCRCDashboard](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/NCRCDashboard)
-- [src/components/ou-workflow/TaskDashboard](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/TaskDashboard)
-- [src/components/ou-workflow/PrelimDashboard](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/PrelimDashboard)
-- [src/components/ou-workflow/ApplicationManagement](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow/ApplicationManagement)
+- [src/features/applications/screens/NcrcDashboardScreen.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/screens/NcrcDashboardScreen.tsx)
+- [src/features/tasks/screens/TaskDashboardScreen.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/tasks/screens/TaskDashboardScreen.tsx)
+- [src/features/prelim/screens/PrelimDashboardScreen.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/prelim/screens/PrelimDashboardScreen.tsx)
+- [src/features/applications/screens/ApplicationDetailScreen.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/screens/ApplicationDetailScreen.tsx)
 
 ## Conventions For New Work
 
@@ -309,6 +347,7 @@ Route files should mainly own:
 - search param normalization
 - redirects
 - loader wiring
+- route-level error boundaries
 - mounting a feature screen
 
 Heavy UI state and business logic should not accumulate in route files.
@@ -344,10 +383,22 @@ The current architecture plan in [ARCHITECTURE_ACTION_PLAN.md](c:/Users/Jakit/Do
 These are still in transition and should be treated carefully during refactors:
 
 - `src/api.ts`
-- `src/components/ou-workflow/hooks/*`
-- large workflow screen containers in NCRC, Tasks, and Prelim
-- task notes orchestration
+- deeper workflow-owned presentational components under `src/components/ou-workflow/*`
+- `src/features/applications/components/ApplicationDetailsContent.tsx` imports several workflow-era detail sections
+- broad query invalidation patterns in task mutations
 - prelim flow cleanup
+
+## Architecture Progress Snapshot
+
+Completed from the architecture plan so far:
+
+- Phase 1: retired the active transitional `useDebounce` and `useTaskActions` workflow hook paths
+- Phase 2: moved route-facing screen ownership into `src/features/*/screens`
+- Phase 3: added route-level error boundaries and extracted app bootstrap into `src/app/router` and `src/app/providers`
+
+Current next priority:
+
+- Phase 4: standardize query and mutation patterns across applications, tasks, prelim, and profile
 
 ## Related Planning Doc
 
