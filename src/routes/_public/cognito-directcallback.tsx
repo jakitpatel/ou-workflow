@@ -4,6 +4,7 @@ import {
   loadAuthenticatedSessionUserFromCognitoCallback,
   type AuthenticatedSessionUser,
 } from "@/features/auth/model/sessionManager";
+import { RouteErrorView } from "@/components/feedback/RouteErrorView";
 import { useUser } from "@/context/UserContext";
 import { useEffect } from "react";
 import { isRedirect } from "@tanstack/react-router";
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/_public/cognito-directcallback")({
   },
 
   component: CognitoDirectCallback,
+  errorComponent: CognitoDirectCallbackError,
 });
 
 function CognitoDirectCallback() {
@@ -67,5 +69,31 @@ function CognitoDirectCallback() {
         <p className="text-sm text-gray-500 mt-2">Setting up your session</p>
       </div>
     </div>
+  );
+}
+
+function CognitoDirectCallbackError({
+  error,
+  reset,
+}: {
+  error: unknown;
+  reset?: () => void;
+}) {
+  return (
+    <RouteErrorView
+      error={error}
+      reset={reset}
+      title="Authentication callback failed"
+      description="We could not finish signing you in from Cognito. You can retry here or return to login."
+      secondaryAction={
+        <button
+          type="button"
+          onClick={() => window.location.assign("/login")}
+          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+        >
+          Back To Login
+        </button>
+      }
+    />
   );
 }

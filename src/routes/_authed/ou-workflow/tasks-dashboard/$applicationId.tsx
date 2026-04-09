@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { getAccessToken } from '@/auth/authService'
+import { RouteErrorView } from '@/components/feedback/RouteErrorView'
 import { getTasksQueryOptions } from '@/features/tasks/hooks/useTaskQueries'
 import { TaskDashboardScreen } from '@/features/tasks/screens/TaskDashboardScreen'
 import { appQueryClient } from '@/shared/api/queryClient'
@@ -33,4 +34,22 @@ export const Route = createFileRoute(
   },
   pendingComponent: () => <div className="p-8">Loading tasks...</div>,
   component: TaskDashboardScreen,
+  errorComponent: TaskDashboardRouteError,
 })
+
+function TaskDashboardRouteError({
+  error,
+  reset,
+}: {
+  error: unknown
+  reset?: () => void
+}) {
+  return (
+    <RouteErrorView
+      error={error}
+      reset={reset}
+      title="Task dashboard could not be loaded"
+      description="The task route failed to load its data. You can retry this route without losing the rest of the session."
+    />
+  )
+}

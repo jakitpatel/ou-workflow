@@ -567,7 +567,7 @@ Status: Completed for route-facing screen entry ownership
 
 ## Phase 3: Harden Routing For Production
 
-Status: Next after hook retirement
+Status: Completed
 
 ### Goals
 
@@ -585,6 +585,24 @@ Status: Next after hook retirement
 
 - loader routes have consistent error handling
 - `main.tsx` becomes a minimal render/bootstrap file
+
+### Completed in this slice
+
+- added reusable route error UI in `src/components/feedback/RouteErrorView.tsx`
+- added a root route error boundary in `src/routes/__root.tsx`
+- added `errorComponent` to the Cognito callback route
+- added `errorComponent` to the NCRC application detail loader route
+- added `errorComponent` to the task dashboard application-detail loader route
+- preserved existing route paths, redirects, and loader behavior
+- added `src/app/router/createAppRouter.ts`
+- added `src/app/providers/AppProviders.tsx`
+- moved router creation out of `src/main.tsx`
+- moved provider composition out of `src/main.tsx`
+- `npm run -s typecheck` passes after the routing hardening slice
+
+### Remaining follow-up
+
+- optionally extend route-level error handling to additional non-loader routes if we want a more uniform shell
 
 ## Phase 4: Standardize Query And Mutation Patterns
 
