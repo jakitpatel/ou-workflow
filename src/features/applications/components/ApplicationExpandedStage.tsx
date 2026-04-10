@@ -70,9 +70,6 @@ const getGUIDisplayResult = (resultData: unknown): string | null => {
   if (typeof resultData === 'string') {
     const raw = resultData.trim()
     if (!raw) return null
-    if (!raw.includes('GUIDisplayResult')) {
-      return raw
-    }
     try {
       const parsed = JSON.parse(raw)
       return readValue(parsed)

@@ -312,10 +312,10 @@ export async function fetchTaskNotes({
   const params = new URLSearchParams()
   const usesVisibilityFilter = typeof isPrivate === 'boolean'
   if (applicationId !== undefined && applicationId !== null) {
-    params.append('filter[applicationId]', String(applicationId))
+    params.append('filter[ApplicationID]', String(applicationId))
   }
   if (taskId !== undefined && taskId !== null && String(taskId).trim()) {
-    params.append('filter[taskInstanceId]', String(taskId).trim())
+    params.append('filter[TaskInstanceId]', String(taskId).trim())
   }
   if (usesVisibilityFilter) {
     params.append('filter[isPrivate]', String(isPrivate))

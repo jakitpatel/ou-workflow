@@ -70,6 +70,7 @@ const getNoteText = (note: TaskNote): string => {
   const directCandidates = [
     note.note,
     note.text,
+    (note as any)?.MessageText,
     note.details,
     (note as any)?.message,
     (note as any)?.content,
