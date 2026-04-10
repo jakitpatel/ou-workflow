@@ -110,6 +110,23 @@ export async function confirmTask({
   })
 }
 
+export async function undoTask({
+  taskId,
+  token,
+}: {
+  taskId: string
+  token?: string | null
+}): Promise<any> {
+  return await fetchWithAuth({
+    path: '/undoTask',
+    method: 'POST',
+    body: {
+      task_instance_id: taskId,
+    },
+    token,
+  })
+}
+
 export async function fetchApplicationTasks({
   token,
   applicationId,

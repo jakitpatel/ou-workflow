@@ -3,17 +3,17 @@ import {
   Inbox,
   MessageSquarePlus,
   SendHorizontal,
+  Undo2,
   UserCog,
-  X
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Task, Applicant } from '@/types/application'
 import { useUser } from '@/context/UserContext'
 import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
+import { useUndoTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState'
-import {
-  TaskNotesDrawer,
-} from '@/features/tasks/notes/TaskNotesDrawer'
+import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
 import {
   getStatusBadgeClass,
   getStatusLabel,
@@ -91,8 +91,13 @@ export function ApplicationExpandedStage({
   applicant,
   handleTaskAction,
 }: Props) {
-  const { username, role, roles, delegated } = useUser()
+  const { token, username, role, roles, delegated } = useUser()
   const { data: taskRolesAll = [] } = useFetchTaskRoles()
+  const undoTaskMutation = useUndoTaskMutation({
+    includeApplicationLists: true,
+    includePrelimLists: true,
+    onError: (message) => toast.error(message),
+  })
   const taskNotes = useTaskNotesDrawerState({
     applicationId: applicant.applicationId ?? null,
     onError: (message) => toast.error(message),
@@ -140,6 +145,10 @@ export function ApplicationExpandedStage({
               })
 
               task.capacity = action.capacity
+              const taskId = getTaskInstanceId(task)
+              const isCompleted = task.status?.toLowerCase() === 'completed'
+              const isUndoing =
+                undoTaskMutation.isPending && undoTaskMutation.variables?.taskId === taskId
 
               return (
                 <div
@@ -149,48 +158,69 @@ export function ApplicationExpandedStage({
                   )}`}
                 >
                   <div className="mb-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {action.disabled ? (
-                        <span
-                          className="text-sm font-semibold leading-tight text-gray-900"
-                          title={task.description || 'No description available'}
-                        >
-                          {task.name}
-                        </span>
-                      ) : (
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {action.disabled ? (
+                          <span
+                            className="text-sm font-semibold leading-tight text-gray-900"
+                            title={task.description || 'No description available'}
+                          >
+                            {task.name}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={e => handleTaskAction?.(e, applicant, task)}
+                            title={task.description || 'No description available'}
+                            className="rounded bg-blue-600 px-2 py-1 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            {task.name}
+                          </button>
+                        )}
+
+                        {task.taskRoles?.map((roleObj, idx) => (
+                          <span
+                            key={idx}
+                            className="rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700"
+                          >
+                            {typeof roleObj === 'string' ? roleObj : roleObj.taskRole}
+                          </span>
+                        ))}
+
+                        {action.assignee && (
+                          <span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700">
+                            {action.assignee}
+                          </span>
+                        )}
+
+                        {action.isdelegate && (
+                          <span className="group relative ml-1 inline-flex items-center text-blue-600">
+                            <UserCog size={14} />
+                            <span className="absolute -top-7 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white shadow group-hover:block">
+                              As Assistant
+                            </span>
+                          </span>
+                        )}
+                      </div>
+
+                      {isCompleted && taskId && (
                         <button
-                          onClick={e => handleTaskAction?.(e, applicant, task)}
-                          title={task.description || 'No description available'}
-                          className="rounded bg-blue-600 px-2 py-1 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          type="button"
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            await undoTaskMutation.mutateAsync({
+                              taskId,
+                              token: token ?? undefined,
+                            })
+                            toast.success(`Undid "${task.name}"`)
+                          }}
+                          disabled={isUndoing}
+                          className="inline-flex flex-shrink-0 items-center rounded p-1 text-amber-600 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`Undo ${task.name}`}
+                          title={isUndoing ? 'Undoing task...' : 'Undo task'}
                         >
-                          {task.name}
+                          <Undo2 className="h-4 w-4" />
                         </button>
                       )}
-
-                      {task.taskRoles?.map((roleObj, idx) => (
-                        <span
-                          key={idx}
-                          className="rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700"
-                        >
-                          {typeof roleObj === 'string' ? roleObj : roleObj.taskRole}
-                        </span>
-                      ))}
-
-                      {action.assignee && (
-                        <span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700">
-                          {action.assignee}
-                        </span>
-                      )}
-
-                      {action.isdelegate && (
-                        <span className="group relative ml-1 inline-flex items-center text-blue-600">
-                          <UserCog size={14} />
-                          <span className="absolute -top-7 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white shadow group-hover:block">
-                            As Assistant
-                          </span>
-                        </span>
-                      )}
-
                     </div>
 
                     <div className="mt-1 flex items-center justify-between">
@@ -256,7 +286,6 @@ export function ApplicationExpandedStage({
 
                     <div className="ml-auto flex items-center gap-1">
                       {(() => {
-                        const taskId = getTaskInstanceId(task)
                         const contextKey = taskId
                         const noteCounts = taskNotes.getCounts(contextKey)
                         const receivedCount =

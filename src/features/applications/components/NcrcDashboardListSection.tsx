@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react'
-import { ApplicantCard } from '@/components/ou-workflow/NCRCDashboard/ApplicantCard'
+import { ApplicantCard } from '@/features/applications/components/ApplicantCard'
 import type { Applicant, Task } from '@/types/application'
 
 type NcrcDashboardListSectionProps = {

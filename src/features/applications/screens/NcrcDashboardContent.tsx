@@ -15,7 +15,7 @@ import type { Applicant, Task } from '@/types/application'
 
 const SHOW_APPLICANT_STATS_CARDS = false
 
-export function NCRCDashboard() {
+export function NcrcDashboardContent() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
   const { token, username } = useUser()

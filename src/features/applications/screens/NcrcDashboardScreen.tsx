@@ -1,5 +1,5 @@
-import { NCRCDashboard } from '@/components/ou-workflow/NCRCDashboard'
+import { NcrcDashboardContent } from '@/features/applications/screens/NcrcDashboardContent'
 
 export function NcrcDashboardScreen() {
-  return <NCRCDashboard />
+  return <NcrcDashboardContent />
 }

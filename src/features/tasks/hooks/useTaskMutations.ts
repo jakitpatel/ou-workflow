@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { assignTask, confirmTask, createTaskNote } from '@/features/tasks/api'
+import { assignTask, confirmTask, createTaskNote, undoTask } from '@/features/tasks/api'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
@@ -22,6 +22,11 @@ type AssignTaskInput = {
   assignee: string
   token?: string | null
   capacity?: string
+}
+
+type UndoTaskInput = {
+  taskId: string
+  token?: string | null
 }
 
 type TaskLike = {
@@ -159,6 +164,27 @@ export const useCreateTaskNoteMutation = (options: TaskMutationOptions = {}) => 
     },
     onError: (error: unknown) => {
       options.onError?.(resolveMutationErrorMessage(error, 'Task note creation failed'))
+    },
+  })
+}
+
+export const useUndoTaskMutation = (options: TaskMutationOptions = {}) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: undoTask,
+    onSuccess: async (_response, variables) => {
+      const payload = variables as UndoTaskInput
+      patchTaskCaches(queryClient, String(payload.taskId), (task) => ({
+        ...task,
+        status: 'PENDING',
+        CompletedDate: undefined,
+        executedBy: undefined,
+      }))
+      await invalidateRelatedLists(queryClient, options)
+    },
+    onError: (error: unknown) => {
+      options.onError?.(resolveMutationErrorMessage(error, 'Undo task failed'))
     },
   })
 }

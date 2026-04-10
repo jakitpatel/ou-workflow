@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { ApplicationExpandedStage } from './ApplicationExpandedStage';
+import { ApplicationExpandedStage } from '@/features/applications/components/ApplicationExpandedStage';
 import { CancelApplicationDialog } from '@/components/ou-workflow/modal/CancelApplicationDialog';
 import { ApplicantProgressBar } from '@/features/applications/components/ApplicantProgressBar';
 import {
@@ -210,7 +210,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
 
   const handleViewTasks = (applicationId?: string | number) => {
     saveScrollPosition(applicationId ?? '');
-    // 🔹 No applicationId → base tasks dashboard
+    // No applicationId -> base tasks dashboard
     if (!applicationId) {
       navigate({
         to: TaskDashboardRoute.to,
@@ -222,7 +222,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
       return;
     }
 
-    // 🔹 With applicationId → param route
+    // With applicationId -> param route
     navigate({
       to: TaskDashboardWithAppRoute.to,
       params: { applicationId: String(applicationId) },
@@ -764,4 +764,3 @@ function DocumentLinks({ filesByType }: { filesByType?: Record<string, any> }) {
     </div>
   );
 }
-
