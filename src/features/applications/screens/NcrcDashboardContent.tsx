@@ -49,6 +49,7 @@ export function NcrcDashboardContent() {
     myNotes,
     myNotesLoading,
     myNotesError,
+    myNotesReplySubmitting,
     updateSearch,
     handleFirst,
     handlePrev,
@@ -56,6 +57,7 @@ export function NcrcDashboardContent() {
     handleLast,
     openMyNotesDrawer,
     closeMyNotesDrawer,
+    submitMyNotesReply,
   } = useNcrcDashboardState({
     search,
     navigate,
@@ -201,7 +203,7 @@ export function NcrcDashboardContent() {
         loadingToMe={myNotesLoading}
         composeText=""
         composePrivate={false}
-        isSubmitting={false}
+        isSubmitting={myNotesReplySubmitting}
         error={myNotesError}
         notesTitleOverride="My Notes"
         currentLabelOverride="Logged In User"
@@ -215,7 +217,7 @@ export function NcrcDashboardContent() {
         onComposeToUserChange={() => {}}
         onComposePrivateChange={() => {}}
         onSubmit={() => {}}
-        onReplySubmit={async () => {}}
+        onReplySubmit={submitMyNotesReply}
       />
     </>
   )

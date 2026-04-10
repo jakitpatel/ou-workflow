@@ -37,7 +37,13 @@ type Props = {
   onComposeToUserChange: (toUserId: string | null) => void
   onComposePrivateChange: (value: boolean) => void
   onSubmit: () => void
-  onReplySubmit: (params: { parentMessageId: string; text: string }) => Promise<void>
+  onReplySubmit: (params: {
+    parentMessageId: string
+    text: string
+    applicationId?: number | null
+    taskId?: string
+    toUser?: string | null
+  }) => Promise<void>
 }
 
 type PublicNoteNode = {
@@ -439,6 +445,20 @@ export function TaskNotesDrawer({
                       await onReplySubmit({
                         parentMessageId,
                         text: replyText.trim(),
+                        applicationId:
+                          typeof (note as any)?.ApplicationID === 'number'
+                            ? (note as any).ApplicationID
+                            : null,
+                        taskId:
+                          (note as any)?.TaskInstanceId === undefined ||
+                          (note as any)?.TaskInstanceId === null ||
+                          String((note as any)?.TaskInstanceId).trim() === '' ||
+                          String((note as any)?.TaskInstanceId).trim() === '0'
+                            ? undefined
+                            : String((note as any)?.TaskInstanceId).trim(),
+                        toUser: getMetaValue(note, 'fromUser', 'from_user', 'FromUser') !== '-'
+                          ? getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
+                          : null,
                       })
                       setReplyTextById((prev) => ({ ...prev, [noteId]: '' }))
                       setReplyOpenById((prev) => ({ ...prev, [noteId]: false }))

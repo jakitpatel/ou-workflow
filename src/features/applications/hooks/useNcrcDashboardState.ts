@@ -4,6 +4,7 @@ import { useUser } from '@/context/UserContext'
 import { useInfiniteApplications } from '@/features/applications/hooks/useInfiniteApplications'
 import { usePagedApplications } from '@/features/applications/hooks/usePagedApplications'
 import { fetchTaskNotes } from '@/features/tasks/api'
+import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { useDebounce } from '@/hooks/useDebounce'
 import type { Applicant, TaskNote } from '@/types/application'
 
@@ -41,6 +42,11 @@ export function useNcrcDashboardState({
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   const debouncedSearch = useDebounce(q, DEBOUNCE_DELAY)
+  const createTaskNoteMutation = useCreateTaskNoteMutation({
+    includeApplicationLists: true,
+    includePrelimLists: true,
+    onError: (message) => setMyNotesError(message),
+  })
 
   const pagedQuery = usePagedApplications({
     searchTerm: debouncedSearch,
@@ -241,6 +247,51 @@ export function useNcrcDashboardState({
     }
   }, [token, username])
 
+  const submitMyNotesReply = useCallback(
+    async ({
+      parentMessageId,
+      text,
+      applicationId: replyApplicationId,
+      taskId,
+      toUser,
+    }: {
+      parentMessageId: string
+      text: string
+      applicationId?: number | null
+      taskId?: string
+      toUser?: string | null
+    }) => {
+      const trimmedText = text.trim()
+      if (!trimmedText) {
+        setMyNotesError('Reply text is required')
+        return
+      }
+
+      if (!username?.trim()) {
+        setMyNotesError('Logged in username is not available.')
+        return
+      }
+
+      await createTaskNoteMutation.mutateAsync({
+        taskId,
+        applicationId: replyApplicationId ?? null,
+        note: trimmedText,
+        isPrivate: false,
+        fromUser: username.trim(),
+        parentMessageId,
+        toUser: toUser ?? undefined,
+        token: token ?? undefined,
+      })
+
+      setMyNotesError('')
+      const notes = await fetchTaskNotes({
+        token: token ?? undefined,
+      })
+      setMyNotes(notes)
+    },
+    [createTaskNoteMutation, token, username],
+  )
+
   const closeMyNotesDrawer = useCallback(() => {
     setMyNotesOpen(false)
     setMyNotesError('')
@@ -267,6 +318,7 @@ export function useNcrcDashboardState({
     myNotes,
     myNotesLoading,
     myNotesError,
+    myNotesReplySubmitting: createTaskNoteMutation.isPending,
     updateSearch,
     handleFirst,
     handlePrev,
@@ -274,5 +326,6 @@ export function useNcrcDashboardState({
     handleLast,
     openMyNotesDrawer,
     closeMyNotesDrawer,
+    submitMyNotesReply,
   }
 }

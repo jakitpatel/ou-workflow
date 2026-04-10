@@ -71,6 +71,9 @@ describe('TaskNotesDrawer', () => {
       expect(onReplySubmit).toHaveBeenCalledWith({
         parentMessageId: '100',
         text: 'Threaded reply',
+        applicationId: null,
+        taskId: undefined,
+        toUser: 'Alice Smith',
       })
     })
   })

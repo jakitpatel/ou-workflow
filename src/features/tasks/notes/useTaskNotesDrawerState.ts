@@ -27,6 +27,9 @@ type OpenDrawerParams = {
 type CreateReplyParams = {
   parentMessageId: string
   text: string
+  applicationId?: number | null
+  taskId?: string
+  toUser?: string | null
 }
 
 type UseTaskNotesDrawerStateParams = {
@@ -232,7 +235,7 @@ export function useTaskNotesDrawerState({
   ])
 
   const submitReply = useCallback(
-    async ({ parentMessageId, text }: CreateReplyParams) => {
+    async ({ parentMessageId, text, applicationId: replyApplicationId, taskId: replyTaskId, toUser }: CreateReplyParams) => {
       if (!drawer) return
 
       const trimmedText = text.trim()
@@ -242,20 +245,22 @@ export function useTaskNotesDrawerState({
       }
 
       await createTaskNoteMutation.mutateAsync({
-        taskId: drawer.taskId,
-        applicationId: applicationId ?? null,
+        taskId: replyTaskId ?? drawer.taskId,
+        applicationId: replyApplicationId ?? applicationId ?? null,
         note: trimmedText,
         isPrivate: false,
         fromUser: username ?? undefined,
         parentMessageId,
+        toUser: toUser ?? undefined,
         token: token ?? undefined,
       })
 
       setError('')
+      const replyTab: NoteTab = drawer.activeTab === 'toMe' ? 'toMe' : 'public'
       await fetchNotesByVisibility({
         contextKey: drawer.contextKey,
         taskId: drawer.taskId,
-        tab: 'public',
+        tab: replyTab,
       })
     },
     [
