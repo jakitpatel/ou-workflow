@@ -194,6 +194,7 @@ export type Task = {
   taskRoles?: { taskRole: string }[],
   Result?: string;
   ResultData?: string;
+  GUIDisplayResult?: string;
   IsGlobalNotes?: number;
   isGlobalNotes?: number;
   IsPrivateNotes?: number;

@@ -59,9 +59,6 @@ const STATUS = {
   COMPLETE: 'complete',
 } as const
 
-const buildInspectionFeeResultData = (value: InspectionFeeChoice): string =>
-  `{"GUIDisplayResult":{inspectionNeeded:${value.inspectionNeeded}, feeNeeded:${value.feeNeeded}}}`
-
 const buildInspectionFeeResult = (value: InspectionFeeChoice): string =>
   `{inspectionNeeded:${value.inspectionNeeded}, feeNeeded:${value.feeNeeded}}`
 
@@ -267,7 +264,7 @@ export function useTaskDashboardState() {
           confirmTaskMutation.mutate({
             ...mutationParams,
             result: buildInspectionFeeResult(result),
-            resultData: buildInspectionFeeResultData(result),
+            resultData: buildInspectionFeeResult(result),
           })
           return
         }
