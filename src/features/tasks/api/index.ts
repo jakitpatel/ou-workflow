@@ -343,7 +343,11 @@ export async function fetchTaskNotes({
     : []
 
   return records.map((record) => {
-    const attributes = (record?.attributes ?? {}) as WFApplicationMessageAttributes
+    const attributes = (
+      record && typeof record === 'object' && 'attributes' in record
+        ? record.attributes
+        : record
+    ) as WFApplicationMessageAttributes
     return {
       ...attributes,
       text: attributes.MessageText ?? '',
