@@ -91,12 +91,12 @@ describe('useTaskNotesDrawerState', () => {
     mutateAsyncMock.mockReset()
 
     fetchTaskNotesMock.mockImplementation(async (params?: Record<string, unknown>) => {
-      if (params?.isPrivate === true) {
-        return [{ MessageID: 'private-note-1', MessageText: 'Private note' }]
+      if (params && !Object.prototype.hasOwnProperty.call(params, 'isPrivate')) {
+        return [{ MessageID: 'to-me-note-1', MessageText: 'To me note' }]
       }
 
-      if (params?.toUser === 'S.Benjamin') {
-        return [{ MessageID: 'to-me-note-1', MessageText: 'To me note' }]
+      if (params?.isPrivate === true) {
+        return [{ MessageID: 'private-note-1', MessageText: 'Private note' }]
       }
 
       return [{ MessageID: 'public-note-1', MessageText: 'Public note' }]
@@ -135,7 +135,6 @@ describe('useTaskNotesDrawerState', () => {
     expect(fetchTaskNotesMock).toHaveBeenCalledWith(
       expect.objectContaining({
         applicationId: 42,
-        toUser: 'S.Benjamin',
         token: 'test-access-token',
       }),
     )

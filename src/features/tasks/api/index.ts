@@ -302,49 +302,22 @@ export async function fetchTaskNotes({
   taskId,
   applicationId,
   isPrivate,
-  toUser,
   token,
 }: {
   taskId?: string | null
   applicationId?: number | null
   isPrivate?: boolean
-  toUser?: string | null
   token?: string | null
 }): Promise<TaskNote[]> {
   const params = new URLSearchParams()
-  const filters: Array<{ name: string; op: 'eq' | 'like'; val: string | boolean }> = []
-
-  if (applicationId !== null && applicationId !== undefined) {
-    filters.push({
-      name: 'ApplicationID',
-      op: 'eq',
-      val: String(applicationId),
-    })
+  if (applicationId !== undefined && applicationId !== null) {
+    params.append('filter[applicationId]', String(applicationId))
   }
   if (taskId !== undefined && taskId !== null && String(taskId).trim()) {
-    filters.push({
-      name: 'TaskInstanceId',
-      op: 'eq',
-      val: String(taskId).trim(),
-    })
+    params.append('filter[taskInstanceId]', String(taskId).trim())
   }
   if (typeof isPrivate === 'boolean') {
-    filters.push({
-      name: 'isPrivate',
-      op: 'eq',
-      val: isPrivate,
-    })
-  }
-  if (toUser !== undefined && toUser !== null && String(toUser).trim()) {
-    filters.push({
-      name: 'ToUser',
-      op: 'like',
-      val: String(toUser).trim(),
-    })
-  }
-
-  if (filters.length > 0) {
-    params.append('filter', JSON.stringify({ and: filters }))
+    params.append('filter[isPrivate]', String(isPrivate))
   }
   params.append('sort', '-MessageID')
 
@@ -353,7 +326,7 @@ export async function fetchTaskNotes({
     messages?: WFApplicationMessageRecord[]
     items?: WFApplicationMessageRecord[]
   } | WFApplicationMessageRecord[]>({
-    path: `/api/WFApplicationMessage?${params.toString()}`,
+    path: `/get_my_messages?${params.toString()}`,
     method: 'GET',
     token,
   })

@@ -91,13 +91,24 @@ export function useTaskNotesDrawerState({
       setLoadingByKey((prev) => ({ ...prev, [loadingKey]: true }))
 
       try {
-        const notes = await fetchTaskNotes({
+        const fetchParams: {
+          taskId?: string
+          applicationId?: number | null
+          isPrivate?: boolean
+          token?: string
+        } = {
           taskId,
           applicationId: applicationId ?? null,
-          isPrivate: tab === 'private',
-          toUser: tab === 'toMe' ? (username ?? undefined) : undefined,
           token: token ?? undefined,
-        })
+        }
+
+        if (tab === 'private') {
+          fetchParams.isPrivate = true
+        } else if (tab === 'public') {
+          fetchParams.isPrivate = false
+        }
+
+        const notes = await fetchTaskNotes(fetchParams)
 
         setNotesByContext((prev) => ({
           ...prev,
