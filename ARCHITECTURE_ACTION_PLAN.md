@@ -71,7 +71,6 @@ The next phase should focus less on inventing architecture and more on finishing
 
 Major workflow screens still render from:
 
-- `src/components/ou-workflow/NCRCDashboard`
 - `src/components/ou-workflow/TaskDashboard`
 - `src/components/ou-workflow/PrelimDashboard`
 - `src/components/ou-workflow/ApplicationManagement`
@@ -89,7 +88,6 @@ Current live consumers include:
 
 - `src/features/applications/hooks/useNcrcDashboardState.ts`
 - `src/features/prelim/hooks/usePrelimDashboardState.ts`
-- `src/components/ou-workflow/NCRCDashboard/index.tsx`
 - `src/components/ou-workflow/PrelimDashboard/ResolvedSection.tsx`
 
 This is one of the clearest signs that the migration is incomplete.
@@ -136,7 +134,7 @@ Notable issues still in the codebase:
 Visible test coverage exists for:
 
 - `src/features/tasks/notes/useTaskNotesDrawerState.test.tsx`
-- `src/components/ou-workflow/NCRCDashboard/TaskNotesDrawer.test.tsx`
+- `src/features/tasks/notes/TaskNotesDrawer.test.tsx`
 - `src/test/renderWithProviders.example.test.tsx`
 
 That is not enough coverage for auth, loaders, route guards, dashboard filtering, task actions, or prelim resolution flow.
@@ -529,7 +527,7 @@ Status: Completed for `useDebounce` and `useTaskActions`
 
 ## Phase 2: Make Screen Ownership Match Feature Ownership
 
-Status: Completed for route-facing screen entry ownership
+Status: Completed for route-facing screen ownership and NCRC dashboard feature migration
 
 ### Goals
 
@@ -550,6 +548,7 @@ Status: Completed for route-facing screen entry ownership
 ### Completed in this slice
 
 - added `src/features/applications/screens/NcrcDashboardScreen.tsx`
+- added `src/features/applications/screens/NcrcDashboardContent.tsx`
 - added `src/features/applications/screens/ApplicationDetailScreen.tsx`
 - added `src/features/tasks/screens/TaskDashboardScreen.tsx`
 - added `src/features/prelim/screens/PrelimDashboardScreen.tsx`
@@ -557,13 +556,16 @@ Status: Completed for route-facing screen entry ownership
 - updated both task dashboard routes to import `TaskDashboardScreen`
 - updated the prelim dashboard route to import `PrelimDashboardScreen`
 - updated the NCRC application detail route to render `ApplicationDetailScreen`
+- moved NCRC dashboard sections into `src/features/applications/components`
+- moved the shared notes drawer into `src/features/tasks/notes`
+- removed the old `src/components/ou-workflow/NCRCDashboard` folder after the feature migration completed
 - `npm run -s typecheck` passes after the screen-ownership move
 
 ### Remaining follow-up
 
-- deeper presentational and section components still live under `src/components/ou-workflow`
+- task, prelim, and application-management presentational sections still live under `src/components/ou-workflow`
 - `src/features/applications/components/ApplicationDetailsContent.tsx` still imports many workflow-era detail sections
-- this phase achieved route-facing feature ownership without attempting a risky full UI file move in one slice
+- this phase fully completed the NCRC dashboard migration while leaving other workflow areas for later slices
 
 ## Phase 3: Harden Routing For Production
 

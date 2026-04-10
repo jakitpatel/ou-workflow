@@ -139,13 +139,14 @@ The UI is currently split across:
 
 - [src/components/ui](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ui): reusable primitive components
 - [src/components/feedback](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/feedback): shared route and app feedback shells
-- [src/components/ou-workflow](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow): workflow screens and workflow-specific UI
+- [src/components/ou-workflow](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/components/ou-workflow): remaining workflow-specific UI outside the fully migrated NCRC dashboard
 - [src/features/*/screens](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features): feature-owned route-facing screen entry files
-- [src/features/applications/components](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/components): newer feature-owned detail components and dashboard sections
+- [src/features/applications/components](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/components): feature-owned application detail components and the full NCRC dashboard component tree
 
-The app is still mid-migration from workflow-folder ownership toward stronger feature ownership, but route-facing screen ownership has already moved into:
+The app is still mid-migration from workflow-folder ownership toward stronger feature ownership, and the NCRC dashboard migration is now complete under:
 
 - [src/features/applications/screens](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/screens)
+- [src/features/applications/components](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/applications/components)
 - [src/features/tasks/screens](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/tasks/screens)
 - [src/features/prelim/screens](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/features/prelim/screens)
 
@@ -175,7 +176,6 @@ ncrc-app/
 |  |  |- feedback/
 |  |  |- ou-workflow/
 |  |  |  |- ApplicationManagement/
-|  |  |  |- NCRCDashboard/
 |  |  |  |- PrelimDashboard/
 |  |  |  |- TaskDashboard/
 |  |  |  |- modal/
@@ -393,7 +393,7 @@ These are still in transition and should be treated carefully during refactors:
 Completed from the architecture plan so far:
 
 - Phase 1: retired the active transitional `useDebounce` and `useTaskActions` workflow hook paths
-- Phase 2: moved route-facing screen ownership into `src/features/*/screens`
+- Phase 2: moved route-facing screen ownership into `src/features/*/screens` and completed the NCRC dashboard migration into `src/features/applications`
 - Phase 3: added route-level error boundaries and extracted app bootstrap into `src/app/router` and `src/app/providers`
 
 Current next priority:
