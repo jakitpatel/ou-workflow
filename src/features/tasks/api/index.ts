@@ -310,13 +310,14 @@ export async function fetchTaskNotes({
   token?: string | null
 }): Promise<TaskNote[]> {
   const params = new URLSearchParams()
+  const usesVisibilityFilter = typeof isPrivate === 'boolean'
   if (applicationId !== undefined && applicationId !== null) {
     params.append('filter[applicationId]', String(applicationId))
   }
   if (taskId !== undefined && taskId !== null && String(taskId).trim()) {
     params.append('filter[taskInstanceId]', String(taskId).trim())
   }
-  if (typeof isPrivate === 'boolean') {
+  if (usesVisibilityFilter) {
     params.append('filter[isPrivate]', String(isPrivate))
   }
   params.append('sort', '-MessageID')
@@ -326,7 +327,7 @@ export async function fetchTaskNotes({
     messages?: WFApplicationMessageRecord[]
     items?: WFApplicationMessageRecord[]
   } | WFApplicationMessageRecord[]>({
-    path: `/get_my_messages?${params.toString()}`,
+    path: `${usesVisibilityFilter ? '/api/WFApplicationMessage' : '/get_my_messages'}?${params.toString()}`,
     method: 'GET',
     token,
   })
