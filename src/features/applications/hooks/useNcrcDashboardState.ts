@@ -8,7 +8,7 @@ import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutatio
 import { useDebounce } from '@/hooks/useDebounce'
 import type { Applicant, TaskNote } from '@/types/application'
 
-const PAGE_LIMIT = 5
+const PAGE_LIMIT = 50
 const DEBOUNCE_DELAY = 1000
 
 type DashboardSearch = {
@@ -26,6 +26,17 @@ type UseNcrcDashboardStateParams = {
     search: (prev: DashboardSearch) => DashboardSearch
   }) => void
 }
+
+const normalizeMyNotesWithApplicationId = (notes: TaskNote[]): TaskNote[] =>
+  notes.map((note) => {
+    const rawApplicationId =
+      (note as any)?.ApplicationID ?? (note as any)?.applicationId ?? (note as any)?.ApplicationId
+    const parsedApplicationId = Number(rawApplicationId)
+
+    return Number.isFinite(parsedApplicationId)
+      ? { ...note, ApplicationID: parsedApplicationId }
+      : note
+  })
 
 export function useNcrcDashboardState({
   search,
@@ -234,7 +245,7 @@ export function useNcrcDashboardState({
       const notes = await fetchTaskNotes({
         token: token ?? undefined,
       })
-      setMyNotes(notes)
+      setMyNotes(normalizeMyNotesWithApplicationId(notes))
     } catch (fetchError: any) {
       const message =
         fetchError?.details?.status ||
@@ -287,7 +298,7 @@ export function useNcrcDashboardState({
       const notes = await fetchTaskNotes({
         token: token ?? undefined,
       })
-      setMyNotes(notes)
+      setMyNotes(normalizeMyNotesWithApplicationId(notes))
     },
     [createTaskNoteMutation, token, username],
   )

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { ErrorDialog, type ErrorDialogRef } from '@/components/ErrorDialog'
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal'
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal'
@@ -14,6 +14,10 @@ import { Route } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
 import type { Applicant, Task } from '@/types/application'
 
 const SHOW_APPLICANT_STATS_CARDS = false
+const normalizeApplicationId = (value: unknown): number | undefined => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
 
 export function NcrcDashboardContent() {
   const search = Route.useSearch()
@@ -69,6 +73,16 @@ export function NcrcDashboardContent() {
     username: username ?? undefined,
     onError: (message) => errorDialogRef.current?.open(message),
   })
+  const myNotesWithApplicationId = useMemo(
+    () =>
+      myNotes.map((note) => ({
+        ...note,
+        ApplicationID: normalizeApplicationId(
+          (note as any)?.ApplicationID ?? (note as any)?.applicationId ?? (note as any)?.ApplicationId,
+        ),
+      })),
+    [myNotes],
+  )
 
   const handleSelectAppActions = (application: Applicant, action: Task) => {
     setSelectedAction({ application, action })
@@ -197,7 +211,7 @@ export function NcrcDashboardContent() {
         activeTab="toMe"
         privateNotes={[]}
         publicNotes={[]}
-        toMeNotes={myNotes}
+        toMeNotes={myNotesWithApplicationId}
         loadingPrivate={false}
         loadingPublic={false}
         loadingToMe={myNotesLoading}
@@ -211,6 +225,7 @@ export function NcrcDashboardContent() {
         singleTabMode
         hideComposer
         hidePrivacyToggle
+        showPerNoteApplicationId
         onClose={closeMyNotesDrawer}
         onTabChange={() => {}}
         onComposeTextChange={() => {}}

@@ -31,6 +31,7 @@ type Props = {
   singleTabMode?: boolean
   hideComposer?: boolean
   hidePrivacyToggle?: boolean
+  showPerNoteApplicationId?: boolean
   onClose: () => void
   onTabChange: (tab: NoteTab) => void
   onComposeTextChange: (text: string) => void
@@ -180,6 +181,23 @@ const getParentMessageId = (note: TaskNote): string => {
   return ''
 }
 
+const getNoteApplicationId = (note: TaskNote): number | null => {
+  const candidates = [
+    (note as any)?.ApplicationID,
+    (note as any)?.applicationId,
+    (note as any)?.ApplicationId,
+  ]
+
+  for (const candidate of candidates) {
+    const numericId = Number(candidate)
+    if (Number.isFinite(numericId)) {
+      return numericId
+    }
+  }
+
+  return null
+}
+
 const getThreadParentMessageId = (note: TaskNote): string | null => {
   const candidate =
     (note as any)?.parentMessageId ??
@@ -274,6 +292,7 @@ export function TaskNotesDrawer({
   singleTabMode = false,
   hideComposer = false,
   hidePrivacyToggle = false,
+  showPerNoteApplicationId = false,
   onClose,
   onTabChange,
   onComposeTextChange,
@@ -411,6 +430,7 @@ export function TaskNotesDrawer({
     const replyText = replyTextById[noteId] ?? ''
     const canReply = Boolean(parentMessageId) && replyText.trim().length > 0 && !isReplySubmitting
     const tone = REPLY_TONES[Math.min(depth, REPLY_TONES.length - 1)]
+    const noteApplicationId = getNoteApplicationId(note)
 
     return (
       <div key={noteId} className={depth > 0 ? `ml-4 border-l ${tone.rail} pl-3` : ''}>
@@ -423,6 +443,11 @@ export function TaskNotesDrawer({
             <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${tone.badge}`}>
               {fromRole}
             </span>
+            {showPerNoteApplicationId && noteApplicationId !== null ? (
+              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-700">
+                AppId: {noteApplicationId}
+              </span>
+            ) : null}
             <span className="text-[11px] text-slate-500">{createdAt}</span>
           </div>
           <p className="mt-2 text-sm leading-5 text-slate-900">{getNoteText(note)}</p>
@@ -445,10 +470,7 @@ export function TaskNotesDrawer({
                       await onReplySubmit({
                         parentMessageId,
                         text: replyText.trim(),
-                        applicationId:
-                          typeof (note as any)?.ApplicationID === 'number'
-                            ? (note as any).ApplicationID
-                            : null,
+                        applicationId: noteApplicationId,
                         taskId:
                           (note as any)?.TaskInstanceId === undefined ||
                           (note as any)?.TaskInstanceId === null ||
@@ -606,6 +628,7 @@ export function TaskNotesDrawer({
                     const createdAt = formatNoteDate(
                       getMetaValue(note, 'createdDate', 'created_date', 'SentDate', 'sentDate')
                     )
+                    const noteApplicationId = getNoteApplicationId(note)
 
                     return (
                       <article
@@ -620,6 +643,11 @@ export function TaskNotesDrawer({
                           <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700">
                             {fromRole}
                           </span>
+                          {showPerNoteApplicationId && noteApplicationId !== null ? (
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-700">
+                              AppId: {noteApplicationId}
+                            </span>
+                          ) : null}
                           <span className="text-[11px] text-slate-500">{createdAt}</span>
                           <span className="ml-auto inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
                             <Lock className="h-3 w-3" />
