@@ -99,7 +99,7 @@ export async function confirmTask({
   }
 
   if (resultData) {
-    body.ResultData = resultData
+    body.GUIDisplayResult = resultData
   }
 
   return await fetchWithAuth({

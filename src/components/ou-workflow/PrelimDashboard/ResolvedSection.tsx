@@ -28,6 +28,10 @@ type DrawerState = {
 
 const isResolvePlantTask = (taskName?: string) => /^ResolvePlant\d*$/.test(taskName ?? '')
 const isTaskPending = (status?: string) => (status ?? '').trim().toLowerCase() === 'pending'
+const isApplicationWithdrawn = (status?: string) => {
+  const normalized = (status ?? '').trim().toLowerCase()
+  return normalized === 'withdrawn' || normalized === 'wth'
+}
 
 export function ResolvedSection({
   application,
@@ -44,6 +48,7 @@ export function ResolvedSection({
 
   const { token, username } = useUser()
   const resolved = extractResolvedData(application)
+  const isWithdrawn = isApplicationWithdrawn(application?.status)
 
   if (!loading && !resolved) return null
 
@@ -337,6 +342,7 @@ export function ResolvedSection({
           selectedId={resolved?.company?.Id}
           isActionable={isTaskPending(companyTask.status)}
           taskStatus={companyTask.status}
+          readOnly={isWithdrawn}
         />
       )}
 
@@ -359,6 +365,7 @@ export function ResolvedSection({
             }
             isActionable={isTaskPending(activePlantTask.status)}
             taskStatus={activePlantTask.status}
+            readOnly={isWithdrawn}
           />
         )}
         </>
