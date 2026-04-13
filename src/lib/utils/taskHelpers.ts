@@ -142,6 +142,14 @@ type TaskActionResult = {
   capacity: string;
 };
 
+const canActOnStatus = (
+  status: string,
+  includeCompleted = false
+): boolean =>
+  status === 'pending' ||
+  status === 'in_progress' ||
+  (includeCompleted && status === 'completed');
+
 export const mapTaskToAction = ({
   application,
   task,
@@ -187,7 +195,7 @@ export const mapTaskToAction = ({
         )
       );
 
-      if (isAssigned && (status === 'pending' || status === 'in_progress')) {
+      if (isAssigned && canActOnStatus(status)) {
         color = 'bg-blue-600 hover:bg-blue-700';
         disabled = false;
         capacity = 'MEMBER';
@@ -204,7 +212,7 @@ export const mapTaskToAction = ({
 
       if (
         isAssignedToDelegated &&
-        (status === 'pending' || status === 'in_progress')
+        canActOnStatus(status)
       ) {
         color = 'bg-blue-600 hover:bg-blue-700';
         disabled = false;
@@ -217,7 +225,107 @@ export const mapTaskToAction = ({
       );
 
       if (
-        (status === 'pending' || status === 'in_progress') &&
+        canActOnStatus(status) &&
+        normalizedTaskRoles.length > 0 &&
+        hasIncludedRole
+      ) {
+        color = 'bg-blue-600 hover:bg-blue-700';
+        disabled = false;
+        capacity = 'DESIGNATED';
+      }
+    }
+  }
+
+  const assignee = getAssignedUser(
+    normalizedTaskRoles,
+    Array.isArray(application.assignedRoles) ? application.assignedRoles : []
+  );
+
+  return {
+    TaskInstanceId: String(task.TaskInstanceId ?? ''),
+    label: task.name ?? '',
+    status: task.status ?? '',
+    required: task.required ?? false,
+    assignee,
+    taskType: task.taskType?.toLowerCase() ?? 'unknown',
+    taskCategory: task.taskCategory?.toLowerCase() ?? 'unknown',
+    color,
+    disabled,
+    isdelegate,
+    capacity,
+  };
+};
+
+export const mapTaskToUndoAction = ({
+  application,
+  task,
+  username,
+  userRoles,
+  delegated,
+  taskRolesAll = [],
+  disableForCompletedApplication = false,
+}: TaskActionContext): TaskActionResult => {
+  const status = normalizeStatus(task.status);
+  const normalizedTaskRoles = normalizeTaskRoles(task.taskRoles);
+  const applicationStatus = normalizeStatus(application.status);
+
+  let color = 'bg-gray-300 cursor-not-allowed';
+  let disabled = true;
+  let isdelegate = false;
+  let capacity = 'MEMBER';
+
+  if (
+    disableForCompletedApplication &&
+    COMPLETED_STATUSES.includes(applicationStatus)
+  ) {
+    color = 'bg-green-400';
+    disabled = true;
+  } else if (normalizedTaskRoles.length > 0) {
+    const matchingRoles = userRoles.filter(role =>
+      normalizedTaskRoles.includes(role)
+    );
+
+    if (matchingRoles.length > 0) {
+      const assignedRoles = Array.isArray(application.assignedRoles)
+        ? application.assignedRoles
+        : [];
+
+      const isAssigned = assignedRoles.some(assignedRole =>
+        matchingRoles.some(
+          role =>
+            assignedRole[role.toUpperCase()]?.toLowerCase() ===
+            username?.toLowerCase()
+        )
+      );
+
+      if (isAssigned && canActOnStatus(status, true)) {
+        color = 'bg-blue-600 hover:bg-blue-700';
+        disabled = false;
+        capacity = 'MEMBER';
+      }
+
+      const delegatedNames = delegated?.map(item => item.name.toLowerCase()) ?? [];
+
+      const isAssignedToDelegated = assignedRoles.some(assignedRole =>
+        matchingRoles.some(role => {
+          const assignedName = assignedRole[role.toUpperCase()]?.toLowerCase();
+          return Boolean(assignedName) && delegatedNames.includes(assignedName);
+        })
+      );
+
+      if (isAssignedToDelegated && canActOnStatus(status, true)) {
+        color = 'bg-blue-600 hover:bg-blue-700';
+        disabled = false;
+        isdelegate = true;
+        capacity = 'ASSISTANT';
+      }
+
+      const hasIncludedRole = taskRolesAll.some(role =>
+        normalizedTaskRoles.includes(role)
+      );
+
+      if (
+        canActOnStatus(status, true) &&
         normalizedTaskRoles.length > 0 &&
         hasIncludedRole
       ) {

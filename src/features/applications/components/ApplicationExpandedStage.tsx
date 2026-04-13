@@ -19,6 +19,7 @@ import {
   getStatusLabel,
   getTaskBorderClass,
   mapTaskToAction,
+  mapTaskToUndoAction,
 } from '@/lib/utils/taskHelpers'
 
 type Props = {
@@ -143,6 +144,15 @@ export function ApplicationExpandedStage({
                 taskRolesAll,
                 disableForCompletedApplication: true,
               })
+              const undoAction = mapTaskToUndoAction({
+                task,
+                application: applicant,
+                username,
+                userRoles,
+                delegated,
+                taskRolesAll,
+                disableForCompletedApplication: true,
+              })
 
               task.capacity = action.capacity
               const taskId = getTaskInstanceId(task)
@@ -213,10 +223,16 @@ export function ApplicationExpandedStage({
                             })
                             toast.success(`Undid "${task.name}"`)
                           }}
-                          disabled={isUndoing}
+                          disabled={isUndoing || undoAction.disabled}
                           className="inline-flex flex-shrink-0 items-center rounded p-1 text-amber-600 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
                           aria-label={`Undo ${task.name}`}
-                          title={isUndoing ? 'Undoing task...' : 'Undo task'}
+                          title={
+                            isUndoing
+                              ? 'Undoing task...'
+                              : undoAction.disabled
+                                ? 'You do not have permission to undo this task'
+                                : 'Undo task'
+                          }
                         >
                           <Undo2 className="h-4 w-4" />
                         </button>
