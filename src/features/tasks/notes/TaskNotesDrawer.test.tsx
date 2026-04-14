@@ -70,6 +70,59 @@ describe('TaskNotesDrawer', () => {
     expect(onApplicationIdClick).toHaveBeenCalledWith(77)
   })
 
+  it('opens dashboard filtering when the My Notes ViewApp button is clicked', async () => {
+    const onApplicationIdClick = vi.fn()
+    const onViewApplicationClick = vi.fn()
+
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="My Notes"
+        applicationId={42}
+        contextType="application"
+        taskName="Current User"
+        activeTab="toMe"
+        privateNotes={[]}
+        publicNotes={[]}
+        toMeNotes={[
+          {
+            MessageID: 101,
+            MessageText: 'Linked note',
+            FromUser: 'Alice Smith',
+            SentDate: '2026-04-07T10:00:00.000Z',
+            ApplicationID: 77,
+          } as TaskNote,
+        ]}
+        loadingPrivate={false}
+        loadingPublic={false}
+        loadingToMe={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate={false}
+        isSubmitting={false}
+        error=""
+        showPerNoteApplicationId
+        showViewApplicationAction
+        hideComposer
+        hidePrivacyToggle
+        onApplicationIdClick={onApplicationIdClick}
+        onViewApplicationClick={onViewApplicationClick}
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'ViewApp:77' }))
+
+    expect(onViewApplicationClick).toHaveBeenCalledWith(77)
+    expect(onApplicationIdClick).not.toHaveBeenCalled()
+  })
+
   it('submits a reply from the public thread UI', async () => {
     const onReplySubmit = vi.fn().mockResolvedValue(undefined)
 

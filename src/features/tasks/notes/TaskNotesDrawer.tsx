@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { AtSign, FileText, Lock, X } from 'lucide-react'
+import { ArrowUpRight, AtSign, FileText, Hash, Lock, X } from 'lucide-react'
 import { useMentionUsers } from '@/features/tasks/hooks/useTaskQueries'
 import type { NoteTab } from '@/features/tasks/notes/types'
 import type { MentionUser } from '@/features/tasks/api'
@@ -33,6 +33,8 @@ type Props = {
   hidePrivacyToggle?: boolean
   showPerNoteApplicationId?: boolean
   onApplicationIdClick?: (applicationId: number) => void
+  showViewApplicationAction?: boolean
+  onViewApplicationClick?: (applicationId: number) => void
   onClose: () => void
   onTabChange: (tab: NoteTab) => void
   onComposeTextChange: (text: string) => void
@@ -295,6 +297,8 @@ export function TaskNotesDrawer({
   hidePrivacyToggle = false,
   showPerNoteApplicationId = false,
   onApplicationIdClick,
+  showViewApplicationAction = false,
+  onViewApplicationClick,
   onClose,
   onTabChange,
   onComposeTextChange,
@@ -446,13 +450,32 @@ export function TaskNotesDrawer({
               {fromRole}
             </span>
             {showPerNoteApplicationId && noteApplicationId !== null ? (
-              <button
-                type="button"
-                onClick={() => onApplicationIdClick?.(noteApplicationId)}
-                className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 transition hover:bg-slate-200 hover:text-slate-900"
-              >
-                AppId: {noteApplicationId}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => onApplicationIdClick?.(noteApplicationId)}
+                  aria-label={`AppId: ${noteApplicationId}`}
+                  title={`Application ID ${noteApplicationId}`}
+                  className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
+                >
+                  <Hash className="h-3 w-3" />
+                  <span className="uppercase tracking-wide text-slate-500">App</span>
+                  <span className="font-semibold text-slate-800">{noteApplicationId}</span>
+                </button>
+                {showViewApplicationAction ? (
+                  <button
+                    type="button"
+                    onClick={() => onViewApplicationClick?.(noteApplicationId)}
+                    aria-label={`ViewApp:${noteApplicationId}`}
+                    title={`View application ${noteApplicationId}`}
+                    className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800"
+                  >
+                    <ArrowUpRight className="h-3 w-3" />
+                    <span>View</span>
+                    <span className="font-semibold">{noteApplicationId}</span>
+                  </button>
+                ) : null}
+              </>
             ) : null}
             <span className="text-[11px] text-slate-500">{createdAt}</span>
           </div>
@@ -650,13 +673,32 @@ export function TaskNotesDrawer({
                             {fromRole}
                           </span>
                           {showPerNoteApplicationId && noteApplicationId !== null ? (
-                            <button
-                              type="button"
-                              onClick={() => onApplicationIdClick?.(noteApplicationId)}
-                              className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 transition hover:bg-slate-200 hover:text-slate-900"
-                            >
-                              AppId: {noteApplicationId}
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => onApplicationIdClick?.(noteApplicationId)}
+                                aria-label={`AppId: ${noteApplicationId}`}
+                                title={`Application ID ${noteApplicationId}`}
+                                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
+                              >
+                                <Hash className="h-3 w-3" />
+                                <span className="uppercase tracking-wide text-slate-500">App</span>
+                                <span className="font-semibold text-slate-800">{noteApplicationId}</span>
+                              </button>
+                              {showViewApplicationAction ? (
+                                <button
+                                  type="button"
+                                  onClick={() => onViewApplicationClick?.(noteApplicationId)}
+                                  aria-label={`ViewApp:${noteApplicationId}`}
+                                  title={`View application ${noteApplicationId}`}
+                                  className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800"
+                                >
+                                  <ArrowUpRight className="h-3 w-3" />
+                                  <span>View</span>
+                                  <span className="font-semibold">{noteApplicationId}</span>
+                                </button>
+                              ) : null}
+                            </>
                           ) : null}
                           <span className="text-[11px] text-slate-500">{createdAt}</span>
                           <span className="ml-auto inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">

@@ -78,6 +78,7 @@ export function useTaskNotesDrawerState({
   const [composeToUserId, setComposeToUserIdState] = useState<string | null>(null)
   const [composePrivate, setComposePrivateState] = useState(false)
   const [selectedApplicationId, setSelectedApplicationId] = useState<number | null>(null)
+  const [selectedApplicationFilterId, setSelectedApplicationFilterId] = useState<number | null>(null)
   const [error, setError] = useState('')
 
   const createTaskNoteMutation = useCreateTaskNoteMutation({
@@ -198,6 +199,14 @@ export function useTaskNotesDrawerState({
 
   const closeApplicationDetails = useCallback(() => {
     setSelectedApplicationId(null)
+  }, [])
+
+  const openApplicationFilter = useCallback((nextApplicationId: number) => {
+    setSelectedApplicationFilterId(nextApplicationId)
+  }, [])
+
+  const closeApplicationFilter = useCallback(() => {
+    setSelectedApplicationFilterId(null)
   }, [])
 
   const submitNote = useCallback(async () => {
@@ -325,8 +334,11 @@ export function useTaskNotesDrawerState({
     setComposeToUserId,
     setComposePrivate,
     selectedApplicationId,
+    selectedApplicationFilterId,
     openApplicationDetails,
     closeApplicationDetails,
+    openApplicationFilter,
+    closeApplicationFilter,
     submitNote,
     submitReply,
     getCounts,

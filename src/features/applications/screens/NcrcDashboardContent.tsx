@@ -150,6 +150,15 @@ export function NcrcDashboardContent() {
     setMyNotesSelectedApplicationId(null)
   }
 
+  const viewApplicationFromMyNotes = (applicationId: number) => {
+    setMyNotesSelectedApplicationId(null)
+    closeMyNotesDrawer()
+    updateSearch({
+      applicationId,
+      page: 0,
+    })
+  }
+
   return (
     <>
       <div className="min-h-screen bg-gray-50">
@@ -238,7 +247,9 @@ export function NcrcDashboardContent() {
         hideComposer
         hidePrivacyToggle
         showPerNoteApplicationId
+        showViewApplicationAction
         onApplicationIdClick={openMyNotesApplicationDetails}
+        onViewApplicationClick={viewApplicationFromMyNotes}
         onClose={closeMyNotesDrawer}
         onTabChange={() => {}}
         onComposeTextChange={() => {}}

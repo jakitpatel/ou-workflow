@@ -63,11 +63,20 @@ function NotesHookHarness() {
         submit-reply
       </button>
 
+      <button type="button" onClick={() => notes.openApplicationFilter(77)}>
+        open-application-filter
+      </button>
+
+      <button type="button" onClick={() => notes.closeApplicationFilter()}>
+        close-application-filter
+      </button>
+
       <div>active-tab:{notes.drawer?.activeTab ?? 'closed'}</div>
       <div>error:{notes.error || 'none'}</div>
       <div>private-count:{notes.getCounts('application:42').private}</div>
       <div>public-count:{notes.getCounts('application:42').public}</div>
       <div>to-me-count:{notes.activeNotes.toMe.length}</div>
+      <div>selected-filter-app:{notes.selectedApplicationFilterId ?? 'none'}</div>
     </div>
   )
 }
@@ -206,5 +215,15 @@ describe('useTaskNotesDrawerState', () => {
     await waitFor(() => {
       expect(fetchTaskNotesMock).toHaveBeenCalledTimes(4)
     })
+  })
+
+  it('tracks the selected application id for dashboard filtering', async () => {
+    renderWithProviders(<NotesHookHarness />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'open-application-filter' }))
+    expect(screen.getByText('selected-filter-app:77')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'close-application-filter' }))
+    expect(screen.getByText('selected-filter-app:none')).toBeTruthy()
   })
 })
