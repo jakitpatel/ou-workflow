@@ -45,6 +45,8 @@ export function useTasks(
       token,
     }),
     enabled: !!token,
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 }
 

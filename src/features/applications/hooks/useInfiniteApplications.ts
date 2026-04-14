@@ -52,5 +52,7 @@ export function useInfiniteApplications({
     },
     enabled: enabled && !!token,
     ...queryOptionDefaults.applicationsList,
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 }

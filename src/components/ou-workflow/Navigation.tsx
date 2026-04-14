@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Bell, User, BarChart3, ClipboardList, LogOut, Settings } from 'lucide-react'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
+import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 
 // Navigation route constants
 const ROUTES = {
@@ -21,6 +24,7 @@ export function Navigation({ showMenu = true }: NavigationProps) {
   const location = useRouterState({ select: (s) => s.location.pathname })
   const { username, role, logout } = useUser()
   const { apiBaseUrl } = useAppPreferences()
+  const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
@@ -65,6 +69,18 @@ export function Navigation({ showMenu = true }: NavigationProps) {
     setMenuOpen(false)
   }, [])
 
+  const refreshApplicationsDashboardData = useCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: applicationsQueryKeys.lists(),
+    })
+  }, [queryClient])
+
+  const refreshTasksDashboardData = useCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: tasksQueryKeys.lists(),
+    })
+  }, [queryClient])
+
   // Helper to check if route is active
   const isActiveRoute = (path: string) => location.includes(path)
 
@@ -93,6 +109,7 @@ export function Navigation({ showMenu = true }: NavigationProps) {
               <div className="hidden md:flex space-x-1">
                 <Link
                   to={ROUTES.NCRC_DASHBOARD}
+                  onClick={refreshApplicationsDashboardData}
                   search={{
                     q: '',
                     status: 'all',
@@ -113,6 +130,7 @@ export function Navigation({ showMenu = true }: NavigationProps) {
 
                 <Link
                   to={ROUTES.TASKS_DASHBOARD}
+                  onClick={refreshTasksDashboardData}
                   search={{
                     qs:'',
                     days: 'pending'

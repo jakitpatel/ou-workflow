@@ -46,5 +46,7 @@ export function usePagedApplications({
     enabled: enabled && !!token,
     placeholderData: keepPreviousData,
     ...queryOptionDefaults.applicationsList,
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 }
