@@ -119,6 +119,7 @@ export function NcrcDashboardControls({
             <option value="INSPECTION">Inspection Scheduled</option>
             <option value="NEW">New</option>
             <option value="PAYPEND">Payment Pending</option>
+            <option value="PAID">Invoice Payment Received</option>
             <option value="REVIEW">Under Review</option>
             <option value="WTH">Withdrawn</option>
           </select>
