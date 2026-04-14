@@ -159,6 +159,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         composePrivate={applicationNotes.composePrivate}
         isSubmitting={applicationNotes.isSubmitting}
         error={applicationNotes.error}
+        onApplicationIdClick={applicationNotes.openApplicationDetails}
         onClose={applicationNotes.closeDrawer}
         onTabChange={applicationNotes.setActiveTab}
         onComposeTextChange={applicationNotes.setComposeText}
@@ -172,6 +173,11 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         open={showDetailsDrawer}
         applicationId={applicant.applicationId}
         onClose={() => setShowDetailsDrawer(false)}
+      />
+      <ApplicationDetailsDrawer
+        open={applicationNotes.selectedApplicationId !== null}
+        applicationId={applicationNotes.selectedApplicationId ?? undefined}
+        onClose={applicationNotes.closeApplicationDetails}
       />
     </div>
   )

@@ -21,6 +21,55 @@ const publicNotes: TaskNote[] = [
 ]
 
 describe('TaskNotesDrawer', () => {
+  it('opens application details when a per-note AppId is clicked', async () => {
+    const onApplicationIdClick = vi.fn()
+
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="My Notes"
+        applicationId={42}
+        contextType="application"
+        taskName="Current User"
+        activeTab="toMe"
+        privateNotes={[]}
+        publicNotes={[]}
+        toMeNotes={[
+          {
+            MessageID: 101,
+            MessageText: 'Linked note',
+            FromUser: 'Alice Smith',
+            SentDate: '2026-04-07T10:00:00.000Z',
+            ApplicationID: 77,
+          } as TaskNote,
+        ]}
+        loadingPrivate={false}
+        loadingPublic={false}
+        loadingToMe={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate={false}
+        isSubmitting={false}
+        error=""
+        showPerNoteApplicationId
+        hideComposer
+        hidePrivacyToggle
+        onApplicationIdClick={onApplicationIdClick}
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'AppId: 77' }))
+
+    expect(onApplicationIdClick).toHaveBeenCalledWith(77)
+  })
+
   it('submits a reply from the public thread UI', async () => {
     const onReplySubmit = vi.fn().mockResolvedValue(undefined)
 

@@ -14,6 +14,7 @@ import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
 import { useUndoTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
+import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
 import {
   getStatusBadgeClass,
   getStatusLabel,
@@ -438,6 +439,7 @@ export function ApplicationExpandedStage({
         composePrivate={taskNotes.composePrivate}
         isSubmitting={taskNotes.isSubmitting}
         error={taskNotes.error}
+        onApplicationIdClick={taskNotes.openApplicationDetails}
         onClose={taskNotes.closeDrawer}
         onTabChange={taskNotes.setActiveTab}
         onComposeTextChange={taskNotes.setComposeText}
@@ -445,6 +447,11 @@ export function ApplicationExpandedStage({
         onComposePrivateChange={taskNotes.setComposePrivate}
         onSubmit={taskNotes.submitNote}
         onReplySubmit={taskNotes.submitReply}
+      />
+      <ApplicationDetailsDrawer
+        open={taskNotes.selectedApplicationId !== null}
+        applicationId={taskNotes.selectedApplicationId ?? undefined}
+        onClose={taskNotes.closeApplicationDetails}
       />
     </div>
   )

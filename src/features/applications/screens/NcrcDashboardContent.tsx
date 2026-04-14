@@ -4,6 +4,7 @@ import { ActionModal } from '@/components/ou-workflow/modal/ActionModal'
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal'
 import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal'
 import { NcrcDashboardControls } from '@/features/applications/components/NcrcDashboardControls'
+import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
 import { NcrcDashboardListSection } from '@/features/applications/components/NcrcDashboardListSection'
 import { useNcrcDashboardState } from '@/features/applications/hooks/useNcrcDashboardState'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
@@ -32,6 +33,9 @@ export function NcrcDashboardContent() {
   const [showActionModal, setShowActionModal] = useState<Task | null | boolean>(null)
   const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null)
   const [showUploadModal, setShowUploadModal] = useState<Task | null | boolean>(null)
+  const [myNotesSelectedApplicationId, setMyNotesSelectedApplicationId] = useState<number | null>(
+    null,
+  )
 
   const {
     q,
@@ -138,6 +142,14 @@ export function NcrcDashboardContent() {
     completeTaskWithResult(action, reason)
   }
 
+  const openMyNotesApplicationDetails = (applicationId: number) => {
+    setMyNotesSelectedApplicationId(applicationId)
+  }
+
+  const closeMyNotesApplicationDetails = () => {
+    setMyNotesSelectedApplicationId(null)
+  }
+
   return (
     <>
       <div className="min-h-screen bg-gray-50">
@@ -226,6 +238,7 @@ export function NcrcDashboardContent() {
         hideComposer
         hidePrivacyToggle
         showPerNoteApplicationId
+        onApplicationIdClick={openMyNotesApplicationDetails}
         onClose={closeMyNotesDrawer}
         onTabChange={() => {}}
         onComposeTextChange={() => {}}
@@ -233,6 +246,11 @@ export function NcrcDashboardContent() {
         onComposePrivateChange={() => {}}
         onSubmit={() => {}}
         onReplySubmit={submitMyNotesReply}
+      />
+      <ApplicationDetailsDrawer
+        open={myNotesSelectedApplicationId !== null}
+        applicationId={myNotesSelectedApplicationId ?? undefined}
+        onClose={closeMyNotesApplicationDetails}
       />
     </>
   )

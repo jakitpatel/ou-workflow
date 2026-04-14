@@ -32,6 +32,7 @@ type Props = {
   hideComposer?: boolean
   hidePrivacyToggle?: boolean
   showPerNoteApplicationId?: boolean
+  onApplicationIdClick?: (applicationId: number) => void
   onClose: () => void
   onTabChange: (tab: NoteTab) => void
   onComposeTextChange: (text: string) => void
@@ -293,6 +294,7 @@ export function TaskNotesDrawer({
   hideComposer = false,
   hidePrivacyToggle = false,
   showPerNoteApplicationId = false,
+  onApplicationIdClick,
   onClose,
   onTabChange,
   onComposeTextChange,
@@ -444,9 +446,13 @@ export function TaskNotesDrawer({
               {fromRole}
             </span>
             {showPerNoteApplicationId && noteApplicationId !== null ? (
-              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-700">
+              <button
+                type="button"
+                onClick={() => onApplicationIdClick?.(noteApplicationId)}
+                className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 transition hover:bg-slate-200 hover:text-slate-900"
+              >
                 AppId: {noteApplicationId}
-              </span>
+              </button>
             ) : null}
             <span className="text-[11px] text-slate-500">{createdAt}</span>
           </div>
@@ -644,9 +650,13 @@ export function TaskNotesDrawer({
                             {fromRole}
                           </span>
                           {showPerNoteApplicationId && noteApplicationId !== null ? (
-                            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-700">
+                            <button
+                              type="button"
+                              onClick={() => onApplicationIdClick?.(noteApplicationId)}
+                              className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 transition hover:bg-slate-200 hover:text-slate-900"
+                            >
                               AppId: {noteApplicationId}
-                            </span>
+                            </button>
                           ) : null}
                           <span className="text-[11px] text-slate-500">{createdAt}</span>
                           <span className="ml-auto inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
