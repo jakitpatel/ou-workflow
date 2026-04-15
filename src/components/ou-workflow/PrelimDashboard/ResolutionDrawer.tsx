@@ -252,6 +252,7 @@ const countUpdatedCompanyFields = (before: CompanyData, after: CompanyData) => {
     hasChanged(before.companyName, after.companyName),
     hasChanged(before.companyAddress, after.companyAddress),
     hasChanged(before.companyCity, after.companyCity),
+    hasChanged(before.companyCountry, after.companyCountry),
     hasChanged(before.companyWebsite, after.companyWebsite),
     hasChanged(before.primaryContact?.name, after.primaryContact?.name),
     hasChanged(before.primaryContact?.title, after.primaryContact?.title),
@@ -696,6 +697,20 @@ export function ResolutionDrawer({
                             editable={isEditMode}
                             onAppValueChange={(value) =>
                               setEditableCompanyData((prev) => ({ ...prev, companyCity: value }))
+                            }
+                        />
+
+                        <ComparisonRow
+                            field="Country"
+                            appValue={companyData.companyCountry || ''}
+                            dbValue={dbCompanyAddress?.country || selectedMatch?.Country || 'Not on file'}
+                            status={getComparisonStatus(
+                              companyData.companyCountry,
+                              dbCompanyAddress?.country || selectedMatch?.Country
+                            )}
+                            editable={isEditMode}
+                            onAppValueChange={(value) =>
+                              setEditableCompanyData((prev) => ({ ...prev, companyCountry: value }))
                             }
                         />
                         

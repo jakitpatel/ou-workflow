@@ -511,7 +511,7 @@ function toCompanyDrawerData(data?: CompanyFromApplication) {
     companyCity: data?.companyCity ?? '',
     companyState: data?.companyState ?? '',
     ZipPostalCode: data?.ZipPostalCode ?? '',
-    companyCountry: data?.companyCountry ?? '',
+    companyCountry: pickFirstNonEmpty(data?.companyCountry),
     companyPhone: data?.companyPhone ?? '',
     companyWebsite: data?.companyWebsite ?? '',
     numberOfPlants: data?.numberOfPlants,
