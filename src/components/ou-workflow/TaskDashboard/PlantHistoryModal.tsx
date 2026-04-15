@@ -1,19 +1,11 @@
 import React from 'react'
 import { History, X } from 'lucide-react'
-
-interface Plant {
-  applications: number
-  lastCertified: string | null
-  currentStage: string
-  notes: string
-  contact: string
-  products: string[]
-}
+import type { PlantHistoryEntry } from '@/features/tasks/model/plantHistory'
 
 interface PlantHistoryModalProps {
   showPlantHistory: string | null
   setShowPlantHistory: (plant: string | null) => void
-  plantHistory?: Record<string, Plant>
+  plantHistory?: Record<string, PlantHistoryEntry>
   onViewNCRCDashboard?: (plantName: string) => void
 }
 

@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { Clock, AlertCircle } from 'lucide-react';
-import { getStatusConfig, getPriorityBorderClass } from './taskHelpers';
+import { getStatusConfig, getPriorityBorderClass } from '@/features/tasks/lib/taskDashboardPresentation';
 import type { ApplicationTask } from '@/types/application';
 import { useNavigate } from '@tanstack/react-router';
 import { Route as DashboardRoute } from '@/routes/_authed/ou-workflow/ncrc-dashboard';

@@ -1,4 +1,14 @@
-export const plantHistory = {
+export interface PlantHistoryEntry {
+  applications: number;
+  lastCertified: string | null;
+  currentStage: string;
+  notes: string;
+  contact: string;
+  products: string[];
+}
+
+// Transitional placeholder data still used by the task dashboard modal.
+export const plantHistory: Record<string, PlantHistoryEntry> = {
   'Brooklyn Bread Co.': {
     applications: 3,
     lastCertified: '2023-12-15',
@@ -32,12 +42,3 @@ export const plantHistory = {
     products: ['Snack Bars', 'Dried Fruits', 'Nuts']
   }
 };
-
-export const staffList = [
-  { id: 'a.gottesman', name: 'A. Gottesman', department: 'Admin' },
-  { id: 'd.herbsman', name: 'David Herbsman', department: 'IAR' },
-  { id: 'j.torres', name: 'Jennifer Torres', department: 'RFR' },
-  { id: 'r.gorelik', name: 'R. Gorelik', department: 'NCRC' },
-  { id: 'r.epstein', name: 'R. Epstein', department: 'NCRC' },
-  { id: 'legal.team', name: 'Legal Team', department: 'Legal' }
-];
