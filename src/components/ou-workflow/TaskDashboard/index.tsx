@@ -3,10 +3,10 @@ import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
 import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal';
 import { TaskFilters } from '@/features/tasks/components/TaskFilters';
+import { PlantHistoryModal } from '@/features/tasks/components/PlantHistoryModal';
+import { TaskRow } from '@/features/tasks/components/TaskRow';
 import { TaskStatsCards } from '@/features/tasks/components/TaskStatsCards';
 import { plantHistory } from '@/features/tasks/model/plantHistory';
-import { PlantHistoryModal } from './PlantHistoryModal';
-import { TaskRow } from './TaskRow';
 import { ErrorDialog } from '@/components/ErrorDialog';
 import { useTaskDashboardState } from '@/features/tasks/hooks/useTaskDashboardState';
 
