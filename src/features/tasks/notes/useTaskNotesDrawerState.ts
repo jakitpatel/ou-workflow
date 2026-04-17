@@ -102,7 +102,6 @@ export function useTaskNotesDrawerState({
           taskId?: string
           applicationId?: number | null
           isPrivate?: boolean
-          apiUser?: string
           mode?: 'standard' | 'directed'
           token?: string
         } = {
@@ -113,7 +112,6 @@ export function useTaskNotesDrawerState({
 
         if (tab === 'directed') {
           fetchParams.isPrivate = true
-          fetchParams.apiUser = username ?? undefined
           fetchParams.mode = 'directed'
         } else if (tab === 'private') {
           fetchParams.isPrivate = true

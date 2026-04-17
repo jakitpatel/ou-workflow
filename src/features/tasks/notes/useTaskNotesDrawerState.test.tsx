@@ -136,7 +136,6 @@ describe('useTaskNotesDrawerState', () => {
     expect(fetchTaskNotesMock).toHaveBeenCalledWith(
       expect.objectContaining({
         applicationId: 42,
-        apiUser: 'S.Benjamin',
         isPrivate: true,
         mode: 'directed',
         token: 'test-access-token',

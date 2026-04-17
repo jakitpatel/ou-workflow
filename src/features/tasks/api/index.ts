@@ -302,14 +302,12 @@ export async function fetchTaskNotes({
   taskId,
   applicationId,
   isPrivate,
-  apiUser,
   mode = 'standard',
   token,
 }: {
   taskId?: string | null
   applicationId?: number | null
   isPrivate?: boolean
-  apiUser?: string | null
   mode?: 'standard' | 'directed'
   token?: string | null
 }): Promise<TaskNote[]> {
@@ -325,27 +323,6 @@ export async function fetchTaskNotes({
   if (isDirectedMode || usesVisibilityFilter) {
     params.append('filter[isPrivate]', String(isPrivate))
   }
-  if (isDirectedMode && apiUser?.trim()) {
-    params.append(
-      'filter',
-      JSON.stringify({
-        or: [
-          {
-            and: [
-              { name: 'fromUser', op: 'eq', val: apiUser.trim() },
-              { name: 'ToUser', op: 'notnull' },
-            ],
-          },
-          {
-            and: [
-              { name: 'ToUser', op: 'eq', val: apiUser.trim() },
-              { name: 'fromUser', op: 'notnull' },
-            ],
-          },
-        ],
-      }),
-    )
-  }
   params.append('sort', '-MessageID')
 
   const response = await fetchWithAuth<{
@@ -353,7 +330,13 @@ export async function fetchTaskNotes({
     messages?: WFApplicationMessageRecord[]
     items?: WFApplicationMessageRecord[]
   } | WFApplicationMessageRecord[]>({
-    path: `${isDirectedMode || usesVisibilityFilter ? '/api/WFApplicationMessage' : '/get_my_messages'}?${params.toString()}`,
+    path: `${
+      isDirectedMode
+        ? '/get_directed_notes'
+        : usesVisibilityFilter
+          ? '/api/WFApplicationMessage'
+          : '/get_my_messages'
+    }?${params.toString()}`,
     method: 'GET',
     token,
   })
