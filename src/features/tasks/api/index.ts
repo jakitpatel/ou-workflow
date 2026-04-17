@@ -320,7 +320,7 @@ export async function fetchTaskNotes({
   if (taskId !== undefined && taskId !== null && String(taskId).trim()) {
     params.append('filter[TaskInstanceId]', String(taskId).trim())
   }
-  if (isDirectedMode || usesVisibilityFilter) {
+  if (!isDirectedMode && usesVisibilityFilter) {
     params.append('filter[isPrivate]', String(isPrivate))
   }
   params.append('sort', '-MessageID')
