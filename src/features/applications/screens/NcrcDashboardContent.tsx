@@ -230,9 +230,11 @@ export function NcrcDashboardContent() {
         contextType="application"
         taskName={username?.trim() || 'Current User'}
         activeTab="toMe"
+        directedNotes={[]}
         privateNotes={[]}
         publicNotes={[]}
         toMeNotes={myNotesWithApplicationId}
+        loadingDirected={false}
         loadingPrivate={false}
         loadingPublic={false}
         loadingToMe={myNotesLoading}

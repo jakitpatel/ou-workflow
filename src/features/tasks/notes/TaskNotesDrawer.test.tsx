@@ -32,6 +32,7 @@ describe('TaskNotesDrawer', () => {
         contextType="application"
         taskName="Current User"
         activeTab="toMe"
+        directedNotes={[]}
         privateNotes={[]}
         publicNotes={[]}
         toMeNotes={[
@@ -43,6 +44,7 @@ describe('TaskNotesDrawer', () => {
             ApplicationID: 77,
           } as TaskNote,
         ]}
+        loadingDirected={false}
         loadingPrivate={false}
         loadingPublic={false}
         loadingToMe={false}
@@ -82,6 +84,7 @@ describe('TaskNotesDrawer', () => {
         contextType="application"
         taskName="Current User"
         activeTab="toMe"
+        directedNotes={[]}
         privateNotes={[]}
         publicNotes={[]}
         toMeNotes={[
@@ -93,6 +96,7 @@ describe('TaskNotesDrawer', () => {
             ApplicationID: 77,
           } as TaskNote,
         ]}
+        loadingDirected={false}
         loadingPrivate={false}
         loadingPublic={false}
         loadingToMe={false}
@@ -134,9 +138,11 @@ describe('TaskNotesDrawer', () => {
         contextType="task"
         taskName="Review Ingredients"
         activeTab="public"
+        directedNotes={[]}
         privateNotes={[]}
         publicNotes={publicNotes}
         toMeNotes={[]}
+        loadingDirected={false}
         loadingPrivate={false}
         loadingPublic={false}
         loadingToMe={false}
@@ -178,5 +184,43 @@ describe('TaskNotesDrawer', () => {
         toUser: 'Alice Smith',
       })
     })
+  })
+
+  it('shows Directed Notes as the first tab and uses the ToUsers label there', () => {
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="task"
+        taskName="Review Ingredients"
+        activeTab="directed"
+        directedNotes={[]}
+        privateNotes={[]}
+        publicNotes={[]}
+        toMeNotes={[]}
+        loadingDirected={false}
+        loadingPrivate={false}
+        loadingPublic={false}
+        loadingToMe={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate
+        isSubmitting={false}
+        error=""
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    const tabs = screen.getAllByRole('button').map((button) => button.textContent ?? '')
+    expect(tabs[1]).toContain('Directed Notes')
+    expect(screen.getByRole('button', { name: /ToUsers/i })).toBeTruthy()
+    expect(screen.queryByLabelText(/Private note/i)).toBeNull()
   })
 })

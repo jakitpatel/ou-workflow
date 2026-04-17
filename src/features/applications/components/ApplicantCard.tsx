@@ -148,9 +148,11 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         contextType="application"
         taskName={applicant.company || `Application ${String(applicant.applicationId ?? '')}`}
         activeTab={applicationNotes.drawer?.activeTab ?? 'public'}
+        directedNotes={applicationNotes.activeNotes.directed}
         privateNotes={applicationNotes.activeNotes.private}
         publicNotes={applicationNotes.activeNotes.public}
         toMeNotes={applicationNotes.activeNotes.toMe}
+        loadingDirected={applicationNotes.activeLoading.directed}
         loadingPrivate={applicationNotes.activeLoading.private}
         loadingPublic={applicationNotes.activeLoading.public}
         loadingToMe={applicationNotes.activeLoading.toMe}

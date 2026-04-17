@@ -302,14 +302,19 @@ export async function fetchTaskNotes({
   taskId,
   applicationId,
   isPrivate,
+  apiUser,
+  mode = 'standard',
   token,
 }: {
   taskId?: string | null
   applicationId?: number | null
   isPrivate?: boolean
+  apiUser?: string | null
+  mode?: 'standard' | 'directed'
   token?: string | null
 }): Promise<TaskNote[]> {
   const params = new URLSearchParams()
+  const isDirectedMode = mode === 'directed'
   const usesVisibilityFilter = typeof isPrivate === 'boolean'
   if (applicationId !== undefined && applicationId !== null) {
     params.append('filter[ApplicationID]', String(applicationId))
@@ -317,8 +322,29 @@ export async function fetchTaskNotes({
   if (taskId !== undefined && taskId !== null && String(taskId).trim()) {
     params.append('filter[TaskInstanceId]', String(taskId).trim())
   }
-  if (usesVisibilityFilter) {
+  if (isDirectedMode || usesVisibilityFilter) {
     params.append('filter[isPrivate]', String(isPrivate))
+  }
+  if (isDirectedMode && apiUser?.trim()) {
+    params.append(
+      'filter',
+      JSON.stringify({
+        or: [
+          {
+            and: [
+              { name: 'fromUser', op: 'eq', val: apiUser.trim() },
+              { name: 'ToUser', op: 'noteq', val: null },
+            ],
+          },
+          {
+            and: [
+              { name: 'ToUser', op: 'eq', val: apiUser.trim() },
+              { name: 'fromUser', op: 'noteq', val: null },
+            ],
+          },
+        ],
+      }),
+    )
   }
   params.append('sort', '-MessageID')
 
@@ -327,7 +353,7 @@ export async function fetchTaskNotes({
     messages?: WFApplicationMessageRecord[]
     items?: WFApplicationMessageRecord[]
   } | WFApplicationMessageRecord[]>({
-    path: `${usesVisibilityFilter ? '/api/WFApplicationMessage' : '/get_my_messages'}?${params.toString()}`,
+    path: `${isDirectedMode || usesVisibilityFilter ? '/api/WFApplicationMessage' : '/get_my_messages'}?${params.toString()}`,
     method: 'GET',
     token,
   })

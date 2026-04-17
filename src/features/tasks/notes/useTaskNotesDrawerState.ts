@@ -13,6 +13,7 @@ type DrawerState = {
 }
 
 type ContextCounts = {
+  directed: number
   private: number
   public: number
 }
@@ -40,6 +41,7 @@ type UseTaskNotesDrawerStateParams = {
 }
 
 const EMPTY_NOTES: NotesByTab<TaskNote> = {
+  directed: [],
   private: [],
   public: [],
   toMe: [],
@@ -90,7 +92,7 @@ export function useTaskNotesDrawerState({
     },
   })
 
-  const fetchNotesByVisibility = useCallback(
+  const fetchNotesByTab = useCallback(
     async ({ contextKey, taskId, tab }: { contextKey: string; taskId?: string; tab: NoteTab }) => {
       const loadingKey = `${contextKey}:${tab}`
       setLoadingByKey((prev) => ({ ...prev, [loadingKey]: true }))
@@ -100,6 +102,8 @@ export function useTaskNotesDrawerState({
           taskId?: string
           applicationId?: number | null
           isPrivate?: boolean
+          apiUser?: string
+          mode?: 'standard' | 'directed'
           token?: string
         } = {
           taskId,
@@ -107,7 +111,11 @@ export function useTaskNotesDrawerState({
           token: token ?? undefined,
         }
 
-        if (tab === 'private') {
+        if (tab === 'directed') {
+          fetchParams.isPrivate = true
+          fetchParams.apiUser = username ?? undefined
+          fetchParams.mode = 'directed'
+        } else if (tab === 'private') {
           fetchParams.isPrivate = true
         } else if (tab === 'public') {
           fetchParams.isPrivate = false
@@ -118,6 +126,7 @@ export function useTaskNotesDrawerState({
         setNotesByContext((prev) => ({
           ...prev,
           [contextKey]: {
+            directed: tab === 'directed' ? (notes as TaskNote[]) : prev[contextKey]?.directed ?? [],
             private: tab === 'private' ? (notes as TaskNote[]) : prev[contextKey]?.private ?? [],
             public: tab === 'public' ? (notes as TaskNote[]) : prev[contextKey]?.public ?? [],
             toMe: tab === 'toMe' ? (notes as TaskNote[]) : prev[contextKey]?.toMe ?? [],
@@ -127,6 +136,7 @@ export function useTaskNotesDrawerState({
         setCountsByContext((prev) => ({
           ...prev,
           [contextKey]: {
+            directed: tab === 'directed' ? notes.length : prev[contextKey]?.directed ?? 0,
             private: tab === 'private' ? notes.length : prev[contextKey]?.private ?? 0,
             public: tab === 'public' ? notes.length : prev[contextKey]?.public ?? 0,
           },
@@ -153,15 +163,16 @@ export function useTaskNotesDrawerState({
         activeTab: tab,
       })
       setError('')
-      setComposePrivateState(tab === 'private')
+      setComposePrivateState(tab === 'private' || tab === 'directed')
 
       await Promise.allSettled([
-        fetchNotesByVisibility({ contextKey, taskId, tab: 'private' }),
-        fetchNotesByVisibility({ contextKey, taskId, tab: 'public' }),
-        fetchNotesByVisibility({ contextKey, taskId, tab: 'toMe' }),
+        fetchNotesByTab({ contextKey, taskId, tab: 'directed' }),
+        fetchNotesByTab({ contextKey, taskId, tab: 'private' }),
+        fetchNotesByTab({ contextKey, taskId, tab: 'public' }),
+        fetchNotesByTab({ contextKey, taskId, tab: 'toMe' }),
       ])
     },
-    [fetchNotesByVisibility],
+    [fetchNotesByTab],
   )
 
   const closeDrawer = useCallback(() => {
@@ -177,7 +188,7 @@ export function useTaskNotesDrawerState({
 
   const setActiveTab = useCallback((tab: NoteTab) => {
     setDrawer((prev) => (prev ? { ...prev, activeTab: tab } : prev))
-    setComposePrivateState(tab === 'private')
+    setComposePrivateState(tab === 'private' || tab === 'directed')
   }, [])
 
   const setComposeText = useCallback((text: string) => {
@@ -217,12 +228,16 @@ export function useTaskNotesDrawerState({
       setError('Note text is required')
       return
     }
+    if (drawer.activeTab === 'directed' && !composeToUserId) {
+      setError('Directed notes require a To User')
+      return
+    }
 
     await createTaskNoteMutation.mutateAsync({
       taskId: drawer.taskId,
       applicationId: applicationId ?? null,
       note: trimmedText,
-      isPrivate: composePrivate,
+      isPrivate: drawer.activeTab === 'directed' ? true : composePrivate,
       priority: 'NORMAL',
       fromUser: username ?? undefined,
       toUser: composeToUserId ?? undefined,
@@ -233,8 +248,9 @@ export function useTaskNotesDrawerState({
     setComposeTextState('')
     setComposeToUserIdState(null)
 
-    const postedTab: NoteTab = composePrivate ? 'private' : 'public'
-    await fetchNotesByVisibility({
+    const postedTab: NoteTab =
+      drawer.activeTab === 'directed' ? 'directed' : composePrivate ? 'private' : 'public'
+    await fetchNotesByTab({
       contextKey: drawer.contextKey,
       taskId: drawer.taskId,
       tab: postedTab,
@@ -247,7 +263,7 @@ export function useTaskNotesDrawerState({
     composeToUserId,
     createTaskNoteMutation,
     drawer,
-    fetchNotesByVisibility,
+    fetchNotesByTab,
     token,
     username,
   ])
@@ -266,7 +282,7 @@ export function useTaskNotesDrawerState({
         taskId: replyTaskId ?? drawer.taskId,
         applicationId: replyApplicationId ?? applicationId ?? null,
         note: trimmedText,
-        isPrivate: false,
+        isPrivate: drawer.activeTab === 'directed',
         fromUser: username ?? undefined,
         parentMessageId,
         toUser: toUser ?? undefined,
@@ -274,8 +290,13 @@ export function useTaskNotesDrawerState({
       })
 
       setError('')
-      const replyTab: NoteTab = drawer.activeTab === 'toMe' ? 'toMe' : 'public'
-      await fetchNotesByVisibility({
+      const replyTab: NoteTab =
+        drawer.activeTab === 'directed'
+          ? 'directed'
+          : drawer.activeTab === 'toMe'
+            ? 'toMe'
+            : 'public'
+      await fetchNotesByTab({
         contextKey: drawer.contextKey,
         taskId: drawer.taskId,
         tab: replyTab,
@@ -285,7 +306,7 @@ export function useTaskNotesDrawerState({
       applicationId,
       createTaskNoteMutation,
       drawer,
-      fetchNotesByVisibility,
+      fetchNotesByTab,
       token,
       username,
     ],
@@ -301,6 +322,7 @@ export function useTaskNotesDrawerState({
 
   const activeLoading = useMemo(
     () => ({
+      directed: drawer ? Boolean(loadingByKey[`${drawer.contextKey}:directed`]) : false,
       private: drawer ? Boolean(loadingByKey[`${drawer.contextKey}:private`]) : false,
       public: drawer ? Boolean(loadingByKey[`${drawer.contextKey}:public`]) : false,
       toMe: drawer ? Boolean(loadingByKey[`${drawer.contextKey}:toMe`]) : false,
@@ -309,7 +331,8 @@ export function useTaskNotesDrawerState({
   )
 
   const getCounts = useCallback(
-    (contextKey: string): ContextCounts => countsByContext[contextKey] ?? { private: 0, public: 0 },
+    (contextKey: string): ContextCounts =>
+      countsByContext[contextKey] ?? { directed: 0, private: 0, public: 0 },
     [countsByContext],
   )
 

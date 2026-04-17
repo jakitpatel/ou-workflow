@@ -72,6 +72,7 @@ function NotesHookHarness() {
       </button>
 
       <div>active-tab:{notes.drawer?.activeTab ?? 'closed'}</div>
+      <div>directed-count:{notes.getCounts('application:42').directed}</div>
       <div>error:{notes.error || 'none'}</div>
       <div>private-count:{notes.getCounts('application:42').private}</div>
       <div>public-count:{notes.getCounts('application:42').public}</div>
@@ -100,6 +101,10 @@ describe('useTaskNotesDrawerState', () => {
     mutateAsyncMock.mockReset()
 
     fetchTaskNotesMock.mockImplementation(async (params?: Record<string, unknown>) => {
+      if (params?.mode === 'directed') {
+        return [{ MessageID: 'directed-note-1', MessageText: 'Directed note', ToUser: 'A.User' }]
+      }
+
       if (params && !Object.prototype.hasOwnProperty.call(params, 'isPrivate')) {
         return [{ MessageID: 'to-me-note-1', MessageText: 'To me note' }]
       }
@@ -121,12 +126,22 @@ describe('useTaskNotesDrawerState', () => {
 
     await waitFor(() => {
       expect(screen.getByText('active-tab:public')).toBeTruthy()
+      expect(screen.getByText('directed-count:1')).toBeTruthy()
       expect(screen.getByText('private-count:1')).toBeTruthy()
       expect(screen.getByText('public-count:1')).toBeTruthy()
       expect(screen.getByText('to-me-count:1')).toBeTruthy()
     })
 
-    expect(fetchTaskNotesMock).toHaveBeenCalledTimes(3)
+    expect(fetchTaskNotesMock).toHaveBeenCalledTimes(4)
+    expect(fetchTaskNotesMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        applicationId: 42,
+        apiUser: 'S.Benjamin',
+        isPrivate: true,
+        mode: 'directed',
+        token: 'test-access-token',
+      }),
+    )
     expect(fetchTaskNotesMock).toHaveBeenCalledWith(
       expect.objectContaining({
         applicationId: 42,
@@ -182,7 +197,7 @@ describe('useTaskNotesDrawerState', () => {
     })
 
     await waitFor(() => {
-      expect(fetchTaskNotesMock).toHaveBeenCalledTimes(4)
+      expect(fetchTaskNotesMock).toHaveBeenCalledTimes(5)
       expect(screen.getByText('error:none')).toBeTruthy()
       expect(screen.getByDisplayValue('')).toBeTruthy()
     })
@@ -213,7 +228,74 @@ describe('useTaskNotesDrawerState', () => {
     })
 
     await waitFor(() => {
-      expect(fetchTaskNotesMock).toHaveBeenCalledTimes(4)
+      expect(fetchTaskNotesMock).toHaveBeenCalledTimes(5)
+    })
+  })
+
+  it('posts directed notes as private notes that require a To User', async () => {
+    function DirectedHarness() {
+      const notes = useTaskNotesDrawerState({
+        applicationId: 42,
+      })
+
+      return (
+        <div>
+          <button
+            type="button"
+            onClick={() =>
+              void notes.openDrawer({
+                contextKey: 'application:42',
+                taskName: 'Application 42',
+                tab: 'directed',
+              })
+            }
+          >
+            open-directed
+          </button>
+          <button type="button" onClick={() => notes.setComposeText('Directed message')}>
+            set-directed-text
+          </button>
+          <button type="button" onClick={() => notes.setComposeToUserId('user-22')}>
+            set-directed-user
+          </button>
+          <button type="button" onClick={() => void notes.submitNote()}>
+            submit-directed
+          </button>
+          <div>active-tab:{notes.drawer?.activeTab ?? 'closed'}</div>
+          <div>error:{notes.error || 'none'}</div>
+        </div>
+      )
+    }
+
+    renderWithProviders(<DirectedHarness />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'open-directed' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('active-tab:directed')).toBeTruthy()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'set-directed-text' }))
+    fireEvent.click(screen.getByRole('button', { name: 'submit-directed' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('error:Directed notes require a To User')).toBeTruthy()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'set-directed-user' }))
+    fireEvent.click(screen.getByRole('button', { name: 'submit-directed' }))
+
+    await waitFor(() => {
+      expect(mutateAsyncMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          applicationId: 42,
+          note: 'Directed message',
+          isPrivate: true,
+          toUser: 'user-22',
+          fromUser: 'S.Benjamin',
+          token: 'test-access-token',
+        }),
+      )
     })
   })
 

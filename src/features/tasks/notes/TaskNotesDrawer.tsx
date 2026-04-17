@@ -14,9 +14,11 @@ type Props = {
   contextType?: 'task' | 'application'
   taskName: string
   activeTab: NoteTab
+  directedNotes: TaskNote[]
   privateNotes: TaskNote[]
   publicNotes: TaskNote[]
   toMeNotes: TaskNote[]
+  loadingDirected: boolean
   loadingPrivate: boolean
   loadingPublic: boolean
   loadingToMe: boolean
@@ -278,9 +280,11 @@ export function TaskNotesDrawer({
   contextType = 'task',
   taskName,
   activeTab,
+  directedNotes,
   privateNotes,
   publicNotes,
   toMeNotes,
+  loadingDirected,
   loadingPrivate,
   loadingPublic,
   loadingToMe,
@@ -324,13 +328,28 @@ export function TaskNotesDrawer({
     currentLabelOverride ?? (contextType === 'application' ? 'Current Application' : 'Current Task')
 
   const notes =
-    activeTab === 'private' ? privateNotes : activeTab === 'toMe' ? toMeNotes : publicNotes
+    activeTab === 'directed'
+      ? directedNotes
+      : activeTab === 'private'
+        ? privateNotes
+        : activeTab === 'toMe'
+          ? toMeNotes
+          : publicNotes
   const isLoading =
-    activeTab === 'private' ? loadingPrivate : activeTab === 'toMe' ? loadingToMe : loadingPublic
+    activeTab === 'directed'
+      ? loadingDirected
+      : activeTab === 'private'
+        ? loadingPrivate
+        : activeTab === 'toMe'
+          ? loadingToMe
+          : loadingPublic
   const canSubmit = composeText.trim().length > 0 && !isSubmitting
-  const threadedNotes = activeTab === 'toMe' ? toMeNotes : publicNotes
-  const publicNoteThreads = activeTab !== 'private' ? buildPublicNoteThreads(threadedNotes) : []
+  const threadedNotes =
+    activeTab === 'directed' ? directedNotes : activeTab === 'toMe' ? toMeNotes : publicNotes
+  const noteThreads =
+    activeTab === 'private' ? [] : buildPublicNoteThreads(threadedNotes)
   const mentionQuery = mentionContext?.query ?? ''
+  const isDirectedTab = activeTab === 'directed'
 
   const filteredMentionUsers = useMemo(() => {
     const query = mentionQuery.trim().toLowerCase()
@@ -591,6 +610,20 @@ export function TaskNotesDrawer({
             <>
               <button
                 type="button"
+                onClick={() => onTabChange('directed')}
+                className={`mr-1 rounded-t-md px-3 py-2 text-sm font-medium ${
+                  activeTab === 'directed'
+                    ? 'border-b-2 border-violet-600 text-violet-700'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Directed Notes
+                <span className="ml-1 rounded-full bg-violet-100 px-1.5 py-0.5 text-xs text-violet-700">
+                  {directedNotes.length}
+                </span>
+              </button>
+              <button
+                type="button"
                 onClick={() => onTabChange('private')}
                 className={`mr-1 rounded-t-md px-3 py-2 text-sm font-medium ${
                   activeTab === 'private'
@@ -711,7 +744,7 @@ export function TaskNotesDrawer({
                       </article>
                     )
                   })
-                : publicNoteThreads.map((node) => renderPublicNode(node, 0))}
+                : noteThreads.map((node) => renderPublicNode(node, 0))}
             </div>
           )}
         </div>
@@ -731,7 +764,11 @@ export function TaskNotesDrawer({
                   }
                 }}
                 className="min-h-[84px] w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                placeholder={`Add a ${composePrivate ? 'private' : 'public'} note... (@ to mention)`}
+                placeholder={
+                  isDirectedTab
+                    ? 'Add a directed note... (@ to select ToUsers)'
+                    : `Add a ${composePrivate ? 'private' : 'public'} note... (@ to mention)`
+                }
               />
               {mentionOpen ? (
                 <div className="absolute bottom-full z-10 mb-1 max-h-52 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
@@ -771,7 +808,7 @@ export function TaskNotesDrawer({
               className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
             >
               <AtSign className="h-3.5 w-3.5" />
-              Mention
+              {isDirectedTab ? 'ToUsers' : 'Mention'}
             </button>
             {selectedMentionUser ? (
               <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
@@ -789,7 +826,7 @@ export function TaskNotesDrawer({
           </div>
 
           <div className="mt-2 flex items-center justify-between gap-2">
-            {!hidePrivacyToggle ? (
+            {!hidePrivacyToggle && !isDirectedTab ? (
               <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-gray-700">
                 <input
                   type="checkbox"

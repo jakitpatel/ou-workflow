@@ -428,9 +428,11 @@ export function ApplicationExpandedStage({
         contextType="task"
         taskName={taskNotes.drawer?.taskName ?? ''}
         activeTab={taskNotes.drawer?.activeTab ?? 'public'}
+        directedNotes={taskNotes.activeNotes.directed}
         privateNotes={taskNotes.activeNotes.private}
         publicNotes={taskNotes.activeNotes.public}
         toMeNotes={taskNotes.activeNotes.toMe}
+        loadingDirected={taskNotes.activeLoading.directed}
         loadingPrivate={taskNotes.activeLoading.private}
         loadingPublic={taskNotes.activeLoading.public}
         loadingToMe={taskNotes.activeLoading.toMe}
