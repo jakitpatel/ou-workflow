@@ -442,6 +442,7 @@ export function TaskNotesDrawer({
   const renderPublicNode = (node: PublicNoteNode, depth: number) => {
     const { note, noteId, children } = node
     const fromName = getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
+    const toUser = getMetaValue(note, 'toUser', 'to_user', 'ToUser')
     const fromRole =
       getMetaValue(note, 'fromUserRole', 'from_user_role') !== '-'
         ? getMetaValue(note, 'fromUserRole', 'from_user_role')
@@ -468,6 +469,11 @@ export function TaskNotesDrawer({
             <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${tone.badge}`}>
               {fromRole}
             </span>
+            {(activeTab === 'directed' || activeTab === 'toMe') && toUser !== '-' ? (
+              <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[11px] font-medium text-violet-800">
+                To: {toUser}
+              </span>
+            ) : null}
             {showPerNoteApplicationId && noteApplicationId !== null ? (
               <>
                 <button
