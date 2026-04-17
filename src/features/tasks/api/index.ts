@@ -333,13 +333,13 @@ export async function fetchTaskNotes({
           {
             and: [
               { name: 'fromUser', op: 'eq', val: apiUser.trim() },
-              { name: 'ToUser', op: 'noteq', val: null },
+              { name: 'ToUser', op: 'notnull' },
             ],
           },
           {
             and: [
               { name: 'ToUser', op: 'eq', val: apiUser.trim() },
-              { name: 'fromUser', op: 'noteq', val: null },
+              { name: 'fromUser', op: 'notnull' },
             ],
           },
         ],
