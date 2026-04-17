@@ -1,5 +1,5 @@
-import { TaskDashboard } from '@/components/ou-workflow/TaskDashboard'
+import { TaskDashboardContent } from '@/features/tasks/components/TaskDashboardContent'
 
 export function TaskDashboardScreen() {
-  return <TaskDashboard />
+  return <TaskDashboardContent />
 }

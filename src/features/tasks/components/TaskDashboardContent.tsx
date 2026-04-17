@@ -1,16 +1,16 @@
- 
+import { ErrorDialog } from '@/components/ErrorDialog';
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
 import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal';
-import { TaskFilters } from '@/features/tasks/components/TaskFilters';
-import { PlantHistoryModal } from '@/features/tasks/components/PlantHistoryModal';
-import { TaskRow } from '@/features/tasks/components/TaskRow';
-import { TaskStatsCards } from '@/features/tasks/components/TaskStatsCards';
-import { plantHistory } from '@/features/tasks/model/plantHistory';
-import { ErrorDialog } from '@/components/ErrorDialog';
 import { useTaskDashboardState } from '@/features/tasks/hooks/useTaskDashboardState';
+import { plantHistory } from '@/features/tasks/model/plantHistory';
 
-export function TaskDashboard() {
+import { PlantHistoryModal } from './PlantHistoryModal';
+import { TaskFilters } from './TaskFilters';
+import { TaskRow } from './TaskRow';
+import { TaskStatsCards } from './TaskStatsCards';
+
+export function TaskDashboardContent() {
   const {
     username,
     role,
@@ -82,15 +82,12 @@ export function TaskDashboard() {
             </div>
 
             <div className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:flex-row">
-                <div className="flex-1">
-                  <TaskFilters
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                  />
-                </div>
+              <div className="flex-1">
+                <TaskFilters searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+              </div>
 
-                <div className="shrink-0">
-                  <div className="inline-flex overflow-hidden rounded-lg border border-gray-300">
+              <div className="shrink-0">
+                <div className="inline-flex overflow-hidden rounded-lg border border-gray-300">
                   {(['pending', 7, 30] as Array<string | number>).map((option, i, arr) => (
                     <button
                       key={option}
@@ -140,7 +137,7 @@ export function TaskDashboard() {
                 </thead>
 
                 <tbody className="divide-y divide-gray-200">
-                  {filteredTasks.map(application => (
+                  {filteredTasks.map((application) => (
                     <TaskRow
                       key={application.taskInstanceId}
                       application={application}
@@ -167,7 +164,9 @@ export function TaskDashboard() {
         showUploadModal={showUploadModal}
         setShowUploadModal={setShowUploadModal}
         selectedAction={selectedAction}
-        taskInstanceId={selectedAction?.action?.taskInstanceId ?? selectedAction?.action?.TaskInstanceId}
+        taskInstanceId={
+          selectedAction?.action?.taskInstanceId ?? selectedAction?.action?.TaskInstanceId
+        }
         completeTaskWithResult={completeTaskWithResult}
       />
       <PlantHistoryModal {...{ showPlantHistory, setShowPlantHistory, plantHistory }} />
