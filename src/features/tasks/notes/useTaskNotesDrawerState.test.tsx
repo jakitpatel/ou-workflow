@@ -139,6 +139,7 @@ describe('useTaskNotesDrawerState', () => {
       expect.objectContaining({
         applicationId: 42,
         isPrivate: true,
+        fromUser: 'S.Benjamin',
         token: 'test-access-token',
       }),
     )

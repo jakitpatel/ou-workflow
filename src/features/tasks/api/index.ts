@@ -303,12 +303,14 @@ export async function fetchMentionUsers({
 export async function fetchTaskNotes({
   taskId,
   applicationId,
+  fromUser,
   isPrivate,
   mode = 'standard',
   token,
 }: {
   taskId?: string | null
   applicationId?: number | null
+  fromUser?: string | null
   isPrivate?: boolean
   mode?: 'standard' | 'directed'
   token?: string | null
@@ -321,6 +323,9 @@ export async function fetchTaskNotes({
   }
   if (taskId !== undefined && taskId !== null && String(taskId).trim()) {
     params.append('filter[TaskInstanceId]', String(taskId).trim())
+  }
+  if (fromUser !== undefined && fromUser !== null && String(fromUser).trim()) {
+    params.append('filter[FromUser]', String(fromUser).trim())
   }
   if (!isDirectedMode && usesVisibilityFilter) {
     params.append('filter[isPrivate]', String(isPrivate))

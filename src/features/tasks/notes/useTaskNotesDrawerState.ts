@@ -100,6 +100,7 @@ export function useTaskNotesDrawerState({
         const fetchParams: {
           taskId?: string
           applicationId?: number | null
+          fromUser?: string
           isPrivate?: boolean
           mode?: 'standard' | 'directed'
           token?: string
@@ -114,6 +115,7 @@ export function useTaskNotesDrawerState({
           fetchParams.mode = 'directed'
         } else if (tab === 'private') {
           fetchParams.isPrivate = true
+          fetchParams.fromUser = username ?? undefined
         } else if (tab === 'public') {
           fetchParams.isPrivate = false
         }
@@ -160,6 +162,9 @@ export function useTaskNotesDrawerState({
       })
       setError('')
       setComposePrivateState(tab === 'private' || tab === 'directed')
+      if (tab === 'private') {
+        setComposeToUserIdState(null)
+      }
 
       await Promise.allSettled([
         fetchNotesByTab({ contextKey, taskId, tab: 'directed' }),
@@ -184,6 +189,9 @@ export function useTaskNotesDrawerState({
   const setActiveTab = useCallback((tab: NoteTab) => {
     setDrawer((prev) => (prev ? { ...prev, activeTab: tab } : prev))
     setComposePrivateState(tab === 'private' || tab === 'directed')
+    if (tab === 'private') {
+      setComposeToUserIdState(null)
+    }
   }, [])
 
   const setComposeText = useCallback((text: string) => {
@@ -235,7 +243,7 @@ export function useTaskNotesDrawerState({
       isPrivate: drawer.activeTab === 'directed' ? true : composePrivate,
       priority: 'NORMAL',
       fromUser: username ?? undefined,
-      toUser: composeToUserId ?? undefined,
+      toUser: drawer.activeTab === 'private' ? undefined : composeToUserId ?? undefined,
       token: token ?? undefined,
     })
 

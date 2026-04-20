@@ -273,4 +273,46 @@ describe('TaskNotesDrawer', () => {
     expect(screen.getByRole('button', { name: /ToUsers/i })).toBeTruthy()
     expect(screen.queryByLabelText(/Private note/i)).toBeNull()
   })
+
+  it('hides mention UI and the private lock badge in the Private Notes tab', () => {
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="task"
+        taskName="Review Ingredients"
+        activeTab="private"
+        directedNotes={[]}
+        privateNotes={[
+          {
+            MessageID: 201,
+            MessageText: 'Only visible internally',
+            FromUser: 'Alice Smith',
+            SentDate: '2026-04-07T10:00:00.000Z',
+          } as TaskNote,
+        ]}
+        publicNotes={[]}
+        loadingDirected={false}
+        loadingPrivate={false}
+        loadingPublic={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate
+        isSubmitting={false}
+        error=""
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: /mention/i })).toBeNull()
+    expect(screen.queryByText('Private')).toBeNull()
+    expect(screen.getByPlaceholderText('Add a private note...')).toBeTruthy()
+  })
 })

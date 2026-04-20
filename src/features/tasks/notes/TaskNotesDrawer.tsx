@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowUpRight, AtSign, ChevronDown, ChevronRight, FileText, Hash, Lock, MessageSquareMore, X } from 'lucide-react'
+import { ArrowUpRight, AtSign, ChevronDown, ChevronRight, FileText, Hash, MessageSquareMore, X } from 'lucide-react'
 import { useMentionUsers } from '@/features/tasks/hooks/useTaskQueries'
 import type { NoteTab } from '@/features/tasks/notes/types'
 import type { MentionUser } from '@/features/tasks/api'
@@ -357,6 +357,7 @@ export function TaskNotesDrawer({
   const noteThreads = activeTab === 'private' ? [] : buildPublicNoteThreads(threadedNotes)
   const mentionQuery = mentionContext?.query ?? ''
   const isDirectedTab = activeTab === 'directed'
+  const isPrivateTab = activeTab === 'private'
 
   const filteredMentionUsers = useMemo(() => {
     const query = mentionQuery.trim().toLowerCase()
@@ -405,10 +406,17 @@ export function TaskNotesDrawer({
 
   const handleComposeChange = (nextText: string, cursor: number) => {
     onComposeTextChange(nextText)
+    if (isPrivateTab) {
+      setMentionContext(null)
+      setMentionOpen(false)
+      return
+    }
     openMentionPopupFromText(nextText, cursor)
   }
 
   const handleMentionButtonClick = () => {
+    if (isPrivateTab) return
+
     const textarea = composeTextareaRef.current
     if (!textarea) {
       setMentionContext({
@@ -825,10 +833,6 @@ export function TaskNotesDrawer({
                             </>
                           ) : null}
                           <span className="text-[11px] text-slate-500">{createdAt}</span>
-                          <span className="ml-auto inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
-                            <Lock className="h-3 w-3" />
-                            Private
-                          </span>
                         </div>
                         <p className="mt-2 text-sm leading-5 text-slate-900">{getNoteText(note)}</p>
                         <div className="mt-2" />
@@ -858,10 +862,12 @@ export function TaskNotesDrawer({
                 placeholder={
                   isDirectedTab
                     ? 'Add a directed note... (@ to select ToUsers)'
-                    : `Add a ${composePrivate ? 'private' : 'public'} note... (@ to mention)`
+                    : isPrivateTab
+                      ? 'Add a private note...'
+                      : `Add a ${composePrivate ? 'private' : 'public'} note... (@ to mention)`
                 }
               />
-              {mentionOpen ? (
+              {mentionOpen && !isPrivateTab ? (
                 <div className="absolute bottom-full z-10 mb-1 max-h-52 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
                   {mentionUsersLoading ? (
                     <div className="px-3 py-2 text-sm text-slate-500">Loading users...</div>
@@ -892,32 +898,34 @@ export function TaskNotesDrawer({
               ) : null}
             </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={handleMentionButtonClick}
-              className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-            >
-              <AtSign className="h-3.5 w-3.5" />
-              {isDirectedTab ? 'ToUsers' : 'Mention'}
-            </button>
-            {selectedMentionUser ? (
-              <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
-                To User: {getMentionLabel(selectedMentionUser)}
-                <button
-                  type="button"
-                  onClick={() => onComposeToUserChange(null)}
-                  className="rounded p-0.5 hover:bg-blue-100"
-                  aria-label="Clear selected mention user"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ) : null}
-          </div>
+          {!isPrivateTab ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleMentionButtonClick}
+                className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              >
+                <AtSign className="h-3.5 w-3.5" />
+                {isDirectedTab ? 'ToUsers' : 'Mention'}
+              </button>
+              {selectedMentionUser ? (
+                <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                  To User: {getMentionLabel(selectedMentionUser)}
+                  <button
+                    type="button"
+                    onClick={() => onComposeToUserChange(null)}
+                    className="rounded p-0.5 hover:bg-blue-100"
+                    aria-label="Clear selected mention user"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="mt-2 flex items-center justify-between gap-2">
-            {!hidePrivacyToggle && !isDirectedTab ? (
+            {!hidePrivacyToggle && !isDirectedTab && !isPrivateTab ? (
               <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-gray-700">
                 <input
                   type="checkbox"
