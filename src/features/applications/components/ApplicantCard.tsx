@@ -21,8 +21,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
   const {
     applicationNotes,
     applicationNotesContextKey,
-    applicationPrivateCount,
-    applicationPublicCount,
+    applicationNotesCount,
     canCancelApplication,
     canUndoWithdrawApplication,
     cancelReason,
@@ -118,17 +117,19 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
 
       <ApplicantCardStats
         applicant={applicant}
-        onOpenApplicationNotes={(tab) =>
+        onOpenApplicationNotes={() =>
           applicationNotes.openDrawer({
             contextKey: applicationNotesContextKey,
             taskName: applicant.company || `Application ${String(applicant.applicationId ?? '')}`,
-            tab,
+            tab: 'directed',
           })
         }
-        applicationPrivateCount={applicationPrivateCount}
-        applicationPublicCount={applicationPublicCount}
-        applicationPrivateLoading={applicationNotes.isLoading(applicationNotesContextKey, 'private')}
-        applicationPublicLoading={applicationNotes.isLoading(applicationNotesContextKey, 'public')}
+        applicationNotesCount={applicationNotesCount}
+        applicationNotesLoading={
+          applicationNotes.isLoading(applicationNotesContextKey, 'directed') ||
+          applicationNotes.isLoading(applicationNotesContextKey, 'private') ||
+          applicationNotes.isLoading(applicationNotesContextKey, 'public')
+        }
       />
 
       <ApplicantCardActions
@@ -147,15 +148,13 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         applicationId={applicant.applicationId ?? null}
         contextType="application"
         taskName={applicant.company || `Application ${String(applicant.applicationId ?? '')}`}
-        activeTab={applicationNotes.drawer?.activeTab ?? 'public'}
+        activeTab={applicationNotes.drawer?.activeTab ?? 'directed'}
         directedNotes={applicationNotes.activeNotes.directed}
         privateNotes={applicationNotes.activeNotes.private}
         publicNotes={applicationNotes.activeNotes.public}
-        toMeNotes={applicationNotes.activeNotes.toMe}
         loadingDirected={applicationNotes.activeLoading.directed}
         loadingPrivate={applicationNotes.activeLoading.private}
         loadingPublic={applicationNotes.activeLoading.public}
-        loadingToMe={applicationNotes.activeLoading.toMe}
         composeText={applicationNotes.composeText}
         composeToUserId={applicationNotes.composeToUserId}
         composePrivate={applicationNotes.composePrivate}

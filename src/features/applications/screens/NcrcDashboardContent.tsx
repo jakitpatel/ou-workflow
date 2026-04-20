@@ -229,23 +229,21 @@ export function NcrcDashboardContent() {
         applicantCompany="My Notes"
         contextType="application"
         taskName={username?.trim() || 'Current User'}
-        activeTab="toMe"
+        activeTab="public"
         directedNotes={[]}
         privateNotes={[]}
-        publicNotes={[]}
-        toMeNotes={myNotesWithApplicationId}
+        publicNotes={myNotesWithApplicationId}
         loadingDirected={false}
         loadingPrivate={false}
-        loadingPublic={false}
-        loadingToMe={myNotesLoading}
+        loadingPublic={myNotesLoading}
         composeText=""
         composePrivate={false}
         isSubmitting={myNotesReplySubmitting}
         error={myNotesError}
         notesTitleOverride="My Notes"
         currentLabelOverride="Logged In User"
-        toMeTabLabel="My Notes"
         singleTabMode
+        singleTabLabel="My Notes"
         hideComposer
         hidePrivacyToggle
         showPerNoteApplicationId

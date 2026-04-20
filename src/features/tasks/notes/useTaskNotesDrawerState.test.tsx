@@ -76,7 +76,6 @@ function NotesHookHarness() {
       <div>error:{notes.error || 'none'}</div>
       <div>private-count:{notes.getCounts('application:42').private}</div>
       <div>public-count:{notes.getCounts('application:42').public}</div>
-      <div>to-me-count:{notes.activeNotes.toMe.length}</div>
       <div>selected-filter-app:{notes.selectedApplicationFilterId ?? 'none'}</div>
     </div>
   )
@@ -105,10 +104,6 @@ describe('useTaskNotesDrawerState', () => {
         return [{ MessageID: 'directed-note-1', MessageText: 'Directed note', ToUser: 'A.User' }]
       }
 
-      if (params && !Object.prototype.hasOwnProperty.call(params, 'isPrivate')) {
-        return [{ MessageID: 'to-me-note-1', MessageText: 'To me note' }]
-      }
-
       if (params?.isPrivate === true) {
         return [{ MessageID: 'private-note-1', MessageText: 'Private note' }]
       }
@@ -129,10 +124,9 @@ describe('useTaskNotesDrawerState', () => {
       expect(screen.getByText('directed-count:1')).toBeTruthy()
       expect(screen.getByText('private-count:1')).toBeTruthy()
       expect(screen.getByText('public-count:1')).toBeTruthy()
-      expect(screen.getByText('to-me-count:1')).toBeTruthy()
     })
 
-    expect(fetchTaskNotesMock).toHaveBeenCalledTimes(4)
+    expect(fetchTaskNotesMock).toHaveBeenCalledTimes(3)
     expect(fetchTaskNotesMock).toHaveBeenCalledWith(
       expect.objectContaining({
         applicationId: 42,
@@ -152,12 +146,6 @@ describe('useTaskNotesDrawerState', () => {
       expect.objectContaining({
         applicationId: 42,
         isPrivate: false,
-        token: 'test-access-token',
-      }),
-    )
-    expect(fetchTaskNotesMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        applicationId: 42,
         token: 'test-access-token',
       }),
     )
@@ -196,7 +184,7 @@ describe('useTaskNotesDrawerState', () => {
     })
 
     await waitFor(() => {
-      expect(fetchTaskNotesMock).toHaveBeenCalledTimes(5)
+      expect(fetchTaskNotesMock).toHaveBeenCalledTimes(4)
       expect(screen.getByText('error:none')).toBeTruthy()
       expect(screen.getByDisplayValue('')).toBeTruthy()
     })
@@ -227,7 +215,7 @@ describe('useTaskNotesDrawerState', () => {
     })
 
     await waitFor(() => {
-      expect(fetchTaskNotesMock).toHaveBeenCalledTimes(5)
+      expect(fetchTaskNotesMock).toHaveBeenCalledTimes(4)
     })
   })
 

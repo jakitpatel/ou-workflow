@@ -1,22 +1,17 @@
-import { FileText, Inbox, MessageSquarePlus, SendHorizontal } from 'lucide-react'
-import type { NoteTab } from '@/features/tasks/notes/types'
+import { FileText, MessageSquare } from 'lucide-react'
 import type { Applicant } from '@/types/application'
 
 type Props = {
   applicant: Applicant
-  applicationPrivateCount?: number
-  applicationPrivateLoading?: boolean
-  applicationPublicCount?: number
-  applicationPublicLoading?: boolean
-  onOpenApplicationNotes?: (tab: NoteTab) => void | Promise<void>
+  applicationNotesCount?: number
+  applicationNotesLoading?: boolean
+  onOpenApplicationNotes?: () => void | Promise<void>
 }
 
 export function ApplicantCardStats({
   applicant,
-  applicationPrivateCount = 0,
-  applicationPrivateLoading = false,
-  applicationPublicCount = 0,
-  applicationPublicLoading = false,
+  applicationNotesCount = 0,
+  applicationNotesLoading = false,
   onOpenApplicationNotes,
 }: Props) {
   const withdrawnReason = (applicant as any)?.withdrawn_reason
@@ -35,56 +30,24 @@ export function ApplicantCardStats({
         <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={() => onOpenApplicationNotes?.('private')}
-            className="group relative rounded p-1 text-blue-600 hover:bg-blue-50"
-            aria-label="Private notes"
+            onClick={() => onOpenApplicationNotes?.()}
+            className="group relative rounded p-1 text-indigo-600 hover:bg-indigo-50"
+            aria-label="Notes"
             title={
-              applicationPrivateLoading
-                ? 'Loading private notes...'
-                : `Private notes (${applicationPrivateCount})`
+              applicationNotesLoading
+                ? 'Loading notes...'
+                : `Notes (${applicationNotesCount})`
             }
           >
-            <Inbox className="h-4 w-4" />
-            {applicationPrivateLoading && (
-              <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-blue-600" />
+            <MessageSquare className="h-4 w-4" />
+            {applicationNotesLoading && (
+              <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-indigo-600" />
             )}
-            {applicationPrivateCount > 0 && (
-              <span className="absolute -right-1 -top-1 rounded-full bg-blue-600 px-1 text-[10px] text-white">
-                {applicationPrivateCount}
+            {applicationNotesCount > 0 && (
+              <span className="absolute -right-1 -top-1 rounded-full bg-indigo-600 px-1 text-[10px] text-white">
+                {applicationNotesCount}
               </span>
             )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onOpenApplicationNotes?.('public')}
-            className="group relative rounded p-1 text-emerald-600 hover:bg-emerald-50"
-            aria-label="Public notes"
-            title={
-              applicationPublicLoading
-                ? 'Loading public notes...'
-                : `Public notes (${applicationPublicCount})`
-            }
-          >
-            <SendHorizontal className="h-4 w-4" />
-            {applicationPublicLoading && (
-              <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-emerald-600" />
-            )}
-            {applicationPublicCount > 0 && (
-              <span className="absolute -right-1 -top-1 rounded-full bg-emerald-600 px-1 text-[10px] text-white">
-                {applicationPublicCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onOpenApplicationNotes?.('public')}
-            className="rounded p-1 text-indigo-600 hover:bg-indigo-50"
-            aria-label="Create note"
-            title="Create note"
-          >
-            <MessageSquarePlus className="h-4 w-4" />
           </button>
         </div>
         {isWithdrawn && withdrawnReason && (

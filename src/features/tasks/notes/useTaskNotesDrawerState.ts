@@ -44,7 +44,6 @@ const EMPTY_NOTES: NotesByTab<TaskNote> = {
   directed: [],
   private: [],
   public: [],
-  toMe: [],
 }
 
 const buildFetchErrorMessage = (error: unknown): string => {
@@ -127,7 +126,6 @@ export function useTaskNotesDrawerState({
             directed: tab === 'directed' ? (notes as TaskNote[]) : prev[contextKey]?.directed ?? [],
             private: tab === 'private' ? (notes as TaskNote[]) : prev[contextKey]?.private ?? [],
             public: tab === 'public' ? (notes as TaskNote[]) : prev[contextKey]?.public ?? [],
-            toMe: tab === 'toMe' ? (notes as TaskNote[]) : prev[contextKey]?.toMe ?? [],
           },
         }))
 
@@ -167,7 +165,6 @@ export function useTaskNotesDrawerState({
         fetchNotesByTab({ contextKey, taskId, tab: 'directed' }),
         fetchNotesByTab({ contextKey, taskId, tab: 'private' }),
         fetchNotesByTab({ contextKey, taskId, tab: 'public' }),
-        fetchNotesByTab({ contextKey, taskId, tab: 'toMe' }),
       ])
     },
     [fetchNotesByTab],
@@ -289,11 +286,7 @@ export function useTaskNotesDrawerState({
 
       setError('')
       const replyTab: NoteTab =
-        drawer.activeTab === 'directed'
-          ? 'directed'
-          : drawer.activeTab === 'toMe'
-            ? 'toMe'
-            : 'public'
+        drawer.activeTab === 'directed' ? 'directed' : 'public'
       await fetchNotesByTab({
         contextKey: drawer.contextKey,
         taskId: drawer.taskId,
@@ -323,7 +316,6 @@ export function useTaskNotesDrawerState({
       directed: drawer ? Boolean(loadingByKey[`${drawer.contextKey}:directed`]) : false,
       private: drawer ? Boolean(loadingByKey[`${drawer.contextKey}:private`]) : false,
       public: drawer ? Boolean(loadingByKey[`${drawer.contextKey}:public`]) : false,
-      toMe: drawer ? Boolean(loadingByKey[`${drawer.contextKey}:toMe`]) : false,
     }),
     [drawer, loadingByKey],
   )

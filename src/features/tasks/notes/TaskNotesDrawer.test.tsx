@@ -31,11 +31,10 @@ describe('TaskNotesDrawer', () => {
         applicationId={42}
         contextType="application"
         taskName="Current User"
-        activeTab="toMe"
+        activeTab="public"
         directedNotes={[]}
         privateNotes={[]}
-        publicNotes={[]}
-        toMeNotes={[
+        publicNotes={[
           {
             MessageID: 101,
             MessageText: 'Linked note',
@@ -47,7 +46,6 @@ describe('TaskNotesDrawer', () => {
         loadingDirected={false}
         loadingPrivate={false}
         loadingPublic={false}
-        loadingToMe={false}
         composeText=""
         composeToUserId={null}
         composePrivate={false}
@@ -83,11 +81,10 @@ describe('TaskNotesDrawer', () => {
         applicationId={42}
         contextType="application"
         taskName="Current User"
-        activeTab="toMe"
+        activeTab="public"
         directedNotes={[]}
         privateNotes={[]}
-        publicNotes={[]}
-        toMeNotes={[
+        publicNotes={[
           {
             MessageID: 101,
             MessageText: 'Linked note',
@@ -99,7 +96,6 @@ describe('TaskNotesDrawer', () => {
         loadingDirected={false}
         loadingPrivate={false}
         loadingPublic={false}
-        loadingToMe={false}
         composeText=""
         composeToUserId={null}
         composePrivate={false}
@@ -141,11 +137,9 @@ describe('TaskNotesDrawer', () => {
         directedNotes={[]}
         privateNotes={[]}
         publicNotes={publicNotes}
-        toMeNotes={[]}
         loadingDirected={false}
         loadingPrivate={false}
         loadingPublic={false}
-        loadingToMe={false}
         composeText=""
         composeToUserId={null}
         composePrivate={false}
@@ -198,11 +192,9 @@ describe('TaskNotesDrawer', () => {
         directedNotes={[]}
         privateNotes={[]}
         publicNotes={[]}
-        toMeNotes={[]}
         loadingDirected={false}
         loadingPrivate={false}
         loadingPublic={false}
-        loadingToMe={false}
         composeText=""
         composeToUserId={null}
         composePrivate

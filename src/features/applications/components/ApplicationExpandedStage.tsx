@@ -1,8 +1,6 @@
 import React, { useMemo } from 'react'
 import {
-  Inbox,
-  MessageSquarePlus,
-  SendHorizontal,
+  MessageSquare,
   Undo2,
   UserCog,
   X,
@@ -36,12 +34,6 @@ type Props = {
 
 const getTaskInstanceId = (task: Task): string =>
   String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '')
-
-const toSafeCount = (value: unknown): number => {
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed) || parsed < 0) return 0
-  return Math.trunc(parsed)
-}
 
 const getGUIDisplayResult = (resultData: unknown): string | null => {
   if (resultData === null || resultData === undefined) return null
@@ -307,110 +299,44 @@ export function ApplicationExpandedStage({
                       {(() => {
                         const contextKey = taskId
                         const noteCounts = taskNotes.getCounts(contextKey)
-                        const receivedCount =
-                          noteCounts.private ||
-                          toSafeCount(task.IsPrivateNotes ?? (task as any)?.isPrivateNotes)
-                        const sentCount =
-                          noteCounts.public ||
-                          toSafeCount(task.IsGlobalNotes ?? (task as any)?.isGlobalNotes)
-                        const isReceivedLoading = taskNotes.isLoading(contextKey, 'private')
-                        const isSentLoading = taskNotes.isLoading(contextKey, 'public')
+                        const totalNotes =
+                          noteCounts.directed + noteCounts.private + noteCounts.public
+                        const isNotesLoading =
+                          taskNotes.isLoading(contextKey, 'directed') ||
+                          taskNotes.isLoading(contextKey, 'private') ||
+                          taskNotes.isLoading(contextKey, 'public')
 
                         return (
-                          <>
-                            <button
-                              type="button"
-                              onClick={async (e) => {
-                                e.stopPropagation()
-                                if (!taskId) {
-                                  toast.error('Task instance id not found')
-                                  return
-                                }
-
-                                await taskNotes.openDrawer({
-                                  contextKey,
-                                  taskId,
-                                  taskName: task.name,
-                                  tab: 'private',
-                                })
-                              }}
-                              className="group relative rounded p-1 text-blue-600 hover:bg-blue-50"
-                              aria-label="Private notes"
-                              title={
-                                isReceivedLoading
-                                  ? 'Loading private notes...'
-                                  : `Private notes (${receivedCount})`
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              if (!taskId) {
+                                toast.error('Task instance id not found')
+                                return
                               }
-                            >
-                              <Inbox className="h-4 w-4" />
-                              {isReceivedLoading && (
-                                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-blue-600" />
-                              )}
-                              {receivedCount > 0 && (
-                                <span className="absolute -right-1 -top-1 rounded-full bg-blue-600 px-1 text-[10px] text-white">
-                                  {receivedCount}
-                                </span>
-                              )}
-                            </button>
 
-                            <button
-                              type="button"
-                              onClick={async (e) => {
-                                e.stopPropagation()
-                                if (!taskId) {
-                                  toast.error('Task instance id not found')
-                                  return
-                                }
-
-                                await taskNotes.openDrawer({
-                                  contextKey,
-                                  taskId,
-                                  taskName: task.name,
-                                  tab: 'public',
-                                })
-                              }}
-                              className="group relative rounded p-1 text-emerald-600 hover:bg-emerald-50"
-                              aria-label="Public notes"
-                              title={
-                                isSentLoading
-                                  ? 'Loading public notes...'
-                                  : `Public notes (${sentCount})`
-                              }
-                            >
-                              <SendHorizontal className="h-4 w-4" />
-                              {isSentLoading && (
-                                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-emerald-600" />
-                              )}
-                              {sentCount > 0 && (
-                                <span className="absolute -right-1 -top-1 rounded-full bg-emerald-600 px-1 text-[10px] text-white">
-                                  {sentCount}
-                                </span>
-                              )}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={async (e) => {
-                                e.stopPropagation()
-                                if (!taskId) {
-                                  toast.error('Task instance id not found')
-                                  return
-                                }
-
-                                await taskNotes.openDrawer({
-                                  contextKey,
-                                  taskId,
-                                  taskName: task.name,
-                                  tab: 'public',
-                                })
-                              }}
-                              className="rounded p-1 text-indigo-600 hover:bg-indigo-50"
-                              aria-label="Create note"
-                              title="Create note"
-                            >
-                              <MessageSquarePlus className="h-4 w-4" />
-                            </button>
-                          </>
+                              await taskNotes.openDrawer({
+                                contextKey,
+                                taskId,
+                                taskName: task.name,
+                                tab: 'directed',
+                              })
+                            }}
+                            className="group relative rounded p-1 text-indigo-600 hover:bg-indigo-50"
+                            aria-label="Notes"
+                            title={isNotesLoading ? 'Loading notes...' : `Notes (${totalNotes})`}
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                            {isNotesLoading && (
+                              <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-indigo-600" />
+                            )}
+                            {totalNotes > 0 && (
+                              <span className="absolute -right-1 -top-1 rounded-full bg-indigo-600 px-1 text-[10px] text-white">
+                                {totalNotes}
+                              </span>
+                            )}
+                          </button>
                         )
                       })()}
                     </div>
@@ -427,15 +353,13 @@ export function ApplicationExpandedStage({
         applicationId={applicant.applicationId ?? null}
         contextType="task"
         taskName={taskNotes.drawer?.taskName ?? ''}
-        activeTab={taskNotes.drawer?.activeTab ?? 'public'}
+        activeTab={taskNotes.drawer?.activeTab ?? 'directed'}
         directedNotes={taskNotes.activeNotes.directed}
         privateNotes={taskNotes.activeNotes.private}
         publicNotes={taskNotes.activeNotes.public}
-        toMeNotes={taskNotes.activeNotes.toMe}
         loadingDirected={taskNotes.activeLoading.directed}
         loadingPrivate={taskNotes.activeLoading.private}
         loadingPublic={taskNotes.activeLoading.public}
-        loadingToMe={taskNotes.activeLoading.toMe}
         composeText={taskNotes.composeText}
         composeToUserId={taskNotes.composeToUserId}
         composePrivate={taskNotes.composePrivate}

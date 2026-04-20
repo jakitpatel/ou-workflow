@@ -175,16 +175,13 @@ export function useApplicantCardState({ applicant, handleCancelTask }: Params) {
     [pendingUndoWithdrawTask, applicant.assignedRoles, taskRolesAll, userRoles, username],
   )
 
-  const applicationPrivateCount = useMemo(() => {
-    return (
-      applicationNotes.getCounts(applicationNotesContextKey).private ||
-      toSafeCount((applicant as any)?.IsPrivateNotes)
-    )
-  }, [applicant, applicationNotes, applicationNotesContextKey])
+  const applicationNotesCount = useMemo(() => {
+    const counts = applicationNotes.getCounts(applicationNotesContextKey)
+    const fetchedTotal = counts.directed + counts.private + counts.public
+    if (fetchedTotal > 0) return fetchedTotal
 
-  const applicationPublicCount = useMemo(() => {
     return (
-      applicationNotes.getCounts(applicationNotesContextKey).public ||
+      toSafeCount((applicant as any)?.IsPrivateNotes) +
       toSafeCount((applicant as any)?.IsGlobalNotes)
     )
   }, [applicant, applicationNotes, applicationNotesContextKey])
@@ -259,8 +256,7 @@ export function useApplicantCardState({ applicant, handleCancelTask }: Params) {
     applicant,
     applicationNotes,
     applicationNotesContextKey,
-    applicationPrivateCount,
-    applicationPublicCount,
+    applicationNotesCount,
     canCancelApplication,
     canUndoWithdrawApplication,
     cancelReason,

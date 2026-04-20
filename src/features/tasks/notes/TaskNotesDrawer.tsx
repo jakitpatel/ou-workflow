@@ -17,11 +17,9 @@ type Props = {
   directedNotes: TaskNote[]
   privateNotes: TaskNote[]
   publicNotes: TaskNote[]
-  toMeNotes: TaskNote[]
   loadingDirected: boolean
   loadingPrivate: boolean
   loadingPublic: boolean
-  loadingToMe: boolean
   composeText: string
   composeToUserId?: string | null
   composePrivate: boolean
@@ -29,8 +27,8 @@ type Props = {
   error?: string
   notesTitleOverride?: string
   currentLabelOverride?: string
-  toMeTabLabel?: string
   singleTabMode?: boolean
+  singleTabLabel?: string
   hideComposer?: boolean
   hidePrivacyToggle?: boolean
   showPerNoteApplicationId?: boolean
@@ -283,11 +281,9 @@ export function TaskNotesDrawer({
   directedNotes,
   privateNotes,
   publicNotes,
-  toMeNotes,
   loadingDirected,
   loadingPrivate,
   loadingPublic,
-  loadingToMe,
   composeText,
   composeToUserId,
   composePrivate,
@@ -295,8 +291,8 @@ export function TaskNotesDrawer({
   error,
   notesTitleOverride,
   currentLabelOverride,
-  toMeTabLabel = 'To Me',
   singleTabMode = false,
+  singleTabLabel = 'Notes',
   hideComposer = false,
   hidePrivacyToggle = false,
   showPerNoteApplicationId = false,
@@ -332,22 +328,16 @@ export function TaskNotesDrawer({
       ? directedNotes
       : activeTab === 'private'
         ? privateNotes
-        : activeTab === 'toMe'
-          ? toMeNotes
-          : publicNotes
+        : publicNotes
   const isLoading =
     activeTab === 'directed'
       ? loadingDirected
       : activeTab === 'private'
         ? loadingPrivate
-        : activeTab === 'toMe'
-          ? loadingToMe
-          : loadingPublic
+        : loadingPublic
   const canSubmit = composeText.trim().length > 0 && !isSubmitting
-  const threadedNotes =
-    activeTab === 'directed' ? directedNotes : activeTab === 'toMe' ? toMeNotes : publicNotes
-  const noteThreads =
-    activeTab === 'private' ? [] : buildPublicNoteThreads(threadedNotes)
+  const threadedNotes = activeTab === 'directed' ? directedNotes : publicNotes
+  const noteThreads = activeTab === 'private' ? [] : buildPublicNoteThreads(threadedNotes)
   const mentionQuery = mentionContext?.query ?? ''
   const isDirectedTab = activeTab === 'directed'
 
@@ -396,6 +386,11 @@ export function TaskNotesDrawer({
   const handleMentionButtonClick = () => {
     const textarea = composeTextareaRef.current
     if (!textarea) {
+      setMentionContext({
+        start: composeText.length,
+        end: composeText.length,
+        query: '',
+      })
       setMentionOpen(true)
       return
     }
@@ -403,35 +398,24 @@ export function TaskNotesDrawer({
     textarea.focus()
     const selectionStart = textarea.selectionStart ?? composeText.length
     const selectionEnd = textarea.selectionEnd ?? composeText.length
-    let nextText = composeText
-    let nextCursor = selectionStart
-
     const existingContext = getMentionContext(composeText, selectionStart)
-    if (!existingContext) {
-      const before = composeText.slice(0, selectionStart)
-      const after = composeText.slice(selectionEnd)
-      const needsSpace = before.length > 0 && !/\s$/.test(before)
-      const mentionPrefix = `${needsSpace ? ' ' : ''}@`
-
-      nextText = `${before}${mentionPrefix}${after}`
-      nextCursor = before.length + mentionPrefix.length
-      onComposeTextChange(nextText)
+    if (existingContext) {
+      setMentionContext(existingContext)
+    } else {
+      setMentionContext({
+        start: selectionStart,
+        end: selectionEnd,
+        query: '',
+      })
     }
-
-    openMentionPopupFromText(nextText, nextCursor)
+    setMentionOpen(true)
   }
 
   const handlePickMentionUser = (user: MentionUser) => {
-    const label = getMentionLabel(user)
-    const replacement = `@${label} `
-
     const context = mentionContext ?? getMentionContext(composeText, composeText.length)
     if (context) {
-      const updatedText = `${composeText.slice(0, context.start)}${replacement}${composeText.slice(context.end)}`
+      const updatedText = `${composeText.slice(0, context.start)}${composeText.slice(context.end)}`
       onComposeTextChange(updatedText)
-    } else {
-      const needsSpace = composeText.trim().length > 0 && !/\s$/.test(composeText)
-      onComposeTextChange(`${composeText}${needsSpace ? ' ' : ''}${replacement}`)
     }
 
     onComposeToUserChange(user.id)
@@ -469,7 +453,7 @@ export function TaskNotesDrawer({
             <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${tone.badge}`}>
               {fromRole}
             </span>
-            {(activeTab === 'directed' || activeTab === 'toMe') && toUser !== '-' ? (
+            {activeTab === 'directed' && toUser !== '-' ? (
               <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[11px] font-medium text-violet-800">
                 To: {toUser}
               </span>
@@ -604,72 +588,58 @@ export function TaskNotesDrawer({
           {singleTabMode ? (
             <button
               type="button"
-              onClick={() => onTabChange('toMe')}
+              onClick={() => onTabChange(activeTab)}
               className="rounded-t-md border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-700"
             >
-              {toMeTabLabel}
+              {singleTabLabel}
               <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">
-                {toMeNotes.length}
+                {notes.length}
               </span>
             </button>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={() => onTabChange('directed')}
-                className={`mr-1 rounded-t-md px-3 py-2 text-sm font-medium ${
-                  activeTab === 'directed'
-                    ? 'border-b-2 border-violet-600 text-violet-700'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Directed Notes
-                <span className="ml-1 rounded-full bg-violet-100 px-1.5 py-0.5 text-xs text-violet-700">
-                  {directedNotes.length}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onTabChange('private')}
-                className={`mr-1 rounded-t-md px-3 py-2 text-sm font-medium ${
-                  activeTab === 'private'
-                    ? 'border-b-2 border-blue-600 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Private Notes
-                <span className="ml-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
-                  {privateNotes.length}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onTabChange('public')}
-                className={`rounded-t-md px-3 py-2 text-sm font-medium ${
-                  activeTab === 'public'
-                    ? 'border-b-2 border-emerald-600 text-emerald-700'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Public Notes
-                <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700">
-                  {publicNotes.length}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onTabChange('toMe')}
-                className={`rounded-t-md px-3 py-2 text-sm font-medium ${
-                  activeTab === 'toMe'
-                    ? 'border-b-2 border-indigo-600 text-indigo-700'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {toMeTabLabel}
-                <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">
-                  {toMeNotes.length}
-                </span>
-              </button>
+            <button
+              type="button"
+              onClick={() => onTabChange('directed')}
+              className={`mr-1 rounded-t-md px-3 py-2 text-sm font-medium ${
+                activeTab === 'directed'
+                  ? 'border-b-2 border-violet-600 text-violet-700'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Directed Notes
+              <span className="ml-1 rounded-full bg-violet-100 px-1.5 py-0.5 text-xs text-violet-700">
+                {directedNotes.length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onTabChange('private')}
+              className={`mr-1 rounded-t-md px-3 py-2 text-sm font-medium ${
+                activeTab === 'private'
+                  ? 'border-b-2 border-blue-600 text-blue-700'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Private Notes
+              <span className="ml-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
+                {privateNotes.length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onTabChange('public')}
+              className={`rounded-t-md px-3 py-2 text-sm font-medium ${
+                activeTab === 'public'
+                  ? 'border-b-2 border-emerald-600 text-emerald-700'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Public Notes
+              <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700">
+                {publicNotes.length}
+              </span>
+            </button>
             </>
           )}
         </div>
