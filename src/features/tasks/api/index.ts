@@ -248,6 +248,8 @@ export async function fetchMentionUsers({
 }: {
   token?: string | null
 } = {}): Promise<MentionUser[]> {
+  const params = buildPaginationParams(0, 10000)
+
   const response = await fetchWithAuth<{
     data?: Array<{
       id?: string | number
@@ -267,7 +269,7 @@ export async function fetchMentionUsers({
       }
     }>
   }>({
-    path: '/api/vUsers',
+    path: `/api/vUsers?${params.toString()}`,
     method: 'GET',
     token,
   })
