@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
 import { renderWithProviders } from '@/test/renderWithProviders'
@@ -6,7 +7,30 @@ import type { TaskNote } from '@/types/application'
 
 vi.mock('@/features/tasks/hooks/useTaskQueries', () => ({
   useMentionUsers: () => ({
-    data: [],
+    data: [
+      {
+        id: 'user-1',
+        fullName: 'Alice Smith',
+        firstName: 'Alice',
+        lastName: 'Smith',
+        kashLogIn: 'asmith',
+        email: 'alice@example.com',
+        userRole: 'NCRC',
+        userName: 'asmith',
+        isActive: true,
+      },
+      {
+        id: 'user-2',
+        fullName: 'Bob User',
+        firstName: 'Bob',
+        lastName: 'User',
+        kashLogIn: 'buser',
+        email: 'bob@example.com',
+        userRole: 'Reviewer',
+        userName: 'buser',
+        isActive: true,
+      },
+    ],
     isLoading: false,
   }),
 }))
@@ -314,5 +338,90 @@ describe('TaskNotesDrawer', () => {
     expect(screen.queryByRole('button', { name: /mention/i })).toBeNull()
     expect(screen.queryByText('Private')).toBeNull()
     expect(screen.getByPlaceholderText('Add a private note...')).toBeTruthy()
+  })
+
+  it('hides the privacy toggle in the Public Notes tab while keeping the public composer', () => {
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="task"
+        taskName="Review Ingredients"
+        activeTab="public"
+        directedNotes={[]}
+        privateNotes={[]}
+        publicNotes={[]}
+        loadingDirected={false}
+        loadingPrivate={false}
+        loadingPublic={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate={false}
+        isSubmitting={false}
+        error=""
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByLabelText(/Public note/i)).toBeNull()
+    expect(screen.getByRole('button', { name: /mention/i })).toBeTruthy()
+    expect(screen.getByPlaceholderText('Add a public note... (@ to mention)')).toBeTruthy()
+  })
+
+  it('inserts public mentions into the message text instead of selecting a To User', () => {
+    const onComposeToUserChange = vi.fn()
+
+    function PublicMentionHarness() {
+      const [composeText, setComposeText] = useState('Hello @al')
+
+      return (
+        <TaskNotesDrawer
+          open
+          applicantCompany="Test Company"
+          applicationId={42}
+          contextType="task"
+          taskName="Review Ingredients"
+          activeTab="public"
+          directedNotes={[]}
+          privateNotes={[]}
+          publicNotes={[]}
+          loadingDirected={false}
+          loadingPrivate={false}
+          loadingPublic={false}
+          composeText={composeText}
+          composeToUserId={null}
+          composePrivate={false}
+          isSubmitting={false}
+          error=""
+          onClose={() => {}}
+          onTabChange={() => {}}
+          onComposeTextChange={setComposeText}
+          onComposeToUserChange={onComposeToUserChange}
+          onComposePrivateChange={() => {}}
+          onSubmit={() => {}}
+          onReplySubmit={vi.fn()}
+        />
+      )
+    }
+
+    renderWithProviders(<PublicMentionHarness />)
+
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'Hello @al', selectionStart: 9 },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mention' }))
+    fireEvent.click(screen.getByRole('button', { name: /alice smith/i }))
+
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Hello @Alice Smith ')
+    expect(onComposeToUserChange).not.toHaveBeenCalled()
+    expect(screen.queryByText(/To User:/i)).toBeNull()
   })
 })

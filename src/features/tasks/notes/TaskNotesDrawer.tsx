@@ -358,6 +358,7 @@ export function TaskNotesDrawer({
   const mentionQuery = mentionContext?.query ?? ''
   const isDirectedTab = activeTab === 'directed'
   const isPrivateTab = activeTab === 'private'
+  const isPublicTab = activeTab === 'public'
 
   const filteredMentionUsers = useMemo(() => {
     const query = mentionQuery.trim().toLowerCase()
@@ -378,9 +379,9 @@ export function TaskNotesDrawer({
   }, [mentionQuery, mentionUsers])
 
   const selectedMentionUser = useMemo(() => {
-    if (!composeToUserId) return null
+    if (!isDirectedTab || !composeToUserId) return null
     return mentionUsers.find((user) => user.id === composeToUserId) ?? null
-  }, [composeToUserId, mentionUsers])
+  }, [composeToUserId, isDirectedTab, mentionUsers])
 
   useEffect(() => {
     if (!open) return
@@ -447,11 +448,24 @@ export function TaskNotesDrawer({
   const handlePickMentionUser = (user: MentionUser) => {
     const context = mentionContext ?? getMentionContext(composeText, composeText.length)
     if (context) {
-      const updatedText = `${composeText.slice(0, context.start)}${composeText.slice(context.end)}`
-      onComposeTextChange(updatedText)
+      if (isDirectedTab) {
+        const updatedText = `${composeText.slice(0, context.start)}${composeText.slice(context.end)}`
+        onComposeTextChange(updatedText)
+      } else {
+        const mentionLabel = `@${getMentionLabel(user)}`
+        const separator = context.start > 0 && !/\s$/.test(composeText.slice(0, context.start)) ? ' ' : ''
+        const trailingSpace =
+          context.end < composeText.length && /^\s/.test(composeText.slice(context.end))
+            ? ''
+            : ' '
+        const updatedText = `${composeText.slice(0, context.start)}${separator}${mentionLabel}${trailingSpace}${composeText.slice(context.end)}`
+        onComposeTextChange(updatedText)
+      }
     }
 
-    onComposeToUserChange(user.id)
+    if (isDirectedTab) {
+      onComposeToUserChange(user.id)
+    }
     setMentionOpen(false)
     setMentionContext(null)
   }
@@ -925,7 +939,7 @@ export function TaskNotesDrawer({
           ) : null}
 
           <div className="mt-2 flex items-center justify-between gap-2">
-            {!hidePrivacyToggle && !isDirectedTab && !isPrivateTab ? (
+            {!hidePrivacyToggle && !isDirectedTab && !isPrivateTab && !isPublicTab ? (
               <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-gray-700">
                 <input
                   type="checkbox"

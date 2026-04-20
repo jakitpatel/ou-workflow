@@ -162,7 +162,7 @@ export function useTaskNotesDrawerState({
       })
       setError('')
       setComposePrivateState(tab === 'private' || tab === 'directed')
-      if (tab === 'private') {
+      if (tab === 'private' || tab === 'public') {
         setComposeToUserIdState(null)
       }
 
@@ -189,7 +189,7 @@ export function useTaskNotesDrawerState({
   const setActiveTab = useCallback((tab: NoteTab) => {
     setDrawer((prev) => (prev ? { ...prev, activeTab: tab } : prev))
     setComposePrivateState(tab === 'private' || tab === 'directed')
-    if (tab === 'private') {
+    if (tab === 'private' || tab === 'public') {
       setComposeToUserIdState(null)
     }
   }, [])
@@ -243,7 +243,7 @@ export function useTaskNotesDrawerState({
       isPrivate: drawer.activeTab === 'directed' ? true : composePrivate,
       priority: 'NORMAL',
       fromUser: username ?? undefined,
-      toUser: drawer.activeTab === 'private' ? undefined : composeToUserId ?? undefined,
+      toUser: drawer.activeTab === 'directed' ? composeToUserId ?? undefined : undefined,
       token: token ?? undefined,
     })
 
