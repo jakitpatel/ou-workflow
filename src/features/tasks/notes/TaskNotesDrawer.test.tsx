@@ -89,7 +89,6 @@ describe('TaskNotesDrawer', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
     fireEvent.click(screen.getByRole('button', { name: 'AppId: 77' }))
 
     expect(onApplicationIdClick).toHaveBeenCalledWith(77)
@@ -142,7 +141,6 @@ describe('TaskNotesDrawer', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
     fireEvent.click(screen.getByRole('button', { name: 'ViewApp:77' }))
 
     expect(onViewApplicationClick).toHaveBeenCalledWith(77)
@@ -236,7 +234,6 @@ describe('TaskNotesDrawer', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
     fireEvent.click(screen.getAllByRole('button', { name: 'Reply' })[0])
 
     const replyInput = await screen.findByPlaceholderText('Reply...')

@@ -491,8 +491,7 @@ export function TaskNotesDrawer({
     const isRoot = depth === 0
     const isThreadExpanded = isRoot ? Boolean(expandedThreads[noteId]) : true
     const replyCount = countThreadReplies(node)
-    const latestThreadActivity =
-      replyCount > 0 ? formatNoteDate(new Date(getLatestThreadTimestamp(node)).toISOString()) : null
+    const hasReplies = replyCount > 0
     const previewText = getCollapsedPreview(getNoteText(note))
     const isDirectedMyNote =
       showMyNotesThreadType &&
@@ -508,25 +507,29 @@ export function TaskNotesDrawer({
       <div key={noteId} className={depth > 0 ? `ml-4 border-l ${tone.rail} pl-3` : ''}>
         <article className={`rounded-lg border p-2.5 shadow-sm transition ${tone.card}`}>
           {isRoot ? (
-            <button
-              type="button"
-              onClick={() =>
-                setExpandedThreads((prev) => ({
-                  ...prev,
-                  [noteId]: !Boolean(prev[noteId]),
-                }))
-              }
-              className="flex w-full items-start gap-3 rounded-md px-0.5 py-0.5 text-left"
-              aria-expanded={isThreadExpanded}
-              aria-label={`${isThreadExpanded ? 'Collapse' : 'Expand'} thread from ${fromName}`}
-            >
-              <span className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                {isThreadExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </span>
+            <div className="flex items-start gap-3 rounded-md px-0.5 py-0.5">
+              {hasReplies ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedThreads((prev) => ({
+                      ...prev,
+                      [noteId]: !Boolean(prev[noteId]),
+                    }))
+                  }
+                  className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
+                  aria-expanded={isThreadExpanded}
+                  aria-label={`${isThreadExpanded ? 'Collapse' : 'Expand'} thread from ${fromName}`}
+                >
+                  {isThreadExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+              ) : (
+                <span className="w-7 flex-shrink-0" aria-hidden="true" />
+              )}
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
@@ -548,32 +551,101 @@ export function TaskNotesDrawer({
                       To: {toUser}
                     </span>
                   ) : null}
-                  {replyCount > 0 ? (
+                  {hasReplies ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
                       <MessageSquareMore className="h-3 w-3" />
                       {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
                     </span>
                   ) : null}
                   <span className="text-[11px] text-slate-500">{createdAt}</span>
-                  {latestThreadActivity && latestThreadActivity !== createdAt ? (
-                    <span className="text-[11px] text-slate-500">Latest: {latestThreadActivity}</span>
+                  {showPerNoteApplicationId && noteApplicationId !== null ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onApplicationIdClick?.(noteApplicationId)}
+                        aria-label={`AppId: ${noteApplicationId}`}
+                        title={`Application ID ${noteApplicationId}`}
+                        className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
+                      >
+                        <Hash className="h-3 w-3" />
+                        <span className="uppercase tracking-wide text-slate-500">App</span>
+                        <span className="font-semibold text-slate-800">{noteApplicationId}</span>
+                      </button>
+                      {showViewApplicationAction ? (
+                        <button
+                          type="button"
+                          onClick={() => onViewApplicationClick?.(noteApplicationId)}
+                          aria-label={`ViewApp:${noteApplicationId}`}
+                          title={`View application ${noteApplicationId}`}
+                          className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800"
+                        >
+                          <ArrowUpRight className="h-3 w-3" />
+                          <span>View</span>
+                          <span className="font-semibold">{noteApplicationId}</span>
+                        </button>
+                      ) : null}
+                    </>
                   ) : null}
                 </div>
-                {!isThreadExpanded ? (
-                  <div className="mt-2 rounded-md border border-slate-200 bg-white/80 px-3 py-2">
-                    <p className="text-sm leading-5 text-slate-700">{previewText || '-'}</p>
-                    <div className="mt-2 flex items-center gap-2 text-[11px] font-medium text-slate-500">
-                      <span>Thread collapsed</span>
-                      <span className="h-1 w-1 rounded-full bg-slate-300" />
-                      <span>Open to view full conversation</span>
+                <p className="mt-2 text-sm leading-5 text-slate-700">{previewText || '-'}</p>
+                {isReplyOpen ? (
+                  <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+                    <div className="flex items-start gap-2">
+                      <textarea
+                        className="min-h-[64px] flex-1 resize-y rounded border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        placeholder="Reply..."
+                        value={replyText}
+                        onChange={(e) => setReplyTextById((prev) => ({ ...prev, [noteId]: e.target.value }))}
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!canReply) return
+                          setReplySubmittingById((prev) => ({ ...prev, [noteId]: true }))
+                          try {
+                            await onReplySubmit({
+                              parentMessageId,
+                              text: replyText.trim(),
+                              applicationId: noteApplicationId,
+                              taskId:
+                                (note as any)?.TaskInstanceId === undefined ||
+                                (note as any)?.TaskInstanceId === null ||
+                                String((note as any)?.TaskInstanceId).trim() === '' ||
+                                String((note as any)?.TaskInstanceId).trim() === '0'
+                                  ? undefined
+                                  : String((note as any)?.TaskInstanceId).trim(),
+                              toUser: getMetaValue(note, 'fromUser', 'from_user', 'FromUser') !== '-'
+                                ? getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
+                                : null,
+                            })
+                            setReplyTextById((prev) => ({ ...prev, [noteId]: '' }))
+                            setReplyOpenById((prev) => ({ ...prev, [noteId]: false }))
+                          } finally {
+                            setReplySubmittingById((prev) => ({ ...prev, [noteId]: false }))
+                          }
+                        }}
+                        disabled={!canReply}
+                        className="rounded bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isReplySubmitting ? 'Posting...' : 'Reply'}
+                      </button>
                     </div>
                   </div>
                 ) : null}
+                <div className="mt-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setReplyOpenById((prev) => ({ ...prev, [noteId]: !Boolean(prev[noteId]) }))}
+                    className="rounded px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    Reply
+                  </button>
+                </div>
               </div>
-            </button>
+            </div>
           ) : null}
 
-          {isThreadExpanded ? (
+          {!isRoot ? (
             <>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
@@ -683,7 +755,7 @@ export function TaskNotesDrawer({
           ) : null}
         </article>
 
-        {isThreadExpanded && children.length > 0 ? (
+        {(isRoot ? isThreadExpanded : true) && children.length > 0 ? (
           <div className="mt-2 space-y-2">{children.map((child) => renderPublicNode(child, depth + 1))}</div>
         ) : null}
       </div>
