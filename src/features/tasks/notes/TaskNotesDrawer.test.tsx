@@ -65,6 +65,7 @@ describe('TaskNotesDrawer', () => {
       />,
     )
 
+    fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
     fireEvent.click(screen.getByRole('button', { name: 'AppId: 77' }))
 
     expect(onApplicationIdClick).toHaveBeenCalledWith(77)
@@ -117,10 +118,66 @@ describe('TaskNotesDrawer', () => {
       />,
     )
 
+    fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
     fireEvent.click(screen.getByRole('button', { name: 'ViewApp:77' }))
 
     expect(onViewApplicationClick).toHaveBeenCalledWith(77)
     expect(onApplicationIdClick).not.toHaveBeenCalled()
+  })
+
+  it('shows directed/public thread indicators only in My Notes root threads', () => {
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="My Notes"
+        applicationId={42}
+        contextType="application"
+        taskName="Current User"
+        activeTab="public"
+        directedNotes={[]}
+        privateNotes={[]}
+        publicNotes={[
+          {
+            MessageID: 101,
+            MessageText: 'Directed thread',
+            FromUser: 'Alice Smith',
+            SentDate: '2026-04-07T10:00:00.000Z',
+            isPrivate: true,
+            ToUser: 'Bob User',
+          } as TaskNote,
+          {
+            MessageID: 102,
+            MessageText: 'Public thread',
+            FromUser: 'Jane Doe',
+            SentDate: '2026-04-07T11:00:00.000Z',
+            isPrivate: false,
+          } as TaskNote,
+        ]}
+        loadingDirected={false}
+        loadingPrivate={false}
+        loadingPublic={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate={false}
+        isSubmitting={false}
+        error=""
+        singleTabMode
+        singleTabLabel="My Notes"
+        showMyNotesThreadType
+        hideComposer
+        hidePrivacyToggle
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Directed')).toBeTruthy()
+    expect(screen.getByText('Public')).toBeTruthy()
   })
 
   it('submits a reply from the public thread UI', async () => {
@@ -155,6 +212,7 @@ describe('TaskNotesDrawer', () => {
       />,
     )
 
+    fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
     fireEvent.click(screen.getAllByRole('button', { name: 'Reply' })[0])
 
     const replyInput = await screen.findByPlaceholderText('Reply...')

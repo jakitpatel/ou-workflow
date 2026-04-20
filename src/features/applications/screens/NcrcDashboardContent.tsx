@@ -244,6 +244,7 @@ export function NcrcDashboardContent() {
         currentLabelOverride="Logged In User"
         singleTabMode
         singleTabLabel="My Notes"
+        showMyNotesThreadType
         hideComposer
         hidePrivacyToggle
         showPerNoteApplicationId

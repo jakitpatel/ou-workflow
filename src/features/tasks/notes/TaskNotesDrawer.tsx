@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react'
-import { ArrowUpRight, AtSign, FileText, Hash, Lock, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ArrowUpRight, AtSign, ChevronDown, ChevronRight, FileText, Hash, Lock, MessageSquareMore, X } from 'lucide-react'
 import { useMentionUsers } from '@/features/tasks/hooks/useTaskQueries'
 import type { NoteTab } from '@/features/tasks/notes/types'
 import type { MentionUser } from '@/features/tasks/api'
@@ -29,6 +29,7 @@ type Props = {
   currentLabelOverride?: string
   singleTabMode?: boolean
   singleTabLabel?: string
+  showMyNotesThreadType?: boolean
   hideComposer?: boolean
   hidePrivacyToggle?: boolean
   showPerNoteApplicationId?: boolean
@@ -99,6 +100,12 @@ const getNoteText = (note: TaskNote): string => {
   }
 
   return '-'
+}
+
+const getCollapsedPreview = (text: string, maxLength = 140): string => {
+  const normalized = text.replace(/\s+/g, ' ').trim()
+  if (normalized.length <= maxLength) return normalized
+  return `${normalized.slice(0, maxLength).trimEnd()}...`
 }
 
 const getMetaValue = (note: TaskNote, ...keys: string[]): string => {
@@ -271,6 +278,14 @@ const buildPublicNoteThreads = (notes: TaskNote[]): PublicNoteNode[] => {
   return roots
 }
 
+const countThreadReplies = (node: PublicNoteNode): number =>
+  node.children.reduce((count, child) => count + 1 + countThreadReplies(child), 0)
+
+const getLatestThreadTimestamp = (node: PublicNoteNode): number => {
+  const childLatest = node.children.map(getLatestThreadTimestamp)
+  return Math.max(getSortableTimestamp(node.note), ...childLatest)
+}
+
 export function TaskNotesDrawer({
   open,
   applicantCompany,
@@ -293,6 +308,7 @@ export function TaskNotesDrawer({
   currentLabelOverride,
   singleTabMode = false,
   singleTabLabel = 'Notes',
+  showMyNotesThreadType = false,
   hideComposer = false,
   hidePrivacyToggle = false,
   showPerNoteApplicationId = false,
@@ -311,6 +327,7 @@ export function TaskNotesDrawer({
   const [replyOpenById, setReplyOpenById] = useState<Record<string, boolean>>({})
   const [replyTextById, setReplyTextById] = useState<Record<string, string>>({})
   const [replySubmittingById, setReplySubmittingById] = useState<Record<string, boolean>>({})
+  const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({})
   const [mentionOpen, setMentionOpen] = useState(false)
   const [mentionContext, setMentionContext] = useState<MentionContext | null>(null)
 
@@ -363,6 +380,14 @@ export function TaskNotesDrawer({
     if (!composeToUserId) return null
     return mentionUsers.find((user) => user.id === composeToUserId) ?? null
   }, [composeToUserId, mentionUsers])
+
+  useEffect(() => {
+    if (!open) return
+    setExpandedThreads({})
+    setReplyOpenById({})
+    setReplyTextById({})
+    setReplySubmittingById({})
+  }, [open, activeTab, taskName])
 
   if (!open) return null
 
@@ -441,10 +466,93 @@ export function TaskNotesDrawer({
     const canReply = Boolean(parentMessageId) && replyText.trim().length > 0 && !isReplySubmitting
     const tone = REPLY_TONES[Math.min(depth, REPLY_TONES.length - 1)]
     const noteApplicationId = getNoteApplicationId(note)
+    const isRoot = depth === 0
+    const isThreadExpanded = isRoot ? Boolean(expandedThreads[noteId]) : true
+    const replyCount = countThreadReplies(node)
+    const latestThreadActivity =
+      replyCount > 0 ? formatNoteDate(new Date(getLatestThreadTimestamp(node)).toISOString()) : null
+    const previewText = getCollapsedPreview(getNoteText(note))
+    const isDirectedMyNote =
+      showMyNotesThreadType &&
+      isRoot &&
+      ((note as any)?.isPrivate === true || String((note as any)?.isPrivate).toLowerCase() === 'true') &&
+      toUser !== '-'
+    const myNoteThreadLabel = isDirectedMyNote ? 'Directed' : 'Public'
+    const myNoteThreadLabelClass = isDirectedMyNote
+      ? 'bg-violet-100 text-violet-800'
+      : 'bg-emerald-100 text-emerald-800'
 
     return (
       <div key={noteId} className={depth > 0 ? `ml-4 border-l ${tone.rail} pl-3` : ''}>
-        <article className={`rounded-lg border p-2.5 shadow-sm ${tone.card}`}>
+        <article className={`rounded-lg border p-2.5 shadow-sm transition ${tone.card}`}>
+          {isRoot ? (
+            <button
+              type="button"
+              onClick={() =>
+                setExpandedThreads((prev) => ({
+                  ...prev,
+                  [noteId]: !Boolean(prev[noteId]),
+                }))
+              }
+              className="flex w-full items-start gap-3 rounded-md px-0.5 py-0.5 text-left"
+              aria-expanded={isThreadExpanded}
+              aria-label={`${isThreadExpanded ? 'Collapse' : 'Expand'} thread from ${fromName}`}
+            >
+              <span className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                {isThreadExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
+                    {getInitials(fromName)}
+                  </div>
+                  <span className="text-sm font-semibold text-slate-900">{fromName}</span>
+                  <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${tone.badge}`}>
+                    {fromRole}
+                  </span>
+                  {showMyNotesThreadType && isRoot ? (
+                    <span
+                      className={`rounded-full px-2 py-1 text-[11px] font-semibold ${myNoteThreadLabelClass}`}
+                    >
+                      {myNoteThreadLabel}
+                    </span>
+                  ) : null}
+                  {activeTab === 'directed' && toUser !== '-' ? (
+                    <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[11px] font-medium text-violet-800">
+                      To: {toUser}
+                    </span>
+                  ) : null}
+                  {replyCount > 0 ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
+                      <MessageSquareMore className="h-3 w-3" />
+                      {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
+                    </span>
+                  ) : null}
+                  <span className="text-[11px] text-slate-500">{createdAt}</span>
+                  {latestThreadActivity && latestThreadActivity !== createdAt ? (
+                    <span className="text-[11px] text-slate-500">Latest: {latestThreadActivity}</span>
+                  ) : null}
+                </div>
+                {!isThreadExpanded ? (
+                  <div className="mt-2 rounded-md border border-slate-200 bg-white/80 px-3 py-2">
+                    <p className="text-sm leading-5 text-slate-700">{previewText || '-'}</p>
+                    <div className="mt-2 flex items-center gap-2 text-[11px] font-medium text-slate-500">
+                      <span>Thread collapsed</span>
+                      <span className="h-1 w-1 rounded-full bg-slate-300" />
+                      <span>Open to view full conversation</span>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </button>
+          ) : null}
+
+          {isThreadExpanded ? (
+            <>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
               {getInitials(fromName)}
@@ -453,6 +561,11 @@ export function TaskNotesDrawer({
             <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${tone.badge}`}>
               {fromRole}
             </span>
+            {showMyNotesThreadType && isRoot ? (
+              <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${myNoteThreadLabelClass}`}>
+                {myNoteThreadLabel}
+              </span>
+            ) : null}
             {activeTab === 'directed' && toUser !== '-' ? (
               <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[11px] font-medium text-violet-800">
                 To: {toUser}
@@ -544,9 +657,11 @@ export function TaskNotesDrawer({
               Reply
             </button>
           </div>
+            </>
+          ) : null}
         </article>
 
-        {children.length > 0 ? (
+        {isThreadExpanded && children.length > 0 ? (
           <div className="mt-2 space-y-2">{children.map((child) => renderPublicNode(child, depth + 1))}</div>
         ) : null}
       </div>
