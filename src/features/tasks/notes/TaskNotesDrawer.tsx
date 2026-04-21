@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ArrowUpRight, AtSign, ChevronDown, ChevronRight, FileText, Hash, MessageSquareMore, X } from 'lucide-react'
 import { useMentionUsers } from '@/features/tasks/hooks/useTaskQueries'
 import type { NoteTab } from '@/features/tasks/notes/types'
@@ -23,6 +23,7 @@ type Props = {
   composeText: string
   composeToUserId?: string | null
   composePrivate: boolean
+  currentUsername?: string | null
   isSubmitting: boolean
   error?: string
   notesTitleOverride?: string
@@ -136,6 +137,53 @@ const getCollapsedPreview = (text: string, maxLength = 140): string => {
   const normalized = text.replace(/\s+/g, ' ').trim()
   if (normalized.length <= maxLength) return normalized
   return `${normalized.slice(0, maxLength).trimEnd()}...`
+}
+
+const normalizeMentionUserName = (value: string): string =>
+  value.trim().replace(/^@/, '').toLowerCase()
+
+const mentionPattern = /@mention\(([^)]+)\)|@([A-Za-z0-9._-]+)/gi
+
+const renderNoteTextWithMentionHighlight = (text: string, currentUsername?: string | null) => {
+  const normalizedCurrentUsername = normalizeMentionUserName(currentUsername ?? '')
+  if (!normalizedCurrentUsername) return text
+
+  const parts: ReactNode[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  mentionPattern.lastIndex = 0
+
+  while ((match = mentionPattern.exec(text)) !== null) {
+    const matchedText = match[0]
+    const mentionedUserName = normalizeMentionUserName(match[1] ?? match[2] ?? '')
+    const matchIndex = match.index
+
+    if (matchIndex > lastIndex) {
+      parts.push(text.slice(lastIndex, matchIndex))
+    }
+
+    if (mentionedUserName === normalizedCurrentUsername) {
+      parts.push(
+        <span
+          key={`${matchIndex}-${matchedText}`}
+          className="rounded bg-amber-100 px-1 font-semibold text-amber-900"
+        >
+          {matchedText}
+        </span>,
+      )
+    } else {
+      parts.push(matchedText)
+    }
+
+    lastIndex = matchIndex + matchedText.length
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+
+  return parts.length === 0 ? text : parts
 }
 
 const getMetaValue = (note: TaskNote, ...keys: string[]): string => {
@@ -332,6 +380,7 @@ export function TaskNotesDrawer({
   composeText,
   composeToUserId,
   composePrivate,
+  currentUsername,
   isSubmitting,
   error,
   notesTitleOverride,
@@ -522,7 +571,12 @@ export function TaskNotesDrawer({
     const isThreadExpanded = isRoot ? Boolean(expandedThreads[noteId]) : true
     const replyCount = countThreadReplies(node)
     const hasReplies = replyCount > 0
-    const previewText = getCollapsedPreview(getNoteText(note))
+    const noteText = getNoteText(note)
+    const previewText = getCollapsedPreview(noteText)
+    const renderedNoteText =
+      isPublicTab ? renderNoteTextWithMentionHighlight(noteText, currentUsername) : noteText
+    const renderedPreviewText =
+      isPublicTab ? renderNoteTextWithMentionHighlight(previewText || '-', currentUsername) : previewText || '-'
     const isDirectedMyNote =
       showMyNotesThreadType &&
       isRoot &&
@@ -621,7 +675,9 @@ export function TaskNotesDrawer({
                     </>
                   ) : null}
                 </div>
-                <p className={`mt-2 text-sm font-medium leading-5 ${rootTone.text}`}>{previewText || '-'}</p>
+                <p className={`mt-2 text-sm font-medium leading-5 ${rootTone.text}`}>
+                  {isThreadExpanded ? renderedNoteText : renderedPreviewText}
+                </p>
                 {isReplyOpen ? (
                   <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
                     <div className="flex items-start gap-2">
@@ -729,7 +785,7 @@ export function TaskNotesDrawer({
             ) : null}
             <span className="text-[11px] text-slate-500">{createdAt}</span>
           </div>
-          <p className="mt-2 text-sm leading-5 text-slate-900">{getNoteText(note)}</p>
+          <p className="mt-2 text-sm leading-5 text-slate-900">{renderedNoteText}</p>
 
           {isReplyOpen ? (
             <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">

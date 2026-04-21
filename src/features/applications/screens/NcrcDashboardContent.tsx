@@ -238,6 +238,7 @@ export function NcrcDashboardContent() {
         loadingPublic={myNotesLoading}
         composeText=""
         composePrivate={false}
+        currentUsername={username}
         isSubmitting={myNotesReplySubmitting}
         error={myNotesError}
         notesTitleOverride="My Notes"

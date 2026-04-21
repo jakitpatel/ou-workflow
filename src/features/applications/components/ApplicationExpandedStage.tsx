@@ -363,6 +363,7 @@ export function ApplicationExpandedStage({
         composeText={taskNotes.composeText}
         composeToUserId={taskNotes.composeToUserId}
         composePrivate={taskNotes.composePrivate}
+        currentUsername={taskNotes.currentUsername}
         isSubmitting={taskNotes.isSubmitting}
         error={taskNotes.error}
         onApplicationIdClick={taskNotes.openApplicationDetails}

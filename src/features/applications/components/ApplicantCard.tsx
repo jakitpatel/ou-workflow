@@ -158,6 +158,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         composeText={applicationNotes.composeText}
         composeToUserId={applicationNotes.composeToUserId}
         composePrivate={applicationNotes.composePrivate}
+        currentUsername={applicationNotes.currentUsername}
         isSubmitting={applicationNotes.isSubmitting}
         error={applicationNotes.error}
         onApplicationIdClick={applicationNotes.openApplicationDetails}

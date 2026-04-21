@@ -343,6 +343,7 @@ export function useTaskNotesDrawerState({
     drawer,
     activeNotes,
     activeLoading,
+    currentUsername: username,
     composeText,
     composeToUserId,
     composePrivate,
