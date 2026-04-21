@@ -552,6 +552,48 @@ export function TaskNotesDrawer({
     setMentionContext(null)
   }
 
+  const renderApplicationActions = (noteApplicationId: number, isRoot = false) => {
+    const showForMyNotes = showMyNotesThreadType
+    if (showForMyNotes && !isRoot) return null
+
+    const appIdButton = (
+      <button
+        type="button"
+        onClick={() => onApplicationIdClick?.(noteApplicationId)}
+        aria-label={`AppId: ${noteApplicationId}`}
+        title={`Application ID ${noteApplicationId}`}
+        className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
+      >
+        <Hash className="h-3 w-3" />
+        <span className="uppercase tracking-wide text-slate-500">
+          {showForMyNotes ? 'View' : 'App'}
+        </span>
+        <span className="font-semibold text-slate-800">{noteApplicationId}</span>
+      </button>
+    )
+
+    const viewButton = showViewApplicationAction ? (
+      <button
+        type="button"
+        onClick={() => onViewApplicationClick?.(noteApplicationId)}
+        aria-label={`ViewApp:${noteApplicationId}`}
+        title={`View application ${noteApplicationId}`}
+        className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800"
+      >
+        <ArrowUpRight className="h-3 w-3" />
+        <span>{showForMyNotes ? 'App' : 'View'}</span>
+        <span className="font-semibold">{noteApplicationId}</span>
+      </button>
+    ) : null
+
+    return (
+      <>
+        {appIdButton}
+        {viewButton}
+      </>
+    )
+  }
+
   const renderPublicNode = (node: PublicNoteNode, depth: number) => {
     const { note, noteId, children } = node
     const fromName = getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
@@ -641,34 +683,9 @@ export function TaskNotesDrawer({
                     </span>
                   ) : null}
                   <span className="text-[11px] text-slate-500">{createdAt}</span>
-                  {showPerNoteApplicationId && noteApplicationId !== null ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => onApplicationIdClick?.(noteApplicationId)}
-                        aria-label={`AppId: ${noteApplicationId}`}
-                        title={`Application ID ${noteApplicationId}`}
-                        className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
-                      >
-                        <Hash className="h-3 w-3" />
-                        <span className="uppercase tracking-wide text-slate-500">App</span>
-                        <span className="font-semibold text-slate-800">{noteApplicationId}</span>
-                      </button>
-                      {showViewApplicationAction ? (
-                        <button
-                          type="button"
-                          onClick={() => onViewApplicationClick?.(noteApplicationId)}
-                          aria-label={`ViewApp:${noteApplicationId}`}
-                          title={`View application ${noteApplicationId}`}
-                          className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800"
-                        >
-                          <ArrowUpRight className="h-3 w-3" />
-                          <span>View</span>
-                          <span className="font-semibold">{noteApplicationId}</span>
-                        </button>
-                      ) : null}
-                    </>
-                  ) : null}
+                  {showPerNoteApplicationId && noteApplicationId !== null
+                    ? renderApplicationActions(noteApplicationId, isRoot)
+                    : null}
                 </div>
                 <p className={`mt-2 text-sm font-medium leading-5 ${rootTone.text}`}>
                   {isThreadExpanded ? renderedNoteText : renderedPreviewText}
@@ -747,34 +764,9 @@ export function TaskNotesDrawer({
                 To: {toUser}
               </span>
             ) : null}
-            {showPerNoteApplicationId && noteApplicationId !== null ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => onApplicationIdClick?.(noteApplicationId)}
-                  aria-label={`AppId: ${noteApplicationId}`}
-                  title={`Application ID ${noteApplicationId}`}
-                  className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
-                >
-                  <Hash className="h-3 w-3" />
-                  <span className="uppercase tracking-wide text-slate-500">App</span>
-                  <span className="font-semibold text-slate-800">{noteApplicationId}</span>
-                </button>
-                {showViewApplicationAction ? (
-                  <button
-                    type="button"
-                    onClick={() => onViewApplicationClick?.(noteApplicationId)}
-                    aria-label={`ViewApp:${noteApplicationId}`}
-                    title={`View application ${noteApplicationId}`}
-                    className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800"
-                  >
-                    <ArrowUpRight className="h-3 w-3" />
-                    <span>View</span>
-                    <span className="font-semibold">{noteApplicationId}</span>
-                  </button>
-                ) : null}
-              </>
-            ) : null}
+            {showPerNoteApplicationId && noteApplicationId !== null
+              ? renderApplicationActions(noteApplicationId, isRoot)
+              : null}
             <span className="text-[11px] text-slate-500">{createdAt}</span>
           </div>
           <p className="mt-2 text-sm leading-5 text-slate-900">{renderedNoteText}</p>
