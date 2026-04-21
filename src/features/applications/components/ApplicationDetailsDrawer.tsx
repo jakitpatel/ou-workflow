@@ -44,7 +44,13 @@ export function ApplicationDetailsDrawer({ open, applicationId, onClose }: Props
             <div className="p-8 text-red-600">Failed to load application: {(error as Error).message}</div>
           ) : null}
           {!isLoading && !error && !data ? <div className="p-8">Application not found</div> : null}
-          {data ? <ApplicationDetailsContent application={data} mode="drawer" /> : null}
+          {data ? (
+            <ApplicationDetailsContent
+              application={data}
+              mode="drawer"
+              applicationId={resolvedApplicationId}
+            />
+          ) : null}
         </div>
       </div>
     </div>

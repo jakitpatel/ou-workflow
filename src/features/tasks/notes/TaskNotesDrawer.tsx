@@ -9,6 +9,7 @@ export type { NoteTab } from '@/features/tasks/notes/types'
 
 type Props = {
   open: boolean
+  variant?: 'drawer' | 'embedded'
   applicantCompany?: string
   applicationId?: number | null
   contextType?: 'task' | 'application'
@@ -366,6 +367,7 @@ const getLatestThreadTimestamp = (node: PublicNoteNode): number => {
 
 export function TaskNotesDrawer({
   open,
+  variant = 'drawer',
   applicantCompany,
   applicationId,
   contextType = 'task',
@@ -402,6 +404,7 @@ export function TaskNotesDrawer({
   onSubmit,
   onReplySubmit,
 }: Props) {
+  const isEmbedded = variant === 'embedded'
   const composeTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const [replyOpenById, setReplyOpenById] = useState<Record<string, boolean>>({})
   const [replyTextById, setReplyTextById] = useState<Record<string, string>>({})
@@ -852,12 +855,8 @@ export function TaskNotesDrawer({
     )
   }
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
-      <div
-        className="fixed right-0 top-0 flex h-full w-full max-w-lg flex-col overflow-hidden bg-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+  const notesContent = (
+    <>
         <div className="flex items-start justify-between bg-gray-800 px-4 py-3 text-white">
           <div>
             <h3 className="inline-flex items-center gap-2 text-lg font-semibold">
@@ -869,13 +868,15 @@ export function TaskNotesDrawer({
               {applicationId ? ` - AppId: ${applicationId}` : ''}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded p-1 text-gray-200 hover:bg-gray-700 hover:text-white"
-            aria-label={`Close ${notesTitle.toLowerCase()} drawer`}
-          >
-            <X className="h-4 w-4" />
-          </button>
+          {!isEmbedded ? (
+            <button
+              onClick={onClose}
+              className="rounded p-1 text-gray-200 hover:bg-gray-700 hover:text-white"
+              aria-label={`Close ${notesTitle.toLowerCase()} drawer`}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
         </div>
 
         <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
@@ -1126,6 +1127,24 @@ export function TaskNotesDrawer({
           {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
           </div>
         ) : null}
+    </>
+  )
+
+  if (isEmbedded) {
+    return (
+      <div className="flex h-full min-h-[36rem] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        {notesContent}
+      </div>
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
+      <div
+        className="fixed right-0 top-0 flex h-full w-full max-w-lg flex-col overflow-hidden bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {notesContent}
       </div>
     </div>
   )

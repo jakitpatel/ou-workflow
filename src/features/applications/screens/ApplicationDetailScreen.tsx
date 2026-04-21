@@ -3,8 +3,15 @@ import type { ApplicationDetail } from '@/types/application'
 
 type Props = {
   application: ApplicationDetail
+  applicationId?: string | number
 }
 
-export function ApplicationDetailScreen({ application }: Props) {
-  return <ApplicationDetailsContent application={application} mode="page" />
+export function ApplicationDetailScreen({ application, applicationId }: Props) {
+  return (
+    <ApplicationDetailsContent
+      application={application}
+      mode="page"
+      applicationId={applicationId}
+    />
+  )
 }

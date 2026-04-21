@@ -26,8 +26,9 @@ export const Route = createFileRoute('/_authed/ou-workflow/ncrc-dashboard/$appli
 
 function ApplicationDetailPage() {
   const data = Route.useLoaderData()
+  const { applicationId } = Route.useParams()
 
-  return <ApplicationDetailScreen application={data} />
+  return <ApplicationDetailScreen application={data} applicationId={applicationId} />
 }
 
 function ApplicationDetailRouteError({

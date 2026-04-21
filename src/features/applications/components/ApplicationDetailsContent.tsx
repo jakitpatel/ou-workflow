@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Upload,
   CheckCircle,
@@ -17,6 +17,8 @@ import {
   MessageCircle,
   ClipboardList,
 } from 'lucide-react'
+import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
+import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState'
 import Overview from '@/components/ou-workflow/ApplicationManagement/Overview'
 import CompanySection from '@/components/ou-workflow/ApplicationManagement/CompanySection'
 import ContactsSection from '@/components/ou-workflow/ApplicationManagement/ContactsSection'
@@ -69,6 +71,30 @@ interface ValidationCheck {
 type Props = {
   application: ApplicationDetail
   mode?: ApplicationDetailsMode
+  applicationId?: string | number
+}
+
+const resolveApplicationId = (
+  application: ApplicationDetail,
+  applicationId?: string | number,
+): number | null => {
+  const candidates = [
+    applicationId,
+    application.applicationId,
+    (application as any)?.ApplicationID,
+    (application as any)?.ApplicationId,
+    (application as any)?.appId,
+    (application as any)?.id,
+  ]
+
+  for (const candidate of candidates) {
+    const value = Number(candidate)
+    if (Number.isFinite(value)) {
+      return value
+    }
+  }
+
+  return null
 }
 
 const TABS = [
@@ -83,6 +109,7 @@ const TABS = [
   { id: 'task-events', label: 'Task Events', icon: ClipboardList },
   { id: 'files', label: 'File Management', icon: Upload },
   { id: 'messages', label: 'Messages', icon: MessageCircle },
+  { id: 'notes', label: 'Notes', icon: MessageSquare },
 ] as const
 
 const STATUS_BADGES: Record<string, string> = {
@@ -259,7 +286,7 @@ const ValidationCheckItem = ({ checkKey, check }: { checkKey: string; check: Val
   </div>
 )
 
-export function ApplicationDetailsContent({ application, mode = 'page' }: Props) {
+export function ApplicationDetailsContent({ application, mode = 'page', applicationId }: Props) {
   const [activeTab, setActiveTab] = useState('overview')
   const [editMode] = useState(false)
   const [showRecentOnly, setShowRecentOnly] = useState(false)
@@ -274,6 +301,16 @@ export function ApplicationDetailsContent({ application, mode = 'page' }: Props)
   const [messages, setMessages] = useState(INITIAL_MESSAGES)
   const [comments, setComments] = useState(INITIAL_COMMENTS)
   const [recentActivity, setRecentActivity] = useState(INITIAL_ACTIVITY)
+  const resolvedApplicationId = useMemo(
+    () => resolveApplicationId(application, applicationId),
+    [application, applicationId],
+  )
+  const applicationNotesContextKey = `application-details:${String(applicationId ?? application.applicationId ?? 'unknown')}`
+  const applicationDisplayName =
+    application.company?.[0]?.name?.trim() || `Application ${application.applicationId}`
+  const applicationNotes = useTaskNotesDrawerState({
+    applicationId: resolvedApplicationId,
+  })
 
   const allValidationsPassed = useMemo(
     () => Object.values(validationChecks).every(check => check.valid),
@@ -363,6 +400,23 @@ export function ApplicationDetailsContent({ application, mode = 'page' }: Props)
       return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime)
     })
   }, [application.taskEvents])
+
+  useEffect(() => {
+    if (activeTab !== 'notes' || resolvedApplicationId === null) return
+    if (applicationNotes.drawer?.contextKey === applicationNotesContextKey) return
+
+    void applicationNotes.openDrawer({
+      contextKey: applicationNotesContextKey,
+      taskName: applicationDisplayName,
+      tab: 'directed',
+    })
+  }, [
+    activeTab,
+    applicationDisplayName,
+    applicationNotes,
+    applicationNotesContextKey,
+    resolvedApplicationId,
+  ])
 
   return (
     <div className={mode === 'page' ? 'min-h-screen bg-gray-50' : 'flex h-full min-h-0 flex-col bg-gray-50'}>
@@ -514,6 +568,41 @@ export function ApplicationDetailsContent({ application, mode = 'page' }: Props)
             {activeTab === 'task-events' && <TaskEventsPanel taskEvents={sortedTaskEvents} />}
             {activeTab === 'files' && <FilesList application={application} />}
             {activeTab === 'messages' && <MessageLog application={application} />}
+            {activeTab === 'notes' && resolvedApplicationId !== null && (
+              <TaskNotesDrawer
+                open
+                variant="embedded"
+                applicantCompany={applicationDisplayName}
+                applicationId={resolvedApplicationId}
+                contextType="application"
+                taskName={applicationDisplayName}
+                activeTab={applicationNotes.drawer?.activeTab ?? 'directed'}
+                directedNotes={applicationNotes.activeNotes.directed}
+                privateNotes={applicationNotes.activeNotes.private}
+                publicNotes={applicationNotes.activeNotes.public}
+                loadingDirected={applicationNotes.activeLoading.directed}
+                loadingPrivate={applicationNotes.activeLoading.private}
+                loadingPublic={applicationNotes.activeLoading.public}
+                composeText={applicationNotes.composeText}
+                composeToUserId={applicationNotes.composeToUserId}
+                composePrivate={applicationNotes.composePrivate}
+                currentUsername={applicationNotes.currentUsername}
+                isSubmitting={applicationNotes.isSubmitting}
+                error={applicationNotes.error}
+                onClose={() => {}}
+                onTabChange={applicationNotes.setActiveTab}
+                onComposeTextChange={applicationNotes.setComposeText}
+                onComposeToUserChange={applicationNotes.setComposeToUserId}
+                onComposePrivateChange={applicationNotes.setComposePrivate}
+                onSubmit={applicationNotes.submitNote}
+                onReplySubmit={applicationNotes.submitReply}
+              />
+            )}
+            {activeTab === 'notes' && resolvedApplicationId === null && (
+              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
+                Notes are unavailable because this application does not have a valid application ID.
+              </div>
+            )}
           </div>
         </div>
       </div>
