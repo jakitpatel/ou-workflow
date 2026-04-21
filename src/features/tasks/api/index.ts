@@ -249,6 +249,7 @@ export async function fetchMentionUsers({
   token?: string | null
 } = {}): Promise<MentionUser[]> {
   const params = buildPaginationParams(0, 10000)
+  params.append('sort', 'LAST')
 
   const response = await fetchWithAuth<{
     data?: Array<{

@@ -65,12 +65,42 @@ type ReplyTone = {
   badge: string
 }
 
+type RootTone = {
+  avatar: string
+  badge: string
+  card: string
+  replyCount: string
+  text: string
+  toggle: string
+  action: string
+}
+
 const REPLY_TONES: ReplyTone[] = [
   { rail: 'border-slate-200', card: 'border-slate-200 bg-white', badge: 'bg-blue-50 text-blue-700' },
   { rail: 'border-emerald-300', card: 'border-emerald-200 bg-emerald-50/40', badge: 'bg-emerald-100 text-emerald-800' },
   { rail: 'border-amber-300', card: 'border-amber-200 bg-amber-50/45', badge: 'bg-amber-100 text-amber-800' },
   { rail: 'border-cyan-300', card: 'border-cyan-200 bg-cyan-50/45', badge: 'bg-cyan-100 text-cyan-800' },
 ]
+
+const PUBLIC_ROOT_TONE: RootTone = {
+  avatar: 'bg-emerald-700',
+  badge: 'bg-emerald-100 text-emerald-900',
+  card: 'border-emerald-300 border-l-4 bg-emerald-50/80 ring-1 ring-emerald-100',
+  replyCount: 'bg-emerald-100 text-emerald-900',
+  text: 'text-emerald-950',
+  toggle: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
+  action: 'text-emerald-800 hover:bg-emerald-100',
+}
+
+const DIRECTED_ROOT_TONE: RootTone = {
+  avatar: 'bg-violet-700',
+  badge: 'bg-violet-100 text-violet-900',
+  card: 'border-violet-300 border-l-4 bg-violet-50/80 ring-1 ring-violet-100',
+  replyCount: 'bg-violet-100 text-violet-900',
+  text: 'text-violet-950',
+  toggle: 'bg-violet-100 text-violet-800 hover:bg-violet-200',
+  action: 'text-violet-800 hover:bg-violet-100',
+}
 
 const normalizeNoteValue = (value: unknown): string => {
   if (typeof value !== 'string') return ''
@@ -502,10 +532,14 @@ export function TaskNotesDrawer({
     const myNoteThreadLabelClass = isDirectedMyNote
       ? 'bg-violet-100 text-violet-800'
       : 'bg-emerald-100 text-emerald-800'
+    const rootTone = isDirectedTab || isDirectedMyNote ? DIRECTED_ROOT_TONE : PUBLIC_ROOT_TONE
+    const cardClass = isRoot ? rootTone.card : tone.card
+    const avatarClass = isRoot ? rootTone.avatar : 'bg-[#185087]'
+    const roleBadgeClass = isRoot ? rootTone.badge : tone.badge
 
     return (
       <div key={noteId} className={depth > 0 ? `ml-4 border-l ${tone.rail} pl-3` : ''}>
-        <article className={`rounded-lg border p-2.5 shadow-sm transition ${tone.card}`}>
+        <article className={`rounded-lg border p-2.5 shadow-sm transition ${cardClass}`}>
           {isRoot ? (
             <div className="flex items-start gap-3 rounded-md px-0.5 py-0.5">
               {hasReplies ? (
@@ -517,7 +551,7 @@ export function TaskNotesDrawer({
                       [noteId]: !Boolean(prev[noteId]),
                     }))
                   }
-                  className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
+                  className={`mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full transition ${rootTone.toggle}`}
                   aria-expanded={isThreadExpanded}
                   aria-label={`${isThreadExpanded ? 'Collapse' : 'Expand'} thread from ${fromName}`}
                 >
@@ -532,11 +566,11 @@ export function TaskNotesDrawer({
               )}
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
+                  <div className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold text-white ${avatarClass}`}>
                     {getInitials(fromName)}
                   </div>
                   <span className="text-sm font-semibold text-slate-900">{fromName}</span>
-                  <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${tone.badge}`}>
+                  <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${roleBadgeClass}`}>
                     {fromRole}
                   </span>
                   {showMyNotesThreadType && isRoot ? (
@@ -552,7 +586,7 @@ export function TaskNotesDrawer({
                     </span>
                   ) : null}
                   {hasReplies ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium ${rootTone.replyCount}`}>
                       <MessageSquareMore className="h-3 w-3" />
                       {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
                     </span>
@@ -587,7 +621,7 @@ export function TaskNotesDrawer({
                     </>
                   ) : null}
                 </div>
-                <p className="mt-2 text-sm leading-5 text-slate-700">{previewText || '-'}</p>
+                <p className={`mt-2 text-sm font-medium leading-5 ${rootTone.text}`}>{previewText || '-'}</p>
                 {isReplyOpen ? (
                   <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
                     <div className="flex items-start gap-2">
@@ -636,7 +670,7 @@ export function TaskNotesDrawer({
                   <button
                     type="button"
                     onClick={() => setReplyOpenById((prev) => ({ ...prev, [noteId]: !Boolean(prev[noteId]) }))}
-                    className="rounded px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                    className={`rounded px-2 py-1 text-xs font-medium ${rootTone.action}`}
                   >
                     Reply
                   </button>
