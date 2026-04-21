@@ -556,10 +556,6 @@ export function TaskNotesDrawer({
     const { note, noteId, children } = node
     const fromName = getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
     const toUser = getMetaValue(note, 'toUser', 'to_user', 'ToUser')
-    const fromRole =
-      getMetaValue(note, 'fromUserRole', 'from_user_role') !== '-'
-        ? getMetaValue(note, 'fromUserRole', 'from_user_role')
-        : 'NCRC'
     const createdAt = formatNoteDate(
       getMetaValue(note, 'createdDate', 'created_date', 'SentDate', 'sentDate')
     )
@@ -592,7 +588,6 @@ export function TaskNotesDrawer({
     const rootTone = isDirectedTab || isDirectedMyNote ? DIRECTED_ROOT_TONE : PUBLIC_ROOT_TONE
     const cardClass = isRoot ? rootTone.card : tone.card
     const avatarClass = isRoot ? rootTone.avatar : 'bg-[#185087]'
-    const roleBadgeClass = isRoot ? rootTone.badge : tone.badge
 
     return (
       <div key={noteId} className={depth > 0 ? `ml-4 border-l ${tone.rail} pl-3` : ''}>
@@ -627,9 +622,6 @@ export function TaskNotesDrawer({
                     {getInitials(fromName)}
                   </div>
                   <span className="text-sm font-semibold text-slate-900">{fromName}</span>
-                  <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${roleBadgeClass}`}>
-                    {fromRole}
-                  </span>
                   {showMyNotesThreadType && isRoot ? (
                     <span
                       className={`rounded-full px-2 py-1 text-[11px] font-semibold ${myNoteThreadLabelClass}`}
@@ -745,9 +737,6 @@ export function TaskNotesDrawer({
               {getInitials(fromName)}
             </div>
             <span className="text-sm font-semibold text-slate-900">{fromName}</span>
-            <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${tone.badge}`}>
-              {fromRole}
-            </span>
             {showMyNotesThreadType && isRoot ? (
               <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${myNoteThreadLabelClass}`}>
                 {myNoteThreadLabel}
@@ -957,12 +946,8 @@ export function TaskNotesDrawer({
             <div className="space-y-2">
               {activeTab === 'private'
                 ? notes.map((note, idx) => {
-                    const noteId = getNoteId(note, idx)
-                    const fromName = getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
-                    const fromRole =
-                      getMetaValue(note, 'fromUserRole', 'from_user_role') !== '-'
-                        ? getMetaValue(note, 'fromUserRole', 'from_user_role')
-                        : 'NCRC'
+                  const noteId = getNoteId(note, idx)
+                  const fromName = getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
                     const createdAt = formatNoteDate(
                       getMetaValue(note, 'createdDate', 'created_date', 'SentDate', 'sentDate')
                     )
@@ -978,9 +963,6 @@ export function TaskNotesDrawer({
                             {getInitials(fromName)}
                           </div>
                           <span className="text-sm font-semibold text-slate-900">{fromName}</span>
-                          <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700">
-                            {fromRole}
-                          </span>
                           {showPerNoteApplicationId && noteApplicationId !== null ? (
                             <>
                               <button
