@@ -51,6 +51,22 @@ function NotesHookHarness() {
         submit-note
       </button>
 
+      <button type="button" onClick={() => notes.setActiveTab('directed')}>
+        tab-directed
+      </button>
+
+      <button type="button" onClick={() => notes.setActiveTab('private')}>
+        tab-private
+      </button>
+
+      <button type="button" onClick={() => notes.setActiveTab('public')}>
+        tab-public
+      </button>
+
+      <button type="button" onClick={() => notes.setComposeToUserId('user-22')}>
+        set-to-user
+      </button>
+
       <button
         type="button"
         onClick={() =>
@@ -76,6 +92,7 @@ function NotesHookHarness() {
       <div>error:{notes.error || 'none'}</div>
       <div>private-count:{notes.getCounts('application:42').private}</div>
       <div>public-count:{notes.getCounts('application:42').public}</div>
+      <div>to-user:{notes.composeToUserId ?? 'none'}</div>
       <div>selected-filter-app:{notes.selectedApplicationFilterId ?? 'none'}</div>
     </div>
   )
@@ -284,6 +301,47 @@ describe('useTaskNotesDrawerState', () => {
           token: 'test-access-token',
         }),
       )
+    })
+  })
+
+  it('clears draft text and selected to user when switching tabs', async () => {
+    renderWithProviders(<NotesHookHarness />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'open-drawer' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('active-tab:public')).toBeTruthy()
+    })
+
+    fireEvent.change(screen.getByLabelText('compose-text'), {
+      target: { value: 'Draft that should clear' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'tab-directed' }))
+    fireEvent.click(screen.getByRole('button', { name: 'set-to-user' }))
+
+    expect((screen.getByLabelText('compose-text') as HTMLInputElement).value).toBe('')
+    expect(screen.getByText('to-user:user-22')).toBeTruthy()
+
+    fireEvent.change(screen.getByLabelText('compose-text'), {
+      target: { value: 'Directed draft that should clear' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'tab-private' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('active-tab:private')).toBeTruthy()
+      expect((screen.getByLabelText('compose-text') as HTMLInputElement).value).toBe('')
+      expect(screen.getByText('to-user:none')).toBeTruthy()
+    })
+
+    fireEvent.change(screen.getByLabelText('compose-text'), {
+      target: { value: 'Private draft that should clear' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'tab-public' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('active-tab:public')).toBeTruthy()
+      expect((screen.getByLabelText('compose-text') as HTMLInputElement).value).toBe('')
+      expect(screen.getByText('to-user:none')).toBeTruthy()
     })
   })
 

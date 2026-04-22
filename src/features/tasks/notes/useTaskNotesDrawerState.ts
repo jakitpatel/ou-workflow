@@ -152,6 +152,13 @@ export function useTaskNotesDrawerState({
     [applicationId, onError, token, username],
   )
 
+  const resetComposeDraft = useCallback((tab: NoteTab) => {
+    setComposeTextState('')
+    setComposeToUserIdState(null)
+    setComposePrivateState(tab === 'private' || tab === 'directed')
+    setError('')
+  }, [])
+
   const openDrawer = useCallback(
     async ({ contextKey, taskId, taskName, tab }: OpenDrawerParams) => {
       setDrawer({
@@ -160,11 +167,7 @@ export function useTaskNotesDrawerState({
         taskName,
         activeTab: tab,
       })
-      setError('')
-      setComposePrivateState(tab === 'private' || tab === 'directed')
-      if (tab === 'private' || tab === 'public') {
-        setComposeToUserIdState(null)
-      }
+      resetComposeDraft(tab)
 
       await Promise.allSettled([
         fetchNotesByTab({ contextKey, taskId, tab: 'directed' }),
@@ -172,7 +175,7 @@ export function useTaskNotesDrawerState({
         fetchNotesByTab({ contextKey, taskId, tab: 'public' }),
       ])
     },
-    [fetchNotesByTab],
+    [fetchNotesByTab, resetComposeDraft],
   )
 
   const closeDrawer = useCallback(() => {
@@ -188,11 +191,8 @@ export function useTaskNotesDrawerState({
 
   const setActiveTab = useCallback((tab: NoteTab) => {
     setDrawer((prev) => (prev ? { ...prev, activeTab: tab } : prev))
-    setComposePrivateState(tab === 'private' || tab === 'directed')
-    if (tab === 'private' || tab === 'public') {
-      setComposeToUserIdState(null)
-    }
-  }, [])
+    resetComposeDraft(tab)
+  }, [resetComposeDraft])
 
   const setComposeText = useCallback((text: string) => {
     setComposeTextState(text)
