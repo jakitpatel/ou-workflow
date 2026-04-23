@@ -202,6 +202,151 @@ describe('TaskNotesDrawer', () => {
     expect(screen.getByText('Public')).toBeTruthy()
   })
 
+  it('shows the note task name only on root notes for application-level note drawers', () => {
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="application"
+        taskName="Application 42"
+        activeTab="public"
+        directedNotes={[]}
+        privateNotes={[]}
+        publicNotes={[
+          {
+            MessageID: 101,
+            MessageText: 'Root note',
+            FromUser: 'Alice Smith',
+            SentDate: '2026-04-07T10:00:00.000Z',
+            TaskInstanceId: 123,
+            TaskName: 'Review Ingredients',
+          } as TaskNote,
+          {
+            MessageID: 102,
+            parentMessageId: '101',
+            MessageText: 'Reply note',
+            FromUser: 'Bob User',
+            SentDate: '2026-04-07T11:00:00.000Z',
+            TaskInstanceId: 123,
+            TaskName: 'Review Ingredients',
+          } as TaskNote,
+        ]}
+        loadingDirected={false}
+        loadingPrivate={false}
+        loadingPublic={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate={false}
+        isSubmitting={false}
+        error=""
+        hideComposer
+        hidePrivacyToggle
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Notes For:')).toBeTruthy()
+    expect(screen.getByText('Review Ingredients')).toBeTruthy()
+    expect(screen.getAllByText('Review Ingredients')).toHaveLength(1)
+  })
+
+  it('shows the note task name in private notes when the note belongs to a task', () => {
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="application"
+        taskName="Application 42"
+        activeTab="private"
+        directedNotes={[]}
+        privateNotes={[
+          {
+            MessageID: 201,
+            MessageText: 'Private note for a task',
+            FromUser: 'Alice Smith',
+            SentDate: '2026-04-07T10:00:00.000Z',
+            TaskInstanceId: 456,
+            TaskName: 'Send NDA',
+          } as TaskNote,
+        ]}
+        publicNotes={[]}
+        loadingDirected={false}
+        loadingPrivate={false}
+        loadingPublic={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate
+        isSubmitting={false}
+        error=""
+        hideComposer
+        hidePrivacyToggle
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Notes For:')).toBeTruthy()
+    expect(screen.getByText('Send NDA')).toBeTruthy()
+  })
+
+  it('does not repeat the note task name inside task note drawers', () => {
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="task"
+        taskName="Review Ingredients"
+        activeTab="public"
+        directedNotes={[]}
+        privateNotes={[]}
+        publicNotes={[
+          {
+            MessageID: 101,
+            MessageText: 'Root note',
+            FromUser: 'Alice Smith',
+            SentDate: '2026-04-07T10:00:00.000Z',
+            TaskInstanceId: 123,
+            TaskName: 'Review Ingredients',
+          } as TaskNote,
+        ]}
+        loadingDirected={false}
+        loadingPrivate={false}
+        loadingPublic={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate={false}
+        isSubmitting={false}
+        error=""
+        hideComposer
+        hidePrivacyToggle
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByText('Notes For:')).toBeNull()
+    expect(screen.getAllByText('Review Ingredients')).toHaveLength(1)
+  })
+
   it('submits a reply from the public thread UI', async () => {
     const onReplySubmit = vi.fn().mockResolvedValue(undefined)
 

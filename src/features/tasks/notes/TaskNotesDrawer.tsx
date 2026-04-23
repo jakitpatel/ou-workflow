@@ -287,6 +287,39 @@ const getNoteApplicationId = (note: TaskNote): number | null => {
   return null
 }
 
+const getNoteTaskId = (note: TaskNote): string | null => {
+  const candidates = [
+    (note as any)?.TaskInstanceId,
+    (note as any)?.taskInstanceId,
+    (note as any)?.TaskId,
+    (note as any)?.taskId,
+  ]
+
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null) continue
+    const value = String(candidate).trim()
+    if (!value || value === '0') continue
+    return value
+  }
+
+  return null
+}
+
+const getNoteTaskName = (note: TaskNote): string => {
+  const candidates = [
+    (note as any)?.TaskName,
+    (note as any)?.taskName,
+    (note as any)?.task_name,
+  ]
+
+  for (const candidate of candidates) {
+    const value = normalizeNoteValue(candidate)
+    if (value) return value
+  }
+
+  return ''
+}
+
 const getThreadParentMessageId = (note: TaskNote): string | null => {
   const candidate =
     (note as any)?.parentMessageId ??
@@ -609,6 +642,9 @@ export function TaskNotesDrawer({
     const tone = REPLY_TONES[Math.min(depth, REPLY_TONES.length - 1)]
     const noteApplicationId = getNoteApplicationId(note)
     const isRoot = depth === 0
+    const noteTaskName = getNoteTaskName(note)
+    const showNoteTaskName =
+      contextType !== 'task' && isRoot && Boolean(getNoteTaskId(note)) && Boolean(noteTaskName)
     const isThreadExpanded = isRoot ? Boolean(expandedThreads[noteId]) : true
     const replyCount = countThreadReplies(node)
     const hasReplies = replyCount > 0
@@ -687,6 +723,11 @@ export function TaskNotesDrawer({
                     ? renderApplicationActions(noteApplicationId, isRoot)
                     : null}
                 </div>
+                {showNoteTaskName ? (
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    Notes For: <span className="text-slate-900">{noteTaskName}</span>
+                  </p>
+                ) : null}
                 <p className={`mt-2 text-sm font-medium leading-5 ${rootTone.text}`}>
                   {isThreadExpanded ? renderedNoteText : renderedPreviewText}
                 </p>
@@ -944,6 +985,11 @@ export function TaskNotesDrawer({
                       getMetaValue(note, 'createdDate', 'created_date', 'SentDate', 'sentDate')
                     )
                     const noteApplicationId = getNoteApplicationId(note)
+                    const noteTaskName = getNoteTaskName(note)
+                    const showNoteTaskName =
+                      contextType !== 'task' &&
+                      Boolean(getNoteTaskId(note)) &&
+                      Boolean(noteTaskName)
 
                     return (
                       <article
@@ -985,6 +1031,11 @@ export function TaskNotesDrawer({
                           ) : null}
                           <span className="text-[11px] text-slate-500">{createdAt}</span>
                         </div>
+                        {showNoteTaskName ? (
+                          <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                            Notes For: <span className="text-slate-900">{noteTaskName}</span>
+                          </p>
+                        ) : null}
                         <p className="mt-2 text-sm leading-5 text-slate-900">{getNoteText(note)}</p>
                         <div className="mt-2" />
                       </article>
