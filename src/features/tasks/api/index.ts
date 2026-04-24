@@ -356,7 +356,7 @@ export async function fetchMyMessages({
   }
 
   const response = await fetchWithAuth<FetchMyMessagesResponse>({
-    path: `/get_my_messages_V1${params.toString() ? `?${params.toString()}` : ''}`,
+    path: `/get_my_messages_v1${params.toString() ? `?${params.toString()}` : ''}`,
     method: 'GET',
     token,
   })
