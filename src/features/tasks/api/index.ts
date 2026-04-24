@@ -299,6 +299,7 @@ export async function fetchMentionUsers({
         lastName?: string
         FIRST?: string
         LAST?: string
+        KashLogin?: string
         KashLogIn?: string
         Email?: string
         UserRole?: string
@@ -315,7 +316,7 @@ export async function fetchMentionUsers({
   return (response.data ?? [])
     .map((item) => {
       const attrs = item.attributes ?? {}
-      const kashLogIn = String(attrs.KashLogIn ?? '').trim()
+      const kashLogIn = String(attrs.KashLogin ?? attrs.KashLogIn ?? '').trim()
       const rawId = attrs.Id ?? (kashLogIn || item.id)
       const id = rawId === undefined || rawId === null ? '' : String(rawId).trim()
       const fullName = String(attrs.FullName ?? '').trim()
@@ -331,7 +332,7 @@ export async function fetchMentionUsers({
         kashLogIn,
         email: String(attrs.Email ?? '').trim(),
         userRole: String(attrs.UserRole ?? '').trim(),
-        userName: String(attrs.UserName ?? attrs.KashLogIn ?? '').trim(),
+        userName: String(attrs.UserName ?? attrs.KashLogin ?? attrs.KashLogIn ?? '').trim(),
         isActive,
       }
     })

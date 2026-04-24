@@ -526,6 +526,94 @@ describe('TaskNotesDrawer', () => {
     expect(screen.getByText('To: Bob User')).toBeTruthy()
   })
 
+  it('shows the ToUsers picker in the Outgoing tab and selected user chip', () => {
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="task"
+        taskName="Review Ingredients"
+        activeTab="outgoing"
+        incomingNotes={[]}
+        outgoingNotes={[]}
+        mentionNotes={[]}
+        privateNotes={[]}
+        loadingIncoming={false}
+        loadingOutgoing={false}
+        loadingMention={false}
+        loadingPrivate={false}
+        composeText=""
+        composeToUserId="asmith"
+        composePrivate
+        isSubmitting={false}
+        error=""
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: /ToUsers/i })).toBeTruthy()
+    expect(screen.getByText('To User: Alice Smith')).toBeTruthy()
+    expect(screen.getByPlaceholderText('Add an outgoing note... (@ to select ToUsers)')).toBeTruthy()
+  })
+
+  it('stores the selected outgoing user as the KashLogin value while showing the full name', () => {
+    const onComposeToUserChange = vi.fn()
+
+    function OutgoingMentionHarness() {
+      const [composeText, setComposeText] = useState('Hello @al')
+
+      return (
+        <TaskNotesDrawer
+          open
+          applicantCompany="Test Company"
+          applicationId={42}
+          contextType="task"
+          taskName="Review Ingredients"
+          activeTab="outgoing"
+          incomingNotes={[]}
+          outgoingNotes={[]}
+          mentionNotes={[]}
+          privateNotes={[]}
+          loadingIncoming={false}
+          loadingOutgoing={false}
+          loadingMention={false}
+          loadingPrivate={false}
+          composeText={composeText}
+          composeToUserId={null}
+          composePrivate
+          isSubmitting={false}
+          error=""
+          onClose={() => {}}
+          onTabChange={() => {}}
+          onComposeTextChange={setComposeText}
+          onComposeToUserChange={onComposeToUserChange}
+          onComposePrivateChange={() => {}}
+          onSubmit={() => {}}
+          onReplySubmit={vi.fn()}
+        />
+      )
+    }
+
+    renderWithProviders(<OutgoingMentionHarness />)
+
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'Hello @al', selectionStart: 9 },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /ToUsers/i }))
+    fireEvent.click(screen.getByRole('button', { name: /alice smith/i }))
+
+    expect(onComposeToUserChange).toHaveBeenCalledWith('asmith')
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Hello ')
+  })
+
   it('hides the privacy toggle in the Mention tab while keeping the public composer', () => {
     renderWithProviders(
       <TaskNotesDrawer
@@ -606,8 +694,49 @@ describe('TaskNotesDrawer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Mention' }))
     fireEvent.click(screen.getByRole('button', { name: /alice smith/i }))
 
-    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Hello @Alice Smith ')
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Hello @asmith ')
     expect(onComposeToUserChange).not.toHaveBeenCalled()
     expect(screen.queryByText(/To User:/i)).toBeNull()
+  })
+
+  it('stores the selected directed user as the KashLogin value while showing the full name', () => {
+    const onComposeToUserChange = vi.fn()
+
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="task"
+        taskName="Review Ingredients"
+        activeTab="incoming"
+        incomingNotes={[]}
+        outgoingNotes={[]}
+        mentionNotes={[]}
+        privateNotes={[]}
+        loadingIncoming={false}
+        loadingOutgoing={false}
+        loadingMention={false}
+        loadingPrivate={false}
+        composeText="@al"
+        composeToUserId="asmith"
+        composePrivate
+        isSubmitting={false}
+        error=""
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={onComposeToUserChange}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /ToUsers/i }))
+    fireEvent.click(screen.getByRole('button', { name: /alice smith/i }))
+
+    expect(onComposeToUserChange).toHaveBeenCalledWith('asmith')
+    expect(screen.getByText('To User: Alice Smith')).toBeTruthy()
   })
 })

@@ -235,14 +235,15 @@ export function useTaskNotesDrawerState({
       setError('Note text is required')
       return
     }
-    if (drawer.activeTab === 'incoming' && !composeToUserId) {
-      setError('Incoming notes require a To User')
+    if ((drawer.activeTab === 'incoming' || drawer.activeTab === 'outgoing') && !composeToUserId) {
+      setError(`${drawer.activeTab === 'incoming' ? 'Incoming' : 'Outgoing'} notes require a To User`)
       return
     }
 
     const isIncomingTab = drawer.activeTab === 'incoming'
+    const isOutgoingTab = drawer.activeTab === 'outgoing'
     const isMentionTab = drawer.activeTab === 'mention'
-    const isPrivateTab = drawer.activeTab === 'private' || drawer.activeTab === 'outgoing'
+    const isPrivateTab = drawer.activeTab === 'private' || isOutgoingTab
 
     await createTaskNoteMutation.mutateAsync({
       taskId: drawer.taskId,
@@ -251,7 +252,7 @@ export function useTaskNotesDrawerState({
       isPrivate: isIncomingTab ? true : isMentionTab ? false : isPrivateTab ? true : composePrivate,
       priority: 'NORMAL',
       fromUser: username ?? undefined,
-      toUser: isIncomingTab ? composeToUserId ?? undefined : undefined,
+      toUser: isIncomingTab || isOutgoingTab ? composeToUserId ?? undefined : undefined,
       token: token ?? undefined,
     })
 

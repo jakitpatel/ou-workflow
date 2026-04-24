@@ -281,6 +281,13 @@ const getMentionLabel = (user: MentionUser): string => {
   return user.id
 }
 
+const getMentionValue = (user: MentionUser): string => {
+  const kashLogin = user.kashLogIn.trim()
+  if (kashLogin) return kashLogin
+  if (user.userName.trim()) return user.userName.trim()
+  return user.id.trim()
+}
+
 const getParentMessageId = (note: TaskNote): string => {
   const idCandidate = (note as any)?.MessageID ?? (note as any)?.messageId ?? (note as any)?.id
   if (idCandidate !== undefined && idCandidate !== null && String(idCandidate).trim()) {
@@ -552,6 +559,7 @@ export function TaskNotesDrawer({
     return mentionUsers.filter((user) => {
       const searchable = [
         getMentionLabel(user),
+        getMentionValue(user),
         user.userRole,
         user.userName,
         user.email,
@@ -564,9 +572,12 @@ export function TaskNotesDrawer({
   }, [mentionQuery, mentionUsers])
 
   const selectedMentionUser = useMemo(() => {
-    if (!isDirectedTab || !composeToUserId) return null
-    return mentionUsers.find((user) => user.id === composeToUserId) ?? null
-  }, [composeToUserId, isDirectedTab, mentionUsers])
+    if ((!isDirectedTab && !isOutgoingTab) || !composeToUserId) return null
+    return mentionUsers.find((user) => {
+      const mentionValue = getMentionValue(user)
+      return user.id === composeToUserId || mentionValue === composeToUserId
+    }) ?? null
+  }, [composeToUserId, isDirectedTab, isOutgoingTab, mentionUsers])
 
   useEffect(() => {
     if (!open) return
@@ -592,7 +603,7 @@ export function TaskNotesDrawer({
 
   const handleComposeChange = (nextText: string, cursor: number) => {
     onComposeTextChange(nextText)
-    if (isPrivateTab) {
+    if (isPrivateTab && !isOutgoingTab) {
       setMentionContext(null)
       setMentionOpen(false)
       return
@@ -601,7 +612,7 @@ export function TaskNotesDrawer({
   }
 
   const handleMentionButtonClick = () => {
-    if (isPrivateTab) return
+    if (isPrivateTab && !isOutgoingTab) return
 
     const textarea = composeTextareaRef.current
     if (!textarea) {
@@ -633,11 +644,11 @@ export function TaskNotesDrawer({
   const handlePickMentionUser = (user: MentionUser) => {
     const context = mentionContext ?? getMentionContext(composeText, composeText.length)
     if (context) {
-      if (isDirectedTab) {
+      if (isDirectedTab || isOutgoingTab) {
         const updatedText = `${composeText.slice(0, context.start)}${composeText.slice(context.end)}`
         onComposeTextChange(updatedText)
       } else {
-        const mentionLabel = `@${getMentionLabel(user)}`
+        const mentionLabel = `@${getMentionValue(user)}`
         const separator = context.start > 0 && !/\s$/.test(composeText.slice(0, context.start)) ? ' ' : ''
         const trailingSpace =
           context.end < composeText.length && /^\s/.test(composeText.slice(context.end))
@@ -648,8 +659,8 @@ export function TaskNotesDrawer({
       }
     }
 
-    if (isDirectedTab) {
-      onComposeToUserChange(user.id)
+    if (isDirectedTab || isOutgoingTab) {
+      onComposeToUserChange(getMentionValue(user))
     }
     setMentionOpen(false)
     setMentionContext(null)
@@ -777,6 +788,11 @@ export function TaskNotesDrawer({
                     {getInitials(fromName)}
                   </div>
                   <span className="text-sm font-semibold text-slate-900">{fromName}</span>
+                  {showMyNotesThreadType ? (
+                    <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${myNoteThreadLabelClass}`}>
+                      {myNoteThreadLabel}
+                    </span>
+                  ) : null}
                   {(isDirectedTab || isOutgoingTab) && toUser !== '-' ? (
                     <span
                       className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
@@ -874,11 +890,6 @@ export function TaskNotesDrawer({
               {getInitials(fromName)}
             </div>
             <span className="text-sm font-semibold text-slate-900">{fromName}</span>
-            {showMyNotesThreadType && isRoot ? (
-              <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${myNoteThreadLabelClass}`}>
-                {myNoteThreadLabel}
-              </span>
-            ) : null}
             {(isDirectedTab || isOutgoingTab) && toUser !== '-' ? (
               <span
                 className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
@@ -1129,12 +1140,14 @@ export function TaskNotesDrawer({
                 placeholder={
                   isDirectedTab
                     ? 'Add an incoming note... (@ to select ToUsers)'
+                    : isOutgoingTab
+                      ? 'Add an outgoing note... (@ to select ToUsers)'
                     : isPrivateTab
                       ? 'Add a private note...'
                       : `Add a ${composePrivate ? 'private' : 'public'} note... (@ to mention)`
                 }
               />
-              {mentionOpen && !isPrivateTab ? (
+              {mentionOpen && (!isPrivateTab || isOutgoingTab) ? (
                 <div className="absolute bottom-full z-10 mb-1 max-h-52 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
                   {mentionUsersLoading ? (
                     <div className="px-3 py-2 text-sm text-slate-500">Loading users...</div>
@@ -1165,7 +1178,7 @@ export function TaskNotesDrawer({
               ) : null}
             </div>
 
-          {!isPrivateTab ? (
+          {(!isPrivateTab || isOutgoingTab) ? (
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
@@ -1173,7 +1186,7 @@ export function TaskNotesDrawer({
                 className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
               >
                 <AtSign className="h-3.5 w-3.5" />
-                {isDirectedTab ? 'ToUsers' : 'Mention'}
+                {isDirectedTab || isOutgoingTab ? 'ToUsers' : 'Mention'}
               </button>
               {selectedMentionUser ? (
                 <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">

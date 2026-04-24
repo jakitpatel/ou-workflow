@@ -67,7 +67,7 @@ function NotesHookHarness() {
         tab-mention
       </button>
 
-      <button type="button" onClick={() => notes.setComposeToUserId('user-22')}>
+      <button type="button" onClick={() => notes.setComposeToUserId('BenjaminD')}>
         set-to-user
       </button>
 
@@ -244,7 +244,7 @@ describe('useTaskNotesDrawerState', () => {
           <button type="button" onClick={() => notes.setComposeText('Directed message')}>
             set-directed-text
           </button>
-          <button type="button" onClick={() => notes.setComposeToUserId('user-22')}>
+          <button type="button" onClick={() => notes.setComposeToUserId('BenjaminD')}>
             set-directed-user
           </button>
           <button type="button" onClick={() => void notes.submitNote()}>
@@ -280,7 +280,74 @@ describe('useTaskNotesDrawerState', () => {
           applicationId: 42,
           note: 'Directed message',
           isPrivate: true,
-          toUser: 'user-22',
+          toUser: 'BenjaminD',
+          fromUser: 'S.Benjamin',
+          token: 'test-access-token',
+        }),
+      )
+    })
+  })
+
+  it('posts outgoing notes as private notes that require a To User', async () => {
+    function OutgoingHarness() {
+      const notes = useTaskNotesDrawerState({
+        applicationId: 42,
+      })
+
+      return (
+        <div>
+          <button
+            type="button"
+            onClick={() =>
+              void notes.openDrawer({
+                contextKey: 'application:42',
+                taskName: 'Application 42',
+                tab: 'outgoing',
+              })
+            }
+          >
+            open-outgoing
+          </button>
+          <button type="button" onClick={() => notes.setComposeText('Outgoing message')}>
+            set-outgoing-text
+          </button>
+          <button type="button" onClick={() => notes.setComposeToUserId('BenjaminD')}>
+            set-outgoing-user
+          </button>
+          <button type="button" onClick={() => void notes.submitNote()}>
+            submit-outgoing
+          </button>
+          <div>active-tab:{notes.drawer?.activeTab ?? 'closed'}</div>
+          <div>error:{notes.error || 'none'}</div>
+        </div>
+      )
+    }
+
+    renderWithProviders(<OutgoingHarness />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'open-outgoing' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('active-tab:outgoing')).toBeTruthy()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'set-outgoing-text' }))
+    fireEvent.click(screen.getByRole('button', { name: 'submit-outgoing' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('error:Outgoing notes require a To User')).toBeTruthy()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'set-outgoing-user' }))
+    fireEvent.click(screen.getByRole('button', { name: 'submit-outgoing' }))
+
+    await waitFor(() => {
+      expect(mutateAsyncMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          applicationId: 42,
+          note: 'Outgoing message',
+          isPrivate: true,
+          toUser: 'BenjaminD',
           fromUser: 'S.Benjamin',
           token: 'test-access-token',
         }),
@@ -304,7 +371,7 @@ describe('useTaskNotesDrawerState', () => {
     fireEvent.click(screen.getByRole('button', { name: 'set-to-user' }))
 
     expect((screen.getByLabelText('compose-text') as HTMLInputElement).value).toBe('')
-    expect(screen.getByText('to-user:user-22')).toBeTruthy()
+    expect(screen.getByText('to-user:BenjaminD')).toBeTruthy()
 
     fireEvent.change(screen.getByLabelText('compose-text'), {
       target: { value: 'Incoming draft that should clear' },
