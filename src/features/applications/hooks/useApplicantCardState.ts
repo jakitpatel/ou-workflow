@@ -177,7 +177,7 @@ export function useApplicantCardState({ applicant, handleCancelTask }: Params) {
 
   const applicationNotesCount = useMemo(() => {
     const counts = applicationNotes.getCounts(applicationNotesContextKey)
-    const fetchedTotal = counts.directed + counts.private + counts.public
+    const fetchedTotal = counts.incoming + counts.outgoing + counts.private + counts.mention
     if (fetchedTotal > 0) return fetchedTotal
 
     return (

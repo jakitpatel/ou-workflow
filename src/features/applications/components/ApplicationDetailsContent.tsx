@@ -408,7 +408,7 @@ export function ApplicationDetailsContent({ application, mode = 'page', applicat
     void applicationNotes.openDrawer({
       contextKey: applicationNotesContextKey,
       taskName: applicationDisplayName,
-      tab: 'directed',
+      tab: 'incoming',
     })
   }, [
     activeTab,
@@ -576,13 +576,15 @@ export function ApplicationDetailsContent({ application, mode = 'page', applicat
                 applicationId={resolvedApplicationId}
                 contextType="application"
                 taskName={applicationDisplayName}
-                activeTab={applicationNotes.drawer?.activeTab ?? 'directed'}
-                directedNotes={applicationNotes.activeNotes.directed}
+                activeTab={applicationNotes.drawer?.activeTab ?? 'incoming'}
+                incomingNotes={applicationNotes.activeNotes.incoming}
+                outgoingNotes={applicationNotes.activeNotes.outgoing}
+                mentionNotes={applicationNotes.activeNotes.mention}
                 privateNotes={applicationNotes.activeNotes.private}
-                publicNotes={applicationNotes.activeNotes.public}
-                loadingDirected={applicationNotes.activeLoading.directed}
+                loadingIncoming={applicationNotes.activeLoading.incoming}
+                loadingOutgoing={applicationNotes.activeLoading.outgoing}
+                loadingMention={applicationNotes.activeLoading.mention}
                 loadingPrivate={applicationNotes.activeLoading.private}
-                loadingPublic={applicationNotes.activeLoading.public}
                 composeText={applicationNotes.composeText}
                 composeToUserId={applicationNotes.composeToUserId}
                 composePrivate={applicationNotes.composePrivate}

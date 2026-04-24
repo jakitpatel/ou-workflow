@@ -3,11 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState'
 import { renderWithProviders } from '@/test/renderWithProviders'
 
-const fetchTaskNotesMock = vi.fn()
+const fetchMyMessagesMock = vi.fn()
 const mutateAsyncMock = vi.fn()
 
 vi.mock('@/features/tasks/api', () => ({
-  fetchTaskNotes: (...args: unknown[]) => fetchTaskNotesMock(...args),
+  fetchMyMessages: (...args: unknown[]) => fetchMyMessagesMock(...args),
 }))
 
 vi.mock('@/features/tasks/hooks/useTaskMutations', () => ({
@@ -34,7 +34,7 @@ function NotesHookHarness() {
           void notes.openDrawer({
             contextKey: 'application:42',
             taskName: 'Application 42',
-            tab: 'public',
+            tab: 'mention',
           })
         }
       >
@@ -51,16 +51,20 @@ function NotesHookHarness() {
         submit-note
       </button>
 
-      <button type="button" onClick={() => notes.setActiveTab('directed')}>
-        tab-directed
+      <button type="button" onClick={() => notes.setActiveTab('incoming')}>
+        tab-incoming
+      </button>
+
+      <button type="button" onClick={() => notes.setActiveTab('outgoing')}>
+        tab-outgoing
       </button>
 
       <button type="button" onClick={() => notes.setActiveTab('private')}>
         tab-private
       </button>
 
-      <button type="button" onClick={() => notes.setActiveTab('public')}>
-        tab-public
+      <button type="button" onClick={() => notes.setActiveTab('mention')}>
+        tab-mention
       </button>
 
       <button type="button" onClick={() => notes.setComposeToUserId('user-22')}>
@@ -88,10 +92,11 @@ function NotesHookHarness() {
       </button>
 
       <div>active-tab:{notes.drawer?.activeTab ?? 'closed'}</div>
-      <div>directed-count:{notes.getCounts('application:42').directed}</div>
+      <div>incoming-count:{notes.getCounts('application:42').incoming}</div>
       <div>error:{notes.error || 'none'}</div>
+      <div>outgoing-count:{notes.getCounts('application:42').outgoing}</div>
       <div>private-count:{notes.getCounts('application:42').private}</div>
-      <div>public-count:{notes.getCounts('application:42').public}</div>
+      <div>mention-count:{notes.getCounts('application:42').mention}</div>
       <div>to-user:{notes.composeToUserId ?? 'none'}</div>
       <div>selected-filter-app:{notes.selectedApplicationFilterId ?? 'none'}</div>
     </div>
@@ -113,20 +118,15 @@ describe('useTaskNotesDrawerState', () => {
     )
     sessionStorage.setItem('access_token', 'test-access-token')
 
-    fetchTaskNotesMock.mockReset()
+    fetchMyMessagesMock.mockReset()
     mutateAsyncMock.mockReset()
 
-    fetchTaskNotesMock.mockImplementation(async (params?: Record<string, unknown>) => {
-      if (params?.mode === 'directed') {
-        return [{ MessageID: 'directed-note-1', MessageText: 'Directed note', ToUser: 'A.User' }]
-      }
-
-      if (params?.isPrivate === true) {
-        return [{ MessageID: 'private-note-1', MessageText: 'Private note' }]
-      }
-
-      return [{ MessageID: 'public-note-1', MessageText: 'Public note' }]
-    })
+    fetchMyMessagesMock.mockImplementation(async () => ({
+      incoming: [{ MessageID: 'incoming-note-1', MessageText: 'Incoming note', ToUser: 'A.User' }],
+      outgoing: [{ MessageID: 'outgoing-note-1', MessageText: 'Outgoing note' }],
+      private: [{ MessageID: 'private-note-1', MessageText: 'Private note' }],
+      mention: [{ MessageID: 'mention-note-1', MessageText: 'Mention note' }],
+    }))
 
     mutateAsyncMock.mockResolvedValue({ status: 'ok' })
   })
@@ -137,33 +137,17 @@ describe('useTaskNotesDrawerState', () => {
     fireEvent.click(screen.getByRole('button', { name: 'open-drawer' }))
 
     await waitFor(() => {
-      expect(screen.getByText('active-tab:public')).toBeTruthy()
-      expect(screen.getByText('directed-count:1')).toBeTruthy()
+      expect(screen.getByText('active-tab:mention')).toBeTruthy()
+      expect(screen.getByText('incoming-count:1')).toBeTruthy()
+      expect(screen.getByText('outgoing-count:1')).toBeTruthy()
       expect(screen.getByText('private-count:1')).toBeTruthy()
-      expect(screen.getByText('public-count:1')).toBeTruthy()
+      expect(screen.getByText('mention-count:1')).toBeTruthy()
     })
 
-    expect(fetchTaskNotesMock).toHaveBeenCalledTimes(3)
-    expect(fetchTaskNotesMock).toHaveBeenCalledWith(
+    expect(fetchMyMessagesMock).toHaveBeenCalledTimes(1)
+    expect(fetchMyMessagesMock).toHaveBeenCalledWith(
       expect.objectContaining({
         applicationId: 42,
-        isPrivate: true,
-        mode: 'directed',
-        token: 'test-access-token',
-      }),
-    )
-    expect(fetchTaskNotesMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        applicationId: 42,
-        isPrivate: true,
-        fromUser: 'S.Benjamin',
-        token: 'test-access-token',
-      }),
-    )
-    expect(fetchTaskNotesMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        applicationId: 42,
-        isPrivate: false,
         token: 'test-access-token',
       }),
     )
@@ -175,7 +159,7 @@ describe('useTaskNotesDrawerState', () => {
     fireEvent.click(screen.getByRole('button', { name: 'open-drawer' }))
 
     await waitFor(() => {
-      expect(screen.getByText('active-tab:public')).toBeTruthy()
+      expect(screen.getByText('active-tab:mention')).toBeTruthy()
     })
 
     fireEvent.click(screen.getByRole('button', { name: 'submit-note' }))
@@ -202,7 +186,7 @@ describe('useTaskNotesDrawerState', () => {
     })
 
     await waitFor(() => {
-      expect(fetchTaskNotesMock).toHaveBeenCalledTimes(4)
+      expect(fetchMyMessagesMock).toHaveBeenCalledTimes(2)
       expect(screen.getByText('error:none')).toBeTruthy()
       expect(screen.getByDisplayValue('')).toBeTruthy()
     })
@@ -214,7 +198,7 @@ describe('useTaskNotesDrawerState', () => {
     fireEvent.click(screen.getByRole('button', { name: 'open-drawer' }))
 
     await waitFor(() => {
-      expect(screen.getByText('active-tab:public')).toBeTruthy()
+      expect(screen.getByText('active-tab:mention')).toBeTruthy()
     })
 
     fireEvent.click(screen.getByRole('button', { name: 'submit-reply' }))
@@ -233,7 +217,7 @@ describe('useTaskNotesDrawerState', () => {
     })
 
     await waitFor(() => {
-      expect(fetchTaskNotesMock).toHaveBeenCalledTimes(4)
+      expect(fetchMyMessagesMock).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -251,7 +235,7 @@ describe('useTaskNotesDrawerState', () => {
               void notes.openDrawer({
                 contextKey: 'application:42',
                 taskName: 'Application 42',
-                tab: 'directed',
+                tab: 'incoming',
               })
             }
           >
@@ -277,14 +261,14 @@ describe('useTaskNotesDrawerState', () => {
     fireEvent.click(screen.getByRole('button', { name: 'open-directed' }))
 
     await waitFor(() => {
-      expect(screen.getByText('active-tab:directed')).toBeTruthy()
+      expect(screen.getByText('active-tab:incoming')).toBeTruthy()
     })
 
     fireEvent.click(screen.getByRole('button', { name: 'set-directed-text' }))
     fireEvent.click(screen.getByRole('button', { name: 'submit-directed' }))
 
     await waitFor(() => {
-      expect(screen.getByText('error:Directed notes require a To User')).toBeTruthy()
+      expect(screen.getByText('error:Incoming notes require a To User')).toBeTruthy()
     })
 
     fireEvent.click(screen.getByRole('button', { name: 'set-directed-user' }))
@@ -310,20 +294,20 @@ describe('useTaskNotesDrawerState', () => {
     fireEvent.click(screen.getByRole('button', { name: 'open-drawer' }))
 
     await waitFor(() => {
-      expect(screen.getByText('active-tab:public')).toBeTruthy()
+      expect(screen.getByText('active-tab:mention')).toBeTruthy()
     })
 
     fireEvent.change(screen.getByLabelText('compose-text'), {
       target: { value: 'Draft that should clear' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'tab-directed' }))
+    fireEvent.click(screen.getByRole('button', { name: 'tab-incoming' }))
     fireEvent.click(screen.getByRole('button', { name: 'set-to-user' }))
 
     expect((screen.getByLabelText('compose-text') as HTMLInputElement).value).toBe('')
     expect(screen.getByText('to-user:user-22')).toBeTruthy()
 
     fireEvent.change(screen.getByLabelText('compose-text'), {
-      target: { value: 'Directed draft that should clear' },
+      target: { value: 'Incoming draft that should clear' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'tab-private' }))
 
@@ -336,10 +320,10 @@ describe('useTaskNotesDrawerState', () => {
     fireEvent.change(screen.getByLabelText('compose-text'), {
       target: { value: 'Private draft that should clear' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'tab-public' }))
+    fireEvent.click(screen.getByRole('button', { name: 'tab-mention' }))
 
     await waitFor(() => {
-      expect(screen.getByText('active-tab:public')).toBeTruthy()
+      expect(screen.getByText('active-tab:mention')).toBeTruthy()
       expect((screen.getByLabelText('compose-text') as HTMLInputElement).value).toBe('')
       expect(screen.getByText('to-user:none')).toBeTruthy()
     })

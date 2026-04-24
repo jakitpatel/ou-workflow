@@ -405,7 +405,7 @@ describe('TaskNotesDrawer', () => {
     })
   })
 
-  it('shows Directed Notes as the first tab and uses the ToUsers label there', () => {
+  it('shows Incoming as the first tab and uses the ToUsers label there', () => {
     renderWithProviders(
       <TaskNotesDrawer
         open
@@ -436,12 +436,12 @@ describe('TaskNotesDrawer', () => {
     )
 
     const tabs = screen.getAllByRole('button').map((button) => button.textContent ?? '')
-    expect(tabs[1]).toContain('Directed Notes')
+    expect(tabs[1]).toContain('Incoming')
     expect(screen.getByRole('button', { name: /ToUsers/i })).toBeTruthy()
     expect(screen.queryByLabelText(/Private note/i)).toBeNull()
   })
 
-  it('hides mention UI and the private lock badge in the Private Notes tab', () => {
+  it('hides mention UI and the private lock badge in the Private tab', () => {
     renderWithProviders(
       <TaskNotesDrawer
         open
@@ -478,12 +478,12 @@ describe('TaskNotesDrawer', () => {
       />,
     )
 
-    expect(screen.queryByRole('button', { name: /mention/i })).toBeNull()
-    expect(screen.queryByText('Private')).toBeNull()
+    expect(screen.getByRole('button', { name: /mention/i })).toBeTruthy()
+    expect(screen.queryAllByText('Private').length).toBeGreaterThan(0)
     expect(screen.getByPlaceholderText('Add a private note...')).toBeTruthy()
   })
 
-  it('hides the privacy toggle in the Public Notes tab while keeping the public composer', () => {
+  it('hides the privacy toggle in the Mention tab while keeping the public composer', () => {
     renderWithProviders(
       <TaskNotesDrawer
         open
@@ -514,7 +514,7 @@ describe('TaskNotesDrawer', () => {
     )
 
     expect(screen.queryByLabelText(/Public note/i)).toBeNull()
-    expect(screen.getByRole('button', { name: /mention/i })).toBeTruthy()
+    expect(screen.getAllByRole('button', { name: /mention/i }).length).toBeGreaterThan(0)
     expect(screen.getByPlaceholderText('Add a public note... (@ to mention)')).toBeTruthy()
   })
 

@@ -300,11 +300,15 @@ export function ApplicationExpandedStage({
                         const contextKey = taskId
                         const noteCounts = taskNotes.getCounts(contextKey)
                         const totalNotes =
-                          noteCounts.directed + noteCounts.private + noteCounts.public
+                          noteCounts.incoming +
+                          noteCounts.outgoing +
+                          noteCounts.private +
+                          noteCounts.mention
                         const isNotesLoading =
-                          taskNotes.isLoading(contextKey, 'directed') ||
+                          taskNotes.isLoading(contextKey, 'incoming') ||
+                          taskNotes.isLoading(contextKey, 'outgoing') ||
                           taskNotes.isLoading(contextKey, 'private') ||
-                          taskNotes.isLoading(contextKey, 'public')
+                          taskNotes.isLoading(contextKey, 'mention')
 
                         return (
                           <button
@@ -320,7 +324,7 @@ export function ApplicationExpandedStage({
                                 contextKey,
                                 taskId,
                                 taskName: task.name,
-                                tab: 'directed',
+                                tab: 'incoming',
                               })
                             }}
                             className="group relative rounded p-1 text-indigo-600 hover:bg-indigo-50"
@@ -353,13 +357,15 @@ export function ApplicationExpandedStage({
         applicationId={applicant.applicationId ?? null}
         contextType="task"
         taskName={taskNotes.drawer?.taskName ?? ''}
-        activeTab={taskNotes.drawer?.activeTab ?? 'directed'}
-        directedNotes={taskNotes.activeNotes.directed}
+        activeTab={taskNotes.drawer?.activeTab ?? 'incoming'}
+        incomingNotes={taskNotes.activeNotes.incoming}
+        outgoingNotes={taskNotes.activeNotes.outgoing}
+        mentionNotes={taskNotes.activeNotes.mention}
         privateNotes={taskNotes.activeNotes.private}
-        publicNotes={taskNotes.activeNotes.public}
-        loadingDirected={taskNotes.activeLoading.directed}
+        loadingIncoming={taskNotes.activeLoading.incoming}
+        loadingOutgoing={taskNotes.activeLoading.outgoing}
+        loadingMention={taskNotes.activeLoading.mention}
         loadingPrivate={taskNotes.activeLoading.private}
-        loadingPublic={taskNotes.activeLoading.public}
         composeText={taskNotes.composeText}
         composeToUserId={taskNotes.composeToUserId}
         composePrivate={taskNotes.composePrivate}

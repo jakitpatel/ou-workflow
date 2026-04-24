@@ -121,14 +121,15 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
           applicationNotes.openDrawer({
             contextKey: applicationNotesContextKey,
             taskName: applicant.company || `Application ${String(applicant.applicationId ?? '')}`,
-            tab: 'directed',
+            tab: 'incoming',
           })
         }
         applicationNotesCount={applicationNotesCount}
         applicationNotesLoading={
-          applicationNotes.isLoading(applicationNotesContextKey, 'directed') ||
+          applicationNotes.isLoading(applicationNotesContextKey, 'incoming') ||
+          applicationNotes.isLoading(applicationNotesContextKey, 'outgoing') ||
           applicationNotes.isLoading(applicationNotesContextKey, 'private') ||
-          applicationNotes.isLoading(applicationNotesContextKey, 'public')
+          applicationNotes.isLoading(applicationNotesContextKey, 'mention')
         }
       />
 
@@ -148,13 +149,15 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         applicationId={applicant.applicationId ?? null}
         contextType="application"
         taskName={applicant.company || `Application ${String(applicant.applicationId ?? '')}`}
-        activeTab={applicationNotes.drawer?.activeTab ?? 'directed'}
-        directedNotes={applicationNotes.activeNotes.directed}
+        activeTab={applicationNotes.drawer?.activeTab ?? 'incoming'}
+        incomingNotes={applicationNotes.activeNotes.incoming}
+        outgoingNotes={applicationNotes.activeNotes.outgoing}
+        mentionNotes={applicationNotes.activeNotes.mention}
         privateNotes={applicationNotes.activeNotes.private}
-        publicNotes={applicationNotes.activeNotes.public}
-        loadingDirected={applicationNotes.activeLoading.directed}
+        loadingIncoming={applicationNotes.activeLoading.incoming}
+        loadingOutgoing={applicationNotes.activeLoading.outgoing}
+        loadingMention={applicationNotes.activeLoading.mention}
         loadingPrivate={applicationNotes.activeLoading.private}
-        loadingPublic={applicationNotes.activeLoading.public}
         composeText={applicationNotes.composeText}
         composeToUserId={applicationNotes.composeToUserId}
         composePrivate={applicationNotes.composePrivate}

@@ -26,12 +26,18 @@ type Props = {
   contextType?: 'task' | 'application'
   taskName: string
   activeTab: NoteTab
-  directedNotes: TaskNote[]
+  incomingNotes?: TaskNote[]
+  outgoingNotes?: TaskNote[]
+  mentionNotes?: TaskNote[]
   privateNotes: TaskNote[]
-  publicNotes: TaskNote[]
-  loadingDirected: boolean
+  directedNotes?: TaskNote[]
+  publicNotes?: TaskNote[]
+  loadingIncoming?: boolean
+  loadingOutgoing?: boolean
+  loadingMention?: boolean
   loadingPrivate: boolean
-  loadingPublic: boolean
+  loadingDirected?: boolean
+  loadingPublic?: boolean
   composeText: string
   composeToUserId?: string | null
   composePrivate: boolean
@@ -411,6 +417,12 @@ const getLatestThreadTimestamp = (node: PublicNoteNode): number => {
   return Math.max(getSortableTimestamp(node.note), ...childLatest)
 }
 
+const normalizeDrawerTab = (tab: NoteTab): NoteTab => {
+  if (tab === 'directed') return 'incoming'
+  if (tab === 'public') return 'mention'
+  return tab
+}
+
 export function TaskNotesDrawer({
   open,
   variant = 'drawer',
@@ -419,11 +431,17 @@ export function TaskNotesDrawer({
   contextType = 'task',
   taskName,
   activeTab,
-  directedNotes,
+  incomingNotes,
+  outgoingNotes = [],
+  mentionNotes,
   privateNotes,
+  directedNotes,
   publicNotes,
-  loadingDirected,
+  loadingIncoming,
+  loadingOutgoing = false,
+  loadingMention,
   loadingPrivate,
+  loadingDirected,
   loadingPublic,
   composeText,
   composeToUserId,
@@ -468,19 +486,32 @@ export function TaskNotesDrawer({
     notesTitleOverride ?? (contextType === 'application' ? 'Application Notes' : 'Task Notes')
   const currentLabel =
     currentLabelOverride ?? (contextType === 'application' ? 'Current Application' : 'Current Task')
+  const resolvedIncomingNotes = incomingNotes ?? directedNotes ?? []
+  const resolvedMentionNotes = mentionNotes ?? publicNotes ?? []
+  const resolvedLoadingIncoming = loadingIncoming ?? loadingDirected ?? false
+  const resolvedLoadingMention = loadingMention ?? loadingPublic ?? false
   const defaultTabs: TaskNotesDrawerTabConfig[] = [
     {
-      id: 'directed',
-      label: 'Directed Notes',
-      notes: directedNotes,
-      loading: loadingDirected,
+      id: 'incoming',
+      label: 'Incoming',
+      notes: resolvedIncomingNotes,
+      loading: resolvedLoadingIncoming,
       mode: 'directed',
       tabClassName: 'border-violet-600 text-violet-700',
       badgeClassName: 'bg-violet-100 text-violet-700',
     },
     {
+      id: 'outgoing',
+      label: 'Outgoing',
+      notes: outgoingNotes,
+      loading: loadingOutgoing,
+      mode: 'private',
+      tabClassName: 'border-slate-600 text-slate-700',
+      badgeClassName: 'bg-slate-100 text-slate-700',
+    },
+    {
       id: 'private',
-      label: 'Private Notes',
+      label: 'Private',
       notes: privateNotes,
       loading: loadingPrivate,
       mode: 'private',
@@ -488,17 +519,18 @@ export function TaskNotesDrawer({
       badgeClassName: 'bg-blue-100 text-blue-700',
     },
     {
-      id: 'public',
-      label: 'Public Notes',
-      notes: publicNotes,
-      loading: loadingPublic,
+      id: 'mention',
+      label: 'Mention',
+      notes: resolvedMentionNotes,
+      loading: resolvedLoadingMention,
       mode: 'public',
-      tabClassName: 'border-emerald-600 text-emerald-700',
-      badgeClassName: 'bg-emerald-100 text-emerald-700',
+      tabClassName: 'border-amber-600 text-amber-700',
+      badgeClassName: 'bg-amber-100 text-amber-700',
     },
   ]
   const tabs = customTabs?.length ? customTabs : defaultTabs
-  const activeTabConfig = tabs.find((tab) => tab.id === activeTab) ?? tabs[0]
+  const normalizedActiveTab = normalizeDrawerTab(activeTab)
+  const activeTabConfig = tabs.find((tab) => tab.id === normalizedActiveTab) ?? tabs[0]
   const notes = activeTabConfig?.notes ?? []
   const isLoading = activeTabConfig?.loading ?? false
   const canSubmit = composeText.trim().length > 0 && !isSubmitting
@@ -750,7 +782,7 @@ export function TaskNotesDrawer({
                       {myNoteThreadLabel}
                     </span>
                   ) : null}
-                  {activeTab === 'directed' && toUser !== '-' ? (
+                  {isDirectedTab && toUser !== '-' ? (
                     <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[11px] font-medium text-violet-800">
                       To: {toUser}
                     </span>
@@ -846,7 +878,7 @@ export function TaskNotesDrawer({
                 {myNoteThreadLabel}
               </span>
             ) : null}
-            {activeTab === 'directed' && toUser !== '-' ? (
+            {isDirectedTab && toUser !== '-' ? (
               <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[11px] font-medium text-violet-800">
                 To: {toUser}
               </span>
@@ -959,7 +991,7 @@ export function TaskNotesDrawer({
           {singleTabMode ? (
             <button
               type="button"
-              onClick={() => onTabChange(activeTab)}
+              onClick={() => onTabChange(normalizedActiveTab)}
               className="rounded-t-md border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-700"
             >
               {singleTabLabel}
@@ -970,7 +1002,7 @@ export function TaskNotesDrawer({
           ) : (
             <>
             {tabs.map((tab) => {
-              const isActive = activeTab === tab.id
+              const isActive = normalizedActiveTab === tab.id
               const activeClassName = tab.tabClassName ?? 'border-indigo-600 text-indigo-700'
               const badgeClassName = tab.badgeClassName ?? 'bg-indigo-100 text-indigo-700'
 
@@ -1091,7 +1123,7 @@ export function TaskNotesDrawer({
                 className="min-h-[84px] w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 placeholder={
                   isDirectedTab
-                    ? 'Add a directed note... (@ to select ToUsers)'
+                    ? 'Add an incoming note... (@ to select ToUsers)'
                     : isPrivateTab
                       ? 'Add a private note...'
                       : `Add a ${composePrivate ? 'private' : 'public'} note... (@ to mention)`

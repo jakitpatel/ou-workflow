@@ -339,12 +339,24 @@ export async function fetchMentionUsers({
 }
 
 export async function fetchMyMessages({
+  applicationId,
+  taskId,
   token,
 }: {
+  applicationId?: number | null
+  taskId?: string | null
   token?: string | null
 } = {}): Promise<MyMessagesByTab> {
+  const params = new URLSearchParams()
+  if (applicationId !== undefined && applicationId !== null) {
+    params.append('filter[ApplicationID]', String(applicationId))
+  }
+  if (taskId !== undefined && taskId !== null && String(taskId).trim()) {
+    params.append('filter[TaskInstanceId]', String(taskId).trim())
+  }
+
   const response = await fetchWithAuth<FetchMyMessagesResponse>({
-    path: '/get_my_messages_V1',
+    path: `/get_my_messages_V1${params.toString() ? `?${params.toString()}` : ''}`,
     method: 'GET',
     token,
   })
