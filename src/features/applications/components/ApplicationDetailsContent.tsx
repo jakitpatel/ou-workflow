@@ -14,7 +14,6 @@ import {
   Check,
   X,
   Shield,
-  MessageCircle,
   ClipboardList,
 } from 'lucide-react'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
@@ -28,7 +27,6 @@ import ActivityLog from '@/components/ou-workflow/ApplicationManagement/Activity
 import FilesList from '@/components/ou-workflow/ApplicationManagement/FilesList'
 import IngredientMgmt from '@/components/ou-workflow/ApplicationManagement/Ingredients'
 import QuoteInfo from '@/components/ou-workflow/ApplicationManagement/QuoteInfo'
-import MessageLog from '@/components/ou-workflow/ApplicationManagement/MessageLog'
 import TaskEventsPanel from '@/components/ou-workflow/ApplicationManagement/TaskEventsPanel'
 import type { ApplicationDetail } from '@/types/application'
 
@@ -44,15 +42,6 @@ interface Activity {
   user: string
   type: ActivityType
   status: ActivityStatus
-}
-
-interface Message {
-  id: number
-  from: string
-  to: string
-  date: string
-  message: string
-  type: string
 }
 
 interface Comment {
@@ -108,8 +97,7 @@ const TABS = [
   { id: 'activity', label: 'Recent Activity', icon: AlertCircle },
   { id: 'task-events', label: 'Task Events', icon: ClipboardList },
   { id: 'files', label: 'File Management', icon: Upload },
-  { id: 'messages', label: 'Messages', icon: MessageCircle },
-  { id: 'notes', label: 'Notes', icon: MessageSquare },
+  { id: 'notes', label: 'Messages', icon: MessageSquare },
 ] as const
 
 const STATUS_BADGES: Record<string, string> = {
@@ -130,17 +118,6 @@ const INITIAL_VALIDATION_CHECKS: Record<string, ValidationCheck> = {
   quote: { valid: false, message: 'Quote not found - needs verification' },
   documentation: { valid: true, message: 'All required documents uploaded and processed' },
 }
-
-const INITIAL_MESSAGES: Message[] = [
-  {
-    id: 1,
-    from: 'J. Mitchell',
-    to: 'Dispatcher',
-    date: '2025-07-18 09:30',
-    message: 'Application ready for initial review. All documentation complete.',
-    type: 'outgoing',
-  },
-]
 
 const INITIAL_COMMENTS: Comment[] = [
   {
@@ -293,12 +270,9 @@ export function ApplicationDetailsContent({ application, mode = 'page', applicat
   const [userRole] = useState('admin')
   const [showAdminView] = useState(false)
   const [completionStatus, setCompletionStatus] = useState<CompletionStatus>('incomplete')
-  const [showMessageModal, setShowMessageModal] = useState(false)
   const [showCommentsModal, setShowCommentsModal] = useState(false)
-  const [newMessage, setNewMessage] = useState('')
   const [newComment, setNewComment] = useState('')
   const [validationChecks] = useState(INITIAL_VALIDATION_CHECKS)
-  const [messages, setMessages] = useState(INITIAL_MESSAGES)
   const [comments, setComments] = useState(INITIAL_COMMENTS)
   const [recentActivity, setRecentActivity] = useState(INITIAL_ACTIVITY)
   const resolvedApplicationId = useMemo(
@@ -343,22 +317,6 @@ export function ApplicationDetailsContent({ application, mode = 'page', applicat
     setCompletionStatus('incomplete')
     addActivity('Completion Undone', 'Application moved back to preparation', 'undo')
   }, [addActivity])
-
-  const sendMessage = useCallback(() => {
-    if (!newMessage.trim()) return
-
-    const message: Message = {
-      id: messages.length + 1,
-      from: 'J. Mitchell',
-      to: 'Dispatcher',
-      date: getCurrentTimestamp(),
-      message: newMessage,
-      type: 'outgoing',
-    }
-    setMessages(prev => [...prev, message])
-    setNewMessage('')
-    setShowMessageModal(false)
-  }, [newMessage, messages.length])
 
   const addComment = useCallback(() => {
     if (!newComment.trim()) return
@@ -567,7 +525,6 @@ export function ApplicationDetailsContent({ application, mode = 'page', applicat
             {activeTab === 'activity' && <ActivityLog recentActivity={recentActivity} comments={comments} />}
             {activeTab === 'task-events' && <TaskEventsPanel taskEvents={sortedTaskEvents} />}
             {activeTab === 'files' && <FilesList application={application} />}
-            {activeTab === 'messages' && <MessageLog application={application} />}
             {activeTab === 'notes' && resolvedApplicationId !== null && (
               <TaskNotesDrawer
                 open
@@ -608,17 +565,6 @@ export function ApplicationDetailsContent({ application, mode = 'page', applicat
           </div>
         </div>
       </div>
-
-      <Modal
-        isOpen={showMessageModal}
-        onClose={() => setShowMessageModal(false)}
-        title="Message Dispatcher"
-        value={newMessage}
-        onChange={setNewMessage}
-        onSubmit={sendMessage}
-        placeholder="Enter your message..."
-        submitLabel="Send Message"
-      />
 
       <Modal
         isOpen={showCommentsModal}
