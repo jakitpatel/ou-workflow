@@ -3,7 +3,7 @@ import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { useInfiniteApplications } from '@/features/applications/hooks/useInfiniteApplications'
 import { usePagedApplications } from '@/features/applications/hooks/usePagedApplications'
-import { fetchTaskNotes } from '@/features/tasks/api'
+import { fetchMyMessages, type MyMessagesByTab } from '@/features/tasks/api'
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { useDebounce } from '@/hooks/useDebounce'
 import type { Applicant, TaskNote } from '@/types/application'
@@ -38,6 +38,20 @@ const normalizeMyNotesWithApplicationId = (notes: TaskNote[]): TaskNote[] =>
       : note
   })
 
+const normalizeMyMessagesWithApplicationId = (messages: MyMessagesByTab): MyMessagesByTab => ({
+  incoming: normalizeMyNotesWithApplicationId(messages.incoming),
+  outgoing: normalizeMyNotesWithApplicationId(messages.outgoing),
+  mention: normalizeMyNotesWithApplicationId(messages.mention),
+  private: normalizeMyNotesWithApplicationId(messages.private),
+})
+
+const EMPTY_MY_MESSAGES: MyMessagesByTab = {
+  incoming: [],
+  outgoing: [],
+  mention: [],
+  private: [],
+}
+
 export function useNcrcDashboardState({
   search,
   navigate,
@@ -47,7 +61,7 @@ export function useNcrcDashboardState({
   const { paginationMode } = useAppPreferences()
 
   const [myNotesOpen, setMyNotesOpen] = useState(false)
-  const [myNotes, setMyNotes] = useState<TaskNote[]>([])
+  const [myNotes, setMyNotes] = useState<MyMessagesByTab>(EMPTY_MY_MESSAGES)
   const [myNotesLoading, setMyNotesLoading] = useState(false)
   const [myNotesError, setMyNotesError] = useState('')
   const sentinelRef = useRef<HTMLDivElement | null>(null)
@@ -235,17 +249,17 @@ export function useNcrcDashboardState({
     setMyNotesError('')
 
     if (!username?.trim()) {
-      setMyNotes([])
+      setMyNotes(EMPTY_MY_MESSAGES)
       setMyNotesError('Logged in username is not available.')
       return
     }
 
     setMyNotesLoading(true)
     try {
-      const notes = await fetchTaskNotes({
+      const notes = await fetchMyMessages({
         token: token ?? undefined,
       })
-      setMyNotes(normalizeMyNotesWithApplicationId(notes))
+      setMyNotes(normalizeMyMessagesWithApplicationId(notes))
     } catch (fetchError: any) {
       const message =
         fetchError?.details?.status ||
@@ -265,12 +279,14 @@ export function useNcrcDashboardState({
       applicationId: replyApplicationId,
       taskId,
       toUser,
+      isPrivate,
     }: {
       parentMessageId: string
       text: string
       applicationId?: number | null
       taskId?: string
       toUser?: string | null
+      isPrivate?: boolean
     }) => {
       const trimmedText = text.trim()
       if (!trimmedText) {
@@ -287,7 +303,7 @@ export function useNcrcDashboardState({
         taskId,
         applicationId: replyApplicationId ?? null,
         note: trimmedText,
-        isPrivate: false,
+        isPrivate: Boolean(isPrivate),
         fromUser: username.trim(),
         parentMessageId,
         toUser: toUser ?? undefined,
@@ -295,10 +311,10 @@ export function useNcrcDashboardState({
       })
 
       setMyNotesError('')
-      const notes = await fetchTaskNotes({
+      const notes = await fetchMyMessages({
         token: token ?? undefined,
       })
-      setMyNotes(normalizeMyNotesWithApplicationId(notes))
+      setMyNotes(normalizeMyMessagesWithApplicationId(notes))
     },
     [createTaskNoteMutation, token, username],
   )

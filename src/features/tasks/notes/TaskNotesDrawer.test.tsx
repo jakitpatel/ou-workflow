@@ -400,6 +400,7 @@ describe('TaskNotesDrawer', () => {
         applicationId: null,
         taskId: undefined,
         toUser: 'Alice Smith',
+        isPrivate: false,
       })
     })
   })

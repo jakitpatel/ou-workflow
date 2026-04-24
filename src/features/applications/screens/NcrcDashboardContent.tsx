@@ -13,6 +13,7 @@ import { useUser } from '@/context/UserContext'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { Route } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
 import type { Applicant, Task } from '@/types/application'
+import type { NoteTab, TaskNotesDrawerTabConfig } from '@/features/tasks/notes/TaskNotesDrawer'
 
 const SHOW_APPLICANT_STATS_CARDS = false
 const normalizeApplicationId = (value: unknown): number | undefined => {
@@ -36,6 +37,7 @@ export function NcrcDashboardContent() {
   const [myNotesSelectedApplicationId, setMyNotesSelectedApplicationId] = useState<number | null>(
     null,
   )
+  const [myMessagesActiveTab, setMyMessagesActiveTab] = useState<NoteTab>('incoming')
 
   const {
     q,
@@ -77,15 +79,78 @@ export function NcrcDashboardContent() {
     username: username ?? undefined,
     onError: (message) => errorDialogRef.current?.open(message),
   })
-  const myNotesWithApplicationId = useMemo(
-    () =>
-      myNotes.map((note) => ({
-        ...note,
-        ApplicationID: normalizeApplicationId(
-          (note as any)?.ApplicationID ?? (note as any)?.applicationId ?? (note as any)?.ApplicationId,
-        ),
-      })),
-    [myNotes],
+  const myMessagesTabs = useMemo<TaskNotesDrawerTabConfig[]>(
+    () => [
+      {
+        id: 'incoming',
+        label: 'Incoming',
+        notes: myNotes.incoming.map((note) => ({
+          ...note,
+          ApplicationID: normalizeApplicationId(
+            (note as any)?.ApplicationID ??
+              (note as any)?.applicationId ??
+              (note as any)?.ApplicationId,
+          ),
+        })),
+        loading: myNotesLoading,
+        mode: 'public',
+        threaded: true,
+        tabClassName: 'border-sky-600 text-sky-700',
+        badgeClassName: 'bg-sky-100 text-sky-700',
+      },
+      {
+        id: 'outgoing',
+        label: 'Outgoing',
+        notes: myNotes.outgoing.map((note) => ({
+          ...note,
+          ApplicationID: normalizeApplicationId(
+            (note as any)?.ApplicationID ??
+              (note as any)?.applicationId ??
+              (note as any)?.ApplicationId,
+          ),
+        })),
+        loading: myNotesLoading,
+        mode: 'public',
+        threaded: true,
+        tabClassName: 'border-violet-600 text-violet-700',
+        badgeClassName: 'bg-violet-100 text-violet-700',
+      },
+      {
+        id: 'mention',
+        label: 'Mention',
+        notes: myNotes.mention.map((note) => ({
+          ...note,
+          ApplicationID: normalizeApplicationId(
+            (note as any)?.ApplicationID ??
+              (note as any)?.applicationId ??
+              (note as any)?.ApplicationId,
+          ),
+        })),
+        loading: myNotesLoading,
+        mode: 'public',
+        threaded: true,
+        tabClassName: 'border-amber-600 text-amber-700',
+        badgeClassName: 'bg-amber-100 text-amber-700',
+      },
+      {
+        id: 'private',
+        label: 'Private',
+        notes: myNotes.private.map((note) => ({
+          ...note,
+          ApplicationID: normalizeApplicationId(
+            (note as any)?.ApplicationID ??
+              (note as any)?.applicationId ??
+              (note as any)?.ApplicationId,
+          ),
+        })),
+        loading: myNotesLoading,
+        mode: 'public',
+        threaded: true,
+        tabClassName: 'border-blue-600 text-blue-700',
+        badgeClassName: 'bg-blue-100 text-blue-700',
+      },
+    ],
+    [myNotes, myNotesLoading],
   )
 
   const handleSelectAppActions = (application: Applicant, action: Task) => {
@@ -159,6 +224,11 @@ export function NcrcDashboardContent() {
     })
   }
 
+  const handleOpenMyMessages = () => {
+    setMyMessagesActiveTab('incoming')
+    openMyNotesDrawer()
+  }
+
   return (
     <>
       <div className="min-h-screen bg-gray-50">
@@ -178,7 +248,7 @@ export function NcrcDashboardContent() {
             username={username}
             showApplicantStats={SHOW_APPLICANT_STATS_CARDS}
             applicantStats={applicantStats}
-            onOpenMyNotes={openMyNotesDrawer}
+            onOpenMyNotes={handleOpenMyMessages}
             onUpdateSearch={updateSearch}
             onFirstPage={handleFirst}
             onPrevPage={handlePrev}
@@ -226,25 +296,24 @@ export function NcrcDashboardContent() {
       <ErrorDialog ref={errorDialogRef} />
       <TaskNotesDrawer
         open={myNotesOpen}
-        applicantCompany="My Notes"
+        applicantCompany="My Messages"
         contextType="application"
         taskName={username?.trim() || 'Current User'}
-        activeTab="public"
+        activeTab={myMessagesActiveTab}
         directedNotes={[]}
         privateNotes={[]}
-        publicNotes={myNotesWithApplicationId}
+        publicNotes={[]}
         loadingDirected={false}
         loadingPrivate={false}
-        loadingPublic={myNotesLoading}
+        loadingPublic={false}
         composeText=""
         composePrivate={false}
         currentUsername={username}
         isSubmitting={myNotesReplySubmitting}
         error={myNotesError}
-        notesTitleOverride="My Notes"
+        notesTitleOverride="My Messages"
         currentLabelOverride="Logged In User"
-        singleTabMode
-        singleTabLabel="My Notes"
+        customTabs={myMessagesTabs}
         showMyNotesThreadType
         hideComposer
         hidePrivacyToggle
@@ -253,7 +322,7 @@ export function NcrcDashboardContent() {
         onApplicationIdClick={openMyNotesApplicationDetails}
         onViewApplicationClick={viewApplicationFromMyNotes}
         onClose={closeMyNotesDrawer}
-        onTabChange={() => {}}
+        onTabChange={setMyMessagesActiveTab}
         onComposeTextChange={() => {}}
         onComposeToUserChange={() => {}}
         onComposePrivateChange={() => {}}

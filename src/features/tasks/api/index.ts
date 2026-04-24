@@ -21,6 +21,43 @@ export type MentionUser = {
   isActive: boolean
 }
 
+export type MyMessagesByTab = {
+  incoming: TaskNote[]
+  outgoing: TaskNote[]
+  mention: TaskNote[]
+  private: TaskNote[]
+}
+
+type FetchMyMessagesResponse = {
+  messages?: {
+    IncomingMessages?: WFApplicationMessageRecord[]
+    OutgoingMessages?: WFApplicationMessageRecord[]
+    MentionMessages?: WFApplicationMessageRecord[]
+    PrivateMessages?: WFApplicationMessageRecord[]
+  }
+  status?: string
+}
+
+const mapMessageRecordsToTaskNotes = (records: WFApplicationMessageRecord[] = []): TaskNote[] =>
+  records.map((record) => {
+    const attributes = (
+      record && typeof record === 'object' && 'attributes' in record
+        ? record.attributes
+        : record
+    ) as WFApplicationMessageAttributes
+
+    return {
+      ...attributes,
+      text: attributes.MessageText ?? '',
+      note: attributes.MessageText ?? '',
+      fromUser: attributes.FromUser ?? '',
+      toUser: attributes.ToUser ?? '',
+      createdDate: attributes.SentDate ?? '',
+      fromTask: String(attributes.TaskInstanceId ?? ''),
+      toTask: String(attributes.TaskInstanceId ?? ''),
+    }
+  })
+
 export async function assignTask({
   appId,
   taskId,
@@ -301,6 +338,25 @@ export async function fetchMentionUsers({
     .filter((user) => user.id && user.isActive)
 }
 
+export async function fetchMyMessages({
+  token,
+}: {
+  token?: string | null
+} = {}): Promise<MyMessagesByTab> {
+  const response = await fetchWithAuth<FetchMyMessagesResponse>({
+    path: '/get_my_messages_V1',
+    method: 'GET',
+    token,
+  })
+
+  return {
+    incoming: mapMessageRecordsToTaskNotes(response.messages?.IncomingMessages ?? []),
+    outgoing: mapMessageRecordsToTaskNotes(response.messages?.OutgoingMessages ?? []),
+    mention: mapMessageRecordsToTaskNotes(response.messages?.MentionMessages ?? []),
+    private: mapMessageRecordsToTaskNotes(response.messages?.PrivateMessages ?? []),
+  }
+}
+
 export async function fetchTaskNotes({
   taskId,
   applicationId,
@@ -359,21 +415,5 @@ export async function fetchTaskNotes({
     ? response.items
     : []
 
-  return records.map((record) => {
-    const attributes = (
-      record && typeof record === 'object' && 'attributes' in record
-        ? record.attributes
-        : record
-    ) as WFApplicationMessageAttributes
-    return {
-      ...attributes,
-      text: attributes.MessageText ?? '',
-      note: attributes.MessageText ?? '',
-      fromUser: attributes.FromUser ?? '',
-      toUser: attributes.ToUser ?? '',
-      createdDate: attributes.SentDate ?? '',
-      fromTask: String(attributes.TaskInstanceId ?? ''),
-      toTask: String(attributes.TaskInstanceId ?? ''),
-    }
-  })
+  return mapMessageRecordsToTaskNotes(records)
 }

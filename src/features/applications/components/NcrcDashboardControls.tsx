@@ -76,11 +76,11 @@ export function NcrcDashboardControls({
           type="button"
           onClick={onOpenMyNotes}
           className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm transition-colors hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          title={username ? `View notes for ${username}` : 'View my notes'}
-          aria-label={username ? `View notes for ${username}` : 'View my notes'}
+          title={username ? `View messages for ${username}` : 'View my messages'}
+          aria-label={username ? `View messages for ${username}` : 'View my messages'}
         >
           <MessageSquareText className="h-4 w-4" />
-          My Notes
+          My Messages
         </button>
       </div>
 

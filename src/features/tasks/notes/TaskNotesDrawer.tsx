@@ -7,6 +7,17 @@ import type { TaskNote } from '@/types/application'
 
 export type { NoteTab } from '@/features/tasks/notes/types'
 
+export type TaskNotesDrawerTabConfig = {
+  id: NoteTab
+  label: string
+  notes: TaskNote[]
+  loading: boolean
+  mode: 'directed' | 'private' | 'public'
+  threaded?: boolean
+  tabClassName?: string
+  badgeClassName?: string
+}
+
 type Props = {
   open: boolean
   variant?: 'drawer' | 'embedded'
@@ -31,6 +42,7 @@ type Props = {
   currentLabelOverride?: string
   singleTabMode?: boolean
   singleTabLabel?: string
+  customTabs?: TaskNotesDrawerTabConfig[]
   showMyNotesThreadType?: boolean
   hideComposer?: boolean
   hidePrivacyToggle?: boolean
@@ -50,6 +62,7 @@ type Props = {
     applicationId?: number | null
     taskId?: string
     toUser?: string | null
+    isPrivate?: boolean
   }) => Promise<void>
 }
 
@@ -422,6 +435,7 @@ export function TaskNotesDrawer({
   currentLabelOverride,
   singleTabMode = false,
   singleTabLabel = 'Notes',
+  customTabs,
   showMyNotesThreadType = false,
   hideComposer = false,
   hidePrivacyToggle = false,
@@ -454,26 +468,48 @@ export function TaskNotesDrawer({
     notesTitleOverride ?? (contextType === 'application' ? 'Application Notes' : 'Task Notes')
   const currentLabel =
     currentLabelOverride ?? (contextType === 'application' ? 'Current Application' : 'Current Task')
-
-  const notes =
-    activeTab === 'directed'
-      ? directedNotes
-      : activeTab === 'private'
-        ? privateNotes
-        : publicNotes
-  const isLoading =
-    activeTab === 'directed'
-      ? loadingDirected
-      : activeTab === 'private'
-        ? loadingPrivate
-        : loadingPublic
+  const defaultTabs: TaskNotesDrawerTabConfig[] = [
+    {
+      id: 'directed',
+      label: 'Directed Notes',
+      notes: directedNotes,
+      loading: loadingDirected,
+      mode: 'directed',
+      tabClassName: 'border-violet-600 text-violet-700',
+      badgeClassName: 'bg-violet-100 text-violet-700',
+    },
+    {
+      id: 'private',
+      label: 'Private Notes',
+      notes: privateNotes,
+      loading: loadingPrivate,
+      mode: 'private',
+      tabClassName: 'border-blue-600 text-blue-700',
+      badgeClassName: 'bg-blue-100 text-blue-700',
+    },
+    {
+      id: 'public',
+      label: 'Public Notes',
+      notes: publicNotes,
+      loading: loadingPublic,
+      mode: 'public',
+      tabClassName: 'border-emerald-600 text-emerald-700',
+      badgeClassName: 'bg-emerald-100 text-emerald-700',
+    },
+  ]
+  const tabs = customTabs?.length ? customTabs : defaultTabs
+  const activeTabConfig = tabs.find((tab) => tab.id === activeTab) ?? tabs[0]
+  const notes = activeTabConfig?.notes ?? []
+  const isLoading = activeTabConfig?.loading ?? false
   const canSubmit = composeText.trim().length > 0 && !isSubmitting
-  const threadedNotes = activeTab === 'directed' ? directedNotes : publicNotes
-  const noteThreads = activeTab === 'private' ? [] : buildPublicNoteThreads(threadedNotes)
+  const tabMode = activeTabConfig?.mode ?? 'public'
+  const isThreadedTab =
+    activeTabConfig?.threaded ?? (tabMode === 'directed' || tabMode === 'public')
+  const noteThreads = isThreadedTab ? buildPublicNoteThreads(notes) : []
   const mentionQuery = mentionContext?.query ?? ''
-  const isDirectedTab = activeTab === 'directed'
-  const isPrivateTab = activeTab === 'private'
-  const isPublicTab = activeTab === 'public'
+  const isDirectedTab = tabMode === 'directed'
+  const isPrivateTab = tabMode === 'private'
+  const isPublicTab = tabMode === 'public'
 
   const filteredMentionUsers = useMemo(() => {
     const query = mentionQuery.trim().toLowerCase()
@@ -586,8 +622,8 @@ export function TaskNotesDrawer({
   }
 
   const renderApplicationActions = (noteApplicationId: number, isRoot = false) => {
-    const showForMyNotes = showMyNotesThreadType
-    if (showForMyNotes && !isRoot) return null
+    const showForMyMessages = showMyNotesThreadType
+    if (showForMyMessages && !isRoot) return null
 
     const appIdButton = (
       <button
@@ -599,7 +635,7 @@ export function TaskNotesDrawer({
       >
         <Hash className="h-3 w-3" />
         <span className="uppercase tracking-wide text-slate-500">
-          {showForMyNotes ? 'View' : 'App'}
+          {showForMyMessages ? 'View' : 'App'}
         </span>
         <span className="font-semibold text-slate-800">{noteApplicationId}</span>
       </button>
@@ -614,7 +650,7 @@ export function TaskNotesDrawer({
         className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800"
       >
         <ArrowUpRight className="h-3 w-3" />
-        <span>{showForMyNotes ? 'App' : 'View'}</span>
+        <span>{showForMyMessages ? 'App' : 'View'}</span>
         <span className="font-semibold">{noteApplicationId}</span>
       </button>
     ) : null
@@ -659,10 +695,17 @@ export function TaskNotesDrawer({
       isRoot &&
       ((note as any)?.isPrivate === true || String((note as any)?.isPrivate).toLowerCase() === 'true') &&
       toUser !== '-'
-    const myNoteThreadLabel = isDirectedMyNote ? 'Directed' : 'Public'
+    const isPrivateMyNote =
+      showMyNotesThreadType &&
+      isRoot &&
+      !isDirectedMyNote &&
+      ((note as any)?.isPrivate === true || String((note as any)?.isPrivate).toLowerCase() === 'true')
+    const myNoteThreadLabel = isDirectedMyNote ? 'Directed' : isPrivateMyNote ? 'Private' : 'Public'
     const myNoteThreadLabelClass = isDirectedMyNote
       ? 'bg-violet-100 text-violet-800'
-      : 'bg-emerald-100 text-emerald-800'
+      : isPrivateMyNote
+        ? 'bg-blue-100 text-blue-800'
+        : 'bg-emerald-100 text-emerald-800'
     const rootTone = isDirectedTab || isDirectedMyNote ? DIRECTED_ROOT_TONE : PUBLIC_ROOT_TONE
     const cardClass = isRoot ? rootTone.card : tone.card
     const avatarClass = isRoot ? rootTone.avatar : 'bg-[#185087]'
@@ -760,6 +803,9 @@ export function TaskNotesDrawer({
                               toUser: getMetaValue(note, 'fromUser', 'from_user', 'FromUser') !== '-'
                                 ? getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
                                 : null,
+                              isPrivate:
+                                (note as any)?.isPrivate === true ||
+                                String((note as any)?.isPrivate).toLowerCase() === 'true',
                             })
                             setReplyTextById((prev) => ({ ...prev, [noteId]: '' }))
                             setReplyOpenById((prev) => ({ ...prev, [noteId]: false }))
@@ -841,6 +887,9 @@ export function TaskNotesDrawer({
                         toUser: getMetaValue(note, 'fromUser', 'from_user', 'FromUser') !== '-'
                           ? getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
                           : null,
+                        isPrivate:
+                          (note as any)?.isPrivate === true ||
+                          String((note as any)?.isPrivate).toLowerCase() === 'true',
                       })
                       setReplyTextById((prev) => ({ ...prev, [noteId]: '' }))
                       setReplyOpenById((prev) => ({ ...prev, [noteId]: false }))
@@ -920,48 +969,27 @@ export function TaskNotesDrawer({
             </button>
           ) : (
             <>
-            <button
-              type="button"
-              onClick={() => onTabChange('directed')}
-              className={`mr-1 rounded-t-md px-3 py-2 text-sm font-medium ${
-                activeTab === 'directed'
-                  ? 'border-b-2 border-violet-600 text-violet-700'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Directed Notes
-              <span className="ml-1 rounded-full bg-violet-100 px-1.5 py-0.5 text-xs text-violet-700">
-                {directedNotes.length}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onTabChange('private')}
-              className={`mr-1 rounded-t-md px-3 py-2 text-sm font-medium ${
-                activeTab === 'private'
-                  ? 'border-b-2 border-blue-600 text-blue-700'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Private Notes
-              <span className="ml-1 rounded-full bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
-                {privateNotes.length}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onTabChange('public')}
-              className={`rounded-t-md px-3 py-2 text-sm font-medium ${
-                activeTab === 'public'
-                  ? 'border-b-2 border-emerald-600 text-emerald-700'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Public Notes
-              <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700">
-                {publicNotes.length}
-              </span>
-            </button>
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id
+              const activeClassName = tab.tabClassName ?? 'border-indigo-600 text-indigo-700'
+              const badgeClassName = tab.badgeClassName ?? 'bg-indigo-100 text-indigo-700'
+
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => onTabChange(tab.id)}
+                  className={`mr-1 rounded-t-md px-3 py-2 text-sm font-medium ${
+                    isActive ? `border-b-2 ${activeClassName}` : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {tab.label}
+                  <span className={`ml-1 rounded-full px-1.5 py-0.5 text-xs ${badgeClassName}`}>
+                    {tab.notes.length}
+                  </span>
+                </button>
+              )
+            })}
             </>
           )}
         </div>
@@ -977,7 +1005,7 @@ export function TaskNotesDrawer({
             </div>
           ) : (
             <div className="space-y-2">
-              {activeTab === 'private'
+              {!isThreadedTab
                 ? notes.map((note, idx) => {
                   const noteId = getNoteId(note, idx)
                   const fromName = getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
