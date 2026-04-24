@@ -506,6 +506,7 @@ export function TaskNotesDrawer({
       notes: outgoingNotes,
       loading: loadingOutgoing,
       mode: 'private',
+      threaded: true,
       tabClassName: 'border-slate-600 text-slate-700',
       badgeClassName: 'bg-slate-100 text-slate-700',
     },
@@ -542,6 +543,7 @@ export function TaskNotesDrawer({
   const isDirectedTab = tabMode === 'directed'
   const isPrivateTab = tabMode === 'private'
   const isPublicTab = tabMode === 'public'
+  const isOutgoingTab = activeTabConfig?.id === 'outgoing'
 
   const filteredMentionUsers = useMemo(() => {
     const query = mentionQuery.trim().toLowerCase()
@@ -775,15 +777,14 @@ export function TaskNotesDrawer({
                     {getInitials(fromName)}
                   </div>
                   <span className="text-sm font-semibold text-slate-900">{fromName}</span>
-                  {showMyNotesThreadType && isRoot ? (
+                  {(isDirectedTab || isOutgoingTab) && toUser !== '-' ? (
                     <span
-                      className={`rounded-full px-2 py-1 text-[11px] font-semibold ${myNoteThreadLabelClass}`}
+                      className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
+                        isOutgoingTab
+                          ? 'bg-slate-100 text-slate-800'
+                          : 'bg-violet-100 text-violet-800'
+                      }`}
                     >
-                      {myNoteThreadLabel}
-                    </span>
-                  ) : null}
-                  {isDirectedTab && toUser !== '-' ? (
-                    <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[11px] font-medium text-violet-800">
                       To: {toUser}
                     </span>
                   ) : null}
@@ -878,8 +879,12 @@ export function TaskNotesDrawer({
                 {myNoteThreadLabel}
               </span>
             ) : null}
-            {isDirectedTab && toUser !== '-' ? (
-              <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[11px] font-medium text-violet-800">
+            {(isDirectedTab || isOutgoingTab) && toUser !== '-' ? (
+              <span
+                className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
+                  isOutgoingTab ? 'bg-slate-100 text-slate-800' : 'bg-violet-100 text-violet-800'
+                }`}
+              >
                 To: {toUser}
               </span>
             ) : null}

@@ -483,6 +483,49 @@ describe('TaskNotesDrawer', () => {
     expect(screen.getByPlaceholderText('Add a private note...')).toBeTruthy()
   })
 
+  it('shows ToUser information in the Outgoing tab thread display', () => {
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="task"
+        taskName="Review Ingredients"
+        activeTab="outgoing"
+        incomingNotes={[]}
+        outgoingNotes={[
+          {
+            MessageID: 301,
+            MessageText: 'Sent to reviewer',
+            FromUser: 'Alice Smith',
+            ToUser: 'Bob User',
+            SentDate: '2026-04-07T10:00:00.000Z',
+          } as TaskNote,
+        ]}
+        mentionNotes={[]}
+        privateNotes={[]}
+        loadingIncoming={false}
+        loadingOutgoing={false}
+        loadingMention={false}
+        loadingPrivate={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate
+        isSubmitting={false}
+        error=""
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('To: Bob User')).toBeTruthy()
+  })
+
   it('hides the privacy toggle in the Mention tab while keeping the public composer', () => {
     renderWithProviders(
       <TaskNotesDrawer
