@@ -751,6 +751,11 @@ export function TaskNotesDrawer({
       : isPrivateMyNote
         ? 'bg-blue-100 text-blue-800'
         : 'bg-emerald-100 text-emerald-800'
+    const replyToUserValue = isPublicTab
+      ? null
+      : getMetaValue(note, 'fromUser', 'from_user', 'FromUser') !== '-'
+        ? getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
+        : null
     const rootTone = isDirectedTab || isDirectedMyNote ? DIRECTED_ROOT_TONE : PUBLIC_ROOT_TONE
     const cardClass = isRoot ? rootTone.card : tone.card
     const avatarClass = isRoot ? rootTone.avatar : 'bg-[#185087]'
@@ -849,9 +854,7 @@ export function TaskNotesDrawer({
                                 String((note as any)?.TaskInstanceId).trim() === '0'
                                   ? undefined
                                   : String((note as any)?.TaskInstanceId).trim(),
-                              toUser: getMetaValue(note, 'fromUser', 'from_user', 'FromUser') !== '-'
-                                ? getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
-                                : null,
+                              toUser: replyToUserValue,
                               isPrivate:
                                 (note as any)?.isPrivate === true ||
                                 String((note as any)?.isPrivate).toLowerCase() === 'true',
@@ -932,9 +935,7 @@ export function TaskNotesDrawer({
                           String((note as any)?.TaskInstanceId).trim() === '0'
                             ? undefined
                             : String((note as any)?.TaskInstanceId).trim(),
-                        toUser: getMetaValue(note, 'fromUser', 'from_user', 'FromUser') !== '-'
-                          ? getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
-                          : null,
+                        toUser: replyToUserValue,
                         isPrivate:
                           (note as any)?.isPrivate === true ||
                           String((note as any)?.isPrivate).toLowerCase() === 'true',

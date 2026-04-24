@@ -399,7 +399,68 @@ describe('TaskNotesDrawer', () => {
         text: 'Threaded reply',
         applicationId: null,
         taskId: undefined,
-        toUser: 'Alice Smith',
+        toUser: null,
+        isPrivate: false,
+      })
+    })
+  })
+
+  it('keeps ToUser empty when replying to a public My Notes thread', async () => {
+    const onReplySubmit = vi.fn().mockResolvedValue(undefined)
+
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="My Notes"
+        applicationId={42}
+        contextType="application"
+        taskName="Current User"
+        activeTab="public"
+        directedNotes={[]}
+        privateNotes={[]}
+        publicNotes={publicNotes}
+        loadingDirected={false}
+        loadingPrivate={false}
+        loadingPublic={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate={false}
+        isSubmitting={false}
+        error=""
+        singleTabMode
+        singleTabLabel="My Notes"
+        showMyNotesThreadType
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={onReplySubmit}
+      />,
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Reply' })[0])
+
+    const replyInput = await screen.findByPlaceholderText('Reply...')
+    fireEvent.change(replyInput, {
+      target: { value: 'Broadcast reply' },
+    })
+
+    const submitReplyButton = screen
+      .getAllByRole('button', { name: 'Reply' })
+      .find((button) => button.className.includes('bg-blue-600'))
+
+    expect(submitReplyButton).toBeTruthy()
+    fireEvent.click(submitReplyButton!)
+
+    await waitFor(() => {
+      expect(onReplySubmit).toHaveBeenCalledWith({
+        parentMessageId: '100',
+        text: 'Broadcast reply',
+        applicationId: null,
+        taskId: undefined,
+        toUser: null,
         isPrivate: false,
       })
     })
