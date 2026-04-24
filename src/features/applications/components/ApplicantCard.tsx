@@ -164,6 +164,8 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         currentUsername={applicationNotes.currentUsername}
         isSubmitting={applicationNotes.isSubmitting}
         error={applicationNotes.error}
+        onIncomingNoteClick={applicationNotes.markIncomingNoteRead}
+        markingReadMessageId={applicationNotes.markingReadMessageId}
         onApplicationIdClick={applicationNotes.openApplicationDetails}
         onClose={applicationNotes.closeDrawer}
         onTabChange={applicationNotes.setActiveTab}

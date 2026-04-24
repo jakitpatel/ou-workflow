@@ -280,6 +280,31 @@ export async function createTaskNote({
   })
 }
 
+export async function markTaskNoteAsRead({
+  messageId,
+  token,
+}: {
+  messageId: string | number
+  token?: string | null
+}): Promise<any> {
+  const resolvedMessageId = String(messageId).trim()
+
+  return await fetchWithAuth({
+    path: `/api/WFApplicationMessage/${resolvedMessageId}`,
+    method: 'PATCH',
+    body: {
+      data: {
+        id: resolvedMessageId,
+        type: 'WFApplicationMessage',
+        attributes: {
+          isRead: 1,
+        },
+      },
+    },
+    token,
+  })
+}
+
 export async function fetchMentionUsers({
   token,
 }: {

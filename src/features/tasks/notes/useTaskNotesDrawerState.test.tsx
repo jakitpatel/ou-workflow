@@ -4,10 +4,12 @@ import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDraw
 import { renderWithProviders } from '@/test/renderWithProviders'
 
 const fetchMyMessagesMock = vi.fn()
+const markTaskNoteAsReadMock = vi.fn()
 const mutateAsyncMock = vi.fn()
 
 vi.mock('@/features/tasks/api', () => ({
   fetchMyMessages: (...args: unknown[]) => fetchMyMessagesMock(...args),
+  markTaskNoteAsRead: (...args: unknown[]) => markTaskNoteAsReadMock(...args),
 }))
 
 vi.mock('@/features/tasks/hooks/useTaskMutations', () => ({
@@ -119,6 +121,7 @@ describe('useTaskNotesDrawerState', () => {
     sessionStorage.setItem('access_token', 'test-access-token')
 
     fetchMyMessagesMock.mockReset()
+    markTaskNoteAsReadMock.mockReset()
     mutateAsyncMock.mockReset()
 
     fetchMyMessagesMock.mockImplementation(async () => ({
@@ -129,6 +132,7 @@ describe('useTaskNotesDrawerState', () => {
     }))
 
     mutateAsyncMock.mockResolvedValue({ status: 'ok' })
+    markTaskNoteAsReadMock.mockResolvedValue({ status: 'ok' })
   })
 
   it('preloads all note tabs when the drawer opens', async () => {
@@ -404,5 +408,65 @@ describe('useTaskNotesDrawerState', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'close-application-filter' }))
     expect(screen.getByText('selected-filter-app:none')).toBeTruthy()
+  })
+
+  it('marks incoming notes as read and refreshes the lists', async () => {
+    function MarkReadHarness() {
+      const notes = useTaskNotesDrawerState({
+        applicationId: 42,
+      })
+
+      return (
+        <div>
+          <button
+            type="button"
+            onClick={() =>
+              void notes.openDrawer({
+                contextKey: 'application:42',
+                taskName: 'Application 42',
+                tab: 'incoming',
+              })
+            }
+          >
+            open-incoming
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              void notes.markIncomingNoteRead({
+                MessageID: 'incoming-note-1',
+                MessageText: 'Incoming note',
+                isRead: 0,
+              } as any)
+            }
+          >
+            mark-read
+          </button>
+          <div>marking:{notes.markingReadMessageId ?? 'none'}</div>
+        </div>
+      )
+    }
+
+    renderWithProviders(<MarkReadHarness />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'open-incoming' }))
+
+    await waitFor(() => {
+      expect(fetchMyMessagesMock).toHaveBeenCalledTimes(1)
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'mark-read' }))
+
+    await waitFor(() => {
+      expect(markTaskNoteAsReadMock).toHaveBeenCalledWith({
+        messageId: 'incoming-note-1',
+        token: 'test-access-token',
+      })
+    })
+
+    await waitFor(() => {
+      expect(fetchMyMessagesMock).toHaveBeenCalledTimes(2)
+      expect(screen.getByText('marking:none')).toBeTruthy()
+    })
   })
 })

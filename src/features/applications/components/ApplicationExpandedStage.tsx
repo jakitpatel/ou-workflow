@@ -372,6 +372,8 @@ export function ApplicationExpandedStage({
         currentUsername={taskNotes.currentUsername}
         isSubmitting={taskNotes.isSubmitting}
         error={taskNotes.error}
+        onIncomingNoteClick={taskNotes.markIncomingNoteRead}
+        markingReadMessageId={taskNotes.markingReadMessageId}
         onApplicationIdClick={taskNotes.openApplicationDetails}
         onClose={taskNotes.closeDrawer}
         onTabChange={taskNotes.setActiveTab}

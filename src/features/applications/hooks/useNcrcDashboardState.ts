@@ -3,7 +3,7 @@ import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { useInfiniteApplications } from '@/features/applications/hooks/useInfiniteApplications'
 import { usePagedApplications } from '@/features/applications/hooks/usePagedApplications'
-import { fetchMyMessages, type MyMessagesByTab } from '@/features/tasks/api'
+import { fetchMyMessages, markTaskNoteAsRead, type MyMessagesByTab } from '@/features/tasks/api'
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { useDebounce } from '@/hooks/useDebounce'
 import type { Applicant, TaskNote } from '@/types/application'
@@ -52,6 +52,23 @@ const EMPTY_MY_MESSAGES: MyMessagesByTab = {
   private: [],
 }
 
+const getMyNoteMessageId = (note: TaskNote): string | null => {
+  const candidate = (note as any)?.MessageID ?? (note as any)?.messageId ?? (note as any)?.id
+  if (candidate === undefined || candidate === null) return null
+
+  const value = String(candidate).trim()
+  return value ? value : null
+}
+
+const isMyNoteRead = (note: TaskNote): boolean => {
+  const value = (note as any)?.isRead
+  if (value === true) return true
+  if (value === false || value === undefined || value === null) return false
+
+  const normalized = String(value).trim().toLowerCase()
+  return normalized === '1' || normalized === 'true'
+}
+
 export function useNcrcDashboardState({
   search,
   navigate,
@@ -64,6 +81,7 @@ export function useNcrcDashboardState({
   const [myNotes, setMyNotes] = useState<MyMessagesByTab>(EMPTY_MY_MESSAGES)
   const [myNotesLoading, setMyNotesLoading] = useState(false)
   const [myNotesError, setMyNotesError] = useState('')
+  const [myNotesMarkingReadMessageId, setMyNotesMarkingReadMessageId] = useState<string | null>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   const debouncedSearch = useDebounce(q, DEBOUNCE_DELAY)
@@ -244,6 +262,13 @@ export function useNcrcDashboardState({
     }
   }, [applicants])
 
+  const refreshMyNotes = useCallback(async () => {
+    const notes = await fetchMyMessages({
+      token: token ?? undefined,
+    })
+    setMyNotes(normalizeMyMessagesWithApplicationId(notes))
+  }, [token])
+
   const openMyNotesDrawer = useCallback(async () => {
     setMyNotesOpen(true)
     setMyNotesError('')
@@ -256,10 +281,7 @@ export function useNcrcDashboardState({
 
     setMyNotesLoading(true)
     try {
-      const notes = await fetchMyMessages({
-        token: token ?? undefined,
-      })
-      setMyNotes(normalizeMyMessagesWithApplicationId(notes))
+      await refreshMyNotes()
     } catch (fetchError: any) {
       const message =
         fetchError?.details?.status ||
@@ -270,7 +292,7 @@ export function useNcrcDashboardState({
     } finally {
       setMyNotesLoading(false)
     }
-  }, [token, username])
+  }, [refreshMyNotes, username])
 
   const submitMyNotesReply = useCallback(
     async ({
@@ -311,12 +333,35 @@ export function useNcrcDashboardState({
       })
 
       setMyNotesError('')
-      const notes = await fetchMyMessages({
-        token: token ?? undefined,
-      })
-      setMyNotes(normalizeMyMessagesWithApplicationId(notes))
+      await refreshMyNotes()
     },
-    [createTaskNoteMutation, token, username],
+    [createTaskNoteMutation, refreshMyNotes, token, username],
+  )
+
+  const markMyNoteRead = useCallback(
+    async (note: TaskNote) => {
+      const messageId = getMyNoteMessageId(note)
+      if (!messageId || isMyNoteRead(note) || myNotesMarkingReadMessageId === messageId) return
+
+      setMyNotesMarkingReadMessageId(messageId)
+      try {
+        await markTaskNoteAsRead({
+          messageId,
+          token: token ?? undefined,
+        })
+        await refreshMyNotes()
+      } catch (markReadError: any) {
+        const message =
+          markReadError?.details?.status ||
+          markReadError?.details?.message ||
+          markReadError?.message ||
+          'Failed to update note status'
+        setMyNotesError(message)
+      } finally {
+        setMyNotesMarkingReadMessageId((current) => (current === messageId ? null : current))
+      }
+    },
+    [myNotesMarkingReadMessageId, refreshMyNotes, token],
   )
 
   const closeMyNotesDrawer = useCallback(() => {
@@ -345,6 +390,7 @@ export function useNcrcDashboardState({
     myNotes,
     myNotesLoading,
     myNotesError,
+    myNotesMarkingReadMessageId,
     myNotesReplySubmitting: createTaskNoteMutation.isPending,
     updateSearch,
     handleFirst,
@@ -354,5 +400,6 @@ export function useNcrcDashboardState({
     openMyNotesDrawer,
     closeMyNotesDrawer,
     submitMyNotesReply,
+    markMyNoteRead,
   }
 }

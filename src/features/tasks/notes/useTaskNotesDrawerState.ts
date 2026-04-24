@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useUser } from '@/context/UserContext'
-import { fetchMyMessages } from '@/features/tasks/api'
+import { fetchMyMessages, markTaskNoteAsRead } from '@/features/tasks/api'
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations'
 import type { TaskNote } from '@/types/application'
 import type { NoteTab, NotesByTab } from './types'
@@ -72,6 +72,23 @@ const normalizeNoteTab = (tab: NoteTab): NoteTab => {
   return tab
 }
 
+const getMessageId = (note: TaskNote): string | null => {
+  const candidate = (note as any)?.MessageID ?? (note as any)?.messageId ?? (note as any)?.id
+  if (candidate === undefined || candidate === null) return null
+
+  const value = String(candidate).trim()
+  return value ? value : null
+}
+
+const isTaskNoteRead = (note: TaskNote): boolean => {
+  const value = (note as any)?.isRead
+  if (value === true) return true
+  if (value === false || value === undefined || value === null) return false
+
+  const normalized = String(value).trim().toLowerCase()
+  return normalized === '1' || normalized === 'true'
+}
+
 export function useTaskNotesDrawerState({
   applicationId,
   includeApplicationLists = true,
@@ -86,6 +103,7 @@ export function useTaskNotesDrawerState({
   const [composeText, setComposeTextState] = useState('')
   const [composeToUserId, setComposeToUserIdState] = useState<string | null>(null)
   const [composePrivate, setComposePrivateState] = useState(false)
+  const [markingReadMessageId, setMarkingReadMessageId] = useState<string | null>(null)
   const [selectedApplicationId, setSelectedApplicationId] = useState<number | null>(null)
   const [selectedApplicationFilterId, setSelectedApplicationFilterId] = useState<number | null>(null)
   const [error, setError] = useState('')
@@ -313,6 +331,37 @@ export function useTaskNotesDrawerState({
     ],
   )
 
+  const markIncomingNoteRead = useCallback(
+    async (note: TaskNote) => {
+      if (!drawer) return
+      if (drawer.activeTab !== 'incoming') return
+      if (isTaskNoteRead(note)) return
+
+      const messageId = getMessageId(note)
+      if (!messageId || markingReadMessageId === messageId) return
+
+      setMarkingReadMessageId(messageId)
+      try {
+        await markTaskNoteAsRead({
+          messageId,
+          token: token ?? undefined,
+        })
+
+        await fetchNotes({
+          contextKey: drawer.contextKey,
+          taskId: drawer.taskId,
+        })
+      } catch (markReadError) {
+        const message = buildFetchErrorMessage(markReadError)
+        setError(message)
+        onError?.(message)
+      } finally {
+        setMarkingReadMessageId((current) => (current === messageId ? null : current))
+      }
+    },
+    [drawer, fetchNotes, markingReadMessageId, onError, token],
+  )
+
   const activeNotes = useMemo(() => {
     if (!drawer) {
       return EMPTY_NOTES
@@ -350,6 +399,7 @@ export function useTaskNotesDrawerState({
     composeText,
     composeToUserId,
     composePrivate,
+    markingReadMessageId,
     error,
     isSubmitting: createTaskNoteMutation.isPending,
     openDrawer,
@@ -366,6 +416,7 @@ export function useTaskNotesDrawerState({
     closeApplicationFilter,
     submitNote,
     submitReply,
+    markIncomingNoteRead,
     getCounts,
     isLoading,
   }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { ArrowUpRight, AtSign, ChevronDown, ChevronRight, FileText, Hash, MessageSquareMore, X } from 'lucide-react'
+import { ArrowUpRight, AtSign, ChevronDown, ChevronRight, Circle, FileText, Hash, MessageSquareMore, X } from 'lucide-react'
 import { useMentionUsers } from '@/features/tasks/hooks/useTaskQueries'
 import type { NoteTab } from '@/features/tasks/notes/types'
 import type { MentionUser } from '@/features/tasks/api'
@@ -56,6 +56,8 @@ type Props = {
   onApplicationIdClick?: (applicationId: number) => void
   showViewApplicationAction?: boolean
   onViewApplicationClick?: (applicationId: number) => void
+  onIncomingNoteClick?: (note: TaskNote) => Promise<void> | void
+  markingReadMessageId?: string | null
   onClose: () => void
   onTabChange: (tab: NoteTab) => void
   onComposeTextChange: (text: string) => void
@@ -371,6 +373,18 @@ const getSortableTimestamp = (note: TaskNote): number => {
   return Number.MAX_SAFE_INTEGER
 }
 
+const isNoteRead = (note: TaskNote): boolean => {
+  const value = (note as any)?.isRead
+  if (value === true) return true
+  if (value === false || value === undefined || value === null) return false
+
+  const normalized = String(value).trim().toLowerCase()
+  return normalized === '1' || normalized === 'true'
+}
+
+const getUnreadNoteCount = (notes: TaskNote[]): number =>
+  notes.reduce((count, note) => count + (isNoteRead(note) ? 0 : 1), 0)
+
 const buildPublicNoteThreads = (notes: TaskNote[]): PublicNoteNode[] => {
   const nodes: PublicNoteNode[] = notes.map((note, idx) => ({
     note,
@@ -468,6 +482,8 @@ export function TaskNotesDrawer({
   onApplicationIdClick,
   showViewApplicationAction = false,
   onViewApplicationClick,
+  onIncomingNoteClick,
+  markingReadMessageId,
   onClose,
   onTabChange,
   onComposeTextChange,
@@ -550,6 +566,7 @@ export function TaskNotesDrawer({
   const isDirectedTab = tabMode === 'directed'
   const isPrivateTab = tabMode === 'private'
   const isPublicTab = tabMode === 'public'
+  const isIncomingTab = activeTabConfig?.id === 'incoming'
   const isOutgoingTab = activeTabConfig?.id === 'outgoing'
 
   const filteredMentionUsers = useMemo(() => {
@@ -751,6 +768,8 @@ export function TaskNotesDrawer({
       : isPrivateMyNote
         ? 'bg-blue-100 text-blue-800'
         : 'bg-emerald-100 text-emerald-800'
+    const noteIsRead = isNoteRead(note)
+    const isMarkingRead = markingReadMessageId === noteId
     const replyToUserValue = isPublicTab
       ? null
       : getMetaValue(note, 'fromUser', 'from_user', 'FromUser') !== '-'
@@ -759,10 +778,24 @@ export function TaskNotesDrawer({
     const rootTone = isDirectedTab || isDirectedMyNote ? DIRECTED_ROOT_TONE : PUBLIC_ROOT_TONE
     const cardClass = isRoot ? rootTone.card : tone.card
     const avatarClass = isRoot ? rootTone.avatar : 'bg-[#185087]'
+    const incomingUnreadAccent =
+      isIncomingTab && !noteIsRead ? 'border-violet-300 bg-violet-50/70 ring-1 ring-violet-100' : ''
+    const incomingReadIndicatorClass = noteIsRead
+      ? 'bg-slate-100 text-slate-600'
+      : 'bg-violet-100 text-violet-800'
+    const handleNoteClick = () => {
+      if (!isIncomingTab) return
+      void onIncomingNoteClick?.(note)
+    }
 
     return (
       <div key={noteId} className={depth > 0 ? `ml-4 border-l ${tone.rail} pl-3` : ''}>
-        <article className={`rounded-lg border p-2.5 shadow-sm transition ${cardClass}`}>
+        <article
+          className={`rounded-lg border p-2.5 shadow-sm transition ${cardClass} ${incomingUnreadAccent} ${
+            isIncomingTab ? 'cursor-pointer' : ''
+          }`}
+          onClick={handleNoteClick}
+        >
           {isRoot ? (
             <div className="flex items-start gap-3 rounded-md px-0.5 py-0.5">
               {hasReplies ? (
@@ -796,6 +829,12 @@ export function TaskNotesDrawer({
                   {showMyNotesThreadType ? (
                     <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${myNoteThreadLabelClass}`}>
                       {myNoteThreadLabel}
+                    </span>
+                  ) : null}
+                  {isIncomingTab ? (
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium ${incomingReadIndicatorClass}`}>
+                      <Circle className={`h-2.5 w-2.5 ${noteIsRead ? 'fill-slate-400 text-slate-400' : 'fill-violet-600 text-violet-600'}`} />
+                      {isMarkingRead ? 'Marking read...' : noteIsRead ? 'Read' : 'Unread'}
                     </span>
                   ) : null}
                   {(isDirectedTab || isOutgoingTab) && toUser !== '-' ? (
@@ -893,6 +932,12 @@ export function TaskNotesDrawer({
               {getInitials(fromName)}
             </div>
             <span className="text-sm font-semibold text-slate-900">{fromName}</span>
+            {isIncomingTab ? (
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium ${incomingReadIndicatorClass}`}>
+                <Circle className={`h-2.5 w-2.5 ${noteIsRead ? 'fill-slate-400 text-slate-400' : 'fill-violet-600 text-violet-600'}`} />
+                {isMarkingRead ? 'Marking read...' : noteIsRead ? 'Read' : 'Unread'}
+              </span>
+            ) : null}
             {(isDirectedTab || isOutgoingTab) && toUser !== '-' ? (
               <span
                 className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
@@ -1022,6 +1067,10 @@ export function TaskNotesDrawer({
               const isActive = normalizedActiveTab === tab.id
               const activeClassName = tab.tabClassName ?? 'border-indigo-600 text-indigo-700'
               const badgeClassName = tab.badgeClassName ?? 'bg-indigo-100 text-indigo-700'
+              const badgeValue =
+                tab.id === 'incoming'
+                  ? `${getUnreadNoteCount(tab.notes)}/${tab.notes.length}`
+                  : tab.notes.length
 
               return (
                 <button
@@ -1034,7 +1083,7 @@ export function TaskNotesDrawer({
                 >
                   {tab.label}
                   <span className={`ml-1 rounded-full px-1.5 py-0.5 text-xs ${badgeClassName}`}>
-                    {tab.notes.length}
+                    {badgeValue}
                   </span>
                 </button>
               )
@@ -1058,6 +1107,8 @@ export function TaskNotesDrawer({
                 ? notes.map((note, idx) => {
                   const noteId = getNoteId(note, idx)
                   const fromName = getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
+                    const noteIsRead = isNoteRead(note)
+                    const isMarkingRead = markingReadMessageId === noteId
                     const createdAt = formatNoteDate(
                       getMetaValue(note, 'createdDate', 'created_date', 'SentDate', 'sentDate')
                     )
@@ -1071,13 +1122,31 @@ export function TaskNotesDrawer({
                     return (
                       <article
                         key={noteId}
-                        className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm"
+                        className={`rounded-lg border p-2.5 shadow-sm ${
+                          isIncomingTab && !noteIsRead
+                            ? 'cursor-pointer border-violet-300 bg-violet-50/70 ring-1 ring-violet-100'
+                            : 'border-slate-200 bg-white'
+                        }`}
+                        onClick={() => {
+                          if (!isIncomingTab) return
+                          void onIncomingNoteClick?.(note)
+                        }}
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#185087] text-[11px] font-semibold text-white">
                             {getInitials(fromName)}
                           </div>
                           <span className="text-sm font-semibold text-slate-900">{fromName}</span>
+                          {isIncomingTab ? (
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium ${
+                                noteIsRead ? 'bg-slate-100 text-slate-600' : 'bg-violet-100 text-violet-800'
+                              }`}
+                            >
+                              <Circle className={`h-2.5 w-2.5 ${noteIsRead ? 'fill-slate-400 text-slate-400' : 'fill-violet-600 text-violet-600'}`} />
+                              {isMarkingRead ? 'Marking read...' : noteIsRead ? 'Read' : 'Unread'}
+                            </span>
+                          ) : null}
                           {showPerNoteApplicationId && noteApplicationId !== null ? (
                             <>
                               <button

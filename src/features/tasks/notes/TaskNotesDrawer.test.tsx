@@ -800,4 +800,108 @@ describe('TaskNotesDrawer', () => {
     expect(onComposeToUserChange).toHaveBeenCalledWith('asmith')
     expect(screen.getByText('To User: Alice Smith')).toBeTruthy()
   })
+
+  it('shows unread over total count for the Incoming tab and renders read status badges', () => {
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="task"
+        taskName="Review Ingredients"
+        activeTab="incoming"
+        incomingNotes={[
+          {
+            MessageID: 401,
+            MessageText: 'Unread incoming message',
+            FromUser: 'Alice Smith',
+            SentDate: '2026-04-07T10:00:00.000Z',
+            isRead: 0,
+          } as TaskNote,
+          {
+            MessageID: 402,
+            MessageText: 'Read incoming message',
+            FromUser: 'Bob User',
+            SentDate: '2026-04-07T11:00:00.000Z',
+            isRead: 1,
+          } as TaskNote,
+        ]}
+        outgoingNotes={[]}
+        mentionNotes={[]}
+        privateNotes={[]}
+        loadingIncoming={false}
+        loadingOutgoing={false}
+        loadingMention={false}
+        loadingPrivate={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate
+        isSubmitting={false}
+        error=""
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('1/2')).toBeTruthy()
+    expect(screen.getAllByText('Unread').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Read').length).toBeGreaterThan(0)
+  })
+
+  it('marks an incoming note as read when the user clicks it', () => {
+    const onIncomingNoteClick = vi.fn()
+
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="task"
+        taskName="Review Ingredients"
+        activeTab="incoming"
+        incomingNotes={[
+          {
+            MessageID: 401,
+            MessageText: 'Unread incoming message',
+            FromUser: 'Alice Smith',
+            SentDate: '2026-04-07T10:00:00.000Z',
+            isRead: 0,
+          } as TaskNote,
+        ]}
+        outgoingNotes={[]}
+        mentionNotes={[]}
+        privateNotes={[]}
+        loadingIncoming={false}
+        loadingOutgoing={false}
+        loadingMention={false}
+        loadingPrivate={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate
+        isSubmitting={false}
+        error=""
+        onIncomingNoteClick={onIncomingNoteClick}
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('Unread incoming message'))
+
+    expect(onIncomingNoteClick).toHaveBeenCalledWith(
+      expect.objectContaining({
+        MessageID: 401,
+      }),
+    )
+  })
 })

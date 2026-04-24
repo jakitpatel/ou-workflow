@@ -224,6 +224,7 @@ export type TaskNote = {
   SentDate?: string;
   TaskInstanceId?: number | string;
   isPrivate?: boolean;
+  isRead?: boolean | number | string;
   FromUser?: string;
   ToUser?: string;
   fromTask?: string;
@@ -246,6 +247,7 @@ export type TaskNote = {
 export type WFApplicationMessageAttributes = {
   ApplicationID?: number;
   FromUser?: string;
+  isRead?: boolean | number | string;
   MessageID?: number;
   MessageText?: string;
   MessageType?: string;

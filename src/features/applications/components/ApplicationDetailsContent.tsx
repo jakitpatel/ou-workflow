@@ -548,6 +548,8 @@ export function ApplicationDetailsContent({ application, mode = 'page', applicat
                 currentUsername={applicationNotes.currentUsername}
                 isSubmitting={applicationNotes.isSubmitting}
                 error={applicationNotes.error}
+                onIncomingNoteClick={applicationNotes.markIncomingNoteRead}
+                markingReadMessageId={applicationNotes.markingReadMessageId}
                 onClose={() => {}}
                 onTabChange={applicationNotes.setActiveTab}
                 onComposeTextChange={applicationNotes.setComposeText}
