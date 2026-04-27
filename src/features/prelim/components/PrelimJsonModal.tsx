@@ -1,12 +1,12 @@
-import { useState, lazy, Suspense } from 'react';
-
-//import { VectorResultsTable } from './VectorResultsTable'
+import { lazy, Suspense, useState } from 'react'
 import { Search } from 'lucide-react'
-//import { useUser } from '@/context/UserContext'
 
-const JsonEditorView = lazy(() => import('./JsonEditorView').then(module => ({ default: module.JsonEditorView })));
+const JsonEditorView = lazy(() =>
+  import('@/features/prelim/components/JsonEditorView').then(module => ({
+    default: module.JsonEditorView,
+  })))
 
-export function JsonModal({
+export function PrelimJsonModal({
   open,
   onClose,
   data,
@@ -53,46 +53,43 @@ export function JsonModal({
   */
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={onClose}
     >
       <div
-        className="bg-white w-[85vw] max-h-[85vh] rounded-lg p-4"
-        onClick={(e) => e.stopPropagation()}
+        className="max-h-[85vh] w-[85vw] rounded-lg bg-white p-4"
+        onClick={event => event.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold text-lg">Application JSON</h2>
-          <button onClick={onClose}>✕</button>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Application JSON</h2>
+          <button onClick={onClose}>âœ•</button>
         </div>
 
         {isLoading && (
-          <div className="h-[60vh] flex items-center justify-center">
-            Loading…
+          <div className="flex h-[60vh] items-center justify-center">
+            Loadingâ€¦
           </div>
         )}
 
         {!isLoading && !error && (
-          <div className="grid grid-cols-1 gap-3 h-[65vh]">
-            {/* Left – Preliminary Data */}
-            <Suspense fallback={<div className="p-4 text-sm">Loading JSON editor…</div>}>
-            <JsonEditorView
-              value={data}
-              title="Preliminary Data"
-              onSelect={setSelectedNode}
-              headerAction={
-                <button
-                  onClick={handleFind}
-                  disabled={selectedNode == null || searching}
-                  className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-600 text-white rounded disabled:opacity-50"
-                >
-                  <Search size={14} />
-                  {searching ? 'Finding…' : 'Find'}
-                </button>
-              }
-            />
+          <div className="grid h-[65vh] grid-cols-1 gap-3">
+            <Suspense fallback={<div className="p-4 text-sm">Loading JSON editorâ€¦</div>}>
+              <JsonEditorView
+                value={data}
+                title="Preliminary Data"
+                onSelect={setSelectedNode}
+                headerAction={
+                  <button
+                    onClick={handleFind}
+                    disabled={selectedNode == null || searching}
+                    className="flex items-center gap-1 rounded bg-blue-600 px-2 py-1 text-xs text-white disabled:opacity-50"
+                  >
+                    <Search size={14} />
+                    {searching ? 'Findingâ€¦' : 'Find'}
+                  </button>
+                }
+              />
             </Suspense>
-            {/* Middle – Vector Matches (TABLE) */}
             {/*
             <div className="flex flex-col h-full border rounded bg-white">
               <div className="px-3 py-2 border-b bg-gray-50 text-sm font-semibold">
@@ -105,9 +102,8 @@ export function JsonModal({
               />
             </div>
             */}
-            {/* Right – KASH DB JSON */}
             {/*
-            <Suspense fallback={<div className="p-4 text-sm">Loading JSON editor…</div>}>
+            <Suspense fallback={<div className="p-4 text-sm">Loading JSON editorâ€¦</div>}>
               <JsonEditorView
                 value={
                   loadingCompany

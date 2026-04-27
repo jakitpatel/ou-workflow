@@ -1,9 +1,9 @@
 import { Search } from 'lucide-react'
 import { CompanyCard } from '@/components/ou-workflow/PrelimDashboard/CompanyCard'
-import { JsonModal } from '@/components/ou-workflow/PrelimDashboard/JsonModal'
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal'
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal'
-import { PrelimApplicantStatsCards } from './PrelimApplicantStatsCards'
+import { PrelimJsonModal } from '@/features/prelim/components/PrelimJsonModal'
+import { PrelimApplicantStatsCards } from '@/features/prelim/components/PrelimApplicantStatsCards'
 import { usePrelimDashboardState } from '@/features/prelim/hooks/usePrelimDashboardState'
 
 const SHOW_PRELIM_APPLICANT_STATS_CARDS = false
@@ -93,7 +93,7 @@ export function PrelimDashboard() {
       </div>
 
       {selectedId && (
-        <JsonModal
+        <PrelimJsonModal
           open={true}
           data={applicationDetails}
           isLoading={isDetailsLoading}

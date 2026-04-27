@@ -78,20 +78,18 @@ const statCards: StatCard[] = [
 
 export const PrelimApplicantStatsCards: React.FC<ApplicantStatsCardsProps> = ({ stats }) => {
   return (
-    <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+    <div className="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {statCards.map(({ key, label, colorScheme }) => (
         <div
           key={key}
-          className={`${colorScheme.bg} p-3 rounded-lg border ${colorScheme.border} transition-transform hover:scale-105`}
+          className={`${colorScheme.bg} rounded-lg border ${colorScheme.border} p-3 transition-transform hover:scale-105`}
           role="article"
           aria-label={`${label}: ${stats[key]} applicants`}
         >
           <div className={`text-2xl font-bold ${colorScheme.text}`}>
             {stats[key].toLocaleString()}
           </div>
-          <div className={`text-sm font-medium ${colorScheme.labelText}`}>
-            {label}
-          </div>
+          <div className={`text-sm font-medium ${colorScheme.labelText}`}>{label}</div>
         </div>
       ))}
     </div>
