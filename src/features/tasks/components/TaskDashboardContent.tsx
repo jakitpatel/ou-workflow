@@ -2,6 +2,7 @@ import { ErrorDialog } from '@/components/ErrorDialog';
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
 import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal';
+import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer';
 import { useTaskDashboardState } from '@/features/tasks/hooks/useTaskDashboardState';
 import { plantHistory } from '@/features/tasks/model/plantHistory';
 
@@ -28,6 +29,8 @@ export function TaskDashboardContent() {
     setShowConditionModal,
     showUploadModal,
     setShowUploadModal,
+    scheduleADrawerState,
+    setScheduleADrawerState,
     selectedAction,
     executeAction,
     completeTaskWithResult,
@@ -101,6 +104,13 @@ export function TaskDashboardContent() {
       />
       <PlantHistoryModal {...{ showPlantHistory, setShowPlantHistory, plantHistory }} />
       <ErrorDialog ref={errorDialogRef} />
+      <ScheduleAIngredientsDrawer
+        open={scheduleADrawerState.open}
+        applicationId={scheduleADrawerState.applicationId}
+        applicationName={scheduleADrawerState.applicationName}
+        taskName={scheduleADrawerState.taskName}
+        onClose={() => setScheduleADrawerState({ open: false })}
+      />
     </>
   );
 }

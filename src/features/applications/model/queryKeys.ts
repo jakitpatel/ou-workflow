@@ -13,4 +13,6 @@ export const applicationsQueryKeys = {
   details: () => [...applicationsQueryKeys.all, 'detail'] as const,
   detail: (applicationId?: string) =>
     [...applicationsQueryKeys.details(), applicationId ?? 'unknown'] as const,
+  scheduleAIngredients: (applicationId?: string) =>
+    [...applicationsQueryKeys.all, 'schedule-a-ingredients', applicationId ?? 'unknown'] as const,
 } as const

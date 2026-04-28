@@ -41,6 +41,13 @@ type SelectedTaskAction = {
   action: any
 }
 
+type ScheduleADrawerState = {
+  open: boolean
+  applicationId?: string | number
+  applicationName?: string
+  taskName?: string
+}
+
 const DEBOUNCE_DELAY = 700
 
 const PRIORITY_ORDER: Record<string, number> = {
@@ -102,6 +109,10 @@ const getTaskActionPresentation = (application: TaskDashboardAction) => {
     return { type: 'assignment' as const }
   }
 
+  if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEA) {
+    return { type: 'schedule-a' as const }
+  }
+
   if (
     actionType === TASK_TYPES.ACTION &&
     [TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].includes(
@@ -158,6 +169,9 @@ export function useTaskDashboardState() {
   const [showConditionModal, setShowConditionModal] = useState<any>(null)
   const [showUploadModal, setShowUploadModal] = useState<any>(null)
   const [selectedAction, setSelectedAction] = useState<SelectedTaskAction | null>(null)
+  const [scheduleADrawerState, setScheduleADrawerState] = useState<ScheduleADrawerState>({
+    open: false,
+  })
 
   const { username, role, roles, token } = useUser()
 
@@ -378,6 +392,16 @@ export function useTaskDashboardState() {
         return
       }
 
+      if (actionPresentation.type === 'schedule-a') {
+        setScheduleADrawerState({
+          open: true,
+          applicationId: action.applicationId,
+          applicationName: action.companyName ?? action.plantName,
+          taskName: action.taskName ?? action.name,
+        })
+        return
+      }
+
       if (actionPresentation.type === 'upload') {
         setShowUploadModal(action)
       }
@@ -431,6 +455,8 @@ export function useTaskDashboardState() {
     setShowConditionModal,
     showUploadModal,
     setShowUploadModal,
+    scheduleADrawerState,
+    setScheduleADrawerState,
     selectedAction,
     executeAction,
     completeTaskWithResult,

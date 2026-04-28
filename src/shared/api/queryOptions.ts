@@ -46,6 +46,10 @@ export const queryOptionDefaults = {
   applicationsDetail: {
     refetchOnWindowFocus: false,
   },
+  applicationScheduleAIngredients: {
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  },
   tasksReferenceData: {
     staleTime: Infinity,
     gcTime: Infinity,

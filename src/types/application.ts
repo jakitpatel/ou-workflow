@@ -444,6 +444,28 @@ export interface ApplicationDetail {
   taskEvents?: TaskEvent[];
 }
 
+export type ScheduleAIngredient = {
+  ApplicationID: number;
+  IngredientId: number;
+  UKDID?: string;
+  brandName?: string;
+  certifyingAgency?: string;
+  group?: number | string;
+  ingredientLabelName?: string;
+  manufacturer?: string;
+  packagedOrBulk?: string;
+  passover?: string;
+  plantStatus?: string;
+  rawMaterialCode?: string;
+}
+
+export interface ScheduleAIngredientsResponse {
+  ingredients?: {
+    schedule_ingredients?: ScheduleAIngredient[];
+  };
+  status?: string;
+}
+
 export interface ApplicationTask {
   TaskCategory: string;          // e.g., "CONFIRMATION"
   applicationId: number;

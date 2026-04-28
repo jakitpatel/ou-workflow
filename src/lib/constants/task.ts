@@ -16,6 +16,7 @@ export const TASK_CATEGORIES = {
   EMAIL: 'email',
   SELECTOR: 'selector',
   INPUT: 'input',
+  SCHEDULEA: 'schedulea',
   SCHEDULING: 'scheduling',
   PROGRESS_TASK: 'progress_task',
   UPLOAD: 'upload',

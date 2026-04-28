@@ -4,6 +4,7 @@ export {
   fetchApplicants,
   fetchApplicationDetail,
   fetchCompanyDetails,
+  fetchScheduleAIngredients,
   fetchUserByRole,
   getCompanyDetailsFromKASH,
   getPlantDetailsFromKASH,

@@ -67,6 +67,7 @@ function LoginPage() {
           { name: "NCRC" },
           { name: "INSP" },
           { name: "LEGAL" },
+          { name: "IAR" }
         ];
         const delegated = [{ name: "S.Benjamin" }, { name: "Jakit" }];
 

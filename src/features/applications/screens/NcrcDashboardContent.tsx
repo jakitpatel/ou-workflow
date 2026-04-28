@@ -6,6 +6,7 @@ import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal'
 import { NcrcDashboardControls } from '@/features/applications/components/NcrcDashboardControls'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
 import { NcrcDashboardListSection } from '@/features/applications/components/NcrcDashboardListSection'
+import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer'
 import { useNcrcDashboardState } from '@/features/applications/hooks/useNcrcDashboardState'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
 import { useTaskActions } from '@/features/tasks/hooks/useTaskActions'
@@ -34,6 +35,14 @@ export function NcrcDashboardContent() {
   const [showActionModal, setShowActionModal] = useState<Task | null | boolean>(null)
   const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null)
   const [showUploadModal, setShowUploadModal] = useState<Task | null | boolean>(null)
+  const [scheduleADrawerState, setScheduleADrawerState] = useState<{
+    open: boolean
+    applicationId?: string | number
+    applicationName?: string
+    taskName?: string
+  }>({
+    open: false,
+  })
   const [myNotesSelectedApplicationId, setMyNotesSelectedApplicationId] = useState<number | null>(
     null,
   )
@@ -167,6 +176,16 @@ export function NcrcDashboardContent() {
 
     const actionType = action.taskType?.toLowerCase()
     const actionCategory = action.taskCategory?.toLowerCase()
+
+    if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEA) {
+      setScheduleADrawerState({
+        open: true,
+        applicationId: application.applicationId,
+        applicationName: application.company,
+        taskName: action.name,
+      })
+      return
+    }
 
     if (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION) {
       executeAction('Confirmed', action, 'yes', { application, action })
@@ -339,6 +358,13 @@ export function NcrcDashboardContent() {
         open={myNotesSelectedApplicationId !== null}
         applicationId={myNotesSelectedApplicationId ?? undefined}
         onClose={closeMyNotesApplicationDetails}
+      />
+      <ScheduleAIngredientsDrawer
+        open={scheduleADrawerState.open}
+        applicationId={scheduleADrawerState.applicationId}
+        applicationName={scheduleADrawerState.applicationName}
+        taskName={scheduleADrawerState.taskName}
+        onClose={() => setScheduleADrawerState({ open: false })}
       />
     </>
   )

@@ -17,6 +17,8 @@ import type {
   ApplicationDetail,
   KashrusCompanyDetailsResponse,
   KashrusPlantDetailsResponse,
+  ScheduleAIngredient,
+  ScheduleAIngredientsResponse,
   UserRoleResponse,
 } from '@/types/application'
 import {
@@ -300,4 +302,26 @@ export async function getPlantDetailsFromKASH({
     path: `/get_PlantDetailsFromKASH?${params.toString()}`,
     token,
   })
+}
+
+export async function fetchScheduleAIngredients({
+  applicationId,
+  token,
+}: {
+  applicationId?: string | number
+  token?: string | null
+} = {}): Promise<ScheduleAIngredient[]> {
+  if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
+    throw createApiError('applicationId is required', 400)
+  }
+
+  const params = new URLSearchParams()
+  params.append('filter[ApplicationID]', String(applicationId))
+
+  const response = await fetchWithAuth<ScheduleAIngredientsResponse>({
+    path: `/get_ingredients?${params.toString()}`,
+    token,
+  })
+
+  return response.ingredients?.schedule_ingredients ?? []
 }
