@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { PrelimAppExpandedStageTasks } from './PrelimAppExpandedStageTasks'
 import { Clock } from 'lucide-react'
 import type { Applicant, Task } from '@/types/application'
 import { ResolvedSection } from '@/components/ou-workflow/PrelimDashboard/ResolvedSection'
 import { useUser } from '@/context/UserContext'
 import { CancelApplicationDialog } from '@/components/ou-workflow/modal/CancelApplicationDialog'
 import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
+import { PrelimStageTasksPanel } from '@/features/prelim/components/PrelimStageTasksPanel'
 import { normalizeStatus, normalizeTaskRoles } from '@/lib/utils/taskHelpers'
 
 type Props = {
@@ -34,7 +34,7 @@ function getStageColor(status?: string): string {
   return STATUS_COLORS[normalizeStatus(status)] ?? STATUS_COLORS.unknown
 }
 
-export function CompanyCard({
+export function PrelimApplicationCard({
   company,
   onViewApplication,
   expanded,
@@ -323,7 +323,7 @@ export function CompanyCard({
 
       {expanded && stageEntries.length > 0 && (
         <div className="expanded-panel">
-          <PrelimAppExpandedStageTasks
+          <PrelimStageTasksPanel
             expandedStage={expandedStage}
             setExpandedStage={(stage) => {
               if (stage) {

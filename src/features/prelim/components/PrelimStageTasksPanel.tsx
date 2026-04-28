@@ -21,7 +21,7 @@ type Props = {
   ) => void
 }
 
-export function PrelimAppExpandedStageTasks({
+export function PrelimStageTasksPanel({
   expandedStage,
   setExpandedStage,
   applicant,

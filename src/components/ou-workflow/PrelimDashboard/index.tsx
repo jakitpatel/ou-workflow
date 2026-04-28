@@ -1,7 +1,7 @@
 import { Search } from 'lucide-react'
-import { CompanyCard } from '@/components/ou-workflow/PrelimDashboard/CompanyCard'
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal'
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal'
+import { PrelimApplicationCard } from '@/features/prelim/components/PrelimApplicationCard'
 import { PrelimJsonModal } from '@/features/prelim/components/PrelimJsonModal'
 import { PrelimApplicantStatsCards } from '@/features/prelim/components/PrelimApplicantStatsCards'
 import { usePrelimDashboardState } from '@/features/prelim/hooks/usePrelimDashboardState'
@@ -77,7 +77,7 @@ export function PrelimDashboard() {
       <div className="flex flex-col gap-4">
         {applications.length > 0 ? (
           applications.map((application: any) => (
-            <CompanyCard
+            <PrelimApplicationCard
               key={application.applicationId}
               company={application}
               expanded={expandedTaskPanel === String(application.applicationId)}
