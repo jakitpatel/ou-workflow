@@ -66,6 +66,7 @@ const buildFetchErrorMessage = (error: unknown): string => {
   return 'Failed to fetch notes'
 }
 
+
 const normalizeNoteTab = (tab: NoteTab): NoteTab => {
   if (tab === 'directed') return 'incoming'
   if (tab === 'outgoing') return 'incoming'

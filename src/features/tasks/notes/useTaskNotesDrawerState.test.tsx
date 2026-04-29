@@ -23,6 +23,7 @@ vi.mock('@/features/profile/api', () => ({
   fetchProfileLayout: vi.fn(async () => []),
 }))
 
+
 function NotesHookHarness() {
   const notes = useTaskNotesDrawerState({
     applicationId: 42,
