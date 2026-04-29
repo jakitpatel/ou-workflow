@@ -57,10 +57,6 @@ function NotesHookHarness() {
         tab-incoming
       </button>
 
-      <button type="button" onClick={() => notes.setActiveTab('outgoing')}>
-        tab-outgoing
-      </button>
-
       <button type="button" onClick={() => notes.setActiveTab('private')}>
         tab-private
       </button>
@@ -225,6 +221,68 @@ describe('useTaskNotesDrawerState', () => {
     })
   })
 
+  it('passes through ToUser when replying from the incoming tab', async () => {
+    function IncomingReplyHarness() {
+      const notes = useTaskNotesDrawerState({
+        applicationId: 42,
+      })
+
+      return (
+        <div>
+          <button
+            type="button"
+            onClick={() =>
+              void notes.openDrawer({
+                contextKey: 'application:42',
+                taskName: 'Application 42',
+                tab: 'incoming',
+              })
+            }
+          >
+            open-incoming
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              void notes.submitReply({
+                parentMessageId: 'incoming-note-1',
+                text: 'Reply from incoming harness',
+                toUser: 'A.User',
+              })
+            }
+          >
+            submit-incoming-reply
+          </button>
+          <div>active-tab:{notes.drawer?.activeTab ?? 'closed'}</div>
+        </div>
+      )
+    }
+
+    renderWithProviders(<IncomingReplyHarness />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'open-incoming' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('active-tab:incoming')).toBeTruthy()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'submit-incoming-reply' }))
+
+    await waitFor(() => {
+      expect(mutateAsyncMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          applicationId: 42,
+          note: 'Reply from incoming harness',
+          isPrivate: true,
+          parentMessageId: 'incoming-note-1',
+          toUser: 'A.User',
+          fromUser: 'S.Benjamin',
+          token: 'test-access-token',
+        }),
+      )
+    })
+  })
+
   it('posts directed notes as private notes that require a To User', async () => {
     function DirectedHarness() {
       const notes = useTaskNotesDrawerState({
@@ -272,7 +330,7 @@ describe('useTaskNotesDrawerState', () => {
     fireEvent.click(screen.getByRole('button', { name: 'submit-directed' }))
 
     await waitFor(() => {
-      expect(screen.getByText('error:Incoming notes require a To User')).toBeTruthy()
+      expect(screen.getByText('error:Direct notes require a To User')).toBeTruthy()
     })
 
     fireEvent.click(screen.getByRole('button', { name: 'set-directed-user' }))
@@ -292,7 +350,7 @@ describe('useTaskNotesDrawerState', () => {
     })
   })
 
-  it('posts outgoing notes as private notes that require a To User', async () => {
+  it('normalizes stale outgoing tab requests back to direct', async () => {
     function OutgoingHarness() {
       const notes = useTaskNotesDrawerState({
         applicationId: 42,
@@ -312,17 +370,7 @@ describe('useTaskNotesDrawerState', () => {
           >
             open-outgoing
           </button>
-          <button type="button" onClick={() => notes.setComposeText('Outgoing message')}>
-            set-outgoing-text
-          </button>
-          <button type="button" onClick={() => notes.setComposeToUserId('BenjaminD')}>
-            set-outgoing-user
-          </button>
-          <button type="button" onClick={() => void notes.submitNote()}>
-            submit-outgoing
-          </button>
           <div>active-tab:{notes.drawer?.activeTab ?? 'closed'}</div>
-          <div>error:{notes.error || 'none'}</div>
         </div>
       )
     }
@@ -332,30 +380,7 @@ describe('useTaskNotesDrawerState', () => {
     fireEvent.click(screen.getByRole('button', { name: 'open-outgoing' }))
 
     await waitFor(() => {
-      expect(screen.getByText('active-tab:outgoing')).toBeTruthy()
-    })
-
-    fireEvent.click(screen.getByRole('button', { name: 'set-outgoing-text' }))
-    fireEvent.click(screen.getByRole('button', { name: 'submit-outgoing' }))
-
-    await waitFor(() => {
-      expect(screen.getByText('error:Outgoing notes require a To User')).toBeTruthy()
-    })
-
-    fireEvent.click(screen.getByRole('button', { name: 'set-outgoing-user' }))
-    fireEvent.click(screen.getByRole('button', { name: 'submit-outgoing' }))
-
-    await waitFor(() => {
-      expect(mutateAsyncMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          applicationId: 42,
-          note: 'Outgoing message',
-          isPrivate: true,
-          toUser: 'BenjaminD',
-          fromUser: 'S.Benjamin',
-          token: 'test-access-token',
-        }),
-      )
+      expect(screen.getByText('active-tab:incoming')).toBeTruthy()
     })
   })
 

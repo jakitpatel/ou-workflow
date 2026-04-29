@@ -68,6 +68,7 @@ const buildFetchErrorMessage = (error: unknown): string => {
 
 const normalizeNoteTab = (tab: NoteTab): NoteTab => {
   if (tab === 'directed') return 'incoming'
+  if (tab === 'outgoing') return 'incoming'
   if (tab === 'public') return 'mention'
   return tab
 }
@@ -254,7 +255,7 @@ export function useTaskNotesDrawerState({
       return
     }
     if ((drawer.activeTab === 'incoming' || drawer.activeTab === 'outgoing') && !composeToUserId) {
-      setError(`${drawer.activeTab === 'incoming' ? 'Incoming' : 'Outgoing'} notes require a To User`)
+      setError(`${drawer.activeTab === 'incoming' ? 'Direct' : 'Outgoing'} notes require a To User`)
       return
     }
 

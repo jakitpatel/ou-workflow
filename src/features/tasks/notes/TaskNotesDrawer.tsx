@@ -440,6 +440,7 @@ const getLatestThreadTimestamp = (node: PublicNoteNode): number => {
 
 const normalizeDrawerTab = (tab: NoteTab): NoteTab => {
   if (tab === 'directed') return 'incoming'
+  if (tab === 'outgoing') return 'incoming'
   if (tab === 'public') return 'mention'
   return tab
 }
@@ -516,22 +517,12 @@ export function TaskNotesDrawer({
   const defaultTabs: TaskNotesDrawerTabConfig[] = [
     {
       id: 'incoming',
-      label: 'Incoming',
+      label: 'Direct',
       notes: resolvedIncomingNotes,
       loading: resolvedLoadingIncoming,
       mode: 'directed',
       tabClassName: 'border-violet-600 text-violet-700',
       badgeClassName: 'bg-violet-100 text-violet-700',
-    },
-    {
-      id: 'outgoing',
-      label: 'Outgoing',
-      notes: outgoingNotes,
-      loading: loadingOutgoing,
-      mode: 'private',
-      threaded: true,
-      tabClassName: 'border-slate-600 text-slate-700',
-      badgeClassName: 'bg-slate-100 text-slate-700',
     },
     {
       id: 'private',
@@ -768,12 +759,15 @@ export function TaskNotesDrawer({
       : isPrivateMyNote
         ? 'bg-blue-100 text-blue-800'
         : 'bg-emerald-100 text-emerald-800'
+    const shouldShowToUser =
+      toUser !== '-' && (isDirectedTab || isOutgoingTab || (showMyNotesThreadType && isIncomingTab))
     const noteIsRead = isNoteRead(note)
     const isMarkingRead = markingReadMessageId === noteId
-    const replyToUserValue = isPublicTab
-      ? null
-      : getMetaValue(note, 'fromUser', 'from_user', 'FromUser') !== '-'
-        ? getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
+    const replyToUserValue =
+      isIncomingTab || isDirectedTab || isOutgoingTab
+        ? getMetaValue(note, 'fromUser', 'from_user', 'FromUser') !== '-'
+          ? getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
+          : null
         : null
     const rootTone = isDirectedTab || isDirectedMyNote ? DIRECTED_ROOT_TONE : PUBLIC_ROOT_TONE
     const cardClass = isRoot ? rootTone.card : tone.card
@@ -837,12 +831,14 @@ export function TaskNotesDrawer({
                       {isMarkingRead ? 'Marking read...' : noteIsRead ? 'Read' : 'Unread'}
                     </span>
                   ) : null}
-                  {(isDirectedTab || isOutgoingTab) && toUser !== '-' ? (
+                  {shouldShowToUser ? (
                     <span
                       className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
                         isOutgoingTab
                           ? 'bg-slate-100 text-slate-800'
-                          : 'bg-violet-100 text-violet-800'
+                          : isIncomingTab
+                            ? 'bg-sky-100 text-sky-800'
+                            : 'bg-violet-100 text-violet-800'
                       }`}
                     >
                       To: {toUser}
@@ -938,10 +934,14 @@ export function TaskNotesDrawer({
                 {isMarkingRead ? 'Marking read...' : noteIsRead ? 'Read' : 'Unread'}
               </span>
             ) : null}
-            {(isDirectedTab || isOutgoingTab) && toUser !== '-' ? (
+            {shouldShowToUser ? (
               <span
                 className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
-                  isOutgoingTab ? 'bg-slate-100 text-slate-800' : 'bg-violet-100 text-violet-800'
+                  isOutgoingTab
+                    ? 'bg-slate-100 text-slate-800'
+                    : isIncomingTab
+                      ? 'bg-sky-100 text-sky-800'
+                      : 'bg-violet-100 text-violet-800'
                 }`}
               >
                 To: {toUser}
@@ -1209,10 +1209,10 @@ export function TaskNotesDrawer({
                 className="min-h-[84px] w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 placeholder={
                   isDirectedTab
-                    ? 'Add an incoming note... (@ to select ToUsers)'
+                    ? 'Add a direct note... (@ to select ToUsers)'
                     : isOutgoingTab
                       ? 'Add an outgoing note... (@ to select ToUsers)'
-                    : isPrivateTab
+                      : isPrivateTab
                       ? 'Add a private note...'
                       : `Add a ${composePrivate ? 'private' : 'public'} note... (@ to mention)`
                 }

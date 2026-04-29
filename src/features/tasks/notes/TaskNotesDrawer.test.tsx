@@ -466,7 +466,76 @@ describe('TaskNotesDrawer', () => {
     })
   })
 
-  it('shows Incoming as the first tab and uses the ToUsers label there', () => {
+  it('replies to an incoming message using the original FromUser as ToUser', async () => {
+    const onReplySubmit = vi.fn().mockResolvedValue(undefined)
+
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="My Messages"
+        contextType="application"
+        taskName="Current User"
+        activeTab="incoming"
+        incomingNotes={[
+          {
+            MessageID: 110,
+            MessageText: 'Incoming directed note',
+            FromUser: 'Alice Smith',
+            ToUser: 'Current User',
+            SentDate: '2026-04-07T10:00:00.000Z',
+            isPrivate: true,
+          } as TaskNote,
+        ]}
+        outgoingNotes={[]}
+        mentionNotes={[]}
+        privateNotes={[]}
+        loadingIncoming={false}
+        loadingOutgoing={false}
+        loadingMention={false}
+        loadingPrivate={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate={false}
+        isSubmitting={false}
+        error=""
+        showMyNotesThreadType
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={onReplySubmit}
+      />,
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Reply' })[0])
+
+    const replyInput = await screen.findByPlaceholderText('Reply...')
+    fireEvent.change(replyInput, {
+      target: { value: 'Reply to sender' },
+    })
+
+    const submitReplyButton = screen
+      .getAllByRole('button', { name: 'Reply' })
+      .find((button) => button.className.includes('bg-blue-600'))
+
+    expect(submitReplyButton).toBeTruthy()
+    fireEvent.click(submitReplyButton!)
+
+    await waitFor(() => {
+      expect(onReplySubmit).toHaveBeenCalledWith({
+        parentMessageId: '110',
+        text: 'Reply to sender',
+        applicationId: null,
+        taskId: undefined,
+        toUser: 'Alice Smith',
+        isPrivate: true,
+      })
+    })
+  })
+
+  it('shows Direct as the first tab and uses the ToUsers label there', () => {
     renderWithProviders(
       <TaskNotesDrawer
         open
@@ -497,7 +566,7 @@ describe('TaskNotesDrawer', () => {
     )
 
     const tabs = screen.getAllByRole('button').map((button) => button.textContent ?? '')
-    expect(tabs[1]).toContain('Incoming')
+    expect(tabs[1]).toContain('Direct')
     expect(screen.getByRole('button', { name: /ToUsers/i })).toBeTruthy()
     expect(screen.queryByLabelText(/Private note/i)).toBeNull()
   })
@@ -544,25 +613,25 @@ describe('TaskNotesDrawer', () => {
     expect(screen.getByPlaceholderText('Add a private note...')).toBeTruthy()
   })
 
-  it('shows ToUser information in the Outgoing tab thread display', () => {
+  it('shows ToUser information in the My Messages Direct tab thread display', () => {
     renderWithProviders(
       <TaskNotesDrawer
         open
-        applicantCompany="Test Company"
-        applicationId={42}
-        contextType="task"
-        taskName="Review Ingredients"
-        activeTab="outgoing"
-        incomingNotes={[]}
-        outgoingNotes={[
+        applicantCompany="My Messages"
+        contextType="application"
+        taskName="Current User"
+        activeTab="incoming"
+        incomingNotes={[
           {
-            MessageID: 301,
-            MessageText: 'Sent to reviewer',
+            MessageID: 311,
+            MessageText: 'Incoming directed message',
             FromUser: 'Alice Smith',
             ToUser: 'Bob User',
             SentDate: '2026-04-07T10:00:00.000Z',
+            isPrivate: true,
           } as TaskNote,
         ]}
+        outgoingNotes={[]}
         mentionNotes={[]}
         privateNotes={[]}
         loadingIncoming={false}
@@ -571,9 +640,12 @@ describe('TaskNotesDrawer', () => {
         loadingPrivate={false}
         composeText=""
         composeToUserId={null}
-        composePrivate
+        composePrivate={false}
         isSubmitting={false}
         error=""
+        showMyNotesThreadType
+        hideComposer
+        hidePrivacyToggle
         onClose={() => {}}
         onTabChange={() => {}}
         onComposeTextChange={() => {}}
@@ -585,94 +657,6 @@ describe('TaskNotesDrawer', () => {
     )
 
     expect(screen.getByText('To: Bob User')).toBeTruthy()
-  })
-
-  it('shows the ToUsers picker in the Outgoing tab and selected user chip', () => {
-    renderWithProviders(
-      <TaskNotesDrawer
-        open
-        applicantCompany="Test Company"
-        applicationId={42}
-        contextType="task"
-        taskName="Review Ingredients"
-        activeTab="outgoing"
-        incomingNotes={[]}
-        outgoingNotes={[]}
-        mentionNotes={[]}
-        privateNotes={[]}
-        loadingIncoming={false}
-        loadingOutgoing={false}
-        loadingMention={false}
-        loadingPrivate={false}
-        composeText=""
-        composeToUserId="asmith"
-        composePrivate
-        isSubmitting={false}
-        error=""
-        onClose={() => {}}
-        onTabChange={() => {}}
-        onComposeTextChange={() => {}}
-        onComposeToUserChange={() => {}}
-        onComposePrivateChange={() => {}}
-        onSubmit={() => {}}
-        onReplySubmit={vi.fn()}
-      />,
-    )
-
-    expect(screen.getByRole('button', { name: /ToUsers/i })).toBeTruthy()
-    expect(screen.getByText('To User: Alice Smith')).toBeTruthy()
-    expect(screen.getByPlaceholderText('Add an outgoing note... (@ to select ToUsers)')).toBeTruthy()
-  })
-
-  it('stores the selected outgoing user as the KashLogin value while showing the full name', () => {
-    const onComposeToUserChange = vi.fn()
-
-    function OutgoingMentionHarness() {
-      const [composeText, setComposeText] = useState('Hello @al')
-
-      return (
-        <TaskNotesDrawer
-          open
-          applicantCompany="Test Company"
-          applicationId={42}
-          contextType="task"
-          taskName="Review Ingredients"
-          activeTab="outgoing"
-          incomingNotes={[]}
-          outgoingNotes={[]}
-          mentionNotes={[]}
-          privateNotes={[]}
-          loadingIncoming={false}
-          loadingOutgoing={false}
-          loadingMention={false}
-          loadingPrivate={false}
-          composeText={composeText}
-          composeToUserId={null}
-          composePrivate
-          isSubmitting={false}
-          error=""
-          onClose={() => {}}
-          onTabChange={() => {}}
-          onComposeTextChange={setComposeText}
-          onComposeToUserChange={onComposeToUserChange}
-          onComposePrivateChange={() => {}}
-          onSubmit={() => {}}
-          onReplySubmit={vi.fn()}
-        />
-      )
-    }
-
-    renderWithProviders(<OutgoingMentionHarness />)
-
-    fireEvent.change(screen.getByRole('textbox'), {
-      target: { value: 'Hello @al', selectionStart: 9 },
-    })
-
-    fireEvent.click(screen.getByRole('button', { name: /ToUsers/i }))
-    fireEvent.click(screen.getByRole('button', { name: /alice smith/i }))
-
-    expect(onComposeToUserChange).toHaveBeenCalledWith('asmith')
-    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Hello ')
   })
 
   it('hides the privacy toggle in the Mention tab while keeping the public composer', () => {
@@ -801,7 +785,7 @@ describe('TaskNotesDrawer', () => {
     expect(screen.getByText('To User: Alice Smith')).toBeTruthy()
   })
 
-  it('shows unread over total count for the Incoming tab and renders read status badges', () => {
+  it('shows unread over total count for the Direct tab and renders read status badges', () => {
     renderWithProviders(
       <TaskNotesDrawer
         open

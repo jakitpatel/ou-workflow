@@ -94,7 +94,7 @@ export function NcrcDashboardContent() {
     () => [
       {
         id: 'incoming',
-        label: 'Incoming',
+        label: 'Direct',
         notes: myNotes.incoming.map((note) => ({
           ...note,
           ApplicationID: normalizeApplicationId(
@@ -108,23 +108,6 @@ export function NcrcDashboardContent() {
         threaded: true,
         tabClassName: 'border-sky-600 text-sky-700',
         badgeClassName: 'bg-sky-100 text-sky-700',
-      },
-      {
-        id: 'outgoing',
-        label: 'Outgoing',
-        notes: myNotes.outgoing.map((note) => ({
-          ...note,
-          ApplicationID: normalizeApplicationId(
-            (note as any)?.ApplicationID ??
-              (note as any)?.applicationId ??
-              (note as any)?.ApplicationId,
-          ),
-        })),
-        loading: myNotesLoading,
-        mode: 'public',
-        threaded: true,
-        tabClassName: 'border-violet-600 text-violet-700',
-        badgeClassName: 'bg-violet-100 text-violet-700',
       },
       {
         id: 'mention',
