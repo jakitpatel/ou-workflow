@@ -379,7 +379,8 @@ describe('TaskNotesDrawer', () => {
       />,
     )
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Reply' })[0])
+    fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Reply' }))
 
     const replyInput = await screen.findByPlaceholderText('Reply...')
     fireEvent.change(replyInput, {
@@ -440,7 +441,8 @@ describe('TaskNotesDrawer', () => {
       />,
     )
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Reply' })[0])
+    fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Reply' }))
 
     const replyInput = await screen.findByPlaceholderText('Reply...')
     fireEvent.change(replyInput, {
@@ -509,7 +511,8 @@ describe('TaskNotesDrawer', () => {
       />,
     )
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Reply' })[0])
+    fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Reply' }))
 
     const replyInput = await screen.findByPlaceholderText('Reply...')
     fireEvent.change(replyInput, {
@@ -535,7 +538,7 @@ describe('TaskNotesDrawer', () => {
     })
   })
 
-  it('shows Direct as the first tab and uses the ToUsers label there', () => {
+  it('shows Direct as the first tab and renders an explicit To picker', () => {
     renderWithProviders(
       <TaskNotesDrawer
         open
@@ -567,7 +570,9 @@ describe('TaskNotesDrawer', () => {
 
     const tabs = screen.getAllByRole('button').map((button) => button.textContent ?? '')
     expect(tabs[1]).toContain('Direct')
-    expect(screen.getByRole('button', { name: /ToUsers/i })).toBeTruthy()
+    expect(screen.getByText('To')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Select User/i })).toBeTruthy()
+    expect(screen.getByText(/No recipient selected/i)).toBeTruthy()
     expect(screen.queryByLabelText(/Private note/i)).toBeNull()
   })
 
@@ -656,7 +661,7 @@ describe('TaskNotesDrawer', () => {
       />,
     )
 
-    expect(screen.getByText('To: Bob User')).toBeTruthy()
+    expect(screen.getAllByText('To: Bob User').length).toBeGreaterThan(0)
   })
 
   it('hides the privacy toggle in the Mention tab while keeping the public composer', () => {
@@ -778,7 +783,7 @@ describe('TaskNotesDrawer', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /ToUsers/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Change/i }))
     fireEvent.click(screen.getByRole('button', { name: /alice smith/i }))
 
     expect(onComposeToUserChange).toHaveBeenCalledWith('asmith')
