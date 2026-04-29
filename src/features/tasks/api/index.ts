@@ -224,6 +224,7 @@ export async function createTaskNote({
   applicationId,
   note,
   isPrivate,
+  isRead = false,
   priority,
   parentMessageId,
   fromUser,
@@ -234,6 +235,7 @@ export async function createTaskNote({
   applicationId?: number | null
   note: string
   isPrivate: boolean
+  isRead?: boolean
   priority?: 'CRITICAL' | 'HIGH' | 'LOW' | 'NORMAL'
   parentMessageId?: string | number
   fromUser?: string
@@ -244,6 +246,7 @@ export async function createTaskNote({
     ApplicationID: applicationId,
     MessageText: note,
     isPrivate: isPrivate,
+    isRead,
     FromUser: fromUser,
     MessageType: 'Text',
     SentDate: new Date().toISOString(),

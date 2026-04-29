@@ -864,6 +864,7 @@ export function TaskNotesDrawer({
       : isPrivateMyNote
         ? 'bg-blue-100 text-blue-800'
         : 'bg-emerald-100 text-emerald-800'
+    const showMyNoteThreadBadge = showMyNotesThreadType && !isIncomingTab
     const noteIsRead = isNoteRead(note)
     const isMarkingRead = markingReadMessageId === rootMessageId
     const incomingReadIndicatorClass = noteIsRead
@@ -982,7 +983,7 @@ export function TaskNotesDrawer({
                 {getInitials(fromName)}
               </div>
               <span className="text-sm font-semibold text-slate-900">{fromName}</span>
-              {showMyNotesThreadType ? (
+              {showMyNoteThreadBadge ? (
                 <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${myNoteThreadLabelClass}`}>
                   {myNoteThreadLabel}
                 </span>

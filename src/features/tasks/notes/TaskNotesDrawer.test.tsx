@@ -662,6 +662,8 @@ describe('TaskNotesDrawer', () => {
     )
 
     expect(screen.getAllByText('To: Bob User').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Directed')).toBeNull()
+    expect(screen.queryByText('Public')).toBeNull()
   })
 
   it('hides the privacy toggle in the Mention tab while keeping the public composer', () => {
