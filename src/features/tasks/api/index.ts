@@ -30,7 +30,7 @@ export type MyMessagesByTab = {
 
 type FetchMyMessagesResponse = {
   messages?: {
-    IncomingMessages?: WFApplicationMessageRecord[]
+    directMessages?: WFApplicationMessageRecord[]
     OutgoingMessages?: WFApplicationMessageRecord[]
     MentionMessages?: WFApplicationMessageRecord[]
     PrivateMessages?: WFApplicationMessageRecord[]
@@ -388,7 +388,7 @@ export async function fetchMyMessages({
   })
 
   return {
-    incoming: mapMessageRecordsToTaskNotes(response.messages?.IncomingMessages ?? []),
+    incoming: mapMessageRecordsToTaskNotes(response.messages?.directMessages ?? []),
     outgoing: mapMessageRecordsToTaskNotes(response.messages?.OutgoingMessages ?? []),
     mention: mapMessageRecordsToTaskNotes(response.messages?.MentionMessages ?? []),
     private: mapMessageRecordsToTaskNotes(response.messages?.PrivateMessages ?? []),
