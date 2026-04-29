@@ -19,5 +19,5 @@ export const TASK_CATEGORIES = {
   SCHEDULEA: 'schedulea',
   SCHEDULING: 'scheduling',
   PROGRESS_TASK: 'progress_task',
-  UPLOAD: 'upload',
+  UPLOAD: 'upload'
 } as const;
