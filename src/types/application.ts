@@ -253,6 +253,8 @@ export type WFApplicationMessageAttributes = {
   MessageType?: string;
   Priority?: 'CRITICAL' | 'HIGH' | 'LOW' | 'NORMAL' | string;
   SentDate?: string;
+  Tag?: string;
+  tag?: string;
   TaskInstanceId?: number;
   ToUser?: string;
   isPrivate?: boolean;

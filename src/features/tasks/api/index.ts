@@ -309,6 +309,33 @@ export async function markTaskNoteAsRead({
   })
 }
 
+export async function updateTaskNoteTag({
+  messageId,
+  tag,
+  token,
+}: {
+  messageId: string | number
+  tag: string
+  token?: string | null
+}): Promise<any> {
+  const resolvedMessageId = String(messageId).trim()
+
+  return await fetchWithAuth({
+    path: `/api/WFApplicationMessage/${resolvedMessageId}`,
+    method: 'PATCH',
+    body: {
+      data: {
+        id: resolvedMessageId,
+        type: 'WFApplicationMessage',
+        attributes: {
+          tag,
+        },
+      },
+    },
+    token,
+  })
+}
+
 export async function fetchMentionUsers({
   token,
 }: {

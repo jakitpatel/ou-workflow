@@ -406,6 +406,55 @@ describe('TaskNotesDrawer', () => {
     })
   })
 
+  it('derives persisted reactions from tag and sends updated tag codes when toggled', async () => {
+    const onReactionTagChange = vi.fn().mockResolvedValue(undefined)
+
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="task"
+        taskName="Review Ingredients"
+        activeTab="public"
+        directedNotes={[]}
+        privateNotes={[]}
+        publicNotes={[
+          {
+            MessageID: 100,
+            MessageText: 'Parent public note',
+            FromUser: 'Alice Smith',
+            SentDate: '2026-04-07T10:00:00.000Z',
+            tag: 'l,s',
+          } as TaskNote,
+        ]}
+        loadingDirected={false}
+        loadingPrivate={false}
+        loadingPublic={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate={false}
+        isSubmitting={false}
+        error=""
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+        onReactionTagChange={onReactionTagChange}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'React with 👍' }))
+
+    await waitFor(() => {
+      expect(onReactionTagChange).toHaveBeenCalledWith('100', 's')
+    })
+  })
+
   it('keeps ToUser empty when replying to a public My Notes thread', async () => {
     const onReplySubmit = vi.fn().mockResolvedValue(undefined)
 

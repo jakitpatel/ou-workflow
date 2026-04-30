@@ -78,6 +78,7 @@ export function NcrcDashboardContent() {
     myNotesLoading,
     myNotesError,
     myNotesMarkingReadMessageId,
+    myNotesReactingMessageId,
     myNotesReplySubmitting,
     updateSearch,
     handleFirst,
@@ -88,6 +89,7 @@ export function NcrcDashboardContent() {
     closeMyNotesDrawer,
     submitMyNotesReply,
     markMyNoteRead,
+    updateMyNoteReactionTag,
   } = useNcrcDashboardState({
     search,
     navigate,
@@ -348,6 +350,7 @@ export function NcrcDashboardContent() {
         onViewApplicationClick={viewApplicationFromMyNotes}
         onIncomingNoteClick={markMyNoteRead}
         markingReadMessageId={myNotesMarkingReadMessageId}
+        reactingMessageId={myNotesReactingMessageId}
         onClose={closeMyNotesDrawer}
         onTabChange={setMyMessagesActiveTab}
         onComposeTextChange={() => {}}
@@ -355,6 +358,7 @@ export function NcrcDashboardContent() {
         onComposePrivateChange={() => {}}
         onSubmit={() => {}}
         onReplySubmit={submitMyNotesReply}
+        onReactionTagChange={updateMyNoteReactionTag}
       />
       <ApplicationDetailsDrawer
         open={myNotesSelectedApplicationId !== null}

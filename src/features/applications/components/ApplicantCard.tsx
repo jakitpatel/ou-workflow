@@ -166,6 +166,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         error={applicationNotes.error}
         onIncomingNoteClick={applicationNotes.markIncomingNoteRead}
         markingReadMessageId={applicationNotes.markingReadMessageId}
+        reactingMessageId={applicationNotes.reactingMessageId}
         onApplicationIdClick={applicationNotes.openApplicationDetails}
         onClose={applicationNotes.closeDrawer}
         onTabChange={applicationNotes.setActiveTab}
@@ -174,6 +175,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
         onComposePrivateChange={applicationNotes.setComposePrivate}
         onSubmit={applicationNotes.submitNote}
         onReplySubmit={applicationNotes.submitReply}
+        onReactionTagChange={applicationNotes.updateMessageReactionTag}
       />
 
       <ApplicationDetailsDrawer

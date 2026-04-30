@@ -5,11 +5,13 @@ import { renderWithProviders } from '@/test/renderWithProviders'
 
 const fetchMyMessagesMock = vi.fn()
 const markTaskNoteAsReadMock = vi.fn()
+const updateTaskNoteTagMock = vi.fn()
 const mutateAsyncMock = vi.fn()
 
 vi.mock('@/features/tasks/api', () => ({
   fetchMyMessages: (...args: unknown[]) => fetchMyMessagesMock(...args),
   markTaskNoteAsRead: (...args: unknown[]) => markTaskNoteAsReadMock(...args),
+  updateTaskNoteTag: (...args: unknown[]) => updateTaskNoteTagMock(...args),
 }))
 
 vi.mock('@/features/tasks/hooks/useTaskMutations', () => ({
@@ -82,6 +84,10 @@ function NotesHookHarness() {
         submit-reply
       </button>
 
+      <button type="button" onClick={() => void notes.updateMessageReactionTag('message-42', 'l,s')}>
+        react-message
+      </button>
+
       <button type="button" onClick={() => notes.openApplicationFilter(77)}>
         open-application-filter
       </button>
@@ -119,6 +125,7 @@ describe('useTaskNotesDrawerState', () => {
 
     fetchMyMessagesMock.mockReset()
     markTaskNoteAsReadMock.mockReset()
+    updateTaskNoteTagMock.mockReset()
     mutateAsyncMock.mockReset()
 
     fetchMyMessagesMock.mockImplementation(async () => ({
@@ -130,6 +137,7 @@ describe('useTaskNotesDrawerState', () => {
 
     mutateAsyncMock.mockResolvedValue({ status: 'ok' })
     markTaskNoteAsReadMock.mockResolvedValue({ status: 'ok' })
+    updateTaskNoteTagMock.mockResolvedValue({ status: 'ok' })
   })
 
   it('preloads all note tabs when the drawer opens', async () => {
@@ -217,6 +225,30 @@ describe('useTaskNotesDrawerState', () => {
           token: 'test-access-token',
         }),
       )
+    })
+
+    await waitFor(() => {
+      expect(fetchMyMessagesMock).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  it('updates a message reaction tag and refreshes notes', async () => {
+    renderWithProviders(<NotesHookHarness />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'open-drawer' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('active-tab:mention')).toBeTruthy()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'react-message' }))
+
+    await waitFor(() => {
+      expect(updateTaskNoteTagMock).toHaveBeenCalledWith({
+        messageId: 'message-42',
+        tag: 'l,s',
+        token: 'test-access-token',
+      })
     })
 
     await waitFor(() => {

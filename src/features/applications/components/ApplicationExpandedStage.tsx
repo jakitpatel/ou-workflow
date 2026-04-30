@@ -374,6 +374,7 @@ export function ApplicationExpandedStage({
         error={taskNotes.error}
         onIncomingNoteClick={taskNotes.markIncomingNoteRead}
         markingReadMessageId={taskNotes.markingReadMessageId}
+        reactingMessageId={taskNotes.reactingMessageId}
         onApplicationIdClick={taskNotes.openApplicationDetails}
         onClose={taskNotes.closeDrawer}
         onTabChange={taskNotes.setActiveTab}
@@ -382,6 +383,7 @@ export function ApplicationExpandedStage({
         onComposePrivateChange={taskNotes.setComposePrivate}
         onSubmit={taskNotes.submitNote}
         onReplySubmit={taskNotes.submitReply}
+        onReactionTagChange={taskNotes.updateMessageReactionTag}
       />
       <ApplicationDetailsDrawer
         open={taskNotes.selectedApplicationId !== null}

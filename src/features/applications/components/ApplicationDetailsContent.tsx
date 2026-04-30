@@ -550,6 +550,7 @@ export function ApplicationDetailsContent({ application, mode = 'page', applicat
                 error={applicationNotes.error}
                 onIncomingNoteClick={applicationNotes.markIncomingNoteRead}
                 markingReadMessageId={applicationNotes.markingReadMessageId}
+                reactingMessageId={applicationNotes.reactingMessageId}
                 onClose={() => {}}
                 onTabChange={applicationNotes.setActiveTab}
                 onComposeTextChange={applicationNotes.setComposeText}
@@ -557,6 +558,7 @@ export function ApplicationDetailsContent({ application, mode = 'page', applicat
                 onComposePrivateChange={applicationNotes.setComposePrivate}
                 onSubmit={applicationNotes.submitNote}
                 onReplySubmit={applicationNotes.submitReply}
+                onReactionTagChange={applicationNotes.updateMessageReactionTag}
               />
             )}
             {activeTab === 'notes' && resolvedApplicationId === null && (

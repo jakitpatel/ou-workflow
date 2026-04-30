@@ -74,6 +74,7 @@ type Props = {
   onViewApplicationClick?: (applicationId: number) => void
   onIncomingNoteClick?: (note: TaskNote) => Promise<void> | void
   markingReadMessageId?: string | null
+  reactingMessageId?: string | null
   onClose: () => void
   onTabChange: (tab: NoteTab) => void
   onComposeTextChange: (text: string) => void
@@ -88,6 +89,7 @@ type Props = {
     toUser?: string | null
     isPrivate?: boolean
   }) => Promise<void>
+  onReactionTagChange?: (messageId: string, tag: string) => Promise<void>
 }
 
 type PublicNoteNode = {
@@ -119,6 +121,41 @@ type ThreadReplyTarget = {
   toUser?: string | null
   isPrivate?: boolean
 }
+
+const REACTION_CODE_TO_EMOJI: Record<string, string> = {
+  l: '👍',
+  h: '❤️',
+  j: '😂',
+  s: '😮',
+  t: '🎉',
+  a: '👏',
+  f: '🔥',
+  c: '✅',
+  e: '👀',
+  i: '💡',
+}
+
+const EMOJI_TO_REACTION_CODE = Object.fromEntries(
+  Object.entries(REACTION_CODE_TO_EMOJI).map(([code, emoji]) => [emoji, code]),
+) as Record<string, string>
+
+const QUICK_REACTION_EMOJIS = ['👍', '❤️', '😂', '😮'] as const
+const PICKER_REACTION_EMOJIS = ['🎉', '👏', '🔥', '✅', '👀', '💡'] as const
+
+const parseReactionCodes = (value: unknown): string[] =>
+  String(value ?? '')
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter((item, index, array) => item in REACTION_CODE_TO_EMOJI && array.indexOf(item) === index)
+
+const serializeReactionCodes = (codes: string[]): string =>
+  codes
+    .map((code) => code.trim().toLowerCase())
+    .filter((code, index, array) => code in REACTION_CODE_TO_EMOJI && array.indexOf(code) === index)
+    .join(',')
+
+const getReactionCodesFromNote = (note: TaskNote): string[] =>
+  parseReactionCodes((note as any)?.tag ?? (note as any)?.Tag)
 
 const PUBLIC_ROOT_TONE: RootTone = {
   avatar: 'bg-emerald-700',
@@ -544,6 +581,7 @@ export function TaskNotesDrawer({
   onViewApplicationClick,
   onIncomingNoteClick,
   markingReadMessageId,
+  reactingMessageId,
   onClose,
   onTabChange,
   onComposeTextChange,
@@ -551,6 +589,7 @@ export function TaskNotesDrawer({
   onComposePrivateChange,
   onSubmit,
   onReplySubmit,
+  onReactionTagChange,
 }: Props) {
   const isEmbedded = variant === 'embedded'
   const composeTextareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -563,7 +602,6 @@ export function TaskNotesDrawer({
   const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({})
   const [reactionPickerOpenById, setReactionPickerOpenById] = useState<Record<string, boolean>>({})
   const [actionMenuOpenById, setActionMenuOpenById] = useState<Record<string, boolean>>({})
-  const [reactionsByNoteId, setReactionsByNoteId] = useState<Record<string, string[]>>({})
   const [mentionOpen, setMentionOpen] = useState(false)
   const [mentionContext, setMentionContext] = useState<MentionContext | null>(null)
   const [recipientPickerOpen, setRecipientPickerOpen] = useState(false)
@@ -696,7 +734,6 @@ export function TaskNotesDrawer({
     setReplyTargetByThreadId({})
     setReactionPickerOpenById({})
     setActionMenuOpenById({})
-    setReactionsByNoteId({})
     setRecipientPickerOpen(false)
     setRecipientQuery('')
   }, [open, activeTab, taskName])
@@ -875,15 +912,21 @@ export function TaskNotesDrawer({
     }
   }
 
-  const addReactionToNote = (noteId: string, emoji: string) => {
-    setReactionsByNoteId((prev) => {
-      const current = prev[noteId] ?? []
-      return {
-        ...prev,
-        [noteId]: current.includes(emoji) ? current.filter((item) => item !== emoji) : [...current, emoji],
-      }
-    })
-    setReactionPickerOpenById((prev) => ({ ...prev, [noteId]: false }))
+  const toggleReactionForNote = async (note: TaskNote, noteId: string, emoji: string) => {
+    const reactionCode = EMOJI_TO_REACTION_CODE[emoji]
+    if (!reactionCode || !onReactionTagChange) return
+
+    const currentCodes = getReactionCodesFromNote(note)
+    const nextCodes = currentCodes.includes(reactionCode)
+      ? currentCodes.filter((code) => code !== reactionCode)
+      : [...currentCodes, reactionCode]
+
+    try {
+      await onReactionTagChange(noteId, serializeReactionCodes(nextCodes))
+      setReactionPickerOpenById((prev) => ({ ...prev, [noteId]: false }))
+    } catch {
+      // Hook layer already captures and surfaces the error.
+    }
   }
 
   const renderPublicNode = (node: PublicNoteNode) => {
@@ -1091,10 +1134,14 @@ export function TaskNotesDrawer({
                 const messageIsMarkingRead = markingReadMessageId === messageId
                 const messageRenderedText =
                   isPublicTab ? renderNoteTextWithMentionHighlight(messageText, currentUsername) : messageText
-                const messageReactions = reactionsByNoteId[messageId] ?? []
+                const messageReactionCodes = getReactionCodesFromNote(messageNote)
+                const messageReactions = messageReactionCodes
+                  .map((code) => REACTION_CODE_TO_EMOJI[code])
+                  .filter(Boolean)
                 const isReactionPickerOpen = Boolean(reactionPickerOpenById[messageId])
                 const isActionMenuOpen = Boolean(actionMenuOpenById[messageId])
                 const canMarkMessageRead = toUserIncludesCurrentUser(messageToUser, currentUsername)
+                const isReactingMessage = reactingMessageId === messageId
                 const showMessageToUser =
                   messageToUser !== '-' && (isDirectedTab || (showMyNotesThreadType && isIncomingTab))
                 const isRootMessage = messageIndex === 0
@@ -1136,11 +1183,12 @@ export function TaskNotesDrawer({
                             messageIsOwn ? 'right-3' : 'left-3'
                           } -top-3 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto`}
                         >
-                          {['👍', '❤️', '😂', '😮'].map((emoji) => (
+                          {QUICK_REACTION_EMOJIS.map((emoji) => (
                             <button
                               key={`${messageId}-${emoji}-quick`}
                               type="button"
-                              onClick={() => addReactionToNote(messageId, emoji)}
+                              onClick={() => void toggleReactionForNote(messageNote, messageId, emoji)}
+                              disabled={isReactingMessage}
                               className="rounded-full px-1.5 py-1 text-xs transition hover:bg-slate-100"
                               aria-label={`React with ${emoji}`}
                             >
@@ -1225,7 +1273,8 @@ export function TaskNotesDrawer({
                               <button
                                 key={`${messageId}-${emoji}`}
                                 type="button"
-                                onClick={() => addReactionToNote(messageId, emoji)}
+                                onClick={() => void toggleReactionForNote(messageNote, messageId, emoji)}
+                                disabled={isReactingMessage}
                                 className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs shadow-sm hover:bg-slate-50"
                               >
                                 {emoji}
@@ -1237,11 +1286,12 @@ export function TaskNotesDrawer({
                         <div className={`relative mt-2 flex flex-wrap items-center gap-1 ${messageIsOwn ? 'justify-end' : 'justify-start'}`}>
                           {isReactionPickerOpen ? (
                             <div className={`absolute top-full z-10 mt-2 flex gap-1 rounded-full border border-slate-200 bg-white p-2 shadow-xl ${messageIsOwn ? 'right-0' : 'left-0'}`}>
-                              {['🎉', '👏', '🔥', '✅', '👀', '💡'].map((emoji) => (
+                              {PICKER_REACTION_EMOJIS.map((emoji) => (
                                 <button
                                   key={`${messageId}-${emoji}-picker`}
                                   type="button"
-                                  onClick={() => addReactionToNote(messageId, emoji)}
+                                  onClick={() => void toggleReactionForNote(messageNote, messageId, emoji)}
+                                  disabled={isReactingMessage}
                                   className="rounded-full px-2 py-1 text-base hover:bg-slate-100"
                                 >
                                   {emoji}

@@ -3,7 +3,12 @@ import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { useInfiniteApplications } from '@/features/applications/hooks/useInfiniteApplications'
 import { usePagedApplications } from '@/features/applications/hooks/usePagedApplications'
-import { fetchMyMessages, markTaskNoteAsRead, type MyMessagesByTab } from '@/features/tasks/api'
+import {
+  fetchMyMessages,
+  markTaskNoteAsRead,
+  updateTaskNoteTag,
+  type MyMessagesByTab,
+} from '@/features/tasks/api'
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { useDebounce } from '@/hooks/useDebounce'
 import type { Applicant, TaskNote } from '@/types/application'
@@ -82,6 +87,7 @@ export function useNcrcDashboardState({
   const [myNotesLoading, setMyNotesLoading] = useState(false)
   const [myNotesError, setMyNotesError] = useState('')
   const [myNotesMarkingReadMessageId, setMyNotesMarkingReadMessageId] = useState<string | null>(null)
+  const [myNotesReactingMessageId, setMyNotesReactingMessageId] = useState<string | null>(null)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   const debouncedSearch = useDebounce(q, DEBOUNCE_DELAY)
@@ -364,6 +370,34 @@ export function useNcrcDashboardState({
     [myNotesMarkingReadMessageId, refreshMyNotes, token],
   )
 
+  const updateMyNoteReactionTag = useCallback(
+    async (messageId: string, tag: string) => {
+      const resolvedMessageId = String(messageId).trim()
+      if (!resolvedMessageId || myNotesReactingMessageId === resolvedMessageId) return
+
+      setMyNotesReactingMessageId(resolvedMessageId)
+      try {
+        await updateTaskNoteTag({
+          messageId: resolvedMessageId,
+          tag,
+          token: token ?? undefined,
+        })
+        await refreshMyNotes()
+      } catch (reactionError: any) {
+        const message =
+          reactionError?.details?.status ||
+          reactionError?.details?.message ||
+          reactionError?.message ||
+          'Failed to update reaction'
+        setMyNotesError(message)
+        throw reactionError
+      } finally {
+        setMyNotesReactingMessageId((current) => (current === resolvedMessageId ? null : current))
+      }
+    },
+    [myNotesReactingMessageId, refreshMyNotes, token],
+  )
+
   const closeMyNotesDrawer = useCallback(() => {
     setMyNotesOpen(false)
     setMyNotesError('')
@@ -391,6 +425,7 @@ export function useNcrcDashboardState({
     myNotesLoading,
     myNotesError,
     myNotesMarkingReadMessageId,
+    myNotesReactingMessageId,
     myNotesReplySubmitting: createTaskNoteMutation.isPending,
     updateSearch,
     handleFirst,
@@ -401,5 +436,6 @@ export function useNcrcDashboardState({
     closeMyNotesDrawer,
     submitMyNotesReply,
     markMyNoteRead,
+    updateMyNoteReactionTag,
   }
 }

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useUser } from '@/context/UserContext'
-import { fetchMyMessages, markTaskNoteAsRead } from '@/features/tasks/api'
+import { fetchMyMessages, markTaskNoteAsRead, updateTaskNoteTag } from '@/features/tasks/api'
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations'
 import type { TaskNote } from '@/types/application'
 import type { NoteTab, NotesByTab } from './types'
@@ -141,6 +141,7 @@ export function useTaskNotesDrawerState({
   const [composeToUserId, setComposeToUserIdState] = useState<string | null>(null)
   const [composePrivate, setComposePrivateState] = useState(false)
   const [markingReadMessageId, setMarkingReadMessageId] = useState<string | null>(null)
+  const [reactingMessageId, setReactingMessageId] = useState<string | null>(null)
   const [selectedApplicationId, setSelectedApplicationId] = useState<number | null>(null)
   const [selectedApplicationFilterId, setSelectedApplicationFilterId] = useState<number | null>(null)
   const [error, setError] = useState('')
@@ -403,6 +404,37 @@ export function useTaskNotesDrawerState({
     [drawer, fetchNotes, markingReadMessageId, onError, token, username],
   )
 
+  const updateMessageReactionTag = useCallback(
+    async (messageId: string | number, tag: string) => {
+      if (!drawer) return
+
+      const resolvedMessageId = String(messageId).trim()
+      if (!resolvedMessageId || reactingMessageId === resolvedMessageId) return
+
+      setReactingMessageId(resolvedMessageId)
+      try {
+        await updateTaskNoteTag({
+          messageId: resolvedMessageId,
+          tag,
+          token: token ?? undefined,
+        })
+
+        await fetchNotes({
+          contextKey: drawer.contextKey,
+          taskId: drawer.taskId,
+        })
+      } catch (reactionError) {
+        const message = buildFetchErrorMessage(reactionError)
+        setError(message)
+        onError?.(message)
+        throw reactionError
+      } finally {
+        setReactingMessageId((current) => (current === resolvedMessageId ? null : current))
+      }
+    },
+    [drawer, fetchNotes, onError, reactingMessageId, token],
+  )
+
   const activeNotes = useMemo(() => {
     if (!drawer) {
       return EMPTY_NOTES
@@ -441,6 +473,7 @@ export function useTaskNotesDrawerState({
     composeToUserId,
     composePrivate,
     markingReadMessageId,
+    reactingMessageId,
     error,
     isSubmitting: createTaskNoteMutation.isPending,
     openDrawer,
@@ -458,6 +491,7 @@ export function useTaskNotesDrawerState({
     submitNote,
     submitReply,
     markIncomingNoteRead,
+    updateMessageReactionTag,
     getCounts,
     isLoading,
   }
