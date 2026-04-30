@@ -3,6 +3,7 @@ import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
 import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal';
 import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer';
+import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer';
 import { useTaskDashboardState } from '@/features/tasks/hooks/useTaskDashboardState';
 import { plantHistory } from '@/features/tasks/model/plantHistory';
 
@@ -31,6 +32,8 @@ export function TaskDashboardContent() {
     setShowUploadModal,
     scheduleADrawerState,
     setScheduleADrawerState,
+    scheduleBDrawerState,
+    setScheduleBDrawerState,
     selectedAction,
     executeAction,
     completeTaskWithResult,
@@ -110,6 +113,13 @@ export function TaskDashboardContent() {
         applicationName={scheduleADrawerState.applicationName}
         taskName={scheduleADrawerState.taskName}
         onClose={() => setScheduleADrawerState({ open: false })}
+      />
+      <ScheduleBProductsDrawer
+        open={scheduleBDrawerState.open}
+        applicationId={scheduleBDrawerState.applicationId}
+        applicationName={scheduleBDrawerState.applicationName}
+        taskName={scheduleBDrawerState.taskName}
+        onClose={() => setScheduleBDrawerState({ open: false })}
       />
     </>
   );

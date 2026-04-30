@@ -17,6 +17,7 @@ export const TASK_CATEGORIES = {
   SELECTOR: 'selector',
   INPUT: 'input',
   SCHEDULEA: 'schedulea',
+  SCHEDULEB: 'scheduleb',
   SCHEDULING: 'scheduling',
   PROGRESS_TASK: 'progress_task',
   UPLOAD: 'upload'

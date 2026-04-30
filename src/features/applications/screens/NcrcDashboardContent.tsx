@@ -7,6 +7,7 @@ import { NcrcDashboardControls } from '@/features/applications/components/NcrcDa
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
 import { NcrcDashboardListSection } from '@/features/applications/components/NcrcDashboardListSection'
 import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer'
+import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer'
 import { useNcrcDashboardState } from '@/features/applications/hooks/useNcrcDashboardState'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
 import { useTaskActions } from '@/features/tasks/hooks/useTaskActions'
@@ -36,6 +37,14 @@ export function NcrcDashboardContent() {
   const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null)
   const [showUploadModal, setShowUploadModal] = useState<Task | null | boolean>(null)
   const [scheduleADrawerState, setScheduleADrawerState] = useState<{
+    open: boolean
+    applicationId?: string | number
+    applicationName?: string
+    taskName?: string
+  }>({
+    open: false,
+  })
+  const [scheduleBDrawerState, setScheduleBDrawerState] = useState<{
     open: boolean
     applicationId?: string | number
     applicationName?: string
@@ -162,6 +171,16 @@ export function NcrcDashboardContent() {
 
     if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEA) {
       setScheduleADrawerState({
+        open: true,
+        applicationId: application.applicationId,
+        applicationName: application.company,
+        taskName: action.name,
+      })
+      return
+    }
+
+    if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEB) {
+      setScheduleBDrawerState({
         open: true,
         applicationId: application.applicationId,
         applicationName: application.company,
@@ -348,6 +367,13 @@ export function NcrcDashboardContent() {
         applicationName={scheduleADrawerState.applicationName}
         taskName={scheduleADrawerState.taskName}
         onClose={() => setScheduleADrawerState({ open: false })}
+      />
+      <ScheduleBProductsDrawer
+        open={scheduleBDrawerState.open}
+        applicationId={scheduleBDrawerState.applicationId}
+        applicationName={scheduleBDrawerState.applicationName}
+        taskName={scheduleBDrawerState.taskName}
+        onClose={() => setScheduleBDrawerState({ open: false })}
       />
     </>
   )
