@@ -470,6 +470,18 @@ const flattenPublicThread = (node: PublicNoteNode): PublicNoteNode[] => [
 const normalizeComparableUserName = (value: string): string =>
   value.trim().replace(/^@/, '').replace(/[^a-z0-9]/gi, '').toLowerCase()
 
+const toUserIncludesCurrentUser = (toUser: string, currentUsername?: string | null): boolean => {
+  const normalizedCurrentUsername = normalizeComparableUserName(currentUsername ?? '')
+  if (!normalizedCurrentUsername) return false
+  if (!toUser || toUser === '-') return false
+
+  return toUser
+    .split(',')
+    .map((value) => normalizeComparableUserName(value))
+    .filter(Boolean)
+    .includes(normalizedCurrentUsername)
+}
+
 const isCurrentUserMessage = (fromName: string, currentUsername?: string | null): boolean => {
   const normalizedFromName = normalizeComparableUserName(fromName)
   const normalizedCurrentUsername = normalizeComparableUserName(currentUsername ?? '')
@@ -909,6 +921,7 @@ export function TaskNotesDrawer({
     const showMyNoteThreadBadge = showMyNotesThreadType && !isIncomingTab
     const noteIsRead = isNoteRead(note)
     const isMarkingRead = markingReadMessageId === rootMessageId
+    const canMarkThreadRead = toUserIncludesCurrentUser(toUser, currentUsername)
     const incomingReadIndicatorClass = noteIsRead
       ? 'bg-slate-100 text-slate-600'
       : 'bg-violet-100 text-violet-800'
@@ -988,7 +1001,7 @@ export function TaskNotesDrawer({
     }
 
     const handleThreadClick = () => {
-      if (!isIncomingTab || noteIsRead) return
+      if (!isIncomingTab || noteIsRead || !canMarkThreadRead) return
       void onIncomingNoteClick?.(note)
     }
 
@@ -999,7 +1012,7 @@ export function TaskNotesDrawer({
           isIncomingTab && !noteIsRead
             ? 'border-violet-300 bg-violet-50/70 ring-1 ring-violet-100'
             : 'border-slate-200 bg-white'
-        } ${isIncomingTab && !isThreadExpanded ? 'cursor-pointer' : ''}`}
+        } ${isIncomingTab && !noteIsRead && !isThreadExpanded && canMarkThreadRead ? 'cursor-pointer' : ''}`}
         onClick={handleThreadClick}
       >
         <div className="flex items-start gap-3 border-b border-slate-100 px-4 py-3">
@@ -1081,6 +1094,7 @@ export function TaskNotesDrawer({
                 const messageReactions = reactionsByNoteId[messageId] ?? []
                 const isReactionPickerOpen = Boolean(reactionPickerOpenById[messageId])
                 const isActionMenuOpen = Boolean(actionMenuOpenById[messageId])
+                const canMarkMessageRead = toUserIncludesCurrentUser(messageToUser, currentUsername)
                 const showMessageToUser =
                   messageToUser !== '-' && (isDirectedTab || (showMyNotesThreadType && isIncomingTab))
                 const isRootMessage = messageIndex === 0
@@ -1196,9 +1210,9 @@ export function TaskNotesDrawer({
                               : isRootMessage
                                 ? `${rootTone.card} ${rootTone.text}`
                                 : 'border-slate-200 bg-white text-slate-900'
-                          } ${isSelectedReplyTarget ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-slate-50 shadow-md' : ''} ${isIncomingTab ? 'cursor-pointer' : ''}`}
+                          } ${isSelectedReplyTarget ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-slate-50 shadow-md' : ''} ${isIncomingTab && !messageNoteIsRead && canMarkMessageRead ? 'cursor-pointer' : ''}`}
                           onClick={() => {
-                            if (!isIncomingTab || messageNoteIsRead) return
+                            if (!isIncomingTab || messageNoteIsRead || !canMarkMessageRead) return
                             void onIncomingNoteClick?.(messageNote)
                           }}
                         >
@@ -1469,10 +1483,12 @@ export function TaskNotesDrawer({
             <div className="space-y-2">
               {!isThreadedTab
                 ? notes.map((note, idx) => {
-                  const noteId = getNoteId(note, idx)
-                  const fromName = getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
+                    const noteId = getNoteId(note, idx)
+                    const fromName = getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
                     const noteIsRead = isNoteRead(note)
                     const isMarkingRead = markingReadMessageId === noteId
+                    const noteToUser = getMetaValue(note, 'toUser', 'to_user', 'ToUser')
+                    const canMarkNoteRead = toUserIncludesCurrentUser(noteToUser, currentUsername)
                     const createdAt = formatNoteDate(
                       getMetaValue(note, 'createdDate', 'created_date', 'SentDate', 'sentDate')
                     )
@@ -1488,11 +1504,11 @@ export function TaskNotesDrawer({
                         key={noteId}
                         className={`rounded-lg border p-2.5 shadow-sm ${
                           isIncomingTab && !noteIsRead
-                            ? 'cursor-pointer border-violet-300 bg-violet-50/70 ring-1 ring-violet-100'
+                            ? `${canMarkNoteRead ? 'cursor-pointer ' : ''}border-violet-300 bg-violet-50/70 ring-1 ring-violet-100`
                             : 'border-slate-200 bg-white'
                         }`}
                         onClick={() => {
-                          if (!isIncomingTab) return
+                          if (!isIncomingTab || !canMarkNoteRead || noteIsRead) return
                           void onIncomingNoteClick?.(note)
                         }}
                       >

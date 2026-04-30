@@ -981,6 +981,7 @@ describe('TaskNotesDrawer', () => {
             MessageID: 401,
             MessageText: 'Unread incoming message',
             FromUser: 'Alice Smith',
+            ToUser: 'S.Benjamin,Other.User',
             SentDate: '2026-04-07T10:00:00.000Z',
             isRead: 0,
           } as TaskNote,
@@ -995,6 +996,7 @@ describe('TaskNotesDrawer', () => {
         composeText=""
         composeToUserId={null}
         composePrivate
+        currentUsername="S.Benjamin"
         isSubmitting={false}
         error=""
         onIncomingNoteClick={onIncomingNoteClick}
@@ -1015,5 +1017,105 @@ describe('TaskNotesDrawer', () => {
         MessageID: 401,
       }),
     )
+  })
+
+  it('does not mark an incoming note as read when currentUsername is not in ToUser', () => {
+    const onIncomingNoteClick = vi.fn()
+
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="task"
+        taskName="Review Ingredients"
+        activeTab="incoming"
+        incomingNotes={[
+          {
+            MessageID: 402,
+            MessageText: 'Unread incoming message',
+            FromUser: 'Alice Smith',
+            ToUser: 'A.User,Another.User',
+            SentDate: '2026-04-07T10:00:00.000Z',
+            isRead: 0,
+          } as TaskNote,
+        ]}
+        outgoingNotes={[]}
+        mentionNotes={[]}
+        privateNotes={[]}
+        loadingIncoming={false}
+        loadingOutgoing={false}
+        loadingMention={false}
+        loadingPrivate={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate
+        currentUsername="S.Benjamin"
+        isSubmitting={false}
+        error=""
+        onIncomingNoteClick={onIncomingNoteClick}
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('Unread incoming message'))
+
+    expect(onIncomingNoteClick).not.toHaveBeenCalled()
+  })
+
+  it('does not mark an already read incoming note as read again when clicked', () => {
+    const onIncomingNoteClick = vi.fn()
+
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="Test Company"
+        applicationId={42}
+        contextType="task"
+        taskName="Review Ingredients"
+        activeTab="incoming"
+        incomingNotes={[
+          {
+            MessageID: 403,
+            MessageText: 'Read incoming message',
+            FromUser: 'Alice Smith',
+            ToUser: 'S.Benjamin',
+            SentDate: '2026-04-07T10:00:00.000Z',
+            isRead: 1,
+          } as TaskNote,
+        ]}
+        outgoingNotes={[]}
+        mentionNotes={[]}
+        privateNotes={[]}
+        loadingIncoming={false}
+        loadingOutgoing={false}
+        loadingMention={false}
+        loadingPrivate={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate
+        currentUsername="S.Benjamin"
+        isSubmitting={false}
+        error=""
+        onIncomingNoteClick={onIncomingNoteClick}
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('Read incoming message'))
+
+    expect(onIncomingNoteClick).not.toHaveBeenCalled()
   })
 })

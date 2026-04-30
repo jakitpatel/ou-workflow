@@ -105,6 +105,27 @@ const isTaskNoteRead = (note: TaskNote): boolean => {
   return normalized === '1' || normalized === 'true'
 }
 
+const normalizeComparableUserName = (value: string): string =>
+  value.trim().replace(/^@/, '').replace(/[^a-z0-9]/gi, '').toLowerCase()
+
+const noteTargetsCurrentUser = (note: TaskNote, currentUsername?: string | null): boolean => {
+  const normalizedCurrentUsername = normalizeComparableUserName(currentUsername ?? '')
+  if (!normalizedCurrentUsername) return false
+
+  const rawToUser =
+    (note as any)?.ToUser ??
+    (note as any)?.toUser ??
+    (note as any)?.to_user
+
+  if (rawToUser === undefined || rawToUser === null) return false
+
+  return String(rawToUser)
+    .split(',')
+    .map((value) => normalizeComparableUserName(value))
+    .filter(Boolean)
+    .includes(normalizedCurrentUsername)
+}
+
 export function useTaskNotesDrawerState({
   applicationId,
   includeApplicationLists = true,
@@ -355,6 +376,7 @@ export function useTaskNotesDrawerState({
       if (!drawer) return
       if (drawer.activeTab !== 'incoming') return
       if (isTaskNoteRead(note)) return
+      if (!noteTargetsCurrentUser(note, username)) return
 
       const messageId = getMessageId(note)
       if (!messageId || markingReadMessageId === messageId) return
@@ -378,7 +400,7 @@ export function useTaskNotesDrawerState({
         setMarkingReadMessageId((current) => (current === messageId ? null : current))
       }
     },
-    [drawer, fetchNotes, markingReadMessageId, onError, token],
+    [drawer, fetchNotes, markingReadMessageId, onError, token, username],
   )
 
   const activeNotes = useMemo(() => {

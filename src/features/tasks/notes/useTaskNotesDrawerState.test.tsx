@@ -466,6 +466,7 @@ describe('useTaskNotesDrawerState', () => {
               void notes.markIncomingNoteRead({
                 MessageID: 'incoming-note-1',
                 MessageText: 'Incoming note',
+                ToUser: 'S.Benjamin,Other.User',
                 isRead: 0,
               } as any)
             }
@@ -498,5 +499,117 @@ describe('useTaskNotesDrawerState', () => {
       expect(fetchMyMessagesMock).toHaveBeenCalledTimes(2)
       expect(screen.getByText('marking:none')).toBeTruthy()
     })
+  })
+
+  it('does not mark an incoming note as read when the logged-in user is not in ToUser', async () => {
+    function MarkReadBlockedHarness() {
+      const notes = useTaskNotesDrawerState({
+        applicationId: 42,
+      })
+
+      return (
+        <div>
+          <button
+            type="button"
+            onClick={() =>
+              void notes.openDrawer({
+                contextKey: 'application:42',
+                taskName: 'Application 42',
+                tab: 'incoming',
+              })
+            }
+          >
+            open-incoming
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              void notes.markIncomingNoteRead({
+                MessageID: 'incoming-note-2',
+                MessageText: 'Incoming note',
+                ToUser: 'A.User,Another.User',
+                isRead: 0,
+              } as any)
+            }
+          >
+            mark-read-blocked
+          </button>
+          <div>marking:{notes.markingReadMessageId ?? 'none'}</div>
+        </div>
+      )
+    }
+
+    renderWithProviders(<MarkReadBlockedHarness />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'open-incoming' }))
+
+    await waitFor(() => {
+      expect(fetchMyMessagesMock).toHaveBeenCalledTimes(1)
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'mark-read-blocked' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('marking:none')).toBeTruthy()
+    })
+
+    expect(markTaskNoteAsReadMock).not.toHaveBeenCalled()
+    expect(fetchMyMessagesMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not mark an incoming note as read when it is already read', async () => {
+    function MarkReadAlreadyReadHarness() {
+      const notes = useTaskNotesDrawerState({
+        applicationId: 42,
+      })
+
+      return (
+        <div>
+          <button
+            type="button"
+            onClick={() =>
+              void notes.openDrawer({
+                contextKey: 'application:42',
+                taskName: 'Application 42',
+                tab: 'incoming',
+              })
+            }
+          >
+            open-incoming
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              void notes.markIncomingNoteRead({
+                MessageID: 'incoming-note-3',
+                MessageText: 'Incoming note',
+                ToUser: 'S.Benjamin',
+                isRead: 1,
+              } as any)
+            }
+          >
+            mark-read-already-read
+          </button>
+          <div>marking:{notes.markingReadMessageId ?? 'none'}</div>
+        </div>
+      )
+    }
+
+    renderWithProviders(<MarkReadAlreadyReadHarness />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'open-incoming' }))
+
+    await waitFor(() => {
+      expect(fetchMyMessagesMock).toHaveBeenCalledTimes(1)
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'mark-read-already-read' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('marking:none')).toBeTruthy()
+    })
+
+    expect(markTaskNoteAsReadMock).not.toHaveBeenCalled()
+    expect(fetchMyMessagesMock).toHaveBeenCalledTimes(1)
   })
 })
