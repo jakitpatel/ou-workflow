@@ -380,7 +380,7 @@ describe('TaskNotesDrawer', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
-    fireEvent.click(screen.getByRole('button', { name: 'Reply' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Reply to thread root' }))
 
     const replyInput = await screen.findByPlaceholderText('Reply...')
     fireEvent.change(replyInput, {
@@ -442,7 +442,7 @@ describe('TaskNotesDrawer', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
-    fireEvent.click(screen.getByRole('button', { name: 'Reply' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Reply to thread root' }))
 
     const replyInput = await screen.findByPlaceholderText('Reply...')
     fireEvent.change(replyInput, {
@@ -512,7 +512,7 @@ describe('TaskNotesDrawer', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
-    fireEvent.click(screen.getByRole('button', { name: 'Reply' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Reply to thread root' }))
 
     const replyInput = await screen.findByPlaceholderText('Reply...')
     fireEvent.change(replyInput, {
@@ -571,7 +571,7 @@ describe('TaskNotesDrawer', () => {
     const tabs = screen.getAllByRole('button').map((button) => button.textContent ?? '')
     expect(tabs[1]).toContain('Direct')
     expect(screen.getByText('To')).toBeTruthy()
-    expect(screen.getByRole('button', { name: /Select User/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Select recipient/i })).toBeTruthy()
     expect(screen.getByText(/No recipient selected/i)).toBeTruthy()
     expect(screen.queryByLabelText(/Private note/i)).toBeNull()
   })
@@ -785,11 +785,132 @@ describe('TaskNotesDrawer', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /Change/i }))
-    fireEvent.click(screen.getByRole('button', { name: /alice smith/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Change recipient/i }))
+    const pickerAliceButton = screen
+      .getAllByRole('button', { name: /Alice Smith/i })
+      .find((button) => (button.textContent ?? '').includes('asmith'))
+    expect(pickerAliceButton).toBeTruthy()
+    fireEvent.click(pickerAliceButton!)
 
     expect(onComposeToUserChange).toHaveBeenCalledWith('asmith')
     expect(screen.getByText('To User: Alice Smith')).toBeTruthy()
+  })
+
+  it('allows selecting multiple directed users from the picker list', () => {
+    function DirectedRecipientHarness() {
+      const [composeToUserId, setComposeToUserId] = useState<string | null>(null)
+
+      return (
+        <TaskNotesDrawer
+          open
+          applicantCompany="Test Company"
+          applicationId={42}
+          contextType="task"
+          taskName="Review Ingredients"
+          activeTab="incoming"
+          incomingNotes={[]}
+          outgoingNotes={[]}
+          mentionNotes={[]}
+          privateNotes={[]}
+          loadingIncoming={false}
+          loadingOutgoing={false}
+          loadingMention={false}
+          loadingPrivate={false}
+          composeText=""
+          composeToUserId={composeToUserId}
+          composePrivate
+          isSubmitting={false}
+          error=""
+          onClose={() => {}}
+          onTabChange={() => {}}
+          onComposeTextChange={() => {}}
+          onComposeToUserChange={setComposeToUserId}
+          onComposePrivateChange={() => {}}
+          onSubmit={() => {}}
+          onReplySubmit={vi.fn()}
+        />
+      )
+    }
+
+    renderWithProviders(<DirectedRecipientHarness />)
+
+    fireEvent.click(screen.getByRole('button', { name: /Select recipient/i }))
+    const pickerAliceButton = screen
+      .getAllByRole('button', { name: /Alice Smith/i })
+      .find((button) => (button.textContent ?? '').includes('asmith'))
+    const pickerBobButton = screen
+      .getAllByRole('button', { name: /Bob User/i })
+      .find((button) => (button.textContent ?? '').includes('buser'))
+    expect(pickerAliceButton).toBeTruthy()
+    expect(pickerBobButton).toBeTruthy()
+    fireEvent.click(pickerAliceButton!)
+    fireEvent.click(pickerBobButton!)
+
+    expect(screen.getByText('To User: Alice Smith')).toBeTruthy()
+    expect(screen.getByText('To User: Bob User')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Change recipient/i })).toBeTruthy()
+  })
+
+  it('allows selecting multiple directed users via @ mentions', () => {
+    function DirectedMentionHarness() {
+      const [composeText, setComposeText] = useState('')
+      const [composeToUserId, setComposeToUserId] = useState<string | null>(null)
+
+      return (
+        <TaskNotesDrawer
+          open
+          applicantCompany="Test Company"
+          applicationId={42}
+          contextType="task"
+          taskName="Review Ingredients"
+          activeTab="incoming"
+          incomingNotes={[]}
+          outgoingNotes={[]}
+          mentionNotes={[]}
+          privateNotes={[]}
+          loadingIncoming={false}
+          loadingOutgoing={false}
+          loadingMention={false}
+          loadingPrivate={false}
+          composeText={composeText}
+          composeToUserId={composeToUserId}
+          composePrivate
+          isSubmitting={false}
+          error=""
+          onClose={() => {}}
+          onTabChange={() => {}}
+          onComposeTextChange={setComposeText}
+          onComposeToUserChange={setComposeToUserId}
+          onComposePrivateChange={() => {}}
+          onSubmit={() => {}}
+          onReplySubmit={vi.fn()}
+        />
+      )
+    }
+
+    renderWithProviders(<DirectedMentionHarness />)
+
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: '@al', selectionStart: 3 },
+    })
+    const mentionAliceButton = screen
+      .getAllByRole('button', { name: /Alice Smith/i })
+      .find((button) => (button.textContent ?? '').includes('NCRC'))
+    expect(mentionAliceButton).toBeTruthy()
+    fireEvent.click(mentionAliceButton!)
+
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: '@bu', selectionStart: 3 },
+    })
+    const mentionBobButton = screen
+      .getAllByRole('button', { name: /Bob User/i })
+      .find((button) => (button.textContent ?? '').includes('Reviewer'))
+    expect(mentionBobButton).toBeTruthy()
+    fireEvent.click(mentionBobButton!)
+
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('')
+    expect(screen.getByText('To User: Alice Smith')).toBeTruthy()
+    expect(screen.getByText('To User: Bob User')).toBeTruthy()
   })
 
   it('shows unread over total count for the Direct tab and renders read status badges', () => {

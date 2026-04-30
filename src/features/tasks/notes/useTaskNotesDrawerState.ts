@@ -66,6 +66,20 @@ const buildFetchErrorMessage = (error: unknown): string => {
   return 'Failed to fetch notes'
 }
 
+const normalizeComposeToUsers = (value: string | null): string | null => {
+  if (!value) return null
+
+  const normalized = Array.from(
+    new Set(
+      value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  )
+
+  return normalized.length > 0 ? normalized.join(',') : null
+}
 
 const normalizeNoteTab = (tab: NoteTab): NoteTab => {
   if (tab === 'directed') return 'incoming'
@@ -224,7 +238,7 @@ export function useTaskNotesDrawerState({
   }, [])
 
   const setComposeToUserId = useCallback((value: string | null) => {
-    setComposeToUserIdState(value)
+    setComposeToUserIdState(normalizeComposeToUsers(value))
   }, [])
 
   const setComposePrivate = useCallback((value: boolean) => {
@@ -251,11 +265,12 @@ export function useTaskNotesDrawerState({
     if (!drawer) return
 
     const trimmedText = composeText.trim()
+    const normalizedToUser = normalizeComposeToUsers(composeToUserId)
     if (!trimmedText) {
       setError('Note text is required')
       return
     }
-    if ((drawer.activeTab === 'incoming' || drawer.activeTab === 'outgoing') && !composeToUserId) {
+    if ((drawer.activeTab === 'incoming' || drawer.activeTab === 'outgoing') && !normalizedToUser) {
       setError(`${drawer.activeTab === 'incoming' ? 'Direct' : 'Outgoing'} notes require a To User`)
       return
     }
@@ -273,7 +288,7 @@ export function useTaskNotesDrawerState({
       isRead: false,
       priority: 'NORMAL',
       fromUser: username ?? undefined,
-      toUser: isIncomingTab || isOutgoingTab ? composeToUserId ?? undefined : undefined,
+      toUser: isIncomingTab || isOutgoingTab ? normalizedToUser ?? undefined : undefined,
       token: token ?? undefined,
     })
 

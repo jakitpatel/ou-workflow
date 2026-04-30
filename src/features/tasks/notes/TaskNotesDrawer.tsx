@@ -305,6 +305,20 @@ const getMentionValue = (user: MentionUser): string => {
   return user.id.trim()
 }
 
+const parseComposeToUsers = (value?: string | null): string[] => {
+  if (!value) return []
+
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+const serializeComposeToUsers = (values: string[]): string | null => {
+  const uniqueValues = Array.from(new Set(values.map((item) => item.trim()).filter(Boolean)))
+  return uniqueValues.length > 0 ? uniqueValues.join(',') : null
+}
+
 const getParentMessageId = (note: TaskNote): string => {
   const idCandidate = (note as any)?.MessageID ?? (note as any)?.messageId ?? (note as any)?.id
   if (idCandidate !== undefined && idCandidate !== null && String(idCandidate).trim()) {
@@ -620,13 +634,27 @@ export function TaskNotesDrawer({
     })
   }, [mentionQuery, mentionUsers])
 
-  const selectedMentionUser = useMemo(() => {
-    if ((!isDirectedTab && !isOutgoingTab) || !composeToUserId) return null
-    return mentionUsers.find((user) => {
-      const mentionValue = getMentionValue(user)
-      return user.id === composeToUserId || mentionValue === composeToUserId
-    }) ?? null
-  }, [composeToUserId, isDirectedTab, isOutgoingTab, mentionUsers])
+  const selectedToUserValues = useMemo(
+    () => parseComposeToUsers(composeToUserId),
+    [composeToUserId],
+  )
+
+  const selectedMentionUsers = useMemo(() => {
+    if ((!isDirectedTab && !isOutgoingTab) || selectedToUserValues.length === 0) return []
+
+    return selectedToUserValues.map((selectedValue) => {
+      const matchedUser =
+        mentionUsers.find((user) => {
+          const mentionValue = getMentionValue(user)
+          return user.id === selectedValue || mentionValue === selectedValue
+        }) ?? null
+
+      return {
+        value: selectedValue,
+        user: matchedUser,
+      }
+    })
+  }, [isDirectedTab, isOutgoingTab, mentionUsers, selectedToUserValues])
 
   const filteredRecipientUsers = useMemo(() => {
     const query = recipientQuery.trim().toLowerCase()
@@ -668,7 +696,7 @@ export function TaskNotesDrawer({
     const textarea = threadReplyTextareaRefs.current[pendingThreadId]
     if (!textarea) return
 
-    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    textarea.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
     textarea.focus()
     const textLength = textarea.value.length
     textarea.setSelectionRange(textLength, textLength)
@@ -695,7 +723,7 @@ export function TaskNotesDrawer({
 
   const handleComposeChange = (nextText: string, cursor: number) => {
     onComposeTextChange(nextText)
-    if (isPrivateTab && !isOutgoingTab) {
+    if (isPrivateTab && !isOutgoingTab && !isDirectedTab) {
       setMentionContext(null)
       setMentionOpen(false)
       return
@@ -752,16 +780,30 @@ export function TaskNotesDrawer({
     }
 
     if (isDirectedTab || isOutgoingTab) {
-      onComposeToUserChange(getMentionValue(user))
+      const nextToUsers = serializeComposeToUsers([
+        ...selectedToUserValues,
+        getMentionValue(user),
+      ])
+      onComposeToUserChange(nextToUsers)
     }
     setMentionOpen(false)
     setMentionContext(null)
   }
 
   const handleRecipientPick = (user: MentionUser) => {
-    onComposeToUserChange(getMentionValue(user))
-    setRecipientPickerOpen(false)
+    const nextToUsers = serializeComposeToUsers([
+      ...selectedToUserValues,
+      getMentionValue(user),
+    ])
+    onComposeToUserChange(nextToUsers)
     setRecipientQuery('')
+  }
+
+  const handleRemoveRecipient = (userValue: string) => {
+    const nextToUsers = serializeComposeToUsers(
+      selectedToUserValues.filter((value) => value !== userValue),
+    )
+    onComposeToUserChange(nextToUsers)
   }
 
   const renderApplicationActions = (noteApplicationId: number, isRoot = false) => {
@@ -1522,17 +1564,27 @@ export function TaskNotesDrawer({
                 <div className="mb-2 flex items-center gap-2">
                   <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">To</div>
                   <div className="min-w-0 flex-1">
-                    {selectedMentionUser ? (
-                      <div className="inline-flex max-w-full items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700">
-                        <span className="truncate">To User: {getMentionLabel(selectedMentionUser)}</span>
-                        <button
-                          type="button"
-                          onClick={() => onComposeToUserChange(null)}
-                          className="rounded p-0.5 hover:bg-blue-100"
-                          aria-label="Clear selected mention user"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
+                    {selectedMentionUsers.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedMentionUsers.map(({ value, user }) => {
+                          const label = user ? getMentionLabel(user) : value
+                          return (
+                            <div
+                              key={`selected-directed-user-${value}`}
+                              className="inline-flex max-w-full items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700"
+                            >
+                              <span className="truncate">To User: {label}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveRecipient(value)}
+                                className="rounded p-0.5 hover:bg-blue-100"
+                                aria-label={`Remove ${label}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          )
+                        })}
                       </div>
                     ) : (
                       <div className="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2 text-sm text-slate-500">
@@ -1544,10 +1596,10 @@ export function TaskNotesDrawer({
                     type="button"
                     onClick={() => setRecipientPickerOpen((prev) => !prev)}
                     className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-slate-300 bg-white px-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                    aria-label={selectedMentionUser ? 'Change recipient' : 'Select recipient'}
+                    aria-label={selectedMentionUsers.length > 0 ? 'Change recipient' : 'Select recipient'}
                   >
                     <UserPlus className="h-3.5 w-3.5" />
-                    <span>{selectedMentionUser ? 'Change' : 'Select'}</span>
+                    <span>{selectedMentionUsers.length > 0 ? 'Add More' : 'Select'}</span>
                     <ChevronDown className={`h-3.5 w-3.5 transition-transform ${recipientPickerOpen ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
@@ -1571,8 +1623,10 @@ export function TaskNotesDrawer({
                       ) : (
                         filteredRecipientUsers.map((user) => {
                           const label = getMentionLabel(user)
+                          const mentionValue = getMentionValue(user)
                           const isSelected =
-                            composeToUserId === user.id || composeToUserId === getMentionValue(user)
+                            selectedToUserValues.includes(user.id) ||
+                            selectedToUserValues.includes(mentionValue)
 
                           return (
                             <button
@@ -1624,7 +1678,7 @@ export function TaskNotesDrawer({
                       : `Add a ${composePrivate ? 'private' : 'public'} note... (@ to mention)`
                 }
               />
-              {mentionOpen && (!isPrivateTab || isOutgoingTab) ? (
+              {mentionOpen && (!isPrivateTab || isOutgoingTab || isDirectedTab) ? (
                 <div className="absolute bottom-full z-10 mb-1 max-h-52 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
                   {mentionUsersLoading ? (
                     <div className="px-3 py-2 text-sm text-slate-500">Loading users...</div>
@@ -1665,18 +1719,26 @@ export function TaskNotesDrawer({
                 <AtSign className="h-3.5 w-3.5" />
                 {isDirectedTab || isOutgoingTab ? 'ToUsers' : 'Mention'}
               </button>
-              {selectedMentionUser ? (
-                <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
-                  To User: {getMentionLabel(selectedMentionUser)}
-                  <button
-                    type="button"
-                    onClick={() => onComposeToUserChange(null)}
-                    className="rounded p-0.5 hover:bg-blue-100"
-                    aria-label="Clear selected mention user"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
+              {selectedMentionUsers.length > 0 ? (
+                selectedMentionUsers.map(({ value, user }) => {
+                  const label = user ? getMentionLabel(user) : value
+                  return (
+                    <span
+                      key={`selected-to-user-${value}`}
+                      className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700"
+                    >
+                      To User: {label}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRecipient(value)}
+                        className="rounded p-0.5 hover:bg-blue-100"
+                        aria-label={`Remove ${label}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  )
+                })
               ) : null}
             </div>
           ) : null}

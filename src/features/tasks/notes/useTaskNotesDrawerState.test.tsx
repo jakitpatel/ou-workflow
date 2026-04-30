@@ -310,7 +310,7 @@ describe('useTaskNotesDrawerState', () => {
           <button type="button" onClick={() => notes.setComposeText('Directed message')}>
             set-directed-text
           </button>
-          <button type="button" onClick={() => notes.setComposeToUserId('BenjaminD')}>
+          <button type="button" onClick={() => notes.setComposeToUserId(' BenjaminD , AliceB , BenjaminD ')}>
             set-directed-user
           </button>
           <button type="button" onClick={() => void notes.submitNote()}>
@@ -347,7 +347,7 @@ describe('useTaskNotesDrawerState', () => {
           note: 'Directed message',
           isPrivate: true,
           isRead: false,
-          toUser: 'BenjaminD',
+          toUser: 'BenjaminD,AliceB',
           fromUser: 'S.Benjamin',
           token: 'test-access-token',
         }),
