@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Beaker, Boxes, Link2, Package, X } from 'lucide-react'
 import { useScheduleAIngredients } from '@/features/applications/hooks/useScheduleAIngredients'
-import type { ScheduleAIngredient } from '@/types/application'
+import type { KashIngredient, ScheduleAIngredient } from '@/types/application'
 
 type ScheduleATab = 'application' | 'kash' | 'mapping'
 
@@ -62,6 +62,45 @@ function IngredientCard({
   )
 }
 
+function KashIngredientCard({ ingredient }: { ingredient: KashIngredient }) {
+  return (
+    <article className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h4 className="text-sm font-semibold text-gray-900">
+            {ingredient.INGREDIENT_NAME || ingredient.BRAND_NAME || ingredient.UKDID || 'Unnamed Ingredient'}
+          </h4>
+          <p className="mt-1 text-xs text-gray-500">
+            Label ID: {String(ingredient.LABEL_ID ?? ingredient.LabelID ?? '-')}
+          </p>
+        </div>
+        <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+          KASH
+        </span>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="Brand Name" value={ingredient.BRAND_NAME} />
+        <Field label="UKDID" value={ingredient.UKDID} />
+        <Field label="Company" value={ingredient.CompanyName} />
+        <Field label="Plant" value={ingredient.PlantName} />
+        <Field label="Plant Status" value={ingredient.PlantStatus} />
+        <Field label="Ingredient Status" value={ingredient.IngredientInPlantStatus} />
+        <Field label="Label Status" value={ingredient.LabelStatus} />
+        <Field label="Passover" value={ingredient.PESACH} />
+        <Field label="Group" value={ingredient.GRP} />
+        <Field label="Symbol" value={ingredient.SYMBOL} />
+      </div>
+    </article>
+  )
+}
+
+const getApplicationIngredientKey = (ingredient: ScheduleAIngredient) =>
+  `application-${ingredient.ApplicationID}-${ingredient.IngredientId}-${ingredient.rawMaterialCode ?? ingredient.ingredientLabelName ?? 'ingredient'}`
+
+const getKashIngredientKey = (ingredient: KashIngredient) =>
+  `kash-${String(ingredient.LABEL_ID ?? ingredient.LabelID ?? ingredient.USED_IN1_ID ?? ingredient.MERCHANDISE_ID ?? ingredient.INGREDIENT_NAME ?? 'ingredient')}`
+
 function Field({ label, value }: { label: string; value: unknown }) {
   return (
     <div className="rounded-lg bg-gray-50 px-3 py-2">
@@ -77,7 +116,7 @@ function IngredientsTabPanel({
   error,
   variant,
 }: {
-  ingredients: ScheduleAIngredient[]
+  ingredients: Array<ScheduleAIngredient | KashIngredient>
   isLoading: boolean
   error: unknown
   variant: 'application' | 'kash'
@@ -115,17 +154,24 @@ function IngredientsTabPanel({
   return (
     <div className="space-y-4">
       {ingredients.map((ingredient) => (
-        <IngredientCard
-          key={`${variant}-${ingredient.IngredientId}-${ingredient.ApplicationID}`}
-          ingredient={ingredient}
-          variant={variant}
-        />
+        variant === 'application' ? (
+          <IngredientCard
+            key={getApplicationIngredientKey(ingredient as ScheduleAIngredient)}
+            ingredient={ingredient as ScheduleAIngredient}
+            variant={variant}
+          />
+        ) : (
+          <KashIngredientCard
+            key={getKashIngredientKey(ingredient as KashIngredient)}
+            ingredient={ingredient as KashIngredient}
+          />
+        )
       ))}
     </div>
   )
 }
 
-function MappingTabPanel({ ingredients }: { ingredients: ScheduleAIngredient[] }) {
+function MappingTabPanel({ ingredientsCount }: { ingredientsCount: number }) {
   return (
     <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6">
       <div className="flex items-center gap-3">
@@ -135,8 +181,8 @@ function MappingTabPanel({ ingredients }: { ingredients: ScheduleAIngredient[] }
         <div>
           <h4 className="text-sm font-semibold text-gray-900">Mapping</h4>
           <p className="text-sm text-gray-500">
-            Mapping UI is not available yet. {ingredients.length} ingredient
-            {ingredients.length === 1 ? '' : 's'} loaded for this application.
+            Mapping UI is not available yet. {ingredientsCount} ingredient
+            {ingredientsCount === 1 ? '' : 's'} loaded for this application.
           </p>
         </div>
       </div>
@@ -156,7 +202,9 @@ export function ScheduleAIngredientsDrawer({
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const { data, isLoading, error } = useScheduleAIngredients(open ? resolvedApplicationId : undefined)
 
-  const ingredients = useMemo(() => data ?? [], [data])
+  const applicationIngredients = useMemo(() => data?.scheduleIngredients ?? [], [data])
+  const kashIngredients = useMemo(() => data?.kashIngredients ?? [], [data])
+  const totalIngredientsCount = applicationIngredients.length + kashIngredients.length
 
   useEffect(() => {
     if (open) {
@@ -225,7 +273,7 @@ export function ScheduleAIngredientsDrawer({
         <div className="min-h-0 flex-1 overflow-y-auto bg-gray-50 p-5">
           {activeTab === 'application' ? (
             <IngredientsTabPanel
-              ingredients={ingredients}
+              ingredients={applicationIngredients}
               isLoading={isLoading}
               error={error}
               variant="application"
@@ -233,13 +281,13 @@ export function ScheduleAIngredientsDrawer({
           ) : null}
           {activeTab === 'kash' ? (
             <IngredientsTabPanel
-              ingredients={ingredients}
+              ingredients={kashIngredients}
               isLoading={isLoading}
               error={error}
               variant="kash"
             />
           ) : null}
-          {activeTab === 'mapping' ? <MappingTabPanel ingredients={ingredients} /> : null}
+          {activeTab === 'mapping' ? <MappingTabPanel ingredientsCount={totalIngredientsCount} /> : null}
         </div>
       </div>
     </div>

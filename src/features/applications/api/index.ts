@@ -17,7 +17,7 @@ import type {
   ApplicationDetail,
   KashrusCompanyDetailsResponse,
   KashrusPlantDetailsResponse,
-  ScheduleAIngredient,
+  ScheduleAIngredientsResult,
   ScheduleAIngredientsResponse,
   UserRoleResponse,
 } from '@/types/application'
@@ -310,7 +310,7 @@ export async function fetchScheduleAIngredients({
 }: {
   applicationId?: string | number
   token?: string | null
-} = {}): Promise<ScheduleAIngredient[]> {
+} = {}): Promise<ScheduleAIngredientsResult> {
   if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
     throw createApiError('applicationId is required', 400)
   }
@@ -323,5 +323,8 @@ export async function fetchScheduleAIngredients({
     token,
   })
 
-  return response.ingredients?.schedule_ingredients ?? []
+  return {
+    scheduleIngredients: response.ingredients?.schedule_ingredients ?? [],
+    kashIngredients: response.ingredients?.ou_kash_ingredients ?? [],
+  }
 }

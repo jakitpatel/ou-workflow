@@ -459,9 +459,56 @@ export type ScheduleAIngredient = {
   rawMaterialCode?: string;
 }
 
+export type KashIngredient = {
+  ACTIVE?: number | string;
+  ALTERNATE_NAME?: string;
+  AS_STIPULATED?: string;
+  BLK?: string;
+  BRAND_NAME?: string;
+  CNTA?: string;
+  COMPANY_ID?: number | string;
+  CTA?: string;
+  CompanyName?: string;
+  DPM?: string;
+  DateAdded?: string;
+  GRP?: number | string;
+  INGREDIENT_NAME?: string;
+  IngredientInPlantStatus?: string;
+  JobID?: number | string;
+  LABEL_COMPANY?: string;
+  LABEL_ID?: number | string;
+  LABEL_SEQ_NUM?: number | string;
+  LOC?: string;
+  LabelID?: number | string;
+  LabelStatus?: string;
+  MERCHANDISE_ID?: number | string;
+  OWNS_ID?: number | string;
+  PESACH?: string;
+  PLANT_ID?: number | string;
+  PlantCTA?: string;
+  PlantName?: string;
+  PlantStatus?: string;
+  SEAL_SIGN?: string;
+  SRC_CITY?: string;
+  SRC_COUNTRY?: string;
+  SRC_MAR_ID?: number | string;
+  SRC_STATE?: string;
+  SRC_STREET?: string;
+  SRC_ZIP?: string;
+  SYMBOL?: string;
+  UKDID?: string;
+  USED_IN1_ID?: number | string;
+}
+
+export interface ScheduleAIngredientsResult {
+  scheduleIngredients: ScheduleAIngredient[];
+  kashIngredients: KashIngredient[];
+}
+
 export interface ScheduleAIngredientsResponse {
   ingredients?: {
     schedule_ingredients?: ScheduleAIngredient[];
+    ou_kash_ingredients?: KashIngredient[];
   };
   status?: string;
 }
