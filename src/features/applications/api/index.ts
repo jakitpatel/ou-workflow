@@ -15,10 +15,14 @@ import {
 import type {
   ApplicantsResponse,
   ApplicationDetail,
+  KashProduct,
   KashrusCompanyDetailsResponse,
   KashrusPlantDetailsResponse,
   ScheduleAIngredientsResult,
   ScheduleAIngredientsResponse,
+  ScheduleBProduct,
+  ScheduleBProductsResponse,
+  ScheduleBProductsResult,
   UserRoleResponse,
 } from '@/types/application'
 import {
@@ -326,5 +330,36 @@ export async function fetchScheduleAIngredients({
   return {
     scheduleIngredients: response.ingredients?.schedule_ingredients ?? [],
     kashIngredients: response.ingredients?.ou_kash_ingredients ?? [],
+  }
+}
+
+const normalizeScheduleBProducts = (
+  products: ScheduleBProduct[] | undefined,
+): ScheduleBProduct[] => products ?? []
+
+const normalizeKashProducts = (products: KashProduct[] | undefined): KashProduct[] => products ?? []
+
+export async function fetchScheduleBProducts({
+  applicationId,
+  token,
+}: {
+  applicationId?: string | number
+  token?: string | null
+} = {}): Promise<ScheduleBProductsResult> {
+  if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
+    throw createApiError('applicationId is required', 400)
+  }
+
+  const params = new URLSearchParams()
+  params.append('filter[ApplicationID]', String(applicationId))
+
+  const response = await fetchWithAuth<ScheduleBProductsResponse>({
+    path: `/get_products?${params.toString()}`,
+    token,
+  })
+
+  return {
+    scheduleProducts: normalizeScheduleBProducts(response.products?.schedule_products),
+    kashProducts: normalizeKashProducts(response.products?.ou_kash_products),
   }
 }

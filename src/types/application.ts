@@ -515,6 +515,82 @@ export interface ScheduleAIngredientsResponse {
   status?: string;
 }
 
+export type ScheduleBProduct = {
+  ApplicationID?: number | string;
+  BrandName?: string;
+  Industrial?: boolean | string;
+  Retail?: boolean | string;
+  ScheduleProductId?: number | string;
+  UPC?: string;
+  bulkShipped?: string;
+  inHouse?: boolean | string;
+  internal_use_only?: string;
+  list?: string;
+  passover?: string;
+  privateLabel?: boolean | string;
+  privateLabelCo?: string;
+  productName?: string;
+  symbol?: string;
+};
+
+export type KashProduct = {
+  ACTIVE?: number | string;
+  AS_STIPULATED?: string;
+  BLK?: string;
+  BRAND_NAME?: string;
+  CAS?: string;
+  CATEGORY_NAME?: string;
+  COMPANY_ID?: number | string;
+  COMPANY_NAME?: string;
+  CONFIDENTIAL?: string;
+  CONFIDENTIAL_TEXT?: string;
+  Consumer?: string;
+  DPM?: string;
+  GRP?: number | string;
+  INDUSTRIAL?: string;
+  IN_USE?: string;
+  IsDairyEquipment?: string;
+  KITNIYOT?: boolean | string;
+  LABEL_COMPANY?: string;
+  LABEL_ID?: number | string;
+  LABEL_SEQ_NUM?: number | string;
+  LABEL_TYPE?: string;
+  LOChold?: string;
+  MERCHANDISE_ID?: number | string;
+  MODIFIED_DATE?: string;
+  MerchProductName?: string;
+  MerchProductNumber?: string;
+  OUP_REQUIRED?: string;
+  OWNS_ID?: number | string;
+  PESACH?: string;
+  PLANT_ID?: number | string;
+  PLANT_NAME?: string;
+  PLANT_STATUS?: string;
+  PRODUCED_IN1_ID?: number | string;
+  PRODUCT_NAME?: string;
+  Plant_Country?: string;
+  RC?: string;
+  Repack?: string;
+  SEAL_SIGN?: string;
+  STATUS?: string;
+  SYMBOL?: string;
+  TOP_LEVEL_PRODUCT_NAME?: string;
+  passoverspecialproduction?: string;
+};
+
+export interface ScheduleBProductsResult {
+  scheduleProducts: ScheduleBProduct[];
+  kashProducts: KashProduct[];
+}
+
+export interface ScheduleBProductsResponse {
+  products?: {
+    schedule_products?: ScheduleBProduct[];
+    ou_kash_products?: KashProduct[];
+  };
+  status?: string;
+}
+
 export interface ApplicationTask {
   TaskCategory: string;          // e.g., "CONFIRMATION"
   applicationId: number;

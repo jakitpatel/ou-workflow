@@ -50,6 +50,10 @@ export const queryOptionDefaults = {
     staleTime: 30_000,
     refetchOnWindowFocus: false,
   },
+  applicationScheduleBProducts: {
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  },
   tasksReferenceData: {
     staleTime: Infinity,
     gcTime: Infinity,

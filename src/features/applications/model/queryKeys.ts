@@ -15,4 +15,6 @@ export const applicationsQueryKeys = {
     [...applicationsQueryKeys.details(), applicationId ?? 'unknown'] as const,
   scheduleAIngredients: (applicationId?: string) =>
     [...applicationsQueryKeys.all, 'schedule-a-ingredients', applicationId ?? 'unknown'] as const,
+  scheduleBProducts: (applicationId?: string) =>
+    [...applicationsQueryKeys.all, 'schedule-b-products', applicationId ?? 'unknown'] as const,
 } as const
