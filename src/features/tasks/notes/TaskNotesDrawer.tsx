@@ -189,6 +189,30 @@ const normalizeReactionRecord = (
   }
 }
 
+const parseSerializedReactionRecords = (value: string): unknown[] | null => {
+  const trimmedValue = value.trim()
+  if (!trimmedValue) return null
+
+  try {
+    const parsedValue = JSON.parse(trimmedValue)
+    return Array.isArray(parsedValue) ? parsedValue : null
+  } catch {
+    // Continue to tolerate Python-style serialized payloads from the backend.
+  }
+
+  try {
+    const normalizedValue = trimmedValue
+      .replace(/\bTrue\b/g, 'true')
+      .replace(/\bFalse\b/g, 'false')
+      .replace(/\bNone\b/g, 'null')
+      .replace(/'/g, '"')
+    const parsedValue = JSON.parse(normalizedValue)
+    return Array.isArray(parsedValue) ? parsedValue : null
+  } catch {
+    return null
+  }
+}
+
 const parseReactionRecords = (value: unknown): TaskNoteReaction[] => {
   if (Array.isArray(value)) {
     return value
@@ -201,13 +225,9 @@ const parseReactionRecords = (value: unknown): TaskNoteReaction[] => {
     const trimmedValue = value.trim()
     if (!trimmedValue) return []
 
-    try {
-      const parsedValue = JSON.parse(trimmedValue)
-      if (Array.isArray(parsedValue)) {
-        return parseReactionRecords(parsedValue)
-      }
-    } catch {
-      // Fall back to legacy comma-separated reaction codes.
+    const parsedRecords = parseSerializedReactionRecords(trimmedValue)
+    if (parsedRecords) {
+      return parseReactionRecords(parsedRecords)
     }
 
     return parseReactionCodes(trimmedValue).map((code, index) => ({

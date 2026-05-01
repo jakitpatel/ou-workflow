@@ -486,6 +486,59 @@ describe('TaskNotesDrawer', () => {
     })
   })
 
+  it('renders reactions when the backend returns a python-style serialized tag string', () => {
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="My Messages"
+        contextType="application"
+        taskName="Current User"
+        activeTab="incoming"
+        incomingNotes={[
+          {
+            MessageID: 12,
+            MessageText: "this is Tyler's reply",
+            FromUser: 'TYLER.BAND',
+            ToUser: 'S.BENJAMIN',
+            SentDate: '2026-04-20T18:19:17.828934',
+            isPrivate: true,
+            isRead: 0,
+            parentMessageId: 0,
+            hasReply: true,
+            tag: "[{'id': 'reaction-1777636913975-fwrqck', 'username': 'SHOUKI.BENJAMIN', 'reaction': 'h', 'datetime': '2026-05-01T12:01:53.975Z', 'active': True}]",
+          } as TaskNote,
+        ]}
+        outgoingNotes={[]}
+        mentionNotes={[]}
+        privateNotes={[]}
+        loadingIncoming={false}
+        loadingOutgoing={false}
+        loadingMention={false}
+        loadingPrivate={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate={false}
+        currentUsername="S.BENJAMIN"
+        isSubmitting={false}
+        error=""
+        showMyNotesThreadType
+        hideComposer
+        hidePrivacyToggle
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /expand thread from tyler.band/i }))
+
+    expect(screen.getAllByRole('button', { name: /❤️/i }).length).toBeGreaterThan(0)
+  })
+
   it('keeps ToUser empty when replying to a public My Notes thread', async () => {
     const onReplySubmit = vi.fn().mockResolvedValue(undefined)
 
