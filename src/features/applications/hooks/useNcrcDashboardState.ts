@@ -33,6 +33,7 @@ type UseNcrcDashboardStateParams = {
   }) => void
 }
 
+
 const normalizeMyNotesWithApplicationId = (notes: TaskNote[]): TaskNote[] =>
   notes.map((note) => {
     const rawApplicationId =
