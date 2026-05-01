@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState'
 import { renderWithProviders } from '@/test/renderWithProviders'
+import type { TaskNoteReaction } from '@/types/application'
 
 const fetchMyMessagesMock = vi.fn()
 const markTaskNoteAsReadMock = vi.fn()
@@ -30,6 +31,22 @@ function NotesHookHarness() {
   const notes = useTaskNotesDrawerState({
     applicationId: 42,
   })
+  const updatedReactions: TaskNoteReaction[] = [
+    {
+      id: 'r1',
+      username: 'S.Benjamin',
+      reaction: 'l',
+      datetime: '2026-05-01T10:30:00Z',
+      active: true,
+    },
+    {
+      id: 'r2',
+      username: 'Bob.User',
+      reaction: 's',
+      datetime: '2026-05-01T10:35:00Z',
+      active: true,
+    },
+  ]
 
   return (
     <div>
@@ -84,7 +101,10 @@ function NotesHookHarness() {
         submit-reply
       </button>
 
-      <button type="button" onClick={() => void notes.updateMessageReactionTag('message-42', 'l,s')}>
+      <button
+        type="button"
+        onClick={() => void notes.updateMessageReactionTag('message-42', updatedReactions)}
+      >
         react-message
       </button>
 
@@ -246,7 +266,22 @@ describe('useTaskNotesDrawerState', () => {
     await waitFor(() => {
       expect(updateTaskNoteTagMock).toHaveBeenCalledWith({
         messageId: 'message-42',
-        tag: 'l,s',
+        tag: [
+          {
+            id: 'r1',
+            username: 'S.Benjamin',
+            reaction: 'l',
+            datetime: '2026-05-01T10:30:00Z',
+            active: true,
+          },
+          {
+            id: 'r2',
+            username: 'Bob.User',
+            reaction: 's',
+            datetime: '2026-05-01T10:35:00Z',
+            active: true,
+          },
+        ],
         token: 'test-access-token',
       })
     })

@@ -425,7 +425,22 @@ describe('TaskNotesDrawer', () => {
             MessageText: 'Parent public note',
             FromUser: 'Alice Smith',
             SentDate: '2026-04-07T10:00:00.000Z',
-            tag: 'l,s',
+            tag: [
+              {
+                id: 'r1',
+                username: 'S.Benjamin',
+                reaction: 'l',
+                datetime: '2026-05-01T10:30:00Z',
+                active: true,
+              },
+              {
+                id: 'r2',
+                username: 'Bob.User',
+                reaction: 's',
+                datetime: '2026-05-01T10:35:00Z',
+                active: true,
+              },
+            ],
           } as TaskNote,
         ]}
         loadingDirected={false}
@@ -434,6 +449,7 @@ describe('TaskNotesDrawer', () => {
         composeText=""
         composeToUserId={null}
         composePrivate={false}
+        currentUsername="S.Benjamin"
         isSubmitting={false}
         error=""
         onClose={() => {}}
@@ -451,7 +467,22 @@ describe('TaskNotesDrawer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'React with 👍' }))
 
     await waitFor(() => {
-      expect(onReactionTagChange).toHaveBeenCalledWith('100', 's')
+      expect(onReactionTagChange).toHaveBeenCalledWith('100', [
+        {
+          id: 'r1',
+          username: 'S.Benjamin',
+          reaction: 'l',
+          datetime: expect.any(String),
+          active: false,
+        },
+        {
+          id: 'r2',
+          username: 'Bob.User',
+          reaction: 's',
+          datetime: '2026-05-01T10:35:00Z',
+          active: true,
+        },
+      ])
     })
   })
 
@@ -1164,6 +1195,65 @@ describe('TaskNotesDrawer', () => {
     )
 
     fireEvent.click(screen.getByText('Read incoming message'))
+
+    expect(onIncomingNoteClick).not.toHaveBeenCalled()
+  })
+
+  it('does not mark an unread incoming thread message as read when reacting to it', async () => {
+    const onIncomingNoteClick = vi.fn()
+    const onReactionTagChange = vi.fn().mockResolvedValue(undefined)
+
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="My Messages"
+        contextType="application"
+        taskName="Current User"
+        activeTab="incoming"
+        incomingNotes={[
+          {
+            MessageID: 510,
+            MessageText: 'Unread incoming threaded note',
+            FromUser: 'Alice Smith',
+            ToUser: 'S.Benjamin',
+            SentDate: '2026-04-07T10:00:00.000Z',
+            isRead: 0,
+            isPrivate: true,
+            tag: [],
+          } as TaskNote,
+        ]}
+        outgoingNotes={[]}
+        mentionNotes={[]}
+        privateNotes={[]}
+        loadingIncoming={false}
+        loadingOutgoing={false}
+        loadingMention={false}
+        loadingPrivate={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate={false}
+        currentUsername="S.Benjamin"
+        isSubmitting={false}
+        error=""
+        showMyNotesThreadType
+        onIncomingNoteClick={onIncomingNoteClick}
+        onReactionTagChange={onReactionTagChange}
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /expand thread from alice smith/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'React with 👍' }))
+
+    await waitFor(() => {
+      expect(onReactionTagChange).toHaveBeenCalledTimes(1)
+    })
 
     expect(onIncomingNoteClick).not.toHaveBeenCalled()
   })

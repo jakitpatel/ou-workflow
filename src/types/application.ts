@@ -237,11 +237,21 @@ export type TaskNote = {
   from_user_role?: string;
   toUser?: string;
   to_user?: string;
+  tag?: string | TaskNoteReaction[];
+  Tag?: string | TaskNoteReaction[];
   toRole?: string;
   to_role?: string;
   createdDate?: string;
   created_date?: string;
   [key: string]: unknown;
+};
+
+export type TaskNoteReaction = {
+  id: string;
+  username: string;
+  reaction: string;
+  datetime: string;
+  active: boolean;
 };
 
 export type WFApplicationMessageAttributes = {
@@ -253,8 +263,8 @@ export type WFApplicationMessageAttributes = {
   MessageType?: string;
   Priority?: 'CRITICAL' | 'HIGH' | 'LOW' | 'NORMAL' | string;
   SentDate?: string;
-  Tag?: string;
-  tag?: string;
+  Tag?: string | TaskNoteReaction[];
+  tag?: string | TaskNoteReaction[];
   TaskInstanceId?: number;
   ToUser?: string;
   isPrivate?: boolean;

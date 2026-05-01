@@ -3,6 +3,7 @@ import { addFilterParams, buildPaginationParams } from '@/shared/api/queryParams
 import type {
   ApplicationTask,
   TaskNote,
+  TaskNoteReaction,
   UserRoleResponse,
   WFApplicationMessageAttributes,
   WFApplicationMessageRecord,
@@ -315,7 +316,7 @@ export async function updateTaskNoteTag({
   token,
 }: {
   messageId: string | number
-  tag: string
+  tag: TaskNoteReaction[]
   token?: string | null
 }): Promise<any> {
   const resolvedMessageId = String(messageId).trim()

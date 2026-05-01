@@ -19,7 +19,7 @@ import { toast } from 'sonner'
 import { useMentionUsers } from '@/features/tasks/hooks/useTaskQueries'
 import type { NoteTab } from '@/features/tasks/notes/types'
 import type { MentionUser } from '@/features/tasks/api'
-import type { TaskNote } from '@/types/application'
+import type { TaskNote, TaskNoteReaction } from '@/types/application'
 
 export type { NoteTab } from '@/features/tasks/notes/types'
 
@@ -89,7 +89,7 @@ type Props = {
     toUser?: string | null
     isPrivate?: boolean
   }) => Promise<void>
-  onReactionTagChange?: (messageId: string, tag: string) => Promise<void>
+  onReactionTagChange?: (messageId: string, tag: TaskNoteReaction[]) => Promise<void>
 }
 
 type PublicNoteNode = {
@@ -142,20 +142,88 @@ const EMOJI_TO_REACTION_CODE = Object.fromEntries(
 const QUICK_REACTION_EMOJIS = ['👍', '❤️', '😂', '😮'] as const
 const PICKER_REACTION_EMOJIS = ['🎉', '👏', '🔥', '✅', '👀', '💡'] as const
 
+type ParsedReactionSummary = {
+  code: string
+  emoji: string
+  count: number
+  reactedByCurrentUser: boolean
+}
+
 const parseReactionCodes = (value: unknown): string[] =>
   String(value ?? '')
     .split(',')
     .map((item) => item.trim().toLowerCase())
     .filter((item, index, array) => item in REACTION_CODE_TO_EMOJI && array.indexOf(item) === index)
 
-const serializeReactionCodes = (codes: string[]): string =>
-  codes
-    .map((code) => code.trim().toLowerCase())
-    .filter((code, index, array) => code in REACTION_CODE_TO_EMOJI && array.indexOf(code) === index)
-    .join(',')
+const isReactionRecord = (value: unknown): value is TaskNoteReaction => {
+  if (!value || typeof value !== 'object') return false
 
-const getReactionCodesFromNote = (note: TaskNote): string[] =>
-  parseReactionCodes((note as any)?.tag ?? (note as any)?.Tag)
+  const candidate = value as Partial<TaskNoteReaction>
+  return typeof candidate.reaction === 'string'
+}
+
+const normalizeReactionActive = (value: unknown): boolean => {
+  if (value === false || value === 0 || value === '0') return false
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (normalized === 'false' || normalized === 'no') return false
+  }
+  return true
+}
+
+const normalizeReactionRecord = (
+  reaction: TaskNoteReaction,
+  index: number,
+): TaskNoteReaction | null => {
+  const normalizedReaction = reaction.reaction.trim().toLowerCase()
+  if (!(normalizedReaction in REACTION_CODE_TO_EMOJI)) return null
+
+  const normalizedId = String(reaction.id ?? '').trim() || `legacy-reaction-${index}-${normalizedReaction}`
+
+  return {
+    id: normalizedId,
+    username: String(reaction.username ?? '').trim(),
+    reaction: normalizedReaction,
+    datetime: String(reaction.datetime ?? '').trim(),
+    active: normalizeReactionActive(reaction.active),
+  }
+}
+
+const parseReactionRecords = (value: unknown): TaskNoteReaction[] => {
+  if (Array.isArray(value)) {
+    return value
+      .filter(isReactionRecord)
+      .map((reaction, index) => normalizeReactionRecord(reaction, index))
+      .filter((reaction): reaction is TaskNoteReaction => Boolean(reaction))
+  }
+
+  if (typeof value === 'string') {
+    const trimmedValue = value.trim()
+    if (!trimmedValue) return []
+
+    try {
+      const parsedValue = JSON.parse(trimmedValue)
+      if (Array.isArray(parsedValue)) {
+        return parseReactionRecords(parsedValue)
+      }
+    } catch {
+      // Fall back to legacy comma-separated reaction codes.
+    }
+
+    return parseReactionCodes(trimmedValue).map((code, index) => ({
+      id: `legacy-reaction-${index}-${code}`,
+      username: '',
+      reaction: code,
+      datetime: '',
+      active: true,
+    }))
+  }
+
+  return []
+}
+
+const getReactionRecordsFromNote = (note: TaskNote): TaskNoteReaction[] =>
+  parseReactionRecords((note as any)?.tag ?? (note as any)?.Tag)
 
 const PUBLIC_ROOT_TONE: RootTone = {
   avatar: 'bg-emerald-700',
@@ -506,6 +574,108 @@ const flattenPublicThread = (node: PublicNoteNode): PublicNoteNode[] => [
 
 const normalizeComparableUserName = (value: string): string =>
   value.trim().replace(/^@/, '').replace(/[^a-z0-9]/gi, '').toLowerCase()
+
+const getReactionSummaryFromNote = (
+  note: TaskNote,
+  currentUsername?: string | null,
+): ParsedReactionSummary[] => {
+  const currentUserKey = normalizeComparableUserName(currentUsername ?? '')
+  const groupedReactions = new Map<string, ParsedReactionSummary>()
+
+  for (const reaction of getReactionRecordsFromNote(note)) {
+    if (!reaction.active) continue
+
+    const code = reaction.reaction
+    const emoji = REACTION_CODE_TO_EMOJI[code]
+    if (!emoji) continue
+
+    const existing = groupedReactions.get(code)
+    const reactedByCurrentUser =
+      normalizeComparableUserName(reaction.username) === currentUserKey && Boolean(currentUserKey)
+
+    if (existing) {
+      existing.count += 1
+      existing.reactedByCurrentUser = existing.reactedByCurrentUser || reactedByCurrentUser
+      continue
+    }
+
+    groupedReactions.set(code, {
+      code,
+      emoji,
+      count: 1,
+      reactedByCurrentUser,
+    })
+  }
+
+  return Array.from(groupedReactions.values())
+}
+
+const createReactionId = (): string =>
+  `reaction-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+const buildNextReactionTag = (
+  note: TaskNote,
+  reactionCode: string,
+  currentUsername?: string | null,
+): TaskNoteReaction[] | null => {
+  const resolvedUsername = String(currentUsername ?? '').trim()
+  const normalizedCurrentUser = normalizeComparableUserName(resolvedUsername)
+  if (!normalizedCurrentUser) return null
+
+  const nextReactions = getReactionRecordsFromNote(note).map((reaction) => ({ ...reaction }))
+  const matchingIndexes: number[] = []
+
+  for (let index = 0; index < nextReactions.length; index += 1) {
+    const reaction = nextReactions[index]
+    if (
+      reaction.reaction === reactionCode &&
+      normalizeComparableUserName(reaction.username) === normalizedCurrentUser
+    ) {
+      matchingIndexes.push(index)
+    }
+  }
+
+  const now = new Date().toISOString()
+  const activeIndexes = matchingIndexes.filter((index) => nextReactions[index]?.active)
+
+  if (activeIndexes.length > 0) {
+    for (const index of activeIndexes) {
+      nextReactions[index] = {
+        ...nextReactions[index],
+        username: nextReactions[index]?.username || resolvedUsername,
+        datetime: now,
+        active: false,
+      }
+    }
+
+    return nextReactions
+  }
+
+  const latestMatchingIndex =
+    matchingIndexes.length > 0 ? matchingIndexes[matchingIndexes.length - 1] : -1
+
+  if (latestMatchingIndex >= 0) {
+    nextReactions[latestMatchingIndex] = {
+      ...nextReactions[latestMatchingIndex],
+      username: nextReactions[latestMatchingIndex]?.username || resolvedUsername,
+      datetime: now,
+      active: true,
+    }
+
+    return nextReactions
+  }
+
+  return [
+    ...nextReactions,
+    {
+      id: createReactionId(),
+      username: resolvedUsername,
+      reaction: reactionCode,
+      datetime: now,
+      active: true,
+    },
+  ]
+}
 
 const toUserIncludesCurrentUser = (toUser: string, currentUsername?: string | null): boolean => {
   const normalizedCurrentUsername = normalizeComparableUserName(currentUsername ?? '')
@@ -912,17 +1082,25 @@ export function TaskNotesDrawer({
     }
   }
 
-  const toggleReactionForNote = async (note: TaskNote, noteId: string, emoji: string) => {
+  const toggleReactionForNote = async (
+    event: React.MouseEvent<HTMLButtonElement>,
+    note: TaskNote,
+    noteId: string,
+    emoji: string,
+  ) => {
+    event.stopPropagation()
+
     const reactionCode = EMOJI_TO_REACTION_CODE[emoji]
     if (!reactionCode || !onReactionTagChange) return
 
-    const currentCodes = getReactionCodesFromNote(note)
-    const nextCodes = currentCodes.includes(reactionCode)
-      ? currentCodes.filter((code) => code !== reactionCode)
-      : [...currentCodes, reactionCode]
+    const nextTag = buildNextReactionTag(note, reactionCode, currentUsername)
+    if (!nextTag) {
+      toast.error('Unable to add a reaction without a username')
+      return
+    }
 
     try {
-      await onReactionTagChange(noteId, serializeReactionCodes(nextCodes))
+      await onReactionTagChange(noteId, nextTag)
       setReactionPickerOpenById((prev) => ({ ...prev, [noteId]: false }))
     } catch {
       // Hook layer already captures and surfaces the error.
@@ -1134,10 +1312,7 @@ export function TaskNotesDrawer({
                 const messageIsMarkingRead = markingReadMessageId === messageId
                 const messageRenderedText =
                   isPublicTab ? renderNoteTextWithMentionHighlight(messageText, currentUsername) : messageText
-                const messageReactionCodes = getReactionCodesFromNote(messageNote)
-                const messageReactions = messageReactionCodes
-                  .map((code) => REACTION_CODE_TO_EMOJI[code])
-                  .filter(Boolean)
+                const messageReactions = getReactionSummaryFromNote(messageNote, currentUsername)
                 const isReactionPickerOpen = Boolean(reactionPickerOpenById[messageId])
                 const isActionMenuOpen = Boolean(actionMenuOpenById[messageId])
                 const canMarkMessageRead = toUserIncludesCurrentUser(messageToUser, currentUsername)
@@ -1187,7 +1362,9 @@ export function TaskNotesDrawer({
                             <button
                               key={`${messageId}-${emoji}-quick`}
                               type="button"
-                              onClick={() => void toggleReactionForNote(messageNote, messageId, emoji)}
+                              onClick={(event) =>
+                                void toggleReactionForNote(event, messageNote, messageId, emoji)
+                              }
                               disabled={isReactingMessage}
                               className="rounded-full px-1.5 py-1 text-xs transition hover:bg-slate-100"
                               aria-label={`React with ${emoji}`}
@@ -1269,15 +1446,27 @@ export function TaskNotesDrawer({
 
                         {messageReactions.length > 0 ? (
                           <div className={`mt-1 flex flex-wrap gap-1 ${messageIsOwn ? 'justify-end' : 'justify-start'}`}>
-                            {messageReactions.map((emoji) => (
+                            {messageReactions.map((reaction) => (
                               <button
-                                key={`${messageId}-${emoji}`}
+                                key={`${messageId}-${reaction.code}`}
                                 type="button"
-                                onClick={() => void toggleReactionForNote(messageNote, messageId, emoji)}
+                                onClick={(event) =>
+                                  void toggleReactionForNote(
+                                    event,
+                                    messageNote,
+                                    messageId,
+                                    reaction.emoji,
+                                  )
+                                }
                                 disabled={isReactingMessage}
-                                className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs shadow-sm hover:bg-slate-50"
+                                className={`rounded-full border px-2 py-0.5 text-xs shadow-sm hover:bg-slate-50 ${
+                                  reaction.reactedByCurrentUser
+                                    ? 'border-blue-200 bg-blue-50 text-blue-700'
+                                    : 'border-slate-200 bg-white'
+                                }`}
                               >
-                                {emoji}
+                                <span>{reaction.emoji}</span>
+                                {reaction.count > 1 ? <span className="ml-1 font-medium">{reaction.count}</span> : null}
                               </button>
                             ))}
                           </div>
@@ -1290,7 +1479,9 @@ export function TaskNotesDrawer({
                                 <button
                                   key={`${messageId}-${emoji}-picker`}
                                   type="button"
-                                  onClick={() => void toggleReactionForNote(messageNote, messageId, emoji)}
+                                  onClick={(event) =>
+                                    void toggleReactionForNote(event, messageNote, messageId, emoji)
+                                  }
                                   disabled={isReactingMessage}
                                   className="rounded-full px-2 py-1 text-base hover:bg-slate-100"
                                 >

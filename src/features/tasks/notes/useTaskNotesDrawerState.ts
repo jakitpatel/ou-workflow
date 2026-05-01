@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useUser } from '@/context/UserContext'
 import { fetchMyMessages, markTaskNoteAsRead, updateTaskNoteTag } from '@/features/tasks/api'
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations'
-import type { TaskNote } from '@/types/application'
+import type { TaskNote, TaskNoteReaction } from '@/types/application'
 import type { NoteTab, NotesByTab } from './types'
 
 type DrawerState = {
@@ -405,7 +405,7 @@ export function useTaskNotesDrawerState({
   )
 
   const updateMessageReactionTag = useCallback(
-    async (messageId: string | number, tag: string) => {
+    async (messageId: string | number, tag: TaskNoteReaction[]) => {
       if (!drawer) return
 
       const resolvedMessageId = String(messageId).trim()

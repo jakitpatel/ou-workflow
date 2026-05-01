@@ -11,7 +11,7 @@ import {
 } from '@/features/tasks/api'
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { useDebounce } from '@/hooks/useDebounce'
-import type { Applicant, TaskNote } from '@/types/application'
+import type { Applicant, TaskNote, TaskNoteReaction } from '@/types/application'
 
 const PAGE_LIMIT = 50
 const DEBOUNCE_DELAY = 1000
@@ -371,7 +371,7 @@ export function useNcrcDashboardState({
   )
 
   const updateMyNoteReactionTag = useCallback(
-    async (messageId: string, tag: string) => {
+    async (messageId: string, tag: TaskNoteReaction[]) => {
       const resolvedMessageId = String(messageId).trim()
       if (!resolvedMessageId || myNotesReactingMessageId === resolvedMessageId) return
 
