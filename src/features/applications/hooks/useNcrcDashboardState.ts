@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { useInfiniteApplications } from '@/features/applications/hooks/useInfiniteApplications'
@@ -96,6 +97,10 @@ export function useNcrcDashboardState({
     includePrelimLists: true,
     onError: (message) => setMyNotesError(message),
   })
+  const isMyNotesPollingPaused =
+    createTaskNoteMutation.isPending ||
+    Boolean(myNotesMarkingReadMessageId) ||
+    Boolean(myNotesReactingMessageId)
 
   const pagedQuery = usePagedApplications({
     searchTerm: debouncedSearch,
@@ -268,37 +273,60 @@ export function useNcrcDashboardState({
     }
   }, [applicants])
 
-  const refreshMyNotes = useCallback(async () => {
-    const notes = await fetchMyMessages({
-      token: token ?? undefined,
-    })
-    setMyNotes(normalizeMyMessagesWithApplicationId(notes))
-  }, [token])
+  const myNotesQuery = useQuery({
+    queryKey: ['dashboard-my-messages', username?.trim() ?? null, token ?? null],
+    queryFn: () =>
+      fetchMyMessages({
+        token: token ?? undefined,
+      }),
+    enabled: Boolean(token) && myNotesOpen && Boolean(username?.trim()),
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchInterval: myNotesOpen && !isMyNotesPollingPaused ? 5000 : false,
+    refetchIntervalInBackground: false,
+  })
 
-  const openMyNotesDrawer = useCallback(async () => {
+  useEffect(() => {
+    if (!myNotesOpen) {
+      setMyNotesLoading(false)
+      return
+    }
+
+    setMyNotesLoading(myNotesQuery.isFetching)
+  }, [myNotesOpen, myNotesQuery.isFetching])
+
+  useEffect(() => {
+    if (!myNotesQuery.data) return
+    setMyNotes(normalizeMyMessagesWithApplicationId(myNotesQuery.data))
+  }, [myNotesQuery.data])
+
+  useEffect(() => {
+    if (!myNotesOpen || !myNotesQuery.error) return
+
+    const fetchError = myNotesQuery.error as any
+    const message =
+      fetchError?.details?.status ||
+      fetchError?.details?.message ||
+      fetchError?.message ||
+      'Failed to fetch notes'
+    setMyNotesError(message)
+  }, [myNotesOpen, myNotesQuery.error])
+
+  const refreshMyNotes = useCallback(async () => {
+    await myNotesQuery.refetch()
+  }, [myNotesQuery])
+
+  const openMyNotesDrawer = useCallback(() => {
     setMyNotesOpen(true)
     setMyNotesError('')
 
     if (!username?.trim()) {
       setMyNotes(EMPTY_MY_MESSAGES)
       setMyNotesError('Logged in username is not available.')
-      return
+    } else {
+      setMyNotesLoading(true)
     }
-
-    setMyNotesLoading(true)
-    try {
-      await refreshMyNotes()
-    } catch (fetchError: any) {
-      const message =
-        fetchError?.details?.status ||
-        fetchError?.details?.message ||
-        fetchError?.message ||
-        'Failed to fetch notes'
-      setMyNotesError(message)
-    } finally {
-      setMyNotesLoading(false)
-    }
-  }, [refreshMyNotes, username])
+  }, [username])
 
   const submitMyNotesReply = useCallback(
     async ({
