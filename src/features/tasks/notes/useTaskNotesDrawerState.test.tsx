@@ -684,7 +684,7 @@ describe('useTaskNotesDrawerState', () => {
     expect(fetchMyMessagesMock).toHaveBeenCalledTimes(1)
   })
 
-  it('polls every 5 seconds only while the drawer is open', async () => {
+  it('polls every 30 seconds only while the drawer is open', async () => {
     vi.useFakeTimers()
 
     try {
@@ -700,7 +700,7 @@ describe('useTaskNotesDrawerState', () => {
       expect(screen.getByText('active-tab:mention')).toBeTruthy()
 
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(5000)
+        await vi.advanceTimersByTimeAsync(30000)
       })
 
       await act(async () => {
@@ -713,7 +713,7 @@ describe('useTaskNotesDrawerState', () => {
       expect(screen.getByText('active-tab:closed')).toBeTruthy()
 
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(5000)
+        await vi.advanceTimersByTimeAsync(30000)
       })
 
       expect(fetchMyMessagesMock).toHaveBeenCalledTimes(2)

@@ -139,6 +139,7 @@ export function useTaskNotesDrawerState({
   const [notesByContext, setNotesByContext] = useState<Record<string, NotesByTab<TaskNote>>>({})
   const [countsByContext, setCountsByContext] = useState<Record<string, ContextCounts>>({})
   const [loadingByKey, setLoadingByKey] = useState<Record<string, boolean>>({})
+  const [loadedContexts, setLoadedContexts] = useState<Record<string, boolean>>({})
   const [composeText, setComposeTextState] = useState('')
   const [composeToUserId, setComposeToUserIdState] = useState<string | null>(null)
   const [composePrivate, setComposePrivateState] = useState(false)
@@ -168,6 +169,7 @@ export function useTaskNotesDrawerState({
         private: notes.private.length,
       },
     }))
+    setLoadedContexts((prev) => ({ ...prev, [contextKey]: true }))
   }, [])
 
   const setContextLoading = useCallback((contextKey: string, isLoading: boolean) => {
@@ -215,8 +217,9 @@ export function useTaskNotesDrawerState({
 
   useEffect(() => {
     if (!activeContextKey) return
-    setContextLoading(activeContextKey, messagesQuery.isFetching)
-  }, [activeContextKey, messagesQuery.isFetching, setContextLoading])
+    const hasLoadedContext = Boolean(loadedContexts[activeContextKey])
+    setContextLoading(activeContextKey, messagesQuery.isFetching && !hasLoadedContext)
+  }, [activeContextKey, loadedContexts, messagesQuery.isFetching, setContextLoading])
 
   useEffect(() => {
     if (!activeContextKey || !messagesQuery.data) return

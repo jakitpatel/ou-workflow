@@ -87,6 +87,7 @@ export function useNcrcDashboardState({
   const [myNotesOpen, setMyNotesOpen] = useState(false)
   const [myNotes, setMyNotes] = useState<MyMessagesByTab>(EMPTY_MY_MESSAGES)
   const [myNotesLoading, setMyNotesLoading] = useState(false)
+  const [myNotesLoaded, setMyNotesLoaded] = useState(false)
   const [myNotesError, setMyNotesError] = useState('')
   const [myNotesMarkingReadMessageId, setMyNotesMarkingReadMessageId] = useState<string | null>(null)
   const [myNotesReactingMessageId, setMyNotesReactingMessageId] = useState<string | null>(null)
@@ -293,12 +294,13 @@ export function useNcrcDashboardState({
       return
     }
 
-    setMyNotesLoading(myNotesQuery.isFetching)
-  }, [myNotesOpen, myNotesQuery.isFetching])
+    setMyNotesLoading(myNotesQuery.isFetching && !myNotesLoaded)
+  }, [myNotesLoaded, myNotesOpen, myNotesQuery.isFetching])
 
   useEffect(() => {
     if (!myNotesQuery.data) return
     setMyNotes(normalizeMyMessagesWithApplicationId(myNotesQuery.data))
+    setMyNotesLoaded(true)
   }, [myNotesQuery.data])
 
   useEffect(() => {
@@ -323,11 +325,12 @@ export function useNcrcDashboardState({
 
     if (!username?.trim()) {
       setMyNotes(EMPTY_MY_MESSAGES)
+      setMyNotesLoaded(false)
       setMyNotesError('Logged in username is not available.')
     } else {
-      setMyNotesLoading(true)
+      setMyNotesLoading(!myNotesLoaded)
     }
-  }, [username])
+  }, [myNotesLoaded, username])
 
   const submitMyNotesReply = useCallback(
     async ({
