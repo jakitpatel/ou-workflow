@@ -283,7 +283,7 @@ export function useNcrcDashboardState({
     enabled: Boolean(token) && myNotesOpen && Boolean(username?.trim()),
     staleTime: 0,
     refetchOnMount: 'always',
-    refetchInterval: myNotesOpen && !isMyNotesPollingPaused ? 5000 : false,
+    refetchInterval: myNotesOpen && !isMyNotesPollingPaused ? 30000 : false,
     refetchIntervalInBackground: false,
   })
 

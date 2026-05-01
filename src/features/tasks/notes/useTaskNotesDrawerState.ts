@@ -209,7 +209,7 @@ export function useTaskNotesDrawerState({
     enabled: Boolean(token) && isMessageDrawerOpen && Boolean(activeContextKey),
     staleTime: 0,
     refetchOnMount: 'always',
-    refetchInterval: isMessageDrawerOpen && !isPollingPaused ? 5000 : false,
+    refetchInterval: isMessageDrawerOpen && !isPollingPaused ? 30000 : false,
     refetchIntervalInBackground: false,
   })
 
