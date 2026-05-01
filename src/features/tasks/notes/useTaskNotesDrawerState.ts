@@ -1,5 +1,7 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useUser } from '@/context/UserContext'
+import type { MyMessagesByTab } from '@/features/tasks/api'
 import { fetchMyMessages, markTaskNoteAsRead, updateTaskNoteTag } from '@/features/tasks/api'
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations'
 import type { TaskNote, TaskNoteReaction } from '@/types/application'
@@ -146,6 +148,39 @@ export function useTaskNotesDrawerState({
   const [selectedApplicationFilterId, setSelectedApplicationFilterId] = useState<number | null>(null)
   const [error, setError] = useState('')
 
+  const applyFetchedNotes = useCallback((contextKey: string, notes: MyMessagesByTab) => {
+    setNotesByContext((prev) => ({
+      ...prev,
+      [contextKey]: {
+        incoming: notes.incoming as TaskNote[],
+        outgoing: notes.outgoing as TaskNote[],
+        mention: notes.mention as TaskNote[],
+        private: notes.private as TaskNote[],
+      },
+    }))
+
+    setCountsByContext((prev) => ({
+      ...prev,
+      [contextKey]: {
+        incoming: notes.incoming.length,
+        outgoing: notes.outgoing.length,
+        mention: notes.mention.length,
+        private: notes.private.length,
+      },
+    }))
+  }, [])
+
+  const setContextLoading = useCallback((contextKey: string, isLoading: boolean) => {
+    const loadingKeys: NoteTab[] = ['incoming', 'outgoing', 'mention', 'private']
+    setLoadingByKey((prev) => {
+      const next = { ...prev }
+      for (const tab of loadingKeys) {
+        next[`${contextKey}:${tab}`] = isLoading
+      }
+      return next
+    })
+  }, [])
+
   const createTaskNoteMutation = useCreateTaskNoteMutation({
     includeApplicationLists,
     includePrelimLists,
@@ -155,61 +190,50 @@ export function useTaskNotesDrawerState({
     },
   })
 
-  const fetchNotes = useCallback(
-    async ({ contextKey, taskId }: { contextKey: string; taskId?: string }) => {
-      const loadingKeys: NoteTab[] = ['incoming', 'outgoing', 'mention', 'private']
-      setLoadingByKey((prev) => {
-        const next = { ...prev }
-        for (const tab of loadingKeys) {
-          next[`${contextKey}:${tab}`] = true
-        }
-        return next
-      })
+  const isMessageDrawerOpen = Boolean(drawer)
+  const activeContextKey = drawer?.contextKey ?? null
+  const activeTaskId = drawer?.taskId
+  const isPollingPaused =
+    createTaskNoteMutation.isPending ||
+    Boolean(markingReadMessageId) ||
+    Boolean(reactingMessageId)
 
-      try {
-        const notes = await fetchMyMessages({
-          taskId,
-          applicationId: applicationId ?? null,
-          token: token ?? undefined,
-        })
+  const messagesQuery = useQuery({
+    queryKey: ['task-notes-drawer-messages', applicationId ?? null, activeContextKey, activeTaskId ?? null],
+    queryFn: () =>
+      fetchMyMessages({
+        taskId: activeTaskId,
+        applicationId: applicationId ?? null,
+        token: token ?? undefined,
+      }),
+    enabled: Boolean(token) && isMessageDrawerOpen && Boolean(activeContextKey),
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchInterval: isMessageDrawerOpen && !isPollingPaused ? 5000 : false,
+    refetchIntervalInBackground: false,
+  })
 
-        setNotesByContext((prev) => ({
-          ...prev,
-          [contextKey]: {
-            incoming: notes.incoming as TaskNote[],
-            outgoing: notes.outgoing as TaskNote[],
-            mention: notes.mention as TaskNote[],
-            private: notes.private as TaskNote[],
-          },
-        }))
+  useEffect(() => {
+    if (!activeContextKey) return
+    setContextLoading(activeContextKey, messagesQuery.isFetching)
+  }, [activeContextKey, messagesQuery.isFetching, setContextLoading])
 
-        setCountsByContext((prev) => ({
-          ...prev,
-          [contextKey]: {
-            incoming: notes.incoming.length,
-            outgoing: notes.outgoing.length,
-            mention: notes.mention.length,
-            private: notes.private.length,
-          },
-        }))
+  useEffect(() => {
+    if (!activeContextKey || !messagesQuery.data) return
+    applyFetchedNotes(activeContextKey, messagesQuery.data)
+  }, [activeContextKey, applyFetchedNotes, messagesQuery.data])
 
-        setError('')
-      } catch (fetchError) {
-        const message = buildFetchErrorMessage(fetchError)
-        setError(message)
-        onError?.(message)
-      } finally {
-        setLoadingByKey((prev) => {
-          const next = { ...prev }
-          for (const tab of loadingKeys) {
-            next[`${contextKey}:${tab}`] = false
-          }
-          return next
-        })
-      }
-    },
-    [applicationId, onError, token],
-  )
+  useEffect(() => {
+    if (!activeContextKey || !messagesQuery.error) return
+    const message = buildFetchErrorMessage(messagesQuery.error)
+    setError(message)
+    onError?.(message)
+  }, [activeContextKey, messagesQuery.error, onError])
+
+  const refetchNotes = useCallback(async () => {
+    if (!drawer) return
+    await messagesQuery.refetch()
+  }, [drawer, messagesQuery])
 
   const resetComposeDraft = useCallback((tab: NoteTab) => {
     const normalizedTab = normalizeNoteTab(tab)
@@ -231,10 +255,8 @@ export function useTaskNotesDrawerState({
         activeTab: normalizedTab,
       })
       resetComposeDraft(normalizedTab)
-
-      await fetchNotes({ contextKey, taskId })
     },
-    [fetchNotes, resetComposeDraft],
+    [resetComposeDraft],
   )
 
   const closeDrawer = useCallback(() => {
@@ -246,6 +268,7 @@ export function useTaskNotesDrawerState({
     setError('')
     setComposeTextState('')
     setComposeToUserIdState(null)
+    setComposePrivateState(false)
   }, [createTaskNoteMutation.isPending])
 
   const setActiveTab = useCallback((tab: NoteTab) => {
@@ -318,10 +341,7 @@ export function useTaskNotesDrawerState({
     setComposeTextState('')
     setComposeToUserIdState(null)
 
-    await fetchNotes({
-      contextKey: drawer.contextKey,
-      taskId: drawer.taskId,
-    })
+    await refetchNotes()
   }, [
     applicationId,
     composePrivate,
@@ -329,7 +349,7 @@ export function useTaskNotesDrawerState({
     composeToUserId,
     createTaskNoteMutation,
     drawer,
-    fetchNotes,
+    refetchNotes,
     token,
     username,
   ])
@@ -357,16 +377,13 @@ export function useTaskNotesDrawerState({
       })
 
       setError('')
-      await fetchNotes({
-        contextKey: drawer.contextKey,
-        taskId: drawer.taskId,
-      })
+      await refetchNotes()
     },
     [
       applicationId,
       createTaskNoteMutation,
       drawer,
-      fetchNotes,
+      refetchNotes,
       token,
       username,
     ],
@@ -389,10 +406,7 @@ export function useTaskNotesDrawerState({
           token: token ?? undefined,
         })
 
-        await fetchNotes({
-          contextKey: drawer.contextKey,
-          taskId: drawer.taskId,
-        })
+        await refetchNotes()
       } catch (markReadError) {
         const message = buildFetchErrorMessage(markReadError)
         setError(message)
@@ -401,7 +415,7 @@ export function useTaskNotesDrawerState({
         setMarkingReadMessageId((current) => (current === messageId ? null : current))
       }
     },
-    [drawer, fetchNotes, markingReadMessageId, onError, token, username],
+    [drawer, markingReadMessageId, onError, refetchNotes, token, username],
   )
 
   const updateMessageReactionTag = useCallback(
@@ -419,10 +433,7 @@ export function useTaskNotesDrawerState({
           token: token ?? undefined,
         })
 
-        await fetchNotes({
-          contextKey: drawer.contextKey,
-          taskId: drawer.taskId,
-        })
+        await refetchNotes()
       } catch (reactionError) {
         const message = buildFetchErrorMessage(reactionError)
         setError(message)
@@ -432,7 +443,7 @@ export function useTaskNotesDrawerState({
         setReactingMessageId((current) => (current === resolvedMessageId ? null : current))
       }
     },
-    [drawer, fetchNotes, onError, reactingMessageId, token],
+    [drawer, onError, reactingMessageId, refetchNotes, token],
   )
 
   const activeNotes = useMemo(() => {

@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState'
 import { renderWithProviders } from '@/test/renderWithProviders'
@@ -114,6 +114,10 @@ function NotesHookHarness() {
 
       <button type="button" onClick={() => notes.closeApplicationFilter()}>
         close-application-filter
+      </button>
+
+      <button type="button" onClick={() => notes.closeDrawer()}>
+        close-drawer
       </button>
 
       <div>active-tab:{notes.drawer?.activeTab ?? 'closed'}</div>
@@ -678,5 +682,43 @@ describe('useTaskNotesDrawerState', () => {
 
     expect(markTaskNoteAsReadMock).not.toHaveBeenCalled()
     expect(fetchMyMessagesMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('polls every 5 seconds only while the drawer is open', async () => {
+    vi.useFakeTimers()
+
+    try {
+      renderWithProviders(<NotesHookHarness />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'open-drawer' }))
+
+      await act(async () => {
+        await Promise.resolve()
+      })
+
+      expect(fetchMyMessagesMock).toHaveBeenCalledTimes(1)
+      expect(screen.getByText('active-tab:mention')).toBeTruthy()
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000)
+      })
+
+      await act(async () => {
+        await Promise.resolve()
+      })
+
+      expect(fetchMyMessagesMock).toHaveBeenCalledTimes(2)
+
+      fireEvent.click(screen.getByRole('button', { name: 'close-drawer' }))
+      expect(screen.getByText('active-tab:closed')).toBeTruthy()
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000)
+      })
+
+      expect(fetchMyMessagesMock).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
