@@ -12,6 +12,7 @@ import {
 } from '@/features/tasks/api'
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { useDebounce } from '@/hooks/useDebounce'
+import { useSSE, type SSEMessage } from '@/hooks/useSSE'
 import type { Applicant, TaskNote, TaskNoteReaction } from '@/types/application'
 
 const PAGE_LIMIT = 50
@@ -76,13 +77,22 @@ const isMyNoteRead = (note: TaskNote): boolean => {
   return normalized === '1' || normalized === 'true'
 }
 
+const isRefreshMessagesEvent = (message: SSEMessage): boolean => {
+  if (!message || typeof message !== 'object') return false
+
+  const eventType = message.type ?? message.data?.type
+  const normalizedEventType = String(eventType ?? '').trim().toLowerCase()
+
+  return normalizedEventType === 'refresh_message' || normalizedEventType === 'refresh_messages'
+}
+
 export function useNcrcDashboardState({
   search,
   navigate,
 }: UseNcrcDashboardStateParams) {
   const { q, status, priority, page, applicationId, myOnly } = search
   const { token, username } = useUser()
-  const { paginationMode } = useAppPreferences()
+  const { apiBaseUrl, paginationMode } = useAppPreferences()
 
   const [myNotesOpen, setMyNotesOpen] = useState(false)
   const [myNotes, setMyNotes] = useState<MyMessagesByTab>(EMPTY_MY_MESSAGES)
@@ -286,6 +296,26 @@ export function useNcrcDashboardState({
     refetchOnMount: 'always',
     refetchInterval: myNotesOpen && !isMyNotesPollingPaused ? 30000 : false,
     refetchIntervalInBackground: false,
+  })
+
+  const sseEndpoint = useMemo(() => {
+    const normalizedBaseUrl = apiBaseUrl?.trim().replace(/\/+$/, '')
+    return normalizedBaseUrl ? `${normalizedBaseUrl}/events` : '/events'
+  }, [apiBaseUrl])
+
+  const handleMyNotesSSEMessage = useCallback(
+    (message: SSEMessage) => {
+      if (!myNotesOpen) return
+      if (!isRefreshMessagesEvent(message)) return
+
+      void myNotesQuery.refetch()
+    },
+    [myNotesOpen, myNotesQuery],
+  )
+
+  useSSE(handleMyNotesSSEMessage, {
+    endpoint: sseEndpoint,
+    enabled: Boolean(token) && myNotesOpen && Boolean(username?.trim()),
   })
 
   useEffect(() => {
