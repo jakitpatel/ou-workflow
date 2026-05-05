@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import type { MyMessagesByTab } from '@/features/tasks/api'
 import { fetchMyMessages, markTaskNoteAsRead, updateTaskNoteTag } from '@/features/tasks/api'
 import { useCreateTaskNoteMutation } from '@/features/tasks/hooks/useTaskMutations'
+import { useSSE, type SSEMessage } from '@/hooks/useSSE'
 import type { TaskNote, TaskNoteReaction } from '@/types/application'
 import type { NoteTab, NotesByTab } from './types'
 
@@ -20,6 +22,8 @@ type ContextCounts = {
   mention: number
   private: number
 }
+
+type DrawerDataTab = keyof NotesByTab<TaskNote>
 
 type OpenDrawerParams = {
   contextKey: string
@@ -98,6 +102,75 @@ const getMessageId = (note: TaskNote): string | null => {
   return value ? value : null
 }
 
+const getParentMessageId = (note: TaskNote): string | null => {
+  const candidate =
+    (note as any)?.parentMessageId ??
+    (note as any)?.ParentMessageId ??
+    (note as any)?.parent_message_id
+
+  if (candidate === undefined || candidate === null) return null
+
+  const value = String(candidate).trim()
+  if (!value || value === '0') return null
+  return value
+}
+
+const normalizeMessageId = (value: unknown): string | null => {
+  if (value === undefined || value === null) return null
+
+  const normalized = String(value).trim()
+  return normalized ? normalized : null
+}
+
+const getVisibleRootMessageIds = (notes: TaskNote[]): Set<string> => {
+  const noteById = new Map<string, TaskNote>()
+  for (const note of notes) {
+    const messageId = getMessageId(note)
+    if (messageId) noteById.set(messageId, note)
+  }
+
+  const rootMessageIds = new Set<string>()
+
+  for (const note of notes) {
+    let currentNote = note
+    let currentMessageId = getMessageId(currentNote)
+    let parentMessageId = getParentMessageId(currentNote)
+    const visitedMessageIds = new Set<string>()
+
+    while (currentMessageId && parentMessageId && noteById.has(parentMessageId)) {
+      if (visitedMessageIds.has(currentMessageId)) break
+      visitedMessageIds.add(currentMessageId)
+
+      currentNote = noteById.get(parentMessageId) as TaskNote
+      currentMessageId = getMessageId(currentNote)
+      parentMessageId = getParentMessageId(currentNote)
+    }
+
+    const rootMessageId = parentMessageId && !noteById.has(parentMessageId) ? parentMessageId : currentMessageId
+    if (rootMessageId) rootMessageIds.add(rootMessageId)
+  }
+
+  return rootMessageIds
+}
+
+const isRefreshMessagesEvent = (message: SSEMessage): boolean => {
+  if (!message || typeof message !== 'object') return false
+
+  const eventType =
+    (message as { type?: unknown }).type ??
+    ((message as { data?: { type?: unknown } }).data?.type)
+  const normalizedEventType = String(eventType ?? '').trim().toLowerCase()
+
+  return normalizedEventType === 'refresh_message' || normalizedEventType === 'refresh_messages'
+}
+
+const getSSEConversationId = (message: SSEMessage): string | null => {
+  if (!message || typeof message !== 'object') return null
+
+  const data = (message as { data?: Record<string, unknown> }).data
+  return normalizeMessageId(data?.convid ?? (message as { convid?: unknown }).convid)
+}
+
 const isTaskNoteRead = (note: TaskNote): boolean => {
   const value = (note as any)?.isRead
   if (value === true) return true
@@ -135,6 +208,7 @@ export function useTaskNotesDrawerState({
   onError,
 }: UseTaskNotesDrawerStateParams) {
   const { username, token } = useUser()
+  const { apiBaseUrl } = useAppPreferences()
   const [drawer, setDrawer] = useState<DrawerState | null>(null)
   const [notesByContext, setNotesByContext] = useState<Record<string, NotesByTab<TaskNote>>>({})
   const [countsByContext, setCountsByContext] = useState<Record<string, ContextCounts>>({})
@@ -213,6 +287,38 @@ export function useTaskNotesDrawerState({
     refetchOnMount: 'always',
     refetchInterval: isMessageDrawerOpen && !isPollingPaused ? 30000 : false,
     refetchIntervalInBackground: false,
+  })
+
+  const sseEndpoint = useMemo(() => {
+    const normalizedBaseUrl = apiBaseUrl?.trim().replace(/\/+$/, '')
+    return normalizedBaseUrl ? `${normalizedBaseUrl}/events` : '/events'
+  }, [apiBaseUrl])
+
+  const visibleRootMessageIds = useMemo(() => {
+    if (!drawer) return new Set<string>()
+
+    const activeNotesTab = normalizeNoteTab(drawer.activeTab) as DrawerDataTab
+    return getVisibleRootMessageIds(
+      (notesByContext[drawer.contextKey] ?? EMPTY_NOTES)[activeNotesTab] ?? [],
+    )
+  }, [drawer, notesByContext])
+
+  const handleSSEMessage = useCallback(
+    (message: SSEMessage) => {
+      if (!drawer) return
+      if (!isRefreshMessagesEvent(message)) return
+
+      const conversationId = getSSEConversationId(message)
+      if (!conversationId || !visibleRootMessageIds.has(conversationId)) return
+
+      void messagesQuery.refetch()
+    },
+    [drawer, messagesQuery, visibleRootMessageIds],
+  )
+
+  useSSE(handleSSEMessage, {
+    endpoint: sseEndpoint,
+    enabled: Boolean(token) && isMessageDrawerOpen,
   })
 
   useEffect(() => {

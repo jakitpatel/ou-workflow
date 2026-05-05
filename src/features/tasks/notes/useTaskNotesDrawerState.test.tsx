@@ -721,4 +721,94 @@ describe('useTaskNotesDrawerState', () => {
       vi.useRealTimers()
     }
   })
+
+  it('refreshes an open drawer when an SSE refresh message matches the visible root conversation', async () => {
+    const eventSources: Array<{
+      url: string
+      onmessage: ((event: MessageEvent) => void) | null
+      onerror: ((event: Event) => void) | null
+      close: ReturnType<typeof vi.fn>
+    }> = []
+
+    class MockEventSource {
+      url: string
+      onmessage: ((event: MessageEvent) => void) | null = null
+      onerror: ((event: Event) => void) | null = null
+      close = vi.fn()
+
+      constructor(url: string) {
+        this.url = url
+        eventSources.push(this)
+      }
+    }
+
+    vi.stubGlobal('EventSource', MockEventSource)
+
+    fetchMyMessagesMock.mockImplementation(async () => ({
+      incoming: [],
+      outgoing: [],
+      private: [],
+      mention: [
+        { MessageID: 101, MessageText: 'Root mention note' },
+        { MessageID: 121, MessageText: 'Reply note', parentMessageId: '101' },
+      ],
+    }))
+
+    try {
+      renderWithProviders(<NotesHookHarness />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'open-drawer' }))
+
+      await waitFor(() => {
+        expect(fetchMyMessagesMock).toHaveBeenCalledTimes(1)
+        expect(eventSources).toHaveLength(1)
+      })
+
+      act(() => {
+        eventSources[0]?.onmessage?.({
+          data: JSON.stringify({
+            type: 'refresh_messages',
+            data: {
+              ApplicationId: 1261,
+              FromUser: 'TYLER.BAND',
+              MessageId: '121',
+              convid: '999',
+              MessageType: 'Text',
+              TaskInstanceId: 0,
+              ToUser: 'SHOUKI.BENJAMIN',
+            },
+          }),
+        } as MessageEvent)
+      })
+
+      await act(async () => {
+        await Promise.resolve()
+      })
+
+      expect(fetchMyMessagesMock).toHaveBeenCalledTimes(1)
+
+      act(() => {
+        eventSources[0]?.onmessage?.({
+          data: JSON.stringify({
+            type: 'refresh_messages',
+            data: {
+              ApplicationId: 1261,
+              FromUser: 'TYLER.BAND',
+              MessageId: '121',
+              convid: '101',
+              MessageType: 'Text',
+              TaskInstanceId: 0,
+              ToUser: 'SHOUKI.BENJAMIN',
+            },
+          }),
+        } as MessageEvent)
+      })
+
+      await waitFor(() => {
+        expect(fetchMyMessagesMock).toHaveBeenCalledTimes(2)
+      })
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 })
