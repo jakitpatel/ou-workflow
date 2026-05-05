@@ -4,7 +4,7 @@ import { useNavigate } from '@tanstack/react-router'
 import type { Applicant } from '@/types/application'
 import { useUser } from '@/context/UserContext'
 import { useTaskActions } from '@/features/tasks/hooks/useTaskActions'
-import { ResolutionDrawer } from '@/components/ou-workflow/PrelimDashboard/ResolutionDrawer'
+import { PrelimResolutionDrawer } from '@/features/prelim/components/PrelimResolutionDrawer'
 import { Route as DashboardRoute } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
 import type {
   CompanyFromApplication,
@@ -33,7 +33,7 @@ const isApplicationWithdrawn = (status?: string) => {
   return normalized === 'withdrawn' || normalized === 'wth'
 }
 
-export function ResolvedSection({
+export function PrelimResolvedSection({
   application,
   loading,
   defaultVisible = true,
@@ -332,7 +332,7 @@ export function ResolvedSection({
 
       {/* Resolution Drawer */}
       {drawerState.isOpen && drawerState.type === 'company' && companyTask && (
-        <ResolutionDrawer
+        <PrelimResolutionDrawer
           isOpen={drawerState.isOpen}
           onClose={closeDrawer}
           type="company"
@@ -349,7 +349,7 @@ export function ResolvedSection({
       {drawerState.isOpen &&
         drawerState.type === 'plant' &&
         activePlantTask && (
-          <ResolutionDrawer
+          <PrelimResolutionDrawer
             isOpen={drawerState.isOpen}
             onClose={closeDrawer}
             type="plant"

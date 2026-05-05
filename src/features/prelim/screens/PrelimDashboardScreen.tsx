@@ -1,5 +1,5 @@
-import { PrelimDashboard } from '@/components/ou-workflow/PrelimDashboard'
+import { PrelimDashboardContent } from '@/features/prelim/components/PrelimDashboardContent'
 
 export function PrelimDashboardScreen() {
-  return <PrelimDashboard />
+  return <PrelimDashboardContent />
 }

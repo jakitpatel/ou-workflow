@@ -168,7 +168,10 @@ const getSSEConversationId = (message: SSEMessage): string | null => {
   if (!message || typeof message !== 'object') return null
 
   const data = (message as { data?: Record<string, unknown> }).data
-  return normalizeMessageId(data?.convid ?? (message as { convid?: unknown }).convid)
+  return normalizeMessageId(
+    data?.root_conversation_id ??
+      (message as { root_conversation_id?: unknown }).root_conversation_id,
+  )
 }
 
 const getSSEMessageId = (message: SSEMessage): string | null => {

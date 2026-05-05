@@ -1,6 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
 
-export type SSEMessage = unknown
+export type SSEMessage = {
+  type?: unknown
+  data?: {
+    type?: unknown
+    root_conversation_id?: unknown
+    MessageId?: unknown
+    MessageID?: unknown
+    messageId?: unknown
+    ToUser?: unknown
+    toUser?: unknown
+    to_user?: unknown
+    [key: string]: unknown
+  }
+  root_conversation_id?: unknown
+  MessageId?: unknown
+  MessageID?: unknown
+  messageId?: unknown
+  ToUser?: unknown
+  toUser?: unknown
+  to_user?: unknown
+  [key: string]: unknown
+}
 
 type UseSSEOptions = {
   endpoint?: string | null

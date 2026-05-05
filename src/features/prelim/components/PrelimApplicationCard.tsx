@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Clock } from 'lucide-react'
 import type { Applicant, Task } from '@/types/application'
-import { ResolvedSection } from '@/components/ou-workflow/PrelimDashboard/ResolvedSection'
+import { PrelimResolvedSection } from '@/features/prelim/components/PrelimResolvedSection'
 import { useUser } from '@/context/UserContext'
 import { CancelApplicationDialog } from '@/components/ou-workflow/modal/CancelApplicationDialog'
 import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
@@ -338,7 +338,7 @@ export function PrelimApplicationCard({
           />
         </div>
       )}
-      <ResolvedSection
+      <PrelimResolvedSection
         application={company}
         loading={false}
         defaultVisible={defaultProgressVisible}

@@ -762,6 +762,7 @@ describe('useTaskNotesDrawerState', () => {
       await waitFor(() => {
         expect(fetchMyMessagesMock).toHaveBeenCalledTimes(1)
         expect(eventSources).toHaveLength(1)
+        expect(screen.getByText('mention-count:2')).toBeTruthy()
       })
 
       act(() => {
@@ -772,7 +773,7 @@ describe('useTaskNotesDrawerState', () => {
               ApplicationId: 1261,
               FromUser: 'TYLER.BAND',
               MessageId: '121',
-              convid: '999',
+              root_conversation_id: '999',
               MessageType: 'Text',
               TaskInstanceId: 0,
               ToUser: 'SHOUKI.BENJAMIN',
@@ -795,7 +796,7 @@ describe('useTaskNotesDrawerState', () => {
               ApplicationId: 1261,
               FromUser: 'TYLER.BAND',
               MessageId: '121',
-              convid: '101',
+              root_conversation_id: '101',
               MessageType: 'Text',
               TaskInstanceId: 0,
               ToUser: 'SHOUKI.BENJAMIN',
@@ -849,6 +850,7 @@ describe('useTaskNotesDrawerState', () => {
       await waitFor(() => {
         expect(fetchMyMessagesMock).toHaveBeenCalledTimes(1)
         expect(eventSources).toHaveLength(1)
+        expect(screen.getByText('mention-count:1')).toBeTruthy()
       })
 
       act(() => {
@@ -859,7 +861,7 @@ describe('useTaskNotesDrawerState', () => {
               ApplicationId: 1261,
               FromUser: 'TYLER.BAND',
               MessageId: '777',
-              convid: '777',
+              root_conversation_id: '777',
               MessageType: 'Text',
               TaskInstanceId: 0,
               ToUser: 'OTHER.USER',
@@ -882,7 +884,7 @@ describe('useTaskNotesDrawerState', () => {
               ApplicationId: 1261,
               FromUser: 'TYLER.BAND',
               MessageId: '778',
-              convid: '778',
+              root_conversation_id: '778',
               MessageType: 'Text',
               TaskInstanceId: 0,
               ToUser: 'S.Benjamin',

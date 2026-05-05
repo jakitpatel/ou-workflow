@@ -8,7 +8,7 @@ import { usePrelimDashboardState } from '@/features/prelim/hooks/usePrelimDashbo
 
 const SHOW_PRELIM_APPLICANT_STATS_CARDS = false
 
-export function PrelimDashboard() {
+export function PrelimDashboardContent() {
   const {
     q,
     status,

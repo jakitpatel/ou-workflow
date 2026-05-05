@@ -284,7 +284,7 @@ const countUpdatedPlantFields = (before: PlantData, after: PlantData) => {
   return checks.filter(Boolean).length
 }
 
-export function ResolutionDrawer({
+export function PrelimResolutionDrawer({
   isOpen,
   onClose,
   type,
