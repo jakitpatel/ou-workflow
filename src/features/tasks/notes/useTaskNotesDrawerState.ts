@@ -171,6 +171,38 @@ const getSSEConversationId = (message: SSEMessage): string | null => {
   return normalizeMessageId(data?.convid ?? (message as { convid?: unknown }).convid)
 }
 
+const getSSEMessageId = (message: SSEMessage): string | null => {
+  if (!message || typeof message !== 'object') return null
+
+  const data = (message as { data?: Record<string, unknown> }).data
+  return normalizeMessageId(
+    data?.MessageId ??
+      data?.MessageID ??
+      data?.messageId ??
+      (message as { MessageId?: unknown; MessageID?: unknown; messageId?: unknown }).MessageId ??
+      (message as { MessageID?: unknown }).MessageID ??
+      (message as { messageId?: unknown }).messageId,
+  )
+}
+
+const getSSEToUser = (message: SSEMessage): string | null => {
+  if (!message || typeof message !== 'object') return null
+
+  const data = (message as { data?: Record<string, unknown> }).data
+  const toUser =
+    data?.ToUser ??
+    data?.toUser ??
+    data?.to_user ??
+    (message as { ToUser?: unknown; toUser?: unknown; to_user?: unknown }).ToUser ??
+    (message as { toUser?: unknown }).toUser ??
+    (message as { to_user?: unknown }).to_user
+
+  if (toUser === undefined || toUser === null) return null
+
+  const value = String(toUser).trim()
+  return value ? value : null
+}
+
 const isTaskNoteRead = (note: TaskNote): boolean => {
   const value = (note as any)?.isRead
   if (value === true) return true
@@ -199,6 +231,35 @@ const noteTargetsCurrentUser = (note: TaskNote, currentUsername?: string | null)
     .map((value) => normalizeComparableUserName(value))
     .filter(Boolean)
     .includes(normalizedCurrentUsername)
+}
+
+const sseToUserTargetsCurrentUser = (message: SSEMessage, currentUsername?: string | null): boolean => {
+  const normalizedCurrentUsername = normalizeComparableUserName(currentUsername ?? '')
+  if (!normalizedCurrentUsername) return false
+
+  const toUser = getSSEToUser(message)
+  if (!toUser) return false
+
+  return toUser
+    .split(',')
+    .map((value) => normalizeComparableUserName(value))
+    .filter(Boolean)
+    .includes(normalizedCurrentUsername)
+}
+
+const isNewRootConversationForCurrentUser = (
+  message: SSEMessage,
+  currentUsername?: string | null,
+): boolean => {
+  const conversationId = getSSEConversationId(message)
+  const messageId = getSSEMessageId(message)
+
+  return Boolean(
+    conversationId &&
+      messageId &&
+      conversationId === messageId &&
+      sseToUserTargetsCurrentUser(message, currentUsername),
+  )
 }
 
 export function useTaskNotesDrawerState({
@@ -309,11 +370,15 @@ export function useTaskNotesDrawerState({
       if (!isRefreshMessagesEvent(message)) return
 
       const conversationId = getSSEConversationId(message)
-      if (!conversationId || !visibleRootMessageIds.has(conversationId)) return
+      const shouldRefreshVisibleConversation =
+        Boolean(conversationId) && visibleRootMessageIds.has(conversationId as string)
+      const shouldRefreshNewConversation = isNewRootConversationForCurrentUser(message, username)
+
+      if (!shouldRefreshVisibleConversation && !shouldRefreshNewConversation) return
 
       void messagesQuery.refetch()
     },
-    [drawer, messagesQuery, visibleRootMessageIds],
+    [drawer, messagesQuery, username, visibleRootMessageIds],
   )
 
   useSSE(handleSSEMessage, {
