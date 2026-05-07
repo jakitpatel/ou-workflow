@@ -5,6 +5,7 @@ import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModa
 import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal'
 import { NcrcDashboardControls } from '@/features/applications/components/NcrcDashboardControls'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
+import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer'
 import { NcrcDashboardListSection } from '@/features/applications/components/NcrcDashboardListSection'
 import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer'
 import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer'
@@ -46,6 +47,15 @@ export function NcrcDashboardContent() {
   })
   const [scheduleBDrawerState, setScheduleBDrawerState] = useState<{
     open: boolean
+    applicationId?: string | number
+    applicationName?: string
+    taskName?: string
+  }>({
+    open: false,
+  })
+  const [inspectionInvoiceDrawerState, setInspectionInvoiceDrawerState] = useState<{
+    open: boolean
+    applicant?: Applicant
     applicationId?: string | number
     applicationName?: string
     taskName?: string
@@ -184,6 +194,17 @@ export function NcrcDashboardContent() {
     if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEB) {
       setScheduleBDrawerState({
         open: true,
+        applicationId: application.applicationId,
+        applicationName: application.company,
+        taskName: action.name,
+      })
+      return
+    }
+
+    if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.INVOICE) {
+      setInspectionInvoiceDrawerState({
+        open: true,
+        applicant: application,
         applicationId: application.applicationId,
         applicationName: application.company,
         taskName: action.name,
@@ -378,6 +399,14 @@ export function NcrcDashboardContent() {
         applicationName={scheduleBDrawerState.applicationName}
         taskName={scheduleBDrawerState.taskName}
         onClose={() => setScheduleBDrawerState({ open: false })}
+      />
+      <InspectionInvoiceDrawer
+        open={inspectionInvoiceDrawerState.open}
+        applicant={inspectionInvoiceDrawerState.applicant}
+        applicationId={inspectionInvoiceDrawerState.applicationId}
+        applicationName={inspectionInvoiceDrawerState.applicationName}
+        taskName={inspectionInvoiceDrawerState.taskName}
+        onClose={() => setInspectionInvoiceDrawerState({ open: false })}
       />
     </>
   )
