@@ -440,15 +440,26 @@ function ApplicationIngredientsTable({
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div className="text-sm font-semibold text-gray-900">Application Ingredients</div>
-        <button
-          type="button"
-          onClick={startDraft}
-          disabled={Boolean(draft) || createIngredientMutation.isPending}
-          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-        >
-          <Plus className="h-4 w-4" />
-          Add Row
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onViewApplication(applicationId)}
+            disabled={!applicationId}
+            className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:text-gray-300"
+          >
+            <Eye className="h-4 w-4" />
+            View Application
+          </button>
+          <button
+            type="button"
+            onClick={startDraft}
+            disabled={Boolean(draft) || createIngredientMutation.isPending}
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+          >
+            <Plus className="h-4 w-4" />
+            Add Row
+          </button>
+        </div>
       </div>
 
       {submitError ? (
@@ -633,17 +644,7 @@ function ApplicationIngredientsTable({
                         <option value={formattedNotes}>{formattedNotes}</option>
                       </select>
                     </td>
-                    <td className="px-3 py-3">
-                      <button
-                        type="button"
-                        onClick={() => onViewApplication(ingredient.ApplicationID ?? applicationId)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-600 shadow-sm hover:bg-blue-50 hover:text-blue-700"
-                        aria-label={`View application ${formatValue(ingredient.ApplicationID ?? applicationId)}`}
-                        title="View application"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                    </td>
+                    <td className="px-3 py-3 text-gray-400">-</td>
                   </tr>
                 )
               })}
