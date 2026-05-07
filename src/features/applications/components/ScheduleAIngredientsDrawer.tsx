@@ -715,12 +715,12 @@ function KashIngredientsTable({ ingredients }: { ingredients: KashIngredient[] }
                     </div>
                     {cta !== '-' ? (
                       <div className="mt-1 truncate text-xs italic text-gray-500" title={cta}>
-                        {cta}
+                        CTA: {cta}
                       </div>
                     ) : null}
                     {plantCta !== '-' ? (
                       <div className="mt-0.5 truncate text-xs italic text-gray-500" title={plantCta}>
-                        {plantCta}
+                        PlantCTA: {plantCta}
                       </div>
                     ) : null}
                   </td>
