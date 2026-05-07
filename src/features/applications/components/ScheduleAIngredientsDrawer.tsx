@@ -19,79 +19,232 @@ const TABS: Array<{ id: ScheduleATab; label: string }> = [
   { id: 'mapping', label: 'Mapping' },
 ]
 
-function IngredientCard({
-  ingredient,
-  variant,
-}: {
-  ingredient: ScheduleAIngredient
-  variant: 'application' | 'kash'
-}) {
-  const badgeClassName =
-    variant === 'application'
-      ? 'bg-sky-100 text-sky-700 border-sky-200'
-      : 'bg-emerald-100 text-emerald-700 border-emerald-200'
+function formatValue(value: unknown) {
+  const normalized = String(value ?? '').trim()
+  return normalized || '-'
+}
 
+function getIngredientField(ingredient: ScheduleAIngredient, fieldNames: string[]) {
+  const ingredientRecord = ingredient as Record<string, unknown>
+  return fieldNames.map((fieldName) => ingredientRecord[fieldName]).find((value) => formatValue(value) !== '-')
+}
+
+function getKashField(ingredient: KashIngredient, fieldNames: string[]) {
+  const ingredientRecord = ingredient as Record<string, unknown>
+  return fieldNames.map((fieldName) => ingredientRecord[fieldName]).find((value) => formatValue(value) !== '-')
+}
+
+function ApplicationIngredientsTable({ ingredients }: { ingredients: ScheduleAIngredient[] }) {
   return (
-    <article className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h4 className="text-sm font-semibold text-gray-900">
-            {ingredient.ingredientLabelName || ingredient.rawMaterialCode || 'Unnamed Ingredient'}
-          </h4>
-          <p className="mt-1 text-xs text-gray-500">
-            Ingredient ID: {ingredient.IngredientId}
-          </p>
-        </div>
-        <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${badgeClassName}`}>
-          {variant === 'application' ? 'Application' : 'KASH'}
-        </span>
-      </div>
+    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="min-w-[860px] w-full table-fixed divide-y divide-gray-200 text-left text-sm">
+          <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <tr>
+              <th scope="col" className="w-[22%] px-4 py-3">Name</th>
+              <th scope="col" className="w-[17%] px-3 py-3">Source</th>
+              <th scope="col" className="w-[15%] px-3 py-3">Brand</th>
+              <th scope="col" className="w-[13%] px-3 py-3">RMC</th>
+              <th scope="col" className="w-[12%] px-3 py-3">UKDID</th>
+              <th scope="col" className="w-[11%] px-3 py-3">Attachment</th>
+              <th scope="col" className="w-[10%] px-3 py-3">Notes</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 bg-white">
+            {ingredients.map((ingredient) => {
+              const source = getIngredientField(ingredient, ['source', 'Source', 'SOURCE', 'manufacturer'])
+              const attachment = getIngredientField(ingredient, [
+                'attachment',
+                'Attachment',
+                'attachmentUrl',
+                'AttachmentUrl',
+                'attachmentURL',
+                'AttachmentURL',
+                'FilePath',
+                'filePath',
+              ])
+              const notes = getIngredientField(ingredient, ['notes', 'Notes', 'note', 'Note'])
+              const formattedAttachment = formatValue(attachment)
+              const formattedNotes = formatValue(notes)
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Raw Material Code" value={ingredient.rawMaterialCode} />
-        <Field label="UKDID" value={ingredient.UKDID} />
-        <Field label="Brand Name" value={ingredient.brandName} />
-        <Field label="Manufacturer" value={ingredient.manufacturer} />
-        <Field label="Certifying Agency" value={ingredient.certifyingAgency} />
-        <Field label="Packaged/Bulk" value={ingredient.packagedOrBulk} />
-        <Field label="Passover" value={ingredient.passover} />
-        <Field label="Plant Status" value={ingredient.plantStatus} />
-        <Field label="Group" value={ingredient.group} />
+              return (
+                <tr key={getApplicationIngredientKey(ingredient)} className="align-top hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    <div className="truncate" title={formatValue(ingredient.ingredientLabelName)}>
+                      {formatValue(ingredient.ingredientLabelName)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(source)}>
+                      {formatValue(source)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(ingredient.brandName)}>
+                      {formatValue(ingredient.brandName)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(ingredient.rawMaterialCode)}>
+                      {formatValue(ingredient.rawMaterialCode)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(ingredient.UKDID)}>
+                      {formatValue(ingredient.UKDID)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    {formattedAttachment === '-' ? (
+                      <span>-</span>
+                    ) : (
+                      <a
+                        href={formattedAttachment}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                      >
+                        View
+                      </a>
+                    )}
+                  </td>
+                  <td className="px-3 py-3">
+                    <select
+                      className="h-8 w-full rounded-md border border-gray-300 bg-white px-2 text-xs text-gray-700 shadow-sm"
+                      value={formattedNotes}
+                      aria-label={`Notes for ${formatValue(ingredient.ingredientLabelName)}`}
+                      onChange={() => undefined}
+                    >
+                      <option value={formattedNotes}>{formattedNotes}</option>
+                    </select>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
-    </article>
+    </div>
   )
 }
 
-function KashIngredientCard({ ingredient }: { ingredient: KashIngredient }) {
+function KashIngredientsTable({ ingredients }: { ingredients: KashIngredient[] }) {
   return (
-    <article className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h4 className="text-sm font-semibold text-gray-900">
-            {ingredient.INGREDIENT_NAME || ingredient.BRAND_NAME || ingredient.UKDID || 'Unnamed Ingredient'}
-          </h4>
-          <p className="mt-1 text-xs text-gray-500">
-            Label ID: {String(ingredient.LABEL_ID ?? ingredient.LabelID ?? '-')}
-          </p>
-        </div>
-        <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
-          KASH
-        </span>
-      </div>
+    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="min-w-[1320px] w-full table-fixed divide-y divide-gray-200 text-left text-sm">
+          <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <tr>
+              <th scope="col" className="w-[8%] px-4 py-3">RMC</th>
+              <th scope="col" className="w-[19%] px-3 py-3">Ingredient Name</th>
+              <th scope="col" className="w-[12%] px-3 py-3">Source</th>
+              <th scope="col" className="w-[12%] px-3 py-3">Brand Name</th>
+              <th scope="col" className="w-[7%] px-3 py-3">Group</th>
+              <th scope="col" className="w-[10%] px-3 py-3">Certification</th>
+              <th scope="col" className="w-[8%] px-3 py-3">Passover</th>
+              <th scope="col" className="w-[10%] px-3 py-3">Plant-Status</th>
+              <th scope="col" className="w-[10%] px-3 py-3">MERCHANDISE_ID</th>
+              <th scope="col" className="w-[8%] px-3 py-3">LABEL_ID</th>
+              <th scope="col" className="w-[8%] px-3 py-3">UKDID</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 bg-white">
+            {ingredients.map((ingredient) => {
+              const rmc = getKashField(ingredient, ['RMC', 'rmc', 'rawMaterialCode', 'RawMaterialCode', 'CNTA'])
+              const source = getKashField(ingredient, [
+                'SOURCE',
+                'Source',
+                'source',
+                'CompanyName',
+                'SRC_MAR_ID',
+                'SRC_STREET',
+                'SRC_CITY',
+              ])
+              const certification = getKashField(ingredient, [
+                'Certification',
+                'CERTIFICATION',
+                'certification',
+                'SYMBOL',
+                'SEAL_SIGN',
+              ])
+              const labelId = ingredient.LABEL_ID ?? ingredient.LabelID
+              const cta = formatValue(ingredient.CTA)
+              const plantCta = formatValue(ingredient.PlantCTA)
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Brand Name" value={ingredient.BRAND_NAME} />
-        <Field label="UKDID" value={ingredient.UKDID} />
-        <Field label="Company" value={ingredient.CompanyName} />
-        <Field label="Plant" value={ingredient.PlantName} />
-        <Field label="Plant Status" value={ingredient.PlantStatus} />
-        <Field label="Ingredient Status" value={ingredient.IngredientInPlantStatus} />
-        <Field label="Label Status" value={ingredient.LabelStatus} />
-        <Field label="Passover" value={ingredient.PESACH} />
-        <Field label="Group" value={ingredient.GRP} />
-        <Field label="Symbol" value={ingredient.SYMBOL} />
+              return (
+                <tr key={getKashIngredientKey(ingredient)} className="align-top hover:bg-gray-50">
+                  <td className="px-4 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(rmc)}>
+                      {formatValue(rmc)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 font-medium text-gray-900">
+                    <div className="truncate" title={formatValue(ingredient.INGREDIENT_NAME)}>
+                      {formatValue(ingredient.INGREDIENT_NAME)}
+                    </div>
+                    {cta !== '-' ? (
+                      <div className="mt-1 truncate text-xs italic text-gray-500" title={cta}>
+                        {cta}
+                      </div>
+                    ) : null}
+                    {plantCta !== '-' ? (
+                      <div className="mt-0.5 truncate text-xs italic text-gray-500" title={plantCta}>
+                        {plantCta}
+                      </div>
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(source)}>
+                      {formatValue(source)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(ingredient.BRAND_NAME)}>
+                      {formatValue(ingredient.BRAND_NAME)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(ingredient.GRP)}>
+                      {formatValue(ingredient.GRP)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(certification)}>
+                      {formatValue(certification)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(ingredient.PESACH)}>
+                      {formatValue(ingredient.PESACH)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(ingredient.PlantStatus)}>
+                      {formatValue(ingredient.PlantStatus)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(ingredient.MERCHANDISE_ID)}>
+                      {formatValue(ingredient.MERCHANDISE_ID)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(labelId)}>
+                      {formatValue(labelId)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 text-gray-700">
+                    <div className="truncate" title={formatValue(ingredient.UKDID)}>
+                      {formatValue(ingredient.UKDID)}
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
-    </article>
+    </div>
   )
 }
 
@@ -100,15 +253,6 @@ const getApplicationIngredientKey = (ingredient: ScheduleAIngredient) =>
 
 const getKashIngredientKey = (ingredient: KashIngredient) =>
   `kash-${String(ingredient.LABEL_ID ?? ingredient.LabelID ?? ingredient.USED_IN1_ID ?? ingredient.MERCHANDISE_ID ?? ingredient.INGREDIENT_NAME ?? 'ingredient')}`
-
-function Field({ label, value }: { label: string; value: unknown }) {
-  return (
-    <div className="rounded-lg bg-gray-50 px-3 py-2">
-      <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500">{label}</div>
-      <div className="mt-1 text-sm text-gray-900">{String(value ?? '').trim() || '-'}</div>
-    </div>
-  )
-}
 
 function IngredientsTabPanel({
   ingredients,
@@ -152,22 +296,11 @@ function IngredientsTabPanel({
   }
 
   return (
-    <div className="space-y-4">
-      {ingredients.map((ingredient) => (
-        variant === 'application' ? (
-          <IngredientCard
-            key={getApplicationIngredientKey(ingredient as ScheduleAIngredient)}
-            ingredient={ingredient as ScheduleAIngredient}
-            variant={variant}
-          />
-        ) : (
-          <KashIngredientCard
-            key={getKashIngredientKey(ingredient as KashIngredient)}
-            ingredient={ingredient as KashIngredient}
-          />
-        )
-      ))}
-    </div>
+    variant === 'application' ? (
+      <ApplicationIngredientsTable ingredients={ingredients as ScheduleAIngredient[]} />
+    ) : (
+      <KashIngredientsTable ingredients={ingredients as KashIngredient[]} />
+    )
   )
 }
 
