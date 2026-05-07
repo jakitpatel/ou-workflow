@@ -20,6 +20,7 @@ import type {
   KashrusPlantDetailsResponse,
   ScheduleAIngredientsResult,
   ScheduleAIngredientsResponse,
+  ScheduleAIngredient,
   ScheduleBProduct,
   ScheduleBProductsResponse,
   ScheduleBProductsResult,
@@ -331,6 +332,28 @@ export async function fetchScheduleAIngredients({
     scheduleIngredients: response.ingredients?.schedule_ingredients ?? [],
     kashIngredients: response.ingredients?.ou_kash_ingredients ?? [],
   }
+}
+
+export type CreateScheduleAIngredientPayload = Partial<Omit<ScheduleAIngredient, 'ApplicationID'>> & {
+  ApplicationID: string | number
+  attachment?: string
+  notes?: string
+  source?: string
+}
+
+export async function createScheduleAIngredient({
+  payload,
+  token,
+}: {
+  payload: CreateScheduleAIngredientPayload
+  token?: string | null
+}): Promise<unknown> {
+  return await fetchWithAuth({
+    path: '/scheduleA',
+    method: 'POST',
+    body: payload,
+    token,
+  })
 }
 
 const normalizeScheduleBProducts = (
