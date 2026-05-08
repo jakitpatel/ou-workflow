@@ -367,6 +367,7 @@ export function NcrcDashboardContent() {
         hidePrivacyToggle
         showPerNoteApplicationId
         showViewApplicationAction
+        enableMessageFilters
         onApplicationIdClick={openMyNotesApplicationDetails}
         onViewApplicationClick={viewApplicationFromMyNotes}
         onIncomingNoteClick={markMyNoteRead}

@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Circle,
   Copy,
+  Filter,
   FileText,
   Hash,
   MessageSquareMore,
@@ -71,6 +72,7 @@ type Props = {
   showPerNoteApplicationId?: boolean
   onApplicationIdClick?: (applicationId: number) => void
   showViewApplicationAction?: boolean
+  enableMessageFilters?: boolean
   onViewApplicationClick?: (applicationId: number) => void
   onIncomingNoteClick?: (note: TaskNote) => Promise<void> | void
   markingReadMessageId?: string | null
@@ -469,6 +471,39 @@ const getNoteApplicationId = (note: TaskNote): number | null => {
   return null
 }
 
+type MessageFilterValues = {
+  applicationId: string
+  toUser: string
+  messageText: string
+}
+
+const EMPTY_MESSAGE_FILTERS: MessageFilterValues = {
+  applicationId: '',
+  toUser: '',
+  messageText: '',
+}
+
+const hasMessageFilters = (filters: MessageFilterValues): boolean =>
+  Boolean(filters.applicationId.trim() || filters.toUser.trim() || filters.messageText.trim())
+
+const noteMatchesMessageFilters = (note: TaskNote, filters: MessageFilterValues): boolean => {
+  const applicationIdFilter = filters.applicationId.trim().toLowerCase()
+  const toUserFilter = filters.toUser.trim().toLowerCase()
+  const messageTextFilter = filters.messageText.trim().toLowerCase()
+
+  if (!applicationIdFilter && !toUserFilter && !messageTextFilter) return true
+
+  const applicationId = String(getNoteApplicationId(note) ?? '').toLowerCase()
+  const toUser = getMetaValue(note, 'toUser', 'to_user', 'ToUser').toLowerCase()
+  const messageText = getNoteText(note).toLowerCase()
+
+  return (
+    (!applicationIdFilter || applicationId.includes(applicationIdFilter)) &&
+    (!toUserFilter || toUser.includes(toUserFilter)) &&
+    (!messageTextFilter || messageText.includes(messageTextFilter))
+  )
+}
+
 const getNoteTaskId = (note: TaskNote): string | null => {
   const candidates = [
     (note as any)?.TaskInstanceId,
@@ -768,6 +803,7 @@ export function TaskNotesDrawer({
   showPerNoteApplicationId = false,
   onApplicationIdClick,
   showViewApplicationAction = false,
+  enableMessageFilters = false,
   onViewApplicationClick,
   onIncomingNoteClick,
   markingReadMessageId,
@@ -796,6 +832,8 @@ export function TaskNotesDrawer({
   const [mentionContext, setMentionContext] = useState<MentionContext | null>(null)
   const [recipientPickerOpen, setRecipientPickerOpen] = useState(false)
   const [recipientQuery, setRecipientQuery] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [messageFilters, setMessageFilters] = useState<MessageFilterValues>(EMPTY_MESSAGE_FILTERS)
 
   const { data: mentionUsers = [], isLoading: mentionUsersLoading } = useMentionUsers({
     enabled: open && !hideComposer,
@@ -847,13 +885,25 @@ export function TaskNotesDrawer({
   const tabMode = activeTabConfig?.mode ?? 'public'
   const isThreadedTab =
     activeTabConfig?.threaded ?? (tabMode === 'directed' || tabMode === 'public')
-  const noteThreads = isThreadedTab ? buildPublicNoteThreads(notes) : []
   const mentionQuery = mentionContext?.query ?? ''
   const isDirectedTab = tabMode === 'directed'
   const isPrivateTab = tabMode === 'private'
   const isPublicTab = tabMode === 'public'
   const isIncomingTab = activeTabConfig?.id === 'incoming'
   const isOutgoingTab = activeTabConfig?.id === 'outgoing'
+  const filtersActive = enableMessageFilters && hasMessageFilters(messageFilters)
+  const displayedNotes = useMemo(
+    () =>
+      enableMessageFilters && filtersActive
+        ? notes.filter((note) => noteMatchesMessageFilters(note, messageFilters))
+        : notes,
+    [enableMessageFilters, filtersActive, messageFilters, notes],
+  )
+  const getDisplayNoteCount = (tab: TaskNotesDrawerTabConfig) =>
+    enableMessageFilters && filtersActive
+      ? tab.notes.filter((note) => noteMatchesMessageFilters(note, messageFilters)).length
+      : tab.notes.length
+  const noteThreads = isThreadedTab ? buildPublicNoteThreads(displayedNotes) : []
 
   const filteredMentionUsers = useMemo(() => {
     const query = mentionQuery.trim().toLowerCase()
@@ -927,6 +977,21 @@ export function TaskNotesDrawer({
     setRecipientPickerOpen(false)
     setRecipientQuery('')
   }, [open, activeTab, taskName])
+
+  useEffect(() => {
+    if (!open) {
+      setFiltersOpen(false)
+    }
+  }, [open])
+
+  const updateMessageFilter = (key: keyof MessageFilterValues, value: string) => {
+    setMessageFilters((current) => ({ ...current, [key]: value }))
+  }
+
+  const clearMessageFilters = () => {
+    setMessageFilters(EMPTY_MESSAGE_FILTERS)
+    setFiltersOpen(false)
+  }
 
   useEffect(() => {
     const pendingThreadId = pendingReplyFocusThreadIdRef.current
@@ -1688,47 +1753,137 @@ export function TaskNotesDrawer({
           <p className="text-sm font-medium text-gray-900">{taskName}</p>
         </div>
 
-        <div className="border-b border-gray-200 px-2">
-          {singleTabMode ? (
-            <button
-              type="button"
-              onClick={() => onTabChange(normalizedActiveTab)}
-              className="rounded-t-md border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-700"
-            >
-              {singleTabLabel}
-              <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">
-                {notes.length}
-              </span>
-            </button>
-          ) : (
-            <>
-            {tabs.map((tab) => {
-              const isActive = normalizedActiveTab === tab.id
-              const activeClassName = tab.tabClassName ?? 'border-indigo-600 text-indigo-700'
-              const badgeClassName = tab.badgeClassName ?? 'bg-indigo-100 text-indigo-700'
-              const badgeValue =
-                tab.id === 'incoming'
-                  ? `${getUnreadNoteCount(tab.notes)}/${tab.notes.length}`
-                  : tab.notes.length
-
-              return (
+        <div className="relative border-b border-gray-200 px-2">
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0">
+              {singleTabMode ? (
                 <button
-                  key={tab.id}
                   type="button"
-                  onClick={() => onTabChange(tab.id)}
-                  className={`mr-1 rounded-t-md px-3 py-2 text-sm font-medium ${
-                    isActive ? `border-b-2 ${activeClassName}` : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                  onClick={() => onTabChange(normalizedActiveTab)}
+                  className="rounded-t-md border-b-2 border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-700"
                 >
-                  {tab.label}
-                  <span className={`ml-1 rounded-full px-1.5 py-0.5 text-xs ${badgeClassName}`}>
-                    {badgeValue}
+                  {singleTabLabel}
+                  <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">
+                    {displayedNotes.length}
                   </span>
                 </button>
-              )
-            })}
-            </>
-          )}
+              ) : (
+                <>
+                {tabs.map((tab) => {
+                  const isActive = normalizedActiveTab === tab.id
+                  const activeClassName = tab.tabClassName ?? 'border-indigo-600 text-indigo-700'
+                  const badgeClassName = tab.badgeClassName ?? 'bg-indigo-100 text-indigo-700'
+                  const displayCount = getDisplayNoteCount(tab)
+                  const badgeValue =
+                    tab.id === 'incoming'
+                      ? `${filtersActive ? displayCount : getUnreadNoteCount(tab.notes)}/${tab.notes.length}`
+                      : filtersActive
+                      ? `${displayCount}/${tab.notes.length}`
+                      : tab.notes.length
+
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => onTabChange(tab.id)}
+                      className={`mr-1 rounded-t-md px-3 py-2 text-sm font-medium ${
+                        isActive ? `border-b-2 ${activeClassName}` : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      {tab.label}
+                      <span className={`ml-1 rounded-full px-1.5 py-0.5 text-xs ${badgeClassName}`}>
+                        {badgeValue}
+                      </span>
+                    </button>
+                  )
+                })}
+                </>
+              )}
+            </div>
+
+            {enableMessageFilters ? (
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((current) => !current)}
+                className={`mb-1 inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition ${
+                  filtersActive
+                    ? 'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100'
+                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                }`}
+                aria-label="Filter my messages"
+                title="Filter my messages"
+              >
+                <Filter className="h-3.5 w-3.5" />
+                <span>Filter</span>
+                {filtersActive ? (
+                  <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] text-sky-700">
+                    {displayedNotes.length}
+                  </span>
+                ) : null}
+              </button>
+            ) : null}
+          </div>
+
+          {enableMessageFilters && filtersOpen ? (
+            <div className="absolute right-2 top-full z-20 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-slate-200 bg-white p-3 shadow-xl">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="text-sm font-semibold text-slate-900">Filter messages</div>
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen(false)}
+                  className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                  aria-label="Close message filters"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-slate-600">
+                  Application ID
+                  <input
+                    type="text"
+                    value={messageFilters.applicationId}
+                    onChange={(event) => updateMessageFilter('applicationId', event.target.value)}
+                    placeholder="Example: 12345"
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                  />
+                </label>
+                <label className="block text-xs font-medium text-slate-600">
+                  To User
+                  <input
+                    type="text"
+                    value={messageFilters.toUser}
+                    onChange={(event) => updateMessageFilter('toUser', event.target.value)}
+                    placeholder="Username or name"
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                  />
+                </label>
+                <label className="block text-xs font-medium text-slate-600">
+                  Message Text
+                  <input
+                    type="text"
+                    value={messageFilters.messageText}
+                    onChange={(event) => updateMessageFilter('messageText', event.target.value)}
+                    placeholder="Search message body"
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                  />
+                </label>
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <span className="text-xs text-slate-500">
+                  Showing {displayedNotes.length} of {notes.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={clearMessageFilters}
+                  disabled={!filtersActive}
+                  className="rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
@@ -1736,14 +1891,16 @@ export function TaskNotesDrawer({
             <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-5 text-center">
               <p className="text-sm text-gray-500">Loading notes...</p>
             </div>
-          ) : notes.length === 0 ? (
+          ) : displayedNotes.length === 0 ? (
             <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-5 text-center">
-              <p className="text-sm text-gray-500">No notes found.</p>
+              <p className="text-sm text-gray-500">
+                {filtersActive ? 'No messages match these filters.' : 'No notes found.'}
+              </p>
             </div>
           ) : (
             <div className="space-y-2">
               {!isThreadedTab
-                ? notes.map((note, idx) => {
+                ? displayedNotes.map((note, idx) => {
                     const noteId = getNoteId(note, idx)
                     const fromName = getMetaValue(note, 'fromUser', 'from_user', 'FromUser')
                     const noteIsRead = isNoteRead(note)
