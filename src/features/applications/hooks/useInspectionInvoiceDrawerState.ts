@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { generateInspectionInvoice } from '@/features/applications/api'
 import type { Applicant } from '@/types/application'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 
@@ -20,6 +21,7 @@ export type InspectionInvoiceRfr = {
   email: string
   userName: string
   fullName: string
+  state: string
   isActive: boolean
   status: 'available' | 'inactive'
   pctOfTotalApps: number
@@ -78,6 +80,7 @@ const mapLookupRfr = (item: any): InspectionInvoiceRfr => {
     email,
     userName,
     fullName: normalizeRfrText(item.fullName ?? name),
+    state: normalizeRfrText(item.state),
     isActive: item.isActive !== false,
     status: item.isActive === false ? 'inactive' : 'available',
     pctOfTotalApps: Number(item.pct_of_total_apps) || 0,
@@ -85,7 +88,19 @@ const mapLookupRfr = (item: any): InspectionInvoiceRfr => {
   }
 }
 
-export function useInspectionInvoiceDrawerState({ enabled = true }: { enabled?: boolean } = {}) {
+export function useInspectionInvoiceDrawerState({
+  applicant,
+  applicationId,
+  applicationName,
+  enabled = true,
+  taskName,
+}: {
+  applicant?: Applicant
+  applicationId?: string | number
+  applicationName?: string
+  enabled?: boolean
+  taskName?: string
+} = {}) {
   const {
     data: rfrLookupList = [],
     isError: isRfrListError,
@@ -102,6 +117,7 @@ export function useInspectionInvoiceDrawerState({ enabled = true }: { enabled?: 
   const [expenseAmount, setExpenseAmount] = useState('333.00')
   const [invoiceDate, setInvoiceDate] = useState(todayYmd())
   const [invoiceId, setInvoiceId] = useState<string | null>(null)
+  const [invoiceDownloadLink, setInvoiceDownloadLink] = useState<string | null>(null)
   const [internalNotes, setInternalNotes] = useState('')
   const [noInspectionReason, setNoInspectionReason] = useState('')
   const [noFeeReason, setNoFeeReason] = useState('')
@@ -111,6 +127,7 @@ export function useInspectionInvoiceDrawerState({ enabled = true }: { enabled?: 
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [sentAt, setSentAt] = useState<string | null>(null)
   const [paidAt, setPaidAt] = useState<string | null>(null)
+  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false)
 
   const selectedRfr = useMemo(
     () => rfrs.find((rfr) => rfr.lookupKey === selectedRfrId || rfr.id === selectedRfrId) ?? null,
@@ -121,7 +138,7 @@ export function useInspectionInvoiceDrawerState({ enabled = true }: { enabled?: 
     const query = rfrSearch.trim().toLowerCase()
     if (!query) return rfrs
     return rfrs.filter((rfr) =>
-      [rfr.name, rfr.region, rfr.coverage, rfr.email, rfr.userName, rfr.fullName].some((value) =>
+      [rfr.name, rfr.region, rfr.coverage, rfr.email, rfr.userName, rfr.fullName, rfr.state].some((value) =>
         value.toLowerCase().includes(query),
       ),
     )
@@ -180,13 +197,56 @@ export function useInspectionInvoiceDrawerState({ enabled = true }: { enabled?: 
     setRfrSearch('')
   }
 
-  const generateInvoice = () => {
+  const generateInvoice = async () => {
     if (!canGenerate) return null
-    const year = new Date().getFullYear()
-    const nextId = `INV-${year}-${String(Math.floor(Date.now() / 1000) % 10000).padStart(4, '0')}`
-    setInvoiceId(nextId)
-    setStage('generated')
-    return nextId
+    setIsGeneratingInvoice(true)
+    try {
+      const result = await generateInspectionInvoice({
+        payload: {
+          applicationId,
+          applicationName,
+          taskName,
+          applicant: applicant
+            ? {
+                id: applicant.id,
+                applicationId: applicant.applicationId,
+                company: applicant.company,
+                externalReferenceId: applicant.externalReferenceId,
+                plant: applicant.plant,
+                plantId: applicant.plantId,
+                region: applicant.region,
+              }
+            : undefined,
+          inspectionNeeded,
+          feeRequired,
+          awaitPayment,
+          rfr: selectedRfr
+            ? {
+                id: selectedRfr.id,
+                name: selectedRfr.name,
+                email: selectedRfr.email,
+                userName: selectedRfr.userName,
+                state: selectedRfr.state,
+                region: selectedRfr.region,
+              }
+            : null,
+          fee,
+          expense: expenses,
+          invoiceDate,
+          internalNotes,
+          noInspectionReason,
+          noFeeReason,
+          recipient,
+          letterTemplate,
+        },
+      })
+      setInvoiceId(result.invoiceId)
+      setInvoiceDownloadLink(result.downloadLink || null)
+      setStage('generated')
+      return result.invoiceId
+    } finally {
+      setIsGeneratingInvoice(false)
+    }
   }
 
   const openEmailPreview = () => {
@@ -207,6 +267,7 @@ export function useInspectionInvoiceDrawerState({ enabled = true }: { enabled?: 
 
   const unlockForEdit = () => {
     setInvoiceId(null)
+    setInvoiceDownloadLink(null)
     setSentAt(null)
     setPaidAt(null)
     setStage(canGenerate ? 'configured' : 'setup')
@@ -224,9 +285,11 @@ export function useInspectionInvoiceDrawerState({ enabled = true }: { enabled?: 
     inspectionNeeded,
     internalNotes,
     invoiceDate,
+    invoiceDownloadLink,
     invoiceId,
     isApplicationFeeOnly,
     isLocked,
+    isGeneratingInvoice,
     isRfrListError,
     isRfrListLoading,
     letterTemplate,

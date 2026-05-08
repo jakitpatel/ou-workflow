@@ -10,6 +10,7 @@ type Props = {
   expenseAmount: number
   feeAmount: number
   invoiceDate: string
+  invoiceDownloadLink: string | null
   invoiceId: string | null
   isApplicationFeeOnly: boolean
   paid: boolean
@@ -20,6 +21,7 @@ export function InspectionInvoicePreview({
   expenseAmount,
   feeAmount,
   invoiceDate,
+  invoiceDownloadLink,
   invoiceId,
   isApplicationFeeOnly,
   paid,
@@ -34,7 +36,14 @@ export function InspectionInvoicePreview({
           Live preview - {invoiceId ? 'generated' : 'draft'}
         </span>
         <div className="flex gap-2">
-          <button type="button" className="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50">
+          <button
+            type="button"
+            disabled={!invoiceDownloadLink}
+            onClick={() => {
+              if (invoiceDownloadLink) window.open(invoiceDownloadLink, '_blank', 'noopener,noreferrer')
+            }}
+            className="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
             Download PDF
           </button>
           <button type="button" className="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50">

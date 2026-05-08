@@ -119,7 +119,13 @@ export function InspectionInvoiceDrawer({
   taskName,
   onClose,
 }: Props) {
-  const state = useInspectionInvoiceDrawerState({ enabled: open })
+  const state = useInspectionInvoiceDrawerState({
+    applicant,
+    applicationId,
+    applicationName,
+    enabled: open,
+    taskName,
+  })
   const accountNumber = getApplicantAccountNumber(applicant) || String(applicationId ?? '')
   const resolvedName = applicationName || applicant?.company || 'Application'
   const emailSubject = useMemo(() => {
@@ -130,21 +136,28 @@ export function InspectionInvoiceDrawer({
   if (!open) return null
 
   const primaryActionLabel =
-    state.stage === 'setup' || state.stage === 'configured'
-      ? 'Generate Invoice'
+    state.isGeneratingInvoice
+      ? 'Generating...'
+      : state.stage === 'setup' || state.stage === 'configured'
+        ? 'Generate Invoice'
       : state.stage === 'generated' || state.stage === 'outlook-opened'
         ? 'Review Outlook Email'
         : state.stage === 'sent-captured'
           ? 'Mark Paid'
           : 'Paid'
 
-  const onPrimaryClick = () => {
+  const onPrimaryClick = async () => {
     if (state.stage === 'setup' || state.stage === 'configured') {
-      const invoiceId = state.generateInvoice()
-      if (invoiceId) {
-        toast.success(`Invoice ${invoiceId} generated`)
-      } else {
-        toast.error('Complete the required invoice fields first')
+      try {
+        const invoiceId = await state.generateInvoice()
+        if (invoiceId) {
+          toast.success(`Invoice ${invoiceId} generated`)
+        } else {
+          toast.error('Complete the required invoice fields first')
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unable to generate invoice'
+        toast.error(message)
       }
       return
     }
@@ -217,6 +230,9 @@ export function InspectionInvoiceDrawer({
                           {state.selectedRfr.email ? (
                             <div className="mt-1 text-xs text-blue-700">{state.selectedRfr.email}</div>
                           ) : null}
+                          {state.selectedRfr.state ? (
+                            <div className="mt-1 text-xs text-blue-700">State: {state.selectedRfr.state}</div>
+                          ) : null}
                           {state.selectedRfr.pctOfTotalApps > 0 || state.selectedRfr.pctOfTotalAppsAtWork > 0 ? (
                             <div className="mt-1 text-xs text-blue-700">
                               {state.selectedRfr.pctOfTotalApps > 0 ? `${state.selectedRfr.pctOfTotalApps}% total` : ''}
@@ -279,6 +295,9 @@ export function InspectionInvoiceDrawer({
                                   <div className="mt-1 text-xs text-gray-500">
                                     {[rfr.userName, rfr.email].filter(Boolean).join(' - ') || '-'}
                                   </div>
+                                  {rfr.state ? (
+                                    <div className="mt-1 text-xs text-gray-500">State: {rfr.state}</div>
+                                  ) : null}
                                   {rfr.pctOfTotalApps > 0 || rfr.pctOfTotalAppsAtWork > 0 ? (
                                     <div className="mt-1 text-xs text-gray-500">
                                       {rfr.pctOfTotalApps > 0 ? `${rfr.pctOfTotalApps}% total` : ''}
@@ -505,6 +524,7 @@ export function InspectionInvoiceDrawer({
             expenseAmount={state.expenses}
             feeAmount={state.fee}
             invoiceDate={state.invoiceDate}
+            invoiceDownloadLink={state.invoiceDownloadLink}
             invoiceId={state.invoiceId}
             isApplicationFeeOnly={state.isApplicationFeeOnly}
             paid={state.stage === 'paid'}
@@ -517,7 +537,9 @@ export function InspectionInvoiceDrawer({
               ? 'Invoice paid. Assignment can proceed when applicable.'
               : state.canGenerate
                 ? state.invoiceId
-                  ? `Invoice ${state.invoiceId} generated.`
+                  ? state.invoiceDownloadLink
+                    ? `Invoice ${state.invoiceId} generated. PDF is ready to download.`
+                    : `Invoice ${state.invoiceId} generated.`
                   : 'Ready to generate. Invoice ID is assigned on generate.'
                 : 'Complete required selections to generate the invoice.'}
           </div>
@@ -532,7 +554,11 @@ export function InspectionInvoiceDrawer({
             <button
               type="button"
               onClick={onPrimaryClick}
-              disabled={(state.stage === 'setup' && !state.canGenerate) || state.stage === 'paid'}
+              disabled={
+                state.isGeneratingInvoice ||
+                ((state.stage === 'setup' || state.stage === 'configured') && !state.canGenerate) ||
+                state.stage === 'paid'
+              }
               className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
             >
               {state.stage === 'generated' || state.stage === 'outlook-opened' ? <Mail className="h-4 w-4" /> : null}

@@ -15,6 +15,7 @@ import {
 import type {
   ApplicantsResponse,
   ApplicationDetail,
+  Applicant,
   KashProduct,
   KashrusCompanyDetailsResponse,
   KashrusPlantDetailsResponse,
@@ -110,6 +111,7 @@ export async function fetchUserByRole({
     userName?: string
     fullName?: string
     userRole?: string
+    state?: string
     isActive?: boolean
     rfr?: string
     pct_of_total_apps?: number
@@ -150,6 +152,7 @@ export async function fetchUserByRole({
       userName,
       fullName,
       userRole: attributes.UserRole,
+      state: normalizeLookupText(attributes.state ?? attributes.State ?? attributes.STATE),
       isActive: attributes.IsActive,
       rfr: normalizeLookupText(attributes.RFR) || fullName,
       pct_of_total_apps: attributes.pct_of_total_apps,
@@ -247,6 +250,99 @@ export async function sendMsgTask({
     body: newMessage,
     token,
   })
+}
+
+export type GenerateInspectionInvoicePayload = {
+  applicationId?: string | number
+  applicationName?: string
+  taskName?: string
+  applicant?: Partial<Applicant>
+  inspectionNeeded: boolean | null
+  feeRequired: boolean | null
+  awaitPayment: boolean
+  rfr?: {
+    id: string
+    name: string
+    email?: string
+    userName?: string
+    state?: string
+    region?: string
+  } | null
+  fee: number
+  expense: number
+  invoiceDate: string
+  internalNotes?: string
+  noInspectionReason?: string
+  noFeeReason?: string
+  recipient?: string
+  letterTemplate?: string
+}
+
+export type GenerateInspectionInvoiceResponse = {
+  invoiceId: string
+  downloadLink: string
+  raw: unknown
+}
+
+function readStringFromRecord(record: Record<string, unknown>, keys: string[]): string {
+  for (const key of keys) {
+    const value = record[key]
+    if (value !== null && value !== undefined && String(value).trim() !== '') {
+      return String(value).trim()
+    }
+  }
+  return ''
+}
+
+export async function generateInspectionInvoice({
+  payload,
+  token,
+}: {
+  payload: GenerateInspectionInvoicePayload
+  token?: string | null
+}): Promise<GenerateInspectionInvoiceResponse> {
+  const response = await fetchWithAuth<unknown>({
+    path: '/generateInvoice',
+    method: 'POST',
+    body: payload,
+    token,
+  })
+  const responseRecord =
+    response && typeof response === 'object' && !Array.isArray(response)
+      ? (response as Record<string, unknown>)
+      : {}
+  const data =
+    responseRecord.data && typeof responseRecord.data === 'object' && !Array.isArray(responseRecord.data)
+      ? (responseRecord.data as Record<string, unknown>)
+      : responseRecord
+
+  const invoiceId = readStringFromRecord(data, [
+    'invoiceId',
+    'invoice_id',
+    'invoiceID',
+    'InvoiceID',
+    'InvoiceId',
+    'id',
+  ])
+  const downloadLink = readStringFromRecord(data, [
+    'downloadLink',
+    'download_link',
+    'downloadUrl',
+    'download_url',
+    'pdfUrl',
+    'pdf_url',
+    'url',
+  ])
+
+  if (!invoiceId) {
+    throw createApiError('Invoice generated but no invoice id was returned.', 500, response)
+  }
+
+  return {
+    invoiceId,
+    downloadLink,
+    raw: response,
+  }
 }
 
 export async function fetchApplicationDetail({

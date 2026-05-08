@@ -4,6 +4,7 @@ export {
   fetchApplicants,
   fetchApplicationDetail,
   fetchCompanyDetails,
+  generateInspectionInvoice,
   fetchScheduleAIngredients,
   fetchUserByRole,
   getCompanyDetailsFromKASH,
