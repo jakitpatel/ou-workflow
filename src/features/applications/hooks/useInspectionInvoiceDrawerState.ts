@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { Applicant } from '@/types/application'
+import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 
 export type InspectionInvoiceStage =
   | 'setup'
@@ -12,62 +13,18 @@ export type InspectionInvoiceStage =
 export type InspectionInvoiceRfr = {
   id: string
   name: string
+  lookupKey: string
+  assigneeValue: string
   region: string
   coverage: string
   email: string
-  status: 'available' | 'busy'
+  userName: string
+  fullName: string
+  isActive: boolean
+  status: 'available' | 'inactive'
+  pctOfTotalApps: number
+  pctOfTotalAppsAtWork: number
 }
-
-const RFRS: InspectionInvoiceRfr[] = [
-  {
-    id: 'rs',
-    name: 'Rabbi Randall Stone',
-    region: 'NY/NJ',
-    coverage: 'Bay Ridge, Brooklyn, Staten Island',
-    email: 'stoner@ou.org',
-    status: 'available',
-  },
-  {
-    id: 'rf',
-    name: 'Rabbi Yaakov Friedman',
-    region: 'NY/NJ',
-    coverage: 'Manhattan, Queens, Long Island',
-    email: 'friedmany@ou.org',
-    status: 'available',
-  },
-  {
-    id: 'rr',
-    name: 'Rabbi David Reznikov',
-    region: 'Mexico',
-    coverage: 'Mexico City, Guanajuato, Monterrey',
-    email: 'reznikovd@ou.org',
-    status: 'available',
-  },
-  {
-    id: 'rk',
-    name: 'Rabbi Shmuel Kosher Max',
-    region: 'NJ/PA',
-    coverage: 'Northern NJ, Eastern PA',
-    email: 'kosherm@ou.org',
-    status: 'busy',
-  },
-  {
-    id: 'rg',
-    name: 'Rabbi Moshe Greenfield',
-    region: 'NY/NJ',
-    coverage: 'Westchester, Rockland, Hudson Valley',
-    email: 'greenfieldm@ou.org',
-    status: 'available',
-  },
-  {
-    id: 'rh',
-    name: 'Rabbi Chaim Herbsman',
-    region: 'CA',
-    coverage: 'Los Angeles, Bay Area',
-    email: 'herbsmanc@ou.org',
-    status: 'available',
-  },
-]
 
 const RFR_FEE_RULES: Record<string, { fee: number; expenses: number }> = {
   'NY/NJ': { fee: 600, expenses: 333 },
@@ -98,7 +55,44 @@ export const formatInvoiceDate = (value: string) => {
 export const getApplicantAccountNumber = (applicant?: Applicant) =>
   String(applicant?.externalReferenceId ?? applicant?.applicationId ?? '').trim()
 
-export function useInspectionInvoiceDrawerState() {
+const normalizeRfrText = (value: unknown) =>
+  String(value ?? '')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+const mapLookupRfr = (item: any): InspectionInvoiceRfr => {
+  const name = normalizeRfrText(item.rfr ?? item.fullName ?? item.name ?? item.userName ?? item.id)
+  const userName = normalizeRfrText(item.userName ?? item.id)
+  const email = normalizeRfrText(item.email)
+  const lookupKey = normalizeRfrText(item.lookupKey ?? item.id ?? userName ?? name)
+  const assigneeValue = normalizeRfrText(item.assigneeValue ?? userName ?? item.id ?? lookupKey)
+
+  return {
+    id: assigneeValue || lookupKey,
+    name,
+    lookupKey,
+    assigneeValue,
+    region: normalizeRfrText(item.userRole),
+    coverage: normalizeRfrText(item.fullName && item.fullName !== name ? item.fullName : ''),
+    email,
+    userName,
+    fullName: normalizeRfrText(item.fullName ?? name),
+    isActive: item.isActive !== false,
+    status: item.isActive === false ? 'inactive' : 'available',
+    pctOfTotalApps: Number(item.pct_of_total_apps) || 0,
+    pctOfTotalAppsAtWork: Number(item.pct_of_total_apps_at_work) || 0,
+  }
+}
+
+export function useInspectionInvoiceDrawerState({ enabled = true }: { enabled?: boolean } = {}) {
+  const {
+    data: rfrLookupList = [],
+    isError: isRfrListError,
+    isLoading: isRfrListLoading,
+  } = useUserListByRole('api/vSelectRFR', { enabled })
+
+  const rfrs = useMemo(() => rfrLookupList.map(mapLookupRfr), [rfrLookupList])
   const [inspectionNeeded, setInspectionNeeded] = useState<boolean | null>(true)
   const [feeRequired, setFeeRequired] = useState<boolean | null>(true)
   const [awaitPayment, setAwaitPayment] = useState(true)
@@ -119,19 +113,19 @@ export function useInspectionInvoiceDrawerState() {
   const [paidAt, setPaidAt] = useState<string | null>(null)
 
   const selectedRfr = useMemo(
-    () => RFRS.find((rfr) => rfr.id === selectedRfrId) ?? null,
-    [selectedRfrId],
+    () => rfrs.find((rfr) => rfr.lookupKey === selectedRfrId || rfr.id === selectedRfrId) ?? null,
+    [rfrs, selectedRfrId],
   )
 
   const filteredRfrs = useMemo(() => {
     const query = rfrSearch.trim().toLowerCase()
-    if (!query) return RFRS
-    return RFRS.filter((rfr) =>
-      [rfr.name, rfr.region, rfr.coverage, rfr.email].some((value) =>
+    if (!query) return rfrs
+    return rfrs.filter((rfr) =>
+      [rfr.name, rfr.region, rfr.coverage, rfr.email, rfr.userName, rfr.fullName].some((value) =>
         value.toLowerCase().includes(query),
       ),
     )
-  }, [rfrSearch])
+  }, [rfrSearch, rfrs])
 
   const fee = Number(feeAmount) || 0
   const expenses = Number(expenseAmount) || 0
@@ -171,7 +165,7 @@ export function useInspectionInvoiceDrawerState() {
   }
 
   const pickRfr = (rfr: InspectionInvoiceRfr) => {
-    setSelectedRfrId(rfr.id)
+    setSelectedRfrId(rfr.lookupKey)
     const rule = RFR_FEE_RULES[rfr.region]
     if (rule && feeRequired !== false) {
       setFeeAmount(rule.fee.toFixed(2))
@@ -233,6 +227,8 @@ export function useInspectionInvoiceDrawerState() {
     invoiceId,
     isApplicationFeeOnly,
     isLocked,
+    isRfrListError,
+    isRfrListLoading,
     letterTemplate,
     noFeeReason,
     noInspectionReason,

@@ -119,7 +119,7 @@ export function InspectionInvoiceDrawer({
   taskName,
   onClose,
 }: Props) {
-  const state = useInspectionInvoiceDrawerState()
+  const state = useInspectionInvoiceDrawerState({ enabled: open })
   const accountNumber = getApplicantAccountNumber(applicant) || String(applicationId ?? '')
   const resolvedName = applicationName || applicant?.company || 'Application'
   const emailSubject = useMemo(() => {
@@ -211,10 +211,19 @@ export function InspectionInvoiceDrawer({
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="font-semibold text-blue-950">{state.selectedRfr.name}</div>
-                          <div className="mt-1 text-xs text-blue-800">
-                            {state.selectedRfr.region} - {state.selectedRfr.coverage}
-                          </div>
-                          <div className="mt-1 text-xs text-blue-700">{state.selectedRfr.email}</div>
+                          {state.selectedRfr.userName ? (
+                            <div className="mt-1 text-xs text-blue-800">{state.selectedRfr.userName}</div>
+                          ) : null}
+                          {state.selectedRfr.email ? (
+                            <div className="mt-1 text-xs text-blue-700">{state.selectedRfr.email}</div>
+                          ) : null}
+                          {state.selectedRfr.pctOfTotalApps > 0 || state.selectedRfr.pctOfTotalAppsAtWork > 0 ? (
+                            <div className="mt-1 text-xs text-blue-700">
+                              {state.selectedRfr.pctOfTotalApps > 0 ? `${state.selectedRfr.pctOfTotalApps}% total` : ''}
+                              {state.selectedRfr.pctOfTotalApps > 0 && state.selectedRfr.pctOfTotalAppsAtWork > 0 ? ' | ' : ''}
+                              {state.selectedRfr.pctOfTotalAppsAtWork > 0 ? `${state.selectedRfr.pctOfTotalAppsAtWork}% at work` : ''}
+                            </div>
+                          ) : null}
                         </div>
                         {!state.isLocked ? (
                           <button
@@ -244,22 +253,47 @@ export function InspectionInvoiceDrawer({
                         />
                       </div>
                       <div className="mt-2 max-h-60 space-y-2 overflow-y-auto">
-                        {state.filteredRfrs.map((rfr) => (
-                          <button
-                            key={rfr.id}
-                            type="button"
-                            onClick={() => state.pickRfr(rfr)}
-                            className="w-full rounded border border-gray-200 bg-white p-3 text-left hover:border-blue-300 hover:bg-blue-50"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="font-medium text-gray-900">{rfr.name}</div>
-                              <span className={`rounded-full px-2 py-0.5 text-xs ${rfr.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                {rfr.status}
-                              </span>
-                            </div>
-                            <div className="mt-1 text-xs text-gray-500">{rfr.region} - {rfr.coverage}</div>
-                          </button>
-                        ))}
+                        {state.isRfrListLoading ? (
+                          <div className="rounded border border-gray-200 bg-white px-3 py-6 text-center text-sm text-gray-500">
+                            Loading RFR list...
+                          </div>
+                        ) : state.isRfrListError ? (
+                          <div className="rounded border border-red-200 bg-red-50 px-3 py-6 text-center text-sm text-red-700">
+                            Unable to load RFR list.
+                          </div>
+                        ) : state.filteredRfrs.length === 0 ? (
+                          <div className="rounded border border-gray-200 bg-white px-3 py-6 text-center text-sm text-gray-500">
+                            No RFR matches found.
+                          </div>
+                        ) : (
+                          state.filteredRfrs.map((rfr) => (
+                            <button
+                              key={rfr.lookupKey}
+                              type="button"
+                              onClick={() => state.pickRfr(rfr)}
+                              className="w-full rounded border border-gray-200 bg-white p-3 text-left hover:border-blue-300 hover:bg-blue-50"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <div className="font-medium text-gray-900">{rfr.name}</div>
+                                  <div className="mt-1 text-xs text-gray-500">
+                                    {[rfr.userName, rfr.email].filter(Boolean).join(' - ') || '-'}
+                                  </div>
+                                  {rfr.pctOfTotalApps > 0 || rfr.pctOfTotalAppsAtWork > 0 ? (
+                                    <div className="mt-1 text-xs text-gray-500">
+                                      {rfr.pctOfTotalApps > 0 ? `${rfr.pctOfTotalApps}% total` : ''}
+                                      {rfr.pctOfTotalApps > 0 && rfr.pctOfTotalAppsAtWork > 0 ? ' | ' : ''}
+                                      {rfr.pctOfTotalAppsAtWork > 0 ? `${rfr.pctOfTotalAppsAtWork}% at work` : ''}
+                                    </div>
+                                  ) : null}
+                                </div>
+                                <span className={`rounded-full px-2 py-0.5 text-xs ${rfr.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                  {rfr.status === 'available' ? 'Active' : 'Inactive'}
+                                </span>
+                              </div>
+                            </button>
+                          ))
+                        )}
                       </div>
                     </div>
                   )}
