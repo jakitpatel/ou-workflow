@@ -282,7 +282,7 @@ export async function createApplicationMessage({
   token?: string | null
 }): Promise<any> {
   return await fetchWithAuth({
-    path: '/applicaitonMessages',
+    path: '/applicationMessages',
     method: 'POST',
     body: payload,
     token,
