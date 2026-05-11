@@ -156,7 +156,10 @@ export function ApplicationExpandedStage({
               return (
                 <div
                   key={task.TaskInstanceId || index}
-                  className={`rounded border-l-4 bg-white p-3 shadow-sm ${getTaskBorderClass(
+                  onClick={action.disabled ? undefined : (e) => handleTaskAction?.(e, applicant, task)}
+                  className={`rounded border-l-4 bg-white p-3 shadow-sm ${
+                    action.disabled ? '' : 'cursor-pointer hover:shadow-md'
+                  } ${getTaskBorderClass(
                     task.status || ''
                   )}`}
                 >

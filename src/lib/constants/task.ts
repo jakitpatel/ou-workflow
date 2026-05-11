@@ -17,6 +17,7 @@ export const TASK_CATEGORIES = {
   SELECTOR: 'selector',
   INPUT: 'input',
   INVOICE: 'invoice',
+  VISIT: 'visit',
   SCHEDULEA: 'schedulea',
   SCHEDULEB: 'scheduleb',
   SCHEDULING: 'scheduling',

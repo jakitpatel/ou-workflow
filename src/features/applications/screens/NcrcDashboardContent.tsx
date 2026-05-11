@@ -5,6 +5,7 @@ import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModa
 import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal'
 import { NcrcDashboardControls } from '@/features/applications/components/NcrcDashboardControls'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
+import { InspectionAssignmentVisitDrawer } from '@/features/applications/components/InspectionAssignmentVisitDrawer'
 import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer'
 import { NcrcDashboardListSection } from '@/features/applications/components/NcrcDashboardListSection'
 import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer'
@@ -60,6 +61,13 @@ export function NcrcDashboardContent() {
     applicationName?: string
     taskInstanceId?: string | number
     taskName?: string
+  }>({
+    open: false,
+  })
+  const [inspectionAssignmentVisitDrawerState, setInspectionAssignmentVisitDrawerState] = useState<{
+    open: boolean
+    applicant?: Applicant
+    task?: Task
   }>({
     open: false,
   })
@@ -210,6 +218,15 @@ export function NcrcDashboardContent() {
         applicationName: application.company,
         taskInstanceId: action.TaskInstanceId,
         taskName: action.name,
+      })
+      return
+    }
+
+    if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.VISIT) {
+      setInspectionAssignmentVisitDrawerState({
+        open: true,
+        applicant: application,
+        task: action,
       })
       return
     }
@@ -411,6 +428,12 @@ export function NcrcDashboardContent() {
         taskInstanceId={inspectionInvoiceDrawerState.taskInstanceId}
         taskName={inspectionInvoiceDrawerState.taskName}
         onClose={() => setInspectionInvoiceDrawerState({ open: false })}
+      />
+      <InspectionAssignmentVisitDrawer
+        open={inspectionAssignmentVisitDrawerState.open}
+        applicant={inspectionAssignmentVisitDrawerState.applicant}
+        task={inspectionAssignmentVisitDrawerState.task}
+        onClose={() => setInspectionAssignmentVisitDrawerState({ open: false })}
       />
     </>
   )
