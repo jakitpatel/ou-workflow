@@ -367,6 +367,11 @@ export async function generateInspectionInvoice({
     'id',
   ])
   const downloadLink = readStringFromRecord(data, [
+    'invoicePDFurl',
+    'invoicePdfUrl',
+    'invoicePDFUrl',
+    'InvoicePDFurl',
+    'InvoicePDFUrl',
     'downloadLink',
     'download_link',
     'downloadUrl',

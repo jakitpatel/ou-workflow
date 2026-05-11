@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import type { Applicant } from '@/types/application'
 import {
   formatCurrency,
@@ -28,6 +29,112 @@ export function InspectionInvoicePreview({
 }: Props) {
   const accountNumber = getApplicantAccountNumber(applicant)
   const total = feeAmount + expenseAmount
+  const invoiceFileName = `Invoice_${invoiceId ?? 'DRAFT'}.pdf`
+  const invoiceRef = useRef<HTMLDivElement | null>(null)
+
+  const handlePrint = () => {
+    const invoiceContent = invoiceRef.current?.innerHTML
+    if (!invoiceContent) return
+
+    const printFrame = document.createElement('iframe')
+    printFrame.title = 'Invoice print preview'
+    printFrame.style.position = 'fixed'
+    printFrame.style.right = '0'
+    printFrame.style.bottom = '0'
+    printFrame.style.width = '0'
+    printFrame.style.height = '0'
+    printFrame.style.border = '0'
+    document.body.appendChild(printFrame)
+
+    const printDocument = printFrame.contentWindow?.document
+    if (!printDocument) {
+      document.body.removeChild(printFrame)
+      return
+    }
+
+    printDocument.open()
+    printDocument.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <title>${invoiceFileName}</title>
+          <style>
+            body { margin: 0; background: #fff; color: #111827; font-family: Arial, sans-serif; }
+            .invoice-print { padding: 32px; }
+            .absolute, .pointer-events-none { display: none !important; }
+            .relative { position: relative; }
+            .flex { display: flex; }
+            .grid { display: grid; }
+            .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .items-start { align-items: flex-start; }
+            .justify-between { justify-content: space-between; }
+            .justify-end { justify-content: flex-end; }
+            .text-right { text-align: right; }
+            .text-left { text-align: left; }
+            .font-bold { font-weight: 700; }
+            .font-semibold { font-weight: 600; }
+            .font-medium { font-weight: 500; }
+            .font-mono { font-family: monospace; }
+            .text-xs { font-size: 12px; }
+            .text-sm { font-size: 14px; }
+            .text-xl { font-size: 20px; }
+            .text-3xl { font-size: 30px; }
+            .uppercase { text-transform: uppercase; }
+            .tracking-wide { letter-spacing: .025em; }
+            .text-blue-900 { color: #1e3a8a; }
+            .text-gray-500 { color: #6b7280; }
+            .text-gray-600 { color: #4b5563; }
+            .text-gray-800 { color: #1f2937; }
+            .text-gray-900 { color: #111827; }
+            .text-white { color: #fff; }
+            .bg-gray-50 { background: #f9fafb; }
+            .bg-blue-900 { background: #1e3a8a; }
+            .border-b { border-bottom: 1px solid #e5e7eb; }
+            .border-y { border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+            .border-gray-100 { border-color: #f3f4f6; }
+            .border-gray-200 { border-color: #e5e7eb; }
+            .rounded { border-radius: 4px; }
+            .w-72 { width: 18rem; }
+            .w-full { width: 100%; }
+            .gap-8 { gap: 32px; }
+            .p-4 { padding: 16px; }
+            .p-8 { padding: 32px; }
+            .px-4 { padding-left: 16px; padding-right: 16px; }
+            .py-3 { padding-top: 12px; padding-bottom: 12px; }
+            .py-4 { padding-top: 16px; padding-bottom: 16px; }
+            .py-8 { padding-top: 32px; padding-bottom: 32px; }
+            .pb-6 { padding-bottom: 24px; }
+            .mt-1 { margin-top: 4px; }
+            .mt-2 { margin-top: 8px; }
+            .mt-5 { margin-top: 20px; }
+            .mt-6 { margin-top: 24px; }
+            .mt-10 { margin-top: 40px; }
+            .leading-6 { line-height: 24px; }
+            table { border-collapse: collapse; }
+            th, td { vertical-align: top; }
+            @page { margin: 0.5in; }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-print">${invoiceContent}</div>
+        </body>
+      </html>
+    `)
+    printDocument.close()
+
+    const printOnlyInvoice = () => {
+      printFrame.contentWindow?.focus()
+      printFrame.contentWindow?.print()
+      window.setTimeout(() => {
+        document.body.removeChild(printFrame)
+      }, 500)
+    }
+
+    if (printFrame.contentWindow) {
+      printFrame.contentWindow.onload = printOnlyInvoice
+    }
+    window.setTimeout(printOnlyInvoice, 100)
+  }
 
   return (
     <div className="h-full overflow-y-auto bg-slate-100 p-5">
@@ -36,23 +143,36 @@ export function InspectionInvoicePreview({
           Live preview - {invoiceId ? 'generated' : 'draft'}
         </span>
         <div className="flex gap-2">
+          {invoiceDownloadLink ? (
+            <a
+              href={invoiceDownloadLink}
+              download={invoiceFileName}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Download PDF
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 opacity-50 disabled:cursor-not-allowed"
+            >
+              Download PDF
+            </button>
+          )}
           <button
             type="button"
-            disabled={!invoiceDownloadLink}
-            onClick={() => {
-              if (invoiceDownloadLink) window.open(invoiceDownloadLink, '_blank', 'noopener,noreferrer')
-            }}
-            className="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={handlePrint}
+            className="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
           >
-            Download PDF
-          </button>
-          <button type="button" className="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50">
             Print
           </button>
         </div>
       </div>
 
-      <div className="relative min-h-[720px] rounded bg-white p-8 shadow-sm">
+      <div ref={invoiceRef} className="relative min-h-[720px] rounded bg-white p-8 shadow-sm">
         {!invoiceId ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <span className="-rotate-12 text-7xl font-bold text-gray-100">DRAFT</span>

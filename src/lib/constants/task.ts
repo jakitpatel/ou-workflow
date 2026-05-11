@@ -13,6 +13,7 @@ export const TASK_CATEGORIES = {
   APPROVAL: 'approval',
   APPROVAL1: 'approval1',
   ASSIGNMENT: 'assignment',
+  ASSIGNMENT1: 'assignment1',
   EMAIL: 'email',
   SELECTOR: 'selector',
   INPUT: 'input',

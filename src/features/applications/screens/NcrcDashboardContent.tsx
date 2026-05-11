@@ -5,8 +5,9 @@ import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModa
 import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal'
 import { NcrcDashboardControls } from '@/features/applications/components/NcrcDashboardControls'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
-import { InspectionAssignmentVisitDrawer } from '@/features/applications/components/InspectionAssignmentVisitDrawer'
+import { InspectionAssignmentDrawer } from '@/features/applications/components/InspectionAssignmentDrawer'
 import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer'
+import { InspectionVisitDateDrawer } from '@/features/applications/components/InspectionVisitDateDrawer'
 import { NcrcDashboardListSection } from '@/features/applications/components/NcrcDashboardListSection'
 import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer'
 import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer'
@@ -64,7 +65,14 @@ export function NcrcDashboardContent() {
   }>({
     open: false,
   })
-  const [inspectionAssignmentVisitDrawerState, setInspectionAssignmentVisitDrawerState] = useState<{
+  const [inspectionAssignmentDrawerState, setInspectionAssignmentDrawerState] = useState<{
+    open: boolean
+    applicant?: Applicant
+    task?: Task
+  }>({
+    open: false,
+  })
+  const [inspectionVisitDateDrawerState, setInspectionVisitDateDrawerState] = useState<{
     open: boolean
     applicant?: Applicant
     task?: Task
@@ -222,8 +230,17 @@ export function NcrcDashboardContent() {
       return
     }
 
+    if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.ASSIGNMENT1) {
+      setInspectionAssignmentDrawerState({
+        open: true,
+        applicant: application,
+        task: action,
+      })
+      return
+    }
+
     if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.VISIT) {
-      setInspectionAssignmentVisitDrawerState({
+      setInspectionVisitDateDrawerState({
         open: true,
         applicant: application,
         task: action,
@@ -429,11 +446,17 @@ export function NcrcDashboardContent() {
         taskName={inspectionInvoiceDrawerState.taskName}
         onClose={() => setInspectionInvoiceDrawerState({ open: false })}
       />
-      <InspectionAssignmentVisitDrawer
-        open={inspectionAssignmentVisitDrawerState.open}
-        applicant={inspectionAssignmentVisitDrawerState.applicant}
-        task={inspectionAssignmentVisitDrawerState.task}
-        onClose={() => setInspectionAssignmentVisitDrawerState({ open: false })}
+      <InspectionAssignmentDrawer
+        open={inspectionAssignmentDrawerState.open}
+        applicant={inspectionAssignmentDrawerState.applicant}
+        task={inspectionAssignmentDrawerState.task}
+        onClose={() => setInspectionAssignmentDrawerState({ open: false })}
+      />
+      <InspectionVisitDateDrawer
+        open={inspectionVisitDateDrawerState.open}
+        applicant={inspectionVisitDateDrawerState.applicant}
+        task={inspectionVisitDateDrawerState.task}
+        onClose={() => setInspectionVisitDateDrawerState({ open: false })}
       />
     </>
   )

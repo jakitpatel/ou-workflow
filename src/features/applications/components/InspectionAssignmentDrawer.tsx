@@ -1,0 +1,452 @@
+import { useMemo, useState } from 'react'
+import type React from 'react'
+import { Check, Mail, Search, UserRound, X } from 'lucide-react'
+import { toast } from 'sonner'
+import { useUser } from '@/context/UserContext'
+import { useAssignTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
+import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
+import { detectRole } from '@/lib/utils/taskHelpers'
+import type { Applicant, Task } from '@/types/application'
+
+type Props = {
+  open: boolean
+  applicant?: Applicant
+  task?: Task
+  onClose: () => void
+}
+
+type RfrOption = {
+  id: string
+  lookupKey: string
+  assigneeValue: string
+  name: string
+  email: string
+  region: string
+  state: string
+  status: 'available' | 'inactive'
+}
+
+const normalizeText = (value: unknown) =>
+  String(value ?? '')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+const mapLookupRfr = (item: any): RfrOption => {
+  const name = normalizeText(item.rfr ?? item.fullName ?? item.name ?? item.userName ?? item.id)
+  const userName = normalizeText(item.userName ?? item.id)
+  const lookupKey = normalizeText(item.lookupKey ?? item.id ?? userName ?? name)
+  const assigneeValue = normalizeText(item.assigneeValue ?? userName ?? item.id ?? lookupKey)
+
+  return {
+    id: assigneeValue || lookupKey,
+    lookupKey,
+    assigneeValue,
+    name,
+    email: normalizeText(item.email),
+    region: normalizeText(item.userRole),
+    state: normalizeText(item.state),
+    status: item.isActive === false ? 'inactive' : 'available',
+  }
+}
+
+const todayYmd = () => new Date().toISOString().slice(0, 10)
+
+const addDaysToYmd = (ymd: string, days: number) => {
+  const [year, month, day] = ymd.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  date.setDate(date.getDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+const formatDate = (ymd: string) => {
+  const [year, month, day] = ymd.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+const nowLabel = () =>
+  new Date().toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+
+const getAccountNumber = (applicant?: Applicant) =>
+  String(applicant?.externalReferenceId ?? applicant?.applicationId ?? '').trim()
+
+function InfoRow({
+  label,
+  value,
+  strong,
+}: {
+  label: string
+  value: React.ReactNode
+  strong?: boolean
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-2 last:border-b-0">
+      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</span>
+      <span className={`text-right text-sm ${strong ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>{value}</span>
+    </div>
+  )
+}
+
+function StatusChip({
+  children,
+  tone = 'neutral',
+}: {
+  children: React.ReactNode
+  tone?: 'neutral' | 'green' | 'blue' | 'red'
+}) {
+  const classes = {
+    neutral: 'border-gray-200 bg-white text-gray-600',
+    green: 'border-green-200 bg-green-50 text-green-700',
+    blue: 'border-blue-200 bg-blue-50 text-blue-700',
+    red: 'border-red-200 bg-red-50 text-red-700',
+  }
+
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${classes[tone]}`}>
+      {children}
+    </span>
+  )
+}
+
+function Section({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-600">{title}</div>
+      {children}
+    </section>
+  )
+}
+
+export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: Props) {
+  const { token, username } = useUser()
+  const { data: rfrLookupList = [], isError, isLoading } = useUserListByRole('api/vSelectRFR', {
+    enabled: open,
+  })
+  const assignTaskMutation = useAssignTaskMutation({
+    includeApplicationLists: true,
+    includePrelimLists: true,
+    onError: (message) => toast.error(message),
+  })
+
+  const rfrs = useMemo(() => rfrLookupList.map(mapLookupRfr), [rfrLookupList])
+  const [selectedRfrId, setSelectedRfrId] = useState('')
+  const [rfrSearch, setRfrSearch] = useState('')
+  const [assignmentCreatedAt, setAssignmentCreatedAt] = useState<string | null>(null)
+  const [visitId, setVisitId] = useState<string | null>(null)
+  const [showEmailPreview, setShowEmailPreview] = useState(false)
+
+  const selectedRfr = useMemo(
+    () => rfrs.find((rfr) => rfr.lookupKey === selectedRfrId || rfr.id === selectedRfrId) ?? null,
+    [rfrs, selectedRfrId],
+  )
+  const filteredRfrs = useMemo(() => {
+    const query = rfrSearch.trim().toLowerCase()
+    if (!query) return rfrs
+    return rfrs.filter((rfr) =>
+      [rfr.name, rfr.email, rfr.region, rfr.state].some((value) => value.toLowerCase().includes(query)),
+    )
+  }, [rfrSearch, rfrs])
+
+  if (!open) return null
+
+  const accountNumber = getAccountNumber(applicant)
+  const assignmentStartDate = todayYmd()
+  const assignmentEndDate = addDaysToYmd(assignmentStartDate, 90)
+  const isAssigned = Boolean(assignmentCreatedAt)
+  const emailSubject = `OU Kosher - Inspection Assignment for ${applicant?.plant || 'Plant'} [${accountNumber || 'Application'}]`
+  const emailBody = [
+    `To ${selectedRfr?.name || 'RFR'},`,
+    `You've been assigned an initial inspection by ${username || 'NCRC'}. Please review the plant and set your planned visit date.`,
+    `Plant: ${applicant?.plant || '-'}`,
+    `Company: ${applicant?.company || '-'}`,
+    `Account #: ${accountNumber || '-'}`,
+    `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`,
+    `Visit ID: ${visitId || '-'}`,
+  ]
+
+  const createAssignment = async () => {
+    if (!selectedRfr || !task) {
+      toast.error('Select an RFR before creating the assignment')
+      return
+    }
+
+    const taskId = String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '')
+    if (!taskId) {
+      toast.error('Task instance id not found')
+      return
+    }
+
+    await assignTaskMutation.mutateAsync({
+      appId: applicant?.applicationId ?? null,
+      taskId,
+      role: detectRole(task.PreScript),
+      assignee: selectedRfr.assigneeValue || selectedRfr.id,
+      token: token ?? undefined,
+      capacity: (task as any)?.capacity ?? undefined,
+    })
+
+    setVisitId(String(Math.floor(2900000 + Math.random() * 9000000)))
+    setAssignmentCreatedAt(nowLabel())
+    toast.success(`Assigned ${selectedRfr.name}`)
+  }
+
+  const resendNotification = () => {
+    toast.success('Notification resent')
+    setShowEmailPreview(true)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
+      <div
+        className="fixed right-0 top-0 flex h-full w-full max-w-[98vw] flex-col overflow-hidden bg-white shadow-2xl xl:max-w-[82vw]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="border-b bg-gray-900 px-5 py-4 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <UserRound className="h-5 w-5 text-sky-300" />
+                <h3 className="text-lg font-semibold">Inspection Assignment</h3>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-300">
+                <span className="rounded-full bg-white/10 px-2.5 py-1">{applicant?.company || 'Application'}</span>
+                {accountNumber ? <span className="rounded-full bg-white/10 px-2.5 py-1">App #{accountNumber}</span> : null}
+                {applicant?.plant ? <span className="rounded-full bg-white/10 px-2.5 py-1">Plant: {applicant.plant}</span> : null}
+                {task?.name ? <span className="rounded-full bg-white/10 px-2.5 py-1">{task.name}</span> : null}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded p-1 text-gray-300 hover:bg-white/10 hover:text-white"
+              aria-label="Close inspection assignment drawer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 border-b bg-white">
+          {[
+            { label: 'Assign RFR', complete: isAssigned, current: !isAssigned },
+            { label: 'Notify RFR', complete: isAssigned, current: false },
+          ].map((step, index) => (
+            <div
+              key={step.label}
+              className={`flex items-center justify-center gap-2 px-3 py-3 text-xs font-semibold ${
+                step.complete ? 'text-green-700' : step.current ? 'text-blue-700' : 'text-gray-400'
+              }`}
+            >
+              <span
+                className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${
+                  step.complete ? 'bg-green-600 text-white' : step.current ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+                }`}
+              >
+                {step.complete ? <Check className="h-3 w-3" /> : index + 1}
+              </span>
+              {step.label}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(420px,0.9fr)_minmax(520px,1.1fr)]">
+          <div className="min-h-0 space-y-4 overflow-y-auto bg-gray-50 p-5">
+            <Section title="1. Assignment">
+              {!isAssigned ? (
+                <>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                    <input
+                      value={rfrSearch}
+                      onChange={(event) => setRfrSearch(event.target.value)}
+                      placeholder="Search RFR by name, region, or state..."
+                      className="w-full rounded border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                  <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">
+                    {isLoading ? (
+                      <div className="rounded border border-gray-200 bg-white px-3 py-6 text-center text-sm text-gray-500">
+                        Loading RFR list...
+                      </div>
+                    ) : isError ? (
+                      <div className="rounded border border-red-200 bg-red-50 px-3 py-6 text-center text-sm text-red-700">
+                        Unable to load RFR list.
+                      </div>
+                    ) : (
+                      filteredRfrs.map((rfr) => {
+                        const isSelected = selectedRfr?.lookupKey === rfr.lookupKey
+                        return (
+                          <button
+                            key={rfr.lookupKey}
+                            type="button"
+                            onClick={() => setSelectedRfrId(rfr.lookupKey)}
+                            className={`w-full rounded border p-3 text-left ${
+                              isSelected ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="font-semibold text-gray-900">{rfr.name}</div>
+                                <div className="mt-1 text-xs text-gray-500">
+                                  {[rfr.email, rfr.region, rfr.state].filter(Boolean).join(' - ') || '-'}
+                                </div>
+                              </div>
+                              <StatusChip tone={rfr.status === 'available' ? 'green' : 'red'}>
+                                {rfr.status === 'available' ? 'Active' : 'Inactive'}
+                              </StatusChip>
+                            </div>
+                          </button>
+                        )
+                      })
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="rounded border border-gray-200 bg-gray-50 p-3">
+                  <InfoRow label="RFR" value={selectedRfr?.name || '-'} strong />
+                  <InfoRow label="Date range" value={`${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`} />
+                  <InfoRow label="Visit ID" value={visitId || '-'} strong />
+                  <InfoRow label="Created by" value={username || 'NCRC'} />
+                </div>
+              )}
+            </Section>
+
+            {isAssigned ? (
+              <Section title="2. Notify RFR">
+                <div className="flex flex-wrap gap-2">
+                  <StatusChip tone="green">Email sent - {assignmentCreatedAt}</StatusChip>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailPreview(true)}
+                  className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800"
+                >
+                  <Mail className="h-4 w-4" />
+                  View email
+                </button>
+              </Section>
+            ) : null}
+          </div>
+
+          <div className="min-h-0 overflow-y-auto bg-slate-100 p-5">
+            <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
+                <span className="text-xs font-bold uppercase tracking-wide text-gray-600">
+                  Notification email preview
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailPreview(true)}
+                  disabled={!selectedRfr}
+                  className="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  View full
+                </button>
+              </div>
+              <div className="divide-y divide-gray-100 px-4 text-sm">
+                <InfoRow
+                  label="To"
+                  value={selectedRfr ? `${selectedRfr.name}${selectedRfr.email ? ` <${selectedRfr.email}>` : ''}` : 'Select an RFR'}
+                />
+                <InfoRow label="Subject" value={selectedRfr ? emailSubject : '-'} />
+              </div>
+              <div className="space-y-3 p-4 text-sm leading-6 text-gray-700">
+                {selectedRfr ? (
+                  emailBody.map((line) => <p key={line}>{line}</p>)
+                ) : (
+                  <p className="italic text-gray-500">The email preview will appear here once you select an RFR.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 border-t bg-white px-5 py-3">
+          <div className="min-w-0 text-sm text-gray-600">
+            {isAssigned
+              ? `Assignment created. ${selectedRfr?.name || 'RFR'} has been notified and can set the visit date.`
+              : selectedRfr
+                ? `${selectedRfr.name} selected. Create the assignment and notify the RFR.`
+                : 'Select an RFR to create the inspection assignment.'}
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={isAssigned ? resendNotification : createAssignment}
+              disabled={(!isAssigned && !selectedRfr) || assignTaskMutation.isPending}
+              className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+            >
+              {assignTaskMutation.isPending ? 'Creating...' : isAssigned ? 'Resend Notification' : 'Create Assignment & Notify'}
+            </button>
+          </div>
+        </div>
+
+        {showEmailPreview ? (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-3xl rounded-lg bg-white shadow-2xl">
+              <div className="border-b px-5 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900">Notification email to RFR</h4>
+                    <p className="mt-1 text-sm text-gray-500">What the RFR will receive.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailPreview(false)}
+                    className="rounded p-1 text-gray-500 hover:bg-gray-100"
+                    aria-label="Close email preview"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-4 px-5 py-4">
+                <div className="rounded border border-gray-200 px-3">
+                  <InfoRow label="From" value="Project Flow <projectflow@ou.org>" />
+                  <InfoRow
+                    label="To"
+                    value={selectedRfr ? `${selectedRfr.name}${selectedRfr.email ? ` <${selectedRfr.email}>` : ''}` : '-'}
+                  />
+                  <InfoRow label="Subject" value={emailSubject} />
+                </div>
+                <div className="rounded border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">
+                  {emailBody.map((line) => (
+                    <p key={line} className="mb-3 last:mb-0">
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 border-t px-5 py-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEmailPreview(false)}
+                  className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
