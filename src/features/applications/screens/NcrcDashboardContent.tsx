@@ -58,6 +58,7 @@ export function NcrcDashboardContent() {
     applicant?: Applicant
     applicationId?: string | number
     applicationName?: string
+    taskInstanceId?: string | number
     taskName?: string
   }>({
     open: false,
@@ -207,6 +208,7 @@ export function NcrcDashboardContent() {
         applicant: application,
         applicationId: application.applicationId,
         applicationName: application.company,
+        taskInstanceId: action.TaskInstanceId,
         taskName: action.name,
       })
       return
@@ -406,6 +408,7 @@ export function NcrcDashboardContent() {
         applicant={inspectionInvoiceDrawerState.applicant}
         applicationId={inspectionInvoiceDrawerState.applicationId}
         applicationName={inspectionInvoiceDrawerState.applicationName}
+        taskInstanceId={inspectionInvoiceDrawerState.taskInstanceId}
         taskName={inspectionInvoiceDrawerState.taskName}
         onClose={() => setInspectionInvoiceDrawerState({ open: false })}
       />

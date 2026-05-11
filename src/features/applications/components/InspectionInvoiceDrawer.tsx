@@ -15,6 +15,7 @@ type Props = {
   applicant?: Applicant
   applicationId?: string | number
   applicationName?: string
+  taskInstanceId?: string | number
   taskName?: string
   onClose: () => void
 }
@@ -73,7 +74,7 @@ function ProgressStrip({ stage }: { stage: string }) {
   const steps = [
     { id: 'setup', label: 'Setup' },
     { id: 'generated', label: 'Generate' },
-    { id: 'sent-captured', label: 'Send via Outlook' },
+    { id: 'sent-captured', label: 'Send Email' },
     { id: 'paid', label: 'Paid' },
   ]
   const activeIndex =
@@ -116,6 +117,7 @@ export function InspectionInvoiceDrawer({
   applicant,
   applicationId,
   applicationName,
+  taskInstanceId,
   taskName,
   onClose,
 }: Props) {
@@ -124,6 +126,7 @@ export function InspectionInvoiceDrawer({
     applicationId,
     applicationName,
     enabled: open,
+    taskInstanceId,
     taskName,
   })
   const accountNumber = getApplicantAccountNumber(applicant) || String(applicationId ?? '')
@@ -141,10 +144,21 @@ export function InspectionInvoiceDrawer({
       : state.stage === 'setup' || state.stage === 'configured'
         ? 'Generate Invoice'
       : state.stage === 'generated' || state.stage === 'outlook-opened'
-        ? 'Review Outlook Email'
+        ? 'Review Email'
         : state.stage === 'sent-captured'
           ? 'Mark Paid'
           : 'Paid'
+
+  const emailAttachment = `Invoice_${state.invoiceId ?? 'DRAFT'}.pdf`
+  const emailMessageText = `To Customer,
+
+Thank you for your interest in OU Kosher. Please find the ${
+    state.isApplicationFeeOnly ? 'application fee' : 'initial inspection'
+  } invoice enclosed for your review. Payment can be made online through OUDirect by ACH or credit card.
+
+Company: ${resolvedName}
+Plant: ${applicant?.plant || '-'}
+Account Number: ${accountNumber || '-'}`
 
   const onPrimaryClick = async () => {
     if (state.stage === 'setup' || state.stage === 'configured') {
@@ -573,9 +587,9 @@ export function InspectionInvoiceDrawer({
               <div className="border-b px-5 py-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h4 className="text-lg font-semibold text-gray-900">Review email in Outlook</h4>
+                    <h4 className="text-lg font-semibold text-gray-900">Review Email</h4>
                     <p className="mt-1 text-sm text-gray-500">
-                      The production version can hand this off to Outlook with the invoice PDF attached.
+                      Review the message details before sending the invoice PDF.
                     </p>
                   </div>
                   <button
@@ -600,23 +614,17 @@ export function InspectionInvoiceDrawer({
                   </div>
                   <div className="grid grid-cols-[80px_1fr] px-3 py-2 text-sm">
                     <span className="font-medium text-gray-500">Attach</span>
-                    <span>Invoice_{state.invoiceId ?? 'DRAFT'}.pdf</span>
+                    <span>{emailAttachment}</span>
                   </div>
                 </div>
                 <div className="rounded border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">
-                  <p>To Customer,</p>
-                  <p className="mt-3">
-                    Thank you for your interest in OU Kosher. Please find the{' '}
-                    {state.isApplicationFeeOnly ? 'application fee' : 'initial inspection'} invoice enclosed
-                    for your review. Payment can be made online through OUDirect by ACH or credit card.
-                  </p>
-                  <p className="mt-3">
-                    Company: {resolvedName}
-                    <br />
-                    Plant: {applicant?.plant || '-'}
-                    <br />
-                    Account Number: {accountNumber || '-'}
-                  </p>
+                  {emailMessageText.split('\n').map((line, index) =>
+                    line ? (
+                      <p key={`${line}-${index}`} className={index === 0 ? undefined : 'mt-3'}>
+                        {line}
+                      </p>
+                    ) : null,
+                  )}
                 </div>
               </div>
               <div className="flex items-center justify-end gap-2 border-t px-5 py-3">
@@ -629,14 +637,25 @@ export function InspectionInvoiceDrawer({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    state.markSent()
-                    toast.success('Invoice send captured')
+                  disabled={state.isSendingEmail}
+                  onClick={async () => {
+                    try {
+                      await state.sendEmail({
+                        attachments: emailAttachment,
+                        messageText: emailMessageText,
+                        subject: emailSubject,
+                        toUser: state.recipient === 'billing' ? 'Billing contact' : 'Primary contact',
+                      })
+                      toast.success('Email sent')
+                    } catch (error) {
+                      const message = error instanceof Error ? error.message : 'Unable to send email'
+                      toast.error(message)
+                    }
                   }}
-                  className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
                   <UserRoundCheck className="h-4 w-4" />
-                  Simulate Sent
+                  {state.isSendingEmail ? 'Sending...' : 'Send'}
                 </button>
               </div>
             </div>

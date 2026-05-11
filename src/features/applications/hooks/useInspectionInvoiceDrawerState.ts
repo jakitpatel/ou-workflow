@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { generateInspectionInvoice } from '@/features/applications/api'
+import { generateInspectionInvoice, createApplicationMessage } from '@/features/applications/api'
+import { useUser } from '@/context/UserContext'
 import type { Applicant } from '@/types/application'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 
@@ -93,14 +94,17 @@ export function useInspectionInvoiceDrawerState({
   applicationId,
   applicationName,
   enabled = true,
+  taskInstanceId,
   taskName,
 }: {
   applicant?: Applicant
   applicationId?: string | number
   applicationName?: string
   enabled?: boolean
+  taskInstanceId?: string | number
   taskName?: string
 } = {}) {
+  const { token, username } = useUser()
   const {
     data: rfrLookupList = [],
     isError: isRfrListError,
@@ -128,6 +132,7 @@ export function useInspectionInvoiceDrawerState({
   const [sentAt, setSentAt] = useState<string | null>(null)
   const [paidAt, setPaidAt] = useState<string | null>(null)
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false)
+  const [isSendingEmail, setIsSendingEmail] = useState(false)
 
   const selectedRfr = useMemo(
     () => rfrs.find((rfr) => rfr.lookupKey === selectedRfrId || rfr.id === selectedRfrId) ?? null,
@@ -254,6 +259,51 @@ export function useInspectionInvoiceDrawerState({
     setStage('outlook-opened')
   }
 
+  const sendEmail = async ({
+    attachments,
+    messageText,
+    subject,
+    toUser,
+  }: {
+    attachments?: string
+    messageText: string
+    subject: string
+    toUser: string
+  }) => {
+    setIsSendingEmail(true)
+    try {
+      await createApplicationMessage({
+        payload: {
+          MessageID: null,
+          ApplicationID: applicationId ?? applicant?.applicationId ?? null,
+          FromUser: username ?? null,
+          ToUser: toUser,
+          Subject: subject,
+          MessageText: messageText,
+          MessageType: 'Email',
+          Priority: 'NORMAL',
+          SentDate: new Date().toISOString(),
+          TemplateName: letterTemplate,
+          TaskInstanceId: taskInstanceId ?? null,
+          isPrivate: false,
+          parentMessageId: null,
+          toReply: null,
+          isRead: false,
+          tag: null,
+          CCUser: null,
+          BCCUser: 'productAutomation@ou.org',
+          Attachments: attachments ?? null,
+        },
+        token,
+      })
+      setSentAt(new Date().toLocaleString())
+      setStage('sent-captured')
+      setShowEmailPreview(false)
+    } finally {
+      setIsSendingEmail(false)
+    }
+  }
+
   const markSent = () => {
     setSentAt(new Date().toLocaleString())
     setStage('sent-captured')
@@ -290,6 +340,7 @@ export function useInspectionInvoiceDrawerState({
     isApplicationFeeOnly,
     isLocked,
     isGeneratingInvoice,
+    isSendingEmail,
     isRfrListError,
     isRfrListLoading,
     letterTemplate,
@@ -307,6 +358,7 @@ export function useInspectionInvoiceDrawerState({
     generateInvoice,
     markPaid,
     markSent,
+    sendEmail,
     openEmailPreview,
     pickRfr,
     setAwaitPayment,

@@ -252,6 +252,43 @@ export async function sendMsgTask({
   })
 }
 
+export type ApplicationMessagePayload = {
+  MessageID?: string | number | null
+  ApplicationID?: string | number | null
+  FromUser?: string | null
+  ToUser?: string | null
+  Subject?: string | null
+  MessageText?: string | null
+  MessageType?: string | null
+  Priority?: string | null
+  SentDate?: string | null
+  TemplateName?: string | null
+  TaskInstanceId?: string | number | null
+  isPrivate?: boolean
+  parentMessageId?: string | number | null
+  toReply?: string | number | boolean | null
+  isRead?: boolean | number
+  tag?: string | null
+  CCUser?: string | null
+  BCCUser?: string | null
+  Attachments?: string | null
+}
+
+export async function createApplicationMessage({
+  payload,
+  token,
+}: {
+  payload: ApplicationMessagePayload
+  token?: string | null
+}): Promise<any> {
+  return await fetchWithAuth({
+    path: '/applicaitonMessages',
+    method: 'POST',
+    body: payload,
+    token,
+  })
+}
+
 export type GenerateInspectionInvoicePayload = {
   applicationId?: string | number
   applicationName?: string
