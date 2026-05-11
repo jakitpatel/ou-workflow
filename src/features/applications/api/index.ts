@@ -282,9 +282,14 @@ export async function createApplicationMessage({
   token?: string | null
 }): Promise<any> {
   return await fetchWithAuth({
-    path: '/api/WFApplicationMessages',
+    path: '/api/WFApplicationMessage',
     method: 'POST',
-    body: payload,
+    body: {
+      data: {
+        attributes: payload,
+        type: 'WFApplicationMessage',
+      },
+    },
     token,
   })
 }
