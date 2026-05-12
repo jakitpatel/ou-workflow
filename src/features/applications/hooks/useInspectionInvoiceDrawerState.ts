@@ -124,35 +124,6 @@ const findInspectionAssignmentTaskId = (applicant?: Applicant): string => {
   return getRawTaskInstanceId(assignmentTask)
 }
 
-const readWaitForPayme = (value: unknown): string => {
-  if (typeof value === 'string') {
-    const text = value.trim()
-    if (!text) return ''
-
-    try {
-      return readWaitForPayme(JSON.parse(text))
-    } catch {
-      const match = text.match(/waitForPayme\s*["']?\s*:\s*["']?([^"',}\s]+)/i)
-      return normalizeTaskText(match?.[1])
-    }
-  }
-
-  if (!value || typeof value !== 'object') return ''
-
-  const record = value as Record<string, unknown>
-  const directValue = record.waitForPayme ?? record.WaitForPayme
-  if (directValue !== undefined && directValue !== null) {
-    return normalizeTaskText(directValue)
-  }
-
-  for (const nestedValue of Object.values(record)) {
-    const resolved = readWaitForPayme(nestedValue)
-    if (resolved) return resolved
-  }
-
-  return ''
-}
-
 export function useInspectionInvoiceDrawerState({
   applicant,
   applicationId,
@@ -274,6 +245,7 @@ export function useInspectionInvoiceDrawerState({
         payload: {
           applicationId,
           applicationName,
+          TaskInstanceId: taskInstanceId ?? null,
           taskName,
           applicant: applicant
             ? {
@@ -313,7 +285,7 @@ export function useInspectionInvoiceDrawerState({
       setInvoiceDownloadLink(result.downloadLink || null)
       setStage('generated')
 
-      if (readWaitForPayme(result.raw) === 'no') {
+      if (awaitPayment === false) {
         const assignmentTaskId = findInspectionAssignmentTaskId(applicant)
         if (!assignmentTaskId) {
           throw new Error('Invoice generated, but the Inspection Assignment task was not found.')
@@ -326,7 +298,7 @@ export function useInspectionInvoiceDrawerState({
           taskId: assignmentTaskId,
           overwrite: '1',
           status: 'PENDING',
-          result: `{RFR:${rfrResultValue}, waitForPayme:"no"}`,
+          result: `{RFR:${rfrResultValue}}`,
           token,
           username: username ?? undefined,
         })

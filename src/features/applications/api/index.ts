@@ -297,6 +297,7 @@ export async function createApplicationMessage({
 export type GenerateInspectionInvoicePayload = {
   applicationId?: string | number
   applicationName?: string
+  TaskInstanceId?: string | number | null
   taskName?: string
   applicant?: Partial<Applicant>
   inspectionNeeded: boolean | null
