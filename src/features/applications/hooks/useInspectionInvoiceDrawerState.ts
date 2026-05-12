@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { generateInspectionInvoice, createApplicationMessage } from '@/features/applications/api'
 import { useUser } from '@/context/UserContext'
 import type { Applicant } from '@/types/application'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { confirmTask } from '@/features/tasks/api'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
+import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
+import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 
 export type InspectionInvoiceStage =
   | 'setup'
@@ -140,6 +143,7 @@ export function useInspectionInvoiceDrawerState({
   taskName?: string
 } = {}) {
   const { token, username } = useUser()
+  const queryClient = useQueryClient()
   const {
     data: rfrLookupList = [],
     isError: isRfrListError,
@@ -285,24 +289,25 @@ export function useInspectionInvoiceDrawerState({
       setInvoiceDownloadLink(result.downloadLink || null)
       setStage('generated')
 
-      if (awaitPayment === false) {
-        const assignmentTaskId = findInspectionAssignmentTaskId(applicant)
-        if (!assignmentTaskId) {
-          throw new Error('Invoice generated, but the Inspection Assignment task was not found.')
-        }
-
-        const rfrResultValue =
-          selectedRfr?.userName || selectedRfr?.name || selectedRfr?.id || selectedRfr?.lookupKey || ''
-
-        await confirmTask({
-          taskId: assignmentTaskId,
-          overwrite: '1',
-          status: 'PENDING',
-          result: `{RFR:${rfrResultValue}}`,
-          token,
-          username: username ?? undefined,
-        })
+      const assignmentTaskId = findInspectionAssignmentTaskId(applicant)
+      if (!assignmentTaskId) {
+        throw new Error('Invoice generated, but the Inspection Assignment task was not found.')
       }
+
+      const rfrResultValue =
+        selectedRfr?.userName || selectedRfr?.name || selectedRfr?.id || selectedRfr?.lookupKey || ''
+
+      await confirmTask({
+        taskId: assignmentTaskId,
+        ...(awaitPayment === false ? { overwrite: '1', status: 'PENDING' } : {}),
+        result: `{RFR:${rfrResultValue}}`,
+        token,
+        username: username ?? undefined,
+      })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
+      ])
 
       return result.invoiceId
     } finally {

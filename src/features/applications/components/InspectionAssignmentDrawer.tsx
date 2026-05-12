@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type React from 'react'
-import { Check, Mail, Search, UserRound, X } from 'lucide-react'
+import { Check, Mail, Pencil, Search, UserRound, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { useAssignTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
@@ -19,6 +19,7 @@ type RfrOption = {
   id: string
   lookupKey: string
   assigneeValue: string
+  userName: string
   name: string
   email: string
   region: string
@@ -42,6 +43,7 @@ const mapLookupRfr = (item: any): RfrOption => {
     id: assigneeValue || lookupKey,
     lookupKey,
     assigneeValue,
+    userName,
     name,
     email: normalizeText(item.email),
     region: normalizeText(item.userRole),
@@ -79,6 +81,29 @@ const nowLabel = () =>
 
 const getAccountNumber = (applicant?: Applicant) =>
   String(applicant?.externalReferenceId ?? applicant?.applicationId ?? '').trim()
+
+const normalizeMatchText = (value: unknown) => normalizeText(value).toLowerCase()
+
+const extractRfrFromTaskResult = (task?: Task): string => {
+  const rawResult = normalizeText((task as any)?.Result ?? (task as any)?.result)
+  if (!rawResult) return ''
+
+  const match = rawResult.match(/RFR\s*:\s*"?([^",}\s]+)"?/i)
+  return normalizeText(match?.[1])
+}
+
+const resolveRfrSelectionId = (rfrs: RfrOption[], savedRfr: string): string => {
+  const normalizedSavedRfr = normalizeMatchText(savedRfr)
+  if (!normalizedSavedRfr) return ''
+
+  const matchedRfr = rfrs.find((rfr) =>
+    [rfr.lookupKey, rfr.id, rfr.assigneeValue, rfr.userName, rfr.name].some(
+      (value) => normalizeMatchText(value) === normalizedSavedRfr,
+    ),
+  )
+
+  return matchedRfr?.lookupKey ?? ''
+}
 
 function InfoRow({
   label,
@@ -141,6 +166,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   const rfrs = useMemo(() => rfrLookupList.map(mapLookupRfr), [rfrLookupList])
   const [selectedRfrId, setSelectedRfrId] = useState('')
   const [rfrSearch, setRfrSearch] = useState('')
+  const [showRfrPicker, setShowRfrPicker] = useState(false)
   const [assignmentCreatedAt, setAssignmentCreatedAt] = useState<string | null>(null)
   const [visitId, setVisitId] = useState<string | null>(null)
   const [showEmailPreview, setShowEmailPreview] = useState(false)
@@ -149,11 +175,28 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
     () => rfrs.find((rfr) => rfr.lookupKey === selectedRfrId || rfr.id === selectedRfrId) ?? null,
     [rfrs, selectedRfrId],
   )
+
+  useEffect(() => {
+    if (!open) return
+
+    const savedRfr = extractRfrFromTaskResult(task)
+    if (!savedRfr) {
+      setSelectedRfrId('')
+      setShowRfrPicker(true)
+      return
+    }
+
+    const resolvedRfrId = resolveRfrSelectionId(rfrs, savedRfr)
+    setSelectedRfrId(resolvedRfrId || savedRfr)
+    setRfrSearch('')
+    setShowRfrPicker(false)
+  }, [open, rfrs, task])
+
   const filteredRfrs = useMemo(() => {
     const query = rfrSearch.trim().toLowerCase()
     if (!query) return rfrs
     return rfrs.filter((rfr) =>
-      [rfr.name, rfr.email, rfr.region, rfr.state].some((value) => value.toLowerCase().includes(query)),
+      [rfr.name, rfr.email, rfr.region, rfr.state, rfr.userName].some((value) => value.toLowerCase().includes(query)),
     )
   }, [rfrSearch, rfrs])
 
@@ -163,6 +206,18 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   const assignmentStartDate = todayYmd()
   const assignmentEndDate = addDaysToYmd(assignmentStartDate, 90)
   const isAssigned = Boolean(assignmentCreatedAt)
+  const selectedRfrLabel = selectedRfr?.name || selectedRfrId || '-'
+  const selectedRfrMeta =
+    selectedRfr
+      ? [selectedRfr.email, selectedRfr.region, selectedRfr.state].filter(Boolean).join(' - ') || selectedRfr.userName || '-'
+      : selectedRfrId
+        ? 'Selected on invoice'
+        : '-'
+  const emailPreviewLabel = isAssigned
+    ? 'Notification email - sent'
+    : selectedRfr
+      ? 'Notification email - preview (not yet sent)'
+      : 'Notification email - preview'
   const emailSubject = `OU Kosher - Inspection Assignment for ${applicant?.plant || 'Plant'} [${accountNumber || 'Application'}]`
   const emailBody = [
     `To ${selectedRfr?.name || 'RFR'},`,
@@ -264,56 +319,101 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
             <Section title="1. Assignment">
               {!isAssigned ? (
                 <>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                    <input
-                      value={rfrSearch}
-                      onChange={(event) => setRfrSearch(event.target.value)}
-                      placeholder="Search RFR by name, region, or state..."
-                      className="w-full rounded border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                  <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">
-                    {isLoading ? (
-                      <div className="rounded border border-gray-200 bg-white px-3 py-6 text-center text-sm text-gray-500">
-                        Loading RFR list...
+                  {selectedRfrId && !showRfrPicker ? (
+                    <div>
+                      <div className="relative rounded border border-gray-200 bg-gray-50 p-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowRfrPicker(true)}
+                          className="absolute right-3 top-3 inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          Edit
+                        </button>
+                        <div className="pr-16">
+                          <div className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                            RFR (chosen at invoice)
+                          </div>
+                          <div className="mt-2 text-sm font-semibold text-gray-900">{selectedRfrLabel}</div>
+                          <div className="mt-1 text-xs text-gray-500">{selectedRfrMeta}</div>
+                        </div>
                       </div>
-                    ) : isError ? (
-                      <div className="rounded border border-red-200 bg-red-50 px-3 py-6 text-center text-sm text-red-700">
-                        Unable to load RFR list.
+                      <div className="mt-3 text-xs text-gray-500">
+                        Click <strong>Create Assignment & Notify</strong> below to register in Kashrus and notify the RFR.
                       </div>
-                    ) : (
-                      filteredRfrs.map((rfr) => {
-                        const isSelected = selectedRfr?.lookupKey === rfr.lookupKey
-                        return (
-                          <button
-                            key={rfr.lookupKey}
-                            type="button"
-                            onClick={() => setSelectedRfrId(rfr.lookupKey)}
-                            className={`w-full rounded border p-3 text-left ${
-                              isSelected ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <div className="font-semibold text-gray-900">{rfr.name}</div>
-                                <div className="mt-1 text-xs text-gray-500">
-                                  {[rfr.email, rfr.region, rfr.state].filter(Boolean).join(' - ') || '-'}
+                    </div>
+                  ) : null}
+
+                  {!selectedRfrId && !showRfrPicker ? (
+                    <div className="rounded border border-amber-300 bg-amber-50 p-3">
+                      <div className="font-semibold text-amber-950">No RFR selected</div>
+                      <div className="mt-1 text-xs text-amber-800">
+                        An RFR is normally picked on the invoice. Select one before creating the assignment.
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {showRfrPicker ? (
+                    <div className={selectedRfrId ? 'mt-3' : undefined}>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                        <input
+                          value={rfrSearch}
+                          onChange={(event) => setRfrSearch(event.target.value)}
+                          placeholder="Search RFR by name, region, or state..."
+                          className="w-full rounded border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        />
+                      </div>
+                      <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">
+                        {isLoading ? (
+                          <div className="rounded border border-gray-200 bg-white px-3 py-6 text-center text-sm text-gray-500">
+                            Loading RFR list...
+                          </div>
+                        ) : isError ? (
+                          <div className="rounded border border-red-200 bg-red-50 px-3 py-6 text-center text-sm text-red-700">
+                            Unable to load RFR list.
+                          </div>
+                        ) : (
+                          filteredRfrs.map((rfr) => {
+                            const isSelected = selectedRfr?.lookupKey === rfr.lookupKey
+                            return (
+                              <button
+                                key={rfr.lookupKey}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedRfrId(rfr.lookupKey)
+                                  setRfrSearch('')
+                                  setShowRfrPicker(false)
+                                }}
+                                className={`w-full rounded border p-3 text-left ${
+                                  isSelected ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50'
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <div className="font-semibold text-gray-900">{rfr.name}</div>
+                                    <div className="mt-1 text-xs text-gray-500">
+                                      {[rfr.email, rfr.region, rfr.state].filter(Boolean).join(' - ') || '-'}
+                                    </div>
+                                  </div>
+                                  <StatusChip tone={rfr.status === 'available' ? 'green' : 'red'}>
+                                    {rfr.status === 'available' ? 'Active' : 'Inactive'}
+                                  </StatusChip>
                                 </div>
-                              </div>
-                              <StatusChip tone={rfr.status === 'available' ? 'green' : 'red'}>
-                                {rfr.status === 'available' ? 'Active' : 'Inactive'}
-                              </StatusChip>
-                            </div>
-                          </button>
-                        )
-                      })
-                    )}
-                  </div>
+                              </button>
+                            )
+                          })
+                        )}
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500">
+                        Pick a different RFR. The change applies before the assignment is created.
+                      </div>
+                    </div>
+                  ) : null}
                 </>
               ) : (
                 <div className="rounded border border-gray-200 bg-gray-50 p-3">
-                  <InfoRow label="RFR" value={selectedRfr?.name || '-'} strong />
+                  <InfoRow label="RFR" value={selectedRfrLabel} strong />
                   <InfoRow label="Date range" value={`${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`} />
                   <InfoRow label="Visit ID" value={visitId || '-'} strong />
                   <InfoRow label="Created by" value={username || 'NCRC'} />
@@ -342,7 +442,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
             <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
               <div className="flex items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
                 <span className="text-xs font-bold uppercase tracking-wide text-gray-600">
-                  Notification email preview
+                  {emailPreviewLabel}
                 </span>
                 <button
                   type="button"
@@ -350,21 +450,21 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
                   disabled={!selectedRfr}
                   className="rounded border border-gray-300 bg-white px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  View full
+                  View full -&gt;
                 </button>
               </div>
               <div className="divide-y divide-gray-100 px-4 text-sm">
                 <InfoRow
                   label="To"
-                  value={selectedRfr ? `${selectedRfr.name}${selectedRfr.email ? ` <${selectedRfr.email}>` : ''}` : 'Select an RFR'}
+                  value={selectedRfr ? `${selectedRfr.name}${selectedRfr.email ? ` <${selectedRfr.email}>` : ''}` : <span className="italic text-gray-400">Select an RFR to preview the email</span>}
                 />
-                <InfoRow label="Subject" value={selectedRfr ? emailSubject : '-'} />
+                <InfoRow label="Subject" value={selectedRfr ? emailSubject : <span className="text-gray-400">-</span>} />
               </div>
-              <div className="space-y-3 p-4 text-sm leading-6 text-gray-700">
+              <div className="space-y-3 px-5 py-5 text-sm leading-6 text-gray-700">
                 {selectedRfr ? (
                   emailBody.map((line) => <p key={line}>{line}</p>)
                 ) : (
-                  <p className="italic text-gray-500">The email preview will appear here once you select an RFR.</p>
+                  <p className="italic text-gray-400">The email preview will appear here once you select an RFR and create the assignment.</p>
                 )}
               </div>
             </div>
