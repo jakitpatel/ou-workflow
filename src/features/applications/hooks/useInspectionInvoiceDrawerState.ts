@@ -3,6 +3,8 @@ import { generateInspectionInvoice, createApplicationMessage } from '@/features/
 import { useUser } from '@/context/UserContext'
 import type { Applicant } from '@/types/application'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
+import { confirmTask } from '@/features/tasks/api'
+import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 
 export type InspectionInvoiceStage =
   | 'setup'
@@ -87,6 +89,68 @@ const mapLookupRfr = (item: any): InspectionInvoiceRfr => {
     pctOfTotalApps: Number(item.pct_of_total_apps) || 0,
     pctOfTotalAppsAtWork: Number(item.pct_of_total_apps_at_work) || 0,
   }
+}
+
+const normalizeTaskText = (value: unknown) =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase()
+
+const getRawTaskInstanceId = (task: unknown): string => {
+  const taskRecord = task && typeof task === 'object' ? (task as Record<string, unknown>) : {}
+  return String(taskRecord.TaskInstanceId ?? taskRecord.taskInstanceId ?? taskRecord.id ?? '').trim()
+}
+
+const findInspectionAssignmentTaskId = (applicant?: Applicant): string => {
+  const stages = applicant?.stages ?? {}
+  const inspectionStage =
+    stages.inspection ??
+    Object.entries(stages).find(([stageName]) => normalizeTaskText(stageName) === 'inspection')?.[1] ??
+    Object.entries(stages).find(([stageName]) => normalizeTaskText(stageName).includes('inspection'))?.[1]
+
+  const assignmentTask = inspectionStage?.tasks?.find((task) => {
+    const taskRecord = task as Record<string, unknown>
+    const taskName = normalizeTaskText(taskRecord.name ?? taskRecord.taskName ?? taskRecord.TaskName)
+    const taskCategory = normalizeTaskText(taskRecord.taskCategory ?? taskRecord.TaskCategory)
+    const taskType = normalizeTaskText(taskRecord.taskType ?? taskRecord.TaskType)
+
+    return (
+      taskName === 'assignment' &&
+      taskCategory === TASK_CATEGORIES.ASSIGNMENT1 &&
+      taskType === TASK_TYPES.ACTION
+    )
+  })
+
+  return getRawTaskInstanceId(assignmentTask)
+}
+
+const readWaitForPayme = (value: unknown): string => {
+  if (typeof value === 'string') {
+    const text = value.trim()
+    if (!text) return ''
+
+    try {
+      return readWaitForPayme(JSON.parse(text))
+    } catch {
+      const match = text.match(/waitForPayme\s*["']?\s*:\s*["']?([^"',}\s]+)/i)
+      return normalizeTaskText(match?.[1])
+    }
+  }
+
+  if (!value || typeof value !== 'object') return ''
+
+  const record = value as Record<string, unknown>
+  const directValue = record.waitForPayme ?? record.WaitForPayme
+  if (directValue !== undefined && directValue !== null) {
+    return normalizeTaskText(directValue)
+  }
+
+  for (const nestedValue of Object.values(record)) {
+    const resolved = readWaitForPayme(nestedValue)
+    if (resolved) return resolved
+  }
+
+  return ''
 }
 
 export function useInspectionInvoiceDrawerState({
@@ -248,6 +312,26 @@ export function useInspectionInvoiceDrawerState({
       setInvoiceId(result.invoiceId)
       setInvoiceDownloadLink(result.downloadLink || null)
       setStage('generated')
+
+      if (readWaitForPayme(result.raw) === 'no') {
+        const assignmentTaskId = findInspectionAssignmentTaskId(applicant)
+        if (!assignmentTaskId) {
+          throw new Error('Invoice generated, but the Inspection Assignment task was not found.')
+        }
+
+        const rfrResultValue =
+          selectedRfr?.userName || selectedRfr?.name || selectedRfr?.id || selectedRfr?.lookupKey || ''
+
+        await confirmTask({
+          taskId: assignmentTaskId,
+          overwrite: '1',
+          status: 'PENDING',
+          result: `{RFR:${rfrResultValue}, waitForPayme:"no"}`,
+          token,
+          username: username ?? undefined,
+        })
+      }
+
       return result.invoiceId
     } finally {
       setIsGeneratingInvoice(false)

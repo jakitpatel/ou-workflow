@@ -91,6 +91,7 @@ export async function confirmTask({
   username,
   status,
   capacity,
+  overwrite,
 }: {
   taskId: string
   result?: string
@@ -100,6 +101,7 @@ export async function confirmTask({
   username?: string
   status?: string
   capacity?: string
+  overwrite?: string | number
 }): Promise<any> {
   const completionNotesMap: Record<string, string> = {
     completed: 'Task completed successfully',
@@ -134,6 +136,10 @@ export async function confirmTask({
 
   if (status) {
     body.status = status
+  }
+
+  if (overwrite !== undefined) {
+    body.overwrite = overwrite
   }
 
   if (resultData) {
