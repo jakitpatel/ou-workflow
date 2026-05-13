@@ -3,6 +3,8 @@ import type React from 'react'
 import { Check, Mail, Pencil, Search, UserRound, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
+import { createApplicationMessage } from '@/features/applications/api'
+import { confirmTask } from '@/features/tasks/api'
 import { useAssignTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { detectRole } from '@/lib/utils/taskHelpers'
@@ -170,6 +172,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   const [assignmentCreatedAt, setAssignmentCreatedAt] = useState<string | null>(null)
   const [visitId, setVisitId] = useState<string | null>(null)
   const [showEmailPreview, setShowEmailPreview] = useState(false)
+  const [isSendingAssignmentMessage, setIsSendingAssignmentMessage] = useState(false)
 
   const selectedRfr = useMemo(
     () => rfrs.find((rfr) => rfr.lookupKey === selectedRfrId || rfr.id === selectedRfrId) ?? null,
@@ -241,18 +244,81 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       return
     }
 
-    await assignTaskMutation.mutateAsync({
-      appId: applicant?.applicationId ?? null,
-      taskId,
-      role: detectRole(task.PreScript),
-      assignee: selectedRfr.assigneeValue || selectedRfr.id,
-      token: token ?? undefined,
-      capacity: (task as any)?.capacity ?? undefined,
-    })
+    setIsSendingAssignmentMessage(true)
+    try {
+      await assignTaskMutation.mutateAsync({
+        appId: applicant?.applicationId ?? null,
+        taskId,
+        role: detectRole(task.PreScript),
+        assignee: selectedRfr.assigneeValue || selectedRfr.id,
+        token: token ?? undefined,
+        capacity: (task as any)?.capacity ?? undefined,
+      })
 
-    setVisitId(String(Math.floor(2900000 + Math.random() * 9000000)))
-    setAssignmentCreatedAt(nowLabel())
-    toast.success(`Assigned ${selectedRfr.name}`)
+      const nextVisitId = String(Math.floor(2900000 + Math.random() * 9000000))
+      const previewToUser = selectedRfr.email
+        ? `${selectedRfr.name} <${selectedRfr.email}>`
+        : selectedRfr.name
+      const notificationMessageText = [
+        `To ${selectedRfr.name},`,
+        '',
+        `You've been assigned an initial inspection by ${username || 'NCRC'}. Please review the plant and set your planned visit date.`,
+        '',
+        `Plant: ${applicant?.plant || '-'}`,
+        '',
+        `Company: ${applicant?.company || '-'}`,
+        '',
+        `Account #: ${accountNumber || '-'}`,
+        '',
+        `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`,
+        '',
+        `Visit ID: ${nextVisitId}`,
+      ].join('\n')
+
+      await createApplicationMessage({
+        payload: {
+          MessageID: null,
+          ApplicationID: applicant?.applicationId ?? null,
+          FromUser: 'Project Flow <projectflow@ou.org>',
+          ToUser: previewToUser,
+          Subject: emailSubject,
+          MessageText: notificationMessageText,
+          MessageType: 'Email',
+          Priority: 'NORMAL',
+          SentDate: new Date().toISOString(),
+          TemplateName: null,
+          TaskInstanceId: taskId,
+          isPrivate: false,
+          parentMessageId: null,
+          toReply: null,
+          isRead: false,
+          tag: null,
+          CCUser: null,
+          BCCUser: 'productAutomation@ou.org',
+          Attachments: null,
+        },
+        token,
+      })
+
+      await confirmTask({
+        taskId,
+        username: username ?? undefined,
+        completionNotes: 'Task completed successfully',
+        capacity: 'DESIGNATED',
+        result: 'created assignment',
+        token,
+      })
+
+      setVisitId(nextVisitId)
+      setAssignmentCreatedAt(nowLabel())
+      toast.success(`Assigned ${selectedRfr.name} and sent notification`)
+      onClose()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create assignment notification'
+      toast.error(message)
+    } finally {
+      setIsSendingAssignmentMessage(false)
+    }
   }
 
   const resendNotification = () => {
@@ -490,10 +556,14 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
             <button
               type="button"
               onClick={isAssigned ? resendNotification : createAssignment}
-              disabled={(!isAssigned && !selectedRfr) || assignTaskMutation.isPending}
+              disabled={(!isAssigned && !selectedRfr) || assignTaskMutation.isPending || isSendingAssignmentMessage}
               className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
             >
-              {assignTaskMutation.isPending ? 'Creating...' : isAssigned ? 'Resend Notification' : 'Create Assignment & Notify'}
+              {assignTaskMutation.isPending || isSendingAssignmentMessage
+                ? 'Creating...'
+                : isAssigned
+                  ? 'Resend Notification'
+                  : 'Create Assignment & Notify'}
             </button>
           </div>
         </div>
