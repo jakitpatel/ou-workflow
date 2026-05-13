@@ -182,8 +182,13 @@ Account Number: ${accountNumber || '-'}`
     }
 
     if (state.stage === 'sent-captured') {
-      state.markPaid()
-      toast.success('Invoice marked paid')
+      try {
+        await state.markPaid()
+        toast.success('Invoice marked paid')
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unable to mark invoice paid'
+        toast.error(message)
+      }
     }
   }
 
@@ -570,13 +575,14 @@ Account Number: ${accountNumber || '-'}`
               onClick={onPrimaryClick}
               disabled={
                 state.isGeneratingInvoice ||
+                state.isMarkingPaid ||
                 ((state.stage === 'setup' || state.stage === 'configured') && !state.canGenerate) ||
                 state.stage === 'paid'
               }
               className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
             >
               {state.stage === 'generated' || state.stage === 'outlook-opened' ? <Mail className="h-4 w-4" /> : null}
-              {primaryActionLabel}
+              {state.isMarkingPaid ? 'Marking paid...' : primaryActionLabel}
             </button>
           </div>
         </div>

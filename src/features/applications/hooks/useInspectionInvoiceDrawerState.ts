@@ -172,6 +172,7 @@ export function useInspectionInvoiceDrawerState({
   const [paidAt, setPaidAt] = useState<string | null>(null)
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false)
   const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [isMarkingPaid, setIsMarkingPaid] = useState(false)
 
   const selectedRfr = useMemo(
     () => rfrs.find((rfr) => rfr.lookupKey === selectedRfrId || rfr.id === selectedRfrId) ?? null,
@@ -371,9 +372,31 @@ export function useInspectionInvoiceDrawerState({
     setShowEmailPreview(false)
   }
 
-  const markPaid = () => {
-    setPaidAt(new Date().toLocaleString())
-    setStage('paid')
+  const markPaid = async () => {
+    const invoiceTaskId = String(taskInstanceId ?? '').trim()
+    if (!invoiceTaskId) {
+      throw new Error('Invoice task instance id not found')
+    }
+
+    setIsMarkingPaid(true)
+    try {
+      await confirmTask({
+        taskId: invoiceTaskId,
+        result: 'Mark Paid',
+        completionNotes: 'Task completed successfully',
+        capacity: 'DESIGNATED',
+        token,
+        username: username ?? undefined,
+      })
+      setPaidAt(new Date().toLocaleString())
+      setStage('paid')
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
+      ])
+    } finally {
+      setIsMarkingPaid(false)
+    }
   }
 
   const unlockForEdit = () => {
@@ -401,6 +424,7 @@ export function useInspectionInvoiceDrawerState({
     isApplicationFeeOnly,
     isLocked,
     isGeneratingInvoice,
+    isMarkingPaid,
     isSendingEmail,
     isRfrListError,
     isRfrListLoading,
