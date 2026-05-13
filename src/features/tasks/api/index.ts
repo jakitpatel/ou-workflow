@@ -92,6 +92,8 @@ export async function confirmTask({
   status,
   capacity,
   overwrite,
+  includeCompletedBy = true,
+  includeCompletionNotes = true,
 }: {
   taskId: string
   result?: string
@@ -102,6 +104,8 @@ export async function confirmTask({
   status?: string
   capacity?: string
   overwrite?: string | number
+  includeCompletedBy?: boolean
+  includeCompletionNotes?: boolean
 }): Promise<any> {
   const completionNotesMap: Record<string, string> = {
     completed: 'Task completed successfully',
@@ -115,9 +119,15 @@ export async function confirmTask({
 
   const body: Record<string, any> = {
     task_instance_id: taskId,
-    completed_by: username,
-    completion_notes,
     capacity,
+  }
+
+  if (includeCompletedBy) {
+    body.completed_by = username
+  }
+
+  if (includeCompletionNotes) {
+    body.completion_notes = completion_notes
   }
 
   if (result) {

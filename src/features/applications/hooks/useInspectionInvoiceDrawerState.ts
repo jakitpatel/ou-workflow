@@ -300,10 +300,12 @@ export function useInspectionInvoiceDrawerState({
 
       await confirmTask({
         taskId: assignmentTaskId,
-        ...(awaitPayment === false ? { overwrite: '1', status: 'PENDING' } : {}),
+        overwrite: '1',
+        ...(awaitPayment === false ? { status: 'PENDING' } : {}),
         result: `{RFR:${rfrResultValue}}`,
+        includeCompletedBy: false,
+        includeCompletionNotes: false,
         token,
-        username: username ?? undefined,
       })
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
@@ -383,10 +385,10 @@ export function useInspectionInvoiceDrawerState({
       await confirmTask({
         taskId: invoiceTaskId,
         result: 'Mark Paid',
-        completionNotes: 'Task completed successfully',
         capacity: 'DESIGNATED',
+        includeCompletedBy: false,
+        includeCompletionNotes: false,
         token,
-        username: username ?? undefined,
       })
       setPaidAt(new Date().toLocaleString())
       setStage('paid')
