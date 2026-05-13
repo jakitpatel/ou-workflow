@@ -164,6 +164,26 @@ export async function confirmTask({
   })
 }
 
+export async function patchTaskResult({
+  taskId,
+  result,
+  token,
+}: {
+  taskId: string
+  result: string
+  token?: string | null
+}): Promise<any> {
+  return await fetchWithAuth({
+    path: `/complete_task/${encodeURIComponent(taskId)}`,
+    method: 'PATCH',
+    body: {
+      task_instance_id: taskId,
+      result,
+    },
+    token,
+  })
+}
+
 export async function undoTask({
   taskId,
   token,

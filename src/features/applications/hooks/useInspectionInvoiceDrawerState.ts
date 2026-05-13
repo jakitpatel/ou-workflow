@@ -4,7 +4,7 @@ import { generateInspectionInvoice, createApplicationMessage } from '@/features/
 import { useUser } from '@/context/UserContext'
 import type { Applicant } from '@/types/application'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
-import { confirmTask } from '@/features/tasks/api'
+import { confirmTask, patchTaskResult } from '@/features/tasks/api'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
@@ -298,15 +298,23 @@ export function useInspectionInvoiceDrawerState({
       const rfrResultValue =
         selectedRfr?.userName || selectedRfr?.name || selectedRfr?.id || selectedRfr?.lookupKey || ''
 
-      await confirmTask({
-        taskId: assignmentTaskId,
-        overwrite: '1',
-        ...(awaitPayment === false ? { status: 'PENDING' } : {}),
-        result: `{RFR:${rfrResultValue}}`,
-        includeCompletedBy: false,
-        includeCompletionNotes: false,
-        token,
-      })
+      if (awaitPayment) {
+        await patchTaskResult({
+          taskId: assignmentTaskId,
+          result: `{RFR:${rfrResultValue}}`,
+          token,
+        })
+      } else {
+        await confirmTask({
+          taskId: assignmentTaskId,
+          overwrite: '1',
+          status: 'PENDING',
+          result: `{RFR:${rfrResultValue}}`,
+          includeCompletedBy: false,
+          includeCompletionNotes: false,
+          token,
+        })
+      }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
         queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
