@@ -174,7 +174,7 @@ export async function patchTaskResult({
   token?: string | null
 }): Promise<any> {
   return await fetchWithAuth({
-    path: `/complete_task/${encodeURIComponent(taskId)}`,
+    path: `/api/TaskInstance/${encodeURIComponent(taskId)}`,
     method: 'PATCH',
     body: {
       task_instance_id: taskId,
