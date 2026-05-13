@@ -185,6 +185,7 @@ Account Number: ${accountNumber || '-'}`
       try {
         await state.markPaid()
         toast.success('Invoice marked paid')
+        onClose()
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to mark invoice paid'
         toast.error(message)
