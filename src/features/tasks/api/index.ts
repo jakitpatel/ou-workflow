@@ -177,8 +177,13 @@ export async function patchTaskResult({
     path: `/api/TaskInstance/${encodeURIComponent(taskId)}`,
     method: 'PATCH',
     body: {
-      task_instance_id: taskId,
-      result,
+      data: {
+        id: taskId,
+        type: 'TaskInstance',
+        attributes: {
+          result,
+        },
+      },
     },
     token,
   })
