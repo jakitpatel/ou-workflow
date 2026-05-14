@@ -1,7 +1,7 @@
-import { Search } from 'lucide-react'
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal'
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal'
-import { PrelimApplicationCard } from '@/features/prelim/components/PrelimApplicationCard'
+import { PrelimDashboardFilters } from '@/features/prelim/components/PrelimDashboardFilters'
+import { PrelimDashboardList } from '@/features/prelim/components/PrelimDashboardList'
 import { PrelimJsonModal } from '@/features/prelim/components/PrelimJsonModal'
 import { PrelimApplicantStatsCards } from '@/features/prelim/components/PrelimApplicantStatsCards'
 import { usePrelimDashboardState } from '@/features/prelim/hooks/usePrelimDashboardState'
@@ -45,52 +45,18 @@ export function PrelimDashboardContent() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search by company, plant, region..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={q || ''}
-                onChange={(event) => updateSearch({ q: event.target.value, page: 0 })}
-              />
-            </div>
-          </div>
+      <PrelimDashboardFilters q={q} status={status} onChange={updateSearch} />
 
-          <select
-            value={status || 'all'}
-            onChange={(event) => updateSearch({ status: event.target.value, page: 0 })}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[140px]"
-          >
-            <option value="all">All Statuses</option>
-            <option value="COMPL">Completed</option>
-            <option value="INP">In Progress</option>
-            <option value="NEW">New</option>
-            <option value="WTH">Withdrawn</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        {applications.length > 0 ? (
-          applications.map((application: any) => (
-            <PrelimApplicationCard
-              key={application.applicationId}
-              company={application}
-              expanded={expandedTaskPanel === String(application.applicationId)}
-              setExpanded={setExpandedTaskPanel}
-              onViewApplication={() => setSelectedId(application.externalReferenceId)}
-              handleCancelTask={handleCancelTask}
-              handleTaskAction={handleTaskAction}
-            />
-          ))
-        ) : (
-          <p className="text-gray-500">No applications found</p>
-        )}
-      </div>
+      <PrelimDashboardList
+        applications={applications}
+        expandedTaskPanel={expandedTaskPanel}
+        setExpandedTaskPanel={setExpandedTaskPanel}
+        onViewApplication={(externalReferenceId) =>
+          setSelectedId(externalReferenceId == null ? null : Number(externalReferenceId))
+        }
+        handleCancelTask={handleCancelTask}
+        handleTaskAction={handleTaskAction}
+      />
 
       {selectedId && (
         <PrelimJsonModal
