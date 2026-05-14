@@ -4,7 +4,6 @@ import { Check, Mail, Pencil, Search, UserRound, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { createApplicationMessage } from '@/features/applications/api'
-import { confirmTask } from '@/features/tasks/api'
 import { useAssignTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { detectRole } from '@/lib/utils/taskHelpers'
@@ -297,15 +296,6 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
           BCCUser: 'productAutomation@ou.org',
           Attachments: null,
         },
-        token,
-      })
-
-      await confirmTask({
-        taskId,
-        username: username ?? undefined,
-        completionNotes: 'Task completed successfully',
-        capacity: 'DESIGNATED',
-        result: 'created assignment',
         token,
       })
 
