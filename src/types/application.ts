@@ -192,6 +192,7 @@ export type Task = {
   completedBy?: string;
   taskCategory?: string;
   taskRoles?: { taskRole: string }[],
+  StatusDetails?: string;
   Result?: string;
   ResultData?: string;
   GUIDisplayResult?: string;

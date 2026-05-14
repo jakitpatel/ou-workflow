@@ -181,7 +181,7 @@ export async function patchTaskResult({
         id: taskId,
         type: 'TaskInstance',
         attributes: {
-          Result: result,
+          StatusDetails: result,
         },
       },
     },

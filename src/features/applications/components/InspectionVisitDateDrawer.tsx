@@ -92,7 +92,9 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
 
   const accountNumber = getAccountNumber(applicant)
   const reportDueDate = addDaysToYmd(plannedVisitDate, 7)
-  const assignmentResult = parseAssignmentResult((task as any)?.Result ?? (task as any)?.result)
+  const assignmentResult = parseAssignmentResult(
+    (task as any)?.StatusDetails ?? (task as any)?.statusDetails ?? (task as any)?.Result ?? (task as any)?.result,
+  )
   const rfrName =
     assignmentResult.rfr ||
     String((task as any)?.assignee ?? (task as any)?.assignedTo ?? 'Assigned RFR')

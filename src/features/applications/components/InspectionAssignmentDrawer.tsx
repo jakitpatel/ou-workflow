@@ -117,7 +117,9 @@ const findVisitDateTaskId = (applicant?: Applicant): string => {
 }
 
 const extractRfrFromTaskResult = (task?: Task): string => {
-  const rawResult = normalizeText((task as any)?.Result ?? (task as any)?.result)
+  const rawResult = normalizeText(
+    (task as any)?.StatusDetails ?? (task as any)?.statusDetails ?? (task as any)?.Result ?? (task as any)?.result,
+  )
   if (!rawResult) return ''
 
   const match = rawResult.match(/RFR\s*:\s*"?([^",}\s]+)"?/i)
