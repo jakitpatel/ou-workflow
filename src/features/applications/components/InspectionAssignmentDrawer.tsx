@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import type React from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Check, Mail, Pencil, Search, UserRound, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { createApplicationMessage } from '@/features/applications/api'
+import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
+import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
+import { patchTaskResult } from '@/features/tasks/api'
 import { useAssignTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
+import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
+import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { detectRole } from '@/lib/utils/taskHelpers'
 import type { Applicant, Task } from '@/types/application'
 
@@ -85,6 +91,31 @@ const getAccountNumber = (applicant?: Applicant) =>
 
 const normalizeMatchText = (value: unknown) => normalizeText(value).toLowerCase()
 
+const getTaskInstanceId = (task?: Task): string =>
+  String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '').trim()
+
+const findVisitDateTaskId = (applicant?: Applicant): string => {
+  const tasks = Object.values(applicant?.stages ?? {}).flatMap((stage) => stage.tasks ?? [])
+  const visitDateTask = tasks.find((stageTask) => {
+    const taskCategory = normalizeMatchText((stageTask as any)?.taskCategory ?? (stageTask as any)?.TaskCategory)
+    const taskType = normalizeMatchText((stageTask as any)?.taskType ?? (stageTask as any)?.TaskType)
+    const taskName = normalizeMatchText((stageTask as any)?.name ?? (stageTask as any)?.TaskName)
+
+    return (
+      taskCategory === TASK_CATEGORIES.VISIT &&
+      taskType === TASK_TYPES.ACTION &&
+      (!taskName || taskName.includes('visit date'))
+    )
+  }) ?? tasks.find((stageTask) => {
+    const taskCategory = normalizeMatchText((stageTask as any)?.taskCategory ?? (stageTask as any)?.TaskCategory)
+    const taskType = normalizeMatchText((stageTask as any)?.taskType ?? (stageTask as any)?.TaskType)
+
+    return taskCategory === TASK_CATEGORIES.VISIT && taskType === TASK_TYPES.ACTION
+  })
+
+  return getTaskInstanceId(visitDateTask)
+}
+
 const extractRfrFromTaskResult = (task?: Task): string => {
   const rawResult = normalizeText((task as any)?.Result ?? (task as any)?.result)
   if (!rawResult) return ''
@@ -155,12 +186,13 @@ function Section({ title, children }: { title: React.ReactNode; children: React.
 
 export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: Props) {
   const { token, username } = useUser()
+  const queryClient = useQueryClient()
   const { data: rfrLookupList = [], isError, isLoading } = useUserListByRole('api/vSelectRFR', {
     enabled: open,
   })
   const assignTaskMutation = useAssignTaskMutation({
-    includeApplicationLists: true,
-    includePrelimLists: true,
+    includeApplicationLists: false,
+    includePrelimLists: false,
     onError: (message) => toast.error(message),
   })
 
@@ -237,9 +269,14 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       return
     }
 
-    const taskId = String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '')
+    const taskId = getTaskInstanceId(task)
     if (!taskId) {
       toast.error('Task instance id not found')
+      return
+    }
+    const visitDateTaskId = findVisitDateTaskId(applicant)
+    if (!visitDateTaskId) {
+      toast.error('Visit Date task instance id not found')
       return
     }
 
@@ -298,6 +335,22 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         },
         token,
       })
+
+      const rfrResultValue =
+        selectedRfr.userName || selectedRfr.assigneeValue || selectedRfr.id || selectedRfr.lookupKey || selectedRfr.name
+      const dateRangeResultValue = `${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`
+
+      await patchTaskResult({
+        taskId: visitDateTaskId,
+        result: `{RFR:${rfrResultValue}, Daterange:"${dateRangeResultValue}"}`,
+        token,
+      })
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: prelimQueryKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
+      ])
 
       setVisitId(nextVisitId)
       setAssignmentCreatedAt(nowLabel())

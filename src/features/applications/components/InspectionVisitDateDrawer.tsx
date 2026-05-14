@@ -35,6 +35,19 @@ const formatDate = (ymd?: string) => {
 const getAccountNumber = (applicant?: Applicant) =>
   String(applicant?.externalReferenceId ?? applicant?.applicationId ?? '').trim()
 
+const parseAssignmentResult = (result: unknown): { rfr: string; dateRange: string } => {
+  const text = String(result ?? '').trim()
+  if (!text) return { rfr: '', dateRange: '' }
+
+  const rfrMatch = text.match(/RFR\s*:\s*"?([^",}]+)"?/i)
+  const dateRangeMatch = text.match(/Daterange\s*:\s*"?([^"}]+)"?/i)
+
+  return {
+    rfr: String(rfrMatch?.[1] ?? '').trim(),
+    dateRange: String(dateRangeMatch?.[1] ?? '').trim(),
+  }
+}
+
 function InfoRow({
   label,
   value,
@@ -79,7 +92,13 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
 
   const accountNumber = getAccountNumber(applicant)
   const reportDueDate = addDaysToYmd(plannedVisitDate, 7)
-  const rfrName = String((task as any)?.assignee ?? (task as any)?.assignedTo ?? 'Assigned RFR')
+  const assignmentResult = parseAssignmentResult((task as any)?.Result ?? (task as any)?.result)
+  const rfrName =
+    assignmentResult.rfr ||
+    String((task as any)?.assignee ?? (task as any)?.assignedTo ?? 'Assigned RFR')
+  const assignmentDateRange =
+    assignmentResult.dateRange ||
+    `${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`
 
   const confirmVisitDate = async () => {
     if (!task) {
@@ -157,7 +176,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
                 </div>
               </div>
               <div className="mt-3 rounded border border-gray-200 bg-gray-50 p-3">
-                <InfoRow label="Date range" value={`${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`} />
+                <InfoRow label="Date range" value={assignmentDateRange} />
                 <InfoRow label="NCRC note" value="Contact the plant before visiting to confirm production schedule and access requirements." />
               </div>
             </Section>
