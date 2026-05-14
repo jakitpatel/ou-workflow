@@ -100,7 +100,8 @@ function cognitoLogout() {
 function requireAuth(): boolean {
   if (!isAuthenticated()) {
     storeAuthRedirect(window.location.pathname + window.location.search);
-    window.location.href = "/login";
+    const base = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "");
+    window.location.href = `${base}/login`;
     return false;
   }
 

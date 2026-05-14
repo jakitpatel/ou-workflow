@@ -20,6 +20,36 @@ function removeItem(key: string): void {
   sessionStorage.removeItem(key);
 }
 
+function normalizeAuthRedirect(path: string): string {
+  let nextPath = path;
+
+  try {
+    if (/^https?:\/\//i.test(path)) {
+      const url = new URL(path);
+      nextPath = `${url.pathname}${url.search}${url.hash}`;
+    }
+  } catch {
+    nextPath = "/";
+  }
+
+  const basePath = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "");
+  if (basePath && basePath !== "/" && nextPath.startsWith(`${basePath}/`)) {
+    nextPath = nextPath.slice(basePath.length);
+  } else if (basePath && basePath !== "/" && nextPath === basePath) {
+    nextPath = "/";
+  }
+
+  if (!nextPath.startsWith("/")) {
+    return "/";
+  }
+
+  if (nextPath.startsWith("/login") || nextPath.startsWith("/cognito-")) {
+    return "/";
+  }
+
+  return nextPath;
+}
+
 export type SessionTokens = {
   accessToken: string;
   idToken: string;
@@ -92,7 +122,7 @@ export function clearOAuthHandledFlag(): void {
 }
 
 export function storeAuthRedirect(path: string): void {
-  setItem(STORAGE_KEYS.authRedirect, path);
+  setItem(STORAGE_KEYS.authRedirect, normalizeAuthRedirect(path));
 }
 
 export function getAuthRedirect(): string | null {

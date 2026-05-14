@@ -14,7 +14,10 @@ import {
 } from "@/components/ui/select";
 import { LogIn, Server } from "lucide-react";
 import { authlogin, isAuthenticated } from "@/auth/authService";
-import { setupLocalDevSession } from "@/features/auth/model/sessionManager";
+import {
+  consumeAuthRedirect,
+  setupLocalDevSession,
+} from "@/features/auth/model/sessionManager";
 
 const config = (window as any).__APP_CONFIG__ || {};
 const availableServers = Object.keys(config)
@@ -31,7 +34,7 @@ const LOCAL_DEV_ID_TOKEN =
 export const Route = createFileRoute("/_public/login")({
   beforeLoad: () => {
     if (isAuthenticated()) {
-      throw redirect({ to: "/" });
+      throw redirect({ to: consumeAuthRedirect("/") });
     }
   },
   component: LoginPage,
@@ -88,7 +91,7 @@ function LoginPage() {
             roles: localDevUser.roles,
             delegated: localDevUser.delegated,
           },
-          () => navigate({ to: "/" }),
+          () => navigate({ to: consumeAuthRedirect("/") }),
         );
       } catch (err: any) {
         setError("Login failed: " + err.message);
