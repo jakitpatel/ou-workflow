@@ -149,7 +149,7 @@ export function InspectionInvoiceDrawer({
           ? 'Mark Paid'
           : 'Paid'
 
-  const emailAttachment = `Invoice_${state.invoiceId ?? 'DRAFT'}.pdf`
+  const emailAttachment = state.invoicePdfUrl ?? `Invoice_${state.invoiceId ?? 'DRAFT'}.pdf`
   const emailMessageText = `To Customer,
 
 Thank you for your interest in OU Kosher. Please find the ${

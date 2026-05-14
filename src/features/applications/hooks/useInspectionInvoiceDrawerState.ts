@@ -161,6 +161,7 @@ export function useInspectionInvoiceDrawerState({
   const [invoiceDate, setInvoiceDate] = useState(todayYmd())
   const [invoiceId, setInvoiceId] = useState<string | null>(null)
   const [invoiceDownloadLink, setInvoiceDownloadLink] = useState<string | null>(null)
+  const [invoicePdfUrl, setInvoicePdfUrl] = useState<string | null>(null)
   const [internalNotes, setInternalNotes] = useState('')
   const [noInspectionReason, setNoInspectionReason] = useState('')
   const [noFeeReason, setNoFeeReason] = useState('')
@@ -288,6 +289,7 @@ export function useInspectionInvoiceDrawerState({
       })
       setInvoiceId(result.invoiceId)
       setInvoiceDownloadLink(result.downloadLink || null)
+      setInvoicePdfUrl(result.invoicePdfUrl || null)
       setStage('generated')
 
       const assignmentTaskId = findInspectionAssignmentTaskId(applicant)
@@ -412,6 +414,7 @@ export function useInspectionInvoiceDrawerState({
   const unlockForEdit = () => {
     setInvoiceId(null)
     setInvoiceDownloadLink(null)
+    setInvoicePdfUrl(null)
     setSentAt(null)
     setPaidAt(null)
     setStage(canGenerate ? 'configured' : 'setup')
@@ -431,6 +434,7 @@ export function useInspectionInvoiceDrawerState({
     invoiceDate,
     invoiceDownloadLink,
     invoiceId,
+    invoicePdfUrl,
     isApplicationFeeOnly,
     isLocked,
     isGeneratingInvoice,
