@@ -6,7 +6,7 @@ import {
 } from "@/features/auth/model/sessionManager";
 import { RouteErrorView } from "@/components/feedback/RouteErrorView";
 import { useUser } from "@/context/UserContext";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { isRedirect } from "@tanstack/react-router";
 
 interface LoaderData {
@@ -51,8 +51,12 @@ export const Route = createFileRoute("/_public/cognito-directcallback")({
 function CognitoDirectCallback() {
   const { login } = useUser();
   const { user } = Route.useLoaderData();
+  const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
+    if (hasRedirectedRef.current) return;
+    hasRedirectedRef.current = true;
+
     login(user, () => {
       window.location.replace(consumeAuthRedirectUrl("/").toString());
     });

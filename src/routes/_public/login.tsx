@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useAppPreferences } from "@/context/AppPreferencesContext";
 import { saveStoredAppPreferences } from "@/context/appPreferencesStorage";
@@ -45,6 +45,7 @@ function LoginPage() {
   const { login } = useUser();
   const { apiBaseUrl, setApiBaseUrl, stageLayout, paginationMode } = useAppPreferences();
   const [error, setError] = useState("");
+  const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
     if (!apiBaseUrl && availableServers.length > 0) {
@@ -91,7 +92,11 @@ function LoginPage() {
             roles: localDevUser.roles,
             delegated: localDevUser.delegated,
           },
-          () => window.location.replace(consumeAuthRedirectUrl("/").toString()),
+          () => {
+            if (hasRedirectedRef.current) return;
+            hasRedirectedRef.current = true;
+            window.location.replace(consumeAuthRedirectUrl("/").toString());
+          },
         );
       } catch (err: any) {
         setError("Login failed: " + err.message);

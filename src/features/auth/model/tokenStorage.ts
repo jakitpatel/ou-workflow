@@ -150,8 +150,7 @@ export function resolveAuthRedirect(defaultPath = "/"): URL {
 export function consumeAuthRedirectUrl(defaultPath = "/"): URL {
   const redirectUrl = resolveAuthRedirect(defaultPath);
   removeItem(STORAGE_KEYS.authRedirect);
-  alert(redirectUrl);
-  // console.log(redirectUrl);
+  //alert(redirectUrl);
   return redirectUrl;
 }
 
