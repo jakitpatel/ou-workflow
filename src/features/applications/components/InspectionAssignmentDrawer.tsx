@@ -89,6 +89,21 @@ const nowLabel = () =>
 const getAccountNumber = (applicant?: Applicant) =>
   String(applicant?.externalReferenceId ?? applicant?.applicationId ?? '').trim()
 
+const buildFilteredApplicationUrl = (applicationId: string) => {
+  const params = new URLSearchParams({
+    q: '',
+    status: 'all',
+    priority: 'all',
+    page: '0',
+    myOnly: 'true',
+    applicationId,
+  })
+  const basePath = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+  const appPath = `${basePath && basePath !== '/' ? basePath : ''}/ou-workflow/ncrc-dashboard?${params.toString()}`
+
+  return typeof window === 'undefined' ? appPath : new URL(appPath, window.location.origin).toString()
+}
+
 const normalizeMatchText = (value: unknown) => normalizeText(value).toLowerCase()
 
 const getTaskInstanceId = (task?: Task): string =>
@@ -239,6 +254,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   if (!open) return null
 
   const accountNumber = getAccountNumber(applicant)
+  const accountApplicationUrl = accountNumber ? buildFilteredApplicationUrl(accountNumber) : ''
   const assignmentStartDate = todayYmd()
   const assignmentEndDate = addDaysToYmd(assignmentStartDate, 90)
   const isAssigned = Boolean(assignmentCreatedAt)
@@ -255,14 +271,16 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       ? 'Notification email - preview (not yet sent)'
       : 'Notification email - preview'
   const emailSubject = `OU Kosher - Inspection Assignment for ${applicant?.plant || 'Plant'} [${accountNumber || 'Application'}]`
-  const emailBody = [
-    `To ${selectedRfr?.name || 'RFR'},`,
-    `You've been assigned an initial inspection by ${username || 'NCRC'}. Please review the plant and set your planned visit date.`,
-    `Plant: ${applicant?.plant || '-'}`,
-    `Company: ${applicant?.company || '-'}`,
-    `Account #: ${accountNumber || '-'}`,
-    `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`,
-    `Visit ID: ${visitId || '-'}`,
+  const emailBody: Array<{ text: string; href?: string }> = [
+    { text: `To ${selectedRfr?.name || 'RFR'},` },
+    {
+      text: `You've been assigned an initial inspection by ${username || 'NCRC'}. Please review the plant and set your planned visit date.`,
+    },
+    { text: `Plant: ${applicant?.plant || '-'}` },
+    { text: `Company: ${applicant?.company || '-'}` },
+    { text: `Account #: ${accountNumber || '-'}`, href: accountApplicationUrl || undefined },
+    { text: `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}` },
+    { text: `Visit ID: ${visitId || '-'}` },
   ]
 
   const createAssignment = async () => {
@@ -304,7 +322,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         '',
         `Company: ${applicant?.company || '-'}`,
         '',
-        `Account #: ${accountNumber || '-'}`,
+        `Account #: ${accountNumber || '-'}${accountApplicationUrl ? ` (${accountApplicationUrl})` : ''}`,
         '',
         `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`,
         '',
@@ -571,7 +589,17 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
               </div>
               <div className="space-y-3 px-5 py-5 text-sm leading-6 text-gray-700">
                 {selectedRfr ? (
-                  emailBody.map((line) => <p key={line}>{line}</p>)
+                  emailBody.map((line) => (
+                    <p key={line.text}>
+                      {line.href ? (
+                        <a className="font-semibold text-blue-700 underline hover:text-blue-800" href={line.href}>
+                          {line.text}
+                        </a>
+                      ) : (
+                        line.text
+                      )}
+                    </p>
+                  ))
                 ) : (
                   <p className="italic text-gray-400">The email preview will appear here once you select an RFR and create the assignment.</p>
                 )}
@@ -641,8 +669,14 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
                 </div>
                 <div className="rounded border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">
                   {emailBody.map((line) => (
-                    <p key={line} className="mb-3 last:mb-0">
-                      {line}
+                    <p key={line.text} className="mb-3 last:mb-0">
+                      {line.href ? (
+                        <a className="font-semibold text-blue-700 underline hover:text-blue-800" href={line.href}>
+                          {line.text}
+                        </a>
+                      ) : (
+                        line.text
+                      )}
                     </p>
                   ))}
                 </div>
