@@ -291,12 +291,10 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         assignee: selectedRfr.assigneeValue || selectedRfr.id,
         token: token ?? undefined,
         capacity: (task as any)?.capacity ?? undefined,
+        overwrite: '1',
       })
 
       const nextVisitId = String(Math.floor(2900000 + Math.random() * 9000000))
-      const previewToUser = selectedRfr.email
-        ? `${selectedRfr.name} <${selectedRfr.email}>`
-        : selectedRfr.name
       const notificationMessageText = [
         `To ${selectedRfr.name},`,
         '',
@@ -317,8 +315,8 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         payload: {
           MessageID: null,
           ApplicationID: applicant?.applicationId ?? null,
-          FromUser: 'Project Flow <projectflow@ou.org>',
-          ToUser: previewToUser,
+          FromUser: 'projectflow@ou.org',
+          ToUser: selectedRfr.email || selectedRfr.name,
           Subject: emailSubject,
           MessageText: notificationMessageText,
           MessageType: 'Email',
