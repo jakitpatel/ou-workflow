@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { generateInspectionInvoice, createApplicationMessage } from '@/features/applications/api'
+import { useEffect, useMemo, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { generateInspectionInvoice, createApplicationMessage, fetchApplicationDetail } from '@/features/applications/api'
 import { useUser } from '@/context/UserContext'
-import type { Applicant } from '@/types/application'
+import type { Applicant, CompanyContact } from '@/types/application'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { confirmTask, patchTaskResult } from '@/features/tasks/api'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
@@ -16,6 +16,9 @@ export type InspectionInvoiceStage =
   | 'outlook-opened'
   | 'sent-captured'
   | 'paid'
+
+export const INSPECTION_LETTER_TEMPLATE = 'initial-inspection'
+export const APPLICATION_FEE_LETTER_TEMPLATE = 'application-fee'
 
 export type InspectionInvoiceRfr = {
   id: string
@@ -32,6 +35,14 @@ export type InspectionInvoiceRfr = {
   status: 'available' | 'inactive'
   pctOfTotalApps: number
   pctOfTotalAppsAtWork: number
+}
+
+export type InspectionInvoiceRecipientOption = {
+  value: string
+  label: string
+  name: string
+  email: string
+  type: string
 }
 
 const RFR_FEE_RULES: Record<string, { fee: number; expenses: number }> = {
@@ -68,6 +79,39 @@ const normalizeRfrText = (value: unknown) =>
     .replace(/[\r\n]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+
+const normalizeContactText = normalizeRfrText
+
+const getContactBucket = (contact: CompanyContact): string | null => {
+  const role = normalizeContactText(contact.role).toLowerCase()
+  const type = normalizeContactText(contact.type).toLowerCase()
+  const haystack = `${role} ${type}`
+
+  if (type === 'primary contact' || role.includes('primary')) return 'Primary Contact'
+  if (haystack.includes('billing') || haystack.includes('accounts payable')) return 'Billing Contact'
+  if (haystack.includes('operation')) return 'Operation Contact'
+
+  return null
+}
+
+const mapCompanyContactToRecipientOption = (
+  contact: CompanyContact,
+  index: number,
+): InspectionInvoiceRecipientOption | null => {
+  const name = normalizeContactText(contact.name)
+  const email = normalizeContactText(contact.email)
+  const bucket = getContactBucket(contact)
+
+  if (!name || !email || !bucket) return null
+
+  return {
+    value: `contact:${index}:${email}`,
+    label: `${name} - ${email} (${bucket})`,
+    name,
+    email,
+    type: bucket,
+  }
+}
 
 const mapLookupRfr = (item: any): InspectionInvoiceRfr => {
   const name = normalizeRfrText(item.rfr ?? item.fullName ?? item.name ?? item.userName ?? item.id)
@@ -149,6 +193,20 @@ export function useInspectionInvoiceDrawerState({
     isError: isRfrListError,
     isLoading: isRfrListLoading,
   } = useUserListByRole('api/vSelectRFR', { enabled })
+  const resolvedApplicationId = String(applicationId ?? applicant?.applicationId ?? '').trim()
+  const {
+    data: applicationDetail,
+    isError: isApplicationDetailError,
+    isLoading: isApplicationDetailLoading,
+  } = useQuery({
+    queryKey: applicationsQueryKeys.detail(resolvedApplicationId),
+    queryFn: () =>
+      fetchApplicationDetail({
+        applicationId: resolvedApplicationId,
+        token,
+      }),
+    enabled: enabled && Boolean(token) && Boolean(resolvedApplicationId),
+  })
 
   const rfrs = useMemo(() => rfrLookupList.map(mapLookupRfr), [rfrLookupList])
   const [inspectionNeeded, setInspectionNeeded] = useState<boolean | null>(true)
@@ -166,7 +224,8 @@ export function useInspectionInvoiceDrawerState({
   const [noInspectionReason, setNoInspectionReason] = useState('')
   const [noFeeReason, setNoFeeReason] = useState('')
   const [recipient, setRecipient] = useState('')
-  const [letterTemplate, setLetterTemplate] = useState('Initial Inspection Fee - New Plant')
+  const [extraRecipientEmail, setExtraRecipientEmail] = useState('')
+  const [letterTemplate, setLetterTemplate] = useState(INSPECTION_LETTER_TEMPLATE)
   const [stage, setStage] = useState<InspectionInvoiceStage>('setup')
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [sentAt, setSentAt] = useState<string | null>(null)
@@ -189,17 +248,36 @@ export function useInspectionInvoiceDrawerState({
       ),
     )
   }, [rfrSearch, rfrs])
+  const recipientOptions = useMemo(
+    () =>
+      (applicationDetail?.companyContacts ?? [])
+        .map(mapCompanyContactToRecipientOption)
+        .filter((option): option is InspectionInvoiceRecipientOption => Boolean(option)),
+    [applicationDetail?.companyContacts],
+  )
+  const selectedRecipient = useMemo(
+    () => recipientOptions.find((option) => option.value === recipient) ?? null,
+    [recipient, recipientOptions],
+  )
+
+  useEffect(() => {
+    if (recipient || recipientOptions.length === 0) return
+
+    const primaryContact =
+      recipientOptions.find((option) => option.type === 'Primary Contact') ?? recipientOptions[0]
+    setRecipient(primaryContact.value)
+  }, [recipient, recipientOptions])
 
   const fee = Number(feeAmount) || 0
   const expenses = Number(expenseAmount) || 0
   const subtotal = fee + expenses
   const isLocked = ['generated', 'outlook-opened', 'sent-captured', 'paid'].includes(stage)
-  const isApplicationFeeOnly = feeRequired === false
+  const isApplicationFeeOnly = letterTemplate === APPLICATION_FEE_LETTER_TEMPLATE
   const canGenerate =
     inspectionNeeded !== null &&
     (inspectionNeeded === false || Boolean(selectedRfrId)) &&
     feeRequired !== null &&
-    fee > 0 &&
+    (feeRequired === true ? fee > 0 : fee >= 0) &&
     Boolean(invoiceDate) &&
     (inspectionNeeded !== false || Boolean(noInspectionReason)) &&
     (feeRequired !== false || Boolean(noFeeReason))
@@ -213,6 +291,12 @@ export function useInspectionInvoiceDrawerState({
     setInspectionNeeded(value)
     if (!value) {
       setSelectedRfrId(null)
+      setFeeAmount('300.00')
+      setExpenseAmount('0.00')
+      setLetterTemplate(APPLICATION_FEE_LETTER_TEMPLATE)
+      setAwaitPayment(false)
+    } else {
+      setLetterTemplate(INSPECTION_LETTER_TEMPLATE)
     }
     updateSetupStage()
   }
@@ -222,7 +306,13 @@ export function useInspectionInvoiceDrawerState({
     if (!value) {
       setFeeAmount('300.00')
       setExpenseAmount('0.00')
+      setLetterTemplate(APPLICATION_FEE_LETTER_TEMPLATE)
       setAwaitPayment(false)
+    } else {
+      const rule = selectedRfr ? RFR_FEE_RULES[selectedRfr.region] : null
+      setFeeAmount((rule?.fee ?? 600).toFixed(2))
+      setExpenseAmount((rule?.expenses ?? 333).toFixed(2))
+      setLetterTemplate(INSPECTION_LETTER_TEMPLATE)
     }
     updateSetupStage()
   }
@@ -230,7 +320,7 @@ export function useInspectionInvoiceDrawerState({
   const pickRfr = (rfr: InspectionInvoiceRfr) => {
     setSelectedRfrId(rfr.lookupKey)
     const rule = RFR_FEE_RULES[rfr.region]
-    if (rule && feeRequired !== false) {
+    if (rule && letterTemplate !== APPLICATION_FEE_LETTER_TEMPLATE) {
       setFeeAmount(rule.fee.toFixed(2))
       setExpenseAmount(rule.expenses.toFixed(2))
     }
@@ -241,6 +331,13 @@ export function useInspectionInvoiceDrawerState({
     if (isLocked) return
     setSelectedRfrId(null)
     setRfrSearch('')
+  }
+
+  const setRecipientValue = (value: string) => {
+    setRecipient(value)
+    if (value !== 'ADD_NEW') {
+      setExtraRecipientEmail('')
+    }
   }
 
   const generateInvoice = async () => {
@@ -283,7 +380,7 @@ export function useInspectionInvoiceDrawerState({
           internalNotes,
           noInspectionReason,
           noFeeReason,
-          recipient,
+          recipient: selectedRecipient?.email ?? (recipient === 'ADD_NEW' ? extraRecipientEmail : recipient),
           letterTemplate,
         },
       })
@@ -425,6 +522,7 @@ export function useInspectionInvoiceDrawerState({
     canGenerate,
     expenseAmount,
     expenses,
+    extraRecipientEmail,
     fee,
     feeAmount,
     feeRequired,
@@ -438,6 +536,8 @@ export function useInspectionInvoiceDrawerState({
     isApplicationFeeOnly,
     isLocked,
     isGeneratingInvoice,
+    isApplicationDetailError,
+    isApplicationDetailLoading,
     isMarkingPaid,
     isSendingEmail,
     isRfrListError,
@@ -447,8 +547,10 @@ export function useInspectionInvoiceDrawerState({
     noInspectionReason,
     paidAt,
     recipient,
+    recipientOptions,
     rfrSearch,
     selectedRfr,
+    selectedRecipient,
     sentAt,
     showEmailPreview,
     stage,
@@ -462,6 +564,7 @@ export function useInspectionInvoiceDrawerState({
     pickRfr,
     setAwaitPayment,
     setExpenseAmount,
+    setExtraRecipientEmail,
     setFeeAmount,
     setFeeRequiredValue,
     setInspection,
@@ -470,7 +573,7 @@ export function useInspectionInvoiceDrawerState({
     setLetterTemplate,
     setNoFeeReason,
     setNoInspectionReason,
-    setRecipient,
+    setRecipient: setRecipientValue,
     setRfrSearch,
     setShowEmailPreview,
     unlockForEdit,

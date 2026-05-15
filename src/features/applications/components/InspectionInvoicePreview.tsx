@@ -28,7 +28,8 @@ export function InspectionInvoicePreview({
   paid,
 }: Props) {
   const accountNumber = getApplicantAccountNumber(applicant)
-  const total = feeAmount + expenseAmount
+  const displayedExpenseAmount = isApplicationFeeOnly ? 0 : expenseAmount
+  const total = feeAmount + displayedExpenseAmount
   const invoiceFileName = `Invoice_${invoiceId ?? 'DRAFT'}.pdf`
   const invoiceRef = useRef<HTMLDivElement | null>(null)
 
@@ -241,7 +242,7 @@ export function InspectionInvoicePreview({
                 </td>
                 <td className="px-4 py-4 text-right font-medium">{formatCurrency(feeAmount)}</td>
               </tr>
-              {expenseAmount > 0 ? (
+              {displayedExpenseAmount > 0 ? (
                 <tr className="border-b border-gray-100">
                   <td className="px-4 py-4">
                     <div className="font-semibold text-gray-900">Inspection Expenses</div>
@@ -249,7 +250,7 @@ export function InspectionInvoicePreview({
                       Travel, lodging, and related expenses estimate
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-right font-medium">{formatCurrency(expenseAmount)}</td>
+                  <td className="px-4 py-4 text-right font-medium">{formatCurrency(displayedExpenseAmount)}</td>
                 </tr>
               ) : null}
             </tbody>

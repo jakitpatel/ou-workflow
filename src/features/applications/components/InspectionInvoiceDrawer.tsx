@@ -4,8 +4,10 @@ import { Check, FileText, Mail, Search, UserRoundCheck, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { InspectionInvoicePreview } from '@/features/applications/components/InspectionInvoicePreview'
 import {
+  APPLICATION_FEE_LETTER_TEMPLATE,
   formatCurrency,
   getApplicantAccountNumber,
+  INSPECTION_LETTER_TEMPLATE,
   useInspectionInvoiceDrawerState,
 } from '@/features/applications/hooks/useInspectionInvoiceDrawerState'
 import type { Applicant } from '@/types/application'
@@ -150,6 +152,14 @@ export function InspectionInvoiceDrawer({
           : 'Paid'
 
   const emailAttachment = state.invoicePdfUrl ?? `Invoice_${state.invoiceId ?? 'DRAFT'}.pdf`
+  const recipientLabel =
+    state.recipient === 'ADD_NEW'
+      ? state.extraRecipientEmail || 'Additional email'
+      : state.selectedRecipient?.label || 'Primary contact'
+  const recipientSendValue =
+    state.recipient === 'ADD_NEW'
+      ? state.extraRecipientEmail
+      : state.selectedRecipient?.email || recipientLabel
   const emailMessageText = `To Customer,
 
 Thank you for your interest in OU Kosher. Please find the ${
@@ -368,7 +378,9 @@ Account Number: ${accountNumber || '-'}`
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-sm font-medium text-gray-900">Inspection fee needed?</div>
-                  <p className="mt-1 text-xs text-gray-500">The application fee is always charged.</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    If no, the application fee defaults to $300. You can override the amount or set it to $0.
+                  </p>
                 </div>
                 <YesNoGroup disabled={state.isLocked} value={state.feeRequired} onChange={state.setFeeRequiredValue} />
               </div>
@@ -427,9 +439,26 @@ Account Number: ${accountNumber || '-'}`
               ) : null}
               {state.isApplicationFeeOnly ? (
                 <div className="mb-3 rounded border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
-                  Application Fee only: standard $300 application fee.
+                  <div className="font-semibold">Application Fee only</div>
+                  <div className="mt-1">Standard $300 application fee - uses the new plant letter template in Kashrus.</div>
                 </div>
               ) : null}
+
+              <label className="mb-3 block text-sm">
+                <span className="text-xs font-semibold uppercase text-gray-500">Letter Template</span>
+                <select
+                  value={state.letterTemplate}
+                  disabled={state.isLocked}
+                  onChange={(event) => state.setLetterTemplate(event.target.value)}
+                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-100"
+                >
+                  <option value={INSPECTION_LETTER_TEMPLATE}>Initial Inspection Fee</option>
+                  <option value={APPLICATION_FEE_LETTER_TEMPLATE}>Application Fee</option>
+                </select>
+                <span className="mt-1 block text-xs text-gray-500">
+                  Default is set by the Inspection Fee answer above. Override if a different letter is needed.
+                </span>
+              </label>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="text-sm">
@@ -484,35 +513,51 @@ Account Number: ${accountNumber || '-'}`
 
             <Section title="5. Email Recipients">
               <label className="block text-sm">
-                <span className="text-xs font-semibold uppercase text-gray-500">To customer contact</span>
+                <span className="text-xs font-semibold uppercase text-gray-500">To (customer contact)</span>
                 <select
                   value={state.recipient}
                   onChange={(event) => state.setRecipient(event.target.value)}
                   className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
                 >
-                  <option value="">Primary contact</option>
-                  <option value="billing">Billing contact</option>
-                  <option value="new">Add new contact...</option>
+                  {state.isApplicationDetailLoading ? (
+                    <option value="">Loading contacts...</option>
+                  ) : state.recipientOptions.length > 0 ? (
+                    state.recipientOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">Primary contact</option>
+                  )}
+                  <option value="ADD_NEW">+ Add another email...</option>
                 </select>
               </label>
+              {state.isApplicationDetailError ? (
+                <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  Unable to load application contacts. Add an email manually if needed.
+                </div>
+              ) : null}
+              {state.recipient === 'ADD_NEW' ? (
+                <label className="mt-2 block text-sm">
+                  <input
+                    type="email"
+                    value={state.extraRecipientEmail}
+                    onChange={(event) => state.setExtraRecipientEmail(event.target.value)}
+                    placeholder="name@example.com"
+                    className="w-full rounded border border-gray-300 px-3 py-2"
+                  />
+                  <span className="mt-1 block text-xs text-gray-500">
+                    Email is added for this invoice only and is not saved as a new contact.
+                  </span>
+                </label>
+              ) : null}
               <div className="mt-3 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs leading-6 text-gray-700">
                 <div><strong>RC:</strong> Assigned RC</div>
                 <div><strong>NCRC:</strong> Current user</div>
                 <div><strong>RC Coord:</strong> Assigned coordinator</div>
                 <div className="text-gray-500">BCC: productAutomation@ou.org</div>
               </div>
-              <label className="mt-3 block text-sm">
-                <span className="text-xs font-semibold uppercase text-gray-500">Letter template</span>
-                <select
-                  value={state.letterTemplate}
-                  onChange={(event) => state.setLetterTemplate(event.target.value)}
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
-                >
-                  <option>Initial Inspection Fee - New Plant</option>
-                  <option>Initial Inspection Fee - Additional Facility</option>
-                  <option>Application Fee - New Plant</option>
-                </select>
-              </label>
               {state.sentAt ? (
                 <div className="mt-3 rounded border border-green-200 bg-green-50 px-3 py-2 text-xs font-medium text-green-700">
                   Invoice sent - {state.sentAt}
@@ -613,7 +658,7 @@ Account Number: ${accountNumber || '-'}`
                 <div className="rounded border border-gray-200">
                   <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
                     <span className="font-medium text-gray-500">To</span>
-                    <span>{state.recipient === 'billing' ? 'Billing contact' : 'Primary contact'}</span>
+                    <span>{recipientLabel}</span>
                   </div>
                   <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
                     <span className="font-medium text-gray-500">Subject</span>
@@ -651,7 +696,7 @@ Account Number: ${accountNumber || '-'}`
                         attachments: emailAttachment,
                         messageText: emailMessageText,
                         subject: emailSubject,
-                        toUser: state.recipient === 'billing' ? 'Billing contact' : 'Primary contact',
+                        toUser: recipientSendValue,
                       })
                       toast.success('Email sent')
                     } catch (error) {
