@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useAppPreferences } from "@/context/AppPreferencesContext";
 import { saveStoredAppPreferences } from "@/context/appPreferencesStorage";
 import { useUser } from "@/context/UserContext";
@@ -16,6 +16,7 @@ import { LogIn, Server } from "lucide-react";
 import { authlogin, isAuthenticated } from "@/auth/authService";
 import {
   consumeAuthRedirect,
+  consumeAuthRedirectUrl,
   setupLocalDevSession,
 } from "@/features/auth/model/sessionManager";
 
@@ -43,7 +44,6 @@ export const Route = createFileRoute("/_public/login")({
 function LoginPage() {
   const { login } = useUser();
   const { apiBaseUrl, setApiBaseUrl, stageLayout, paginationMode } = useAppPreferences();
-  const navigate = useNavigate();
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -91,7 +91,7 @@ function LoginPage() {
             roles: localDevUser.roles,
             delegated: localDevUser.delegated,
           },
-          () => navigate({ to: consumeAuthRedirect("/") }),
+          () => window.location.replace(consumeAuthRedirectUrl("/").toString()),
         );
       } catch (err: any) {
         setError("Login failed: " + err.message);

@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import {
-  consumeAuthRedirect,
+  consumeAuthRedirectUrl,
   loadAuthenticatedSessionUserFromCognitoCallback,
   type AuthenticatedSessionUser,
 } from "@/features/auth/model/sessionManager";
@@ -50,14 +50,13 @@ export const Route = createFileRoute("/_public/cognito-directcallback")({
 
 function CognitoDirectCallback() {
   const { login } = useUser();
-  const navigate = Route.useNavigate();
   const { user } = Route.useLoaderData();
 
   useEffect(() => {
     login(user, () => {
-      navigate({ to: consumeAuthRedirect("/") });
+      window.location.replace(consumeAuthRedirectUrl("/").toString());
     });
-  }, [login, navigate, user]);
+  }, [login, user]);
 
   return (
     <div className="flex items-center justify-center h-screen">

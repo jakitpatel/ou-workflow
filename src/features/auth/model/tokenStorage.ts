@@ -139,6 +139,20 @@ export function clearAuthRedirect(): void {
   removeItem(STORAGE_KEYS.authRedirect);
 }
 
+export function resolveAuthRedirect(defaultPath = "/"): URL {
+  const redirect = normalizeAuthRedirect(getItem(STORAGE_KEYS.authRedirect) || defaultPath);
+  const basePath = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "");
+  const appPath = basePath && basePath !== "/" ? `${basePath}${redirect}` : redirect;
+
+  return new URL(appPath, window.location.origin);
+}
+
+export function consumeAuthRedirectUrl(defaultPath = "/"): URL {
+  const redirectUrl = resolveAuthRedirect(defaultPath);
+  removeItem(STORAGE_KEYS.authRedirect);
+  return redirectUrl;
+}
+
 export function clearSessionArtifacts(): void {
   clearTokenStorage();
   clearPendingOAuthState();
