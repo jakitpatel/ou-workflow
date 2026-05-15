@@ -22,7 +22,7 @@ type AssignTaskInput = {
   assignee: string
   token?: string | null
   capacity?: string
-  overwrite?: string | number
+  override?: string | number
 }
 
 type UndoTaskInput = {

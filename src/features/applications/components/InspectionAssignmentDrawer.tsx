@@ -291,7 +291,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         assignee: selectedRfr.assigneeValue || selectedRfr.id,
         token: token ?? undefined,
         capacity: (task as any)?.capacity ?? undefined,
-        overwrite: '1',
+        override: 1,
       })
 
       const nextVisitId = String(Math.floor(2900000 + Math.random() * 9000000))

@@ -66,7 +66,7 @@ export async function assignTask({
   assignee,
   token,
   capacity,
-  overwrite,
+  override,
 }: {
   appId?: number | null
   taskId: string
@@ -74,12 +74,12 @@ export async function assignTask({
   assignee: string
   token?: string | null
   capacity?: string
-  overwrite?: string | number
+  override?: string | number
 }): Promise<any> {
   const body: Record<string, unknown> = { appId, taskId, role, assignee, capacity }
 
-  if (overwrite !== undefined) {
-    body.overwrite = overwrite
+  if (override !== undefined) {
+    body.override = override
   }
 
   return await fetchWithAuth({
