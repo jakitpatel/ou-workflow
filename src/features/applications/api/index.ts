@@ -259,6 +259,9 @@ export type ApplicationMessagePayload = {
   ToUser?: string | null
   Subject?: string | null
   MessageText?: string | null
+  MessageTextPlain?: string | null
+  PlainText?: string | null
+  Text?: string | null
   MessageType?: string | null
   Priority?: string | null
   SentDate?: string | null

@@ -13,6 +13,7 @@ import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { detectRole } from '@/lib/utils/taskHelpers'
+import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import type { Applicant, Task } from '@/types/application'
 
 type Props = {
@@ -322,12 +323,17 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         '',
         `Company: ${applicant?.company || '-'}`,
         '',
-        `Account #: ${accountNumber || '-'}${accountApplicationUrl ? ` (${accountApplicationUrl})` : ''}`,
+        `Account #: ${accountNumber || '-'}`,
+        ...(accountApplicationUrl ? ['', `Application link: ${accountApplicationUrl}`] : []),
         '',
         `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`,
         '',
         `Visit ID: ${nextVisitId}`,
       ].join('\n')
+      const notificationEmail = buildHtmlEmailFromPlainText(notificationMessageText, {
+        preheader: `Inspection assignment for ${applicant?.plant || 'Plant'}`,
+        title: 'Inspection Assignment',
+      })
 
       await createApplicationMessage({
         payload: {
@@ -336,7 +342,10 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
           FromUser: 'projectflow@ou.org',
           ToUser: selectedRfr.email || selectedRfr.name,
           Subject: emailSubject,
-          MessageText: notificationMessageText,
+          MessageText: notificationEmail.html,
+          MessageTextPlain: notificationEmail.text,
+          PlainText: notificationEmail.text,
+          Text: notificationEmail.text,
           MessageType: 'Email',
           Priority: 'NORMAL',
           SentDate: new Date().toISOString(),

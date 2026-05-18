@@ -8,6 +8,7 @@ import { confirmTask, patchTaskResult } from '@/features/tasks/api'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
+import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 
 export type InspectionInvoiceStage =
   | 'setup'
@@ -447,6 +448,11 @@ export function useInspectionInvoiceDrawerState({
   }) => {
     setIsSendingEmail(true)
     try {
+      const email = buildHtmlEmailFromPlainText(messageText, {
+        preheader: subject,
+        title: 'OU Kosher Invoice',
+      })
+
       await createApplicationMessage({
         payload: {
           MessageID: null,
@@ -454,7 +460,10 @@ export function useInspectionInvoiceDrawerState({
           FromUser: username ?? null,
           ToUser: toUser,
           Subject: subject,
-          MessageText: messageText,
+          MessageText: email.html,
+          MessageTextPlain: email.text,
+          PlainText: email.text,
+          Text: email.text,
           MessageType: 'Email',
           Priority: 'NORMAL',
           SentDate: new Date().toISOString(),
