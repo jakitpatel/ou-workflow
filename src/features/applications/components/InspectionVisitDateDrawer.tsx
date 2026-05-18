@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type React from 'react'
 import { CalendarDays, Check, ExternalLink, MapPin, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
+import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import type { Applicant, Task } from '@/types/application'
 
@@ -34,6 +35,71 @@ const formatDate = (ymd?: string) => {
 
 const getAccountNumber = (applicant?: Applicant) =>
   String(applicant?.externalReferenceId ?? applicant?.applicationId ?? '').trim()
+
+const normalizeText = (value: unknown) =>
+  (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? String(value) : '')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+const pickFirstText = (...values: unknown[]) => {
+  for (const value of values) {
+    const text = normalizeText(value)
+    if (text) return text
+  }
+
+  return ''
+}
+
+const formatAddressParts = (...values: unknown[]) =>
+  values.map(normalizeText).filter(Boolean).join(', ')
+
+const formatAddressObject = (value: unknown) => {
+  if (!value || typeof value !== 'object') return ''
+  const address = value as Record<string, unknown>
+
+  return formatAddressParts(
+    address.street ?? address.Street ?? address.STREET1,
+    address.line2 ?? address.Line2 ?? address.STREET2,
+    address.city ?? address.City ?? address.CITY,
+    address.state ?? address.State ?? address.STATE,
+    address.zip ?? address.Zip ?? address.ZIP,
+    address.country ?? address.Country ?? address.COUNTRY,
+  )
+}
+
+const getPreferredAddress = <T extends { type?: string }>(addresses?: T[]) => {
+  if (!addresses?.length) return undefined
+
+  return (
+    addresses.find((address) => normalizeText(address.type).toLowerCase() === 'physical') ??
+    addresses[0]
+  )
+}
+
+const getResolvedPlantAddress = (applicant?: Applicant) =>
+  pickFirstText(
+    applicant?.resolved?.plants?.find((plant) => normalizeText(plant.plant?.plantAddress))?.plant?.plantAddress,
+    applicant?.resolved?.plants?.[0]?.plant?.plantAddress,
+  )
+
+const getTaskPlantAddress = (task?: Task) => {
+  const plantSelected = task?.plantSelected
+  const plantFromApplication = task?.plantFromApplication
+
+  return pickFirstText(
+    plantSelected?.Address,
+    plantFromApplication?.Address,
+    formatAddressParts(
+      plantFromApplication?.plantAddress,
+      plantFromApplication?.plantCity,
+      plantFromApplication?.plantState,
+      plantFromApplication?.plantZip,
+      plantFromApplication?.plantCountry,
+    ),
+    plantFromApplication?.plantAddress,
+  )
+}
 
 const parseAssignmentResult = (result: unknown): { rfr: string; dateRange: string } => {
   const text = String(result ?? '').trim()
@@ -76,6 +142,8 @@ function Section({ title, children }: { title: React.ReactNode; children: React.
 
 export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Props) {
   const { token, username } = useUser()
+  const applicationId = String(applicant?.applicationId ?? '').trim()
+  const { data: applicationDetail } = useApplicationDetail(open ? applicationId : undefined)
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
     includePrelimLists: true,
@@ -87,6 +155,52 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
   const [plannedVisitDate, setPlannedVisitDate] = useState(addDaysToYmd(assignmentStartDate, 14))
   const [rfrNote, setRfrNote] = useState('')
   const [confirmed, setConfirmed] = useState(false)
+
+  const plantReference = useMemo(() => {
+    const detailPlantAddress = getPreferredAddress(applicationDetail?.plantAddresses)
+    const detailPlant = applicationDetail?.plants?.[0]
+    const detailPlantName = pickFirstText(detailPlant?.name, applicant?.plant)
+    const detailContact =
+      applicationDetail?.plantContacts?.find((contact) =>
+        normalizeText(contact.type).toLowerCase().includes('primary'),
+      ) ?? applicationDetail?.plantContacts?.[0]
+    const address = pickFirstText(
+      formatAddressParts(
+        detailPlantAddress?.street,
+        detailPlantAddress?.line2,
+        detailPlantAddress?.city,
+        detailPlantAddress?.state,
+        detailPlantAddress?.zip,
+        detailPlantAddress?.country,
+      ),
+      formatAddressObject(detailPlant?.address),
+      getTaskPlantAddress(task),
+      getResolvedPlantAddress(applicant),
+    )
+    const encodedAddress = address ? encodeURIComponent(address) : ''
+
+    return {
+      address,
+      contactEmail: normalizeText(detailContact?.email),
+      contactName: normalizeText(detailContact?.name),
+      contactPhone: normalizeText(detailContact?.phone),
+      contactTitle: normalizeText(detailContact?.role),
+      mapEmbedUrl: encodedAddress
+        ? `https://maps.google.com/maps?q=${encodedAddress}&z=14&output=embed`
+        : '',
+      mapSearchUrl: encodedAddress
+        ? `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`
+        : '',
+      plantName: detailPlantName,
+      plantType: pickFirstText(
+        (detailPlant?.manufacturing as any)?.brieflySummarize,
+        (detailPlant?.manufacturing as any)?.type,
+        (detailPlant as any)?.brieflySummarize,
+      ),
+      productsCount: applicationDetail?.products?.length ?? 0,
+      ingredientsCount: applicationDetail?.ingredients?.length ?? 0,
+    }
+  }, [applicant, applicationDetail, task])
 
   if (!open) return null
 
@@ -240,27 +354,74 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
                 <MapPin className="mt-0.5 h-5 w-5 text-blue-600" />
                 <div>
                   <div className="text-base font-bold text-blue-950">
-                    {applicant?.company || 'Application'} - {applicant?.plant || 'Plant'}
+                    {applicant?.company || 'Application'} - {plantReference.plantName || 'Plant'}
                   </div>
                   <div className="mt-1 text-sm text-gray-500">Plant info - read-only reference</div>
                 </div>
               </div>
               <div className="rounded border border-gray-200 bg-gray-50 p-3">
                 <InfoRow label="Account #" value={accountNumber || '-'} />
+                <InfoRow label="Address" value={plantReference.address || '-'} />
                 <InfoRow label="Region" value={applicant?.region || '-'} />
-                <InfoRow label="Scope" value="Review plant details and Schedule A before visit" />
+                <InfoRow label="Plant type" value={plantReference.plantType || '-'} />
+                <InfoRow
+                  label="Scope"
+                  value={
+                    plantReference.ingredientsCount || plantReference.productsCount
+                      ? `${plantReference.ingredientsCount || 0} ingredients - ${plantReference.productsCount || 0} products`
+                      : 'Review plant details and Schedule A before visit'
+                  }
+                />
                 <InfoRow label="Plant status" value="New application - first inspection" />
               </div>
+              <div className="mt-4">
+                {plantReference.mapEmbedUrl ? (
+                  <>
+                    <iframe
+                      src={plantReference.mapEmbedUrl}
+                      className="block h-44 w-full rounded-md border border-gray-200"
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      title="Plant location"
+                    />
+                    <a
+                      href={plantReference.mapSearchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 hover:text-blue-800"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Open in Google Maps
+                    </a>
+                  </>
+                ) : (
+                  <div className="rounded border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
+                    No plant address is available for map preview.
+                  </div>
+                )}
+              </div>
+              {plantReference.contactName ||
+              plantReference.contactTitle ||
+              plantReference.contactEmail ||
+              plantReference.contactPhone ? (
+                <div className="mt-4 rounded border border-gray-200 bg-gray-50 p-3">
+                  <div className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">Plant Contact</div>
+                  <InfoRow label="Primary contact" value={plantReference.contactName || '-'} />
+                  <InfoRow label="Title" value={plantReference.contactTitle || '-'} />
+                  <InfoRow label="Email" value={plantReference.contactEmail || '-'} />
+                  <InfoRow label="Phone" value={plantReference.contactPhone || '-'} />
+                </div>
+              ) : null}
               <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
                 <strong>Heads up:</strong> Review ingredients and pending LOC items before the visit.
               </div>
-              <button
-                type="button"
+              <a
+                href={applicationId ? `/ou-workflow/ncrc-dashboard/${applicationId}` : undefined}
                 className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800"
               >
                 <ExternalLink className="h-4 w-4" />
                 View application details
-              </button>
+              </a>
             </div>
           </div>
         </div>
