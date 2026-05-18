@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type React from 'react'
 import {
   Upload,
   CheckCircle,
@@ -15,6 +16,9 @@ import {
   X,
   Shield,
   ClipboardList,
+  Mail,
+  Paperclip,
+  Eye,
 } from 'lucide-react'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
 import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState'
@@ -28,7 +32,7 @@ import FilesList from '@/components/ou-workflow/ApplicationManagement/FilesList'
 import IngredientMgmt from '@/components/ou-workflow/ApplicationManagement/Ingredients'
 import QuoteInfo from '@/components/ou-workflow/ApplicationManagement/QuoteInfo'
 import TaskEventsPanel from '@/components/ou-workflow/ApplicationManagement/TaskEventsPanel'
-import type { ApplicationDetail } from '@/types/application'
+import type { ApplicationDetail, ApplicationEmail } from '@/types/application'
 
 type CompletionStatus = 'incomplete' | 'complete' | 'dispatched'
 type ActivityType = 'completion' | 'ingredient' | 'plant' | 'bulk' | 'company' | 'dispatch' | 'undo'
@@ -96,6 +100,7 @@ const TABS = [
   { id: 'quote', label: 'Quote', icon: FileText },
   { id: 'activity', label: 'Recent Activity', icon: AlertCircle },
   { id: 'task-events', label: 'Task Events', icon: ClipboardList },
+  { id: 'emails', label: 'Emails', icon: Mail },
   { id: 'files', label: 'File Management', icon: Upload },
   { id: 'notes', label: 'Messages', icon: MessageSquare },
 ] as const
@@ -191,6 +196,246 @@ const getStatusBadge = (status: string | number): string =>
   STATUS_BADGES[String(status)] || STATUS_BADGES['Not Started']
 
 const getCurrentTimestamp = (): string => new Date().toISOString().slice(0, 16).replace('T', ' ')
+
+const formatEmailDate = (value?: string | null) => {
+  if (!value) return '-'
+  const normalizedValue = value.includes('T') ? value : value.replace(' ', 'T')
+  const date = new Date(normalizedValue)
+
+  if (Number.isNaN(date.getTime())) return value
+
+  return date.toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+}
+
+const isHtmlEmail = (value?: string | null) => /<\/?[a-z][\s\S]*>/i.test(value ?? '')
+
+const getEmailTextFallback = (email: ApplicationEmail) =>
+  email.MessageTextPlain?.trim() || email.PlainText?.trim() || email.Text?.trim() || ''
+
+const getEmailStatusClasses = (status?: string | null) => {
+  const normalizedStatus = String(status ?? '').toLowerCase()
+
+  if (!normalizedStatus) return 'bg-gray-100 text-gray-700'
+  if (normalizedStatus.includes('fail') || normalizedStatus.includes('error')) return 'bg-red-100 text-red-700'
+  if (normalizedStatus.includes('sent') || normalizedStatus.includes('success')) return 'bg-green-100 text-green-700'
+  return 'bg-amber-100 text-amber-700'
+}
+
+function EmailInfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[92px_1fr] gap-3 border-b border-gray-100 py-2 text-sm last:border-b-0">
+      <span className="font-medium text-gray-500">{label}</span>
+      <span className="min-w-0 break-words text-gray-900">{value || '-'}</span>
+    </div>
+  )
+}
+
+function EmailBodyPreview({ email }: { email: ApplicationEmail }) {
+  const messageText = email.MessageText ?? ''
+  const textFallback = getEmailTextFallback(email)
+  const hasHtmlBody = isHtmlEmail(messageText)
+  const bodyText = textFallback || messageText
+
+  if (hasHtmlBody) {
+    return (
+      <iframe
+        title={`Email body ${email.MessageID ?? email.Subject ?? 'preview'}`}
+        sandbox=""
+        srcDoc={messageText}
+        className="h-[520px] w-full rounded border border-gray-200 bg-white"
+      />
+    )
+  }
+
+  return (
+    <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-800">
+      {bodyText || 'No message body.'}
+    </pre>
+  )
+}
+
+function EmailPreviewModal({
+  email,
+  onClose,
+}: {
+  email: ApplicationEmail | null
+  onClose: () => void
+}) {
+  if (!email) return null
+
+  const attachmentText = email.Attachments?.trim()
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div
+        className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="border-b border-gray-200 bg-gray-50 px-5 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getEmailStatusClasses(email.EmailStatus)}`}>
+                  {email.EmailStatus || 'Status unknown'}
+                </span>
+                <span className="text-xs font-medium text-gray-500">{formatEmailDate(email.SentDate)}</span>
+              </div>
+              <h3 className="break-words text-lg font-semibold text-gray-900">{email.Subject || '(No subject)'}</h3>
+              <div className="mt-1 text-xs text-gray-500">
+                {email.MessageID ? `Message #${email.MessageID}` : 'Email message'}
+                {email.TaskInstanceId ? ` - Task #${email.TaskInstanceId}` : ''}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
+              aria-label="Close email preview"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+          <div className="mb-4 rounded-lg border border-gray-200 bg-white px-4">
+            <EmailInfoRow label="From" value={email.FromUser} />
+            <EmailInfoRow label="To" value={email.ToUser} />
+            <EmailInfoRow label="CC" value={email.CCUser} />
+            <EmailInfoRow label="BCC" value={email.BCCUser} />
+            <EmailInfoRow label="Priority" value={email.Priority} />
+            {attachmentText ? (
+              <EmailInfoRow
+                label="Attachment"
+                value={
+                  <span className="inline-flex items-center gap-1.5">
+                    <Paperclip className="h-4 w-4 text-gray-400" />
+                    {attachmentText}
+                  </span>
+                }
+              />
+            ) : null}
+          </div>
+
+          <EmailBodyPreview email={email} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EmailsPanel({ emails }: { emails?: ApplicationEmail[] }) {
+  const [previewEmail, setPreviewEmail] = useState<ApplicationEmail | null>(null)
+  const sortedEmails = useMemo(() => {
+    return [...(emails ?? [])].sort((a, b) => {
+      const aTime = new Date(String(a.SentDate ?? '').replace(' ', 'T')).getTime()
+      const bTime = new Date(String(b.SentDate ?? '').replace(' ', 'T')).getTime()
+      return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime)
+    })
+  }, [emails])
+
+  if (sortedEmails.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
+        No emails are available for this application.
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Emails</h2>
+          <p className="text-sm text-gray-500">Sent and attempted email history for this application</p>
+        </div>
+        <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+          {sortedEmails.length} total
+        </span>
+      </div>
+
+      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div className="hidden grid-cols-[52px_minmax(160px,1fr)_minmax(180px,1.4fr)_minmax(96px,0.8fr)_110px] gap-3 border-b border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 md:grid">
+          <div>View</div>
+          <div>Recipient</div>
+          <div>Subject</div>
+          <div>Status</div>
+          <div>Sent</div>
+        </div>
+
+        <div className="divide-y divide-gray-100">
+          {sortedEmails.map((email, index) => {
+            const attachmentText = email.Attachments?.trim()
+            const emailKey = String(email.MessageID ?? `${email.SentDate ?? 'email'}-${index}`)
+
+            return (
+              <div
+                key={emailKey}
+                className="grid grid-cols-[44px_1fr] gap-3 px-4 py-3 hover:bg-gray-50 md:grid-cols-[52px_minmax(160px,1fr)_minmax(180px,1.4fr)_minmax(96px,0.8fr)_110px]"
+              >
+                <div className="flex items-start">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewEmail(email)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                    title="Preview email"
+                    aria-label={`Preview email ${email.Subject || emailKey}`}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="min-w-0">
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 md:hidden">Recipient</div>
+                  <div className="truncate text-sm font-semibold text-gray-900" title={email.ToUser ?? undefined}>
+                    {email.ToUser || '-'}
+                  </div>
+                  <div className="mt-1 truncate text-xs text-gray-500" title={email.FromUser ?? undefined}>
+                    From: {email.FromUser || '-'}
+                  </div>
+                </div>
+
+                <div className="col-span-2 min-w-0 md:col-span-1">
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 md:hidden">Subject</div>
+                  <div className="truncate text-sm font-medium text-gray-900" title={email.Subject ?? undefined}>
+                    {email.Subject || '(No subject)'}
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                    {email.MessageID ? <span>Message #{email.MessageID}</span> : null}
+                    {email.TaskInstanceId ? <span>Task #{email.TaskInstanceId}</span> : null}
+                    {attachmentText ? (
+                      <span className="inline-flex items-center gap-1">
+                        <Paperclip className="h-3.5 w-3.5" />
+                        Attachment
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="col-span-2 self-start md:col-span-1">
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 md:hidden">Status</div>
+                  <span className={`inline-flex max-w-full rounded-full px-2.5 py-1 text-xs font-semibold ${getEmailStatusClasses(email.EmailStatus)}`}>
+                    <span className="truncate">{email.EmailStatus || 'Unknown'}</span>
+                  </span>
+                </div>
+
+                <div className="col-span-2 text-sm text-gray-600 md:col-span-1">
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 md:hidden">Sent</div>
+                  {formatEmailDate(email.SentDate)}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <EmailPreviewModal email={previewEmail} onClose={() => setPreviewEmail(null)} />
+    </div>
+  )
+}
 
 const Modal = ({
   isOpen,
@@ -524,6 +769,7 @@ export function ApplicationDetailsContent({ application, mode = 'page', applicat
             {activeTab === 'quote' && <QuoteInfo application={application} />}
             {activeTab === 'activity' && <ActivityLog recentActivity={recentActivity} comments={comments} />}
             {activeTab === 'task-events' && <TaskEventsPanel taskEvents={sortedTaskEvents} />}
+            {activeTab === 'emails' && <EmailsPanel emails={application.emails} />}
             {activeTab === 'files' && <FilesList application={application} />}
             {activeTab === 'notes' && resolvedApplicationId !== null && (
               <TaskNotesDrawer

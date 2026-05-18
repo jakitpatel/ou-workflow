@@ -434,6 +434,29 @@ export interface TaskEvent {
   TaskInstanceId?: number;
 }
 
+export interface ApplicationEmail {
+  ApplicationID?: number | string;
+  Attachments?: string | null;
+  BCCUser?: string | null;
+  CCUser?: string | null;
+  EmailStatus?: string | null;
+  FromUser?: string | null;
+  MessageID?: number | string;
+  MessageText?: string | null;
+  MessageTextPlain?: string | null;
+  MessageType?: string | null;
+  PlainText?: string | null;
+  Priority?: string | null;
+  SentDate?: string | null;
+  Subject?: string | null;
+  TaskInstanceId?: number | string | null;
+  Text?: string | null;
+  ToUser?: string | null;
+  isPrivate?: boolean;
+  parentMessageId?: number | string | null;
+  tag?: string | null;
+}
+
 export interface ApplicationDetail {
   applicationId: string;
   status: string;
@@ -455,6 +478,7 @@ export interface ApplicationDetail {
   quotes?: QuoteData[]; // <-- added here
   messages?: WFApplicationMessage[];
   taskEvents?: TaskEvent[];
+  emails?: ApplicationEmail[];
 }
 
 export type ScheduleAIngredient = {
