@@ -19,6 +19,10 @@ export type InspectionInvoiceStage =
 
 export const INSPECTION_LETTER_TEMPLATE = 'initial-inspection'
 export const APPLICATION_FEE_LETTER_TEMPLATE = 'application-fee'
+export const APPLICATION_FEE_DESCRIPTION =
+  'Non-refundable fee to initiate OU Kosher certification review'
+export const INITIAL_INSPECTION_FEE_DESCRIPTION =
+  'Professional services - kosher certification initial inspection'
 
 export type InspectionInvoiceRfr = {
   id: string

@@ -4,6 +4,7 @@ import { Check, FileText, Mail, Search, UserRoundCheck, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { InspectionInvoicePreview } from '@/features/applications/components/InspectionInvoicePreview'
 import {
+  APPLICATION_FEE_DESCRIPTION,
   APPLICATION_FEE_LETTER_TEMPLATE,
   formatCurrency,
   getApplicantAccountNumber,
@@ -440,7 +441,7 @@ Account Number: ${accountNumber || '-'}`
               {state.isApplicationFeeOnly ? (
                 <div className="mb-3 rounded border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
                   <div className="font-semibold">Application Fee only</div>
-                  <div className="mt-1">Standard $300 application fee - uses the new plant letter template in Kashrus.</div>
+                  <div className="mt-1">{APPLICATION_FEE_DESCRIPTION}</div>
                 </div>
               ) : null}
 

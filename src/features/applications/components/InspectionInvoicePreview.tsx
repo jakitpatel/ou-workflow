@@ -1,9 +1,11 @@
 import { useRef } from 'react'
 import type { Applicant } from '@/types/application'
 import {
+  APPLICATION_FEE_DESCRIPTION,
   formatCurrency,
   formatInvoiceDate,
   getApplicantAccountNumber,
+  INITIAL_INSPECTION_FEE_DESCRIPTION,
 } from '@/features/applications/hooks/useInspectionInvoiceDrawerState'
 
 type Props = {
@@ -236,8 +238,8 @@ export function InspectionInvoicePreview({
                   </div>
                   <div className="mt-1 text-xs text-gray-500">
                     {isApplicationFeeOnly
-                      ? 'Standard new application processing fee'
-                      : 'Professional services - kosher certification initial inspection'}
+                      ? APPLICATION_FEE_DESCRIPTION
+                      : INITIAL_INSPECTION_FEE_DESCRIPTION}
                   </div>
                 </td>
                 <td className="px-4 py-4 text-right font-medium">{formatCurrency(feeAmount)}</td>
