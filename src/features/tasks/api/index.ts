@@ -224,6 +224,26 @@ export async function patchTaskGuiDisplayResult({
   })
 }
 
+export async function scheduleVisit({
+  visitId,
+  visitDate,
+  token,
+}: {
+  visitId: string
+  visitDate: string
+  token?: string | null
+}): Promise<any> {
+  return await fetchWithAuth({
+    path: '/schedule_visit',
+    method: 'POST',
+    body: {
+      visit_id: visitId,
+      visit_date: visitDate,
+    },
+    token,
+  })
+}
+
 export async function undoTask({
   taskId,
   token,

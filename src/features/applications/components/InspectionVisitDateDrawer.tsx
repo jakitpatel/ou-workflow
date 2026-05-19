@@ -4,6 +4,7 @@ import { CalendarDays, Check, ExternalLink, MapPin, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
+import { scheduleVisit } from '@/features/tasks/api'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import type { Applicant, Task } from '@/types/application'
 
@@ -101,15 +102,17 @@ const getTaskPlantAddress = (task?: Task) => {
   )
 }
 
-const parseAssignmentResult = (result: unknown): { rfr: string; dateRange: string } => {
+const parseAssignmentResult = (result: unknown): { rfr: string; visitId: string; dateRange: string } => {
   const text = String(result ?? '').trim()
-  if (!text) return { rfr: '', dateRange: '' }
+  if (!text) return { rfr: '', visitId: '', dateRange: '' }
 
   const rfrMatch = text.match(/RFR\s*:\s*"?([^",}]+)"?/i)
+  const visitIdMatch = text.match(/visitId\s*:\s*"?([^",}]+)"?/i)
   const dateRangeMatch = text.match(/Daterange\s*:\s*"?([^"}]+)"?/i)
 
   return {
     rfr: String(rfrMatch?.[1] ?? '').trim(),
+    visitId: String(visitIdMatch?.[1] ?? '').trim(),
     dateRange: String(dateRangeMatch?.[1] ?? '').trim(),
   }
 }
@@ -155,6 +158,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
   const [plannedVisitDate, setPlannedVisitDate] = useState(addDaysToYmd(assignmentStartDate, 14))
   const [rfrNote, setRfrNote] = useState('')
   const [confirmed, setConfirmed] = useState(false)
+  const [isSchedulingVisit, setIsSchedulingVisit] = useState(false)
 
   const plantReference = useMemo(() => {
     const detailPlantAddress = getPreferredAddress(applicationDetail?.plantAddresses)
@@ -215,6 +219,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
   const assignmentDateRange =
     assignmentResult.dateRange ||
     `${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`
+  const isConfirmingVisitDate = confirmTaskMutation.isPending || isSchedulingVisit
 
   const confirmVisitDate = async () => {
     if (!task) {
@@ -231,24 +236,42 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
       toast.error('Task instance id not found')
       return
     }
+    if (!assignmentResult.visitId) {
+      toast.error('Visit ID not found')
+      return
+    }
 
-    await confirmTaskMutation.mutateAsync({
-      taskId,
-      token: token ?? undefined,
-      username: username ?? undefined,
-      result: 'completed',
-      resultData: JSON.stringify({
-        GUIDisplayResult: `Visit ${plannedVisitDate}`,
-        plannedVisitDate,
-        reportDueDate,
-        rfrNote: rfrNote.trim(),
-      }),
-      completionNotes: rfrNote.trim() || `Visit scheduled for ${formatDate(plannedVisitDate)}`,
-      capacity: (task as any)?.capacity ?? undefined,
-    })
+    setIsSchedulingVisit(true)
+    try {
+      await scheduleVisit({
+        visitId: assignmentResult.visitId,
+        visitDate: plannedVisitDate,
+        token,
+      })
 
-    setConfirmed(true)
-    toast.success(`Visit scheduled ${formatDate(plannedVisitDate)}`)
+      await confirmTaskMutation.mutateAsync({
+        taskId,
+        token: token ?? undefined,
+        username: username ?? undefined,
+        result: 'completed',
+        resultData: JSON.stringify({
+          GUIDisplayResult: `Visit ${plannedVisitDate}`,
+          plannedVisitDate,
+          reportDueDate,
+          rfrNote: rfrNote.trim(),
+        }),
+        completionNotes: rfrNote.trim() || `Visit scheduled for ${formatDate(plannedVisitDate)}`,
+        capacity: (task as any)?.capacity ?? undefined,
+      })
+
+      setConfirmed(true)
+      toast.success(`Visit scheduled ${formatDate(plannedVisitDate)}`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to schedule visit'
+      toast.error(message)
+    } finally {
+      setIsSchedulingVisit(false)
+    }
   }
 
   return (
@@ -267,6 +290,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
               <div className="mt-2 flex flex-wrap gap-2 text-xs text-blue-100">
                 <span className="rounded-full bg-white/10 px-2.5 py-1">{applicant?.company || 'Application'}</span>
                 {accountNumber ? <span className="rounded-full bg-white/10 px-2.5 py-1">App #{accountNumber}</span> : null}
+                {assignmentResult.visitId ? <span className="rounded-full bg-white/10 px-2.5 py-1">Visit #{assignmentResult.visitId}</span> : null}
                 {applicant?.plant ? <span className="rounded-full bg-white/10 px-2.5 py-1">Plant: {applicant.plant}</span> : null}
                 {task?.name ? <span className="rounded-full bg-white/10 px-2.5 py-1">{task.name}</span> : null}
               </div>
@@ -292,6 +316,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
                 </div>
               </div>
               <div className="mt-3 rounded border border-gray-200 bg-gray-50 p-3">
+                <InfoRow label="Visit ID" value={assignmentResult.visitId || '-'} strong />
                 <InfoRow label="Date range" value={assignmentDateRange} />
                 <InfoRow label="NCRC note" value="Contact the plant before visiting to confirm production schedule and access requirements." />
               </div>
@@ -337,11 +362,11 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
                   <button
                     type="button"
                     onClick={confirmVisitDate}
-                    disabled={confirmTaskMutation.isPending}
+                    disabled={isConfirmingVisitDate}
                     className="inline-flex items-center gap-2 rounded bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                   >
                     <CalendarDays className="h-4 w-4" />
-                    {confirmTaskMutation.isPending ? 'Confirming...' : 'Confirm Visit Date'}
+                    {isConfirmingVisitDate ? 'Confirming...' : 'Confirm Visit Date'}
                   </button>
                 </div>
               )}

@@ -38,6 +38,11 @@ const getTaskInstanceId = (task: Task): string =>
 const getGUIDisplayResult = (resultData: unknown): string | null => {
   if (resultData === null || resultData === undefined) return null
 
+  const stripOuterResultBraces = (value: string): string => {
+    const text = value.trim()
+    return text.startsWith('{') && text.endsWith('}') ? text.slice(1, -1).trim() : text
+  }
+
   const formatInspectionFeeObject = (value: any): string | null => {
     if (!value || typeof value !== 'object') return null
     const inspectionNeeded = value?.inspectionNeeded
@@ -54,7 +59,7 @@ const getGUIDisplayResult = (resultData: unknown): string | null => {
       if (formatted) return formatted
     }
     const text = String(value).trim()
-    return text ? text : null
+    return text ? stripOuterResultBraces(text) : null
   }
 
   if (typeof resultData === 'object') {
@@ -68,11 +73,11 @@ const getGUIDisplayResult = (resultData: unknown): string | null => {
       const parsed = JSON.parse(raw)
       return readValue(parsed)
     } catch {
-      const directObjectMatch = raw.match(/GUIDisplayResult"\s*:\s*(\{[^}]*\})/)
+      const directObjectMatch = raw.match(/['"]GUIDisplayResult['"]\s*:\s*['"]?(\{[^}]*\})['"]?/)
       if (directObjectMatch?.[1]) {
-        return directObjectMatch[1].trim()
+        return stripOuterResultBraces(directObjectMatch[1])
       }
-      return raw
+      return stripOuterResultBraces(raw)
     }
   }
 
