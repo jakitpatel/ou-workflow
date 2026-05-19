@@ -4,7 +4,7 @@ import { generateInspectionInvoice, createApplicationMessage, fetchApplicationDe
 import { useUser } from '@/context/UserContext'
 import type { Applicant, CompanyContact } from '@/types/application'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
-import { confirmTask, patchTaskResult } from '@/features/tasks/api'
+import { confirmTask, patchTaskGuiDisplayResult, patchTaskResult } from '@/features/tasks/api'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
@@ -153,6 +153,120 @@ const getRawTaskInstanceId = (task: unknown): string => {
   return String(taskRecord.TaskInstanceId ?? taskRecord.taskInstanceId ?? taskRecord.id ?? '').trim()
 }
 
+const formatStatusCurrency = (value: number) =>
+  value.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
+    maximumFractionDigits: Number.isInteger(value) ? 0 : 2,
+  })
+
+const formatStatusInvoiceDate = (value: string) => {
+  if (!value) return '-'
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  }).toUpperCase()
+}
+
+const getInvoiceStatusRfrValue = (rfr: InspectionInvoiceRfr | null) =>
+  normalizeRfrText(rfr?.userName || rfr?.name || rfr?.id || rfr?.lookupKey || '-')
+
+const buildInvoiceGuiDisplayResult = ({
+  invoiceDate,
+  invoiceId,
+  paid,
+  rfr,
+  subtotal,
+}: {
+  invoiceDate: string
+  invoiceId?: string | null
+  paid?: boolean
+  rfr: InspectionInvoiceRfr | null
+  subtotal: number
+}) => {
+  const values = [
+    `RFR:${getInvoiceStatusRfrValue(rfr)}`,
+    formatStatusCurrency(subtotal),
+    formatStatusInvoiceDate(invoiceDate),
+    invoiceId || 'Not generated',
+  ]
+
+  if (paid) {
+    values.push('Paid')
+  }
+
+  return `{${values.join(', ')}}`
+}
+
+const withPatchedTaskGuiDisplayResult = (value: unknown, taskId: string, guiDisplayResult: string): unknown => {
+  if (!value || typeof value !== 'object') return value
+
+  if (Array.isArray(value)) {
+    const nextValue = value.map((item) => withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult))
+    return nextValue.some((item, index) => item !== value[index]) ? nextValue : value
+  }
+
+  const record = value as Record<string, any>
+  const recordTaskId = getRawTaskInstanceId(record)
+  let changed = false
+  let nextRecord = record
+
+  if (recordTaskId && recordTaskId === taskId) {
+    changed = true
+    nextRecord = {
+      ...nextRecord,
+      GUIDisplayResult: guiDisplayResult,
+      ResultData: {
+        GUIDisplayResult: guiDisplayResult,
+      },
+    }
+  }
+
+  if (Array.isArray(record.data)) {
+    const nextData = record.data.map((item) => withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult))
+    if (nextData.some((item, index) => item !== record.data[index])) {
+      changed = true
+      nextRecord = { ...nextRecord, data: nextData }
+    }
+  }
+
+  if (Array.isArray(record.pages)) {
+    const nextPages = record.pages.map((page) => withPatchedTaskGuiDisplayResult(page, taskId, guiDisplayResult))
+    if (nextPages.some((page, index) => page !== record.pages[index])) {
+      changed = true
+      nextRecord = { ...nextRecord, pages: nextPages }
+    }
+  }
+
+  if (record.stages && typeof record.stages === 'object') {
+    let stagesChanged = false
+    const nextStages = Object.fromEntries(
+      Object.entries(record.stages).map(([stageKey, stageValue]) => {
+        if (!stageValue || typeof stageValue !== 'object') return [stageKey, stageValue]
+        const stageRecord = stageValue as Record<string, any>
+        if (!Array.isArray(stageRecord.tasks)) return [stageKey, stageValue]
+
+        const nextTasks = stageRecord.tasks.map((task) => withPatchedTaskGuiDisplayResult(task, taskId, guiDisplayResult))
+        if (!nextTasks.some((task, index) => task !== stageRecord.tasks[index])) {
+          return [stageKey, stageValue]
+        }
+
+        stagesChanged = true
+        return [stageKey, { ...stageRecord, tasks: nextTasks }]
+      }),
+    )
+
+    if (stagesChanged) {
+      changed = true
+      nextRecord = { ...nextRecord, stages: nextStages }
+    }
+  }
+
+  return changed ? nextRecord : value
+}
+
 const findInspectionAssignmentTaskId = (applicant?: Applicant): string => {
   const stages = applicant?.stages ?? {}
   const inspectionStage =
@@ -292,6 +406,49 @@ export function useInspectionInvoiceDrawerState({
     setStage(nextCanGenerate ? 'configured' : 'setup')
   }
 
+  const updateCachedInvoiceTaskResult = (taskId: string, guiDisplayResult: string) => {
+    queryClient.setQueriesData({ queryKey: applicationsQueryKeys.lists() }, (current) =>
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+    )
+    queryClient.setQueriesData({ queryKey: tasksQueryKeys.lists() }, (current) =>
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+    )
+  }
+
+  const patchInvoiceTaskGuiDisplayResult = async ({
+    nextInvoiceDate = invoiceDate,
+    nextInvoiceId = invoiceId,
+    nextPaid = false,
+    nextRfr = selectedRfr,
+    nextSubtotal = subtotal,
+  }: {
+    nextInvoiceDate?: string
+    nextInvoiceId?: string | null
+    nextPaid?: boolean
+    nextRfr?: InspectionInvoiceRfr | null
+    nextSubtotal?: number
+  } = {}) => {
+    const invoiceTaskId = String(taskInstanceId ?? '').trim()
+    if (!invoiceTaskId) return null
+
+    const guiDisplayResult = buildInvoiceGuiDisplayResult({
+      invoiceDate: nextInvoiceDate,
+      invoiceId: nextInvoiceId,
+      paid: nextPaid,
+      rfr: nextRfr,
+      subtotal: nextSubtotal,
+    })
+
+    updateCachedInvoiceTaskResult(invoiceTaskId, guiDisplayResult)
+    await patchTaskGuiDisplayResult({
+      taskId: invoiceTaskId,
+      result: guiDisplayResult,
+      token,
+    })
+
+    return guiDisplayResult
+  }
+
   const setInspection = (value: boolean) => {
     setInspectionNeeded(value)
     if (!value) {
@@ -322,14 +479,25 @@ export function useInspectionInvoiceDrawerState({
     updateSetupStage()
   }
 
-  const pickRfr = (rfr: InspectionInvoiceRfr) => {
+  const pickRfr = async (rfr: InspectionInvoiceRfr) => {
     setSelectedRfrId(rfr.lookupKey)
     const rule = RFR_FEE_RULES[rfr.region]
+    let nextFee = fee
+    let nextExpenses = expenses
+
     if (rule && letterTemplate !== APPLICATION_FEE_LETTER_TEMPLATE) {
       setFeeAmount(rule.fee.toFixed(2))
       setExpenseAmount(rule.expenses.toFixed(2))
+      nextFee = rule.fee
+      nextExpenses = rule.expenses
     }
     updateSetupStage(true)
+
+    await patchInvoiceTaskGuiDisplayResult({
+      nextInvoiceId: null,
+      nextRfr: rfr,
+      nextSubtotal: nextFee + nextExpenses,
+    })
   }
 
   const changeRfr = () => {
@@ -393,6 +561,9 @@ export function useInspectionInvoiceDrawerState({
       setInvoiceDownloadLink(result.downloadLink || null)
       setInvoicePdfUrl(result.invoicePdfUrl || null)
       setStage('generated')
+      await patchInvoiceTaskGuiDisplayResult({
+        nextInvoiceId: result.invoiceId,
+      })
 
       const assignmentTaskId = findInspectionAssignmentTaskId(applicant)
       if (!assignmentTaskId) {
@@ -512,6 +683,10 @@ export function useInspectionInvoiceDrawerState({
       })
       setPaidAt(new Date().toLocaleString())
       setStage('paid')
+      await patchInvoiceTaskGuiDisplayResult({
+        nextInvoiceId: invoiceId,
+        nextPaid: true,
+      })
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
         queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),

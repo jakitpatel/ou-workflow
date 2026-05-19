@@ -72,7 +72,7 @@ const getGUIDisplayResult = (resultData: unknown): string | null => {
       if (directObjectMatch?.[1]) {
         return directObjectMatch[1].trim()
       }
-      return null
+      return raw
     }
   }
 
@@ -285,19 +285,6 @@ export function ApplicationExpandedStage({
                         </span>
                       )}
 
-                    {(() => {
-                      const guiDisplayResult = getGUIDisplayResult(
-                        (task as any)?.GUIDisplayResult ?? (task as any)?.ResultData,
-                      )
-                      if (!guiDisplayResult) return null
-
-                      return (
-                        <span className="rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
-                          {guiDisplayResult}
-                        </span>
-                      )
-                    })()}
-
                     <div className="ml-auto flex items-center gap-1">
                       {(() => {
                         const contextKey = taskId
@@ -348,6 +335,21 @@ export function ApplicationExpandedStage({
                       })()}
                     </div>
                   </div>
+
+                  {(() => {
+                    const guiDisplayResult = getGUIDisplayResult(
+                      (task as any)?.GUIDisplayResult ?? (task as any)?.ResultData,
+                    )
+                    if (!guiDisplayResult) return null
+
+                    return (
+                      <div className="mb-2">
+                        <span className="inline-block rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
+                          {guiDisplayResult}
+                        </span>
+                      </div>
+                    )
+                  })()}
                 </div>
               )
             })}

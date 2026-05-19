@@ -317,7 +317,14 @@ Account Number: ${accountNumber || '-'}`
                             <button
                               key={rfr.lookupKey}
                               type="button"
-                              onClick={() => state.pickRfr(rfr)}
+                              onClick={async () => {
+                                try {
+                                  await state.pickRfr(rfr)
+                                } catch (error) {
+                                  const message = error instanceof Error ? error.message : 'Unable to update invoice status'
+                                  toast.error(message)
+                                }
+                              }}
                               className="w-full rounded border border-gray-200 bg-white p-3 text-left hover:border-blue-300 hover:bg-blue-50"
                             >
                               <div className="flex items-center justify-between gap-3">

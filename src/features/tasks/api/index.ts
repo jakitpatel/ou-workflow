@@ -197,6 +197,33 @@ export async function patchTaskResult({
   })
 }
 
+export async function patchTaskGuiDisplayResult({
+  taskId,
+  result,
+  token,
+}: {
+  taskId: string
+  result: string
+  token?: string | null
+}): Promise<any> {
+  return await fetchWithAuth({
+    path: `/api/TaskInstance/${encodeURIComponent(taskId)}`,
+    method: 'PATCH',
+    body: {
+      data: {
+        id: taskId,
+        type: 'TaskInstance',
+        attributes: {
+          ResultData: {
+            GUIDisplayResult: result,
+          },
+        },
+      },
+    },
+    token,
+  })
+}
+
 export async function undoTask({
   taskId,
   token,
