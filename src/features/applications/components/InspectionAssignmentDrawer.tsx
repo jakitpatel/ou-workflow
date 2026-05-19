@@ -142,6 +142,18 @@ const extractRfrFromTaskResult = (task?: Task): string => {
   return normalizeText(match?.[1])
 }
 
+const extractVisitIdFromAssignResponse = (response: unknown): string => {
+  if (!response || typeof response !== 'object') return ''
+
+  const payload = response as {
+    visitId?: unknown
+    data?: { visitId?: unknown; attributes?: { visitId?: unknown } }
+    attributes?: { visitId?: unknown }
+  }
+
+  return normalizeText(payload.visitId ?? payload.data?.visitId ?? payload.data?.attributes?.visitId ?? payload.attributes?.visitId)
+}
+
 const resolveRfrSelectionId = (rfrs: RfrOption[], savedRfr: string): string => {
   const normalizedSavedRfr = normalizeMatchText(savedRfr)
   if (!normalizedSavedRfr) return ''
@@ -303,7 +315,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
 
     setIsSendingAssignmentMessage(true)
     try {
-      await assignTaskMutation.mutateAsync({
+      const assignResponse = await assignTaskMutation.mutateAsync({
         appId: applicant?.applicationId ?? null,
         taskId,
         role: detectRole(task.PreScript),
@@ -312,8 +324,11 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         capacity: (task as any)?.capacity ?? undefined,
         override: 1,
       })
+      const nextVisitId = extractVisitIdFromAssignResponse(assignResponse)
+      if (!nextVisitId) {
+        throw new Error('Assignment response did not include visitId')
+      }
 
-      const nextVisitId = String(Math.floor(2900000 + Math.random() * 9000000))
       const notificationMessageText = [
         `To ${selectedRfr.name},`,
         '',
@@ -369,7 +384,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
 
       await patchTaskResult({
         taskId: visitDateTaskId,
-        result: `{RFR:${rfrResultValue}, Daterange:"${dateRangeResultValue}"}`,
+        result: `{RFR:${rfrResultValue}, visitId:"${nextVisitId}", Daterange:"${dateRangeResultValue}"}`,
         token,
       })
 
@@ -382,7 +397,6 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       setVisitId(nextVisitId)
       setAssignmentCreatedAt(nowLabel())
       toast.success(`Assigned ${selectedRfr.name} and sent notification`)
-      onClose()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to create assignment notification'
       toast.error(message)
