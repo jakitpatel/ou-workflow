@@ -147,11 +147,30 @@ const extractVisitIdFromAssignResponse = (response: unknown): string => {
 
   const payload = response as {
     visitId?: unknown
+    visit_id?: unknown
+    result?: unknown
     data?: { visitId?: unknown; attributes?: { visitId?: unknown } }
-    attributes?: { visitId?: unknown }
+    attributes?: { visitId?: unknown; visit_id?: unknown }
   }
 
-  return normalizeText(payload.visitId ?? payload.data?.visitId ?? payload.data?.attributes?.visitId ?? payload.attributes?.visitId)
+  if (typeof payload.result === 'string' && payload.result.trim()) {
+    try {
+      const resultPayload = JSON.parse(payload.result) as { visit_id?: unknown; visitId?: unknown }
+      const resultVisitId = normalizeText(resultPayload.visit_id ?? resultPayload.visitId)
+      if (resultVisitId) return resultVisitId
+    } catch {
+      return ''
+    }
+  }
+
+  return normalizeText(
+    payload.visit_id ??
+      payload.visitId ??
+      payload.data?.visitId ??
+      payload.data?.attributes?.visitId ??
+      payload.attributes?.visit_id ??
+      payload.attributes?.visitId,
+  )
 }
 
 const resolveRfrSelectionId = (rfrs: RfrOption[], savedRfr: string): string => {
