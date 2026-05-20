@@ -103,7 +103,7 @@ const nowLabel = () =>
   })
 
 const getAccountNumber = (applicant?: Applicant) =>
-  String(applicant?.externalReferenceId ?? applicant?.applicationId ?? '').trim()
+  String(applicant?.companyId ?? applicant?.externalReferenceId ?? applicant?.applicationId ?? '').trim()
 
 const buildFilteredApplicationUrl = (applicationId: string) => {
   const params = new URLSearchParams({
@@ -121,6 +121,30 @@ const buildFilteredApplicationUrl = (applicationId: string) => {
 }
 
 const normalizeMatchText = (value: unknown) => normalizeText(value).toLowerCase()
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
+const replaceApplicationLinkLabel = ({
+  html,
+  href,
+  label,
+}: {
+  html: string
+  href: string
+  label: string
+}) => {
+  const escapedLabel = escapeHtml(label)
+  const escapedText = `Application link: ${escapedLabel}`
+  const linkedText = `Application link: <a href="${escapeHtml(href)}" style="color:#1d4ed8;text-decoration:underline;">${escapedLabel}</a>`
+
+  return html.replace(escapedText, linkedText)
+}
 
 const getTaskInstanceId = (task?: Task): string =>
   String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '').trim()
@@ -409,14 +433,18 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       ? 'Notification email - preview (not yet sent)'
       : 'Notification email - preview'
   const emailSubject = `OU Kosher - Inspection Assignment for ${applicant?.plant || 'Plant'} [${accountNumber || 'Application'}]`
-  const emailBody: Array<{ text: string; href?: string }> = [
+  const applicationLinkLabel = applicant?.company || 'Application'
+  const emailBody: Array<{ text: string; href?: string; linkText?: string }> = [
     { text: `To ${selectedRfr?.name || 'RFR'},` },
     {
       text: `You've been assigned an initial inspection by ${username || 'NCRC'}. Please review the plant and set your planned visit date.`,
     },
     { text: `Plant: ${applicant?.plant || '-'}` },
     { text: `Company: ${applicant?.company || '-'}` },
-    { text: `Account #: ${accountNumber || '-'}`, href: accountApplicationUrl || undefined },
+    { text: `Account #: ${accountNumber || '-'}` },
+    ...(accountApplicationUrl
+      ? [{ text: 'Application link: ', href: accountApplicationUrl, linkText: applicationLinkLabel }]
+      : []),
     { text: `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}` },
     { text: `Visit ID: ${visitId || '-'}` },
   ]
@@ -479,7 +507,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         `Company: ${applicant?.company || '-'}`,
         '',
         `Account #: ${accountNumber || '-'}`,
-        ...(accountApplicationUrl ? ['', `Application link: ${accountApplicationUrl}`] : []),
+        ...(accountApplicationUrl ? ['', `Application link: ${applicationLinkLabel}`] : []),
         '',
         `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`,
         '',
@@ -489,6 +517,13 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         preheader: `Inspection assignment for ${applicant?.plant || 'Plant'}`,
         title: 'Inspection Assignment',
       })
+      if (accountApplicationUrl) {
+        notificationEmail.html = replaceApplicationLinkLabel({
+          html: notificationEmail.html,
+          href: accountApplicationUrl,
+          label: applicationLinkLabel,
+        })
+      }
 
       await createApplicationMessage({
         payload: {
@@ -773,9 +808,12 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
                   emailBody.map((line) => (
                     <p key={line.text}>
                       {line.href ? (
-                        <a className="font-semibold text-blue-700 underline hover:text-blue-800" href={line.href}>
+                        <>
                           {line.text}
-                        </a>
+                          <a className="font-semibold text-blue-700 underline hover:text-blue-800" href={line.href}>
+                            {line.linkText ?? line.text}
+                          </a>
+                        </>
                       ) : (
                         line.text
                       )}
@@ -852,9 +890,12 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
                   {emailBody.map((line) => (
                     <p key={line.text} className="mb-3 last:mb-0">
                       {line.href ? (
-                        <a className="font-semibold text-blue-700 underline hover:text-blue-800" href={line.href}>
+                        <>
                           {line.text}
-                        </a>
+                          <a className="font-semibold text-blue-700 underline hover:text-blue-800" href={line.href}>
+                            {line.linkText ?? line.text}
+                          </a>
+                        </>
                       ) : (
                         line.text
                       )}
