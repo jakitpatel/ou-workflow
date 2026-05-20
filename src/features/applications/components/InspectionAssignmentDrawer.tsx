@@ -7,7 +7,7 @@ import { useUser } from '@/context/UserContext'
 import { createApplicationMessage } from '@/features/applications/api'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
-import { patchTaskResult } from '@/features/tasks/api'
+import { patchTaskGuiDisplayResult, patchTaskResult } from '@/features/tasks/api'
 import { useAssignTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
@@ -78,6 +78,21 @@ const formatDate = (ymd: string) => {
   })
 }
 
+const formatDisplayDate = (ymd: string) => {
+  const [year, month, day] = ymd.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+const formatSentDate = (date = new Date()) =>
+  date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+
 const nowLabel = () =>
   new Date().toLocaleString('en-US', {
     month: 'short',
@@ -109,6 +124,80 @@ const normalizeMatchText = (value: unknown) => normalizeText(value).toLowerCase(
 
 const getTaskInstanceId = (task?: Task): string =>
   String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '').trim()
+
+const getRawTaskInstanceId = (value: unknown): string => {
+  const record = value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+  return String(record.TaskInstanceId ?? record.taskInstanceId ?? record.id ?? '').trim()
+}
+
+const withPatchedTaskGuiDisplayResult = (value: unknown, taskId: string, guiDisplayResult: string): unknown => {
+  if (!value || typeof value !== 'object') return value
+
+  if (Array.isArray(value)) {
+    const nextValue = value.map((item) => withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult))
+    return nextValue.some((item, index) => item !== value[index]) ? nextValue : value
+  }
+
+  const record = value as Record<string, any>
+  const recordTaskId = getRawTaskInstanceId(record)
+  let changed = false
+  let nextRecord = record
+
+  if (recordTaskId && recordTaskId === taskId) {
+    changed = true
+    nextRecord = {
+      ...nextRecord,
+      GUIDisplayResult: guiDisplayResult,
+      ResultData: {
+        GUIDisplayResult: guiDisplayResult,
+      },
+    }
+  }
+
+  if (Array.isArray(record.data)) {
+    const nextData = record.data.map((item) => withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult))
+    if (nextData.some((item, index) => item !== record.data[index])) {
+      changed = true
+      nextRecord = { ...nextRecord, data: nextData }
+    }
+  }
+
+  if (Array.isArray(record.pages)) {
+    const nextPages = record.pages.map((page) => withPatchedTaskGuiDisplayResult(page, taskId, guiDisplayResult))
+    if (nextPages.some((page, index) => page !== record.pages[index])) {
+      changed = true
+      nextRecord = { ...nextRecord, pages: nextPages }
+    }
+  }
+
+  if (record.stages && typeof record.stages === 'object') {
+    let stagesChanged = false
+    const nextStages = Object.fromEntries(
+      Object.entries(record.stages).map(([stageKey, stageValue]) => {
+        if (!stageValue || typeof stageValue !== 'object') return [stageKey, stageValue]
+        const stageRecord = stageValue as Record<string, any>
+        if (!Array.isArray(stageRecord.tasks)) return [stageKey, stageValue]
+
+        const nextTasks = stageRecord.tasks.map((stageTask) =>
+          withPatchedTaskGuiDisplayResult(stageTask, taskId, guiDisplayResult),
+        )
+        if (!nextTasks.some((stageTask, index) => stageTask !== stageRecord.tasks[index])) {
+          return [stageKey, stageValue]
+        }
+
+        stagesChanged = true
+        return [stageKey, { ...stageRecord, tasks: nextTasks }]
+      }),
+    )
+
+    if (stagesChanged) {
+      changed = true
+      nextRecord = { ...nextRecord, stages: nextStages }
+    }
+  }
+
+  return changed ? nextRecord : value
+}
 
 const findVisitDateTaskId = (applicant?: Applicant): string => {
   const tasks = Object.values(applicant?.stages ?? {}).flatMap((stage) => stage.tasks ?? [])
@@ -184,6 +273,23 @@ const resolveRfrSelectionId = (rfrs: RfrOption[], savedRfr: string): string => {
   )
 
   return matchedRfr?.lookupKey ?? ''
+}
+
+const buildAssignmentGuiDisplayResult = ({
+  rfr,
+  visitId,
+  startDate,
+  endDate,
+  sentDate,
+}: {
+  rfr: RfrOption
+  visitId: string
+  startDate: string
+  endDate: string
+  sentDate: Date
+}) => {
+  const rfrValue = rfr.userName || rfr.assigneeValue || rfr.id || rfr.lookupKey || rfr.name
+  return `{RFR:${rfrValue}, Visit #${visitId}, ${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)}, Sent ${formatSentDate(sentDate)}}`
 }
 
 function InfoRow({
@@ -315,6 +421,21 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
     { text: `Visit ID: ${visitId || '-'}` },
   ]
 
+  const updateCachedAssignmentTaskResult = (taskId: string, guiDisplayResult: string) => {
+    queryClient.setQueriesData({ queryKey: applicationsQueryKeys.lists() }, (current) =>
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+    )
+    queryClient.setQueriesData({ queryKey: applicationsQueryKeys.details() }, (current) =>
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+    )
+    queryClient.setQueriesData({ queryKey: prelimQueryKeys.lists() }, (current) =>
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+    )
+    queryClient.setQueriesData({ queryKey: tasksQueryKeys.lists() }, (current) =>
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+    )
+  }
+
   const createAssignment = async () => {
     if (!selectedRfr || !task) {
       toast.error('Select an RFR before creating the assignment')
@@ -400,6 +521,21 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       const rfrResultValue =
         selectedRfr.userName || selectedRfr.assigneeValue || selectedRfr.id || selectedRfr.lookupKey || selectedRfr.name
       const dateRangeResultValue = `${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`
+      const assignmentSentDate = new Date()
+      const assignmentGuiDisplayResult = buildAssignmentGuiDisplayResult({
+        rfr: selectedRfr,
+        visitId: nextVisitId,
+        startDate: assignmentStartDate,
+        endDate: assignmentEndDate,
+        sentDate: assignmentSentDate,
+      })
+
+      await patchTaskGuiDisplayResult({
+        taskId,
+        result: assignmentGuiDisplayResult,
+        token,
+      })
+      updateCachedAssignmentTaskResult(taskId, assignmentGuiDisplayResult)
 
       await patchTaskResult({
         taskId: visitDateTaskId,
