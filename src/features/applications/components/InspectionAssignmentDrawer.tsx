@@ -521,6 +521,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       const rfrResultValue =
         selectedRfr.userName || selectedRfr.assigneeValue || selectedRfr.id || selectedRfr.lookupKey || selectedRfr.name
       const dateRangeResultValue = `${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`
+      const visitDateGuiDisplayResult = `{RFR:${rfrResultValue}, Visit #${nextVisitId}, ${formatDisplayDate(assignmentStartDate)} - ${formatDisplayDate(assignmentEndDate)}, Awaiting selection}`
       const assignmentSentDate = new Date()
       const assignmentGuiDisplayResult = buildAssignmentGuiDisplayResult({
         rfr: selectedRfr,
@@ -540,8 +541,10 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       await patchTaskResult({
         taskId: visitDateTaskId,
         result: `{RFR:${rfrResultValue}, visitId:"${nextVisitId}", Daterange:"${dateRangeResultValue}"}`,
+        guiDisplayResult: visitDateGuiDisplayResult,
         token,
       })
+      updateCachedAssignmentTaskResult(visitDateTaskId, visitDateGuiDisplayResult)
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),

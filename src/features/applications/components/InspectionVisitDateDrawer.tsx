@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react'
 import type React from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { CalendarDays, Check, ExternalLink, MapPin, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
-import { scheduleVisit } from '@/features/tasks/api'
-import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
+import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
+import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
+import { confirmTask, patchTaskGuiDisplayResult, scheduleVisit } from '@/features/tasks/api'
+import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import type { Applicant, Task } from '@/types/application'
 
 type Props = {
@@ -31,6 +34,15 @@ const formatDate = (ymd?: string) => {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
+  })
+}
+
+const formatDisplayDate = (ymd?: string) => {
+  if (!ymd) return '-'
+  const [year, month, day] = ymd.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
   })
 }
 
@@ -117,6 +129,80 @@ const parseAssignmentResult = (result: unknown): { rfr: string; visitId: string;
   }
 }
 
+const getRawTaskInstanceId = (value: unknown): string => {
+  const record = value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+  return String(record.TaskInstanceId ?? record.taskInstanceId ?? record.id ?? '').trim()
+}
+
+const withPatchedTaskGuiDisplayResult = (value: unknown, taskId: string, guiDisplayResult: string): unknown => {
+  if (!value || typeof value !== 'object') return value
+
+  if (Array.isArray(value)) {
+    const nextValue = value.map((item) => withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult))
+    return nextValue.some((item, index) => item !== value[index]) ? nextValue : value
+  }
+
+  const record = value as Record<string, any>
+  const recordTaskId = getRawTaskInstanceId(record)
+  let changed = false
+  let nextRecord = record
+
+  if (recordTaskId && recordTaskId === taskId) {
+    changed = true
+    nextRecord = {
+      ...nextRecord,
+      GUIDisplayResult: guiDisplayResult,
+      ResultData: {
+        GUIDisplayResult: guiDisplayResult,
+      },
+    }
+  }
+
+  if (Array.isArray(record.data)) {
+    const nextData = record.data.map((item) => withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult))
+    if (nextData.some((item, index) => item !== record.data[index])) {
+      changed = true
+      nextRecord = { ...nextRecord, data: nextData }
+    }
+  }
+
+  if (Array.isArray(record.pages)) {
+    const nextPages = record.pages.map((page) => withPatchedTaskGuiDisplayResult(page, taskId, guiDisplayResult))
+    if (nextPages.some((page, index) => page !== record.pages[index])) {
+      changed = true
+      nextRecord = { ...nextRecord, pages: nextPages }
+    }
+  }
+
+  if (record.stages && typeof record.stages === 'object') {
+    let stagesChanged = false
+    const nextStages = Object.fromEntries(
+      Object.entries(record.stages).map(([stageKey, stageValue]) => {
+        if (!stageValue || typeof stageValue !== 'object') return [stageKey, stageValue]
+        const stageRecord = stageValue as Record<string, any>
+        if (!Array.isArray(stageRecord.tasks)) return [stageKey, stageValue]
+
+        const nextTasks = stageRecord.tasks.map((stageTask) =>
+          withPatchedTaskGuiDisplayResult(stageTask, taskId, guiDisplayResult),
+        )
+        if (!nextTasks.some((stageTask, index) => stageTask !== stageRecord.tasks[index])) {
+          return [stageKey, stageValue]
+        }
+
+        stagesChanged = true
+        return [stageKey, { ...stageRecord, tasks: nextTasks }]
+      }),
+    )
+
+    if (stagesChanged) {
+      changed = true
+      nextRecord = { ...nextRecord, stages: nextStages }
+    }
+  }
+
+  return changed ? nextRecord : value
+}
+
 function InfoRow({
   label,
   value,
@@ -145,13 +231,9 @@ function Section({ title, children }: { title: React.ReactNode; children: React.
 
 export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Props) {
   const { token, username } = useUser()
+  const queryClient = useQueryClient()
   const applicationId = String(applicant?.applicationId ?? '').trim()
   const { data: applicationDetail } = useApplicationDetail(open ? applicationId : undefined)
-  const confirmTaskMutation = useConfirmTaskMutation({
-    includeApplicationLists: true,
-    includePrelimLists: true,
-    onError: (message) => toast.error(message),
-  })
 
   const assignmentStartDate = todayYmd()
   const assignmentEndDate = addDaysToYmd(assignmentStartDate, 90)
@@ -219,7 +301,22 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
   const assignmentDateRange =
     assignmentResult.dateRange ||
     `${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`
-  const isConfirmingVisitDate = confirmTaskMutation.isPending || isSchedulingVisit
+  const isConfirmingVisitDate = isSchedulingVisit
+
+  const updateCachedVisitDateTaskResult = (taskId: string, guiDisplayResult: string) => {
+    queryClient.setQueriesData({ queryKey: applicationsQueryKeys.lists() }, (current) =>
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+    )
+    queryClient.setQueriesData({ queryKey: applicationsQueryKeys.details() }, (current) =>
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+    )
+    queryClient.setQueriesData({ queryKey: prelimQueryKeys.lists() }, (current) =>
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+    )
+    queryClient.setQueriesData({ queryKey: tasksQueryKeys.lists() }, (current) =>
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+    )
+  }
 
   const confirmVisitDate = async () => {
     if (!task) {
@@ -243,19 +340,21 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
 
     setIsSchedulingVisit(true)
     try {
+      const visitDateGuiDisplayResult = `{RFR:${rfrName}, Visit #${assignmentResult.visitId}, ${formatDisplayDate(plannedVisitDate)}, EIR due ${formatDisplayDate(reportDueDate)}}`
+
       await scheduleVisit({
         visitId: assignmentResult.visitId,
         visitDate: plannedVisitDate,
         token,
       })
 
-      await confirmTaskMutation.mutateAsync({
+      await confirmTask({
         taskId,
         token: token ?? undefined,
         username: username ?? undefined,
         result: 'completed',
         resultData: JSON.stringify({
-          GUIDisplayResult: `Visit ${plannedVisitDate}`,
+          GUIDisplayResult: visitDateGuiDisplayResult,
           plannedVisitDate,
           reportDueDate,
           rfrNote: rfrNote.trim(),
@@ -263,6 +362,18 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
         completionNotes: rfrNote.trim() || `Visit scheduled for ${formatDate(plannedVisitDate)}`,
         capacity: (task as any)?.capacity ?? undefined,
       })
+
+      await patchTaskGuiDisplayResult({
+        taskId,
+        result: visitDateGuiDisplayResult,
+        token,
+      })
+      updateCachedVisitDateTaskResult(taskId, visitDateGuiDisplayResult)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: prelimQueryKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
+      ])
 
       setConfirmed(true)
       toast.success(`Visit scheduled ${formatDate(plannedVisitDate)}`)

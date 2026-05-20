@@ -175,12 +175,24 @@ export async function confirmTask({
 export async function patchTaskResult({
   taskId,
   result,
+  guiDisplayResult,
   token,
 }: {
   taskId: string
   result: string
+  guiDisplayResult?: string
   token?: string | null
 }): Promise<any> {
+  const attributes: Record<string, unknown> = {
+    StatusDetails: result,
+  }
+
+  if (guiDisplayResult) {
+    attributes.ResultData = {
+      GUIDisplayResult: guiDisplayResult,
+    }
+  }
+
   return await fetchWithAuth({
     path: `/api/TaskInstance/${encodeURIComponent(taskId)}`,
     method: 'PATCH',
@@ -188,9 +200,7 @@ export async function patchTaskResult({
       data: {
         id: taskId,
         type: 'TaskInstance',
-        attributes: {
-          StatusDetails: result,
-        },
+        attributes,
       },
     },
     token,
