@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { generateInspectionInvoice, createApplicationMessage, fetchApplicationDetail } from '@/features/applications/api'
 import { useUser } from '@/context/UserContext'
@@ -7,7 +7,10 @@ import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { confirmTask, patchTaskGuiDisplayResult, patchTaskResult } from '@/features/tasks/api'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
-import { buildInspectionStatusDetails } from '@/features/applications/utils/inspectionStatusDetails'
+import {
+  buildInspectionStatusDetails,
+  getInspectionStatusSavedState,
+} from '@/features/applications/utils/inspectionStatusDetails'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 
@@ -49,6 +52,45 @@ export type InspectionInvoiceRecipientOption = {
   name: string
   email: string
   type: string
+}
+
+type InspectionInvoiceSavedState = {
+  version?: number
+  stage?: InspectionInvoiceStage
+  setup?: {
+    inspectionNeeded?: boolean | null
+    feeRequired?: boolean | null
+    awaitPayment?: boolean
+    selectedRfrId?: string | null
+    rfr?: Partial<InspectionInvoiceRfr> | null
+    feeAmount?: string
+    expenseAmount?: string
+    invoiceDate?: string
+    internalNotes?: string
+    noInspectionReason?: string
+    noFeeReason?: string
+    recipient?: string
+    recipientEmail?: string
+    extraRecipientEmail?: string
+    letterTemplate?: string
+  }
+  generate?: {
+    invoiceId?: string | null
+    invoiceDownloadLink?: string | null
+    invoicePdfUrl?: string | null
+    generatedAt?: string
+  }
+  email?: {
+    sent?: boolean
+    sentAt?: string | null
+    toUser?: string
+    subject?: string
+    attachments?: string
+  }
+  payment?: {
+    paid?: boolean
+    paidAt?: string | null
+  }
 }
 
 const RFR_FEE_RULES: Record<string, { fee: number; expenses: number }> = {
@@ -201,11 +243,18 @@ const buildInvoiceGuiDisplayResult = ({
   return `{${values.join(', ')}}`
 }
 
-const withPatchedTaskGuiDisplayResult = (value: unknown, taskId: string, guiDisplayResult: string): unknown => {
+const withPatchedTaskGuiDisplayResult = (
+  value: unknown,
+  taskId: string,
+  guiDisplayResult: string,
+  statusDetails?: string,
+): unknown => {
   if (!value || typeof value !== 'object') return value
 
   if (Array.isArray(value)) {
-    const nextValue = value.map((item) => withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult))
+    const nextValue = value.map((item) =>
+      withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult, statusDetails),
+    )
     return nextValue.some((item, index) => item !== value[index]) ? nextValue : value
   }
 
@@ -218,6 +267,7 @@ const withPatchedTaskGuiDisplayResult = (value: unknown, taskId: string, guiDisp
     changed = true
     nextRecord = {
       ...nextRecord,
+      ...(statusDetails ? { StatusDetails: statusDetails, statusDetails } : {}),
       GUIDisplayResult: guiDisplayResult,
       ResultData: {
         GUIDisplayResult: guiDisplayResult,
@@ -226,7 +276,9 @@ const withPatchedTaskGuiDisplayResult = (value: unknown, taskId: string, guiDisp
   }
 
   if (Array.isArray(record.data)) {
-    const nextData = record.data.map((item) => withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult))
+    const nextData = record.data.map((item) =>
+      withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult, statusDetails),
+    )
     if (nextData.some((item, index) => item !== record.data[index])) {
       changed = true
       nextRecord = { ...nextRecord, data: nextData }
@@ -234,7 +286,9 @@ const withPatchedTaskGuiDisplayResult = (value: unknown, taskId: string, guiDisp
   }
 
   if (Array.isArray(record.pages)) {
-    const nextPages = record.pages.map((page) => withPatchedTaskGuiDisplayResult(page, taskId, guiDisplayResult))
+    const nextPages = record.pages.map((page) =>
+      withPatchedTaskGuiDisplayResult(page, taskId, guiDisplayResult, statusDetails),
+    )
     if (nextPages.some((page, index) => page !== record.pages[index])) {
       changed = true
       nextRecord = { ...nextRecord, pages: nextPages }
@@ -249,7 +303,9 @@ const withPatchedTaskGuiDisplayResult = (value: unknown, taskId: string, guiDisp
         const stageRecord = stageValue as Record<string, any>
         if (!Array.isArray(stageRecord.tasks)) return [stageKey, stageValue]
 
-        const nextTasks = stageRecord.tasks.map((task) => withPatchedTaskGuiDisplayResult(task, taskId, guiDisplayResult))
+        const nextTasks = stageRecord.tasks.map((task) =>
+          withPatchedTaskGuiDisplayResult(task, taskId, guiDisplayResult, statusDetails),
+        )
         if (!nextTasks.some((task, index) => task !== stageRecord.tasks[index])) {
           return [stageKey, stageValue]
         }
@@ -290,6 +346,72 @@ const findInspectionAssignmentTaskId = (applicant?: Applicant): string => {
 
   return getRawTaskInstanceId(assignmentTask)
 }
+
+const findTaskById = (applicant: Applicant | undefined, taskId: string) => {
+  if (!taskId) return null
+
+  const tasks = Object.values(applicant?.stages ?? {}).flatMap((stage) => stage.tasks ?? [])
+  return tasks.find((task) => getRawTaskInstanceId(task) === taskId) ?? null
+}
+
+const toSavedRfr = (rfr: InspectionInvoiceRfr | null): Partial<InspectionInvoiceRfr> | null =>
+  rfr
+    ? {
+        id: rfr.id,
+        name: rfr.name,
+        lookupKey: rfr.lookupKey,
+        assigneeValue: rfr.assigneeValue,
+        email: rfr.email,
+        userName: rfr.userName,
+        state: rfr.state,
+        region: rfr.region,
+        coverage: rfr.coverage,
+        fullName: rfr.fullName,
+        isActive: rfr.isActive,
+        status: rfr.status,
+        pctOfTotalApps: rfr.pctOfTotalApps,
+        pctOfTotalAppsAtWork: rfr.pctOfTotalAppsAtWork,
+      }
+    : null
+
+const toRestoredRfr = (rfr: Partial<InspectionInvoiceRfr> | null | undefined): InspectionInvoiceRfr | null => {
+  if (!rfr) return null
+
+  const name = normalizeRfrText(rfr.name ?? rfr.fullName ?? rfr.userName ?? rfr.id)
+  const lookupKey = normalizeRfrText(rfr.lookupKey ?? rfr.id ?? rfr.userName ?? name)
+  const id = normalizeRfrText(rfr.id ?? rfr.assigneeValue ?? lookupKey)
+  if (!name && !lookupKey && !id) return null
+
+  return {
+    id,
+    name: name || id || lookupKey,
+    lookupKey: lookupKey || id,
+    assigneeValue: normalizeRfrText(rfr.assigneeValue ?? id ?? lookupKey),
+    region: normalizeRfrText(rfr.region),
+    coverage: normalizeRfrText(rfr.coverage),
+    email: normalizeRfrText(rfr.email),
+    userName: normalizeRfrText(rfr.userName ?? id),
+    fullName: normalizeRfrText(rfr.fullName ?? name),
+    state: normalizeRfrText(rfr.state),
+    isActive: rfr.isActive !== false,
+    status: rfr.status === 'inactive' ? 'inactive' : 'available',
+    pctOfTotalApps: Number(rfr.pctOfTotalApps) || 0,
+    pctOfTotalAppsAtWork: Number(rfr.pctOfTotalAppsAtWork) || 0,
+  }
+}
+
+const isInvoiceStage = (value: unknown): value is InspectionInvoiceStage =>
+  value === 'setup' ||
+  value === 'configured' ||
+  value === 'generated' ||
+  value === 'outlook-opened' ||
+  value === 'sent-captured' ||
+  value === 'paid'
+
+const buildInspectionInvoiceStatusDetails = (savedState: InspectionInvoiceSavedState) =>
+  JSON.stringify({
+    savedState: JSON.stringify(savedState),
+  })
 
 export function useInspectionInvoiceDrawerState({
   applicant,
@@ -333,6 +455,7 @@ export function useInspectionInvoiceDrawerState({
   const [feeRequired, setFeeRequired] = useState<boolean | null>(true)
   const [awaitPayment, setAwaitPayment] = useState(true)
   const [selectedRfrId, setSelectedRfrId] = useState<string | null>(null)
+  const [restoredRfr, setRestoredRfr] = useState<InspectionInvoiceRfr | null>(null)
   const [rfrSearch, setRfrSearch] = useState('')
   const [feeAmount, setFeeAmount] = useState('600.00')
   const [expenseAmount, setExpenseAmount] = useState('333.00')
@@ -353,10 +476,15 @@ export function useInspectionInvoiceDrawerState({
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false)
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [isMarkingPaid, setIsMarkingPaid] = useState(false)
+  const restoredTaskKeyRef = useRef('')
 
   const selectedRfr = useMemo(
-    () => rfrs.find((rfr) => rfr.lookupKey === selectedRfrId || rfr.id === selectedRfrId) ?? null,
-    [rfrs, selectedRfrId],
+    () =>
+      rfrs.find((rfr) => rfr.lookupKey === selectedRfrId || rfr.id === selectedRfrId) ??
+      (restoredRfr && (restoredRfr.lookupKey === selectedRfrId || restoredRfr.id === selectedRfrId)
+        ? restoredRfr
+        : null),
+    [restoredRfr, rfrs, selectedRfrId],
   )
 
   const filteredRfrs = useMemo(() => {
@@ -379,6 +507,63 @@ export function useInspectionInvoiceDrawerState({
     () => recipientOptions.find((option) => option.value === recipient) ?? null,
     [recipient, recipientOptions],
   )
+
+  useEffect(() => {
+    const invoiceTaskId = String(taskInstanceId ?? '').trim()
+    const restoreKey = `${invoiceTaskId}:${enabled ? 'open' : 'closed'}`
+    if (!enabled || !invoiceTaskId || restoredTaskKeyRef.current === restoreKey) return
+
+    const currentTask = findTaskById(applicant, invoiceTaskId)
+    const savedState = getInspectionStatusSavedState<InspectionInvoiceSavedState>(
+      (currentTask as any)?.StatusDetails ??
+        (currentTask as any)?.statusDetails ??
+        (currentTask as any)?.Result ??
+        (currentTask as any)?.result,
+    )
+    restoredTaskKeyRef.current = restoreKey
+    if (!savedState) return
+
+    const setup = savedState.setup ?? {}
+    const generate = savedState.generate ?? {}
+    const email = savedState.email ?? {}
+    const payment = savedState.payment ?? {}
+    const nextRestoredRfr = toRestoredRfr(setup.rfr)
+    const nextSelectedRfrId = normalizeRfrText(
+      setup.selectedRfrId ?? nextRestoredRfr?.lookupKey ?? nextRestoredRfr?.id ?? '',
+    )
+
+    setInspectionNeeded(setup.inspectionNeeded ?? true)
+    setFeeRequired(setup.feeRequired ?? true)
+    setAwaitPayment(setup.awaitPayment ?? true)
+    setSelectedRfrId(nextSelectedRfrId || null)
+    setRestoredRfr(nextRestoredRfr)
+    setFeeAmount(setup.feeAmount ?? '600.00')
+    setExpenseAmount(setup.expenseAmount ?? '333.00')
+    setInvoiceDate(setup.invoiceDate ?? todayYmd())
+    setInternalNotes(setup.internalNotes ?? '')
+    setNoInspectionReason(setup.noInspectionReason ?? '')
+    setNoFeeReason(setup.noFeeReason ?? '')
+    setRecipient(setup.recipient ?? (setup.recipientEmail ? 'ADD_NEW' : ''))
+    setExtraRecipientEmail(setup.extraRecipientEmail ?? setup.recipientEmail ?? '')
+    setLetterTemplate(setup.letterTemplate ?? INSPECTION_LETTER_TEMPLATE)
+    setInvoiceId(generate.invoiceId ?? null)
+    setInvoiceDownloadLink(generate.invoiceDownloadLink ?? null)
+    setInvoicePdfUrl(generate.invoicePdfUrl ?? null)
+    setSentAt(email.sent ? email.sentAt ?? 'Sent' : null)
+    setPaidAt(payment.paid ? payment.paidAt ?? 'Paid' : null)
+
+    const restoredStage =
+      isInvoiceStage(savedState.stage)
+        ? savedState.stage
+        : payment.paid
+          ? 'paid'
+          : email.sent
+            ? 'sent-captured'
+            : generate.invoiceId
+              ? 'generated'
+              : 'configured'
+    setStage(restoredStage)
+  }, [applicant, enabled, taskInstanceId])
 
   useEffect(() => {
     if (recipient || recipientOptions.length === 0) return
@@ -407,13 +592,138 @@ export function useInspectionInvoiceDrawerState({
     setStage(nextCanGenerate ? 'configured' : 'setup')
   }
 
-  const updateCachedInvoiceTaskResult = (taskId: string, guiDisplayResult: string) => {
+  const updateCachedInvoiceTaskResult = (taskId: string, guiDisplayResult: string, statusDetails?: string) => {
     queryClient.setQueriesData({ queryKey: applicationsQueryKeys.lists() }, (current) =>
-      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult, statusDetails),
     )
     queryClient.setQueriesData({ queryKey: tasksQueryKeys.lists() }, (current) =>
-      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult, statusDetails),
     )
+  }
+
+  const buildSavedState = ({
+    nextAttachments,
+    nextInvoiceDownloadLink = invoiceDownloadLink,
+    nextInvoiceId = invoiceId,
+    nextInvoicePdfUrl = invoicePdfUrl,
+    nextPaidAt = paidAt,
+    nextRecipientEmail,
+    nextSentAt = sentAt,
+    nextStage = stage,
+    nextSubject,
+    nextToUser,
+  }: {
+    nextAttachments?: string
+    nextInvoiceDownloadLink?: string | null
+    nextInvoiceId?: string | null
+    nextInvoicePdfUrl?: string | null
+    nextPaidAt?: string | null
+    nextRecipientEmail?: string
+    nextSentAt?: string | null
+    nextStage?: InspectionInvoiceStage
+    nextSubject?: string
+    nextToUser?: string
+  } = {}): InspectionInvoiceSavedState => ({
+    version: 1,
+    stage: nextStage,
+    setup: {
+      inspectionNeeded,
+      feeRequired,
+      awaitPayment,
+      selectedRfrId,
+      rfr: toSavedRfr(selectedRfr),
+      feeAmount,
+      expenseAmount,
+      invoiceDate,
+      internalNotes,
+      noInspectionReason,
+      noFeeReason,
+      recipient,
+      recipientEmail:
+        nextRecipientEmail ??
+        selectedRecipient?.email ??
+        (recipient === 'ADD_NEW' ? extraRecipientEmail : recipient),
+      extraRecipientEmail,
+      letterTemplate,
+    },
+    generate: {
+      invoiceId: nextInvoiceId,
+      invoiceDownloadLink: nextInvoiceDownloadLink,
+      invoicePdfUrl: nextInvoicePdfUrl,
+      generatedAt: nextInvoiceId ? new Date().toISOString() : undefined,
+    },
+    email: {
+      sent: Boolean(nextSentAt),
+      sentAt: nextSentAt,
+      toUser: nextToUser,
+      subject: nextSubject,
+      attachments: nextAttachments,
+    },
+    payment: {
+      paid: Boolean(nextPaidAt),
+      paidAt: nextPaidAt,
+    },
+  })
+
+  const saveInvoiceTaskState = async ({
+    nextInvoiceDate = invoiceDate,
+    nextInvoiceDownloadLink = invoiceDownloadLink,
+    nextInvoiceId = invoiceId,
+    nextInvoicePdfUrl = invoicePdfUrl,
+    nextPaid = stage === 'paid',
+    nextPaidAt = paidAt,
+    nextRfr = selectedRfr,
+    nextSentAt = sentAt,
+    nextStage = stage,
+    nextSubtotal = subtotal,
+    ...savedStateOptions
+  }: {
+    nextAttachments?: string
+    nextInvoiceDate?: string
+    nextInvoiceDownloadLink?: string | null
+    nextInvoiceId?: string | null
+    nextInvoicePdfUrl?: string | null
+    nextPaid?: boolean
+    nextPaidAt?: string | null
+    nextRecipientEmail?: string
+    nextRfr?: InspectionInvoiceRfr | null
+    nextSentAt?: string | null
+    nextStage?: InspectionInvoiceStage
+    nextSubject?: string
+    nextSubtotal?: number
+    nextToUser?: string
+  } = {}) => {
+    const invoiceTaskId = String(taskInstanceId ?? '').trim()
+    if (!invoiceTaskId) return null
+
+    const guiDisplayResult = buildInvoiceGuiDisplayResult({
+      invoiceDate: nextInvoiceDate,
+      invoiceId: nextInvoiceId,
+      paid: nextPaid,
+      rfr: nextRfr,
+      subtotal: nextSubtotal,
+    })
+    const statusDetails = buildInspectionInvoiceStatusDetails(
+      buildSavedState({
+        ...savedStateOptions,
+        nextInvoiceDownloadLink,
+        nextInvoiceId,
+        nextInvoicePdfUrl,
+        nextPaidAt,
+        nextSentAt,
+        nextStage,
+      }),
+    )
+
+    updateCachedInvoiceTaskResult(invoiceTaskId, guiDisplayResult, statusDetails)
+    await patchTaskResult({
+      taskId: invoiceTaskId,
+      result: statusDetails,
+      guiDisplayResult,
+      token,
+    })
+
+    return guiDisplayResult
   }
 
   const patchInvoiceTaskGuiDisplayResult = async ({
@@ -562,8 +872,11 @@ export function useInspectionInvoiceDrawerState({
       setInvoiceDownloadLink(result.downloadLink || null)
       setInvoicePdfUrl(result.invoicePdfUrl || null)
       setStage('generated')
-      await patchInvoiceTaskGuiDisplayResult({
+      await saveInvoiceTaskState({
         nextInvoiceId: result.invoiceId,
+        nextInvoiceDownloadLink: result.downloadLink || null,
+        nextInvoicePdfUrl: result.invoicePdfUrl || null,
+        nextStage: 'generated',
       })
 
       const assignmentTaskId = findInspectionAssignmentTaskId(applicant)
@@ -652,9 +965,18 @@ export function useInspectionInvoiceDrawerState({
         },
         token,
       })
-      setSentAt(new Date().toLocaleString())
+      const nextSentAt = new Date().toLocaleString()
+      setSentAt(nextSentAt)
       setStage('sent-captured')
       setShowEmailPreview(false)
+      await saveInvoiceTaskState({
+        nextAttachments: attachments,
+        nextRecipientEmail: toUser,
+        nextSentAt,
+        nextStage: 'sent-captured',
+        nextSubject: subject,
+        nextToUser: toUser,
+      })
     } finally {
       setIsSendingEmail(false)
     }
@@ -682,11 +1004,14 @@ export function useInspectionInvoiceDrawerState({
         includeCompletionNotes: false,
         token,
       })
-      setPaidAt(new Date().toLocaleString())
+      const nextPaidAt = new Date().toLocaleString()
+      setPaidAt(nextPaidAt)
       setStage('paid')
-      await patchInvoiceTaskGuiDisplayResult({
+      await saveInvoiceTaskState({
         nextInvoiceId: invoiceId,
         nextPaid: true,
+        nextPaidAt,
+        nextStage: 'paid',
       })
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
