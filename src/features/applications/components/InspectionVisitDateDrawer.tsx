@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
+import { getInspectionStatusInputParam } from '@/features/applications/utils/inspectionStatusDetails'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import { confirmTask, patchTaskGuiDisplayResult, scheduleVisit } from '@/features/tasks/api'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
@@ -115,7 +116,7 @@ const getTaskPlantAddress = (task?: Task) => {
 }
 
 const parseAssignmentResult = (result: unknown): { rfr: string; visitId: string; dateRange: string } => {
-  const text = String(result ?? '').trim()
+  const text = getInspectionStatusInputParam(result)
   if (!text) return { rfr: '', visitId: '', dateRange: '' }
 
   const rfrMatch = text.match(/RFR\s*:\s*"?([^",}]+)"?/i)

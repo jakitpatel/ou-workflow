@@ -6,6 +6,10 @@ import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { createApplicationMessage } from '@/features/applications/api'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
+import {
+  buildInspectionStatusDetails,
+  getInspectionStatusInputParam,
+} from '@/features/applications/utils/inspectionStatusDetails'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import { patchTaskGuiDisplayResult, patchTaskResult } from '@/features/tasks/api'
 import { useAssignTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
@@ -154,11 +158,18 @@ const getRawTaskInstanceId = (value: unknown): string => {
   return String(record.TaskInstanceId ?? record.taskInstanceId ?? record.id ?? '').trim()
 }
 
-const withPatchedTaskGuiDisplayResult = (value: unknown, taskId: string, guiDisplayResult: string): unknown => {
+const withPatchedTaskGuiDisplayResult = (
+  value: unknown,
+  taskId: string,
+  guiDisplayResult: string,
+  statusDetails?: string,
+): unknown => {
   if (!value || typeof value !== 'object') return value
 
   if (Array.isArray(value)) {
-    const nextValue = value.map((item) => withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult))
+    const nextValue = value.map((item) =>
+      withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult, statusDetails),
+    )
     return nextValue.some((item, index) => item !== value[index]) ? nextValue : value
   }
 
@@ -171,6 +182,7 @@ const withPatchedTaskGuiDisplayResult = (value: unknown, taskId: string, guiDisp
     changed = true
     nextRecord = {
       ...nextRecord,
+      ...(statusDetails ? { StatusDetails: statusDetails, statusDetails } : {}),
       GUIDisplayResult: guiDisplayResult,
       ResultData: {
         GUIDisplayResult: guiDisplayResult,
@@ -179,7 +191,9 @@ const withPatchedTaskGuiDisplayResult = (value: unknown, taskId: string, guiDisp
   }
 
   if (Array.isArray(record.data)) {
-    const nextData = record.data.map((item) => withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult))
+    const nextData = record.data.map((item) =>
+      withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult, statusDetails),
+    )
     if (nextData.some((item, index) => item !== record.data[index])) {
       changed = true
       nextRecord = { ...nextRecord, data: nextData }
@@ -187,7 +201,9 @@ const withPatchedTaskGuiDisplayResult = (value: unknown, taskId: string, guiDisp
   }
 
   if (Array.isArray(record.pages)) {
-    const nextPages = record.pages.map((page) => withPatchedTaskGuiDisplayResult(page, taskId, guiDisplayResult))
+    const nextPages = record.pages.map((page) =>
+      withPatchedTaskGuiDisplayResult(page, taskId, guiDisplayResult, statusDetails),
+    )
     if (nextPages.some((page, index) => page !== record.pages[index])) {
       changed = true
       nextRecord = { ...nextRecord, pages: nextPages }
@@ -203,7 +219,7 @@ const withPatchedTaskGuiDisplayResult = (value: unknown, taskId: string, guiDisp
         if (!Array.isArray(stageRecord.tasks)) return [stageKey, stageValue]
 
         const nextTasks = stageRecord.tasks.map((stageTask) =>
-          withPatchedTaskGuiDisplayResult(stageTask, taskId, guiDisplayResult),
+          withPatchedTaskGuiDisplayResult(stageTask, taskId, guiDisplayResult, statusDetails),
         )
         if (!nextTasks.some((stageTask, index) => stageTask !== stageRecord.tasks[index])) {
           return [stageKey, stageValue]
@@ -247,7 +263,9 @@ const findVisitDateTaskId = (applicant?: Applicant): string => {
 
 const extractRfrFromTaskResult = (task?: Task): string => {
   const rawResult = normalizeText(
-    (task as any)?.StatusDetails ?? (task as any)?.statusDetails ?? (task as any)?.Result ?? (task as any)?.result,
+    getInspectionStatusInputParam(
+      (task as any)?.StatusDetails ?? (task as any)?.statusDetails ?? (task as any)?.Result ?? (task as any)?.result,
+    ),
   )
   if (!rawResult) return ''
 
@@ -449,18 +467,18 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
     { text: `Visit ID: ${visitId || '-'}` },
   ]
 
-  const updateCachedAssignmentTaskResult = (taskId: string, guiDisplayResult: string) => {
+  const updateCachedAssignmentTaskResult = (taskId: string, guiDisplayResult: string, statusDetails?: string) => {
     queryClient.setQueriesData({ queryKey: applicationsQueryKeys.lists() }, (current) =>
-      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult, statusDetails),
     )
     queryClient.setQueriesData({ queryKey: applicationsQueryKeys.details() }, (current) =>
-      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult, statusDetails),
     )
     queryClient.setQueriesData({ queryKey: prelimQueryKeys.lists() }, (current) =>
-      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult, statusDetails),
     )
     queryClient.setQueriesData({ queryKey: tasksQueryKeys.lists() }, (current) =>
-      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult),
+      withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult, statusDetails),
     )
   }
 
@@ -556,6 +574,9 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       const rfrResultValue =
         selectedRfr.userName || selectedRfr.assigneeValue || selectedRfr.id || selectedRfr.lookupKey || selectedRfr.name
       const dateRangeResultValue = `${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`
+      const visitDateStatusDetails = buildInspectionStatusDetails(
+        `{RFR:${rfrResultValue}, visitId:"${nextVisitId}", Daterange:"${dateRangeResultValue}"}`,
+      )
       const visitDateGuiDisplayResult = `{RFR:${rfrResultValue}, Visit #${nextVisitId}, ${formatDisplayDate(assignmentStartDate)} - ${formatDisplayDate(assignmentEndDate)}, Awaiting selection}`
       const assignmentSentDate = new Date()
       const assignmentGuiDisplayResult = buildAssignmentGuiDisplayResult({
@@ -575,11 +596,11 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
 
       await patchTaskResult({
         taskId: visitDateTaskId,
-        result: `{RFR:${rfrResultValue}, visitId:"${nextVisitId}", Daterange:"${dateRangeResultValue}"}`,
+        result: visitDateStatusDetails,
         guiDisplayResult: visitDateGuiDisplayResult,
         token,
       })
-      updateCachedAssignmentTaskResult(visitDateTaskId, visitDateGuiDisplayResult)
+      updateCachedAssignmentTaskResult(visitDateTaskId, visitDateGuiDisplayResult, visitDateStatusDetails)
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),

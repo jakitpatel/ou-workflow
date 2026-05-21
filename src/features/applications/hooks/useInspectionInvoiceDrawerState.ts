@@ -7,6 +7,7 @@ import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { confirmTask, patchTaskGuiDisplayResult, patchTaskResult } from '@/features/tasks/api'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
+import { buildInspectionStatusDetails } from '@/features/applications/utils/inspectionStatusDetails'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 
@@ -576,7 +577,7 @@ export function useInspectionInvoiceDrawerState({
       if (awaitPayment) {
         await patchTaskResult({
           taskId: assignmentTaskId,
-          result: `{RFR:${rfrResultValue}}`,
+          result: buildInspectionStatusDetails(`{RFR:${rfrResultValue}}`),
           token,
         })
       } else {
@@ -584,7 +585,7 @@ export function useInspectionInvoiceDrawerState({
           taskId: assignmentTaskId,
           overwrite: '1',
           status: 'PENDING',
-          result: `{RFR:${rfrResultValue}}`,
+          result: buildInspectionStatusDetails(`{RFR:${rfrResultValue}}`),
           includeCompletedBy: false,
           includeCompletionNotes: false,
           token,
