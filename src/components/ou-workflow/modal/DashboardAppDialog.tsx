@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { useMutation } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
 import { useUser } from "@/context/UserContext"
 import {
   createSubmissionApplication,
@@ -21,6 +22,7 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
   const [touched, setTouched] = useState(false)
 
   const { token } = useUser()
+  const navigate = useNavigate()
   const dialogRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -71,11 +73,27 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
     },
 
     onSuccess: (res) => {
-      toast.success((res as { status: string }).status)
+      const response = res as { application_id?: string | number; status?: string }
+      toast.success(response.status ?? "Request completed successfully")
       setError(null)
       setValue("")
       setTouched(false)
       onClose()
+
+      const createdApplicationId = Number(response.application_id)
+      if (mode === "create" && Number.isFinite(createdApplicationId)) {
+        navigate({
+          to: "/ou-workflow/ncrc-dashboard",
+          search: {
+            q: "",
+            status: "all",
+            priority: "all",
+            page: 0,
+            myOnly: true,
+            applicationId: createdApplicationId,
+          },
+        })
+      }
     },
   })
 
