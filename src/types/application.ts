@@ -658,6 +658,14 @@ export interface ApplicationTask {
 
 export interface ApplicationTasksResponse {
   data: ApplicationTask[];
+  meta?: {
+    async_enabled?: boolean;
+    count: number;
+    limit: number;
+    offset: number;
+    processing_time?: number;
+    total_count: number;
+  };
   status: string; // e.g., "ok"
 }
 

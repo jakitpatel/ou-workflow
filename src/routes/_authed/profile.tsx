@@ -58,10 +58,16 @@ function ProfilePage() {
     return role
   }, [role, roles])
 
-  const buildProfileLayout = (): string =>
+  const buildProfileLayout = ({
+    nextStageLayout = stageLayout,
+    nextPaginationMode = paginationMode,
+  }: {
+    nextStageLayout?: StageLayout
+    nextPaginationMode?: PaginationMode
+  } = {}): string =>
     JSON.stringify({
-      stageLayout,
-      paginationMode,
+      stageLayout: nextStageLayout,
+      paginationMode: nextPaginationMode,
     })
 
   const saveProfileLayoutMutation = useSaveProfileLayoutMutation({
@@ -96,17 +102,17 @@ function ProfilePage() {
     saveProfileLayoutMutation.mutate({
       token,
       username: username ?? '',
-      profileLayout: buildProfileLayout(),
+      profileLayout: buildProfileLayout({ nextStageLayout: value }),
     })
   }
 
-  const handlePaginationModeChange = (value: 'paged' | 'infinite') => {
+  const handlePaginationModeChange = (value: PaginationMode) => {
     if (value === paginationMode) return
     setPaginationMode(value)
     saveProfileLayoutMutation.mutate({
       token,
       username: username ?? '',
-      profileLayout: buildProfileLayout(),
+      profileLayout: buildProfileLayout({ nextPaginationMode: value }),
     })
   }
 

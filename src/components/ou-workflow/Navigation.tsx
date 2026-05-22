@@ -133,7 +133,8 @@ export function Navigation({ showMenu = true }: NavigationProps) {
                   onClick={refreshTasksDashboardData}
                   search={{
                     qs:'',
-                    days: 'pending'
+                    days: 'pending',
+                    page: 0,
                   }}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
                     isActiveRoute('tasks-dashboard')

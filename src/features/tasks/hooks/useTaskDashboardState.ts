@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { type ErrorDialogRef } from '@/components/ErrorDialog'
+import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import {
@@ -9,7 +10,7 @@ import {
   normalizeStatus,
 } from '@/lib/utils/taskHelpers'
 import type { ApplicationTask } from '@/types/application'
-import { useTasks } from '@/features/tasks/hooks/useTaskQueries'
+import { useInfiniteTasks, useTasks } from '@/features/tasks/hooks/useTaskQueries'
 import {
   useAssignTaskMutation,
   useConfirmTaskMutation,
@@ -18,6 +19,7 @@ import {
 type TaskSearchParams = {
   qs?: string
   days?: string | number
+  page?: number
 }
 
 type DaysFilter = string | number
@@ -56,6 +58,7 @@ type ScheduleBDrawerState = {
 }
 
 const DEBOUNCE_DELAY = 700
+const PAGE_LIMIT = 50
 
 const PRIORITY_ORDER: Record<string, number> = {
   urgent: 0,
@@ -172,6 +175,7 @@ export function useTaskDashboardState() {
 
   const searchTerm = search.qs || ''
   const daysFilter = search.days || 'pending'
+  const page = Number.isFinite(Number(search.page)) ? Math.max(0, Number(search.page)) : 0
   const applicationId = (params as { applicationId?: string | number })?.applicationId
 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm)
@@ -188,6 +192,8 @@ export function useTaskDashboardState() {
   })
 
   const { username, role, roles, token } = useUser()
+  const { paginationMode } = useAppPreferences()
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -204,8 +210,29 @@ export function useTaskDashboardState() {
     return applicationId != null ? String(applicationId) : undefined
   }, [applicationId])
 
-  const tasksQuery = useTasks(normalizedAppId, debouncedSearchTerm, daysFilter)
-  const tasks = tasksQuery.data ?? []
+  const pagedTasksQuery = useTasks(
+    normalizedAppId,
+    debouncedSearchTerm,
+    daysFilter,
+    page,
+    PAGE_LIMIT,
+    paginationMode === 'paged',
+  )
+  const infiniteTasksQuery = useInfiniteTasks({
+    applicationId: normalizedAppId,
+    searchTerm: debouncedSearchTerm,
+    daysFilter,
+    limit: PAGE_LIMIT,
+    enabled: paginationMode === 'infinite',
+  })
+  const tasks =
+    paginationMode === 'paged'
+      ? pagedTasksQuery.data?.data ?? []
+      : infiniteTasksQuery.data?.pages.flatMap((currentPage) => currentPage.data) ?? []
+  const totalCount =
+    paginationMode === 'paged'
+      ? pagedTasksQuery.data?.meta?.total_count ?? 0
+      : infiniteTasksQuery.data?.pages?.[0]?.meta?.total_count ?? 0
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -225,7 +252,7 @@ export function useTaskDashboardState() {
 
   const taskStats = useMemo(() => calculateTaskStats(tasks), [tasks])
 
-  const filteredTasks = useMemo(() => {
+  const allFilteredTasks = useMemo(() => {
     const isAllRole = role?.toUpperCase() === 'ALL'
     const userRoles = isAllRole
       ? (roles ?? []).map((userRole) => userRole.name?.toLowerCase()).filter(Boolean)
@@ -251,6 +278,66 @@ export function useTaskDashboardState() {
       return (b.daysActive ?? 0) - (a.daysActive ?? 0)
     })
   }, [tasks, role, roles])
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_LIMIT))
+  const filteredTasks = allFilteredTasks
+  const hasNextPage = paginationMode === 'infinite' && Boolean(infiniteTasksQuery.hasNextPage)
+
+  const updateSearch = useCallback(
+    (updates: Partial<TaskSearchParams>) => {
+      navigate({
+        search: (prev: TaskSearchParams) => ({
+          ...prev,
+          ...updates,
+        }),
+      } as any)
+    },
+    [navigate],
+  )
+
+  const handleFirst = useCallback(() => updateSearch({ page: 0 }), [updateSearch])
+  const handlePrev = useCallback(
+    () => updateSearch({ page: Math.max(page - PAGE_LIMIT, 0) }),
+    [page, updateSearch],
+  )
+  const handleNext = useCallback(
+    () => updateSearch({ page: page + PAGE_LIMIT < totalCount ? page + PAGE_LIMIT : page }),
+    [page, totalCount, updateSearch],
+  )
+  const handleLast = useCallback(
+    () => updateSearch({ page: (totalPages - 1) * PAGE_LIMIT }),
+    [totalPages, updateSearch],
+  )
+
+  useEffect(() => {
+    if (paginationMode !== 'paged') return
+    if (page === 0 || page < totalCount) return
+    updateSearch({ page: 0 })
+  }, [page, paginationMode, totalCount, updateSearch])
+
+  useEffect(() => {
+    if (paginationMode !== 'infinite') return
+    if (!sentinelRef.current) return
+    if (!hasNextPage) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0].isIntersecting) return
+        if (!infiniteTasksQuery.hasNextPage || infiniteTasksQuery.isFetchingNextPage) return
+        infiniteTasksQuery.fetchNextPage()
+      },
+      { rootMargin: '300px' },
+    )
+
+    observer.observe(sentinelRef.current)
+    return () => observer.disconnect()
+  }, [
+    hasNextPage,
+    infiniteTasksQuery.fetchNextPage,
+    infiniteTasksQuery.hasNextPage,
+    infiniteTasksQuery.isFetchingNextPage,
+    paginationMode,
+  ])
 
   const confirmTaskMutation = useConfirmTaskMutation({
     onError: (message) => errorDialogRef.current?.open(message),
@@ -435,26 +522,16 @@ export function useTaskDashboardState() {
 
   const setSearchTerm = useCallback(
     (value: string) => {
-      navigate({
-        search: (prev: TaskSearchParams) => ({
-          ...prev,
-          qs: value,
-        }),
-      } as any)
+      updateSearch({ qs: value, page: 0 })
     },
-    [navigate],
+    [updateSearch],
   )
 
   const setDaysFilter = useCallback(
     (value: DaysFilter) => {
-      navigate({
-        search: (prev: TaskSearchParams) => ({
-          ...prev,
-          days: value,
-        }),
-      } as any)
+      updateSearch({ days: value, page: 0 })
     },
-    [navigate],
+    [updateSearch],
   )
 
   const handleShowPlantHistory = useCallback((plantName: string) => {
@@ -466,11 +543,18 @@ export function useTaskDashboardState() {
     role,
     searchTerm,
     daysFilter,
+    page,
+    paginationMode,
     filteredTasks,
+    totalCount,
+    totalPages,
+    hasNextPage,
+    sentinelRef,
     taskStats,
-    isLoading: tasksQuery.isLoading,
-    isError: tasksQuery.isError,
-    error: tasksQuery.error,
+    isLoading: paginationMode === 'paged' ? pagedTasksQuery.isLoading : infiniteTasksQuery.isLoading,
+    isError: paginationMode === 'paged' ? pagedTasksQuery.isError : infiniteTasksQuery.isError,
+    error: paginationMode === 'paged' ? pagedTasksQuery.error : infiniteTasksQuery.error,
+    isFetchingNextPage: infiniteTasksQuery.isFetchingNextPage,
     showPlantHistory,
     setShowPlantHistory,
     showActionModal,
@@ -490,6 +574,10 @@ export function useTaskDashboardState() {
     handleShowPlantHistory,
     setSearchTerm,
     setDaysFilter,
+    handleFirst,
+    handlePrev,
+    handleNext,
+    handleLast,
     errorDialogRef,
   }
 }

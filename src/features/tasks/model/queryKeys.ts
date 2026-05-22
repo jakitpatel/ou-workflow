@@ -2,6 +2,8 @@ type TasksListParams = {
   applicationId?: string
   searchTerm?: string
   daysFilter?: string | number
+  page?: number
+  limit?: number
 }
 
 export const tasksQueryKeys = {

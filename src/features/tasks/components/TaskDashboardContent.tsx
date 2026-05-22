@@ -17,7 +17,14 @@ export function TaskDashboardContent() {
     role,
     searchTerm,
     daysFilter,
+    page,
+    paginationMode,
     filteredTasks,
+    totalCount,
+    totalPages,
+    hasNextPage,
+    sentinelRef,
+    isFetchingNextPage,
     taskStats,
     isLoading,
     isError,
@@ -41,6 +48,10 @@ export function TaskDashboardContent() {
     handleShowPlantHistory,
     setSearchTerm,
     setDaysFilter,
+    handleFirst,
+    handlePrev,
+    handleNext,
+    handleLast,
     errorDialogRef,
   } = useTaskDashboardState();
 
@@ -82,10 +93,23 @@ export function TaskDashboardContent() {
             setSearchTerm={setSearchTerm}
             stats={taskStats}
             username={username}
+            page={page}
+            totalCount={totalCount}
+            totalPages={totalPages}
+            paginationMode={paginationMode}
+            onFirstPage={handleFirst}
+            onPrevPage={handlePrev}
+            onNextPage={handleNext}
+            onLastPage={handleLast}
           />
 
           <TaskDashboardTable
             filteredTasks={filteredTasks}
+            paginationMode={paginationMode}
+            totalCount={totalCount}
+            hasNextPage={hasNextPage}
+            sentinelRef={sentinelRef}
+            isFetchingNextPage={isFetchingNextPage}
             handleApplicationTaskAction={handleTaskAction}
             handleShowPlantHistory={handleShowPlantHistory}
           />

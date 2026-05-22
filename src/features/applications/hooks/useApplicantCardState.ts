@@ -202,6 +202,7 @@ export function useApplicantCardState({ applicant, handleCancelTask }: Params) {
         search: () => ({
           qs: '',
           days: 'pending',
+          page: 0,
         }),
       })
       return
@@ -213,6 +214,7 @@ export function useApplicantCardState({ applicant, handleCancelTask }: Params) {
       search: () => ({
         qs: '',
         days: 'pending',
+        page: 0,
       }),
     })
   }

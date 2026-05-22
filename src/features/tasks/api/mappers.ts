@@ -17,10 +17,10 @@ export type BackendApplicationTasksResponse = Omit<ApplicationTasksResponse, 'da
   data?: BackendApplicationTask[]
 }
 
-export function mapApplicationTasksResponse(
+const mapApplicationTasksData = (
   response: BackendApplicationTasksResponse,
-): ApplicationTask[] {
-  return (response.data ?? []).map((task) => {
+): ApplicationTask[] =>
+  (response.data ?? []).map((task) => {
     const taskCategory = task.taskCategory ?? task.TaskCategory ?? ''
     const taskType = task.taskType ?? task.TaskType ?? ''
     const taskName = task.taskName ?? task.TaskName ?? ''
@@ -56,4 +56,20 @@ export function mapApplicationTasksResponse(
       completedBy: task.completedBy ?? null,
     }
   })
+
+export function mapApplicationTasksResponse(
+  response: BackendApplicationTasksResponse,
+): ApplicationTasksResponse {
+  const data = mapApplicationTasksData(response)
+
+  return {
+    data,
+    meta: response.meta ?? {
+      count: data.length,
+      limit: data.length,
+      offset: 0,
+      total_count: data.length,
+    },
+    status: response.status ?? 'ok',
+  }
 }

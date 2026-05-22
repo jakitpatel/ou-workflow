@@ -1,7 +1,7 @@
 import { fetchWithAuth } from '@/shared/api/httpClient'
 import { addFilterParams, buildPaginationParams } from '@/shared/api/queryParams'
 import type {
-  ApplicationTask,
+  ApplicationTasksResponse,
   TaskNote,
   TaskNoteReaction,
   UserRoleResponse,
@@ -276,8 +276,10 @@ export async function fetchApplicationTasks({
   applicationId,
   searchTerm,
   days,
-}: FetchApplicationTasksRequest = {}): Promise<ApplicationTask[]> {
-  const params = new URLSearchParams()
+  page = 0,
+  limit = 5,
+}: FetchApplicationTasksRequest = {}): Promise<ApplicationTasksResponse> {
+  const params = buildPaginationParams(page, limit)
 
   addFilterParams(params, {
     'filter[applicationId]': applicationId,
@@ -304,6 +306,8 @@ export type FetchApplicationTasksRequest = {
   applicationId?: string
   searchTerm?: string
   days?: string | number | undefined
+  page?: number
+  limit?: number
 }
 
 export async function fetchTaskRoles({
