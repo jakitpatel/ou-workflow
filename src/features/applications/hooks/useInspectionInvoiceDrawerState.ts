@@ -120,7 +120,7 @@ export const formatInvoiceDate = (value: string) => {
 }
 
 export const getApplicantAccountNumber = (applicant?: Applicant) =>
-  String(applicant?.externalReferenceId ?? applicant?.applicationId ?? '').trim()
+  String(applicant?.companyId ?? '').trim()
 
 const normalizeRfrText = (value: unknown) =>
   String(value ?? '')
@@ -838,6 +838,7 @@ export function useInspectionInvoiceDrawerState({
             ? {
                 id: applicant.id,
                 applicationId: applicant.applicationId,
+                companyId: applicant.companyId,
                 company: applicant.company,
                 externalReferenceId: applicant.externalReferenceId,
                 plant: applicant.plant,

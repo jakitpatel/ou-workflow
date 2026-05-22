@@ -132,7 +132,7 @@ export function InspectionInvoiceDrawer({
     taskInstanceId,
     taskName,
   })
-  const accountNumber = getApplicantAccountNumber(applicant) || String(applicationId ?? '')
+  const accountNumber = getApplicantAccountNumber(applicant)
   const resolvedName = applicationName || applicant?.company || 'Application'
   const emailSubject = useMemo(() => {
     const feeType = state.isApplicationFeeOnly ? 'Application Fee' : 'Initial Inspection'
