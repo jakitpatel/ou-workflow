@@ -887,19 +887,20 @@ export function useInspectionInvoiceDrawerState({
 
       const rfrResultValue =
         selectedRfr?.userName || selectedRfr?.name || selectedRfr?.id || selectedRfr?.lookupKey || ''
+      const assignmentStatusDetails = buildInspectionStatusDetails(`{RFR:${rfrResultValue}}`)
 
-      if (awaitPayment) {
-        await patchTaskResult({
-          taskId: assignmentTaskId,
-          result: buildInspectionStatusDetails(`{RFR:${rfrResultValue}}`),
-          token,
-        })
-      } else {
+      await patchTaskResult({
+        taskId: assignmentTaskId,
+        result: assignmentStatusDetails,
+        token,
+      })
+
+      if (!awaitPayment) {
         await confirmTask({
           taskId: assignmentTaskId,
           overwrite: '1',
           status: 'PENDING',
-          result: buildInspectionStatusDetails(`{RFR:${rfrResultValue}}`),
+          result: '',
           includeCompletedBy: false,
           includeCompletionNotes: false,
           token,

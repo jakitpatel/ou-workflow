@@ -138,18 +138,22 @@ export async function confirmTask({
     body.completion_notes = completion_notes
   }
 
-  if (typeof result === 'string' && result) {
-    const normalizedResult = result.toLowerCase()
-    const standardizedResultValues = new Set([
-      'yes',
-      'no',
-      'completed',
-      'in_progress',
-      'pending',
-    ])
-    body.result = standardizedResultValues.has(normalizedResult)
-      ? normalizedResult.toUpperCase()
-      : result
+  if (typeof result === 'string') {
+    if (result) {
+      const normalizedResult = result.toLowerCase()
+      const standardizedResultValues = new Set([
+        'yes',
+        'no',
+        'completed',
+        'in_progress',
+        'pending',
+      ])
+      body.result = standardizedResultValues.has(normalizedResult)
+        ? normalizedResult.toUpperCase()
+        : result
+    } else {
+      body.result = ''
+    }
   } else if (result) {
     body.result = result
   }
