@@ -691,6 +691,7 @@ export function useTaskDashboardState() {
     filteredTasks,
     totalCount,
     totalPages,
+    pageSize: PAGE_LIMIT,
     hasNextPage,
     sentinelRef,
     taskStats,

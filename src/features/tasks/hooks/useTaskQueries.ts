@@ -5,13 +5,15 @@ import { useUser } from '@/context/UserContext'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 
+const DEFAULT_TASKS_PAGE_LIMIT = 50
+
 export const getTasksQueryOptions = ({
   applicationId,
   searchTerm,
   daysFilter = 'pending',
   token,
   page = 0,
-  limit = 5,
+  limit = DEFAULT_TASKS_PAGE_LIMIT,
 }: {
   applicationId?: string
   searchTerm?: string
@@ -43,7 +45,7 @@ export function useTasks(
   searchTerm?: string,
   daysFilter: string | number | undefined = 'pending',
   page = 0,
-  limit = 5,
+  limit = DEFAULT_TASKS_PAGE_LIMIT,
   enabled = true,
 ) {
   const { token } = useUser()
@@ -68,7 +70,7 @@ export function useInfiniteTasks({
   applicationId,
   searchTerm,
   daysFilter = 'pending',
-  limit = 5,
+  limit = DEFAULT_TASKS_PAGE_LIMIT,
   enabled = true,
 }: {
   applicationId?: string

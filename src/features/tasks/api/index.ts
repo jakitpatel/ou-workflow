@@ -277,7 +277,7 @@ export async function fetchApplicationTasks({
   searchTerm,
   days,
   page = 0,
-  limit = 5,
+  limit = 50,
 }: FetchApplicationTasksRequest = {}): Promise<ApplicationTasksResponse> {
   const params = buildPaginationParams(page, limit)
 

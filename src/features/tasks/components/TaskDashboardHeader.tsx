@@ -2,7 +2,6 @@ import { TaskFilters } from './TaskFilters';
 import { TaskStatsCards } from './TaskStatsCards';
 
 const dayFilterOptions = ['pending', 7, 30] as const;
-const PAGE_SIZE = 5;
 
 type TaskDashboardHeaderProps = {
   daysFilter: string | number;
@@ -15,6 +14,7 @@ type TaskDashboardHeaderProps = {
   page: number;
   totalCount: number;
   totalPages: number;
+  pageSize: number;
   paginationMode: 'paged' | 'infinite';
   onFirstPage: () => void;
   onPrevPage: () => void;
@@ -33,6 +33,7 @@ export function TaskDashboardHeader({
   page,
   totalCount,
   totalPages,
+  pageSize,
   paginationMode,
   onFirstPage,
   onPrevPage,
@@ -40,9 +41,10 @@ export function TaskDashboardHeader({
   onLastPage,
 }: TaskDashboardHeaderProps) {
   const firstItem = totalCount === 0 ? 0 : page + 1;
-  const lastItem = Math.min(page + PAGE_SIZE, totalCount);
+  const lastItem = Math.min(page + pageSize, totalCount);
+  const currentPage = Math.floor(page / pageSize) + 1;
   const isFirstPage = page === 0;
-  const isLastPage = page + PAGE_SIZE >= totalCount;
+  const isLastPage = page + pageSize >= totalCount;
 
   return (
     <div className="sticky top-16 z-20 bg-gray-50 pb-4">
@@ -106,7 +108,7 @@ export function TaskDashboardHeader({
               Prev
             </button>
             <span className="rounded-md bg-gray-50 px-3 py-1.5 text-sm font-medium">
-              Page {Math.floor(page / PAGE_SIZE) + 1} of {totalPages}
+              Page {currentPage} of {totalPages}
             </span>
             <button
               onClick={onNextPage}

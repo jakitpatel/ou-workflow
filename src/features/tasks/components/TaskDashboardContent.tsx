@@ -25,6 +25,7 @@ export function TaskDashboardContent() {
     filteredTasks,
     totalCount,
     totalPages,
+    pageSize,
     hasNextPage,
     sentinelRef,
     isFetchingNextPage,
@@ -105,6 +106,7 @@ export function TaskDashboardContent() {
             page={page}
             totalCount={totalCount}
             totalPages={totalPages}
+            pageSize={pageSize}
             paginationMode={paginationMode}
             onFirstPage={handleFirst}
             onPrevPage={handlePrev}
