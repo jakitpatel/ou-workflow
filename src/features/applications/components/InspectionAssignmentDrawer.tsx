@@ -161,8 +161,8 @@ const getRawTaskInstanceId = (value: unknown): string => {
 const withPatchedTaskGuiDisplayResult = (
   value: unknown,
   taskId: string,
-  guiDisplayResult: string,
-  statusDetails?: string,
+  guiDisplayResult?: string,
+  statusDetails?: unknown,
 ): unknown => {
   if (!value || typeof value !== 'object') return value
 
@@ -183,10 +183,14 @@ const withPatchedTaskGuiDisplayResult = (
     nextRecord = {
       ...nextRecord,
       ...(statusDetails ? { StatusDetails: statusDetails, statusDetails } : {}),
-      GUIDisplayResult: guiDisplayResult,
-      ResultData: {
-        GUIDisplayResult: guiDisplayResult,
-      },
+      ...(guiDisplayResult
+        ? {
+            GUIDisplayResult: guiDisplayResult,
+            ResultData: {
+              GUIDisplayResult: guiDisplayResult,
+            },
+          }
+        : {}),
     }
   }
 
@@ -467,7 +471,11 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
     { text: `Visit ID: ${visitId || '-'}` },
   ]
 
-  const updateCachedAssignmentTaskResult = (taskId: string, guiDisplayResult: string, statusDetails?: string) => {
+  const updateCachedAssignmentTaskResult = (
+    taskId: string,
+    guiDisplayResult?: string,
+    statusDetails?: unknown,
+  ) => {
     queryClient.setQueriesData({ queryKey: applicationsQueryKeys.lists() }, (current) =>
       withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult, statusDetails),
     )
@@ -577,7 +585,6 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       const visitDateStatusDetails = buildInspectionStatusDetails(
         `{RFR:${rfrResultValue}, visitId:"${nextVisitId}", Daterange:"${dateRangeResultValue}"}`,
       )
-      const visitDateGuiDisplayResult = `{RFR:${rfrResultValue}, Visit #${nextVisitId}, ${formatDisplayDate(assignmentStartDate)} - ${formatDisplayDate(assignmentEndDate)}, Awaiting selection}`
       const assignmentSentDate = new Date()
       const assignmentGuiDisplayResult = buildAssignmentGuiDisplayResult({
         rfr: selectedRfr,
@@ -597,10 +604,9 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       await patchTaskResult({
         taskId: visitDateTaskId,
         result: visitDateStatusDetails,
-        guiDisplayResult: visitDateGuiDisplayResult,
         token,
       })
-      updateCachedAssignmentTaskResult(visitDateTaskId, visitDateGuiDisplayResult, visitDateStatusDetails)
+      updateCachedAssignmentTaskResult(visitDateTaskId, undefined, visitDateStatusDetails)
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),

@@ -349,7 +349,7 @@ export function ApplicationExpandedStage({
 
                     return (
                       <div className="mb-2">
-                        <span className="inline-block rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
+                        <span className="inline-block rounded border border-[#D0D5DD] bg-[#F4F6F8] px-2 py-1 text-xs font-semibold text-[#344054]">
                           {guiDisplayResult}
                         </span>
                       </div>

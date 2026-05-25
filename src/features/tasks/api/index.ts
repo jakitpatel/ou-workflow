@@ -104,7 +104,7 @@ export async function confirmTask({
   includeCompletionNotes = true,
 }: {
   taskId: string
-  result?: string
+  result?: unknown
   resultData?: string
   completionNotes?: string
   token?: string | null
@@ -123,7 +123,7 @@ export async function confirmTask({
 
   const completion_notes =
     completionNotes ??
-    ((result && completionNotesMap[result]) || 'Task completed successfully')
+    ((typeof result === 'string' && completionNotesMap[result]) || 'Task completed successfully')
 
   const body: Record<string, any> = {
     task_instance_id: taskId,
@@ -138,7 +138,7 @@ export async function confirmTask({
     body.completion_notes = completion_notes
   }
 
-  if (result) {
+  if (typeof result === 'string' && result) {
     const normalizedResult = result.toLowerCase()
     const standardizedResultValues = new Set([
       'yes',
@@ -150,6 +150,8 @@ export async function confirmTask({
     body.result = standardizedResultValues.has(normalizedResult)
       ? normalizedResult.toUpperCase()
       : result
+  } else if (result) {
+    body.result = result
   }
 
   if (status) {
@@ -179,7 +181,7 @@ export async function patchTaskResult({
   token,
 }: {
   taskId: string
-  result: string
+  result: unknown
   guiDisplayResult?: string
   token?: string | null
 }): Promise<any> {

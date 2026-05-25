@@ -1,13 +1,50 @@
+const parseInspectionInputParam = (inputParam: string): Record<string, string> | string => {
+  const text = inputParam.trim()
+  if (!text.startsWith('{') || !text.endsWith('}')) return inputParam
+
+  const body = text.slice(1, -1)
+  const entries: Record<string, string> = {}
+  const pattern = /([^:,{}]+)\s*:\s*("[^"]*"|[^,}]*)/g
+  let match: RegExpExecArray | null
+
+  while ((match = pattern.exec(body)) !== null) {
+    const key = match[1].trim()
+    const rawValue = match[2].trim()
+    const value = rawValue.startsWith('"') && rawValue.endsWith('"')
+      ? rawValue.slice(1, -1)
+      : rawValue
+
+    if (key) {
+      entries[key] = value
+    }
+  }
+
+  return Object.keys(entries).length > 0 ? entries : inputParam
+}
+
+const formatInspectionInputParam = (inputParam: Record<string, unknown>): string => {
+  const entries = Object.entries(inputParam)
+
+  return `{${entries
+    .map(([key, value]) => {
+      const textValue = String(value ?? '')
+      const needsQuotes = /[\s,{}]/.test(textValue)
+
+      return `${key}:${needsQuotes ? `"${textValue}"` : textValue}`
+    })
+    .join(', ')}}`
+}
+
 export const buildInspectionStatusDetails = (inputParam: string, savedState?: unknown) => {
   const payload: Record<string, unknown> = {
-    inputParam,
+    inputParam: parseInspectionInputParam(inputParam),
   }
 
   if (savedState !== undefined) {
-    payload.savedState = typeof savedState === 'string' ? savedState : JSON.stringify(savedState)
+    payload.savedState = savedState
   }
 
-  return JSON.stringify(payload)
+  return payload
 }
 
 export const getInspectionStatusInputParam = (value: unknown): string => {
@@ -17,6 +54,9 @@ export const getInspectionStatusInputParam = (value: unknown): string => {
     const record = value as Record<string, unknown>
     const inputParam = record.inputParam ?? record.InputParam
     if (typeof inputParam === 'string') return inputParam.trim()
+    if (inputParam && typeof inputParam === 'object') {
+      return formatInspectionInputParam(inputParam as Record<string, unknown>)
+    }
 
     const statusDetails = record.StatusDetails ?? record.statusDetails
     if (statusDetails) return getInspectionStatusInputParam(statusDetails)
