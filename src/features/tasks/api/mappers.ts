@@ -28,6 +28,7 @@ const mapApplicationTasksData = (
 
     return {
       TaskCategory: taskCategory,
+      taskCategory,
       applicationId: task.applicationId ?? 0,
       id: task.id ?? taskInstanceId,
       assignee: task.assignee ?? '',
@@ -46,7 +47,15 @@ const mapApplicationTasksData = (
       taskName,
       taskDescription: task.taskDescription ?? '',
       taskType,
+      TaskType: task.TaskType,
       PreScript: task.PreScript ?? task.preScript ?? '',
+      Result: task.Result,
+      result: task.result,
+      ResultData: task.ResultData,
+      resultData: task.resultData,
+      StatusDetails: task.StatusDetails,
+      statusDetails: task.statusDetails,
+      GUIDisplayResult: task.GUIDisplayResult,
       daysActive: task.daysActive ?? 0,
       priority: task.priority ?? 'NORMAL',
       stageName: task.stageName ?? '',

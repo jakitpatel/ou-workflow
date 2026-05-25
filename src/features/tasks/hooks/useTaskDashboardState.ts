@@ -9,7 +9,7 @@ import {
   getProgressStatus,
   normalizeStatus,
 } from '@/lib/utils/taskHelpers'
-import type { ApplicationTask } from '@/types/application'
+import type { Applicant, ApplicationTask, Task } from '@/types/application'
 import { useInfiniteTasks, useTasks } from '@/features/tasks/hooks/useTaskQueries'
 import {
   useAssignTaskMutation,
@@ -57,6 +57,21 @@ type ScheduleBDrawerState = {
   taskName?: string
 }
 
+type InspectionInvoiceDrawerState = {
+  open: boolean
+  applicant?: Applicant
+  applicationId?: string | number
+  applicationName?: string
+  taskInstanceId?: string | number
+  taskName?: string
+}
+
+type InspectionTaskDrawerState = {
+  open: boolean
+  applicant?: Applicant
+  task?: Task
+}
+
 const DEBOUNCE_DELAY = 700
 const PAGE_LIMIT = 50
 
@@ -75,6 +90,78 @@ const STATUS = {
   COMPLETED: 'completed',
   COMPLETE: 'complete',
 } as const
+
+const getTaskInstanceId = (task: ApplicationTask): number => {
+  const taskId = Number((task as any).taskInstanceId ?? (task as any).TaskInstanceId ?? task.id)
+
+  return Number.isFinite(taskId) ? taskId : 0
+}
+
+const mapApplicationTaskToStageTask = (task: ApplicationTask): Task => ({
+  TaskInstanceId: getTaskInstanceId(task),
+  name: task.taskName ?? (task as any).name ?? '',
+  PreScript: task.PreScript ?? '',
+  status: ['completed', 'in_progress', 'overdue', 'blocked', 'pending'].includes(
+    String(task.status ?? '').toLowerCase(),
+  )
+    ? (String(task.status).toLowerCase() as Task['status'])
+    : 'pending',
+  assignee: task.assignee ?? '',
+  daysActive: task.daysActive ?? 0,
+  required: Boolean((task as any).required),
+  overdue: (task.daysOverdue ?? 0) > 0 || Boolean((task as any).overdue),
+  overdueDays: task.daysOverdue,
+  daysPending: task.daysPending,
+  daysOverdue: task.daysOverdue,
+  description: task.taskDescription ?? '',
+  completedBy: task.completedBy ?? undefined,
+  CompletedDate: task.completedDate ?? undefined,
+  taskType: task.taskType ?? task.TaskType,
+  taskCategory: task.taskCategory ?? task.TaskCategory,
+  StatusDetails: task.StatusDetails ?? task.statusDetails,
+  Result: task.Result ?? task.result,
+  ResultData: task.ResultData ?? task.resultData,
+  GUIDisplayResult: task.GUIDisplayResult,
+})
+
+const buildInspectionApplicant = (selectedTask: ApplicationTask, tasks: ApplicationTask[]): Applicant => {
+  const relatedTasks = tasks.filter((task) => task.applicationId === selectedTask.applicationId)
+  const stageTasks = relatedTasks.length > 0 ? relatedTasks : [selectedTask]
+  const stages = stageTasks.reduce<Applicant['stages']>((acc, task) => {
+    const stageName = task.stageName || task.laneName || 'Tasks'
+
+    acc[stageName] ??= {
+      status: '',
+      progress: 0,
+      tasks: [],
+    }
+    acc[stageName].tasks.push(mapApplicationTaskToStageTask(task))
+
+    return acc
+  }, {})
+
+  return {
+    id: selectedTask.applicationId,
+    applicationId: selectedTask.applicationId,
+    companyId: selectedTask.companyId,
+    company: selectedTask.companyName ?? '',
+    plantId: selectedTask.plantId,
+    plant: selectedTask.plantName ?? '',
+    region: (selectedTask as any).region ?? '',
+    priority: selectedTask.priority ?? 'NORMAL',
+    status: '',
+    assignedRC: '',
+    daysInProcess: selectedTask.daysActive ?? 0,
+    overdue: (selectedTask.daysOverdue ?? 0) > 0,
+    daysOverdue: selectedTask.daysOverdue ?? 0,
+    lastUpdate: selectedTask.completedDate ?? selectedTask.startedDate ?? '',
+    nextAction: selectedTask.taskName ?? '',
+    documents: 0,
+    notes: 0,
+    stages,
+    externalReferenceId: selectedTask.companyId,
+  }
+}
 
 const buildInspectionFeeResult = (value: InspectionFeeChoice): string =>
   `{inspectionNeeded:${value.inspectionNeeded}, feeNeeded:${value.feeNeeded}}`
@@ -117,6 +204,18 @@ const getTaskActionPresentation = (application: TaskDashboardAction) => {
 
   if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.ASSIGNMENT) {
     return { type: 'assignment' as const }
+  }
+
+  if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.INVOICE) {
+    return { type: 'inspection-invoice' as const }
+  }
+
+  if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.ASSIGNMENT1) {
+    return { type: 'inspection-assignment' as const }
+  }
+
+  if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.VISIT) {
+    return { type: 'inspection-visit' as const }
   }
 
   if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEA) {
@@ -190,6 +289,18 @@ export function useTaskDashboardState() {
   const [scheduleBDrawerState, setScheduleBDrawerState] = useState<ScheduleBDrawerState>({
     open: false,
   })
+  const [inspectionInvoiceDrawerState, setInspectionInvoiceDrawerState] =
+    useState<InspectionInvoiceDrawerState>({
+      open: false,
+    })
+  const [inspectionAssignmentDrawerState, setInspectionAssignmentDrawerState] =
+    useState<InspectionTaskDrawerState>({
+      open: false,
+    })
+  const [inspectionVisitDateDrawerState, setInspectionVisitDateDrawerState] =
+    useState<InspectionTaskDrawerState>({
+      open: false,
+    })
 
   const { username, role, roles, token } = useUser()
   const { paginationMode } = useAppPreferences()
@@ -472,6 +583,8 @@ export function useTaskDashboardState() {
       setSelectedAction(nextSelectedAction)
 
       const actionPresentation = getTaskActionPresentation(action)
+      const inspectionApplicant = buildInspectionApplicant(application, tasks)
+      const inspectionTask = mapApplicationTaskToStageTask(application)
 
       if (actionPresentation.type === 'execute') {
         executeAction(
@@ -513,11 +626,41 @@ export function useTaskDashboardState() {
         return
       }
 
+      if (actionPresentation.type === 'inspection-invoice') {
+        setInspectionInvoiceDrawerState({
+          open: true,
+          applicant: inspectionApplicant,
+          applicationId: action.applicationId,
+          applicationName: action.companyName ?? action.plantName,
+          taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
+          taskName: action.taskName ?? action.name,
+        })
+        return
+      }
+
+      if (actionPresentation.type === 'inspection-assignment') {
+        setInspectionAssignmentDrawerState({
+          open: true,
+          applicant: inspectionApplicant,
+          task: inspectionTask,
+        })
+        return
+      }
+
+      if (actionPresentation.type === 'inspection-visit') {
+        setInspectionVisitDateDrawerState({
+          open: true,
+          applicant: inspectionApplicant,
+          task: inspectionTask,
+        })
+        return
+      }
+
       if (actionPresentation.type === 'upload') {
         setShowUploadModal(action)
       }
     },
-    [executeAction],
+    [executeAction, tasks],
   )
 
   const setSearchTerm = useCallback(
@@ -567,6 +710,12 @@ export function useTaskDashboardState() {
     setScheduleADrawerState,
     scheduleBDrawerState,
     setScheduleBDrawerState,
+    inspectionInvoiceDrawerState,
+    setInspectionInvoiceDrawerState,
+    inspectionAssignmentDrawerState,
+    setInspectionAssignmentDrawerState,
+    inspectionVisitDateDrawerState,
+    setInspectionVisitDateDrawerState,
     selectedAction,
     executeAction,
     completeTaskWithResult,

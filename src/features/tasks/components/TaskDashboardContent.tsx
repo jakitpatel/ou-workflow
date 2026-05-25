@@ -2,6 +2,9 @@ import { ErrorDialog } from '@/components/ErrorDialog';
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
 import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal';
+import { InspectionAssignmentDrawer } from '@/features/applications/components/InspectionAssignmentDrawer';
+import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer';
+import { InspectionVisitDateDrawer } from '@/features/applications/components/InspectionVisitDateDrawer';
 import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer';
 import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer';
 import { useTaskDashboardState } from '@/features/tasks/hooks/useTaskDashboardState';
@@ -41,6 +44,12 @@ export function TaskDashboardContent() {
     setScheduleADrawerState,
     scheduleBDrawerState,
     setScheduleBDrawerState,
+    inspectionInvoiceDrawerState,
+    setInspectionInvoiceDrawerState,
+    inspectionAssignmentDrawerState,
+    setInspectionAssignmentDrawerState,
+    inspectionVisitDateDrawerState,
+    setInspectionVisitDateDrawerState,
     selectedAction,
     executeAction,
     completeTaskWithResult,
@@ -144,6 +153,27 @@ export function TaskDashboardContent() {
         applicationName={scheduleBDrawerState.applicationName}
         taskName={scheduleBDrawerState.taskName}
         onClose={() => setScheduleBDrawerState({ open: false })}
+      />
+      <InspectionInvoiceDrawer
+        open={inspectionInvoiceDrawerState.open}
+        applicant={inspectionInvoiceDrawerState.applicant}
+        applicationId={inspectionInvoiceDrawerState.applicationId}
+        applicationName={inspectionInvoiceDrawerState.applicationName}
+        taskInstanceId={inspectionInvoiceDrawerState.taskInstanceId}
+        taskName={inspectionInvoiceDrawerState.taskName}
+        onClose={() => setInspectionInvoiceDrawerState({ open: false })}
+      />
+      <InspectionAssignmentDrawer
+        open={inspectionAssignmentDrawerState.open}
+        applicant={inspectionAssignmentDrawerState.applicant}
+        task={inspectionAssignmentDrawerState.task}
+        onClose={() => setInspectionAssignmentDrawerState({ open: false })}
+      />
+      <InspectionVisitDateDrawer
+        open={inspectionVisitDateDrawerState.open}
+        applicant={inspectionVisitDateDrawerState.applicant}
+        task={inspectionVisitDateDrawerState.task}
+        onClose={() => setInspectionVisitDateDrawerState({ open: false })}
       />
     </>
   );
