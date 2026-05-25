@@ -4,13 +4,16 @@ const parseInspectionInputParam = (inputParam: string): Record<string, string> |
 
   const body = text.slice(1, -1)
   const entries: Record<string, string> = {}
-  const pattern = /([^:,{}]+)\s*:\s*("[^"]*"|[^,}]*)/g
+  const pattern = /(['"]?[^'":,{}]+['"]?)\s*:\s*("[^"]*"|'[^']*'|[^,}]*)/g
   let match: RegExpExecArray | null
 
   while ((match = pattern.exec(body)) !== null) {
-    const key = match[1].trim()
+    const key = match[1].trim().replace(/^['"]|['"]$/g, '')
     const rawValue = match[2].trim()
-    const value = rawValue.startsWith('"') && rawValue.endsWith('"')
+    const value = (
+      (rawValue.startsWith('"') && rawValue.endsWith('"')) ||
+      (rawValue.startsWith("'") && rawValue.endsWith("'"))
+    )
       ? rawValue.slice(1, -1)
       : rawValue
 
@@ -35,6 +38,18 @@ const formatInspectionInputParam = (inputParam: Record<string, unknown>): string
     .join(', ')}}`
 }
 
+const parseJsonLikeObject = (text: string): unknown | null => {
+  try {
+    return JSON.parse(text)
+  } catch {
+    try {
+      return JSON.parse(text.replace(/'/g, '"'))
+    } catch {
+      return null
+    }
+  }
+}
+
 export const buildInspectionStatusDetails = (inputParam: string, savedState?: unknown) => {
   const payload: Record<string, unknown> = {
     inputParam: parseInspectionInputParam(inputParam),
@@ -53,7 +68,12 @@ export const getInspectionStatusInputParam = (value: unknown): string => {
   if (typeof value === 'object') {
     const record = value as Record<string, unknown>
     const inputParam = record.inputParam ?? record.InputParam
-    if (typeof inputParam === 'string') return inputParam.trim()
+    if (typeof inputParam === 'string') {
+      const parsedInputParam = parseInspectionInputParam(inputParam)
+      return typeof parsedInputParam === 'string'
+        ? parsedInputParam.trim()
+        : formatInspectionInputParam(parsedInputParam)
+    }
     if (inputParam && typeof inputParam === 'object') {
       return formatInspectionInputParam(inputParam as Record<string, unknown>)
     }
@@ -72,14 +92,14 @@ export const getInspectionStatusInputParam = (value: unknown): string => {
   const text = String(value ?? '').trim()
   if (!text) return ''
 
-  try {
-    const parsed = JSON.parse(text)
+  const parsed = parseJsonLikeObject(text)
+  if (parsed) {
     const parsedInputParam = getInspectionStatusInputParam(parsed)
     if (parsedInputParam) return parsedInputParam
-  } catch {
-    const singleQuotedInputParam = text.match(/['"]inputParam['"]\s*:\s*'([\s\S]*)'\s*}?$/)
-    if (singleQuotedInputParam?.[1]) return singleQuotedInputParam[1].trim()
   }
+
+  const singleQuotedInputParam = text.match(/['"]inputParam['"]\s*:\s*'([\s\S]*)'\s*}?$/)
+  if (singleQuotedInputParam?.[1]) return singleQuotedInputParam[1].trim()
 
   return text
 }
@@ -114,9 +134,6 @@ export const getInspectionStatusSavedState = <T = unknown>(value: unknown): T | 
   const text = String(value ?? '').trim()
   if (!text) return null
 
-  try {
-    return getInspectionStatusSavedState<T>(JSON.parse(text))
-  } catch {
-    return null
-  }
+  const parsed = parseJsonLikeObject(text)
+  return parsed ? getInspectionStatusSavedState<T>(parsed) : null
 }
