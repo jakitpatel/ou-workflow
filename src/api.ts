@@ -35,5 +35,4 @@ export {
   extractCreatedRecordId,
   fetchPrelimApplicationDetails,
   fetchPrelimApplications,
-  fetchVectorMatches,
 } from '@/features/prelim/api'

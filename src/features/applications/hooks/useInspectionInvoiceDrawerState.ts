@@ -247,7 +247,7 @@ const withPatchedTaskGuiDisplayResult = (
   value: unknown,
   taskId: string,
   guiDisplayResult: string,
-  statusDetails?: string,
+  statusDetails?: unknown,
 ): unknown => {
   if (!value || typeof value !== 'object') return value
 
@@ -408,10 +408,9 @@ const isInvoiceStage = (value: unknown): value is InspectionInvoiceStage =>
   value === 'sent-captured' ||
   value === 'paid'
 
-const buildInspectionInvoiceStatusDetails = (savedState: InspectionInvoiceSavedState) =>
-  JSON.stringify({
-    savedState: JSON.stringify(savedState),
-  })
+const buildInspectionInvoiceStatusDetails = (savedState: InspectionInvoiceSavedState) => ({
+  savedState,
+})
 
 export function useInspectionInvoiceDrawerState({
   applicant,
@@ -592,7 +591,7 @@ export function useInspectionInvoiceDrawerState({
     setStage(nextCanGenerate ? 'configured' : 'setup')
   }
 
-  const updateCachedInvoiceTaskResult = (taskId: string, guiDisplayResult: string, statusDetails?: string) => {
+  const updateCachedInvoiceTaskResult = (taskId: string, guiDisplayResult: string, statusDetails?: unknown) => {
     queryClient.setQueriesData({ queryKey: applicationsQueryKeys.lists() }, (current) =>
       withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult, statusDetails),
     )
