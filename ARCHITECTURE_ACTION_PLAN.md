@@ -18,10 +18,10 @@ What is already working well:
 
 What still needs architectural work:
 
-- feature ownership is incomplete because some major workflow areas still live under `src/components/ou-workflow`
-- transitional hooks in `src/components/ou-workflow/hooks` still shape active flows
-- route-level error boundaries are not implemented
-- a true app bootstrap/provider layer does not exist yet as a first-class folder
+- feature ownership is incomplete because Application Management detail sections still live under `src/components/ou-workflow`
+- shared workflow-era modals/navigation and compatibility hook re-exports still live under `src/components/ou-workflow`
+- route-level error boundaries exist for the root and key loader-backed routes, but are not yet uniform everywhere
+- app bootstrap/provider files now exist under `src/app`, but more route context/provider cleanup may still be useful
 - query/mutation patterns are inconsistent across features
 - production-path debug logging and local-dev auth behavior still need hardening
 - automated coverage is still too thin for the amount of workflow logic in the app
@@ -64,41 +64,35 @@ The next phase should focus less on inventing architecture and more on finishing
 - task dashboard state moved into `src/features/tasks/hooks/useTaskDashboardState.ts`
 - prelim dashboard state moved into `src/features/prelim/hooks/usePrelimDashboardState.ts`
 - shared notes orchestration moved into `src/features/tasks/notes/useTaskNotesDrawerState.ts`
+- Prelim dashboard UI ownership now lives under `src/features/prelim/components`
 
 ## Highest-priority gaps
 
 ### 1. Feature ownership is still split across old and new boundaries
 
-Major workflow screens still render from:
+The remaining major workflow-owned detail surface is:
 
-- `src/components/ou-workflow/PrelimDashboard`
 - `src/components/ou-workflow/ApplicationManagement`
 
-This means routing, feature hooks, and API ownership have improved, but UI ownership is still transitional.
+Prelim, NCRC dashboard, and Task Dashboard screen composition have moved into feature folders. Application detail UI still imports many Application Management sections from the workflow folder.
 
-### 2. Transitional workflow hooks are still active
+### 2. Workflow-era compatibility surfaces still exist
 
-Active imports still come from:
+Remaining compatibility surfaces include:
 
-- `src/components/ou-workflow/hooks/useDebounce.ts`
-- `src/components/ou-workflow/hooks/useTaskActions.ts`
+- `src/components/ou-workflow/hooks/*` re-export files for applications, prelim, and task query hooks
+- `src/components/ou-workflow/modal/*` shared task/action modals
+- `src/components/ou-workflow/Navigation.tsx`
 
-Current live consumers include:
+The riskiest hooks, `useDebounce` and `useTaskActions`, have already been retired from the workflow folder.
 
-- `src/features/applications/hooks/useNcrcDashboardState.ts`
-- `src/features/prelim/hooks/usePrelimDashboardState.ts`
-- `src/components/ou-workflow/PrelimDashboard/ResolvedSection.tsx`
+### 3. Route boundaries are improved but not uniform everywhere
 
-This is one of the clearest signs that the migration is incomplete.
+The app uses loaders, lazy routes, root error handling, and route-level error components in the key loader-backed paths. Remaining hardening opportunities:
 
-### 3. Route boundaries are only partially production-ready
-
-The app uses loaders and lazy routes in the right places, but it still lacks:
-
-- root-level error boundary
-- route-level `errorComponent` usage
-- a dedicated provider/bootstrap layer
 - a consistent route context strategy beyond the query client
+- optional error components for additional non-loader routes
+- continued cleanup of route-local auth guard wiring into feature-owned helpers
 
 ### 4. Query patterns are good, but not yet uniform
 
@@ -121,12 +115,11 @@ Notable issues still in the codebase:
 
 - hardcoded local-dev tokens in `src/routes/_public/login.tsx`
 - debug logging in `src/shared/api/httpClient.ts`
-- `console.log` in `src/components/ou-workflow/ApplicationManagement/QuoteInfo.tsx`
 - mixed UI-level `console.error` / `console.warn` usage without a logging policy
 
-### 6. There is at least one hook design smell worth fixing early
+### 6. Historical hook design smell has been resolved
 
-`src/components/ou-workflow/hooks/useTaskActions.ts` exposes `getSelectedAction`, which internally calls `useMemo` from inside a nested function. Even if current call sites happen to behave, this is not a durable hook contract and should be flattened into normal hook state/derived values.
+The old workflow `useTaskActions` nested-hook contract has been replaced by the feature-owned `src/features/tasks/hooks/useTaskActions.ts` implementation. Keep new task-action work on that feature-owned hook.
 
 ### 7. Testing is still far behind the architecture
 
@@ -424,6 +417,7 @@ The app is in a mixed state:
 - some screens already compose extracted hooks and subcomponents
 - some orchestration still lives in workflow containers
 - many reusable primitives are already isolated in `src/components/ui`
+- prelim dashboard composition now follows the feature-owned screen/components/hooks pattern
 
 ### Target pattern
 
@@ -438,7 +432,7 @@ For each feature:
 
 - move NCRC dashboard screen ownership under `src/features/applications/screens`
 - task dashboard screen ownership now lives under `src/features/tasks/screens`
-- move prelim dashboard screen ownership under `src/features/prelim/screens`
+- prelim dashboard screen ownership and component ownership now live under `src/features/prelim`
 - move application detail screen ownership under `src/features/applications/screens`
 
 Keep route imports pointing to screens, not to workflow folders.
@@ -452,14 +446,14 @@ Keep route imports pointing to screens, not to workflow folders.
 - architecture exists but is expressed inconsistently
 - routes are cleaner than screens
 - data layer is more modern than component ownership
-- major workflow UI still sits under `components/ou-workflow`
-- compatibility hooks still bridge new code back to old folders
+- Application Management detail UI still sits under `components/ou-workflow`
+- compatibility re-export hooks and shared workflow modals still bridge new code back to old folders
 
 ### After
 
 - route files mount feature screens only
 - each workflow has a real feature-owned screen and hook surface
-- shared hooks move out of workflow folders
+- shared hooks move out of workflow folders or become clearly intentional shared feature APIs
 - route-level error handling is consistent
 - app bootstrap moves into `app/providers` and `app/router`
 - `src/api.ts` becomes removable
@@ -526,7 +520,7 @@ Status: Completed for `useDebounce` and `useTaskActions`
 
 ## Phase 2: Make Screen Ownership Match Feature Ownership
 
-Status: Completed for route-facing screen ownership, NCRC dashboard feature migration, and Task Dashboard feature migration
+Status: Completed for route-facing screen ownership, NCRC dashboard feature migration, Task Dashboard feature migration, and Prelim Dashboard feature migration
 
 ### Goals
 
@@ -560,16 +554,19 @@ Status: Completed for route-facing screen ownership, NCRC dashboard feature migr
 - updated the NCRC application detail route to render `ApplicationDetailScreen`
 - moved NCRC dashboard sections into `src/features/applications/components`
 - moved Task Dashboard UI ownership fully into `src/features/tasks/components`, `src/features/tasks/lib`, and `src/features/tasks/model`
+- moved Prelim Dashboard UI ownership fully into `src/features/prelim/components`, `src/features/prelim/lib`, and `src/features/prelim/model`
 - moved the shared notes drawer into `src/features/tasks/notes`
 - removed the old `src/components/ou-workflow/NCRCDashboard` folder after the feature migration completed
 - removed the old `src/components/ou-workflow/TaskDashboard` folder after the feature migration completed
+- removed the old `src/components/ou-workflow/PrelimDashboard` folder after dormant prelim surfaces were cleaned up
 - `npm run -s typecheck` passes after the screen-ownership move
 
 ### Remaining follow-up
 
-- prelim and application-management presentational sections still live under `src/components/ou-workflow`
+- application-management presentational sections still live under `src/components/ou-workflow`
 - `src/features/applications/components/ApplicationDetailsContent.tsx` still imports many workflow-era detail sections
-- this phase fully completed the NCRC dashboard and Task Dashboard migrations while leaving other workflow areas for later slices
+- shared workflow modals and navigation still live under `src/components/ou-workflow`
+- this phase fully completed the NCRC dashboard, Task Dashboard, and Prelim Dashboard migrations while leaving Application Management and shared compatibility surfaces for later slices
 
 ## Phase 3: Harden Routing For Production
 
@@ -631,7 +628,7 @@ Status: Important
 
 ## Phase 5: Prelim Workflow Completion
 
-Status: Important
+Status: Completed
 
 ### Goals
 
@@ -648,6 +645,24 @@ Status: Important
 
 - prelim no longer depends on workflow hook surfaces
 - prelim screen composition looks like the task and applications architecture
+
+### Completed in this slice
+
+- moved active Prelim Dashboard composition into `src/features/prelim/components/PrelimDashboardContent.tsx`
+- moved prelim card, stage-task, resolved-section, resolution drawer, JSON modal, filter, and list UI into `src/features/prelim/components`
+- split the resolution drawer into smaller presentation components
+- moved prelim resolution helpers into `src/features/prelim/lib/prelimResolution.ts`
+- moved drawer-specific resolution types into `src/features/prelim/model/resolution.ts`
+- removed dormant `VectorResultsTable.tsx` and the hidden stats-card surface
+- removed commented vector-search/KASH preview code from `PrelimJsonModal.tsx`
+- removed the unused `fetchVectorMatches` API export
+- deleted the old `src/components/ou-workflow/PrelimDashboard` folder
+- verified the cleanup with `npm run -s typecheck`
+
+### Remaining follow-up
+
+- decide whether prelim application details should become a loader-backed route instead of staying modal-driven
+- migrate shared workflow modals out of `src/components/ou-workflow/modal` when their ownership is clarified
 
 ## Phase 6: App Shell And Shared UX Patterns
 
@@ -711,7 +726,7 @@ Status: Last
 3. Move screen entry ownership under feature folders.
 4. Add route-level error boundaries and app/provider bootstrap cleanup.
 5. Standardize query/mutation patterns.
-6. Finish prelim migration.
+6. Finish Application Management and shared workflow compatibility cleanup.
 7. Expand regression coverage around the new structure.
 8. Remove `src/api.ts` and final compatibility seams.
 
@@ -722,10 +737,10 @@ Status: Last
 If the goal is the highest architectural payoff with the lowest migration risk, the next batch should be:
 
 1. Retire `useDebounce` and `useTaskActions` from `components/ou-workflow/hooks`.
-2. Create feature-owned screen entry files for NCRC, Task Dashboard, Prelim Dashboard, and Application Management.
-3. Add reusable route-level error handling for the existing loader-backed routes.
+2. Move Application Management detail sections out of `src/components/ou-workflow/ApplicationManagement`.
+3. Decide final ownership for shared workflow modals and navigation.
 
-That sequence finishes the most visible migration seams without forcing a disruptive rewrite.
+That sequence finishes the remaining visible migration seams without forcing a disruptive rewrite.
 
 ---
 

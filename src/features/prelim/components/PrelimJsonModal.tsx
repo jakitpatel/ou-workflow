@@ -1,10 +1,10 @@
-import { lazy, Suspense, useState } from 'react'
-import { Search } from 'lucide-react'
+import { lazy, Suspense } from 'react'
 
 const JsonEditorView = lazy(() =>
-  import('@/features/prelim/components/JsonEditorView').then(module => ({
+  import('@/features/prelim/components/JsonEditorView').then((module) => ({
     default: module.JsonEditorView,
-  })))
+  })),
+)
 
 export function PrelimJsonModal({
   open,
@@ -13,44 +13,8 @@ export function PrelimJsonModal({
   isLoading,
   error,
 }: any) {
-  const [selectedNode, setSelectedNode] = useState<any>(null)
-  //const [vectorResults, setVectorResults] = useState<any[]>([])
-  //const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null)
-  //const [companyDetails, setCompanyDetails] = useState<any>(null)
-  const [searching, setSearching] = useState(false)
-  //const [loadingCompany, setLoadingCompany] = useState(false)
-  //const { token } = useUser();
-
   if (!open) return null
 
-  const handleFind = async () => {
-    if (selectedNode == null) return
-
-    setSearching(true)
-    //setVectorResults([])
-    //setSelectedCompanyId(null)
-    //setCompanyDetails(null)
-
-    try {
-      //const result = await fetchVectorMatches({ source: selectedNode, token: token ?? undefined })
-      //setVectorResults(result)
-    } finally {
-      setSearching(false)
-    }
-  }
-  /*
-  const handleSelectCompany = async (companyId: number) => {
-    setSelectedCompanyId(companyId)
-    setLoadingCompany(true)
-
-    try {
-      const details = await fetchCompanyDetails(companyId);
-      setCompanyDetails(details?.[0] ?? null)
-    } finally {
-      setLoadingCompany(false)
-    }
-  }
-  */
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
@@ -58,62 +22,24 @@ export function PrelimJsonModal({
     >
       <div
         className="max-h-[85vh] w-[85vw] rounded-lg bg-white p-4"
-        onClick={event => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Application JSON</h2>
-          <button onClick={onClose}>âœ•</button>
+          <button onClick={onClose}>x</button>
         </div>
 
         {isLoading && (
           <div className="flex h-[60vh] items-center justify-center">
-            Loadingâ€¦
+            Loading...
           </div>
         )}
 
         {!isLoading && !error && (
           <div className="grid h-[65vh] grid-cols-1 gap-3">
-            <Suspense fallback={<div className="p-4 text-sm">Loading JSON editorâ€¦</div>}>
-              <JsonEditorView
-                value={data}
-                title="Preliminary Data"
-                onSelect={setSelectedNode}
-                headerAction={
-                  <button
-                    onClick={handleFind}
-                    disabled={selectedNode == null || searching}
-                    className="flex items-center gap-1 rounded bg-blue-600 px-2 py-1 text-xs text-white disabled:opacity-50"
-                  >
-                    <Search size={14} />
-                    {searching ? 'Findingâ€¦' : 'Find'}
-                  </button>
-                }
-              />
+            <Suspense fallback={<div className="p-4 text-sm">Loading JSON editor...</div>}>
+              <JsonEditorView value={data} title="Preliminary Data" />
             </Suspense>
-            {/*
-            <div className="flex flex-col h-full border rounded bg-white">
-              <div className="px-3 py-2 border-b bg-gray-50 text-sm font-semibold">
-                Vector Search Data
-              </div>
-              <VectorResultsTable
-                results={vectorResults}
-                selectedCompanyId={selectedCompanyId}
-                onSelect={handleSelectCompany}
-              />
-            </div>
-            */}
-            {/*
-            <Suspense fallback={<div className="p-4 text-sm">Loading JSON editorâ€¦</div>}>
-              <JsonEditorView
-                value={
-                  loadingCompany
-                    ? { loading: true }
-                    : companyDetails ?? { message: 'Select a company' }
-                }
-                title="KASH DB Data"
-              />
-            </Suspense>
-            */}
           </div>
         )}
       </div>

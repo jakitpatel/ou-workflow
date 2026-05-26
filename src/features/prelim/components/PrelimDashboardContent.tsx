@@ -3,17 +3,13 @@ import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModa
 import { PrelimDashboardFilters } from '@/features/prelim/components/PrelimDashboardFilters'
 import { PrelimDashboardList } from '@/features/prelim/components/PrelimDashboardList'
 import { PrelimJsonModal } from '@/features/prelim/components/PrelimJsonModal'
-import { PrelimApplicantStatsCards } from '@/features/prelim/components/PrelimApplicantStatsCards'
 import { usePrelimDashboardState } from '@/features/prelim/hooks/usePrelimDashboardState'
-
-const SHOW_PRELIM_APPLICANT_STATS_CARDS = false
 
 export function PrelimDashboardContent() {
   const {
     q,
     status,
     applications,
-    applicantStats,
     isLoading,
     expandedTaskPanel,
     setExpandedTaskPanel,
@@ -38,12 +34,6 @@ export function PrelimDashboardContent() {
   return (
     <div className="p-6 space-y-4">
       <h1 className="text-2xl font-bold">Application Intake</h1>
-
-      {SHOW_PRELIM_APPLICANT_STATS_CARDS && (
-        <div className="pb-4">
-          <PrelimApplicantStatsCards stats={applicantStats} />
-        </div>
-      )}
 
       <PrelimDashboardFilters q={q} status={status} onChange={updateSearch} />
 

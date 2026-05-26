@@ -195,15 +195,6 @@ export async function fetchPrelimApplicationDetails(
   return res.data
 }
 
-export async function fetchVectorMatches(payload: any, token?: string | null) {
-  return await fetchWithAuth({
-    path: '/matchList',
-    method: 'POST',
-    body: { data: JSON.stringify(payload) },
-    token,
-  })
-}
-
 export function buildCompanyPayloadFromApplication(
   appValue: AppCompanyValue,
   companyId: number | null = 0,

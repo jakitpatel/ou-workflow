@@ -50,35 +50,6 @@ export function usePrelimDashboardState() {
     ...queryOptionDefaults.prelimDetail,
   })
 
-  const applicantStats = useMemo(() => {
-    const normalizedApplications = applications.map((application) => ({
-      ...application,
-      status: application.status?.toLowerCase() || '',
-    }))
-
-    const statusCounts = {
-      new: normalizedApplications.filter((application) => application.status === 'new').length,
-      inProgress: normalizedApplications.filter(
-        (application) => application.status === 'inp' || application.status === 'in progress',
-      ).length,
-      withdrawn: normalizedApplications.filter(
-        (application) =>
-          application.status === 'wth' || application.status === 'withdrawn',
-      ).length,
-      completed: normalizedApplications.filter((application) =>
-        ['compl', 'completed', 'certified'].includes(application.status),
-      ).length,
-    }
-
-    const knownTotal = Object.values(statusCounts).reduce((sum, count) => sum + count, 0)
-
-    return {
-      total: normalizedApplications.length,
-      ...statusCounts,
-      others: normalizedApplications.length - knownTotal,
-    }
-  }, [applications])
-
   const updateSearch = (updates: Partial<typeof search>) => {
     navigate({
       search: (prev) => {
@@ -148,7 +119,6 @@ export function usePrelimDashboardState() {
     q,
     status,
     applications,
-    applicantStats,
     isLoading: prelimApplicationsQuery.isLoading,
     expandedTaskPanel,
     setExpandedTaskPanel,
