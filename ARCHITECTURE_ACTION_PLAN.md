@@ -357,7 +357,7 @@ Keep route-group-based protection as the primary pattern:
 - `_public` for login/callback/logout
 - `_authed` for everything requiring a session
 
-Do not add a second, component-only auth guard system on top of this.
+Do not add second, component-only auth guard system on top of this.
 
 ---
 
