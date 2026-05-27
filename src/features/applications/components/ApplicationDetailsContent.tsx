@@ -65,6 +65,7 @@ type Props = {
   application: ApplicationDetail
   mode?: ApplicationDetailsMode
   applicationId?: string | number
+  showInterfaceLabel?: boolean
 }
 
 const resolveApplicationId = (
@@ -508,7 +509,12 @@ const ValidationCheckItem = ({ checkKey, check }: { checkKey: string; check: Val
   </div>
 )
 
-export function ApplicationDetailsContent({ application, mode = 'page', applicationId }: Props) {
+export function ApplicationDetailsContent({
+  application,
+  mode = 'page',
+  applicationId,
+  showInterfaceLabel = true,
+}: Props) {
   const [activeTab, setActiveTab] = useState('overview')
   const [editMode] = useState(false)
   const [showRecentOnly, setShowRecentOnly] = useState(false)
@@ -629,7 +635,9 @@ export function ApplicationDetailsContent({ application, mode = 'page', applicat
             <h1 className={mode === 'page' ? 'text-2xl font-bold text-gray-900' : 'text-xl font-bold text-gray-900'}>
               Application Review & Management
             </h1>
-            <p className="text-gray-600">NCRC Preprocessing Interface</p>
+            {showInterfaceLabel ? (
+              <p className="text-gray-600">NCRC Preprocessing Interface</p>
+            ) : null}
           </div>
           <div className="flex items-center space-x-4">
             <span className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusBadge(application.status)}`}>

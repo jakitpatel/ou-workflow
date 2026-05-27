@@ -68,6 +68,7 @@ export function PrelimApplicationDetailsDrawer({
               application={application}
               mode="drawer"
               applicationId={resolvedExternalReferenceId}
+              showInterfaceLabel={false}
             />
           ) : null}
         </div>
