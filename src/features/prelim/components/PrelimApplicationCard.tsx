@@ -248,7 +248,10 @@ export function PrelimApplicationCard({
               </div>
             )}
             <button
-              onClick={onViewApplication}
+              onClick={(e) => {
+                e.stopPropagation()
+                onViewApplication()
+              }}
               className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
             >
               View Application

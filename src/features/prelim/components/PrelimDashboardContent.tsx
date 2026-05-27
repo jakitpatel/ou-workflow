@@ -1,8 +1,8 @@
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal'
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal'
+import { PrelimApplicationDetailsDrawer } from '@/features/prelim/components/PrelimApplicationDetailsDrawer'
 import { PrelimDashboardFilters } from '@/features/prelim/components/PrelimDashboardFilters'
 import { PrelimDashboardList } from '@/features/prelim/components/PrelimDashboardList'
-import { PrelimJsonModal } from '@/features/prelim/components/PrelimJsonModal'
 import { usePrelimDashboardState } from '@/features/prelim/hooks/usePrelimDashboardState'
 
 export function PrelimDashboardContent() {
@@ -48,15 +48,14 @@ export function PrelimDashboardContent() {
         handleTaskAction={handleTaskAction}
       />
 
-      {selectedId && (
-        <PrelimJsonModal
-          open={true}
-          data={applicationDetails}
-          isLoading={isDetailsLoading}
-          error={applicationDetailsError}
-          onClose={() => setSelectedId(null)}
-        />
-      )}
+      <PrelimApplicationDetailsDrawer
+        open={selectedId !== null}
+        externalReferenceId={selectedId}
+        data={applicationDetails}
+        isLoading={isDetailsLoading}
+        error={applicationDetailsError}
+        onClose={() => setSelectedId(null)}
+      />
 
       <ActionModal
         setShowActionModal={setShowActionModal}
