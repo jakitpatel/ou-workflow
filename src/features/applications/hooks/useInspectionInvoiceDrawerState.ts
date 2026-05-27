@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { generateInspectionInvoice, createApplicationMessage, fetchApplicationDetail } from '@/features/applications/api'
+import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { useUser } from '@/context/UserContext'
 import type { Applicant, CompanyContact } from '@/types/application'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
@@ -897,6 +898,7 @@ export function useInspectionInvoiceDrawerState({
       if (!awaitPayment) {
         await confirmTask({
           taskId: assignmentTaskId,
+          applicationId: resolvedApplicationId,
           overwrite: '1',
           status: 'PENDING',
           result: '',
@@ -906,7 +908,15 @@ export function useInspectionInvoiceDrawerState({
         })
       }
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+        refreshApplicationInListCaches({
+          applicationId: resolvedApplicationId,
+          queryClient,
+          token,
+        }).then((refreshed) =>
+          refreshed
+            ? undefined
+            : queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+        ).catch(() => queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })),
         queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
       ])
 
@@ -999,6 +1009,7 @@ export function useInspectionInvoiceDrawerState({
     try {
       await confirmTask({
         taskId: invoiceTaskId,
+        applicationId: resolvedApplicationId,
         result: 'Mark Paid',
         capacity: 'DESIGNATED',
         includeCompletedBy: false,
@@ -1015,7 +1026,15 @@ export function useInspectionInvoiceDrawerState({
         nextStage: 'paid',
       })
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+        refreshApplicationInListCaches({
+          applicationId: resolvedApplicationId,
+          queryClient,
+          token,
+        }).then((refreshed) =>
+          refreshed
+            ? undefined
+            : queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+        ).catch(() => queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })),
         queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
       ])
     } finally {

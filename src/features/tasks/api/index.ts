@@ -104,6 +104,7 @@ export async function confirmTask({
   includeCompletionNotes = true,
 }: {
   taskId: string
+  applicationId?: string | number | null
   result?: unknown
   resultData?: string
   completionNotes?: string
@@ -265,6 +266,7 @@ export async function undoTask({
   token,
 }: {
   taskId: string
+  applicationId?: string | number | null
   token?: string | null
 }): Promise<any> {
   return await fetchWithAuth({

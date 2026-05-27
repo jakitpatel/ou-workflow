@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { CalendarDays, Check, ExternalLink, MapPin, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
+import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { getInspectionStatusInputParam } from '@/features/applications/utils/inspectionStatusDetails'
@@ -351,6 +352,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
 
       await confirmTask({
         taskId,
+        applicationId,
         token: token ?? undefined,
         username: username ?? undefined,
         result: 'completed',
@@ -371,7 +373,15 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
       })
       updateCachedVisitDateTaskResult(taskId, visitDateGuiDisplayResult)
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+        refreshApplicationInListCaches({
+          applicationId,
+          queryClient,
+          token,
+        }).then((refreshed) =>
+          refreshed
+            ? undefined
+            : queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+        ).catch(() => queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })),
         queryClient.invalidateQueries({ queryKey: prelimQueryKeys.lists() }),
         queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
       ])

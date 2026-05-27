@@ -451,10 +451,12 @@ export function useTaskDashboardState() {
   ])
 
   const confirmTaskMutation = useConfirmTaskMutation({
+    includeApplicationLists: true,
     onError: (message) => errorDialogRef.current?.open(message),
   })
 
   const assignTaskMutation = useAssignTaskMutation({
+    includeApplicationLists: true,
     onError: (message) => errorDialogRef.current?.open(message),
   })
 
@@ -469,9 +471,14 @@ export function useTaskDashboardState() {
       const taskCategory = (action.taskCategory || action.TaskCategory)?.toLowerCase()
       const taskId = action.taskInstanceId ?? action.TaskInstanceId ?? action.id
       const capacity = resolveCapacity(action, username)
+      const resolvedApplicationId =
+        selectedActionArg?.application?.applicationId ??
+        selectedActionArg?.application?.id ??
+        action.applicationId
 
       const mutationParams = {
         taskId: String(taskId ?? ''),
+        applicationId: resolvedApplicationId,
         token: token ?? undefined,
         username: username ?? undefined,
         capacity,
@@ -549,12 +556,23 @@ export function useTaskDashboardState() {
   )
 
   const completeTaskWithResult = useCallback(
-    (action: any, result: string, status?: string, completionNotes?: string) => {
+    (
+      action: any,
+      result: string,
+      status?: string,
+      completionNotes?: string,
+      applicationId?: string | number | null,
+    ) => {
       const taskId = action.taskInstanceId ?? action.TaskInstanceId ?? action.id
       const capacity = resolveCapacity(action, username)
+      const resolvedApplicationId =
+        applicationId ??
+        action.applicationId ??
+        action.application?.applicationId
 
       confirmTaskMutation.mutate({
         taskId: String(taskId ?? ''),
+        applicationId: resolvedApplicationId,
         token: token ?? undefined,
         username: username ?? undefined,
         capacity,

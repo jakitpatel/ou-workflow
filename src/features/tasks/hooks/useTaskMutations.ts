@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { assignTask, confirmTask, createTaskNote, undoTask } from '@/features/tasks/api'
+import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 
 type ConfirmTaskInput = {
   taskId: string
+  applicationId?: string | number | null
   result?: string
   resultData?: string
   completionNotes?: string
@@ -27,6 +29,7 @@ type AssignTaskInput = {
 
 type UndoTaskInput = {
   taskId: string
+  applicationId?: string | number | null
   token?: string | null
 }
 
@@ -106,10 +109,26 @@ const resolveMutationErrorMessage = (error: unknown, fallback: string): string =
 const invalidateRelatedLists = async (
   queryClient: ReturnType<typeof useQueryClient>,
   options: TaskMutationOptions,
+  applicationRefresh?: {
+    applicationId?: string | number | null
+    token?: string | null
+  },
 ) => {
   await queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() })
   if (options.includeApplicationLists) {
-    await queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })
+    try {
+      const refreshed = await refreshApplicationInListCaches({
+        applicationId: applicationRefresh?.applicationId,
+        queryClient,
+        token: applicationRefresh?.token,
+      })
+
+      if (!refreshed) {
+        await queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })
+      }
+    } catch {
+      await queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })
+    }
   }
   if (options.includePrelimLists) {
     await queryClient.invalidateQueries({ queryKey: prelimQueryKeys.lists() })
@@ -127,7 +146,11 @@ export const useConfirmTaskMutation = (options: TaskMutationOptions = {}) => {
         ...task,
         ...(nextStatus ? { status: nextStatus } : {}),
       }))
-      await invalidateRelatedLists(queryClient, options)
+      const payload = variables as ConfirmTaskInput
+      await invalidateRelatedLists(queryClient, options, {
+        applicationId: payload.applicationId,
+        token: payload.token,
+      })
     },
     onError: (error: unknown) => {
       options.onError?.(resolveMutationErrorMessage(error, 'Task confirmation failed'))
@@ -147,7 +170,10 @@ export const useAssignTaskMutation = (options: TaskMutationOptions = {}) => {
         assignee: payload.assignee,
         assigneeRole: payload.role,
       }))
-      await invalidateRelatedLists(queryClient, options)
+      await invalidateRelatedLists(queryClient, options, {
+        applicationId: payload.appId,
+        token: payload.token,
+      })
     },
     onError: (error: unknown) => {
       options.onError?.(resolveMutationErrorMessage(error, 'Task assignment failed'))
@@ -160,8 +186,15 @@ export const useCreateTaskNoteMutation = (options: TaskMutationOptions = {}) => 
 
   return useMutation({
     mutationFn: createTaskNote,
-    onSuccess: async (_response, _variables) => {
-      await invalidateRelatedLists(queryClient, options)
+    onSuccess: async (_response, variables) => {
+      const payload = variables as {
+        applicationId?: string | number | null
+        token?: string | null
+      }
+      await invalidateRelatedLists(queryClient, options, {
+        applicationId: payload.applicationId,
+        token: payload.token,
+      })
     },
     onError: (error: unknown) => {
       options.onError?.(resolveMutationErrorMessage(error, 'Task note creation failed'))
@@ -182,7 +215,10 @@ export const useUndoTaskMutation = (options: TaskMutationOptions = {}) => {
         CompletedDate: undefined,
         executedBy: undefined,
       }))
-      await invalidateRelatedLists(queryClient, options)
+      await invalidateRelatedLists(queryClient, options, {
+        applicationId: payload.applicationId,
+        token: payload.token,
+      })
     },
     onError: (error: unknown) => {
       options.onError?.(resolveMutationErrorMessage(error, 'Undo task failed'))

@@ -5,6 +5,7 @@ import { Check, Mail, Pencil, Search, UserRound, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { createApplicationMessage } from '@/features/applications/api'
+import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import {
   buildInspectionStatusDetails,
@@ -609,7 +610,15 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       updateCachedAssignmentTaskResult(visitDateTaskId, undefined, visitDateStatusDetails)
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+        refreshApplicationInListCaches({
+          applicationId: applicant?.applicationId,
+          queryClient,
+          token,
+        }).then((refreshed) =>
+          refreshed
+            ? undefined
+            : queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+        ).catch(() => queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })),
         queryClient.invalidateQueries({ queryKey: prelimQueryKeys.lists() }),
         queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
       ])

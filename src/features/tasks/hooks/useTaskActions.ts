@@ -71,9 +71,14 @@ export function useTaskActions({ applications, token, username, onError }: Param
       const taskType = action.taskType?.toLowerCase()
       const taskCategory = action.taskCategory?.toLowerCase()
       const taskId = String(action?.TaskInstanceId ?? action?.taskInstanceId ?? action?.id ?? '')
+      const applicationId =
+        selectedAction?.application?.applicationId ??
+        action.application?.applicationId ??
+        action.applicationId
 
       const baseParams = {
         taskId,
+        applicationId,
         token: token ?? undefined,
         username: username ?? undefined,
         capacity: action.capacity ?? undefined,
@@ -143,11 +148,22 @@ export function useTaskActions({ applications, token, username, onError }: Param
   )
 
   const completeTaskWithResult = useCallback(
-    (action: Task, result: string, status?: string, completionNotes?: string) => {
+    (
+      action: Task,
+      result: string,
+      status?: string,
+      completionNotes?: string,
+      applicationId?: string | number | null,
+    ) => {
       const isCancelApplicationTask = action?.name?.toLowerCase().trim() === 'cancel application'
+      const resolvedApplicationId =
+        applicationId ??
+        (action as any)?.applicationId ??
+        (action as any)?.application?.applicationId
 
       confirmTaskMutation.mutate({
         taskId: String(action.TaskInstanceId),
+        applicationId: resolvedApplicationId,
         token: token ?? undefined,
         username: username ?? undefined,
         capacity: action.capacity ?? undefined,

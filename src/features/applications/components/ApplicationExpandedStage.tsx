@@ -220,6 +220,7 @@ export function ApplicationExpandedStage({
                             e.stopPropagation()
                             await undoTaskMutation.mutateAsync({
                               taskId,
+                              applicationId: applicant.applicationId,
                               token: token ?? undefined,
                             })
                             toast.success(`Undid "${task.name}"`)

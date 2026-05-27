@@ -20,7 +20,8 @@ type Props = {
     action: Task,
     result: string,
     status?: string,
-    completionNotes?: string
+    completionNotes?: string,
+    applicationId?: string | number | null
   ) => void;
 };
 
@@ -218,7 +219,8 @@ export const UploadNdaModal: React.FC<Props> = ({
           selectedAction.action,
           "yes",
           undefined,
-          "NDA uploaded successfully"
+          "NDA uploaded successfully",
+          applicationId
         );
         setShowUploadModal(null);
       }
@@ -231,6 +233,7 @@ export const UploadNdaModal: React.FC<Props> = ({
   }, [
     file,
     selectedAction,
+    applicationId,
     taskInstanceId,
     taskName,
     token,
@@ -321,14 +324,16 @@ export const UploadNdaModal: React.FC<Props> = ({
           selectedAction.action,
           "yes",
           undefined,
-          "NDA uploaded and marked complete"
+          "NDA uploaded and marked complete",
+          applicationId
         );
       } else if (isEmailActionTask) {
         completeTaskWithResult(
           selectedAction.action,
           "yes",
           undefined,
-          "Email sent to "+selectedContactEmail
+          "Email sent to "+selectedContactEmail,
+          applicationId
         );
       }
 
@@ -343,6 +348,7 @@ export const UploadNdaModal: React.FC<Props> = ({
     isEmailActionTask,
     companyContacts.length,
     selectedContactEmail,
+    applicationId,
     uploaded,
     uploadSelectedFile,
     completeTaskWithResult,
@@ -364,7 +370,8 @@ export const UploadNdaModal: React.FC<Props> = ({
         selectedAction.action,
         "",
         "IN_PROGRESS",
-        "NDA review marked as negotiate"
+        "NDA review marked as negotiate",
+        applicationId
       );
       setShowUploadModal(null);
     } catch (err: any) {
@@ -374,7 +381,7 @@ export const UploadNdaModal: React.FC<Props> = ({
       setSaving(false);
       setProcessingAction(null);
     }
-  }, [selectedAction, completeTaskWithResult, setShowUploadModal]);
+  }, [selectedAction, applicationId, completeTaskWithResult, setShowUploadModal]);
 
   if (!showUploadModal || !selectedAction) {
     return null;

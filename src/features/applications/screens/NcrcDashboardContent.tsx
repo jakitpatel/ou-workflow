@@ -286,7 +286,7 @@ export function NcrcDashboardContent() {
 
   const handleCancelTask = async (application: Applicant, action: Task, reason: string) => {
     handleSelectAppActions(application, action)
-    completeTaskWithResult(action, reason)
+    completeTaskWithResult(action, reason, undefined, undefined, application.applicationId)
   }
 
   const openMyNotesApplicationDetails = (applicationId: number) => {
