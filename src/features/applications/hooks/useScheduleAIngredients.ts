@@ -322,9 +322,11 @@ export function useScheduleAIngredientsScratchpad(applicationId?: string | numbe
   const generateRound = useCallback(
     ({
       applicationName,
+      recipientEmail,
       rows,
     }: {
       applicationName?: string
+      recipientEmail?: string
       rows: ScheduleAIngredientRow[]
     }) => {
       const resolved = new Set(
@@ -362,7 +364,7 @@ export function useScheduleAIngredientsScratchpad(applicationId?: string | numbe
         items,
         status: 'generated',
         email: {
-          to: '',
+          to: recipientEmail ?? '',
           subject,
           body,
         },

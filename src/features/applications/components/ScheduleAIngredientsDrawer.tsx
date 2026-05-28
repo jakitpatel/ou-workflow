@@ -18,10 +18,12 @@ import {
 } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
 import {
+  createApplicationMessage,
   createScheduleAIngredient,
   type CreateScheduleAIngredientPayload,
 } from '@/features/applications/api'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
+import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import {
   mapApplicationIngredientRow,
   mapKashIngredientRow,
@@ -30,6 +32,7 @@ import {
   useScheduleAIngredientsScratchpad,
 } from '@/features/applications/hooks/useScheduleAIngredients'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
+import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 
 type ScheduleATab = 'application' | 'kashrus' | 'communication' | 'eir' | 'signoff'
 
@@ -87,6 +90,15 @@ const downloadTextFile = (filename: string, text: string, type = 'text/csv;chars
   link.click()
   document.body.removeChild(link)
   window.setTimeout(() => URL.revokeObjectURL(href), 1000)
+}
+
+const findPrimaryContactEmail = (contacts?: Array<Record<string, unknown>>) => {
+  const primaryContact =
+    contacts?.find((contact) => String(contact.type ?? contact.Type ?? '').toLowerCase() === 'primary contact') ??
+    contacts?.find((contact) => String(contact.IsPrimaryContact ?? contact.isPrimaryContact ?? '').toLowerCase() === 'true')
+
+  const email = primaryContact?.email ?? primaryContact?.Email ?? primaryContact?.EMail ?? primaryContact?.contactEmail
+  return String(email ?? '').trim()
 }
 
 function StatusPill({ children, tone = 'gray' }: { children: React.ReactNode; tone?: 'gray' | 'green' | 'amber' | 'red' | 'blue' | 'purple' }) {
@@ -508,21 +520,96 @@ function CommunicationTab({
   rows,
   applicationName,
   applicationId,
+  primaryContactEmail,
+  isPrimaryContactLoading,
   scratchpadApi,
 }: {
   rows: ScheduleAIngredientRow[]
   applicationName?: string
   applicationId?: string
+  primaryContactEmail?: string
+  isPrimaryContactLoading?: boolean
   scratchpadApi: ReturnType<typeof useScheduleAIngredientsScratchpad>
 }) {
+  const { token } = useUser()
   const { scratchpad } = scratchpadApi
   const unresolved = rows.filter((row) => scratchpad.flags[row.id]?.flagged && !scratchpad.deleted[row.id])
   const [latestEmailId, setLatestEmailId] = useState<string | null>(null)
+  const [toEmail, setToEmail] = useState('')
+  const [sendError, setSendError] = useState('')
+  const [sentMessage, setSentMessage] = useState('')
   const latestEmail = scratchpad.rounds.find((round) => round.id === latestEmailId) ?? scratchpad.rounds.at(-1)
 
+  useEffect(() => {
+    if (latestEmail) {
+      setToEmail(latestEmail.email.to || primaryContactEmail || '')
+      setSendError('')
+      setSentMessage('')
+    }
+  }, [latestEmail, primaryContactEmail])
+
+  const sendEmailMutation = useMutation({
+    mutationFn: createApplicationMessage,
+    onSuccess: () => {
+      if (latestEmail) scratchpadApi.updateRoundStatus(latestEmail.id, 'awaiting')
+      setSendError('')
+      setSentMessage('Email sent and captured in application messages.')
+    },
+    onError: (error: unknown) => {
+      const message =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message?: unknown }).message)
+          : 'Failed to send email.'
+      setSendError(message)
+      setSentMessage('')
+    },
+  })
+
   const generateRound = () => {
-    const round = scratchpadApi.generateRound({ applicationName, rows })
+    const round = scratchpadApi.generateRound({ applicationName, recipientEmail: primaryContactEmail, rows })
     if (round) setLatestEmailId(round.id)
+  }
+
+  const sendRoundEmail = () => {
+    if (!latestEmail) return
+    const recipient = toEmail.trim()
+    if (!recipient) {
+      setSendError('Enter a recipient email before sending.')
+      return
+    }
+
+    const email = buildHtmlEmailFromPlainText(latestEmail.email.body, {
+      preheader: latestEmail.email.subject,
+      title: 'OU Kosher Schedule A',
+    })
+
+    sendEmailMutation.mutate({
+      payload: {
+        MessageID: null,
+        ApplicationID: applicationId ?? null,
+        FromUser: 'projectflow@ou.org',
+        ToUser: recipient,
+        Subject: latestEmail.email.subject,
+        MessageText: email.html,
+        MessageTextPlain: email.text,
+        PlainText: email.text,
+        Text: email.text,
+        MessageType: 'Email',
+        Priority: 'NORMAL',
+        SentDate: new Date().toISOString(),
+        TemplateName: 'schedule-a-ingredients',
+        TaskInstanceId: null,
+        isPrivate: false,
+        parentMessageId: null,
+        toReply: null,
+        isRead: false,
+        tag: null,
+        CCUser: null,
+        BCCUser: 'productAutomation@ou.org',
+        Attachments: null,
+      },
+      token,
+    })
   }
 
   return (
@@ -565,22 +652,32 @@ function CommunicationTab({
               <span className="text-xs text-blue-600">{latestEmail.items.length} item{latestEmail.items.length === 1 ? '' : 's'}</span>
             </div>
             <div className="mb-2 grid gap-2 text-xs md:grid-cols-[70px_1fr]">
+              <span className="font-medium text-blue-500">To</span>
+              <input
+                value={toEmail}
+                onChange={(event) => setToEmail(event.target.value)}
+                placeholder={isPrimaryContactLoading ? 'Loading primary contact...' : 'Primary contact email'}
+                className="rounded border border-blue-200 bg-white px-2 py-1 text-blue-900 outline-none focus:ring-1 focus:ring-blue-500"
+              />
               <span className="font-medium text-blue-500">Subject</span>
               <span className="rounded border border-blue-200 bg-white px-2 py-1 text-blue-900">{latestEmail.email.subject}</span>
             </div>
+            {sendError ? <div className="mb-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">{sendError}</div> : null}
+            {sentMessage ? <div className="mb-2 rounded border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700">{sentMessage}</div> : null}
             <textarea readOnly rows={8} className="w-full resize-y rounded border border-blue-200 bg-white px-2 py-1.5 font-mono text-xs text-blue-900 outline-none" value={latestEmail.email.body} />
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <a
-                href={`mailto:?subject=${encodeURIComponent(latestEmail.email.subject)}&body=${encodeURIComponent(latestEmail.email.body)}`}
-                onClick={() => scratchpadApi.updateRoundStatus(latestEmail.id, 'awaiting')}
+              <button
+                type="button"
+                onClick={sendRoundEmail}
+                disabled={sendEmailMutation.isPending}
                 className="inline-flex items-center gap-1.5 rounded bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
               >
                 <Send className="h-3.5 w-3.5" />
-                Open in Outlook
-              </a>
+                {sendEmailMutation.isPending ? 'Sending...' : 'Send Email'}
+              </button>
               <button
                 type="button"
-                onClick={() => navigator.clipboard.writeText(`Subject: ${latestEmail.email.subject}\n\n${latestEmail.email.body}`)}
+                onClick={() => navigator.clipboard.writeText(`To: ${toEmail}\nSubject: ${latestEmail.email.subject}\n\n${latestEmail.email.body}`)}
                 className="rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50"
               >
                 Copy email
@@ -858,6 +955,10 @@ export function ScheduleAIngredientsDrawer({
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const { data, isLoading, error } = useScheduleAIngredients(open ? resolvedApplicationId : undefined)
+  const {
+    data: applicationDetail,
+    isLoading: isApplicationDetailLoading,
+  } = useApplicationDetail(open ? resolvedApplicationId : undefined)
   const scratchpadApi = useScheduleAIngredientsScratchpad(resolvedApplicationId)
 
   const applicationRows = useMemo(
@@ -869,6 +970,10 @@ export function ScheduleAIngredientsDrawer({
   )
   const kashRows = useMemo(() => (data?.kashIngredients ?? []).map(mapKashIngredientRow), [data?.kashIngredients])
   const allRows = useMemo(() => [...applicationRows, ...kashRows], [applicationRows, kashRows])
+  const primaryContactEmail = useMemo(
+    () => findPrimaryContactEmail(applicationDetail?.companyContacts as Array<Record<string, unknown>> | undefined),
+    [applicationDetail?.companyContacts],
+  )
 
   useEffect(() => {
     if (open) {
@@ -924,6 +1029,8 @@ export function ScheduleAIngredientsDrawer({
           rows={allRows}
           applicationName={applicationName}
           applicationId={resolvedApplicationId}
+          primaryContactEmail={primaryContactEmail}
+          isPrimaryContactLoading={isApplicationDetailLoading}
           scratchpadApi={scratchpadApi}
         />
       )
