@@ -257,18 +257,27 @@ export type TaskNoteReaction = {
 
 export type WFApplicationMessageAttributes = {
   ApplicationID?: number;
+  Attachments?: string | null;
+  BCCUser?: string | null;
+  CCUser?: string | null;
+  EmailStatus?: string | null;
   FromUser?: string;
   isRead?: boolean | number | string;
   MessageID?: number;
   MessageText?: string;
+  MessageTextPlain?: string | null;
   MessageType?: string;
+  PlainText?: string | null;
   Priority?: 'CRITICAL' | 'HIGH' | 'LOW' | 'NORMAL' | string;
   SentDate?: string;
+  Subject?: string | null;
   Tag?: string | TaskNoteReaction[];
   tag?: string | TaskNoteReaction[];
   TaskInstanceId?: number;
+  Text?: string | null;
   ToUser?: string;
   isPrivate?: boolean;
+  parentMessageId?: number | string | null;
 };
 
 export type WFApplicationMessageRecord = {

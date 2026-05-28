@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchScheduleAIngredients } from '@/features/applications/api'
+import { fetchApplicationMessages, fetchScheduleAIngredients } from '@/features/applications/api'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { useUser } from '@/context/UserContext'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
@@ -180,6 +180,32 @@ export function useScheduleAIngredients(applicationId?: string | number) {
   })
 }
 
+export function useScheduleACommunicationRounds({
+  applicationId,
+  taskInstanceId,
+}: {
+  applicationId?: string | number
+  taskInstanceId?: string | number | null
+}) {
+  const { token } = useUser()
+  const normalizedApplicationId =
+    applicationId === undefined || applicationId === null ? undefined : String(applicationId)
+  const normalizedTaskInstanceId =
+    taskInstanceId === undefined || taskInstanceId === null ? undefined : String(taskInstanceId)
+
+  return useQuery({
+    queryKey: applicationsQueryKeys.scheduleAMessages(normalizedApplicationId, normalizedTaskInstanceId),
+    queryFn: () =>
+      fetchApplicationMessages({
+        applicationId: normalizedApplicationId,
+        taskInstanceId: normalizedTaskInstanceId,
+        token: token ?? undefined,
+      }),
+    enabled: !!token && !!normalizedApplicationId,
+    ...queryOptionDefaults.applicationScheduleAIngredients,
+  })
+}
+
 export function useScheduleAIngredientsScratchpad(applicationId?: string | number) {
   const normalizedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
@@ -323,10 +349,12 @@ export function useScheduleAIngredientsScratchpad(applicationId?: string | numbe
     ({
       applicationName,
       recipientEmail,
+      roundNumber,
       rows,
     }: {
       applicationName?: string
       recipientEmail?: string
+      roundNumber?: number
       rows: ScheduleAIngredientRow[]
     }) => {
       const resolved = new Set(
@@ -342,9 +370,9 @@ export function useScheduleAIngredientsScratchpad(applicationId?: string | numbe
 
       if (!items.length) return null
 
-      const roundNumber = scratchpad.rounds.length + 1
+      const resolvedRoundNumber = roundNumber ?? scratchpad.rounds.length + 1
       const companyName = applicationName || 'this application'
-      const subject = `OU Schedule A - Additional Information Needed (App #${normalizedApplicationId ?? ''}, Round ${roundNumber})`
+      const subject = `OU Schedule A - Additional Information Needed (App #${normalizedApplicationId ?? ''}, Round ${resolvedRoundNumber})`
       const body = [
         'Dear Company Contact,',
         '',
@@ -359,7 +387,7 @@ export function useScheduleAIngredientsScratchpad(applicationId?: string | numbe
 
       const round: ScheduleACommunicationRound = {
         id: `round-${Date.now()}`,
-        roundNumber,
+        roundNumber: resolvedRoundNumber,
         generatedDate: todayLabel(),
         items,
         status: 'generated',

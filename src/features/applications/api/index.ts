@@ -26,6 +26,8 @@ import type {
   ScheduleBProductsResponse,
   ScheduleBProductsResult,
   UserRoleResponse,
+  ApplicationEmail,
+  WFApplicationMessageRecord,
 } from '@/types/application'
 import {
   mapApplicantsResponse,
@@ -294,6 +296,79 @@ export async function createApplicationMessage({
       },
     },
     token,
+  })
+}
+
+export async function fetchApplicationMessages({
+  applicationId,
+  taskInstanceId,
+  token,
+}: {
+  applicationId?: string | number | null
+  taskInstanceId?: string | number | null
+  token?: string | null
+}): Promise<ApplicationEmail[]> {
+  const params = new URLSearchParams()
+
+  if (applicationId !== undefined && applicationId !== null && String(applicationId).trim()) {
+    params.append('filter[ApplicationID]', String(applicationId).trim())
+  }
+
+  if (taskInstanceId !== undefined && taskInstanceId !== null && String(taskInstanceId).trim()) {
+    params.append('filter[TaskInstanceId]', String(taskInstanceId).trim())
+  }
+
+  params.append('sort', '-MessageID')
+
+  const response = await fetchWithAuth<
+    | {
+        data?: WFApplicationMessageRecord[]
+        messages?: WFApplicationMessageRecord[]
+        items?: WFApplicationMessageRecord[]
+      }
+    | WFApplicationMessageRecord[]
+  >({
+    path: `/api/WFApplicationMessage?${params.toString()}`,
+    method: 'GET',
+    token,
+  })
+
+  const records = Array.isArray(response)
+    ? response
+    : Array.isArray(response?.data)
+      ? response.data
+      : Array.isArray(response?.messages)
+        ? response.messages
+        : Array.isArray(response?.items)
+          ? response.items
+          : []
+
+  return records.map((record) => {
+    const attributes = record.attributes ?? {}
+    const tag = attributes.tag ?? attributes.Tag
+
+    return {
+      ApplicationID: attributes.ApplicationID,
+      Attachments: attributes.Attachments,
+      BCCUser: attributes.BCCUser,
+      CCUser: attributes.CCUser,
+      EmailStatus: attributes.EmailStatus,
+      FromUser: attributes.FromUser,
+      MessageID: attributes.MessageID ?? record.id,
+      MessageText: attributes.MessageText,
+      MessageTextPlain: attributes.MessageTextPlain,
+      MessageType: attributes.MessageType,
+      PlainText: attributes.PlainText,
+      Priority: attributes.Priority,
+      SentDate: attributes.SentDate,
+      Subject: attributes.Subject,
+      TaskInstanceId: attributes.TaskInstanceId,
+      Text: attributes.Text,
+      ToUser: attributes.ToUser,
+      isPrivate: attributes.isPrivate,
+      parentMessageId: attributes.parentMessageId,
+      tag: typeof tag === 'string' ? tag : null,
+    }
   })
 }
 

@@ -43,6 +43,7 @@ export function NcrcDashboardContent() {
     open: boolean
     applicationId?: string | number
     applicationName?: string
+    taskInstanceId?: string | number
     taskName?: string
   }>({
     open: false,
@@ -203,6 +204,7 @@ export function NcrcDashboardContent() {
         open: true,
         applicationId: application.applicationId,
         applicationName: application.company,
+        taskInstanceId: action.TaskInstanceId,
         taskName: action.name,
       })
       return
@@ -427,6 +429,7 @@ export function NcrcDashboardContent() {
         open={scheduleADrawerState.open}
         applicationId={scheduleADrawerState.applicationId}
         applicationName={scheduleADrawerState.applicationName}
+        taskInstanceId={scheduleADrawerState.taskInstanceId}
         taskName={scheduleADrawerState.taskName}
         onClose={() => setScheduleADrawerState({ open: false })}
       />

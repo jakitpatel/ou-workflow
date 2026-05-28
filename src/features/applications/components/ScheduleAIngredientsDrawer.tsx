@@ -28,6 +28,7 @@ import {
   mapApplicationIngredientRow,
   mapKashIngredientRow,
   type ScheduleAIngredientRow,
+  useScheduleACommunicationRounds,
   useScheduleAIngredients,
   useScheduleAIngredientsScratchpad,
 } from '@/features/applications/hooks/useScheduleAIngredients'
@@ -40,6 +41,7 @@ type Props = {
   open: boolean
   applicationId?: string | number
   applicationName?: string
+  taskInstanceId?: string | number | null
   taskName?: string
   onClose: () => void
 }
@@ -520,6 +522,7 @@ function CommunicationTab({
   rows,
   applicationName,
   applicationId,
+  taskInstanceId,
   primaryContactEmail,
   isPrimaryContactLoading,
   scratchpadApi,
@@ -527,18 +530,40 @@ function CommunicationTab({
   rows: ScheduleAIngredientRow[]
   applicationName?: string
   applicationId?: string
+  taskInstanceId?: string | number | null
   primaryContactEmail?: string
   isPrimaryContactLoading?: boolean
   scratchpadApi: ReturnType<typeof useScheduleAIngredientsScratchpad>
 }) {
   const { token } = useUser()
+  const queryClient = useQueryClient()
   const { scratchpad } = scratchpadApi
   const unresolved = rows.filter((row) => scratchpad.flags[row.id]?.flagged && !scratchpad.deleted[row.id])
   const [latestEmailId, setLatestEmailId] = useState<string | null>(null)
   const [toEmail, setToEmail] = useState('')
   const [sendError, setSendError] = useState('')
   const [sentMessage, setSentMessage] = useState('')
-  const latestEmail = scratchpad.rounds.find((round) => round.id === latestEmailId) ?? scratchpad.rounds.at(-1)
+  const latestEmail = latestEmailId
+    ? scratchpad.rounds.find((round) => round.id === latestEmailId) ?? null
+    : null
+  const {
+    data: backendEmails = [],
+    isLoading: isRoundsLoading,
+    error: roundsError,
+  } = useScheduleACommunicationRounds({ applicationId, taskInstanceId })
+  const roundCards = useMemo(
+    () =>
+      backendEmails
+        .map((email) => {
+          const subject = String(email.Subject ?? '')
+          const roundNumber = Number(subject.match(/round\s+(\d+)/i)?.[1] ?? 0)
+          return { email, subject, roundNumber }
+        })
+        .filter((round) => round.roundNumber > 0 && /ou schedule a/i.test(round.subject))
+        .sort((a, b) => b.roundNumber - a.roundNumber || Number(b.email.MessageID ?? 0) - Number(a.email.MessageID ?? 0)),
+    [backendEmails],
+  )
+  const nextRoundNumber = roundCards.length + 1
 
   useEffect(() => {
     if (latestEmail) {
@@ -550,8 +575,15 @@ function CommunicationTab({
 
   const sendEmailMutation = useMutation({
     mutationFn: createApplicationMessage,
-    onSuccess: () => {
+    onSuccess: async () => {
       if (latestEmail) scratchpadApi.updateRoundStatus(latestEmail.id, 'awaiting')
+      await queryClient.invalidateQueries({
+        queryKey: applicationsQueryKeys.scheduleAMessages(
+          applicationId,
+          taskInstanceId === undefined || taskInstanceId === null ? undefined : String(taskInstanceId),
+        ),
+      })
+      setLatestEmailId(null)
       setSendError('')
       setSentMessage('Email sent and captured in application messages.')
     },
@@ -566,7 +598,12 @@ function CommunicationTab({
   })
 
   const generateRound = () => {
-    const round = scratchpadApi.generateRound({ applicationName, recipientEmail: primaryContactEmail, rows })
+    const round = scratchpadApi.generateRound({
+      applicationName,
+      recipientEmail: primaryContactEmail,
+      rows,
+      roundNumber: nextRoundNumber,
+    })
     if (round) setLatestEmailId(round.id)
   }
 
@@ -598,7 +635,7 @@ function CommunicationTab({
         Priority: 'NORMAL',
         SentDate: new Date().toISOString(),
         TemplateName: 'schedule-a-ingredients',
-        TaskInstanceId: null,
+        TaskInstanceId: taskInstanceId ?? null,
         isPrivate: false,
         parentMessageId: null,
         toReply: null,
@@ -620,8 +657,8 @@ function CommunicationTab({
             <h2 className="text-lg font-semibold text-gray-900">Company Communication</h2>
             <p className="mt-1 text-sm text-gray-600">Resolve ingredient info by requesting clarification, LOCs, or source details from the company.</p>
           </div>
-          <StatusPill tone={scratchpad.rounds.length ? 'blue' : 'gray'}>
-            {scratchpad.rounds.length ? `${scratchpad.rounds.length} round${scratchpad.rounds.length === 1 ? '' : 's'}` : 'No rounds yet'}
+          <StatusPill tone={roundCards.length ? 'blue' : 'gray'}>
+            {roundCards.length ? `${roundCards.length} round${roundCards.length === 1 ? '' : 's'}` : 'No rounds yet'}
           </StatusPill>
         </div>
       </div>
@@ -641,7 +678,7 @@ function CommunicationTab({
             className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
           >
             <MessageSquare className="h-4 w-4" />
-            Generate Round {scratchpad.rounds.length + 1} Email
+            Generate Round {nextRoundNumber} Email
           </button>
         </div>
 
@@ -687,53 +724,46 @@ function CommunicationTab({
         ) : null}
 
         <div className="space-y-3">
-          {scratchpad.rounds.length === 0 ? (
+          {isRoundsLoading ? (
+            <p className="rounded-lg border border-dashed border-gray-300 px-4 py-6 text-center text-sm text-gray-500">
+              Loading rounds...
+            </p>
+          ) : null}
+          {roundsError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              Failed to load rounds: {(roundsError as Error).message}
+            </p>
+          ) : null}
+          {!isRoundsLoading && !roundsError && roundCards.length === 0 ? (
             <p className="rounded-lg border border-dashed border-gray-300 px-4 py-6 text-center text-sm text-gray-500">
               No rounds generated yet.
             </p>
           ) : null}
-          {scratchpad.rounds.slice().reverse().map((round) => {
-            const resolvedCount = round.items.filter((item) => item.resolved).length
+          {roundCards.map((round) => {
+            const messageText =
+              round.email.MessageTextPlain?.trim() ||
+              round.email.PlainText?.trim() ||
+              round.email.Text?.trim() ||
+              round.email.MessageText?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() ||
+              ''
             return (
-              <div key={round.id} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+              <div key={round.email.MessageID ?? round.subject} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-gray-900">Round {round.roundNumber}</span>
-                    <StatusPill tone={round.status === 'reviewed' ? 'green' : round.status === 'responded' ? 'blue' : round.status === 'awaiting' ? 'amber' : 'gray'}>
-                      {round.status === 'generated' ? 'Email Drafted' : round.status === 'awaiting' ? 'Awaiting Response' : round.status === 'responded' ? 'Response Received' : 'Reviewed'}
-                    </StatusPill>
-                    <span className="text-xs text-gray-400">{resolvedCount}/{round.items.length} resolved</span>
+                    <StatusPill tone="amber">Awaiting Response</StatusPill>
                   </div>
-                  <span className="text-xs text-gray-400">Generated {round.generatedDate}</span>
+                  <span className="text-xs text-gray-400">{round.email.SentDate ? `Sent ${new Date(round.email.SentDate).toLocaleDateString()}` : 'Sent date unavailable'}</span>
                 </div>
-                <div className="divide-y divide-gray-100">
-                  {round.items.map((item) => (
-                    <div key={`${round.id}-${item.ingId}`} className={item.resolved ? 'bg-green-50 px-4 py-3' : 'px-4 py-3'}>
-                      <div className="mb-1 flex items-start justify-between gap-3">
-                        <span className="text-sm font-medium text-gray-900">{item.name}</span>
-                        {item.resolved ? <StatusPill tone="green">Resolved</StatusPill> : item.needsFollowup ? <StatusPill tone="amber">Next round</StatusPill> : null}
-                      </div>
-                      <p className="text-xs text-gray-600"><span className="font-medium">Asked:</span> {item.question}</p>
-                      {item.response ? (
-                        <div className="mt-2 rounded border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-gray-700">
-                          <span className="font-medium text-blue-700">Company response:</span> {item.response}
-                        </div>
-                      ) : null}
-                      {item.response && !item.resolved && !item.needsFollowup ? (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <button type="button" onClick={() => scratchpadApi.resolveRoundItem(round.id, item.ingId)} className="rounded bg-green-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-green-700">Mark Resolved</button>
-                          <button type="button" onClick={() => scratchpadApi.requestRoundFollowup(round.id, item.ingId)} className="rounded border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50">Needs another round</button>
-                        </div>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-                <div className="flex flex-wrap items-center gap-2 border-t bg-gray-50 px-4 py-2.5">
-                  {round.status === 'generated' ? (
-                    <button type="button" onClick={() => scratchpadApi.updateRoundStatus(round.id, 'awaiting')} className="rounded border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50">Mark as Sent</button>
-                  ) : null}
-                  {round.status === 'awaiting' ? (
-                    <button type="button" onClick={() => scratchpadApi.simulateRoundResponse(round.id)} className="rounded border border-dashed border-indigo-300 bg-white px-3 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50">Simulate Response</button>
+                <div className="space-y-2 px-4 py-3">
+                  <div className="grid gap-1 text-xs text-gray-600 md:grid-cols-[70px_1fr]">
+                    <span className="font-medium text-gray-500">To</span>
+                    <span>{round.email.ToUser || '-'}</span>
+                    <span className="font-medium text-gray-500">Subject</span>
+                    <span className="break-words text-gray-900">{round.subject}</span>
+                  </div>
+                  {messageText ? (
+                    <p className="line-clamp-4 whitespace-pre-line text-xs text-gray-600">{messageText}</p>
                   ) : null}
                 </div>
               </div>
@@ -947,6 +977,7 @@ export function ScheduleAIngredientsDrawer({
   open,
   applicationId,
   applicationName,
+  taskInstanceId,
   taskName,
   onClose,
 }: Props) {
@@ -1029,6 +1060,7 @@ export function ScheduleAIngredientsDrawer({
           rows={allRows}
           applicationName={applicationName}
           applicationId={resolvedApplicationId}
+          taskInstanceId={taskInstanceId}
           primaryContactEmail={primaryContactEmail}
           isPrimaryContactLoading={isApplicationDetailLoading}
           scratchpadApi={scratchpadApi}
