@@ -351,11 +351,13 @@ export function useScheduleAIngredientsScratchpad(applicationId?: string | numbe
       recipientEmail,
       roundNumber,
       rows,
+      taskInstanceId,
     }: {
       applicationName?: string
       recipientEmail?: string
       roundNumber?: number
       rows: ScheduleAIngredientRow[]
+      taskInstanceId?: string | number | null
     }) => {
       const resolved = new Set(
         scratchpad.rounds.flatMap((round) => round.items.filter((item) => item.resolved).map((item) => item.ingId)),
@@ -372,7 +374,12 @@ export function useScheduleAIngredientsScratchpad(applicationId?: string | numbe
 
       const resolvedRoundNumber = roundNumber ?? scratchpad.rounds.length + 1
       const companyName = applicationName || 'this application'
-      const subject = `OU Schedule A - Additional Information Needed (App #${normalizedApplicationId ?? ''}, Round ${resolvedRoundNumber})`
+      const normalizedTaskInstanceId =
+        taskInstanceId === undefined || taskInstanceId === null ? '' : String(taskInstanceId).trim()
+      const taskSubjectPart = normalizedTaskInstanceId ? `, Task: #${normalizedTaskInstanceId}` : ''
+      const subject = `OU Schedule A - Additional Information Needed (App #${
+        normalizedApplicationId ?? ''
+      }${taskSubjectPart}, Round ${resolvedRoundNumber})`
       const body = [
         'Dear Company Contact,',
         '',

@@ -34,6 +34,7 @@ import {
 } from '@/features/applications/hooks/useScheduleAIngredients'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
+import type { ApplicationEmail } from '@/types/application'
 
 type ScheduleATab = 'application' | 'kashrus' | 'communication' | 'eir' | 'signoff'
 
@@ -101,6 +102,24 @@ const findPrimaryContactEmail = (contacts?: Array<Record<string, unknown>>) => {
 
   const email = primaryContact?.email ?? primaryContact?.Email ?? primaryContact?.EMail ?? primaryContact?.contactEmail
   return String(email ?? '').trim()
+}
+
+const getEmailMessageId = (email: ApplicationEmail) => String(email.MessageID ?? '').trim()
+
+const getEmailParentMessageId = (email: ApplicationEmail) => String(email.parentMessageId ?? '').trim()
+
+const getEmailPreviewText = (email: ApplicationEmail) =>
+  email.MessageTextPlain?.trim() ||
+  email.PlainText?.trim() ||
+  email.Text?.trim() ||
+  email.MessageText?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() ||
+  ''
+
+type ScheduleARoundCard = {
+  email: ApplicationEmail
+  replies: ApplicationEmail[]
+  subject: string
+  roundNumber: number
 }
 
 function StatusPill({ children, tone = 'gray' }: { children: React.ReactNode; tone?: 'gray' | 'green' | 'amber' | 'red' | 'blue' | 'purple' }) {
@@ -552,15 +571,45 @@ function CommunicationTab({
     error: roundsError,
   } = useScheduleACommunicationRounds({ applicationId, taskInstanceId })
   const roundCards = useMemo(
-    () =>
-      backendEmails
-        .map((email) => {
+    () => {
+      const childrenByParentId = new Map<string, ApplicationEmail[]>()
+
+      backendEmails.forEach((email) => {
+        const parentMessageId = getEmailParentMessageId(email)
+        if (!parentMessageId || parentMessageId === '0') return
+
+        const children = childrenByParentId.get(parentMessageId) ?? []
+        children.push(email)
+        childrenByParentId.set(parentMessageId, children)
+      })
+
+      const sortByMessageId = (a: ApplicationEmail, b: ApplicationEmail) =>
+        Number(a.MessageID ?? 0) - Number(b.MessageID ?? 0)
+
+      const collectReplies = (parentId: string): ApplicationEmail[] =>
+        (childrenByParentId.get(parentId) ?? [])
+          .sort(sortByMessageId)
+          .flatMap((reply) => [reply, ...collectReplies(getEmailMessageId(reply))])
+
+      return backendEmails
+        .map((email): ScheduleARoundCard | null => {
           const subject = String(email.Subject ?? '')
           const roundNumber = Number(subject.match(/round\s+(\d+)/i)?.[1] ?? 0)
-          return { email, subject, roundNumber }
+          const parentMessageId = getEmailParentMessageId(email)
+          const isRootMessage = !parentMessageId || parentMessageId === '0'
+
+          if (!isRootMessage || roundNumber <= 0 || !/ou schedule a/i.test(subject)) return null
+
+          return {
+            email,
+            replies: collectReplies(getEmailMessageId(email)),
+            subject,
+            roundNumber,
+          }
         })
-        .filter((round) => round.roundNumber > 0 && /ou schedule a/i.test(round.subject))
-        .sort((a, b) => b.roundNumber - a.roundNumber || Number(b.email.MessageID ?? 0) - Number(a.email.MessageID ?? 0)),
+        .filter((round): round is ScheduleARoundCard => Boolean(round))
+        .sort((a, b) => b.roundNumber - a.roundNumber || Number(b.email.MessageID ?? 0) - Number(a.email.MessageID ?? 0))
+    },
     [backendEmails],
   )
   const nextRoundNumber = roundCards.length + 1
@@ -603,6 +652,7 @@ function CommunicationTab({
       recipientEmail: primaryContactEmail,
       rows,
       roundNumber: nextRoundNumber,
+      taskInstanceId,
     })
     if (round) setLatestEmailId(round.id)
   }
@@ -740,22 +790,20 @@ function CommunicationTab({
             </p>
           ) : null}
           {roundCards.map((round) => {
-            const messageText =
-              round.email.MessageTextPlain?.trim() ||
-              round.email.PlainText?.trim() ||
-              round.email.Text?.trim() ||
-              round.email.MessageText?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() ||
-              ''
+            const messageText = getEmailPreviewText(round.email)
+            const hasResponses = round.replies.length > 0
             return (
               <div key={round.email.MessageID ?? round.subject} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-gray-900">Round {round.roundNumber}</span>
-                    <StatusPill tone="amber">Awaiting Response</StatusPill>
+                    <StatusPill tone={hasResponses ? 'green' : 'amber'}>
+                      {hasResponses ? 'Responded' : 'Awaiting Response'}
+                    </StatusPill>
                   </div>
                   <span className="text-xs text-gray-400">{round.email.SentDate ? `Sent ${new Date(round.email.SentDate).toLocaleDateString()}` : 'Sent date unavailable'}</span>
                 </div>
-                <div className="space-y-2 px-4 py-3">
+                <div className="space-y-3 px-4 py-3">
                   <div className="grid gap-1 text-xs text-gray-600 md:grid-cols-[70px_1fr]">
                     <span className="font-medium text-gray-500">To</span>
                     <span>{round.email.ToUser || '-'}</span>
@@ -764,6 +812,44 @@ function CommunicationTab({
                   </div>
                   {messageText ? (
                     <p className="line-clamp-4 whitespace-pre-line text-xs text-gray-600">{messageText}</p>
+                  ) : null}
+                  {round.replies.length ? (
+                    <div className="space-y-2 border-t border-gray-100 pt-3">
+                      {round.replies.map((reply) => {
+                        const replyText = getEmailPreviewText(reply)
+                        return (
+                          <div
+                            key={reply.MessageID ?? `${round.email.MessageID}-${reply.SentDate}`}
+                            className="rounded-md border border-green-100 bg-green-50/60 px-3 py-2"
+                          >
+                            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <StatusPill tone="green">Response</StatusPill>
+                                <span className="text-xs font-medium text-gray-700">
+                                  From {reply.FromUser || '-'}
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-400">
+                                {reply.SentDate ? `Received ${new Date(reply.SentDate).toLocaleDateString()}` : 'Received date unavailable'}
+                              </span>
+                            </div>
+                            <div className="mb-1 grid gap-1 text-xs text-gray-600 md:grid-cols-[70px_1fr]">
+                              <span className="font-medium text-gray-500">To</span>
+                              <span>{reply.ToUser || '-'}</span>
+                              {reply.Subject ? (
+                                <>
+                                  <span className="font-medium text-gray-500">Subject</span>
+                                  <span className="break-words text-gray-900">{reply.Subject}</span>
+                                </>
+                              ) : null}
+                            </div>
+                            {replyText ? (
+                              <p className="line-clamp-4 whitespace-pre-line text-xs text-gray-600">{replyText}</p>
+                            ) : null}
+                          </div>
+                        )
+                      })}
+                    </div>
                   ) : null}
                 </div>
               </div>
