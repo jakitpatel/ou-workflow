@@ -8,6 +8,7 @@ import type { KashIngredient, ScheduleAIngredient } from '@/types/application'
 
 export type ScheduleAIngredientRow = {
   id: string
+  ingredientId?: string
   name: string
   source: string
   brand: string
@@ -20,6 +21,16 @@ export type ScheduleAIngredientRow = {
   origin: 'Application' | 'Kashrus' | 'IAR-added'
   raw?: ScheduleAIngredient | KashIngredient
 }
+
+export const SCHEDULE_A_INGREDIENT_UPLOAD_MIME_TYPES = [
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+] as const
+
+export const isScheduleAIngredientUploadFile = (file: File) =>
+  SCHEDULE_A_INGREDIENT_UPLOAD_MIME_TYPES.includes(
+    file.type as (typeof SCHEDULE_A_INGREDIENT_UPLOAD_MIME_TYPES)[number],
+  )
 
 export type ScheduleACommunicationItem = {
   ingId: string
@@ -104,6 +115,7 @@ export function mapApplicationIngredientRow(
 
   return {
     id: getApplicationIngredientRowId(ingredient, index),
+    ingredientId: valueText(ingredient.IngredientId),
     name: valueText(ingredient.ingredientLabelName),
     source: getRecordValue(record, ['source', 'Source', 'SOURCE', 'manufacturer']),
     brand: valueText(ingredient.brandName),
@@ -133,6 +145,7 @@ export function mapKashIngredientRow(ingredient: KashIngredient, index: number):
 
   return {
     id: getKashIngredientRowId(ingredient, index),
+    ingredientId: '',
     name: valueText(ingredient.INGREDIENT_NAME),
     source: valueText(ingredient.LABEL_COMPANY),
     brand: valueText(ingredient.BRAND_NAME),

@@ -239,6 +239,56 @@ export async function uploadApplicationFile({
   }
 }
 
+export async function uploadScheduleAIngredientsFile({
+  applicationId,
+  file,
+  token,
+}: {
+  applicationId: string | number
+  file: File
+  token?: string | null
+}): Promise<unknown> {
+  const baseUrl = resolveApiBaseUrl()
+  const uploadBaseUrl = baseUrl.replace('/api', '')
+  const url = `${uploadBaseUrl}/ingredient_file_upload`
+  const accessToken = token ?? getAccessToken()
+  const formData = new FormData()
+
+  formData.append('application_id', String(applicationId))
+  formData.append('file', file, file.name)
+
+  const requestHeaders: Record<string, string> = {}
+  if (accessToken) {
+    requestHeaders.Authorization = `Bearer ${accessToken}`
+  }
+
+  const response = await executeRequest(
+    url,
+    {
+      method: 'POST',
+      headers: requestHeaders,
+      body: formData,
+    },
+    accessToken,
+  )
+
+  if (!response.ok) {
+    const errorBody = await parseErrorBody(response)
+    const parsedError = errorBody as { message?: string; error?: string } | null
+    const message =
+      parsedError?.message ??
+      parsedError?.error ??
+      `Request failed: ${response.status} ${response.statusText}`
+    throw createApiError(message, response.status, errorBody)
+  }
+
+  try {
+    return await response.json()
+  } catch {
+    return await response.text()
+  }
+}
+
 export async function sendMsgTask({
   newMessage,
   token,
@@ -560,10 +610,9 @@ export async function fetchScheduleAIngredients({
   }
 }
 
-export type CreateScheduleAIngredientPayload = Partial<Omit<ScheduleAIngredient, 'ApplicationID'>> & {
+export type CreateScheduleAIngredientPayload = {
   ApplicationID: string | number
-  attachment?: string
-  notes?: string
+} & Partial<Pick<ScheduleAIngredient, 'UKDID' | 'brandName' | 'ingredientLabelName' | 'manufacturer' | 'rawMaterialCode'>> & {
   source?: string
 }
 
@@ -575,9 +624,37 @@ export async function createScheduleAIngredient({
   token?: string | null
 }): Promise<unknown> {
   return await fetchWithAuth({
-    path: '/scheduleA',
+    path: '/api/ScheduleIngredient',
     method: 'POST',
-    body: payload,
+    body: {
+      data: {
+        attributes: payload,
+        type: 'ScheduleIngredient',
+      },
+    },
+    token,
+  })
+}
+
+export async function updateScheduleAIngredientDeleted({
+  ingredientId,
+  token,
+}: {
+  ingredientId: string | number
+  token?: string | null
+}): Promise<unknown> {
+  return await fetchWithAuth({
+    path: '/api/ScheduleIngredient',
+    method: 'PATCH',
+    body: {
+      data: {
+        attributes: {
+          IngredientId: ingredientId,
+          isDeleted: true,
+        },
+        type: 'ScheduleIngredient',
+      },
+    },
     token,
   })
 }

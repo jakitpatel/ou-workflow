@@ -20,11 +20,14 @@ import { useUser } from '@/context/UserContext'
 import {
   createApplicationMessage,
   createScheduleAIngredient,
+  updateScheduleAIngredientDeleted,
+  uploadScheduleAIngredientsFile,
   type CreateScheduleAIngredientPayload,
 } from '@/features/applications/api'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import {
+  isScheduleAIngredientUploadFile,
   mapApplicationIngredientRow,
   mapKashIngredientRow,
   type ScheduleAIngredientRow,
@@ -232,8 +235,59 @@ function ScheduleATable({
     },
   })
 
+  const uploadIngredientFileMutation = useMutation({
+    mutationFn: uploadScheduleAIngredientsFile,
+    onError: (error: unknown) => {
+      const message =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message?: unknown }).message)
+          : 'Failed to upload ingredient file.'
+      setSubmitError(message)
+    },
+  })
+
+  const deleteIngredientMutation = useMutation({
+    mutationFn: updateScheduleAIngredientDeleted,
+    onError: (error: unknown) => {
+      const message =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message?: unknown }).message)
+          : 'Failed to delete Schedule A ingredient.'
+      setSubmitError(message)
+    },
+  })
+
   const updateDraft = (field: keyof ApplicationIngredientDraft, value: string) => {
     setDraft((current) => ({ ...(current ?? EMPTY_DRAFT), [field]: value }))
+  }
+
+  const uploadDraftAttachment = async (file: File | undefined) => {
+    if (!file) return
+
+    if (!isScheduleAIngredientUploadFile(file)) {
+      setSubmitError('Please attach an Excel file (.xlsx or .xls).')
+      return
+    }
+
+    if (!applicationId) {
+      setSubmitError('Application ID is required before uploading ingredient files.')
+      return
+    }
+
+    setSubmitError('')
+    try {
+      await uploadIngredientFileMutation.mutateAsync({
+        applicationId,
+        file,
+        token,
+      })
+      updateDraft('attachment', file.name)
+      await queryClient.invalidateQueries({
+        queryKey: applicationsQueryKeys.scheduleAIngredients(applicationId),
+      })
+    } catch {
+      // The mutation onError handler owns the visible error message.
+    }
   }
 
   const saveDraft = () => {
@@ -267,10 +321,40 @@ function ScheduleATable({
       brandName: localRow.brand || undefined,
       rawMaterialCode: localRow.rmc || undefined,
       UKDID: localRow.ukd || undefined,
-      attachment: localRow.attachment || undefined,
     }
 
     createIngredientMutation.mutate({ payload, token })
+  }
+
+  const toggleDeleted = async (row: ScheduleAIngredientRow) => {
+    if (scratchpad.deleted[row.id]) {
+      scratchpadApi.toggleDeleted(row.id)
+      return
+    }
+
+    if (row.origin === 'IAR-added') {
+      scratchpadApi.toggleDeleted(row.id)
+      return
+    }
+
+    if (!row.ingredientId) {
+      setSubmitError('Ingredient ID is required before deleting this row.')
+      return
+    }
+
+    setSubmitError('')
+    try {
+      await deleteIngredientMutation.mutateAsync({
+        ingredientId: row.ingredientId,
+        token,
+      })
+      scratchpadApi.toggleDeleted(row.id)
+      await queryClient.invalidateQueries({
+        queryKey: applicationsQueryKeys.scheduleAIngredients(applicationId),
+      })
+    } catch {
+      // The mutation onError handler owns the visible error message.
+    }
   }
 
   const downloadScratchpad = () => {
@@ -376,11 +460,15 @@ function ScheduleATable({
                 <td className="px-3 py-3">
                   <label className="inline-flex cursor-pointer items-center gap-1 rounded border border-dashed border-gray-300 px-1.5 py-0.5 text-xs text-gray-500">
                     <Paperclip className="h-3 w-3" />
-                    {draft.attachment || 'Attach'}
+                    {uploadIngredientFileMutation.isPending ? 'Uploading...' : draft.attachment || 'Attach'}
                     <input
                       type="file"
+                      accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                       className="hidden"
-                      onChange={(event) => updateDraft('attachment', event.currentTarget.files?.[0]?.name ?? '')}
+                      onChange={(event) => {
+                        void uploadDraftAttachment(event.currentTarget.files?.[0])
+                        event.currentTarget.value = ''
+                      }}
                     />
                   </label>
                 </td>
@@ -479,8 +567,10 @@ function ScheduleATable({
                         {variant === 'application' ? (
                           <button
                             type="button"
-                            onClick={() => scratchpadApi.toggleDeleted(row.id)}
-                            disabled={isFrozen}
+                            onClick={() => {
+                              void toggleDeleted(row)
+                            }}
+                            disabled={isFrozen || deleteIngredientMutation.isPending}
                             className={`rounded p-1 ${deleted ? 'text-blue-600 hover:bg-blue-50' : 'text-gray-300 hover:bg-red-50 hover:text-red-500'} disabled:cursor-not-allowed`}
                             title={deleted ? 'Restore row' : 'Mark deleted'}
                           >
