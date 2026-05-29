@@ -14,6 +14,7 @@ import {
   RotateCcw,
   Send,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
@@ -261,17 +262,17 @@ function ScheduleATable({
     setDraft((current) => ({ ...(current ?? EMPTY_DRAFT), [field]: value }))
   }
 
-  const uploadDraftAttachment = async (file: File | undefined) => {
-    if (!file) return
+  const uploadIngredientsFile = async (file: File | undefined) => {
+    if (!file) return false
 
     if (!isScheduleAIngredientUploadFile(file)) {
       setSubmitError('Please attach an Excel file (.xlsx or .xls).')
-      return
+      return false
     }
 
     if (!applicationId) {
       setSubmitError('Application ID is required before uploading ingredient files.')
-      return
+      return false
     }
 
     setSubmitError('')
@@ -285,8 +286,17 @@ function ScheduleATable({
       await queryClient.invalidateQueries({
         queryKey: applicationsQueryKeys.scheduleAIngredients(applicationId),
       })
+      return true
     } catch {
       // The mutation onError handler owns the visible error message.
+      return false
+    }
+  }
+
+  const uploadDraftAttachment = async (file: File | undefined) => {
+    const uploaded = await uploadIngredientsFile(file)
+    if (uploaded && file) {
+      updateDraft('attachment', file.name)
     }
   }
 
@@ -389,6 +399,27 @@ function ScheduleATable({
           </button>
           {variant === 'application' ? (
             <>
+              <label
+                className={`inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-700 ${
+                  !applicationId || uploadIngredientFileMutation.isPending || isFrozen
+                    ? 'cursor-not-allowed opacity-60'
+                    : 'cursor-pointer'
+                }`}
+                title="Upload ingredients Excel file"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                {uploadIngredientFileMutation.isPending ? 'Uploading...' : 'Upload Ingredients'}
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                  className="hidden"
+                  disabled={!applicationId || uploadIngredientFileMutation.isPending || isFrozen}
+                  onChange={(event) => {
+                    void uploadIngredientsFile(event.currentTarget.files?.[0])
+                    event.currentTarget.value = ''
+                  }}
+                />
+              </label>
               <button
                 type="button"
                 onClick={() => onViewApplication(applicationId)}
