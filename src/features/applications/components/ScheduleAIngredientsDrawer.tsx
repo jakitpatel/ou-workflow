@@ -378,7 +378,7 @@ export function ScheduleAIngredientsDrawer({
       })
     })
 
-    const filtered = activeRows.filter((row) => {
+    const filtered = ingView === 'kashrus' ? activeRows : activeRows.filter((row) => {
       if (filter === 'flagged') return Boolean(scratchpad.flags[row.id]?.flagged)
       if (filter === 'resolved') return resolvedIds.has(row.id)
       if (filter === 'halacha') return Boolean(scratchpad.halacha[row.id]?.open)
@@ -386,7 +386,7 @@ export function ScheduleAIngredientsDrawer({
     })
 
     return sortRows(filtered, sortKey, sortDirection)
-  }, [activeRows, filter, scratchpad, sortDirection, sortKey])
+  }, [activeRows, filter, ingView, scratchpad, sortDirection, sortKey])
 
   if (!open) return null
 
@@ -581,18 +581,20 @@ export function ScheduleAIngredientsDrawer({
                         {ingView === 'application' ? 'Application Ingredients' : 'Kashrus Ingredients'}
                       </h2>
                       <div className="flex flex-wrap items-center gap-2">
-                        {(['all', 'flagged', 'resolved', 'halacha'] as ScheduleAIngredientFilter[]).map((item) => (
-                          <button
-                            key={item}
-                            type="button"
-                            onClick={() => setFilter(item)}
-                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                              filter === item ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-600 ring-1 ring-gray-200'
-                            }`}
-                          >
-                            {item === 'all' ? 'All' : item[0].toUpperCase() + item.slice(1)} {counts[item]}
-                          </button>
-                        ))}
+                        {ingView === 'application'
+                          ? (['all', 'flagged', 'resolved', 'halacha'] as ScheduleAIngredientFilter[]).map((item) => (
+                              <button
+                                key={item}
+                                type="button"
+                                onClick={() => setFilter(item)}
+                                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                                  filter === item ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-600 ring-1 ring-gray-200'
+                                }`}
+                              >
+                                {item === 'all' ? 'All' : item[0].toUpperCase() + item.slice(1)} {counts[item]}
+                              </button>
+                            ))
+                          : null}
                         <button
                           type="button"
                           onClick={downloadScheduleA}
@@ -645,7 +647,7 @@ export function ScheduleAIngredientsDrawer({
                                 key={key}
                                 className={`px-3 py-2.5 text-xs font-semibold text-gray-600 ${
                                   key === 'plantStatus' && ingView === 'application' ? 'hidden' : ''
-                                } ${['source', 'brand'].includes(key) && ingView === 'kashrus' ? 'hidden' : ''}`}
+                                }`}
                               >
                                 <button type="button" onClick={() => setSort(key as ScheduleAIngredientSortKey)} className="inline-flex items-center gap-1 hover:text-blue-700">
                                   {label}
@@ -770,12 +772,8 @@ export function ScheduleAIngredientsDrawer({
                                     </div>
                                   ) : null}
                                 </td>
-                                {ingView === 'application' ? (
-                                  <>
-                                    <td className="px-3 py-3 text-gray-700">{row.source || '-'}</td>
-                                    <td className="px-3 py-3 text-gray-700">{row.brand || '-'}</td>
-                                  </>
-                                ) : null}
+                                <td className="px-3 py-3 text-gray-700">{row.source || '-'}</td>
+                                <td className="px-3 py-3 text-gray-700">{row.brand || '-'}</td>
                                 <td className="px-3 py-3">
                                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${groupClass(row.group)}`}>{row.group || '-'}</span>
                                 </td>
