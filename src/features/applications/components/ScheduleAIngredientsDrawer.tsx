@@ -57,6 +57,37 @@ const EMPTY_ADD_ROW_DRAFT: ScheduleAIngredientDraft = {
   plantStatus: '',
 }
 
+const EIR_DOCUMENT_FILENAME = 'PIINSPECTN_14056484_Initial_Inspection_Aloha_Medicinals_001.pdf'
+const EIR_PREVIEW_HTML = `<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827}.page{max-width:760px;margin:28px auto;background:white;min-height:920px;box-shadow:0 12px 30px rgba(15,23,42,.14);padding:52px}.meta{color:#6b7280;font-size:12px}.title{font-size:20px;font-weight:700;text-align:center;margin:18px 0 28px}.section{border-top:1px solid #d1d5db;padding-top:16px;margin-top:20px}.h{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#374151}.p{font-size:13px;line-height:1.55;color:#374151}.stamp{display:inline-block;border:1px solid #f59e0b;background:#fffbeb;color:#92400e;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:700}</style></head><body><div class="page"><p class="meta">OU Direct - Visit ID 14056484 - Apr 10, 2026</p><div class="title">Initial Inspection Report</div><p class="stamp">Sample EIR for demonstration</p><div class="section"><p class="h">Facility observations</p><p class="p">Line 1 was clean and no non-kosher equipment was observed. Dairy ingredients are stored in a designated separate area.</p></div><div class="section"><p class="h">Ingredient observations</p><p class="p">Palm Shortening, Rosemary Extract, and an unlabeled Dough Conditioner were observed on-site and were not present on the original Schedule A submission.</p></div><div class="section"><p class="h">Follow-up required</p><p class="p">Confirm LOCs and supplier details for missing or unclear ingredients before Schedule A can proceed.</p></div></div></body></html>`
+
+const EIR_AI_FINDINGS = [
+  '3 ingredients observed on-site were NOT listed on the original application: Palm Shortening, Rosemary Extract (Kemin Naturals), and an unlabeled Dough Conditioner - all must be added to Schedule A before certification can proceed.',
+  'Whey Protein Concentrate drum had no visible kosher certification at time of inspection. Supplier and LOC must be confirmed.',
+  'Natural Flavors: Givaudan drum identified on Line 1, but specific flavor code not confirmed. LOC cannot be verified without the code.',
+  "Margarine listed generically as 'Cargill' on the application - RFR could not confirm the specific product. LOC required.",
+  'Facility generally clean: no non-kosher equipment on Line 1, no recent switchovers, and dairy ingredients are stored in a designated separate area.',
+]
+
+const EIR_AI_INGREDIENTS = [
+  { name: 'Wheat Flour', notes: 'Observed in production area', onScheduleA: true },
+  { name: 'Canola Oil', notes: 'Matched to Schedule A', onScheduleA: true },
+  { name: 'Margarine', notes: 'Cargill product observed - exact item unclear', onScheduleA: true },
+  { name: 'Whey Protein Concentrate', notes: 'No visible certification on drum', onScheduleA: true },
+  { name: 'Natural Flavors', notes: 'Givaudan drum observed - flavor code not confirmed', onScheduleA: true },
+  { name: 'Palm Shortening', notes: 'Observed on Line 1 - NOT on original application', onScheduleA: false },
+  { name: 'Rosemary Extract', notes: 'Kemin Naturals, used as antioxidant - NOT on original application', onScheduleA: false },
+  { name: 'Dough Conditioner', notes: 'Unlabeled bag, origin unknown - NOT on original application', onScheduleA: false },
+]
+
+const EIR_AI_RECOMMENDATIONS = [
+  'Add Palm Shortening to Schedule A - observed in production but missing from application. Supplier and kosher certification required.',
+  'Add Rosemary Extract (Kemin Naturals) to Schedule A - antioxidant use observed on Line 1. Certification status unknown.',
+  'Add Dough Conditioner to Schedule A - unlabeled bag of unknown origin observed. Company must identify supplier and obtain OU approval before continued use.',
+  'Margarine: confirm specific Cargill product and obtain LOC before Schedule A can be finalized.',
+  'Whey Protein Concentrate: confirm certified supplier and provide LOC - no certification was visible on drum during inspection.',
+  'Natural Flavors: obtain Givaudan flavor code and verify LOC status.',
+]
+
 const textValue = (value: unknown) => String(value ?? '').trim()
 
 const downloadTextFile = (filename: string, text: string, type = 'text/plain;charset=utf-8;') => {
@@ -327,6 +358,7 @@ export function ScheduleAIngredientsDrawer({
   const [addRowDraft, setAddRowDraft] = useState<ScheduleAIngredientDraft>(EMPTY_ADD_ROW_DRAFT)
   const [addRowError, setAddRowError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [eirAiOpen, setEirAiOpen] = useState(true)
   const ingredientsHeaderRef = useRef<HTMLDivElement | null>(null)
   const ingredientsTableRef = useRef<HTMLTableElement | null>(null)
 
@@ -502,6 +534,17 @@ export function ScheduleAIngredientsDrawer({
     const html = buildScheduleAHtml(kashRows, applicationName, resolvedApplicationId)
     const filename = `ScheduleA_${resolvedApplicationId ?? 'application'}.html`
     downloadTextFile(filename, html, 'text/html;charset=utf-8;')
+  }
+
+  const downloadEirDocument = () => {
+    downloadTextFile(EIR_DOCUMENT_FILENAME.replace(/\.pdf$/i, '.html'), EIR_PREVIEW_HTML, 'text/html;charset=utf-8;')
+  }
+
+  const openEirDocument = () => {
+    const blob = new Blob([EIR_PREVIEW_HTML], { type: 'text/html;charset=utf-8;' })
+    const href = URL.createObjectURL(blob)
+    window.open(href, '_blank', 'noopener,noreferrer')
+    window.setTimeout(() => URL.revokeObjectURL(href), 1000)
   }
 
   const readyForSignoff = scratchpad.scheduleAReady && (scratchpad.eirReviewComplete || scratchpad.eirNotRequired)
@@ -981,71 +1024,204 @@ export function ScheduleAIngredientsDrawer({
                 ) : null}
 
                 {activeTab === 'eir' ? (
-                  <div className="space-y-4">
+                  <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 className="mb-4 text-2xl font-semibold text-gray-900">Inspection Report (EIR)</h2>
+
                     {!scratchpad.eirReceived && !scratchpad.eirNotRequired ? (
-                      <div className="flex items-center gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3">
+                      <div className="mb-6 flex items-center gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3">
                         <AlertCircle className="h-5 w-5 shrink-0 text-red-500" />
-                        <p className="text-sm font-semibold text-red-800">Awaiting EIR Submission. NCRC will review and forward to IAR once received.</p>
+                        <p className="text-sm font-semibold text-red-800">Awaiting EIR Submission - NCRC will be notified on receipt to review and forward to the IA Manager</p>
                       </div>
                     ) : null}
+
                     {scratchpad.eirNotRequired ? (
-                      <div className="flex items-center gap-3 rounded-lg border border-gray-300 bg-gray-50 px-4 py-3">
+                      <div className="mb-6 flex items-center gap-3 rounded-lg border border-gray-300 bg-gray-50 px-4 py-3">
                         <FileText className="h-5 w-5 shrink-0 text-gray-500" />
                         <p className="text-sm font-semibold text-gray-800">EIR marked not required for this application.</p>
                       </div>
                     ) : null}
-                    {scratchpad.eirReceived ? (
-                      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-2 bg-gray-50 px-4 py-3">
-                          <div className="flex items-start gap-3">
-                            <FileText className="mt-0.5 h-8 w-8 shrink-0 text-red-400" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">PIINSPECTN_Initial_Inspection.pdf</p>
-                              <p className="mt-0.5 text-xs text-gray-500">Submitted via OU Direct</p>
-                            </div>
-                          </div>
-                          <button type="button" onClick={() => downloadTextFile('PIINSPECTN_Initial_Inspection.txt', 'Sample EIR document placeholder.')} className="inline-flex items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700">
-                            <Download className="h-3.5 w-3.5" />
-                            Download
-                          </button>
-                        </div>
-                        <div className="bg-gray-50 p-8 text-center text-sm text-gray-500">EIR PDF preview placeholder</div>
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">EIR document will appear here once the RFR submits via OU Direct.</div>
-                    )}
 
-                    <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
-                      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-purple-900">IA Manager EIR Review</p>
-                          <p className="mt-1 text-xs text-purple-800">Read the EIR, request missing ingredient entry, or mark the review complete.</p>
+                    <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-gray-100 py-2">
+                          <span className="text-sm font-medium text-gray-600">Inspection Status</span>
+                          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
+                            scratchpad.eirNotRequired
+                              ? 'border-gray-200 bg-gray-100 text-gray-700'
+                              : scratchpad.eirReviewComplete
+                                ? 'border-green-200 bg-green-100 text-green-800'
+                                : scratchpad.eirReceived
+                                  ? 'border-blue-200 bg-blue-100 text-blue-800'
+                                  : 'border-yellow-200 bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {scratchpad.eirNotRequired ? 'Not Required' : scratchpad.eirReviewComplete ? 'Review Complete' : scratchpad.eirReceived ? 'Report Received' : 'Awaiting Report'}
+                          </span>
                         </div>
-                        <Pill tone={scratchpad.eirReviewComplete ? 'green' : scratchpad.eirNotRequired ? 'gray' : scratchpad.eirReceived ? 'blue' : 'amber'}>
-                          {scratchpad.eirReviewComplete ? 'Review complete' : scratchpad.eirNotRequired ? 'Not required' : scratchpad.eirReceived ? 'Ready for review' : 'Awaiting report'}
-                        </Pill>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button type="button" onClick={scratchpadApi.markEirReceived} className="rounded border border-purple-300 bg-white px-2.5 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-50">
-                          Simulate EIR Received
-                        </button>
-                        <button type="button" onClick={scratchpadApi.requestEirIngredientEntry} disabled={!scratchpad.eirReceived} className="rounded border border-purple-300 bg-white px-2.5 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-50 disabled:cursor-not-allowed disabled:text-gray-300">
-                          Request IAR add ingredient
-                        </button>
-                        <button type="button" onClick={scratchpadApi.markEirReviewComplete} disabled={!scratchpad.eirReceived} className="rounded bg-purple-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-gray-300">
-                          Mark EIR review complete
-                        </button>
-                        <button type="button" onClick={scratchpadApi.markEirNotRequired} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                          Mark EIR not required
-                        </button>
-                        {scratchpad.eirNotRequired ? (
-                          <button type="button" onClick={scratchpadApi.clearEirNotRequired} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                            Clear not required
-                          </button>
-                        ) : null}
+                        <div className="flex items-center justify-between border-b border-gray-100 py-2">
+                          <span className="text-sm font-medium text-gray-600">RFR Assigned</span>
+                          <span className="text-sm font-semibold text-gray-900">Mordechai Stareshefsky</span>
+                        </div>
+                        <div className="flex items-center justify-between border-b border-gray-100 py-2">
+                          <span className="text-sm font-medium text-gray-600">Visit ID</span>
+                          <span className="font-mono text-sm font-semibold text-gray-900">14056484</span>
+                        </div>
+                        <div className="flex items-center justify-between border-b border-gray-100 py-2">
+                          <span className="text-sm font-medium text-gray-600">Inspection Date</span>
+                          <span className="text-sm font-semibold text-gray-900">Apr 10, 2026</span>
+                        </div>
+                        <div className="flex items-center justify-between py-2">
+                          <span className="text-sm font-medium text-gray-600">Days Since Visit</span>
+                          <span className={scratchpad.eirReceived || scratchpad.eirNotRequired ? 'text-sm font-semibold text-gray-900' : 'text-sm font-semibold text-red-600'}>
+                            {scratchpad.eirReceived || scratchpad.eirNotRequired ? 'Report accounted for' : '6 days - overdue'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
+                    {scratchpad.eirReceived ? (
+                      <div>
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-t-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                          <div className="flex items-start gap-3">
+                            <FileText className="mt-0.5 h-8 w-8 shrink-0 text-red-400" strokeWidth={1.5} />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{EIR_DOCUMENT_FILENAME}</p>
+                              <p className="mt-0.5 text-xs text-gray-500">
+                                446 KB - Submitted via OU Direct - <span className="font-medium text-amber-700">Sample EIR for demonstration - actual submitted report would appear here</span>
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <button type="button" onClick={openEirDocument} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              Open in new tab
+                            </button>
+                            <button type="button" onClick={downloadEirDocument} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700">
+                              <Download className="h-3.5 w-3.5" />
+                              Download
+                            </button>
+                          </div>
+                        </div>
+                        <iframe title="EIR PDF" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100" srcDoc={EIR_PREVIEW_HTML} />
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
+                        <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
+                        <p className="text-sm text-gray-500">EIR document will appear here once Mordechai Stareshefsky submits via OU Direct</p>
+                      </div>
+                    )}
+
+                    {scratchpad.eirReceived ? (
+                      <div className="mt-5 overflow-hidden rounded-lg border border-violet-200 bg-violet-50/60">
+                        <div className="flex items-center justify-between border-b border-violet-200 bg-violet-100/70 px-4 py-2.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-semibold text-violet-700">Claude - EIR summary</span>
+                            <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                              {EIR_AI_INGREDIENTS.filter((ingredient) => !ingredient.onScheduleA).length} not on Schedule A
+                            </span>
+                          </div>
+                          <button type="button" onClick={() => setEirAiOpen((current) => !current)} className="inline-flex items-center gap-1 text-xs font-medium text-violet-700 hover:text-violet-900">
+                            {eirAiOpen ? 'Collapse' : 'Expand'}
+                            <ArrowUp className={`h-3.5 w-3.5 transition-transform ${eirAiOpen ? '' : 'rotate-180'}`} />
+                          </button>
+                        </div>
+                        {eirAiOpen ? (
+                          <div className="space-y-4 p-4">
+                            <div>
+                              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-violet-700">Key findings</p>
+                              <ul className="space-y-1 text-sm text-gray-700">
+                                {EIR_AI_FINDINGS.map((finding) => (
+                                  <li key={finding} className="flex items-start gap-1.5">
+                                    <span className="mt-0.5 shrink-0 text-amber-500">&gt;</span>
+                                    <span>{finding}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            <div>
+                              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-violet-700">Ingredients observed vs. Schedule A</p>
+                              <div className="overflow-hidden rounded-lg border border-violet-200 bg-white">
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="bg-violet-50 text-left text-xs font-semibold text-violet-700">
+                                      <th className="px-3 py-1.5">Ingredient</th>
+                                      <th className="px-3 py-1.5">Notes</th>
+                                      <th className="px-3 py-1.5">On Schedule A</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {EIR_AI_INGREDIENTS.map((ingredient) => (
+                                      <tr key={ingredient.name} className={`border-b border-amber-100 last:border-0 ${ingredient.onScheduleA ? '' : 'bg-amber-50'}`}>
+                                        <td className="px-3 py-1.5 font-medium text-gray-900">{ingredient.name}</td>
+                                        <td className="px-3 py-1.5 text-gray-600">{ingredient.notes}</td>
+                                        <td className="px-3 py-1.5">
+                                          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${
+                                            ingredient.onScheduleA
+                                              ? 'border-green-200 bg-green-100 text-green-800'
+                                              : 'border-red-200 bg-red-100 text-red-800'
+                                          }`}>
+                                            {ingredient.onScheduleA ? 'Yes' : 'No'}
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-red-700">Recommended actions</p>
+                              <ul className="space-y-1 text-sm text-gray-700">
+                                {EIR_AI_RECOMMENDATIONS.map((recommendation) => (
+                                  <li key={recommendation} className="flex items-start gap-1.5">
+                                    <span className="mt-0.5 shrink-0 text-red-500">&gt;</span>
+                                    <span>{recommendation}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            <p className="border-t border-violet-200 pt-1 text-[11px] text-violet-600/80">AI-generated from the inspection report. Review and confirm before acting - nothing here changes Schedule A automatically.</p>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {scratchpad.eirReceived && !scratchpad.eirReviewComplete ? (
+                      <div className="mt-5 rounded-lg border border-purple-200 bg-purple-50 p-4">
+                        <div className="mb-2 flex items-center gap-2">
+                          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-purple-300 text-[10px] font-semibold text-purple-600">IA</span>
+                          <p className="text-sm font-semibold text-purple-900">IA Manager - EIR Review</p>
+                        </div>
+                        <p className="mb-3 text-xs text-purple-800">The IA Manager reads the EIR and directs the IAR to update Schedule A. IAR executes on direction.</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button type="button" onClick={scratchpadApi.requestEirIngredientEntry} className="inline-flex items-center gap-1.5 rounded-lg border border-purple-300 bg-white px-2.5 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-50">
+                            <Plus className="h-3.5 w-3.5" />
+                            Request IAR add ingredient
+                          </button>
+                          <button type="button" onClick={scratchpadApi.markEirReviewComplete} className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-purple-700">
+                            <Check className="h-3.5 w-3.5" />
+                            Mark EIR review complete
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
+                      {!scratchpad.eirReceived && !scratchpad.eirNotRequired ? (
+                        <button type="button" onClick={scratchpadApi.markEirReceived} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                          Simulate EIR received
+                        </button>
+                      ) : null}
+                      {!scratchpad.eirReceived ? (
+                        <button type="button" onClick={scratchpadApi.markEirNotRequired} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                          Mark EIR not required
+                        </button>
+                      ) : null}
+                      {scratchpad.eirNotRequired ? (
+                        <button type="button" onClick={scratchpadApi.clearEirNotRequired} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                          Clear not required
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 ) : null}
 
