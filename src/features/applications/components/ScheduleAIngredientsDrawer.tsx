@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react'
 import {
   AlertCircle,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   Check,
   CheckCircle2,
   Copy,
@@ -14,7 +17,6 @@ import {
   Minimize2,
   Send,
   ShieldCheck,
-  Trash2,
   X,
 } from 'lucide-react'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
@@ -134,6 +136,29 @@ function SaMonogram() {
   )
 }
 
+function SortIcon({
+  active,
+  direction,
+}: {
+  active: boolean
+  direction: 'asc' | 'desc'
+}) {
+  const iconClass = 'h-3.5 w-3.5'
+  if (!active) {
+    return (
+      <span title="Sort column" aria-label="Sort column" className="text-gray-400">
+        <ArrowUpDown className={iconClass} aria-hidden="true" />
+      </span>
+    )
+  }
+
+  return (
+    <span title={direction === 'asc' ? 'Sorted ascending' : 'Sorted descending'} aria-label={direction === 'asc' ? 'Sorted ascending' : 'Sorted descending'} className="text-blue-700">
+      {direction === 'asc' ? <ArrowUp className={iconClass} aria-hidden="true" /> : <ArrowDown className={iconClass} aria-hidden="true" />}
+    </span>
+  )
+}
+
 function sortRows(rows: ScheduleAIngredientRow[], sortKey: ScheduleAIngredientSortKey, direction: 'asc' | 'desc') {
   const getter = (row: ScheduleAIngredientRow) => {
     if (sortKey === 'plantStatus') return row.status
@@ -204,8 +229,8 @@ export function ScheduleAIngredientsDrawer({
 
     return activeRows.reduce(
       (acc, row) => {
-        if (!scratchpad.deleted[row.id]) acc.all += 1
-        if (scratchpad.flags[row.id]?.flagged && !scratchpad.deleted[row.id]) acc.flagged += 1
+        acc.all += 1
+        if (scratchpad.flags[row.id]?.flagged) acc.flagged += 1
         if (resolvedIds.has(row.id)) acc.resolved += 1
         if (scratchpad.halacha[row.id]?.open) acc.halacha += 1
         return acc
@@ -223,7 +248,6 @@ export function ScheduleAIngredientsDrawer({
     })
 
     const filtered = activeRows.filter((row) => {
-      if (scratchpad.deleted[row.id]) return false
       if (filter === 'flagged') return Boolean(scratchpad.flags[row.id]?.flagged)
       if (filter === 'resolved') return resolvedIds.has(row.id)
       if (filter === 'halacha') return Boolean(scratchpad.halacha[row.id]?.open)
@@ -431,7 +455,7 @@ export function ScheduleAIngredientsDrawer({
                               >
                                 <button type="button" onClick={() => setSort(key as ScheduleAIngredientSortKey)} className="inline-flex items-center gap-1 hover:text-blue-700">
                                   {label}
-                                  <span className="text-[10px] text-gray-400">{sortKey === key ? (sortDirection === 'asc' ? 'up' : 'down') : 'sort'}</span>
+                                  <SortIcon active={sortKey === key} direction={sortDirection} />
                                 </button>
                               </th>
                             ))}
@@ -486,9 +510,6 @@ export function ScheduleAIngredientsDrawer({
                                       </IconButton>
                                       <IconButton title={halacha?.open ? 'Resolve halacha' : 'Open halacha review'} onClick={() => scratchpadApi.toggleHalacha(row.id)} className={halacha?.open ? 'text-purple-700' : ''}>
                                         <ShieldCheck className="h-4 w-4" />
-                                      </IconButton>
-                                      <IconButton title="Delete row" onClick={() => scratchpadApi.toggleDeleted(row.id)}>
-                                        <Trash2 className="h-4 w-4" />
                                       </IconButton>
                                     </div>
                                     {flagged ? (

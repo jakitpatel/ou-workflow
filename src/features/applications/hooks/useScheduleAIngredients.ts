@@ -55,7 +55,6 @@ export type ScheduleAScratchpad = {
   rounds: ScheduleACommunicationRound[]
   halacha: Record<string, { open: boolean; note: string; resolvedAt?: string }>
   resolved: Record<string, boolean>
-  deleted: Record<string, boolean>
   attachments: Record<string, string>
   eirReceived: boolean
   eirReviewComplete: boolean
@@ -71,7 +70,6 @@ const EMPTY_SCRATCHPAD: ScheduleAScratchpad = {
   rounds: [],
   halacha: {},
   resolved: {},
-  deleted: {},
   attachments: {},
   eirReceived: false,
   eirReviewComplete: false,
@@ -98,7 +96,6 @@ const normalizeScratchpad = (value: Partial<ScheduleAScratchpad> | null | undefi
   rounds: value?.rounds ?? [],
   halacha: value?.halacha ?? {},
   resolved: value?.resolved ?? {},
-  deleted: value?.deleted ?? {},
   attachments: value?.attachments ?? {},
 })
 
@@ -271,19 +268,22 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
         } else {
           resolved[rowId] = true
         }
-        return { ...current, resolved }
-      })
-    },
-    [updateScratchpad],
-  )
 
-  const toggleDeleted = useCallback(
-    (rowId: string) => {
-      updateScratchpad((current) => {
-        const deleted = { ...current.deleted }
-        if (deleted[rowId]) delete deleted[rowId]
-        else deleted[rowId] = true
-        return { ...current, deleted }
+        const flags = { ...current.flags }
+        const halacha = { ...current.halacha }
+
+        if (resolved[rowId]) {
+          if (flags[rowId]) flags[rowId] = { ...flags[rowId], flagged: false }
+          if (halacha[rowId]?.open) {
+            halacha[rowId] = {
+              ...halacha[rowId],
+              open: false,
+              resolvedAt: new Date().toISOString().slice(0, 10),
+            }
+          }
+        }
+
+        return { ...current, flags, halacha, resolved }
       })
     },
     [updateScratchpad],
@@ -338,7 +338,7 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
       Object.keys(scratchpad.resolved).forEach((id) => alreadyResolved.add(id))
 
       const items = rows
-        .filter((row) => scratchpad.flags[row.id]?.flagged && !scratchpad.deleted[row.id] && !alreadyResolved.has(row.id))
+        .filter((row) => scratchpad.flags[row.id]?.flagged && !alreadyResolved.has(row.id))
         .map((row) => ({
           ingId: row.id,
           name: row.name || row.rmc || 'Ingredient',
@@ -503,7 +503,7 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
   const buildScratchpadCsv = useCallback(
     (rows: ScheduleAIngredientRow[]) => {
       const csvRows = [
-        ['#', 'RMC', 'Name', 'Source', 'Brand', 'Group', 'Certifier', 'Plant Status', 'Origin', 'Flagged', 'Question', 'Halacha', 'Resolved', 'Deleted'],
+        ['#', 'RMC', 'Name', 'Source', 'Brand', 'Group', 'Certifier', 'Plant Status', 'Origin', 'Flagged', 'Question', 'Halacha', 'Resolved'],
         ...rows.map((row, index) => [
           index + 1,
           row.rmc,
@@ -518,7 +518,6 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
           scratchpad.flags[row.id]?.note ?? '',
           scratchpad.halacha[row.id]?.open ? 'Open' : scratchpad.halacha[row.id]?.resolvedAt ? 'Resolved' : '',
           scratchpad.resolved[row.id] ? 'Yes' : 'No',
-          scratchpad.deleted[row.id] ? 'Yes' : 'No',
         ]),
       ]
 
@@ -532,7 +531,6 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
     toggleFlag,
     updateFlagNote,
     toggleResolved,
-    toggleDeleted,
     toggleHalacha,
     updateHalachaNote,
     generateRound,
