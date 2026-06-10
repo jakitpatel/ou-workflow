@@ -29,15 +29,18 @@ import {
   type ScheduleAIngredientSortKey,
   type ScheduleAIngredientView,
   type ScheduleAIngredientDraft,
+  getAssignedRoleValue,
   useCreateScheduleAIngredient,
   useScheduleAIngredients,
   useScheduleAScratchpad,
 } from '@/features/applications/hooks/useScheduleAIngredients'
+import type { AssignedRole } from '@/types/application'
 
 type Props = {
   open: boolean
   applicationId?: string | number
   applicationName?: string
+  assignedRoles?: AssignedRole[]
   taskInstanceId?: string | number | null
   taskName?: string
   onClose: () => void
@@ -342,6 +345,7 @@ export function ScheduleAIngredientsDrawer({
   open,
   applicationId,
   applicationName,
+  assignedRoles,
   taskInstanceId,
   taskName,
   onClose,
@@ -369,6 +373,8 @@ export function ScheduleAIngredientsDrawer({
   const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
   const scratchpadApi = useScheduleAScratchpad(resolvedApplicationId)
   const { scratchpad } = scratchpadApi
+  const assignedRfr = useMemo(() => getAssignedRoleValue(assignedRoles, 'RFR'), [assignedRoles])
+  const eirSubmitterLabel = assignedRfr === 'Not yet Assigned' ? 'the assigned RFR' : assignedRfr
 
   const contact = useMemo(
     () => primaryContact(applicationDetail?.companyContacts as Array<Record<string, unknown>> | undefined),
@@ -1059,7 +1065,7 @@ export function ScheduleAIngredientsDrawer({
                         </div>
                         <div className="flex items-center justify-between border-b border-gray-100 py-2">
                           <span className="text-sm font-medium text-gray-600">RFR Assigned</span>
-                          <span className="text-sm font-semibold text-gray-900">Mordechai Stareshefsky</span>
+                          <span className="text-sm font-semibold text-gray-900">{assignedRfr}</span>
                         </div>
                         <div className="flex items-center justify-between border-b border-gray-100 py-2">
                           <span className="text-sm font-medium text-gray-600">Visit ID</span>
@@ -1106,7 +1112,7 @@ export function ScheduleAIngredientsDrawer({
                     ) : (
                       <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
                         <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
-                        <p className="text-sm text-gray-500">EIR document will appear here once Mordechai Stareshefsky submits via OU Direct</p>
+                        <p className="text-sm text-gray-500">EIR document will appear here once {eirSubmitterLabel} submits via OU Direct</p>
                       </div>
                     )}
 

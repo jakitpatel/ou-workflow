@@ -49,6 +49,11 @@ export const normalizeTaskRoles = (
   return [];
 };
 
+const getAssignedRoleText = (assignedRole: AssignedRole, role: string): string => {
+  const value = assignedRole[role.toUpperCase()];
+  return typeof value === 'string' ? value.trim() : '';
+};
+
 export const getAssignedUser = (
   taskRoles: string[] | undefined,
   assignedRoles: AssignedRole[] | undefined
@@ -67,7 +72,8 @@ export const getAssignedUser = (
       if (!roleKey) continue;
 
       if (roleKey.toLowerCase() === normalizedTaskRole) {
-        return item[roleKey];
+        const assignedUser = item[roleKey];
+        return typeof assignedUser === 'string' && assignedUser.trim() ? assignedUser.trim() : null;
       }
     }
   }
@@ -190,7 +196,7 @@ export const mapTaskToAction = ({
       const isAssigned = assignedRoles.some(assignedRole =>
         matchingRoles.some(
           role =>
-            assignedRole[role.toUpperCase()]?.toLowerCase() ===
+            getAssignedRoleText(assignedRole, role).toLowerCase() ===
             username?.toLowerCase()
         )
       );
@@ -205,7 +211,7 @@ export const mapTaskToAction = ({
 
       const isAssignedToDelegated = assignedRoles.some(assignedRole =>
         matchingRoles.some(role => {
-          const assignedName = assignedRole[role.toUpperCase()]?.toLowerCase();
+          const assignedName = getAssignedRoleText(assignedRole, role).toLowerCase();
           return Boolean(assignedName) && delegatedNames.includes(assignedName);
         })
       );
@@ -293,7 +299,7 @@ export const mapTaskToUndoAction = ({
       const isAssigned = assignedRoles.some(assignedRole =>
         matchingRoles.some(
           role =>
-            assignedRole[role.toUpperCase()]?.toLowerCase() ===
+            getAssignedRoleText(assignedRole, role).toLowerCase() ===
             username?.toLowerCase()
         )
       );
@@ -308,7 +314,7 @@ export const mapTaskToUndoAction = ({
 
       const isAssignedToDelegated = assignedRoles.some(assignedRole =>
         matchingRoles.some(role => {
-          const assignedName = assignedRole[role.toUpperCase()]?.toLowerCase();
+          const assignedName = getAssignedRoleText(assignedRole, role).toLowerCase();
           return Boolean(assignedName) && delegatedNames.includes(assignedName);
         })
       );

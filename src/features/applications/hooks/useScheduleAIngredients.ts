@@ -32,6 +32,8 @@ export type ScheduleAIngredientFilter = 'all' | 'flagged' | 'resolved' | 'halach
 export type ScheduleAIngredientSortKey = 'rmc' | 'name' | 'source' | 'brand' | 'group' | 'certifier' | 'plantStatus'
 export type ScheduleAIngredientView = 'application' | 'kashrus'
 
+export const UNASSIGNED_RFR_LABEL = 'Not yet Assigned'
+
 export type ScheduleAIngredientDraft = {
   rmc: string
   name: string
@@ -106,6 +108,24 @@ const valueText = (value: unknown) => String(value ?? '').trim()
 
 const getRecordValue = (record: Record<string, unknown>, fieldNames: string[]) =>
   fieldNames.map((fieldName) => valueText(record[fieldName])).find(Boolean) ?? ''
+
+export const getAssignedRoleValue = (
+  assignedRoles: Array<Record<string, unknown>> | undefined,
+  roleName: string,
+  fallback = UNASSIGNED_RFR_LABEL,
+) => {
+  const normalizedRoleName = roleName.trim().toLowerCase()
+  const assignedRole = assignedRoles?.find((role) =>
+    Object.keys(role).some((key) => key.trim().toLowerCase() === normalizedRoleName),
+  )
+
+  if (!assignedRole) return fallback
+
+  const roleKey = Object.keys(assignedRole).find((key) => key.trim().toLowerCase() === normalizedRoleName)
+  const roleValue = roleKey ? valueText(assignedRole[roleKey]) : ''
+
+  return roleValue || fallback
+}
 
 const makeScratchpadKey = (applicationId?: string | number) =>
   `schedule-a-ingredients-v32:${applicationId ?? 'unknown'}`

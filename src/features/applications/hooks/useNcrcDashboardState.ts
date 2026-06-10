@@ -140,9 +140,13 @@ export function useNcrcDashboardState({
 
   const applicants: Applicant[] = useMemo(
     () =>
-      paginationMode === 'paged'
+      (paginationMode === 'paged'
         ? pagedQuery.data?.data ?? []
-        : infiniteQuery.data?.pages.flatMap((currentPage) => currentPage.data) ?? [],
+        : infiniteQuery.data?.pages.flatMap((currentPage) => currentPage.data) ?? []
+      ).map((applicant) => ({
+        ...applicant,
+        assignedRoles: Array.isArray(applicant.assignedRoles) ? applicant.assignedRoles : [],
+      })),
     [infiniteQuery.data?.pages, pagedQuery.data?.data, paginationMode],
   )
 

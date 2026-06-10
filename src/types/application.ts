@@ -293,7 +293,7 @@ export type Stage = {
   progress: number;
   tasks: Task[];
 };
-export type AssignedRole = Record<string, string>;
+export type AssignedRole = Record<string, string | boolean | null | undefined>;
 
 type ResolvedCompany = {
   companyName?: string
