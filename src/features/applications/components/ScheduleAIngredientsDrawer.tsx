@@ -1019,9 +1019,6 @@ export function ScheduleAIngredientsDrawer({
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <Pill tone={round.status === 'reviewed' ? 'green' : round.status === 'responded' ? 'blue' : round.status === 'awaiting' ? 'amber' : 'gray'}>{round.status}</Pill>
-                                  <button type="button" onClick={() => scratchpadApi.simulateRoundResponse(round.id)} className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50">
-                                    Simulate Response
-                                  </button>
                                 </div>
                               </div>
                               <div className="space-y-2">

@@ -292,8 +292,16 @@ export function useScheduleACommunicationMessages({
 }
 
 export function useSendScheduleACommunicationEmail() {
-  const { token } = useUser()
+  const { token, username } = useUser()
   const queryClient = useQueryClient()
+  const fromUser = (() => {
+    const normalizedUsername = valueText(username)
+    if (!normalizedUsername) return 'projectflow@ou.org'
+    const localPart = normalizedUsername.includes('@')
+      ? normalizedUsername.split('@')[0]
+      : normalizedUsername
+    return `${localPart}@ou.org`
+  })()
 
   return useMutation({
     mutationFn: async ({
@@ -325,7 +333,7 @@ export function useSendScheduleACommunicationEmail() {
         payload: {
           MessageID: null,
           ApplicationID: normalizedApplicationId,
-          FromUser: 'projectflow@ou.org',
+          FromUser: fromUser,
           ToUser: normalizedRecipientEmail,
           Subject: subject,
           MessageText: htmlEmail.html,
