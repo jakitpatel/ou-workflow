@@ -5,7 +5,6 @@ import {
   ArrowUp,
   ArrowUpDown,
   Check,
-  CheckCircle2,
   Copy,
   Download,
   ExternalLink,
@@ -17,7 +16,6 @@ import {
   Minimize2,
   Plus,
   Send,
-  ShieldCheck,
   X,
 } from 'lucide-react'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
@@ -104,29 +102,74 @@ const groupClass = (group: string) => {
   return 'bg-gray-100 text-gray-700'
 }
 
-function IconButton({
-  title,
-  children,
+function ResolveButton({
+  resolved,
   onClick,
-  disabled,
-  className = '',
 }: {
-  title: string
-  children: React.ReactNode
-  onClick?: () => void
-  disabled?: boolean
-  className?: string
+  resolved: boolean
+  onClick: () => void
 }) {
   return (
     <button
       type="button"
-      title={title}
-      aria-label={title}
+      title={resolved ? 'Resolved - click to reopen' : 'Mark resolved / done'}
+      aria-label={resolved ? 'Resolved - click to reopen' : 'Mark resolved / done'}
       onClick={onClick}
-      disabled={disabled}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      className={
+        resolved
+          ? 'inline-flex h-7 w-7 items-center justify-center rounded bg-green-100 text-green-600 hover:bg-green-200'
+          : 'inline-flex h-7 w-7 items-center justify-center rounded text-gray-300 hover:bg-green-50 hover:text-green-600'
+      }
     >
-      {children}
+      <Check className="h-4 w-4" strokeWidth={resolved ? 2.5 : 2} />
+    </button>
+  )
+}
+
+function FlagActionButton({
+  flagged,
+  onClick,
+}: {
+  flagged: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      title={flagged ? 'Unflag follow-up' : 'Flag for follow-up'}
+      aria-label={flagged ? 'Unflag follow-up' : 'Flag for follow-up'}
+      onClick={onClick}
+      className={
+        flagged
+          ? 'inline-flex h-7 w-7 items-center justify-center rounded p-1 text-amber-500 hover:bg-amber-100'
+          : 'inline-flex h-7 w-7 items-center justify-center rounded p-1 text-gray-300 hover:bg-amber-50 hover:text-amber-400'
+      }
+    >
+      <Flag className="h-4 w-4" fill={flagged ? 'currentColor' : 'none'} />
+    </button>
+  )
+}
+
+function HalachaActionButton({
+  open,
+  onClick,
+}: {
+  open: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      title={open ? 'Open halachic review - click to resolve' : 'Flag for halachic review'}
+      aria-label={open ? 'Open halachic review - click to resolve' : 'Flag for halachic review'}
+      onClick={onClick}
+      className={
+        open
+          ? 'ml-0.5 inline-flex h-5 w-5 items-center justify-center rounded border border-red-300 bg-red-100 text-red-600 hover:bg-red-200'
+          : 'ml-0.5 inline-flex h-5 w-5 items-center justify-center rounded border border-transparent text-gray-300 hover:border-red-200 hover:bg-red-50 hover:text-red-600'
+      }
+    >
+      <AlertCircle className="h-3 w-3" strokeWidth={2.5} />
     </button>
   )
 }
@@ -698,14 +741,32 @@ export function ScheduleAIngredientsDrawer({
                             const halacha = scratchpad.halacha[row.id]
                             return (
                               <Fragment key={row.id}>
-                              <tr className={`${flagged ? 'bg-amber-50/60' : ''} ${resolved ? 'bg-green-50/50' : ''}`}>
+                              <tr
+                                className={
+                                  resolved
+                                    ? 'bg-green-50 hover:bg-green-100'
+                                    : halacha?.open
+                                      ? 'bg-red-50 hover:bg-red-100'
+                                      : flagged
+                                        ? 'bg-amber-50/60 hover:bg-amber-100'
+                                        : 'hover:bg-gray-50'
+                                }
+                              >
                                 <td className="px-3 py-3 text-xs text-gray-500">{index + 1}</td>
                                 <td className="px-3 py-3 font-mono text-xs text-gray-700">{row.rmc || '-'}</td>
                                 <td className="px-3 py-3">
-                                  <div className="font-medium text-gray-900">{row.name || '-'}</div>
-                                  {halacha?.open ? (
-                                    <div className="mt-1 rounded border border-purple-200 bg-purple-50 px-2 py-1 text-xs text-purple-800">
-                                      Halachic review open{halacha.note ? `: ${halacha.note}` : ''}
+                                  <div className="flex items-center gap-1.5 font-medium text-gray-900">
+                                    <span className={halacha?.open && !resolved ? 'text-red-700' : ''}>{row.name || '-'}</span>
+                                    {resolved ? (
+                                      <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-green-100 text-green-700" title="Resolved">
+                                        <Check className="h-3 w-3" strokeWidth={2.5} />
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  {halacha?.open && !resolved ? (
+                                    <div className="mt-1 inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700">
+                                      <AlertCircle className="h-3.5 w-3.5" strokeWidth={2.5} />
+                                      <span>Halachic review</span>
                                     </div>
                                   ) : null}
                                 </td>
@@ -727,21 +788,19 @@ export function ScheduleAIngredientsDrawer({
                                 {ingView === 'application' ? (
                                   <td className="px-3 py-3">
                                     <div className="flex flex-nowrap items-center gap-1">
-                                      <IconButton title={flagged ? 'Unflag' : 'Flag'} onClick={() => scratchpadApi.toggleFlag(row.id)} className={flagged ? 'text-amber-700' : ''}>
-                                        <Flag className="h-4 w-4" />
-                                      </IconButton>
-                                      <IconButton title={halacha?.open ? 'Resolve halacha' : 'Open halacha review'} onClick={() => scratchpadApi.toggleHalacha(row.id)} className={halacha?.open ? 'text-purple-700' : ''}>
-                                        <ShieldCheck className="h-4 w-4" />
-                                      </IconButton>
-                                      <IconButton title={resolved ? 'Mark unresolved' : 'Mark resolved'} onClick={() => scratchpadApi.toggleResolved(row.id)} className={resolved ? 'text-green-700' : ''}>
-                                        <CheckCircle2 className="h-4 w-4" />
-                                      </IconButton>
+                                      {resolved ? null : (
+                                        <>
+                                          <FlagActionButton flagged={flagged} onClick={() => scratchpadApi.toggleFlag(row.id)} />
+                                          <HalachaActionButton open={Boolean(halacha?.open)} onClick={() => scratchpadApi.toggleHalacha(row.id)} />
+                                        </>
+                                      )}
+                                      <ResolveButton resolved={resolved} onClick={() => scratchpadApi.toggleResolved(row.id)} />
                                     </div>
-                                    {halacha?.open ? (
+                                    {halacha?.open && !resolved ? (
                                       <input
-                                        className="mt-2 h-8 w-full rounded border border-purple-200 bg-white px-2 text-xs text-gray-700"
+                                        className="mt-2 h-8 w-full rounded border border-red-200 bg-white px-2 text-xs text-gray-700 outline-none focus:ring-1 focus:ring-red-400"
                                         value={halacha.note ?? ''}
-                                        placeholder="Halachic review note"
+                                        placeholder="Halachic note (question, sources, conclusion)..."
                                         onChange={(event) => scratchpadApi.updateHalachaNote(row.id, event.target.value)}
                                       />
                                     ) : null}
