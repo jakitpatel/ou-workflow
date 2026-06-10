@@ -26,6 +26,8 @@ const normalizeApplicationId = (value: unknown): number | undefined => {
   return Number.isFinite(parsed) ? parsed : undefined
 }
 
+const normalizeTaskText = (value: unknown) => String(value ?? '').trim().toLowerCase()
+
 export function NcrcDashboardContent() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
@@ -196,15 +198,20 @@ export function NcrcDashboardContent() {
 
     handleSelectAppActions(application, action)
 
-    const actionType = action.taskType?.toLowerCase()
-    const actionCategory = action.taskCategory?.toLowerCase()
+    const actionRecord = action as Task & {
+      TaskType?: unknown
+      TaskCategory?: unknown
+      taskInstanceId?: unknown
+    }
+    const actionType = normalizeTaskText(actionRecord.taskType ?? actionRecord.TaskType)
+    const actionCategory = normalizeTaskText(actionRecord.taskCategory ?? actionRecord.TaskCategory)
 
     if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEA) {
       setScheduleADrawerState({
         open: true,
         applicationId: application.applicationId,
         applicationName: application.company,
-        taskInstanceId: action.TaskInstanceId,
+        taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
         taskName: action.name,
       })
       return
