@@ -577,15 +577,15 @@ export function ScheduleAIngredientsDrawer({
                                 ) : null}
                                 {ingView === 'application' ? (
                                   <td className="px-3 py-3">
-                                    <div className="flex flex-wrap gap-1">
+                                    <div className="flex flex-nowrap items-center gap-1">
                                       <IconButton title={flagged ? 'Unflag' : 'Flag'} onClick={() => scratchpadApi.toggleFlag(row.id)} className={flagged ? 'text-amber-700' : ''}>
                                         <Flag className="h-4 w-4" />
                                       </IconButton>
-                                      <IconButton title={resolved ? 'Mark unresolved' : 'Mark resolved'} onClick={() => scratchpadApi.toggleResolved(row.id)} className={resolved ? 'text-green-700' : ''}>
-                                        <CheckCircle2 className="h-4 w-4" />
-                                      </IconButton>
                                       <IconButton title={halacha?.open ? 'Resolve halacha' : 'Open halacha review'} onClick={() => scratchpadApi.toggleHalacha(row.id)} className={halacha?.open ? 'text-purple-700' : ''}>
                                         <ShieldCheck className="h-4 w-4" />
+                                      </IconButton>
+                                      <IconButton title={resolved ? 'Mark unresolved' : 'Mark resolved'} onClick={() => scratchpadApi.toggleResolved(row.id)} className={resolved ? 'text-green-700' : ''}>
+                                        <CheckCircle2 className="h-4 w-4" />
                                       </IconButton>
                                     </div>
                                     {halacha?.open ? (
