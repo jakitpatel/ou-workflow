@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import {
   AlertCircle,
   ArrowDown,
@@ -22,6 +22,7 @@ import {
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import {
+  CANNED_NOTES,
   mapApplicationIngredientRow,
   mapKashIngredientRow,
   type ScheduleAIngredientFilter,
@@ -42,6 +43,8 @@ type Props = {
 }
 
 type DrawerTab = 'ingredients' | 'comm' | 'eir' | 'signoff'
+
+const CUSTOM_NOTE_VALUE = '__custom__'
 
 const textValue = (value: unknown) => String(value ?? '').trim()
 
@@ -159,6 +162,73 @@ function SortIcon({
   )
 }
 
+const isCannedNote = (note: string) => CANNED_NOTES.includes(note as (typeof CANNED_NOTES)[number])
+
+function CannedNoteRow({
+  rowId,
+  note,
+  colSpan,
+  customSelected,
+  onCustomSelectedChange,
+  onNoteChange,
+}: {
+  rowId: string
+  note: string
+  colSpan: number
+  customSelected: boolean
+  onCustomSelectedChange: (rowId: string, customSelected: boolean) => void
+  onNoteChange: (rowId: string, note: string) => void
+}) {
+  const isCustom = customSelected || (note !== '' && !isCannedNote(note))
+  const selectedValue = note === '' ? '' : isCustom ? CUSTOM_NOTE_VALUE : note
+
+  const onCannedNoteChange = (value: string) => {
+    if (value === CUSTOM_NOTE_VALUE) {
+      onCustomSelectedChange(rowId, true)
+      onNoteChange(rowId, isCannedNote(note) ? '' : note)
+      return
+    }
+
+    onCustomSelectedChange(rowId, false)
+    onNoteChange(rowId, value)
+  }
+
+  return (
+    <tr className="border-b border-amber-100 bg-amber-50">
+      <td colSpan={colSpan} className="px-4 pb-2.5 pt-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <FileText className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+          <select
+            className="rounded border border-amber-200 bg-white px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-amber-400"
+            value={isCustom ? CUSTOM_NOTE_VALUE : selectedValue}
+            onChange={(event) => onCannedNoteChange(event.target.value)}
+          >
+            <option value="" disabled>
+              Select a request to the company...
+            </option>
+            {CANNED_NOTES.map((cannedNote) => (
+              <option key={cannedNote} value={cannedNote}>
+                {cannedNote}
+              </option>
+            ))}
+            <option value={CUSTOM_NOTE_VALUE}>Custom...</option>
+          </select>
+          {isCustom ? (
+            <input
+              type="text"
+              className="min-w-[200px] flex-1 rounded border border-amber-200 bg-white px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-amber-400"
+              value={isCustom ? note : ''}
+              placeholder="Type the custom request sent to the company..."
+              onChange={(event) => onNoteChange(rowId, event.target.value)}
+              autoFocus
+            />
+          ) : null}
+        </div>
+      </td>
+    </tr>
+  )
+}
+
 function sortRows(rows: ScheduleAIngredientRow[], sortKey: ScheduleAIngredientSortKey, direction: 'asc' | 'desc') {
   const getter = (row: ScheduleAIngredientRow) => {
     if (sortKey === 'plantStatus') return row.status
@@ -196,6 +266,7 @@ export function ScheduleAIngredientsDrawer({
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [expanded, setExpanded] = useState(false)
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | number | null>(null)
+  const [customNoteRows, setCustomNoteRows] = useState<Set<string>>(() => new Set())
   const [copied, setCopied] = useState(false)
 
   const resolvedApplicationId =
@@ -266,6 +337,15 @@ export function ScheduleAIngredientsDrawer({
       setSortKey(key)
       setSortDirection('asc')
     }
+  }
+
+  const setCustomNoteSelected = (rowId: string, selected: boolean) => {
+    setCustomNoteRows((current) => {
+      const next = new Set(current)
+      if (selected) next.add(rowId)
+      else next.delete(rowId)
+      return next
+    })
   }
 
   const generateRound = () => {
@@ -468,16 +548,12 @@ export function ScheduleAIngredientsDrawer({
                             const resolved = Boolean(scratchpad.resolved[row.id])
                             const halacha = scratchpad.halacha[row.id]
                             return (
-                              <tr key={row.id} className={`${flagged ? 'bg-amber-50/60' : ''} ${resolved ? 'bg-green-50/50' : ''}`}>
+                              <Fragment key={row.id}>
+                              <tr className={`${flagged ? 'bg-amber-50/60' : ''} ${resolved ? 'bg-green-50/50' : ''}`}>
                                 <td className="px-3 py-3 text-xs text-gray-500">{index + 1}</td>
                                 <td className="px-3 py-3 font-mono text-xs text-gray-700">{row.rmc || '-'}</td>
                                 <td className="px-3 py-3">
                                   <div className="font-medium text-gray-900">{row.name || '-'}</div>
-                                  {scratchpad.flags[row.id]?.note ? (
-                                    <div className="mt-1 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
-                                      {scratchpad.flags[row.id]?.note}
-                                    </div>
-                                  ) : null}
                                   {halacha?.open ? (
                                     <div className="mt-1 rounded border border-purple-200 bg-purple-50 px-2 py-1 text-xs text-purple-800">
                                       Halachic review open{halacha.note ? `: ${halacha.note}` : ''}
@@ -512,14 +588,6 @@ export function ScheduleAIngredientsDrawer({
                                         <ShieldCheck className="h-4 w-4" />
                                       </IconButton>
                                     </div>
-                                    {flagged ? (
-                                      <textarea
-                                        className="mt-2 min-h-16 w-full rounded border border-amber-200 bg-white px-2 py-1 text-xs text-gray-700"
-                                        value={scratchpad.flags[row.id]?.note ?? ''}
-                                        placeholder="Follow-up note"
-                                        onChange={(event) => scratchpadApi.updateFlagNote(row.id, event.target.value)}
-                                      />
-                                    ) : null}
                                     {halacha?.open ? (
                                       <input
                                         className="mt-2 h-8 w-full rounded border border-purple-200 bg-white px-2 text-xs text-gray-700"
@@ -531,6 +599,17 @@ export function ScheduleAIngredientsDrawer({
                                   </td>
                                 ) : null}
                               </tr>
+                              {ingView === 'application' && flagged && !resolved ? (
+                                <CannedNoteRow
+                                  rowId={row.id}
+                                  note={scratchpad.flags[row.id]?.note ?? ''}
+                                  colSpan={8}
+                                  customSelected={customNoteRows.has(row.id)}
+                                  onCustomSelectedChange={setCustomNoteSelected}
+                                  onNoteChange={scratchpadApi.updateFlagNote}
+                                />
+                              ) : null}
+                              </Fragment>
                             )
                           })}
                         </tbody>

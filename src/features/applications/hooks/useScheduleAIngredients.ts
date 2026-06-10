@@ -27,6 +27,12 @@ export type ScheduleAIngredientFilter = 'all' | 'flagged' | 'resolved' | 'halach
 export type ScheduleAIngredientSortKey = 'rmc' | 'name' | 'source' | 'brand' | 'group' | 'certifier' | 'plantStatus'
 export type ScheduleAIngredientView = 'application' | 'kashrus'
 
+export const CANNED_NOTES = [
+  'Provide updated LOC - Letter of Certification.',
+  'Specify Ingredient Name/UKDID on LOC provided.',
+  'Ingredient/Source is not Approved. Provide alternate approved Ingredient/Source.',
+] as const
+
 export type ScheduleACommunicationItem = {
   ingId: string
   name: string
