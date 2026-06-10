@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertCircle,
   ArrowDown,
@@ -327,6 +327,8 @@ export function ScheduleAIngredientsDrawer({
   const [addRowDraft, setAddRowDraft] = useState<ScheduleAIngredientDraft>(EMPTY_ADD_ROW_DRAFT)
   const [addRowError, setAddRowError] = useState('')
   const [copied, setCopied] = useState(false)
+  const ingredientsHeaderRef = useRef<HTMLDivElement | null>(null)
+  const ingredientsTableRef = useRef<HTMLTableElement | null>(null)
 
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
@@ -387,6 +389,30 @@ export function ScheduleAIngredientsDrawer({
 
     return sortRows(filtered, sortKey, sortDirection)
   }, [activeRows, filter, ingView, scratchpad, sortDirection, sortKey])
+
+  useEffect(() => {
+    if (!open || activeTab !== 'ingredients') return
+
+    const syncStickyTableHeader = () => {
+      const headerHeight = ingredientsHeaderRef.current?.offsetHeight ?? 76
+      ingredientsTableRef.current?.style.setProperty('--schedule-a-ing-header-height', `${headerHeight}px`)
+    }
+
+    syncStickyTableHeader()
+
+    const headerElement = ingredientsHeaderRef.current
+    const observer =
+      typeof ResizeObserver === 'undefined' || !headerElement
+        ? null
+        : new ResizeObserver(syncStickyTableHeader)
+    if (headerElement) observer?.observe(headerElement)
+    window.addEventListener('resize', syncStickyTableHeader)
+
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', syncStickyTableHeader)
+    }
+  }, [activeTab, ingView, open])
 
   if (!open) return null
 
@@ -480,6 +506,9 @@ export function ScheduleAIngredientsDrawer({
 
   const readyForSignoff = scratchpad.scheduleAReady && (scratchpad.eirReviewComplete || scratchpad.eirNotRequired)
   const panelWidth = expanded ? 'lg:max-w-[96vw]' : 'lg:max-w-[72vw]'
+  const stickyTableHeaderClass =
+    'sticky z-10 bg-gray-50 px-3 py-2.5 text-xs font-semibold text-gray-600 shadow-[inset_0_-1px_0_#e5e7eb]'
+  const stickyTableHeaderStyle = { top: 'var(--schedule-a-ing-header-height, 76px)' }
 
   return (
     <>
@@ -573,10 +602,10 @@ export function ScheduleAIngredientsDrawer({
                 </nav>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <div className="min-h-0 flex-1 overflow-auto p-4">
                 {activeTab === 'ingredients' ? (
-                  <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-                    <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b bg-gray-50 px-6 py-4">
+                  <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                    <div ref={ingredientsHeaderRef} className="sticky left-0 right-0 top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-t-lg border-b bg-gray-50 px-6 py-4 shadow-sm">
                       <h2 className="text-2xl font-semibold text-gray-900">
                         {ingView === 'application' ? 'Application Ingredients' : 'Kashrus Ingredients'}
                       </h2>
@@ -629,11 +658,11 @@ export function ScheduleAIngredientsDrawer({
                       </div>
                     ) : null}
 
-                    <div className="overflow-x-auto">
-                      <table className={`w-full min-w-[980px] text-left text-sm ${ingView === 'kashrus' ? 'view-kashrus' : 'view-application'}`}>
+                    <div className="overflow-visible">
+                      <table ref={ingredientsTableRef} className={`w-full min-w-[980px] text-left text-sm ${ingView === 'kashrus' ? 'view-kashrus' : 'view-application'}`}>
                         <thead>
                           <tr className="border-b border-gray-200 bg-gray-50">
-                            <th className="w-8 px-3 py-2.5 text-xs font-semibold text-gray-600">#</th>
+                            <th className={`w-8 ${stickyTableHeaderClass}`} style={stickyTableHeaderStyle}>#</th>
                             {[
                               ['rmc', 'RMC'],
                               ['name', 'Ingredient Name'],
@@ -645,9 +674,10 @@ export function ScheduleAIngredientsDrawer({
                             ].map(([key, label]) => (
                               <th
                                 key={key}
-                                className={`px-3 py-2.5 text-xs font-semibold text-gray-600 ${
+                                className={`${stickyTableHeaderClass} ${
                                   key === 'plantStatus' && ingView === 'application' ? 'hidden' : ''
                                 }`}
+                                style={stickyTableHeaderStyle}
                               >
                                 <button type="button" onClick={() => setSort(key as ScheduleAIngredientSortKey)} className="inline-flex items-center gap-1 hover:text-blue-700">
                                   {label}
@@ -655,7 +685,7 @@ export function ScheduleAIngredientsDrawer({
                                 </button>
                               </th>
                             ))}
-                            {ingView === 'application' ? <th className="w-28 px-3 py-2.5 text-xs font-semibold text-gray-600">Actions</th> : null}
+                            {ingView === 'application' ? <th className={`w-28 ${stickyTableHeaderClass}`} style={stickyTableHeaderStyle}>Actions</th> : null}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
