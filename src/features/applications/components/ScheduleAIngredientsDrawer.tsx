@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
   AlertCircle,
-  Bot,
   Check,
   CheckCircle2,
   Copy,
@@ -13,10 +12,8 @@ import {
   Maximize2,
   MessageSquare,
   Minimize2,
-  Plus,
   Send,
   ShieldCheck,
-  Sparkles,
   Trash2,
   X,
 } from 'lucide-react'
@@ -43,54 +40,6 @@ type Props = {
 }
 
 type DrawerTab = 'ingredients' | 'comm' | 'eir' | 'signoff'
-
-type DraftRow = {
-  rmc: string
-  name: string
-  source: string
-  brand: string
-  group: string
-  certifier: string
-}
-
-const EMPTY_DRAFT: DraftRow = {
-  rmc: '',
-  name: '',
-  source: '',
-  brand: '',
-  group: '2',
-  certifier: '',
-}
-
-const CANNED_NOTES = [
-  'Need source details and kosher certificate.',
-  'LOC required before Schedule A can be finalized.',
-  'Confirm product code, brand, and manufacturer.',
-  'Observed in EIR but missing from original application.',
-  'Certification status unclear.',
-]
-
-const EIR_AI_RESULT = {
-  findings: [
-    'Inspection report references ingredients that need company clarification.',
-    'Several observed labels do not show enough certification detail.',
-    'Items not on the application should be added or explicitly rejected before sign-off.',
-  ],
-  ingredients: [
-    { name: 'Margarine', notes: 'Cargill product observed; LOC required.', onScheduleA: true },
-    { name: 'Whey Protein Concentrate', notes: 'No certification visible on drum; source required.', onScheduleA: true },
-    { name: 'Natural Flavors', notes: 'Flavor code not confirmed.', onScheduleA: true },
-    { name: 'Palm Shortening', notes: 'Observed on Line 1; missing from application.', onScheduleA: false },
-    { name: 'Rosemary Extract', notes: 'Used as antioxidant; certification unknown.', onScheduleA: false },
-    { name: 'Dough Conditioner', notes: 'Unlabeled bag; origin unknown.', onScheduleA: false },
-  ],
-  recommendations: [
-    'Add Palm Shortening to Schedule A or request a company explanation.',
-    'Add Rosemary Extract and obtain kosher certification status.',
-    'Identify Dough Conditioner supplier before approval.',
-    'Confirm Cargill margarine product code and LOC.',
-  ],
-}
 
 const textValue = (value: unknown) => String(value ?? '').trim()
 
@@ -220,7 +169,6 @@ export function ScheduleAIngredientsDrawer({
   const [filter, setFilter] = useState<ScheduleAIngredientFilter>('all')
   const [sortKey, setSortKey] = useState<ScheduleAIngredientSortKey>('rmc')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
-  const [draft, setDraft] = useState<DraftRow | null>(null)
   const [expanded, setExpanded] = useState(false)
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | number | null>(null)
   const [copied, setCopied] = useState(false)
@@ -238,11 +186,8 @@ export function ScheduleAIngredientsDrawer({
   )
 
   const applicationRows = useMemo(
-    () => [
-      ...(data?.scheduleIngredients ?? []).map(mapApplicationIngredientRow),
-      ...scratchpad.additions,
-    ],
-    [data?.scheduleIngredients, scratchpad.additions],
+    () => (data?.scheduleIngredients ?? []).map(mapApplicationIngredientRow),
+    [data?.scheduleIngredients],
   )
   const kashRows = useMemo(() => (data?.kashIngredients ?? []).map(mapKashIngredientRow), [data?.kashIngredients])
   const activeRows = ingView === 'application' ? applicationRows : kashRows
@@ -263,10 +208,9 @@ export function ScheduleAIngredientsDrawer({
         if (scratchpad.flags[row.id]?.flagged && !scratchpad.deleted[row.id]) acc.flagged += 1
         if (resolvedIds.has(row.id)) acc.resolved += 1
         if (scratchpad.halacha[row.id]?.open) acc.halacha += 1
-        if (row.origin === 'IAR-added' && !scratchpad.deleted[row.id]) acc.added += 1
         return acc
       },
-      { all: 0, flagged: 0, resolved: 0, halacha: 0, added: 0 },
+      { all: 0, flagged: 0, resolved: 0, halacha: 0 },
     )
   }, [activeRows, scratchpad])
 
@@ -283,7 +227,6 @@ export function ScheduleAIngredientsDrawer({
       if (filter === 'flagged') return Boolean(scratchpad.flags[row.id]?.flagged)
       if (filter === 'resolved') return resolvedIds.has(row.id)
       if (filter === 'halacha') return Boolean(scratchpad.halacha[row.id]?.open)
-      if (filter === 'added') return row.origin === 'IAR-added'
       return true
     })
 
@@ -299,18 +242,6 @@ export function ScheduleAIngredientsDrawer({
       setSortKey(key)
       setSortDirection('asc')
     }
-  }
-
-  const addDraft = () => {
-    if (!draft || (!draft.name.trim() && !draft.rmc.trim())) return
-    scratchpadApi.addLocalRow({
-      ...draft,
-      ukd: '',
-      fn: '',
-      attachment: '',
-    })
-    setDraft(null)
-    setFilter('all')
   }
 
   const generateRound = () => {
@@ -448,7 +379,7 @@ export function ScheduleAIngredientsDrawer({
                         {ingView === 'application' ? 'Application Ingredients' : 'Kashrus Ingredients'}
                       </h2>
                       <div className="flex flex-wrap items-center gap-2">
-                        {(['all', 'flagged', 'resolved', 'halacha', 'added'] as ScheduleAIngredientFilter[]).map((item) => (
+                        {(['all', 'flagged', 'resolved', 'halacha'] as ScheduleAIngredientFilter[]).map((item) => (
                           <button
                             key={item}
                             type="button"
@@ -468,17 +399,6 @@ export function ScheduleAIngredientsDrawer({
                           <Download className="h-3.5 w-3.5" />
                           Download
                         </button>
-                        {ingView === 'application' ? (
-                          <button
-                            type="button"
-                            onClick={() => setDraft(EMPTY_DRAFT)}
-                            disabled={Boolean(draft)}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                            Add Row
-                          </button>
-                        ) : null}
                       </div>
                     </div>
 
@@ -519,32 +439,6 @@ export function ScheduleAIngredientsDrawer({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                          {draft && ingView === 'application' ? (
-                            <tr className="bg-blue-50 align-top">
-                              <td className="px-3 py-3 text-xs text-blue-500">+</td>
-                              {(['rmc', 'name', 'source', 'brand', 'group', 'certifier'] as const).map((field) => (
-                                <td key={field} className="px-3 py-3">
-                                  <input
-                                    className="h-8 w-full rounded border border-gray-300 bg-white px-2 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                    value={draft[field]}
-                                    placeholder={field === 'name' ? 'Ingredient name' : field.toUpperCase()}
-                                    onChange={(event) => setDraft((current) => ({ ...(current ?? EMPTY_DRAFT), [field]: event.target.value }))}
-                                  />
-                                </td>
-                              ))}
-                              <td className="px-3 py-3">
-                                <div className="flex gap-1">
-                                  <IconButton title="Save row" onClick={addDraft} className="text-green-700">
-                                    <Check className="h-4 w-4" />
-                                  </IconButton>
-                                  <IconButton title="Cancel row" onClick={() => setDraft(null)}>
-                                    <X className="h-4 w-4" />
-                                  </IconButton>
-                                </div>
-                              </td>
-                            </tr>
-                          ) : null}
-
                           {visibleRows.map((row, index) => {
                             const flagged = Boolean(scratchpad.flags[row.id]?.flagged)
                             const resolved = Boolean(scratchpad.resolved[row.id])
@@ -598,18 +492,12 @@ export function ScheduleAIngredientsDrawer({
                                       </IconButton>
                                     </div>
                                     {flagged ? (
-                                      <select
-                                        className="mt-2 h-8 w-full rounded border border-amber-200 bg-white px-2 text-xs text-gray-700"
+                                      <textarea
+                                        className="mt-2 min-h-16 w-full rounded border border-amber-200 bg-white px-2 py-1 text-xs text-gray-700"
                                         value={scratchpad.flags[row.id]?.note ?? ''}
+                                        placeholder="Follow-up note"
                                         onChange={(event) => scratchpadApi.updateFlagNote(row.id, event.target.value)}
-                                      >
-                                        <option value="">Select follow-up note</option>
-                                        {CANNED_NOTES.map((note) => (
-                                          <option key={note} value={note}>
-                                            {note}
-                                          </option>
-                                        ))}
-                                      </select>
+                                      />
                                     ) : null}
                                     {halacha?.open ? (
                                       <input
@@ -822,69 +710,6 @@ export function ScheduleAIngredientsDrawer({
                       </div>
                     </div>
 
-                    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-gray-50 px-5 py-4">
-                        <div className="flex items-center gap-2">
-                          <Bot className="h-5 w-5 text-blue-500" />
-                          <h2 className="text-lg font-semibold text-gray-900">EIR AI Review</h2>
-                          {scratchpad.eirAiRan ? <Pill tone="amber">{EIR_AI_RESULT.ingredients.filter((item) => !item.onScheduleA).length} missing</Pill> : null}
-                        </div>
-                        <button type="button" onClick={scratchpadApi.runEirAiSummary} className="inline-flex items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700">
-                          <Sparkles className="h-3.5 w-3.5" />
-                          Run AI Summary
-                        </button>
-                      </div>
-                      {scratchpad.eirAiRan ? (
-                        <div className="space-y-4 p-5">
-                          <div>
-                            <p className="mb-2 text-sm font-semibold text-gray-900">Findings</p>
-                            <ul className="space-y-1 text-sm text-gray-700">
-                              {EIR_AI_RESULT.findings.map((finding) => (
-                                <li key={finding} className="flex gap-2">
-                                  <span className="text-amber-500">-</span>
-                                  <span>{finding}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div className="overflow-x-auto rounded border border-gray-200">
-                            <table className="w-full min-w-[640px] text-left text-sm">
-                              <thead className="bg-gray-50 text-xs text-gray-600">
-                                <tr>
-                                  <th className="px-3 py-2">Ingredient</th>
-                                  <th className="px-3 py-2">Notes</th>
-                                  <th className="px-3 py-2">On Schedule A</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-100">
-                                {EIR_AI_RESULT.ingredients.map((item) => (
-                                  <tr key={item.name}>
-                                    <td className="px-3 py-2 font-medium text-gray-900">{item.name}</td>
-                                    <td className="px-3 py-2 text-gray-700">{item.notes}</td>
-                                    <td className="px-3 py-2">
-                                      <Pill tone={item.onScheduleA ? 'green' : 'red'}>{item.onScheduleA ? 'Yes' : 'No'}</Pill>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                          <div className="rounded border border-red-200 bg-red-50 p-3">
-                            <p className="mb-2 text-sm font-semibold text-red-900">Recommendations</p>
-                            <ul className="space-y-1 text-sm text-red-800">
-                              {EIR_AI_RESULT.recommendations.map((recommendation) => (
-                                <li key={recommendation} className="flex gap-2">
-                                  <span>-</span>
-                                  <span>{recommendation}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-5 text-sm text-gray-500">Run the AI summary after EIR receipt to compare observed ingredients against Schedule A.</div>
-                      )}
-                    </div>
                   </div>
                 ) : null}
 

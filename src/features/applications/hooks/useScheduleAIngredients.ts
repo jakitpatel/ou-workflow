@@ -19,11 +19,11 @@ export type ScheduleAIngredientRow = {
   certifier: string
   attachment: string
   status: string
-  origin: 'Application' | 'Kashrus' | 'IAR-added'
+  origin: 'Application' | 'Kashrus'
   raw?: ScheduleAIngredient | KashIngredient
 }
 
-export type ScheduleAIngredientFilter = 'all' | 'flagged' | 'resolved' | 'halacha' | 'added'
+export type ScheduleAIngredientFilter = 'all' | 'flagged' | 'resolved' | 'halacha'
 export type ScheduleAIngredientSortKey = 'rmc' | 'name' | 'source' | 'brand' | 'group' | 'certifier' | 'plantStatus'
 export type ScheduleAIngredientView = 'application' | 'kashrus'
 
@@ -52,7 +52,6 @@ export type ScheduleACommunicationRound = {
 
 export type ScheduleAScratchpad = {
   flags: Record<string, { flagged: boolean; note: string }>
-  additions: ScheduleAIngredientRow[]
   rounds: ScheduleACommunicationRound[]
   halacha: Record<string, { open: boolean; note: string; resolvedAt?: string }>
   resolved: Record<string, boolean>
@@ -62,7 +61,6 @@ export type ScheduleAScratchpad = {
   eirReviewComplete: boolean
   eirNeedsEntry: boolean
   eirNotRequired: boolean
-  eirAiRan: boolean
   scheduleAReady: boolean
   scheduleAReadyBy?: string
   scheduleAReadyDate?: string
@@ -70,7 +68,6 @@ export type ScheduleAScratchpad = {
 
 const EMPTY_SCRATCHPAD: ScheduleAScratchpad = {
   flags: {},
-  additions: [],
   rounds: [],
   halacha: {},
   resolved: {},
@@ -80,7 +77,6 @@ const EMPTY_SCRATCHPAD: ScheduleAScratchpad = {
   eirReviewComplete: false,
   eirNeedsEntry: false,
   eirNotRequired: false,
-  eirAiRan: false,
   scheduleAReady: false,
 }
 
@@ -99,7 +95,6 @@ const normalizeScratchpad = (value: Partial<ScheduleAScratchpad> | null | undefi
   ...EMPTY_SCRATCHPAD,
   ...value,
   flags: value?.flags ?? {},
-  additions: value?.additions ?? [],
   rounds: value?.rounds ?? [],
   halacha: value?.halacha ?? {},
   resolved: value?.resolved ?? {},
@@ -294,24 +289,6 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
     [updateScratchpad],
   )
 
-  const addLocalRow = useCallback(
-    (draft: Omit<ScheduleAIngredientRow, 'id' | 'origin' | 'raw' | 'status'>) => {
-      updateScratchpad((current) => ({
-        ...current,
-        additions: [
-          ...current.additions,
-          {
-            ...draft,
-            id: `added-${Date.now()}`,
-            status: 'added',
-            origin: 'IAR-added',
-          },
-        ],
-      }))
-    },
-    [updateScratchpad],
-  )
-
   const toggleHalacha = useCallback(
     (rowId: string) => {
       updateScratchpad((current) => {
@@ -494,10 +471,6 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
     updateScratchpad((current) => ({ ...current, eirNotRequired: false }))
   }, [updateScratchpad])
 
-  const runEirAiSummary = useCallback(() => {
-    updateScratchpad((current) => ({ ...current, eirAiRan: true, eirReceived: true, eirNotRequired: false }))
-  }, [updateScratchpad])
-
   const markEirReviewComplete = useCallback(() => {
     updateScratchpad((current) => ({ ...current, eirReceived: true, eirReviewComplete: true, eirNeedsEntry: false }))
   }, [updateScratchpad])
@@ -560,7 +533,6 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
     updateFlagNote,
     toggleResolved,
     toggleDeleted,
-    addLocalRow,
     toggleHalacha,
     updateHalachaNote,
     generateRound,
@@ -571,7 +543,6 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
     markEirReceived,
     markEirNotRequired,
     clearEirNotRequired,
-    runEirAiSummary,
     markEirReviewComplete,
     requestEirIngredientEntry,
     markScheduleAReady,
