@@ -612,7 +612,19 @@ export async function fetchScheduleAIngredients({
 
 export type CreateScheduleAIngredientPayload = {
   ApplicationID: string | number
-} & Partial<Pick<ScheduleAIngredient, 'UKDID' | 'brandName' | 'ingredientLabelName' | 'manufacturer' | 'rawMaterialCode'>> & {
+} & Partial<
+  Pick<
+    ScheduleAIngredient,
+    | 'UKDID'
+    | 'brandName'
+    | 'certifyingAgency'
+    | 'group'
+    | 'ingredientLabelName'
+    | 'manufacturer'
+    | 'plantStatus'
+    | 'rawMaterialCode'
+  >
+> & {
   source?: string
 }
 

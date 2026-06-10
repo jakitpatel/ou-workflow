@@ -15,6 +15,7 @@ import {
   Maximize2,
   MessageSquare,
   Minimize2,
+  Plus,
   Send,
   ShieldCheck,
   X,
@@ -29,6 +30,8 @@ import {
   type ScheduleAIngredientRow,
   type ScheduleAIngredientSortKey,
   type ScheduleAIngredientView,
+  type ScheduleAIngredientDraft,
+  useCreateScheduleAIngredient,
   useScheduleAIngredients,
   useScheduleAScratchpad,
 } from '@/features/applications/hooks/useScheduleAIngredients'
@@ -45,6 +48,16 @@ type Props = {
 type DrawerTab = 'ingredients' | 'comm' | 'eir' | 'signoff'
 
 const CUSTOM_NOTE_VALUE = '__custom__'
+
+const EMPTY_ADD_ROW_DRAFT: ScheduleAIngredientDraft = {
+  rmc: '',
+  name: '',
+  source: '',
+  brand: '',
+  group: '',
+  certifier: '',
+  plantStatus: '',
+}
 
 const textValue = (value: unknown) => String(value ?? '').trim()
 
@@ -267,11 +280,15 @@ export function ScheduleAIngredientsDrawer({
   const [expanded, setExpanded] = useState(false)
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | number | null>(null)
   const [customNoteRows, setCustomNoteRows] = useState<Set<string>>(() => new Set())
+  const [isAddingRow, setIsAddingRow] = useState(false)
+  const [addRowDraft, setAddRowDraft] = useState<ScheduleAIngredientDraft>(EMPTY_ADD_ROW_DRAFT)
+  const [addRowError, setAddRowError] = useState('')
   const [copied, setCopied] = useState(false)
 
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const { data, isLoading, error } = useScheduleAIngredients(open ? resolvedApplicationId : undefined)
+  const createIngredientMutation = useCreateScheduleAIngredient(resolvedApplicationId)
   const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
   const scratchpadApi = useScheduleAScratchpad(resolvedApplicationId)
   const { scratchpad } = scratchpadApi
@@ -346,6 +363,43 @@ export function ScheduleAIngredientsDrawer({
       else next.delete(rowId)
       return next
     })
+  }
+
+  const updateAddRowDraft = (field: keyof ScheduleAIngredientDraft, value: string) => {
+    setAddRowDraft((current) => ({ ...current, [field]: value }))
+  }
+
+  const startAddRow = () => {
+    setIngView('application')
+    setFilter('all')
+    setIsAddingRow(true)
+    setAddRowError('')
+  }
+
+  const cancelAddRow = () => {
+    setIsAddingRow(false)
+    setAddRowDraft(EMPTY_ADD_ROW_DRAFT)
+    setAddRowError('')
+  }
+
+  const saveAddRow = async () => {
+    if (!addRowDraft.name.trim()) {
+      setAddRowError('Ingredient name is required before saving.')
+      return
+    }
+
+    setAddRowError('')
+    try {
+      await createIngredientMutation.mutateAsync(addRowDraft)
+      setIsAddingRow(false)
+      setAddRowDraft(EMPTY_ADD_ROW_DRAFT)
+    } catch (mutationError) {
+      const message =
+        mutationError && typeof mutationError === 'object' && 'message' in mutationError
+          ? String((mutationError as { message?: unknown }).message)
+          : 'Failed to add Schedule A ingredient.'
+      setAddRowError(message)
+    }
   }
 
   const generateRound = () => {
@@ -445,6 +499,7 @@ export function ScheduleAIngredientsDrawer({
                             setActiveTab('ingredients')
                             setIngView(view)
                             setFilter('all')
+                            if (view === 'kashrus') cancelAddRow()
                           }}
                           className={`inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium ${
                             active ? 'bg-blue-700 text-white' : 'text-gray-600 hover:bg-gray-50'
@@ -503,6 +558,17 @@ export function ScheduleAIngredientsDrawer({
                           <Download className="h-3.5 w-3.5" />
                           Download
                         </button>
+                        {ingView === 'application' ? (
+                          <button
+                            type="button"
+                            onClick={startAddRow}
+                            disabled={isAddingRow || createIngredientMutation.isPending}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Add Row
+                          </button>
+                        ) : null}
                       </div>
                     </div>
 
@@ -510,6 +576,11 @@ export function ScheduleAIngredientsDrawer({
                     {error ? (
                       <div className="m-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                         Failed to load ingredients: {(error as Error).message}
+                      </div>
+                    ) : null}
+                    {addRowError ? (
+                      <div className="m-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
+                        {addRowError}
                       </div>
                     ) : null}
 
@@ -543,6 +614,84 @@ export function ScheduleAIngredientsDrawer({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
+                          {ingView === 'application' && isAddingRow ? (
+                            <tr className="border-b border-blue-100 border-l-4 border-l-blue-400 bg-blue-50/60">
+                              <td className="w-8 px-2 py-2 text-xs text-blue-400">+</td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={addRowDraft.rmc}
+                                  placeholder="RMC"
+                                  onChange={(event) => updateAddRowDraft('rmc', event.target.value)}
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={addRowDraft.name}
+                                  placeholder="Ingredient name *"
+                                  onChange={(event) => updateAddRowDraft('name', event.target.value)}
+                                  autoFocus
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={addRowDraft.source}
+                                  placeholder="Source"
+                                  onChange={(event) => updateAddRowDraft('source', event.target.value)}
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={addRowDraft.brand}
+                                  placeholder="Brand"
+                                  onChange={(event) => updateAddRowDraft('brand', event.target.value)}
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={addRowDraft.group}
+                                  placeholder="Group"
+                                  onChange={(event) => updateAddRowDraft('group', event.target.value)}
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={addRowDraft.certifier}
+                                  placeholder="Certifier"
+                                  onChange={(event) => updateAddRowDraft('certifier', event.target.value)}
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    title="Save row"
+                                    aria-label="Save row"
+                                    onClick={saveAddRow}
+                                    disabled={createIngredientMutation.isPending}
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded bg-green-600 text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    title="Cancel"
+                                    aria-label="Cancel"
+                                    onClick={cancelAddRow}
+                                    disabled={createIngredientMutation.isPending}
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ) : null}
                           {visibleRows.map((row, index) => {
                             const flagged = Boolean(scratchpad.flags[row.id]?.flagged)
                             const resolved = Boolean(scratchpad.resolved[row.id])

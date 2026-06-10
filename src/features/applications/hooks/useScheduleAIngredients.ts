@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { fetchApplicationMessages, fetchScheduleAIngredients } from '@/features/applications/api'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  createScheduleAIngredient,
+  fetchApplicationMessages,
+  fetchScheduleAIngredients,
+  type CreateScheduleAIngredientPayload,
+} from '@/features/applications/api'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { useUser } from '@/context/UserContext'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
@@ -26,6 +31,16 @@ export type ScheduleAIngredientRow = {
 export type ScheduleAIngredientFilter = 'all' | 'flagged' | 'resolved' | 'halacha'
 export type ScheduleAIngredientSortKey = 'rmc' | 'name' | 'source' | 'brand' | 'group' | 'certifier' | 'plantStatus'
 export type ScheduleAIngredientView = 'application' | 'kashrus'
+
+export type ScheduleAIngredientDraft = {
+  rmc: string
+  name: string
+  source: string
+  brand: string
+  group: string
+  certifier: string
+  plantStatus: string
+}
 
 export const CANNED_NOTES = [
   'Provide updated LOC - Letter of Certification.',
@@ -180,6 +195,43 @@ export function useScheduleAIngredients(applicationId?: string | number) {
       }),
     enabled: !!token && !!normalizedApplicationId,
     ...queryOptionDefaults.applicationScheduleAIngredients,
+  })
+}
+
+export function useCreateScheduleAIngredient(applicationId?: string | number) {
+  const { token } = useUser()
+  const queryClient = useQueryClient()
+  const normalizedApplicationId =
+    applicationId === undefined || applicationId === null ? undefined : String(applicationId)
+
+  return useMutation({
+    mutationFn: (draft: ScheduleAIngredientDraft) => {
+      if (!normalizedApplicationId) {
+        throw new Error('Application ID is required before adding an ingredient.')
+      }
+
+      const payload: CreateScheduleAIngredientPayload = {
+        ApplicationID: normalizedApplicationId,
+        rawMaterialCode: valueText(draft.rmc) || undefined,
+        ingredientLabelName: valueText(draft.name) || undefined,
+        manufacturer: valueText(draft.source) || undefined,
+        source: valueText(draft.source) || undefined,
+        brandName: valueText(draft.brand) || undefined,
+        group: valueText(draft.group) || undefined,
+        certifyingAgency: valueText(draft.certifier) || undefined,
+        plantStatus: valueText(draft.plantStatus) || undefined,
+      }
+
+      return createScheduleAIngredient({
+        payload,
+        token: token ?? undefined,
+      })
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: applicationsQueryKeys.scheduleAIngredients(normalizedApplicationId),
+      })
+    },
   })
 }
 
