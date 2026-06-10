@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  createApplicationMessage,
   createScheduleAIngredient,
   fetchApplicationMessages,
   fetchScheduleAIngredients,
@@ -9,6 +10,7 @@ import {
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { useUser } from '@/context/UserContext'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
+import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import type { KashIngredient, ScheduleAIngredient } from '@/types/application'
 
 export type ScheduleAIngredientRow = {
@@ -71,6 +73,14 @@ export type ScheduleACommunicationRound = {
     body: string
   }
   responseDate?: string
+}
+
+export type SendScheduleACommunicationEmailInput = {
+  applicationId?: string | number | null
+  taskInstanceId?: string | number | null
+  recipientEmail: string
+  subject: string
+  body: string
 }
 
 export type ScheduleAScratchpad = {
@@ -278,6 +288,81 @@ export function useScheduleACommunicationMessages({
       }),
     enabled: !!token && !!normalizedApplicationId,
     ...queryOptionDefaults.applicationScheduleAIngredients,
+  })
+}
+
+export function useSendScheduleACommunicationEmail() {
+  const { token } = useUser()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      applicationId,
+      taskInstanceId,
+      recipientEmail,
+      subject,
+      body,
+    }: SendScheduleACommunicationEmailInput) => {
+      const normalizedApplicationId =
+        applicationId === undefined || applicationId === null ? '' : String(applicationId).trim()
+      const normalizedRecipientEmail = valueText(recipientEmail)
+
+      if (!normalizedApplicationId) {
+        throw new Error('Application ID is required before sending email.')
+      }
+
+      if (!normalizedRecipientEmail) {
+        throw new Error('Recipient email is required before sending email.')
+      }
+
+      const htmlEmail = buildHtmlEmailFromPlainText(body, {
+        preheader: subject,
+        title: 'OU Kosher Schedule A',
+      })
+
+      return createApplicationMessage({
+        token: token ?? undefined,
+        payload: {
+          MessageID: null,
+          ApplicationID: normalizedApplicationId,
+          FromUser: 'projectflow@ou.org',
+          ToUser: normalizedRecipientEmail,
+          Subject: subject,
+          MessageText: htmlEmail.html,
+          MessageTextPlain: htmlEmail.text,
+          PlainText: htmlEmail.text,
+          Text: htmlEmail.text,
+          MessageType: 'Email',
+          Priority: 'NORMAL',
+          SentDate: new Date().toISOString(),
+          TemplateName: 'schedule-a-ingredients',
+          TaskInstanceId: taskInstanceId ?? null,
+          isPrivate: false,
+          parentMessageId: null,
+          toReply: null,
+          isRead: false,
+          tag: null,
+          CCUser: null,
+          BCCUser: 'productAutomation@ou.org',
+          replyTo: 'oucert@ou.org',
+          Attachments: null,
+        },
+      })
+    },
+    onSuccess: async (_data, variables) => {
+      const normalizedApplicationId =
+        variables.applicationId === undefined || variables.applicationId === null
+          ? undefined
+          : String(variables.applicationId).trim()
+      const normalizedTaskInstanceId =
+        variables.taskInstanceId === undefined || variables.taskInstanceId === null
+          ? undefined
+          : String(variables.taskInstanceId).trim()
+
+      await queryClient.invalidateQueries({
+        queryKey: applicationsQueryKeys.scheduleAMessages(normalizedApplicationId, normalizedTaskInstanceId),
+      })
+    },
   })
 }
 

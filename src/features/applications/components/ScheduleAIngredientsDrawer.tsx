@@ -10,7 +10,6 @@ import {
   ExternalLink,
   FileText,
   Flag,
-  Mail,
   Maximize2,
   MessageSquare,
   Minimize2,
@@ -33,6 +32,7 @@ import {
   useCreateScheduleAIngredient,
   useScheduleAIngredients,
   useScheduleAScratchpad,
+  useSendScheduleACommunicationEmail,
 } from '@/features/applications/hooks/useScheduleAIngredients'
 import type { AssignedRole } from '@/types/application'
 
@@ -364,6 +364,8 @@ export function ScheduleAIngredientsDrawer({
   const [addRowDraft, setAddRowDraft] = useState<ScheduleAIngredientDraft>(EMPTY_ADD_ROW_DRAFT)
   const [addRowError, setAddRowError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [sendError, setSendError] = useState('')
+  const [sentMessage, setSentMessage] = useState('')
   const [eirAiOpen, setEirAiOpen] = useState(true)
   const ingredientsHeaderRef = useRef<HTMLDivElement | null>(null)
   const ingredientsTableRef = useRef<HTMLTableElement | null>(null)
@@ -378,6 +380,7 @@ export function ScheduleAIngredientsDrawer({
   const assignedRfr = useMemo(() => getAssignedRoleValue(assignedRoles, 'RFR'), [assignedRoles])
   const eirSubmitterLabel = assignedRfr === 'Not yet Assigned' ? 'the assigned RFR' : assignedRfr
   const visitIdLabel = textValue(visitId)
+  const sendRoundEmailMutation = useSendScheduleACommunicationEmail()
 
   const contact = useMemo(
     () => primaryContact(applicationDetail?.companyContacts as Array<Record<string, unknown>> | undefined),
@@ -531,12 +534,32 @@ export function ScheduleAIngredientsDrawer({
     window.setTimeout(() => setCopied(false), 1500)
   }
 
-  const openRoundEmail = () => {
+  const sendRoundEmail = async () => {
     if (!latestRound) return
-    const href = `mailto:${encodeURIComponent(latestRound.email.to)}?subject=${encodeURIComponent(
-      latestRound.email.subject,
-    )}&body=${encodeURIComponent(latestRound.email.body)}`
-    window.location.href = href
+
+    const recipientEmail = textValue(latestRound.email.to || contact.email)
+    if (!recipientEmail) {
+      setSendError('Enter a recipient email before sending.')
+      setSentMessage('')
+      return
+    }
+
+    setSendError('')
+    setSentMessage('')
+
+    try {
+      await sendRoundEmailMutation.mutateAsync({
+        applicationId: resolvedApplicationId,
+        taskInstanceId,
+        recipientEmail,
+        subject: latestRound.email.subject,
+        body: latestRound.email.body,
+      })
+      scratchpadApi.updateRoundStatus(latestRound.id, 'awaiting')
+      setSentMessage('Email sent and captured in application messages.')
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : 'Failed to send email.')
+    }
   }
 
   const downloadScheduleA = () => {
@@ -965,18 +988,16 @@ export function ScheduleAIngredientsDrawer({
                             </div>
                           </div>
                           <textarea readOnly rows={8} className="w-full resize-y rounded border border-blue-200 bg-white px-2 py-1.5 font-mono text-xs text-blue-900 focus:outline-none" value={latestRound.email.body} />
+                          {sendError ? <div className="mt-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">{sendError}</div> : null}
+                          {sentMessage ? <div className="mt-2 rounded border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700">{sentMessage}</div> : null}
                           <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <button type="button" onClick={openRoundEmail} className="inline-flex items-center gap-1.5 rounded bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700">
-                              <Mail className="h-3.5 w-3.5" />
-                              Open Email
-                            </button>
                             <button type="button" onClick={copyRoundEmail} className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50">
                               <Copy className="h-3.5 w-3.5" />
                               {copied ? 'Copied' : 'Copy'}
                             </button>
-                            <button type="button" onClick={() => scratchpadApi.updateRoundStatus(latestRound.id, 'awaiting')} className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50">
+                            <button type="button" onClick={() => void sendRoundEmail()} disabled={sendRoundEmailMutation.isPending} className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60">
                               <Send className="h-3.5 w-3.5" />
-                              Mark Sent
+                              {sendRoundEmailMutation.isPending ? 'Sending...' : 'Send Email'}
                             </button>
                           </div>
                         </div>

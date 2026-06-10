@@ -326,6 +326,7 @@ export type ApplicationMessagePayload = {
   tag?: string | null
   CCUser?: string | null
   BCCUser?: string | null
+  replyTo?: string | null
   Attachments?: string | null
 }
 
