@@ -45,6 +45,7 @@ export function NcrcDashboardContent() {
     open: boolean
     applicationId?: string | number
     applicationName?: string
+    visitId?: string | number | null
     assignedRoles?: AssignedRole[]
     taskInstanceId?: string | number
     taskName?: string
@@ -212,6 +213,7 @@ export function NcrcDashboardContent() {
         open: true,
         applicationId: application.applicationId,
         applicationName: application.company,
+        visitId: application.visit_id ?? application.visitId ?? null,
         assignedRoles: application.assignedRoles,
         taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
         taskName: action.name,
@@ -438,6 +440,7 @@ export function NcrcDashboardContent() {
         open={scheduleADrawerState.open}
         applicationId={scheduleADrawerState.applicationId}
         applicationName={scheduleADrawerState.applicationName}
+        visitId={scheduleADrawerState.visitId}
         assignedRoles={scheduleADrawerState.assignedRoles}
         taskInstanceId={scheduleADrawerState.taskInstanceId}
         taskName={scheduleADrawerState.taskName}

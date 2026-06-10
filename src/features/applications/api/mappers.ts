@@ -10,6 +10,8 @@ export type BackendApplicant = Omit<Applicant, 'stages'> & {
   stages?: Record<string, Stage>
   companyName?: string
   plantName?: string
+  visit_id?: number | string | null
+  visitId?: number | string | null
 } & Partial<Applicant>
 
 export type BackendApplicantsResponse = {
@@ -30,6 +32,7 @@ export function mapApplicantsResponse(
       ...(applicant as Partial<Applicant>),
       id: applicant.id ?? applicant.applicationId ?? 0,
       applicationId: applicant.applicationId ?? applicant.id ?? 0,
+      visit_id: applicant.visit_id ?? applicant.visitId ?? null,
       company: applicant.company ?? applicant.companyName ?? '',
       plant: applicant.plant ?? applicant.plantName ?? '',
       region: applicant.region ?? '',

@@ -40,6 +40,7 @@ type Props = {
   open: boolean
   applicationId?: string | number
   applicationName?: string
+  visitId?: string | number | null
   assignedRoles?: AssignedRole[]
   taskInstanceId?: string | number | null
   taskName?: string
@@ -345,6 +346,7 @@ export function ScheduleAIngredientsDrawer({
   open,
   applicationId,
   applicationName,
+  visitId,
   assignedRoles,
   taskInstanceId,
   taskName,
@@ -375,6 +377,7 @@ export function ScheduleAIngredientsDrawer({
   const { scratchpad } = scratchpadApi
   const assignedRfr = useMemo(() => getAssignedRoleValue(assignedRoles, 'RFR'), [assignedRoles])
   const eirSubmitterLabel = assignedRfr === 'Not yet Assigned' ? 'the assigned RFR' : assignedRfr
+  const visitIdLabel = textValue(visitId)
 
   const contact = useMemo(
     () => primaryContact(applicationDetail?.companyContacts as Array<Record<string, unknown>> | undefined),
@@ -1069,7 +1072,7 @@ export function ScheduleAIngredientsDrawer({
                         </div>
                         <div className="flex items-center justify-between border-b border-gray-100 py-2">
                           <span className="text-sm font-medium text-gray-600">Visit ID</span>
-                          <span className="font-mono text-sm font-semibold text-gray-900">14056484</span>
+                          <span className="font-mono text-sm font-semibold text-gray-900">{visitIdLabel}</span>
                         </div>
                         <div className="flex items-center justify-between border-b border-gray-100 py-2">
                           <span className="text-sm font-medium text-gray-600">Inspection Date</span>

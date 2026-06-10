@@ -323,6 +323,8 @@ export type ResolvedData = {
 export type Applicant = {
   id: number;
   applicationId: number;
+  visit_id?: number | string | null;
+  visitId?: number | string | null;
   companyId?: number;
   company: string;
   plantId?: number;
