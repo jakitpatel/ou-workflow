@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { useUser } from '@/context/UserContext'
 import {
   AlertCircle,
   ArrowDown,
@@ -36,6 +37,7 @@ import {
   useScheduleAScratchpad,
   useSendScheduleACommunicationEmail,
 } from '@/features/applications/hooks/useScheduleAIngredients'
+import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import type { ApplicationEmail, AssignedRole } from '@/types/application'
 
 type Props = {
@@ -449,8 +451,14 @@ export function ScheduleAIngredientsDrawer({
 
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
+  const { token, username } = useUser()
   const { data, isLoading, error } = useScheduleAIngredients(open ? resolvedApplicationId : undefined)
   const createIngredientMutation = useCreateScheduleAIngredient(resolvedApplicationId)
+  const completeScheduleATaskMutation = useConfirmTaskMutation({
+    includeApplicationLists: true,
+    includePrelimLists: true,
+    onError: (message) => toast.error(message),
+  })
   const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
   const scratchpadApi = useScheduleAScratchpad(resolvedApplicationId)
   const { scratchpad } = scratchpadApi
@@ -672,13 +680,35 @@ export function ScheduleAIngredientsDrawer({
     window.setTimeout(() => URL.revokeObjectURL(href), 1000)
   }
 
-  const markScheduleAReady = () => {
+  const markScheduleAReady = async () => {
     if (counts.resolved < counts.all) {
       toast.warning('All application ingredients items are not resolved')
       return
     }
 
-    scratchpadApi.markScheduleAReady('IAR')
+    const resolvedTaskInstanceId =
+      taskInstanceId === undefined || taskInstanceId === null ? '' : String(taskInstanceId).trim()
+
+    if (!resolvedTaskInstanceId) {
+      toast.error('Task instance id not found')
+      return
+    }
+
+    try {
+      await completeScheduleATaskMutation.mutateAsync({
+        taskId: resolvedTaskInstanceId,
+        applicationId: resolvedApplicationId,
+        token: token ?? undefined,
+        username: username ?? undefined,
+        capacity: 'DESIGNATED',
+        completionNotes: 'Task completed successfully',
+        result: 'YES',
+      })
+      scratchpadApi.markScheduleAReady(username ?? 'IAR')
+      toast.success('Schedule A marked ready')
+    } catch {
+      // useConfirmTaskMutation shows the API error through its onError handler.
+    }
   }
 
   const panelWidth = expanded ? 'lg:max-w-[96vw]' : 'lg:max-w-[72vw]'
@@ -787,9 +817,9 @@ export function ScheduleAIngredientsDrawer({
                       <div className="flex flex-wrap items-center gap-2">
                         {ingView === 'application' ? (
                           !scratchpad.scheduleAReady ? (
-                            <button type="button" onClick={markScheduleAReady} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700">
+                            <button type="button" onClick={markScheduleAReady} disabled={completeScheduleATaskMutation.isPending} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300">
                               <Check className="h-3.5 w-3.5" />
-                              Mark Schedule A Ready
+                              {completeScheduleATaskMutation.isPending ? 'Marking Ready...' : 'Mark Schedule A Ready'}
                             </button>
                           ) : (
                             <button type="button" onClick={scratchpadApi.reopenScheduleA} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
