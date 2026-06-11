@@ -48,7 +48,7 @@ type Props = {
   onClose: () => void
 }
 
-type DrawerTab = 'ingredients' | 'comm' | 'eir' | 'signoff'
+type DrawerTab = 'ingredients' | 'comm' | 'eir'
 
 const CUSTOM_NOTE_VALUE = '__custom__'
 
@@ -671,7 +671,6 @@ export function ScheduleAIngredientsDrawer({
     window.setTimeout(() => URL.revokeObjectURL(href), 1000)
   }
 
-  const readyForSignoff = scratchpad.scheduleAReady && (scratchpad.eirReviewComplete || scratchpad.eirNotRequired)
   const panelWidth = expanded ? 'lg:max-w-[96vw]' : 'lg:max-w-[72vw]'
   const stickyTableHeaderClass =
     'sticky z-10 bg-gray-50 px-3 py-2.5 text-xs font-semibold text-gray-600 shadow-[inset_0_-1px_0_#e5e7eb]'
@@ -753,7 +752,6 @@ export function ScheduleAIngredientsDrawer({
                   {[
                     { id: 'comm', label: 'Communication' },
                     { id: 'eir', label: 'EIR' },
-                    { id: 'signoff', label: 'Sign-off' },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -777,6 +775,19 @@ export function ScheduleAIngredientsDrawer({
                         {ingView === 'application' ? 'Application Ingredients' : 'Kashrus Ingredients'}
                       </h2>
                       <div className="flex flex-wrap items-center gap-2">
+                        {ingView === 'application' ? (
+                          !scratchpad.scheduleAReady ? (
+                            <button type="button" onClick={() => scratchpadApi.markScheduleAReady('IAR')} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700">
+                              <Check className="h-3.5 w-3.5" />
+                              Mark Schedule A Ready
+                            </button>
+                          ) : (
+                            <button type="button" onClick={scratchpadApi.reopenScheduleA} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                              <X className="h-3.5 w-3.5" />
+                              Unmark
+                            </button>
+                          )
+                        ) : null}
                         {ingView === 'application'
                           ? (['all', 'flagged', 'resolved', 'halacha'] as ScheduleAIngredientFilter[]).map((item) => (
                               <button
@@ -1395,93 +1406,6 @@ export function ScheduleAIngredientsDrawer({
                   </div>
                 ) : null}
 
-                {activeTab === 'signoff' ? (
-                  <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-                    <div className="flex flex-wrap items-start justify-between gap-3 border-b bg-gray-50 px-5 py-4">
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-900">Ingredients Sign-off</h2>
-                        <p className="mt-1 text-sm text-gray-600">Schedule A is the deliverable for the Contract stage. Track readiness before it moves forward.</p>
-                      </div>
-                      <Pill tone={readyForSignoff ? 'blue' : 'amber'}>
-                        {readyForSignoff ? 'Ready' : 'Not ready'}
-                      </Pill>
-                    </div>
-                    <div className="space-y-5 p-5">
-                      <div className="rounded-lg border border-gray-200 p-4">
-                        <div className="flex flex-wrap items-start justify-between gap-4">
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900">Schedule A readiness</p>
-                            <p className="mt-1 text-xs text-gray-600">
-                              {scratchpad.scheduleAReady
-                                ? `Schedule A marked ready ${scratchpad.scheduleAReadyDate ?? ''} by ${scratchpad.scheduleAReadyBy ?? 'IAR'}.`
-                                : 'IAR decides when the ingredient list is clean enough to hand to the IA Manager.'}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            {!scratchpad.scheduleAReady ? (
-                              <button type="button" onClick={() => scratchpadApi.markScheduleAReady('IAR')} className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700">
-                                Mark Schedule A Ready
-                              </button>
-                            ) : (
-                              <button type="button" onClick={scratchpadApi.reopenScheduleA} className="rounded border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                                Unmark
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-                        {[
-                          {
-                            ok: scratchpad.scheduleAReady,
-                            title: 'Schedule A marked ready by IAR',
-                            detail: scratchpad.scheduleAReady ? `Marked ready ${scratchpad.scheduleAReadyDate ?? ''}` : 'Awaiting IAR readiness',
-                          },
-                          {
-                            ok: scratchpad.eirReviewComplete || scratchpad.eirNotRequired,
-                            title: 'EIR reviewed or marked not required',
-                            detail: scratchpad.eirNotRequired
-                              ? 'No EIR required'
-                              : scratchpad.eirReviewComplete
-                                ? 'EIR reviewed and reflected in Schedule A'
-                                : 'Awaiting EIR review',
-                          },
-                        ].map((row) => (
-                          <div key={row.title} className="flex items-center justify-between gap-3 border-b border-gray-100 bg-white px-4 py-3 last:border-b-0">
-                            <div className="flex items-start gap-3">
-                              <span className={`mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full ${row.ok ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                                <Check className="h-3 w-3" />
-                              </span>
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">{row.title}</p>
-                                <p className="text-xs text-gray-500">{row.detail}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="grid gap-3 md:grid-cols-3">
-                        <div className="rounded-lg border border-gray-200 p-3">
-                          <p className="text-xs uppercase tracking-wide text-gray-500">Schedule A</p>
-                          <p className="mt-1 text-xl font-semibold text-gray-900">{counts.all} <span className="text-xs font-normal text-gray-500">ingredients</span></p>
-                          <p className="mt-0.5 text-xs text-gray-500">{counts.flagged} flagged</p>
-                        </div>
-                        <div className="rounded-lg border border-gray-200 p-3">
-                          <p className="text-xs uppercase tracking-wide text-gray-500">EIR</p>
-                          <p className="mt-1 text-xl font-semibold text-gray-900">{scratchpad.eirNotRequired ? 'Not required' : scratchpad.eirReviewComplete ? 'Reviewed' : scratchpad.eirReceived ? 'In review' : 'Awaiting'}</p>
-                          <p className="mt-0.5 text-xs text-gray-500">IA Manager review</p>
-                        </div>
-                        <div className="rounded-lg border border-gray-200 p-3">
-                          <p className="text-xs uppercase tracking-wide text-gray-500">Communication</p>
-                          <p className="mt-1 text-xl font-semibold text-gray-900">{scratchpad.rounds.length} <span className="text-xs font-normal text-gray-500">rounds</span></p>
-                          <p className="mt-0.5 text-xs text-gray-500">{counts.flagged ? 'Open items remain' : 'All resolved'}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
               </div>
             </div>
           </div>
