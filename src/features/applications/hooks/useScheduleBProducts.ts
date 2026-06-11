@@ -14,13 +14,27 @@ import type { KashProduct, ScheduleBProduct } from '@/types/application'
 
 export type ScheduleBProductRow = {
   id: string
+  labelNo: string
   productId?: string
+  labelName: string
   name: string
+  labelCo: string
   source: string
   brand: string
   rmc: string
+  upc: string
   ukd: string
+  symbol: string
   fn: string
+  use: string
+  bulk: string
+  excl: string
+  list: string
+  internal: string
+  passover: string
+  artwork: string
+  typeLabel: string
+  productDisplayId: string
   group: string
   certifier: string
   attachment: string
@@ -30,19 +44,41 @@ export type ScheduleBProductRow = {
 }
 
 export type ScheduleBProductFilter = 'all' | 'flagged' | 'resolved' | 'halacha'
-export type ScheduleBProductSortKey = 'rmc' | 'name' | 'source' | 'brand' | 'group' | 'certifier' | 'plantStatus'
+export type ScheduleBProductSortKey =
+  | 'labelNo'
+  | 'labelName'
+  | 'brand'
+  | 'labelCo'
+  | 'excl'
+  | 'use'
+  | 'bulk'
+  | 'list'
+  | 'symbol'
+  | 'internal'
+  | 'passover'
+  | 'upc'
+  | 'artwork'
+  | 'typeLabel'
+  | 'productDisplayId'
+  | 'status'
 export type ScheduleBProductView = 'application' | 'kashrus'
 
 export const UNASSIGNED_RFR_LABEL = 'Not yet Assigned'
 
 export type ScheduleBProductDraft = {
-  rmc: string
-  name: string
-  source: string
+  labelNo: string
+  labelName: string
   brand: string
-  group: string
-  certifier: string
-  plantStatus: string
+  labelCo: string
+  excl: string
+  use: string
+  bulk: string
+  list: string
+  symbol: string
+  internal: string
+  passover: string
+  upc: string
+  artwork: string
 }
 
 export const CANNED_NOTES = [
@@ -114,6 +150,13 @@ const todayLabel = () =>
   new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
 const valueText = (value: unknown) => String(value ?? '').trim()
+
+const toYn = (value: unknown) => {
+  const normalized = valueText(value).toLowerCase()
+  if (['true', 'yes', '1', 'y'].includes(normalized)) return 'Y'
+  if (['false', 'no', '0', 'n'].includes(normalized)) return 'N'
+  return valueText(value)
+}
 
 const getCreatedMessageId = (response: unknown) => {
   const data = response && typeof response === 'object' && 'data' in response
@@ -188,25 +231,52 @@ export function mapApplicationProductRow(
   product: ScheduleBProduct,
   index: number,
 ): ScheduleBProductRow {
+  const productId = valueText(product.ScheduleProductId)
+  const labelName = valueText(product.productName) || valueText(product.BrandName)
+  const brand = valueText(product.BrandName)
+  const labelCo = valueText(product.privateLabelCo)
+  const use = [
+    ['Industrial', product.Industrial],
+    ['Consumer', product.Retail],
+  ]
+    .filter(([, value]) => ['true', 'yes', '1', 'y'].includes(valueText(value).toLowerCase()))
+    .map(([label]) => label)
+    .join(' / ')
+  const list = valueText(product.list).toUpperCase()
+  const upc = valueText(product.UPC)
+  const symbol = valueText(product.symbol)
+  const bulk = toYn(product.bulkShipped)
+  const internal = toYn(product.internal_use_only)
+  const excl = toYn(product.privateLabel)
+  const passover = toYn(product.passover)
+
   return {
     id: getApplicationProductRowId(product, index),
-    productId: valueText(product.ScheduleProductId),
-    name: valueText(product.productName) || valueText(product.BrandName),
-    source: valueText(product.privateLabelCo),
-    brand: valueText(product.BrandName),
-    rmc: valueText(product.UPC),
+    labelNo: productId,
+    productId,
+    labelName,
+    name: labelName,
+    labelCo,
+    source: labelCo,
+    brand,
+    rmc: upc,
+    upc,
     ukd: valueText(product.symbol),
-    fn: [
-      ['Industrial', product.Industrial],
-      ['Retail', product.Retail],
-    ]
-      .filter(([, value]) => ['true', 'yes', '1', 'y'].includes(valueText(value).toLowerCase()))
-      .map(([label]) => label)
-      .join(', '),
+    symbol,
+    fn: use,
+    use,
+    bulk,
+    excl,
+    list,
+    internal,
+    passover,
+    artwork: '',
+    typeLabel: valueText(product.privateLabel).toLowerCase() === 'true' ? 'Private label' : 'In-house',
+    productDisplayId: '',
     group: '',
-    certifier: valueText(product.symbol),
+    certifier: symbol,
     attachment: '',
-    status: valueText(product.list) || valueText(product.passover) || 'submitted',
+    status: list || passover || 'submitted',
     origin: 'Application',
     raw: product,
   }
@@ -215,18 +285,39 @@ export function mapApplicationProductRow(
 export function mapKashProductRow(product: KashProduct, index: number): ScheduleBProductRow {
   const plantStatus = valueText(product.PLANT_STATUS)
   const dpm = valueText(product.DPM)
+  const labelName = valueText(product.PRODUCT_NAME) || valueText(product.MerchProductName) || valueText(product.BRAND_NAME)
+  const labelCo = valueText(product.COMPANY_NAME) || valueText(product.LABEL_COMPANY)
+  const brand = valueText(product.BRAND_NAME)
+  const symbol = valueText(product.SYMBOL)
+  const merchId = valueText(product.MERCHANDISE_ID)
+  const labelId = valueText(product.LABEL_ID)
+  const productDisplayId = merchId ? `PRD-${merchId}` : labelId ? `PRD-${labelId}` : ''
 
   return {
     id: getKashProductRowId(product, index),
+    labelNo: labelId,
     productId: '',
-    name: valueText(product.PRODUCT_NAME) || valueText(product.MerchProductName) || valueText(product.BRAND_NAME),
-    source: valueText(product.COMPANY_NAME) || valueText(product.LABEL_COMPANY),
-    brand: valueText(product.BRAND_NAME),
+    labelName,
+    name: labelName,
+    labelCo,
+    source: labelCo,
+    brand,
     rmc: valueText(product.MerchProductNumber),
-    ukd: valueText(product.LABEL_ID),
+    upc: valueText(product.MerchProductNumber),
+    ukd: labelId,
+    symbol,
     fn: [product.INDUSTRIAL, product.Consumer].filter(Boolean).map(valueText).join(' / '),
+    use: [product.INDUSTRIAL, product.Consumer].filter(Boolean).map(valueText).join(' / '),
+    bulk: toYn(product.BLK),
+    excl: '',
+    list: valueText(product.IN_USE).toUpperCase(),
+    internal: toYn(product.OUP_REQUIRED),
+    passover: toYn(product.PESACH),
+    artwork: '',
+    typeLabel: valueText(product.LABEL_TYPE) || (valueText(product.LABEL_COMPANY) ? 'Private label' : 'In-house'),
+    productDisplayId,
     group: valueText(product.GRP),
-    certifier: valueText(product.SYMBOL),
+    certifier: symbol,
     attachment: '',
     status: plantStatus && dpm ? `${plantStatus}-${dpm}` : plantStatus || dpm || valueText(product.STATUS),
     origin: 'Kashrus',

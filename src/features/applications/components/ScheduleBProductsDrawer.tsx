@@ -56,13 +56,19 @@ type DrawerTab = 'products' | 'comm' | 'eir'
 const CUSTOM_NOTE_VALUE = '__custom__'
 
 const EMPTY_ADD_ROW_DRAFT: ScheduleBProductDraft = {
-  rmc: '',
-  name: '',
-  source: '',
+  labelNo: '',
+  labelName: '',
   brand: '',
-  group: '',
-  certifier: '',
-  plantStatus: '',
+  labelCo: '',
+  excl: '',
+  use: '',
+  bulk: '',
+  list: '',
+  symbol: '',
+  internal: '',
+  passover: '',
+  upc: '',
+  artwork: '',
 }
 
 const EIR_DOCUMENT_FILENAME = 'PIINSPECTN_14056484_Initial_Inspection_Aloha_Medicinals_001.pdf'
@@ -206,13 +212,6 @@ const statusClass = (status: string) => {
   }
   if (value.includes('hold') || value.includes('pending')) return 'bg-amber-100 text-amber-800'
   if (value.includes('reject') || value.includes('inactive')) return 'bg-red-100 text-red-700'
-  return 'bg-gray-100 text-gray-700'
-}
-
-const groupClass = (group: string) => {
-  if (group === '1') return 'bg-green-100 text-green-700'
-  if (group === '2') return 'bg-amber-100 text-amber-800'
-  if (group === '3') return 'bg-red-100 text-red-700'
   return 'bg-gray-100 text-gray-700'
 }
 
@@ -400,10 +399,7 @@ function CannedNoteRow({
 }
 
 function sortRows(rows: ScheduleBProductRow[], sortKey: ScheduleBProductSortKey, direction: 'asc' | 'desc') {
-  const getter = (row: ScheduleBProductRow) => {
-    if (sortKey === 'plantStatus') return row.status
-    return row[sortKey] ?? ''
-  }
+  const getter = (row: ScheduleBProductRow) => row[sortKey] ?? ''
   return [...rows].sort((a, b) => {
     const result = String(getter(a)).localeCompare(String(getter(b)), undefined, { numeric: true, sensitivity: 'base' })
     return direction === 'asc' ? result : -result
@@ -414,12 +410,38 @@ function buildScheduleBHtml(rows: ScheduleBProductRow[], applicationName?: strin
   const tableRows = rows
     .map(
       (row, index) =>
-        `<tr><td>${index + 1}</td><td>${row.rmc}</td><td>${row.name}</td><td>${row.source}</td><td>${row.brand}</td><td>${row.group}</td><td>${row.certifier}</td><td>${row.status}</td></tr>`,
+        `<tr><td>${index + 1}</td><td>${row.labelName}</td><td>${row.brand}</td><td>${row.labelCo}</td><td>${row.typeLabel}</td><td>${row.symbol}</td><td>${row.productDisplayId}</td><td>${row.status}</td></tr>`,
     )
     .join('')
 
-  return `<!doctype html><html><head><meta charset="utf-8"><title>Schedule B</title><style>body{font-family:Arial,sans-serif;padding:24px}table{border-collapse:collapse;width:100%;font-size:12px}td,th{border:1px solid #ddd;padding:6px;text-align:left}th{background:#f3f4f6}.foot{margin-top:18px;color:#555}</style></head><body><h1>Schedule B Products</h1><p>${applicationName ?? 'Application'} - App #${applicationId ?? ''}</p><table><thead><tr><th>#</th><th>UPC</th><th>Name</th><th>Source</th><th>Brand</th><th>Group</th><th>Symbol</th><th>Plant Status</th></tr></thead><tbody>${tableRows}</tbody></table><p class="foot">Symbols sourced from label data. Group 2 items require a certified source or LOC before Schedule B can be completed.</p></body></html>`
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Schedule B</title><style>body{font-family:Arial,sans-serif;padding:24px}table{border-collapse:collapse;width:100%;font-size:12px}td,th{border:1px solid #ddd;padding:6px;text-align:left}th{background:#f3f4f6}.foot{margin-top:18px;color:#555}</style></head><body><h1>Schedule B Products</h1><p>${applicationName ?? 'Application'} - App #${applicationId ?? ''}</p><table><thead><tr><th>#</th><th>Label Name</th><th>Brand</th><th>Label Company</th><th>Type</th><th>Symbol</th><th>Product ID</th><th>Status</th></tr></thead><tbody>${tableRows}</tbody></table><p class="foot">Export reflects the Kashrus-style Schedule B view.</p></body></html>`
 }
+
+const APPLICATION_COLUMNS: Array<{ key: ScheduleBProductSortKey; label: string; widthClass?: string }> = [
+  { key: 'labelNo', label: 'Label #' },
+  { key: 'labelName', label: 'Label Name' },
+  { key: 'brand', label: 'Brand' },
+  { key: 'labelCo', label: 'Label Company' },
+  { key: 'excl', label: 'Excl?' },
+  { key: 'use', label: 'Cons/Ind' },
+  { key: 'bulk', label: 'Bulk' },
+  { key: 'list', label: 'List' },
+  { key: 'symbol', label: 'Symbol' },
+  { key: 'internal', label: 'Internal' },
+  { key: 'passover', label: 'Passover' },
+  { key: 'upc', label: 'UPC' },
+  { key: 'artwork', label: 'Artwork' },
+]
+
+const KASHRUS_COLUMNS: Array<{ key: ScheduleBProductSortKey; label: string; widthClass?: string }> = [
+  { key: 'labelName', label: 'Label Name' },
+  { key: 'brand', label: 'Brand' },
+  { key: 'labelCo', label: 'Label Company' },
+  { key: 'typeLabel', label: 'Type' },
+  { key: 'symbol', label: 'Symbol' },
+  { key: 'productDisplayId', label: 'Product ID' },
+  { key: 'status', label: 'Status' },
+]
 
 export function ScheduleBProductsDrawer({
   open,
@@ -434,7 +456,7 @@ export function ScheduleBProductsDrawer({
   const [activeTab, setActiveTab] = useState<DrawerTab>('products')
   const [ingView, setIngView] = useState<ScheduleBProductView>('application')
   const [filter, setFilter] = useState<ScheduleBProductFilter>('all')
-  const [sortKey, setSortKey] = useState<ScheduleBProductSortKey>('rmc')
+  const [sortKey, setSortKey] = useState<ScheduleBProductSortKey>('labelNo')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [expanded, setExpanded] = useState(false)
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | number | null>(null)
@@ -533,6 +555,9 @@ export function ScheduleBProductsDrawer({
     return sortRows(filtered, sortKey, sortDirection)
   }, [activeRows, filter, ingView, scratchpad, sortDirection, sortKey])
 
+  const currentColumns = ingView === 'application' ? APPLICATION_COLUMNS : KASHRUS_COLUMNS
+  const noteColSpan = currentColumns.length + 2
+
   useEffect(() => {
     if (!open || activeTab !== 'products') return
 
@@ -556,6 +581,12 @@ export function ScheduleBProductsDrawer({
       window.removeEventListener('resize', syncStickyTableHeader)
     }
   }, [activeTab, ingView, open])
+
+  const renderApplicationValue = (value: string) => value || <span className="text-red-400 text-xs italic">-</span>
+
+  const renderKashrusStatus = (value: string) => (
+    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(value)}`}>{value || '-'}</span>
+  )
 
   if (!open) return null
 
@@ -595,8 +626,8 @@ export function ScheduleBProductsDrawer({
   }
 
   const saveAddRow = async () => {
-    if (!addRowDraft.name.trim()) {
-      setAddRowError('Product name is required before saving.')
+    if (!addRowDraft.labelName.trim()) {
+      setAddRowError('Label name is required before saving.')
       return
     }
 
@@ -877,24 +908,14 @@ export function ScheduleBProductsDrawer({
                     ) : null}
 
                     <div className="overflow-visible">
-                      <table ref={productsTableRef} className={`w-full min-w-[980px] text-left text-sm ${ingView === 'kashrus' ? 'view-kashrus' : 'view-application'}`}>
+                      <table ref={productsTableRef} className={`w-full min-w-[1400px] text-left text-sm ${ingView === 'kashrus' ? 'view-kashrus' : 'view-application'}`}>
                         <thead>
                           <tr className="border-b border-gray-200 bg-gray-50">
                             <th className={`w-8 ${stickyTableHeaderClass}`} style={stickyTableHeaderStyle}>#</th>
-                            {[
-                              ['rmc', 'UPC'],
-                              ['name', 'Product Name'],
-                              ['source', 'Source'],
-                              ['brand', 'Brand Name'],
-                              ['group', 'Group'],
-                              ['certifier', 'Symbol'],
-                              ['plantStatus', 'Plant-Status'],
-                            ].map(([key, label]) => (
+                            {currentColumns.map(({ key, label, widthClass }) => (
                               <th
                                 key={key}
-                                className={`${stickyTableHeaderClass} ${
-                                  key === 'plantStatus' && ingView === 'application' ? 'hidden' : ''
-                                }`}
+                                className={`${stickyTableHeaderClass} ${widthClass ?? ''}`}
                                 style={stickyTableHeaderStyle}
                               >
                                 <button type="button" onClick={() => setSort(key as ScheduleBProductSortKey)} className="inline-flex items-center gap-1 hover:text-blue-700">
@@ -913,26 +934,18 @@ export function ScheduleBProductsDrawer({
                               <td className="px-3 py-2">
                                 <input
                                   className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  value={addRowDraft.rmc}
-                                  placeholder="UPC"
-                                  onChange={(event) => updateAddRowDraft('rmc', event.target.value)}
+                                  value={addRowDraft.labelNo}
+                                  placeholder="Label #"
+                                  onChange={(event) => updateAddRowDraft('labelNo', event.target.value)}
                                 />
                               </td>
                               <td className="px-3 py-2">
                                 <input
                                   className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  value={addRowDraft.name}
-                                  placeholder="Product name *"
-                                  onChange={(event) => updateAddRowDraft('name', event.target.value)}
+                                  value={addRowDraft.labelName}
+                                  placeholder="Label Name *"
+                                  onChange={(event) => updateAddRowDraft('labelName', event.target.value)}
                                   autoFocus
-                                />
-                              </td>
-                              <td className="px-3 py-2">
-                                <input
-                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  value={addRowDraft.source}
-                                  placeholder="Source"
-                                  onChange={(event) => updateAddRowDraft('source', event.target.value)}
                                 />
                               </td>
                               <td className="px-3 py-2">
@@ -946,19 +959,76 @@ export function ScheduleBProductsDrawer({
                               <td className="px-3 py-2">
                                 <input
                                   className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  value={addRowDraft.group}
-                                  placeholder="Group"
-                                  onChange={(event) => updateAddRowDraft('group', event.target.value)}
+                                  value={addRowDraft.labelCo}
+                                  placeholder="Label Company"
+                                  onChange={(event) => updateAddRowDraft('labelCo', event.target.value)}
                                 />
                               </td>
                               <td className="px-3 py-2">
                                 <input
                                   className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  value={addRowDraft.certifier}
-                                  placeholder="Symbol"
-                                  onChange={(event) => updateAddRowDraft('certifier', event.target.value)}
+                                  value={addRowDraft.excl}
+                                  placeholder="Excl?"
+                                  onChange={(event) => updateAddRowDraft('excl', event.target.value)}
                                 />
                               </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={addRowDraft.use}
+                                  placeholder="Cons/Ind"
+                                  onChange={(event) => updateAddRowDraft('use', event.target.value)}
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={addRowDraft.bulk}
+                                  placeholder="Bulk"
+                                  onChange={(event) => updateAddRowDraft('bulk', event.target.value)}
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={addRowDraft.list}
+                                  placeholder="List"
+                                  onChange={(event) => updateAddRowDraft('list', event.target.value)}
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={addRowDraft.symbol}
+                                  placeholder="Symbol"
+                                  onChange={(event) => updateAddRowDraft('symbol', event.target.value)}
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={addRowDraft.internal}
+                                  placeholder="Internal"
+                                  onChange={(event) => updateAddRowDraft('internal', event.target.value)}
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={addRowDraft.passover}
+                                  placeholder="Passover"
+                                  onChange={(event) => updateAddRowDraft('passover', event.target.value)}
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={addRowDraft.upc}
+                                  placeholder="UPC"
+                                  onChange={(event) => updateAddRowDraft('upc', event.target.value)}
+                                />
+                              </td>
+                              <td className="px-3 py-2 text-xs text-gray-400">-</td>
                               <td className="px-3 py-2">
                                 <div className="flex items-center gap-1">
                                   <button
@@ -1003,34 +1073,48 @@ export function ScheduleBProductsDrawer({
                                 }
                               >
                                 <td className="px-3 py-3 text-xs text-gray-500">{index + 1}</td>
-                                <td className="px-3 py-3 font-mono text-xs text-gray-700">{row.rmc || '-'}</td>
-                                <td className="px-3 py-3">
-                                  <div className="flex items-center gap-1.5 font-medium text-gray-900">
-                                    <span className={halacha?.open && !resolved ? 'text-red-700' : ''}>{row.name || '-'}</span>
-                                    {resolved ? (
-                                      <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-green-100 text-green-700" title="Resolved">
-                                        <Check className="h-3 w-3" strokeWidth={2.5} />
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  {halacha?.open && !resolved ? (
-                                    <div className="mt-1 inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700">
-                                      <AlertCircle className="h-3.5 w-3.5" strokeWidth={2.5} />
-                                      <span>Halachic review</span>
-                                    </div>
-                                  ) : null}
-                                </td>
-                                <td className="px-3 py-3 text-gray-700">{row.source || '-'}</td>
-                                <td className="px-3 py-3 text-gray-700">{row.brand || '-'}</td>
-                                <td className="px-3 py-3">
-                                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${groupClass(row.group)}`}>{row.group || '-'}</span>
-                                </td>
-                                <td className="px-3 py-3 text-gray-700">{row.certifier || row.ukd || '-'}</td>
-                                {ingView === 'kashrus' ? (
-                                  <td className="px-3 py-3">
-                                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(row.status)}`}>{row.status || '-'}</span>
-                                  </td>
-                                ) : null}
+                                {ingView === 'application' ? (
+                                  <>
+                                    <td className="px-3 py-3 text-gray-700">{renderApplicationValue(row.labelNo)}</td>
+                                    <td className="px-3 py-3">
+                                      <div className="flex items-center gap-1.5 font-medium text-gray-900">
+                                        <span className={halacha?.open && !resolved ? 'text-red-700' : ''}>{row.labelName || '-'}</span>
+                                        {resolved ? (
+                                          <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-green-100 text-green-700" title="Resolved">
+                                            <Check className="h-3 w-3" strokeWidth={2.5} />
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      {halacha?.open && !resolved ? (
+                                        <div className="mt-1 inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700">
+                                          <AlertCircle className="h-3.5 w-3.5" strokeWidth={2.5} />
+                                          <span>Halachic review</span>
+                                        </div>
+                                      ) : null}
+                                    </td>
+                                    <td className="px-3 py-3 text-gray-700">{renderApplicationValue(row.brand)}</td>
+                                    <td className="px-3 py-3 text-gray-700">{renderApplicationValue(row.labelCo)}</td>
+                                    <td className="px-3 py-3 text-gray-700">{renderApplicationValue(row.excl)}</td>
+                                    <td className="px-3 py-3 text-gray-700">{renderApplicationValue(row.use)}</td>
+                                    <td className="px-3 py-3 text-gray-700">{renderApplicationValue(row.bulk)}</td>
+                                    <td className="px-3 py-3 text-gray-700">{renderApplicationValue(row.list)}</td>
+                                    <td className="px-3 py-3 text-gray-700">{renderApplicationValue(row.symbol)}</td>
+                                    <td className="px-3 py-3 text-gray-700">{renderApplicationValue(row.internal)}</td>
+                                    <td className="px-3 py-3 text-gray-700">{renderApplicationValue(row.passover)}</td>
+                                    <td className="px-3 py-3 font-mono text-xs text-gray-700">{renderApplicationValue(row.upc)}</td>
+                                    <td className="px-3 py-3 text-gray-700">{renderApplicationValue(row.artwork)}</td>
+                                  </>
+                                ) : (
+                                  <>
+                                    <td className="px-3 py-3 font-medium text-gray-900">{row.labelName || '-'}</td>
+                                    <td className="px-3 py-3 text-gray-700">{row.brand || '-'}</td>
+                                    <td className="px-3 py-3 text-gray-700">{row.labelCo || '-'}</td>
+                                    <td className="px-3 py-3 text-gray-700">{row.typeLabel || '-'}</td>
+                                    <td className="px-3 py-3 text-gray-700">{row.symbol || '-'}</td>
+                                    <td className="px-3 py-3 font-mono text-xs text-gray-700">{row.productDisplayId || '-'}</td>
+                                    <td className="px-3 py-3">{renderKashrusStatus(row.status)}</td>
+                                  </>
+                                )}
                                 {ingView === 'application' ? (
                                   <td className="px-3 py-3">
                                     <div className="flex flex-nowrap items-center gap-1">
@@ -1042,14 +1126,6 @@ export function ScheduleBProductsDrawer({
                                       )}
                                       <ResolveButton resolved={resolved} onClick={() => scratchpadApi.toggleResolved(row.id)} />
                                     </div>
-                                    {halacha?.open && !resolved ? (
-                                      <input
-                                        className="mt-2 h-8 w-full rounded border border-red-200 bg-white px-2 text-xs text-gray-700 outline-none focus:ring-1 focus:ring-red-400"
-                                        value={halacha.note ?? ''}
-                                        placeholder="Halachic note (question, sources, conclusion)..."
-                                        onChange={(event) => scratchpadApi.updateHalachaNote(row.id, event.target.value)}
-                                      />
-                                    ) : null}
                                   </td>
                                 ) : null}
                               </tr>
@@ -1057,11 +1133,34 @@ export function ScheduleBProductsDrawer({
                                 <CannedNoteRow
                                   rowId={row.id}
                                   note={scratchpad.flags[row.id]?.note ?? ''}
-                                  colSpan={8}
+                                  colSpan={noteColSpan}
                                   customSelected={customNoteRows.has(row.id)}
                                   onCustomSelectedChange={setCustomNoteSelected}
                                   onNoteChange={scratchpadApi.updateFlagNote}
                                 />
+                              ) : null}
+                              {ingView === 'application' && halacha?.open && !resolved ? (
+                                <tr className="border-b border-red-100 bg-red-50">
+                                  <td colSpan={noteColSpan} className="px-4 py-2">
+                                    <div className="flex items-start gap-2">
+                                      <div className="mt-0.5 shrink-0 text-red-600">
+                                        <AlertCircle className="h-3.5 w-3.5" strokeWidth={2.5} />
+                                      </div>
+                                      <div className="flex-1">
+                                        <div className="mb-1">
+                                          <span className="text-xs font-semibold uppercase tracking-wide text-red-800">Halachic review - RC / Rabbinic</span>
+                                        </div>
+                                        <textarea
+                                          rows={2}
+                                          className="w-full rounded border border-red-200 bg-white px-2 py-1 text-xs text-gray-700 outline-none focus:ring-1 focus:ring-red-400"
+                                          value={halacha.note ?? ''}
+                                          placeholder="Halachic note (question, sources, conclusion)..."
+                                          onChange={(event) => scratchpadApi.updateHalachaNote(row.id, event.target.value)}
+                                        />
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
                               ) : null}
                               </Fragment>
                             )
@@ -1070,7 +1169,9 @@ export function ScheduleBProductsDrawer({
                       </table>
                     </div>
                     <div className="border-t bg-gray-50 px-6 py-2 text-xs text-gray-400">
-                      Symbols sourced from label data. Group 2 items require a certified source or LOC before Schedule B can be completed.
+                      {ingView === 'application'
+                        ? 'Export includes every template field, including blanks, so the products dept can fill in what the customer missed.'
+                        : 'Products that have been added into Kashrus appear here as the source of truth.'}
                     </div>
                   </div>
                 ) : null}
