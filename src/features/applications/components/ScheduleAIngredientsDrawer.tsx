@@ -30,11 +30,12 @@ import {
   type ScheduleAIngredientDraft,
   getAssignedRoleValue,
   useCreateScheduleAIngredient,
+  useScheduleACommunicationMessages,
   useScheduleAIngredients,
   useScheduleAScratchpad,
   useSendScheduleACommunicationEmail,
 } from '@/features/applications/hooks/useScheduleAIngredients'
-import type { AssignedRole } from '@/types/application'
+import type { ApplicationEmail, AssignedRole } from '@/types/application'
 
 type Props = {
   open: boolean
@@ -93,6 +94,81 @@ const EIR_AI_RECOMMENDATIONS = [
 ]
 
 const textValue = (value: unknown) => String(value ?? '').trim()
+
+type ScheduleARoundMessageCard = {
+  email: ApplicationEmail
+  replies: ApplicationEmail[]
+  roundNumber: number
+  subject: string
+}
+
+const getEmailMessageId = (email: ApplicationEmail) => textValue(email.MessageID)
+
+const getEmailParentMessageId = (email: ApplicationEmail) => textValue(email.parentMessageId)
+
+const getEmailPreviewText = (email: ApplicationEmail) =>
+  textValue(email.MessageTextPlain) ||
+  textValue(email.PlainText) ||
+  textValue(email.Text) ||
+  textValue(email.MessageText).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+
+const getRoundNumberFromSubject = (subject: string) => Number(subject.match(/round\s+(\d+)/i)?.[1] ?? 0)
+
+const getRefMessageIdFromSubject = (subject: string) => textValue(subject.match(/refMsgId:\s*#?(\d+)/i)?.[1])
+
+const formatMessageDate = (date?: string | null) => {
+  if (!date) return ''
+  const parsed = new Date(date)
+  if (Number.isNaN(parsed.getTime())) return date
+  return parsed.toLocaleDateString()
+}
+
+const buildScheduleARoundMessageCards = (emails: ApplicationEmail[]): ScheduleARoundMessageCard[] => {
+  const childrenByParentId = new Map<string, ApplicationEmail[]>()
+
+  emails.forEach((email) => {
+    const parentMessageId = getEmailParentMessageId(email)
+    if (!parentMessageId || parentMessageId === '0') return
+
+    const children = childrenByParentId.get(parentMessageId) ?? []
+    children.push(email)
+    childrenByParentId.set(parentMessageId, children)
+  })
+
+  const sortByMessageId = (a: ApplicationEmail, b: ApplicationEmail) =>
+    Number(a.MessageID ?? 0) - Number(b.MessageID ?? 0)
+
+  const collectReplies = (parentIds: string[], visited = new Set<string>()): ApplicationEmail[] =>
+    parentIds.flatMap((parentId) => {
+      if (!parentId || visited.has(parentId)) return []
+      visited.add(parentId)
+
+      return (childrenByParentId.get(parentId) ?? [])
+        .sort(sortByMessageId)
+        .flatMap((reply) => [reply, ...collectReplies([getEmailMessageId(reply)], visited)])
+    })
+
+  return emails
+    .map((email): ScheduleARoundMessageCard | null => {
+      const subject = textValue(email.Subject)
+      const roundNumber = getRoundNumberFromSubject(subject)
+      const parentMessageId = getEmailParentMessageId(email)
+      const isRootMessage = !parentMessageId || parentMessageId === '0'
+
+      if (!isRootMessage || roundNumber <= 0 || !/ou schedule a/i.test(subject)) return null
+
+      const replyParentIds = Array.from(new Set([getEmailMessageId(email), getRefMessageIdFromSubject(subject)].filter(Boolean)))
+
+      return {
+        email,
+        replies: collectReplies(replyParentIds),
+        roundNumber,
+        subject,
+      }
+    })
+    .filter((round): round is ScheduleARoundMessageCard => Boolean(round))
+    .sort((a, b) => b.roundNumber - a.roundNumber || Number(b.email.MessageID ?? 0) - Number(a.email.MessageID ?? 0))
+}
 
 const downloadTextFile = (filename: string, text: string, type = 'text/plain;charset=utf-8;') => {
   const blob = new Blob(['\uFEFF' + text], { type })
@@ -381,6 +457,14 @@ export function ScheduleAIngredientsDrawer({
   const eirSubmitterLabel = assignedRfr === 'Not yet Assigned' ? 'the assigned RFR' : assignedRfr
   const visitIdLabel = textValue(visitId)
   const sendRoundEmailMutation = useSendScheduleACommunicationEmail()
+  const {
+    data: backendRoundEmails = [],
+    isLoading: isRoundHistoryLoading,
+    error: roundHistoryError,
+  } = useScheduleACommunicationMessages({
+    applicationId: open ? resolvedApplicationId : undefined,
+    taskInstanceId,
+  })
 
   const contact = useMemo(
     () => primaryContact(applicationDetail?.companyContacts as Array<Record<string, unknown>> | undefined),
@@ -395,6 +479,10 @@ export function ScheduleAIngredientsDrawer({
   const activeRows = ingView === 'application' ? applicationRows : kashRows
   const allRows = useMemo(() => [...applicationRows, ...kashRows], [applicationRows, kashRows])
   const latestRound = scratchpad.rounds.at(-1)
+  const roundMessageCards = useMemo(
+    () => buildScheduleARoundMessageCards(backendRoundEmails),
+    [backendRoundEmails],
+  )
 
   const counts = useMemo(() => {
     const resolvedIds = new Set(Object.keys(scratchpad.resolved).filter((id) => scratchpad.resolved[id]))
@@ -980,7 +1068,14 @@ export function ScheduleAIngredientsDrawer({
                           <div className="mb-2 space-y-1.5">
                             <div className="flex items-center gap-2 text-xs">
                               <span className="w-12 shrink-0 font-medium text-blue-500">To</span>
-                              <span className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 font-mono text-blue-900">{latestRound.email.to || 'No contact email found'}</span>
+                              <input
+                                type="email"
+                                aria-label="Email To"
+                                className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 font-mono text-blue-900 outline-none focus:ring-1 focus:ring-blue-400"
+                                value={latestRound.email.to}
+                                placeholder="No contact email found"
+                                onChange={(event) => scratchpadApi.updateRoundEmailTo(latestRound.id, event.target.value)}
+                              />
                             </div>
                             <div className="flex items-center gap-2 text-xs">
                               <span className="w-12 shrink-0 font-medium text-blue-500">Subject</span>
@@ -1012,46 +1107,84 @@ export function ScheduleAIngredientsDrawer({
 
                     <div className="border-t px-6 py-4">
                       <h3 className="mb-3 text-sm font-semibold text-gray-900">Round History</h3>
-                      {!scratchpad.rounds.length ? (
-                        <p className="py-2 text-xs text-gray-400">No rounds generated yet. Flag ingredients with follow-up notes, then generate an email to the company.</p>
-                      ) : (
+                      {isRoundHistoryLoading ? (
+                        <p className="rounded-lg border border-dashed border-gray-300 px-4 py-6 text-center text-sm text-gray-500">
+                          Loading rounds...
+                        </p>
+                      ) : null}
+                      {roundHistoryError ? (
+                        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                          Failed to load rounds: {roundHistoryError instanceof Error ? roundHistoryError.message : 'Unknown error'}
+                        </p>
+                      ) : null}
+                      {!isRoundHistoryLoading && !roundHistoryError && !roundMessageCards.length ? (
+                        <p className="py-2 text-xs text-gray-400">No round messages found yet. Flag ingredients with follow-up notes, generate an email, and send it to capture round history.</p>
+                      ) : null}
+                      {roundMessageCards.length ? (
                         <div className="space-y-3">
-                          {[...scratchpad.rounds].reverse().map((round) => (
-                            <div key={round.id} className="rounded-lg border border-gray-200 bg-white p-3">
-                              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                                <div>
-                                  <p className="text-sm font-semibold text-gray-900">Round {round.roundNumber}</p>
-                                  <p className="text-xs text-gray-500">{round.generatedDate}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Pill tone={round.status === 'reviewed' ? 'green' : round.status === 'responded' ? 'blue' : round.status === 'awaiting' ? 'amber' : 'gray'}>{round.status}</Pill>
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                {round.items.map((item) => (
-                                  <div key={item.ingId} className="rounded border border-gray-100 bg-gray-50 p-2">
-                                    <div className="flex flex-wrap items-start justify-between gap-2">
-                                      <div>
-                                        <p className="text-sm font-medium text-gray-900">{item.name}</p>
-                                        <p className="text-xs text-gray-600">{item.question}</p>
-                                        {item.response ? <p className="mt-1 text-xs text-green-700">{item.response}</p> : null}
-                                      </div>
-                                      <div className="flex gap-1">
-                                        <button type="button" onClick={() => scratchpadApi.resolveRoundItem(round.id, item.ingId)} className="rounded bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700">
-                                          Resolve
-                                        </button>
-                                        <button type="button" onClick={() => scratchpadApi.requestRoundFollowup(round.id, item.ingId)} className="rounded border border-amber-300 bg-white px-2 py-1 text-xs font-medium text-amber-800 hover:bg-amber-50">
-                                          Another Round
-                                        </button>
-                                      </div>
-                                    </div>
+                          {roundMessageCards.map((round) => {
+                            const messageText = getEmailPreviewText(round.email)
+                            const sentDate = formatMessageDate(round.email.SentDate)
+                            const hasResponses = round.replies.length > 0
+
+                            return (
+                              <div key={round.email.MessageID ?? round.subject} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                                <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-semibold text-gray-900">Round {round.roundNumber}</p>
+                                    <Pill tone={hasResponses ? 'green' : 'amber'}>{hasResponses ? 'Responded' : 'Awaiting Response'}</Pill>
                                   </div>
-                                ))}
+                                  <span className="text-xs text-gray-400">{sentDate ? `Sent ${sentDate}` : 'Sent date unavailable'}</span>
+                                </div>
+                                <div className="space-y-3 px-4 py-3">
+                                  <div className="grid gap-1 text-xs text-gray-600 md:grid-cols-[70px_1fr]">
+                                    <span className="font-medium text-gray-500">To</span>
+                                    <span>{round.email.ToUser || '-'}</span>
+                                    <span className="font-medium text-gray-500">Subject</span>
+                                    <span className="break-words text-gray-900">{round.subject}</span>
+                                  </div>
+                                  {messageText ? (
+                                    <p className="line-clamp-4 whitespace-pre-line text-xs text-gray-600">{messageText}</p>
+                                  ) : null}
+                                  {round.replies.length ? (
+                                    <div className="space-y-2 border-t border-gray-100 pt-3">
+                                      {round.replies.map((reply) => {
+                                        const replyText = getEmailPreviewText(reply)
+                                        const replyDate = formatMessageDate(reply.SentDate)
+
+                                        return (
+                                          <div key={reply.MessageID ?? `${round.email.MessageID}-${reply.SentDate}`} className="rounded-md border border-green-100 bg-green-50/60 px-3 py-2">
+                                            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                              <div className="flex flex-wrap items-center gap-2">
+                                                <Pill tone="green">Response</Pill>
+                                                <span className="text-xs font-medium text-gray-700">From {reply.FromUser || '-'}</span>
+                                              </div>
+                                              <span className="text-xs text-gray-400">{replyDate ? `Received ${replyDate}` : 'Received date unavailable'}</span>
+                                            </div>
+                                            <div className="mb-1 grid gap-1 text-xs text-gray-600 md:grid-cols-[70px_1fr]">
+                                              <span className="font-medium text-gray-500">To</span>
+                                              <span>{reply.ToUser || '-'}</span>
+                                              {reply.Subject ? (
+                                                <>
+                                                  <span className="font-medium text-gray-500">Subject</span>
+                                                  <span className="break-words text-gray-900">{reply.Subject}</span>
+                                                </>
+                                              ) : null}
+                                            </div>
+                                            {replyText ? (
+                                              <p className="line-clamp-4 whitespace-pre-line text-xs text-gray-600">{replyText}</p>
+                                            ) : null}
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                  ) : null}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 ) : null}

@@ -353,10 +353,12 @@ export async function createApplicationMessage({
 export async function fetchApplicationMessages({
   applicationId,
   taskInstanceId,
+  messageType,
   token,
 }: {
   applicationId?: string | number | null
   taskInstanceId?: string | number | null
+  messageType?: string | null
   token?: string | null
 }): Promise<ApplicationEmail[]> {
   const params = new URLSearchParams()
@@ -367,6 +369,10 @@ export async function fetchApplicationMessages({
 
   if (taskInstanceId !== undefined && taskInstanceId !== null && String(taskInstanceId).trim()) {
     params.append('filter[TaskInstanceId]', String(taskInstanceId).trim())
+  }
+
+  if (messageType !== undefined && messageType !== null && String(messageType).trim()) {
+    params.append('filter[MessageType]', String(messageType).trim())
   }
 
   params.append('sort', '-MessageID')
@@ -420,6 +426,9 @@ export async function fetchApplicationMessages({
       parentMessageId: attributes.parentMessageId,
       tag: typeof tag === 'string' ? tag : null,
     }
+  }).filter((message) => {
+    if (messageType === undefined || messageType === null || !String(messageType).trim()) return true
+    return String(message.MessageType ?? '') === String(messageType).trim()
   })
 }
 

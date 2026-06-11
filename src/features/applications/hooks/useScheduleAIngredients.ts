@@ -284,6 +284,7 @@ export function useScheduleACommunicationMessages({
       fetchApplicationMessages({
         applicationId: normalizedApplicationId,
         taskInstanceId: normalizedTaskInstanceId,
+        messageType: 'Email',
         token: token ?? undefined,
       }),
     enabled: !!token && !!normalizedApplicationId,
@@ -579,6 +580,18 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
     [updateScratchpad],
   )
 
+  const updateRoundEmailTo = useCallback(
+    (roundId: string, to: string) => {
+      updateScratchpad((current) => ({
+        ...current,
+        rounds: current.rounds.map((round) =>
+          round.id === roundId ? { ...round, email: { ...round.email, to } } : round,
+        ),
+      }))
+    },
+    [updateScratchpad],
+  )
+
   const simulateRoundResponse = useCallback(
     (roundId: string) => {
       updateScratchpad((current) => ({
@@ -719,6 +732,7 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
     generateRound,
     updateRoundStatus,
     updateRoundEmailBody,
+    updateRoundEmailTo,
     simulateRoundResponse,
     resolveRoundItem,
     requestRoundFollowup,
