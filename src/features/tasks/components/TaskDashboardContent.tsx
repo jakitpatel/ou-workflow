@@ -154,6 +154,7 @@ export function TaskDashboardContent() {
         open={scheduleBDrawerState.open}
         applicationId={scheduleBDrawerState.applicationId}
         applicationName={scheduleBDrawerState.applicationName}
+        taskInstanceId={scheduleBDrawerState.taskInstanceId}
         taskName={scheduleBDrawerState.taskName}
         onClose={() => setScheduleBDrawerState({ open: false })}
       />

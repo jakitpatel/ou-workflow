@@ -55,6 +55,7 @@ type ScheduleBDrawerState = {
   open: boolean
   applicationId?: string | number
   applicationName?: string
+  taskInstanceId?: string | number
   taskName?: string
 }
 
@@ -641,6 +642,7 @@ export function useTaskDashboardState() {
           open: true,
           applicationId: action.applicationId,
           applicationName: action.companyName ?? action.plantName,
+          taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
           taskName: action.taskName ?? action.name,
         })
         return
