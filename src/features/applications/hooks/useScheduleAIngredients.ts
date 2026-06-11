@@ -340,7 +340,7 @@ export function useSendScheduleACommunicationEmail() {
           MessageTextPlain: htmlEmail.text,
           PlainText: htmlEmail.text,
           Text: htmlEmail.text,
-          MessageType: 'Email',
+          MessageType: 'Email-Staging',
           Priority: 'NORMAL',
           SentDate: new Date().toISOString(),
           TemplateName: 'schedule-a-ingredients',
@@ -567,6 +567,18 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
     [updateScratchpad],
   )
 
+  const updateRoundEmailBody = useCallback(
+    (roundId: string, body: string) => {
+      updateScratchpad((current) => ({
+        ...current,
+        rounds: current.rounds.map((round) =>
+          round.id === roundId ? { ...round, email: { ...round.email, body } } : round,
+        ),
+      }))
+    },
+    [updateScratchpad],
+  )
+
   const simulateRoundResponse = useCallback(
     (roundId: string) => {
       updateScratchpad((current) => ({
@@ -706,6 +718,7 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
     updateHalachaNote,
     generateRound,
     updateRoundStatus,
+    updateRoundEmailBody,
     simulateRoundResponse,
     resolveRoundItem,
     requestRoundFollowup,

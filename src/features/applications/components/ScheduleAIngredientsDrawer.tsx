@@ -987,7 +987,13 @@ export function ScheduleAIngredientsDrawer({
                               <span className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 text-blue-900">{latestRound.email.subject}</span>
                             </div>
                           </div>
-                          <textarea readOnly rows={8} className="w-full resize-y rounded border border-blue-200 bg-white px-2 py-1.5 font-mono text-xs text-blue-900 focus:outline-none" value={latestRound.email.body} />
+                          <textarea
+                            rows={8}
+                            aria-label="Email draft body"
+                            className="w-full resize-y rounded border border-blue-200 bg-white px-2 py-1.5 font-mono text-xs text-blue-900 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            value={latestRound.email.body}
+                            onChange={(event) => scratchpadApi.updateRoundEmailBody(latestRound.id, event.target.value)}
+                          />
                           {sendError ? <div className="mt-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">{sendError}</div> : null}
                           {sentMessage ? <div className="mt-2 rounded border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700">{sentMessage}</div> : null}
                           <div className="mt-2 flex flex-wrap items-center gap-2">
