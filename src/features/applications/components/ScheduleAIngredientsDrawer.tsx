@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import {
   AlertCircle,
   ArrowDown,
@@ -671,6 +672,15 @@ export function ScheduleAIngredientsDrawer({
     window.setTimeout(() => URL.revokeObjectURL(href), 1000)
   }
 
+  const markScheduleAReady = () => {
+    if (counts.resolved < counts.all) {
+      toast.warning('All application ingredients items are not resolved')
+      return
+    }
+
+    scratchpadApi.markScheduleAReady('IAR')
+  }
+
   const panelWidth = expanded ? 'lg:max-w-[96vw]' : 'lg:max-w-[72vw]'
   const stickyTableHeaderClass =
     'sticky z-10 bg-gray-50 px-3 py-2.5 text-xs font-semibold text-gray-600 shadow-[inset_0_-1px_0_#e5e7eb]'
@@ -777,7 +787,7 @@ export function ScheduleAIngredientsDrawer({
                       <div className="flex flex-wrap items-center gap-2">
                         {ingView === 'application' ? (
                           !scratchpad.scheduleAReady ? (
-                            <button type="button" onClick={() => scratchpadApi.markScheduleAReady('IAR')} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700">
+                            <button type="button" onClick={markScheduleAReady} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700">
                               <Check className="h-3.5 w-3.5" />
                               Mark Schedule A Ready
                             </button>
