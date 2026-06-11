@@ -350,6 +350,31 @@ export async function createApplicationMessage({
   })
 }
 
+export async function updateApplicationMessage({
+  messageId,
+  payload,
+  token,
+}: {
+  messageId: string | number
+  payload: ApplicationMessagePayload
+  token?: string | null
+}): Promise<any> {
+  const resolvedMessageId = String(messageId).trim()
+
+  return await fetchWithAuth({
+    path: `/api/WFApplicationMessage/${encodeURIComponent(resolvedMessageId)}`,
+    method: 'PATCH',
+    body: {
+      data: {
+        attributes: payload,
+        id: resolvedMessageId,
+        type: 'WFApplicationMessage',
+      },
+    },
+    token,
+  })
+}
+
 export async function fetchApplicationMessages({
   applicationId,
   taskInstanceId,

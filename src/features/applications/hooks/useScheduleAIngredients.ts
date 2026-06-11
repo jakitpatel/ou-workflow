@@ -5,6 +5,7 @@ import {
   createScheduleAIngredient,
   fetchApplicationMessages,
   fetchScheduleAIngredients,
+  updateApplicationMessage,
   type CreateScheduleAIngredientPayload,
 } from '@/features/applications/api'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
@@ -118,6 +119,26 @@ const valueText = (value: unknown) => String(value ?? '').trim()
 
 const getRecordValue = (record: Record<string, unknown>, fieldNames: string[]) =>
   fieldNames.map((fieldName) => valueText(record[fieldName])).find(Boolean) ?? ''
+
+const getCreatedMessageId = (response: unknown) => {
+  const data = response && typeof response === 'object' && 'data' in response
+    ? (response as { data?: unknown }).data
+    : undefined
+  const attributes = data && typeof data === 'object' && 'attributes' in data
+    ? (data as { attributes?: Record<string, unknown> }).attributes
+    : undefined
+  const dataId = data && typeof data === 'object' && 'id' in data ? (data as { id?: unknown }).id : undefined
+
+  return valueText(attributes?.MessageID ?? dataId)
+}
+
+const addRefMessageIdToSubject = (subject: string, messageId: string) => {
+  const cleanSubject = subject.replace(/,\s*refMessageId:\s*#?\d+/i, '').replace(/,\s*refMsgId:\s*#?\d+/i, '')
+  const roundMatch = cleanSubject.match(/,\s*Round\s+\d+\)/i)
+  if (roundMatch?.index === undefined) return `${cleanSubject} (refMessageId: #${messageId})`
+
+  return `${cleanSubject.slice(0, roundMatch.index)}, refMessageId: #${messageId}${cleanSubject.slice(roundMatch.index)}`
+}
 
 export const getAssignedRoleValue = (
   assignedRoles: Array<Record<string, unknown>> | undefined,
@@ -329,7 +350,7 @@ export function useSendScheduleACommunicationEmail() {
         title: 'OU Kosher Schedule A',
       })
 
-      return createApplicationMessage({
+      const createResponse = await createApplicationMessage({
         token: token ?? undefined,
         payload: {
           MessageID: null,
@@ -355,6 +376,23 @@ export function useSendScheduleACommunicationEmail() {
           BCCUser: 'productAutomation@ou.org',
           replyTo: 'oucert@ou.org',
           Attachments: null,
+        },
+      })
+
+      const messageId = getCreatedMessageId(createResponse)
+      if (!messageId) {
+        throw new Error('Email was staged, but the response did not include a MessageID.')
+      }
+
+      const finalizedSubject = addRefMessageIdToSubject(subject, messageId)
+
+      return await updateApplicationMessage({
+        messageId,
+        token: token ?? undefined,
+        payload: {
+          MessageID: messageId,
+          MessageType: 'Email',
+          Subject: finalizedSubject,
         },
       })
     },
@@ -495,12 +533,14 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
       applicationName,
       recipientEmail,
       recipientName,
+      roundNumber: requestedRoundNumber,
       rows,
       taskInstanceId,
     }: {
       applicationName?: string
       recipientEmail?: string
       recipientName?: string
+      roundNumber?: number
       rows: ScheduleAIngredientRow[]
       taskInstanceId?: string | number | null
     }) => {
@@ -519,7 +559,7 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
 
       if (!items.length) return null
 
-      const roundNumber = scratchpad.rounds.length + 1
+      const roundNumber = requestedRoundNumber && requestedRoundNumber > 0 ? requestedRoundNumber : scratchpad.rounds.length + 1
       const normalizedTaskInstanceId =
         taskInstanceId === undefined || taskInstanceId === null ? '' : String(taskInstanceId).trim()
       const taskSubjectPart = normalizedTaskInstanceId ? `, Task: #${normalizedTaskInstanceId}` : ''
@@ -587,6 +627,16 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
         rounds: current.rounds.map((round) =>
           round.id === roundId ? { ...round, email: { ...round.email, to } } : round,
         ),
+      }))
+    },
+    [updateScratchpad],
+  )
+
+  const removeRound = useCallback(
+    (roundId: string) => {
+      updateScratchpad((current) => ({
+        ...current,
+        rounds: current.rounds.filter((round) => round.id !== roundId),
       }))
     },
     [updateScratchpad],
@@ -733,6 +783,7 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
     updateRoundStatus,
     updateRoundEmailBody,
     updateRoundEmailTo,
+    removeRound,
     simulateRoundResponse,
     resolveRoundItem,
     requestRoundFollowup,

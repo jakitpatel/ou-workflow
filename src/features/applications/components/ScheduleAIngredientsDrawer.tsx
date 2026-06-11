@@ -461,6 +461,7 @@ export function ScheduleAIngredientsDrawer({
     data: backendRoundEmails = [],
     isLoading: isRoundHistoryLoading,
     error: roundHistoryError,
+    refetch: refetchRoundHistory,
   } = useScheduleACommunicationMessages({
     applicationId: open ? resolvedApplicationId : undefined,
     taskInstanceId,
@@ -483,6 +484,7 @@ export function ScheduleAIngredientsDrawer({
     () => buildScheduleARoundMessageCards(backendRoundEmails),
     [backendRoundEmails],
   )
+  const nextRoundNumber = roundMessageCards.length + scratchpad.rounds.length + 1
 
   const counts = useMemo(() => {
     const resolvedIds = new Set(Object.keys(scratchpad.resolved).filter((id) => scratchpad.resolved[id]))
@@ -609,6 +611,7 @@ export function ScheduleAIngredientsDrawer({
       applicationName,
       recipientEmail: contact.email,
       recipientName: contact.name,
+      roundNumber: nextRoundNumber,
       taskInstanceId,
     })
     if (round) setActiveTab('comm')
@@ -643,8 +646,9 @@ export function ScheduleAIngredientsDrawer({
         subject: latestRound.email.subject,
         body: latestRound.email.body,
       })
-      scratchpadApi.updateRoundStatus(latestRound.id, 'awaiting')
+      scratchpadApi.removeRound(latestRound.id)
       setSentMessage('Email sent and captured in application messages.')
+      await refetchRoundHistory()
     } catch (error) {
       setSendError(error instanceof Error ? error.message : 'Failed to send email.')
     }
@@ -1044,17 +1048,17 @@ export function ScheduleAIngredientsDrawer({
                         <MessageSquare className="h-4 w-4 text-blue-500" />
                         <h3 className="text-sm font-semibold text-gray-900">Company Communication</h3>
                         <Pill tone={scratchpad.rounds.length ? 'blue' : 'gray'}>
-                          {scratchpad.rounds.length ? `${scratchpad.rounds.length} round${scratchpad.rounds.length === 1 ? '' : 's'}` : 'No rounds yet'}
+                          {roundMessageCards.length ? `${roundMessageCards.length} round${roundMessageCards.length === 1 ? '' : 's'}` : 'No rounds yet'}
                         </Pill>
                       </div>
                       <button
                         type="button"
                         onClick={generateRound}
-                        disabled={!counts.flagged}
+                        disabled={!counts.flagged || Boolean(latestRound)}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                       >
                         <MessageSquare className="h-3.5 w-3.5" />
-                        Generate Round {scratchpad.rounds.length + 1} Email
+                        Generate Round {nextRoundNumber} Email
                       </button>
                     </div>
 
