@@ -84,9 +84,11 @@ export type ScheduleBProductDraft = {
 }
 
 export const CANNED_NOTES = [
-  'Provide updated LOC - Letter of Certification.',
-  'Specify Product Name/Symbol on LOC provided.',
-  'Product/Source is not Approved. Provide alternate approved Product/Source.',
+  'Please provide a copy of the label artwork.',
+  'Please confirm the UPC code.',
+  'Please confirm the brand and label company.',
+  'Is this product Consumer or Industrial?',
+  'Please confirm Passover status (Yes / No).',
 ] as const
 
 export type ScheduleBCommunicationItem = {
@@ -110,6 +112,11 @@ export type ScheduleBCommunicationRound = {
     body: string
   }
   responseDate?: string
+}
+
+export type ScheduleBExportRowsResult = {
+  header: string[]
+  data: string[][]
 }
 
 export type SendScheduleBCommunicationEmailInput = {
@@ -899,6 +906,44 @@ export function useScheduleBScratchpad(applicationId?: string | number) {
     [scratchpad],
   )
 
+  const buildScheduleBExportRows = useCallback(
+    (rows: ScheduleBProductRow[]): ScheduleBExportRowsResult => ({
+      header: [
+        'Label Number',
+        'Label Name',
+        'Brand',
+        'Label Company',
+        'Exclusive (Y/N)',
+        'Consumer/Industrial',
+        'Bulk Shipped',
+        'List (Y/U/N)',
+        'Symbol',
+        'Internal Use',
+        'Passover',
+        'UPC',
+        'Artwork',
+        'Note',
+      ],
+      data: rows.map((row) => [
+        row.labelNo,
+        row.labelName,
+        row.brand,
+        row.labelCo,
+        row.excl,
+        row.use,
+        row.bulk,
+        row.list,
+        row.symbol,
+        row.internal,
+        row.passover,
+        row.upc,
+        row.artwork ? 'attached' : '',
+        scratchpad.flags[row.id]?.note ?? '',
+      ]),
+    }),
+    [scratchpad],
+  )
+
   return {
     scratchpad,
     toggleFlag,
@@ -922,5 +967,6 @@ export function useScheduleBScratchpad(applicationId?: string | number) {
     markScheduleBReady,
     reopenScheduleB,
     buildScratchpadCsv,
+    buildScheduleBExportRows,
   }
 }

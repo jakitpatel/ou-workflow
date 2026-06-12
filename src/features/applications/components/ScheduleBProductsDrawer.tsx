@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import {
@@ -17,6 +17,7 @@ import {
   Minimize2,
   Plus,
   Send,
+  Upload,
   X,
 } from 'lucide-react'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
@@ -406,15 +407,98 @@ function sortRows(rows: ScheduleBProductRow[], sortKey: ScheduleBProductSortKey,
   })
 }
 
-function buildScheduleBHtml(rows: ScheduleBProductRow[], applicationName?: string, applicationId?: string | number) {
-  const tableRows = rows
-    .map(
-      (row, index) =>
-        `<tr><td>${index + 1}</td><td>${row.labelName}</td><td>${row.brand}</td><td>${row.labelCo}</td><td>${row.typeLabel}</td><td>${row.symbol}</td><td>${row.productDisplayId}</td><td>${row.status}</td></tr>`,
-    )
-    .join('')
+const IMPORT_HEADER_TO_FIELD: Record<string, keyof ScheduleBProductDraft> = {
+  brand: 'brand',
+  bulk: 'bulk',
+  bulkshipped: 'bulk',
+  consumerindustrial: 'use',
+  excl: 'excl',
+  exclusive: 'excl',
+  exclusiveyn: 'excl',
+  internal: 'internal',
+  internaluse: 'internal',
+  labelco: 'labelCo',
+  labelcompany: 'labelCo',
+  labelname: 'labelName',
+  labelno: 'labelNo',
+  labelnumber: 'labelNo',
+  list: 'list',
+  listyun: 'list',
+  passover: 'passover',
+  productname: 'labelName',
+  symbol: 'symbol',
+  upc: 'upc',
+}
 
-  return `<!doctype html><html><head><meta charset="utf-8"><title>Schedule B</title><style>body{font-family:Arial,sans-serif;padding:24px}table{border-collapse:collapse;width:100%;font-size:12px}td,th{border:1px solid #ddd;padding:6px;text-align:left}th{background:#f3f4f6}.foot{margin-top:18px;color:#555}</style></head><body><h1>Schedule B Products</h1><p>${applicationName ?? 'Application'} - App #${applicationId ?? ''}</p><table><thead><tr><th>#</th><th>Label Name</th><th>Brand</th><th>Label Company</th><th>Type</th><th>Symbol</th><th>Product ID</th><th>Status</th></tr></thead><tbody>${tableRows}</tbody></table><p class="foot">Export reflects the Kashrus-style Schedule B view.</p></body></html>`
+const normalizeImportHeader = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+const parseDelimitedText = (text: string) => {
+  const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
+  if (!normalized) return [] as string[][]
+
+  const delimiter = normalized.includes('\t') ? '\t' : ','
+  const rows: string[][] = []
+  let currentValue = ''
+  let currentRow: string[] = []
+  let insideQuotes = false
+
+  for (let index = 0; index < normalized.length; index += 1) {
+    const character = normalized[index]
+    const nextCharacter = normalized[index + 1]
+
+    if (character === '"') {
+      if (insideQuotes && nextCharacter === '"') {
+        currentValue += '"'
+        index += 1
+      } else {
+        insideQuotes = !insideQuotes
+      }
+      continue
+    }
+
+    if (!insideQuotes && character === delimiter) {
+      currentRow.push(currentValue.trim())
+      currentValue = ''
+      continue
+    }
+
+    if (!insideQuotes && character === '\n') {
+      currentRow.push(currentValue.trim())
+      rows.push(currentRow)
+      currentRow = []
+      currentValue = ''
+      continue
+    }
+
+    currentValue += character
+  }
+
+  currentRow.push(currentValue.trim())
+  rows.push(currentRow)
+
+  return rows.filter((row) => row.some((cell) => cell.trim() !== ''))
+}
+
+const sanitizeFilenamePart = (value: string) =>
+  value.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'application'
+
+const getImportDraftsFromText = (text: string): ScheduleBProductDraft[] => {
+  const rows = parseDelimitedText(text)
+  if (rows.length < 2) return []
+
+  const header = rows[0].map((value) => IMPORT_HEADER_TO_FIELD[normalizeImportHeader(value)] ?? null)
+
+  return rows
+    .slice(1)
+    .map((row) => {
+      const draft: ScheduleBProductDraft = { ...EMPTY_ADD_ROW_DRAFT }
+      row.forEach((value, index) => {
+        const field = header[index]
+        if (field) draft[field] = value
+      })
+      return draft
+    })
+    .filter((draft) => Object.values(draft).some((value) => value.trim() !== ''))
 }
 
 const APPLICATION_COLUMNS: Array<{ key: ScheduleBProductSortKey; label: string; widthClass?: string }> = [
@@ -487,6 +571,11 @@ export function ScheduleBProductsDrawer({
   const [sendError, setSendError] = useState('')
   const [sentMessage, setSentMessage] = useState('')
   const [eirAiOpen, setEirAiOpen] = useState(true)
+  const [importOpen, setImportOpen] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importFilename, setImportFilename] = useState('')
+  const [importError, setImportError] = useState('')
+  const [isImporting, setIsImporting] = useState(false)
   const productsHeaderRef = useRef<HTMLDivElement | null>(null)
   const productsTableRef = useRef<HTMLTableElement | null>(null)
 
@@ -502,7 +591,7 @@ export function ScheduleBProductsDrawer({
   })
   const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
   const scratchpadApi = useScheduleBScratchpad(resolvedApplicationId)
-  const { scratchpad } = scratchpadApi
+  const { scratchpad, buildScheduleBExportRows } = scratchpadApi
   const assignedRfr = useMemo(() => getAssignedRoleValue(assignedRoles, 'RFR'), [assignedRoles])
   const eirSubmitterLabel = assignedRfr === 'Not yet Assigned' ? 'the assigned RFR' : assignedRfr
   const visitIdLabel = textValue(visitId)
@@ -731,10 +820,95 @@ export function ScheduleBProductsDrawer({
     }
   }
 
-  const downloadScheduleB = () => {
-    const html = buildScheduleBHtml(kashRows, applicationName, resolvedApplicationId)
-    const filename = `ScheduleB_${resolvedApplicationId ?? 'application'}.html`
-    downloadTextFile(filename, html, 'text/html;charset=utf-8;')
+  const exportRows = buildScheduleBExportRows(visibleRows)
+
+  const scheduleBFilenameBase = (() => {
+    const namePart = sanitizeFilenamePart(applicationName ?? '')
+    const applicationPart = sanitizeFilenamePart(String(resolvedApplicationId ?? 'application'))
+    return `ScheduleB_${namePart}_${applicationPart}`
+  })()
+
+  const downloadScheduleBCsv = () => {
+    const csv = [exportRows.header, ...exportRows.data]
+      .map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\r\n')
+
+    downloadTextFile(`${scheduleBFilenameBase}.csv`, csv, 'text/csv;charset=utf-8;')
+  }
+
+  const exportScheduleBExcel = () => {
+    const html = `<!doctype html><html><head><meta charset="utf-8"></head><body><table border="1"><tr>${exportRows.header
+      .map((header) => `<th>${header}</th>`)
+      .join('')}</tr>${exportRows.data
+      .map((row) => `<tr>${row.map((cell) => `<td>${String(cell ?? '')}</td>`).join('')}</tr>`)
+      .join('')}</table></body></html>`
+
+    downloadTextFile(`${scheduleBFilenameBase}.xls`, html, 'application/vnd.ms-excel;charset=utf-8;')
+  }
+
+  const openImportModal = () => {
+    setIngView('application')
+    setFilter('all')
+    setImportError('')
+    setImportOpen(true)
+  }
+
+  const closeImportModal = () => {
+    if (isImporting) return
+    setImportOpen(false)
+    setImportError('')
+  }
+
+  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      const text = await file.text()
+      setImportText(text)
+      setImportFilename(file.name)
+      setImportError('')
+    } catch {
+      setImportError('Failed to read the selected file.')
+    } finally {
+      event.target.value = ''
+    }
+  }
+
+  const importPreviewRows = (() => {
+    try {
+      return getImportDraftsFromText(importText)
+    } catch {
+      return []
+    }
+  })()
+
+  const importProducts = async () => {
+    const drafts = getImportDraftsFromText(importText).filter((draft) => draft.labelName.trim())
+    if (!drafts.length) {
+      setImportError('Provide a CSV or tab-delimited file with at least one row containing a Label Name.')
+      return
+    }
+
+    setImportError('')
+    setIsImporting(true)
+    try {
+      for (const draft of drafts) {
+        await createProductMutation.mutateAsync(draft)
+      }
+      setImportOpen(false)
+      setImportText('')
+      setImportFilename('')
+      toast.success(`Imported ${drafts.length} Schedule B product${drafts.length === 1 ? '' : 's'}.`)
+    } catch (mutationError) {
+      const message =
+        mutationError && typeof mutationError === 'object' && 'message' in mutationError
+          ? String((mutationError as { message?: unknown }).message)
+          : 'Failed to import Schedule B products.'
+      setImportError(message)
+    } finally {
+      setIsImporting(false)
+    }
   }
 
   const downloadEirDocument = () => {
@@ -879,9 +1053,14 @@ export function ScheduleBProductsDrawer({
                 {activeTab === 'products' ? (
                   <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
                     <div ref={productsHeaderRef} className="sticky left-0 right-0 top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-t-lg border-b bg-gray-50 px-6 py-4 shadow-sm">
-                      <h2 className="text-2xl font-semibold text-gray-900">
-                        {ingView === 'application' ? 'Application Products' : 'Kashrus Products'}
-                      </h2>
+                      <div>
+                        <h2 className="text-2xl font-semibold text-gray-900">
+                          {ingView === 'application' ? 'Schedule B - Application' : 'Schedule B - Kashrus'}
+                        </h2>
+                        <p className="mt-0.5 text-xs text-gray-500">
+                          {activeRows.length} {activeRows.length === 1 ? 'product' : 'products'}
+                        </p>
+                      </div>
                       <div className="flex flex-wrap items-center gap-2">
                         {ingView === 'application' ? (
                           !scratchpad.scheduleBReady ? (
@@ -910,24 +1089,46 @@ export function ScheduleBProductsDrawer({
                               </button>
                             ))
                           : null}
-                        <button
-                          type="button"
-                          onClick={downloadScheduleB}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          Download
-                        </button>
                         {ingView === 'application' ? (
-                          <button
-                            type="button"
-                            onClick={startAddRow}
-                            disabled={isAddingRow || createProductMutation.isPending}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                            Add Row
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              onClick={downloadScheduleBCsv}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                              title="Download the scratchpad as CSV"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              Download CSV
+                            </button>
+                            <button
+                              type="button"
+                              onClick={exportScheduleBExcel}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                              title="Export all fields to Excel for the Kashrus bulk import"
+                            >
+                              <FileText className="h-3.5 w-3.5 text-green-600" />
+                              Export to Excel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={openImportModal}
+                              disabled={createProductMutation.isPending || isImporting}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                              title="Import rows from CSV or tab-delimited text"
+                            >
+                              <Upload className="h-3.5 w-3.5" />
+                              Import
+                            </button>
+                            <button
+                              type="button"
+                              onClick={startAddRow}
+                              disabled={isAddingRow || createProductMutation.isPending}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              Add Row
+                            </button>
+                          </>
                         ) : null}
                       </div>
                     </div>
@@ -1559,6 +1760,100 @@ export function ScheduleBProductsDrawer({
           </div>
         </div>
       </div>
+      {importOpen ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" onClick={closeImportModal}>
+          <div
+            className="w-full max-w-3xl rounded-xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b px-5 py-4">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Import products</h3>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Upload CSV or tab-delimited rows using the Schedule B Application columns from the demo export.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeImportModal}
+                disabled={isImporting}
+                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Close import modal"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 px-5 py-4">
+              <div className="rounded-lg border border-dashed border-violet-300 bg-violet-50/60 p-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-700">
+                    <Upload className="h-4 w-4" />
+                    Choose File
+                    <input type="file" accept=".csv,.txt,.tsv" className="hidden" onChange={handleImportFile} />
+                  </label>
+                  <span className="text-xs text-violet-800">
+                    {importFilename || 'Accepted formats: .csv, .tsv, .txt'}
+                  </span>
+                </div>
+                <p className="mt-3 text-xs text-violet-800">
+                  Supported headers: Label Number, Label Name, Brand, Label Company, Exclusive (Y/N), Consumer/Industrial,
+                  Bulk Shipped, List (Y/U/N), Symbol, Internal Use, Passover, UPC.
+                </p>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                  Paste Rows
+                </label>
+                <textarea
+                  value={importText}
+                  onChange={(event) => {
+                    setImportText(event.target.value)
+                    setImportError('')
+                  }}
+                  placeholder="Paste CSV or tab-delimited rows here..."
+                  className="h-56 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2">
+                <p className="text-xs text-gray-600">
+                  Preview: <span className="font-semibold text-gray-900">{importPreviewRows.length}</span>{' '}
+                  {importPreviewRows.length === 1 ? 'row' : 'rows'} ready to import
+                </p>
+                <p className="text-xs text-gray-500">Rows without a Label Name will be skipped.</p>
+              </div>
+
+              {importError ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+                  {importError}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t px-5 py-4">
+              <button
+                type="button"
+                onClick={closeImportModal}
+                disabled={isImporting}
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={importProducts}
+                disabled={isImporting || !importPreviewRows.length}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Upload className="h-4 w-4" />
+                {isImporting ? 'Importing...' : `Import ${importPreviewRows.length || ''}`.trim()}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <ApplicationDetailsDrawer
         open={selectedApplicationId !== null}
         applicationId={selectedApplicationId ?? undefined}
