@@ -443,6 +443,25 @@ const KASHRUS_COLUMNS: Array<{ key: ScheduleBProductSortKey; label: string; widt
   { key: 'status', label: 'Status' },
 ]
 
+const YES_NO_OPTIONS = [
+  { value: '', label: '-' },
+  { value: 'Y', label: 'Y' },
+  { value: 'N', label: 'N' },
+] as const
+
+const USE_OPTIONS = [
+  { value: '', label: '-' },
+  { value: 'Consumer', label: 'Consumer' },
+  { value: 'Industrial', label: 'Industrial' },
+] as const
+
+const LIST_OPTIONS = [
+  { value: '', label: '-' },
+  { value: 'Y', label: 'Y' },
+  { value: 'U', label: 'U' },
+  { value: 'N', label: 'N' },
+] as const
+
 export function ScheduleBProductsDrawer({
   open,
   applicationId,
@@ -611,6 +630,24 @@ export function ScheduleBProductsDrawer({
   const updateAddRowDraft = (field: keyof ScheduleBProductDraft, value: string) => {
     setAddRowDraft((current) => ({ ...current, [field]: value }))
   }
+
+  const renderAddRowSelect = (
+    field: keyof ScheduleBProductDraft,
+    options: ReadonlyArray<{ value: string; label: string }>,
+    minWidthClass = 'min-w-[72px]',
+  ) => (
+    <select
+      className={`${minWidthClass} w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500`}
+      value={addRowDraft[field]}
+      onChange={(event) => updateAddRowDraft(field, event.target.value)}
+    >
+      {options.map((option) => (
+        <option key={`${field}-${option.label}`} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  )
 
   const startAddRow = () => {
     setIngView('application')
@@ -965,36 +1002,16 @@ export function ScheduleBProductsDrawer({
                                 />
                               </td>
                               <td className="px-3 py-2">
-                                <input
-                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  value={addRowDraft.excl}
-                                  placeholder="Excl?"
-                                  onChange={(event) => updateAddRowDraft('excl', event.target.value)}
-                                />
+                                {renderAddRowSelect('excl', YES_NO_OPTIONS)}
                               </td>
                               <td className="px-3 py-2">
-                                <input
-                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  value={addRowDraft.use}
-                                  placeholder="Cons/Ind"
-                                  onChange={(event) => updateAddRowDraft('use', event.target.value)}
-                                />
+                                {renderAddRowSelect('use', USE_OPTIONS, 'min-w-[110px]')}
                               </td>
                               <td className="px-3 py-2">
-                                <input
-                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  value={addRowDraft.bulk}
-                                  placeholder="Bulk"
-                                  onChange={(event) => updateAddRowDraft('bulk', event.target.value)}
-                                />
+                                {renderAddRowSelect('bulk', YES_NO_OPTIONS)}
                               </td>
                               <td className="px-3 py-2">
-                                <input
-                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  value={addRowDraft.list}
-                                  placeholder="List"
-                                  onChange={(event) => updateAddRowDraft('list', event.target.value)}
-                                />
+                                {renderAddRowSelect('list', LIST_OPTIONS)}
                               </td>
                               <td className="px-3 py-2">
                                 <input
@@ -1005,20 +1022,10 @@ export function ScheduleBProductsDrawer({
                                 />
                               </td>
                               <td className="px-3 py-2">
-                                <input
-                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  value={addRowDraft.internal}
-                                  placeholder="Internal"
-                                  onChange={(event) => updateAddRowDraft('internal', event.target.value)}
-                                />
+                                {renderAddRowSelect('internal', YES_NO_OPTIONS)}
                               </td>
                               <td className="px-3 py-2">
-                                <input
-                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                  value={addRowDraft.passover}
-                                  placeholder="Passover"
-                                  onChange={(event) => updateAddRowDraft('passover', event.target.value)}
-                                />
+                                {renderAddRowSelect('passover', YES_NO_OPTIONS)}
                               </td>
                               <td className="px-3 py-2">
                                 <input

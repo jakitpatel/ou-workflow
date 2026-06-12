@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createApplicationMessage,
+  createScheduleBProduct,
   fetchApplicationMessages,
   fetchScheduleBProducts,
   updateApplicationMessage,
+  type CreateScheduleBProductPayload,
 } from '@/features/applications/api'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { useUser } from '@/context/UserContext'
@@ -156,6 +158,13 @@ const toYn = (value: unknown) => {
   if (['true', 'yes', '1', 'y'].includes(normalized)) return 'Y'
   if (['false', 'no', '0', 'n'].includes(normalized)) return 'N'
   return valueText(value)
+}
+
+const toBoolean = (value: unknown): boolean | undefined => {
+  const normalized = valueText(value).toLowerCase()
+  if (['true', 'yes', '1', 'y'].includes(normalized)) return true
+  if (['false', 'no', '0', 'n'].includes(normalized)) return false
+  return undefined
 }
 
 const getCreatedMessageId = (response: unknown) => {
@@ -343,15 +352,63 @@ export function useScheduleBProducts(applicationId?: string | number) {
 }
 
 export function useCreateScheduleBProduct(applicationId?: string | number) {
+  const { token } = useUser()
+  const queryClient = useQueryClient()
   const normalizedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
 
   return useMutation({
-    mutationFn: async (_draft: ScheduleBProductDraft) => {
+    mutationFn: (draft: ScheduleBProductDraft) => {
       if (!normalizedApplicationId) {
         throw new Error('Application ID is required before adding a product.')
       }
-      throw new Error('Adding Schedule B products is not available from this drawer yet.')
+
+      const normalizedUse = valueText(draft.use).toLowerCase()
+      const explicitPrivateLabel = toBoolean(draft.excl)
+      const payload: CreateScheduleBProductPayload = {
+        ApplicationID: normalizedApplicationId,
+        UKDID: valueText(draft.labelNo) || undefined,
+        productName: valueText(draft.labelName) || undefined,
+        Retail:
+          normalizedUse.includes('retail') || normalizedUse.includes('consumer')
+            ? true
+            : normalizedUse
+                  .split(/[\/,&]/)
+                  .map((part) => part.trim())
+                  .some((part) => ['r', 'ret', 'cons', 'consumer'].includes(part))
+              ? true
+              : undefined,
+        Industrial:
+          normalizedUse.includes('industrial')
+            ? true
+            : normalizedUse
+                  .split(/[\/,&]/)
+                  .map((part) => part.trim())
+                  .some((part) => ['i', 'ind', 'industrial'].includes(part))
+              ? true
+              : undefined,
+        BrandName: valueText(draft.brand) || undefined,
+        inHouse: explicitPrivateLabel === undefined ? undefined : !explicitPrivateLabel,
+        privateLabel: explicitPrivateLabel,
+        privateLabelCo: valueText(draft.labelCo) || undefined,
+        bulkShipped: valueText(draft.bulk) || undefined,
+        symbol: valueText(draft.symbol) || undefined,
+        passover: valueText(draft.passover) || undefined,
+        status: valueText(draft.list) || undefined,
+        UPC: valueText(draft.upc) || undefined,
+        internal_use_only: valueText(draft.internal) || undefined,
+        list: valueText(draft.list) || undefined,
+      }
+
+      return createScheduleBProduct({
+        payload,
+        token: token ?? undefined,
+      })
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: applicationsQueryKeys.scheduleBProducts(normalizedApplicationId),
+      })
     },
   })
 }
@@ -375,7 +432,7 @@ export function useScheduleBCommunicationMessages({
       fetchApplicationMessages({
         applicationId: normalizedApplicationId,
         taskInstanceId: normalizedTaskInstanceId,
-        messageType: 'Email',
+        //messageType: 'Email',
         token: token ?? undefined,
       }),
     enabled: !!token && !!normalizedApplicationId,

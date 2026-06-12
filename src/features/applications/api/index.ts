@@ -663,6 +663,31 @@ export type CreateScheduleAIngredientPayload = {
   source?: string
 }
 
+export type CreateScheduleBProductPayload = {
+  ApplicationID: string | number
+} & Partial<
+  Pick<
+    ScheduleBProduct,
+    | 'UKDID'
+    | 'productName'
+    | 'Retail'
+    | 'Industrial'
+    | 'BrandName'
+    | 'inHouse'
+    | 'privateLabel'
+    | 'privateLabelCo'
+    | 'bulkShipped'
+    | 'symbol'
+    | 'passover'
+    | 'status'
+    | 'group'
+    | 'UPC'
+    | 'notes'
+    | 'internal_use_only'
+    | 'list'
+  >
+>
+
 export async function createScheduleAIngredient({
   payload,
   token,
@@ -700,6 +725,26 @@ export async function updateScheduleAIngredientDeleted({
           isDeleted: true,
         },
         type: 'ScheduleIngredient',
+      },
+    },
+    token,
+  })
+}
+
+export async function createScheduleBProduct({
+  payload,
+  token,
+}: {
+  payload: CreateScheduleBProductPayload
+  token?: string | null
+}): Promise<unknown> {
+  return await fetchWithAuth({
+    path: '/api/ScheduleProducts',
+    method: 'POST',
+    body: {
+      data: {
+        attributes: payload,
+        type: 'ScheduleProducts',
       },
     },
     token,

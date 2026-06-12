@@ -565,17 +565,21 @@ export type ScheduleBProduct = {
   ApplicationID?: number | string;
   BrandName?: string;
   Industrial?: boolean | string;
+  UKDID?: string;
   Retail?: boolean | string;
   ScheduleProductId?: number | string;
   UPC?: string;
   bulkShipped?: string;
+  group?: number | string;
   inHouse?: boolean | string;
   internal_use_only?: string;
   list?: string;
+  notes?: string;
   passover?: string;
   privateLabel?: boolean | string;
   privateLabelCo?: string;
   productName?: string;
+  status?: string;
   symbol?: string;
 };
 

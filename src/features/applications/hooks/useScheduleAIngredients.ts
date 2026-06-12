@@ -305,7 +305,7 @@ export function useScheduleACommunicationMessages({
       fetchApplicationMessages({
         applicationId: normalizedApplicationId,
         taskInstanceId: normalizedTaskInstanceId,
-        messageType: 'Email',
+        //messageType: 'Email',
         token: token ?? undefined,
       }),
     enabled: !!token && !!normalizedApplicationId,
