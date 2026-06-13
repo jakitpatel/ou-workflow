@@ -537,6 +537,10 @@ export function ApplicationDetailsContent({
   const applicationNotesContextKey = `application-details:${String(applicationId ?? application.applicationId ?? 'unknown')}`
   const applicationDisplayName =
     application.company?.[0]?.name?.trim() || `Application ${application.applicationId}`
+  const pageTitle =
+    dataSource === 'prelim'
+      ? 'Intake Application Review & Management'
+      : 'Application Review & Management'
   const applicationNotes = useTaskNotesDrawerState({
     applicationId: resolvedApplicationId,
   })
@@ -637,7 +641,7 @@ export function ApplicationDetailsContent({
         <div className={mode === 'page' ? 'flex items-center justify-between py-4' : 'flex items-center justify-between'}>
           <div>
             <h1 className={mode === 'page' ? 'text-2xl font-bold text-gray-900' : 'text-xl font-bold text-gray-900'}>
-              Application Review & Management
+              {pageTitle}
             </h1>
             {showInterfaceLabel ? (
               <p className="text-gray-600">NCRC Preprocessing Interface</p>
