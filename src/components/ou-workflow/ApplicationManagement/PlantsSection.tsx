@@ -327,19 +327,23 @@ export default function PlantsSection({
               <div className="flex flex-col gap-1">
                 <span className="text-sm text-green-700">Plant Status</span>
                 <span className="inline-flex items-center px-2.5 py-1 bg-green-200 text-green-900 border border-green-300 rounded-full text-xs font-medium w-fit">
+                  {/*
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Active
+                  */}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-sm text-green-700">Last Inspection</span>
-                <span className="font-medium text-green-900">Pending</span>
+                <span className="font-medium text-green-900"></span>
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-sm text-green-700">Compliance Status</span>
                 <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-full text-xs font-medium w-fit">
+                  {/*
                   <AlertCircle className="h-3 w-3 mr-1" />
                   Under Review
+                  */}
                 </span>
               </div>
             </div>
