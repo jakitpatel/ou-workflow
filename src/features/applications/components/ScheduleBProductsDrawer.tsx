@@ -24,6 +24,7 @@ import { ApplicationDetailsDrawer } from '@/features/applications/components/App
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import {
   CANNED_NOTES,
+  getScheduleBCommunicationMessageBody,
   mapApplicationProductRow,
   mapKashProductRow,
   type ScheduleBProductFilter,
@@ -117,10 +118,7 @@ const getEmailMessageId = (email: ApplicationEmail) => textValue(email.MessageID
 const getEmailParentMessageId = (email: ApplicationEmail) => textValue(email.parentMessageId)
 
 const getEmailPreviewText = (email: ApplicationEmail) =>
-  textValue(email.MessageTextPlain) ||
-  textValue(email.PlainText) ||
-  textValue(email.Text) ||
-  textValue(email.MessageText).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  getScheduleBCommunicationMessageBody(email)
 
 const getRoundNumberFromSubject = (subject: string) => Number(subject.match(/round\s+(\d+)/i)?.[1] ?? 0)
 
@@ -1508,7 +1506,9 @@ export function ScheduleBProductsDrawer({
                                     <span className="break-words text-gray-900">{round.subject}</span>
                                   </div>
                                   {messageText ? (
-                                    <p className="line-clamp-4 whitespace-pre-line text-xs text-gray-600">{messageText}</p>
+                                    <div className="whitespace-pre-wrap break-words rounded-md bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-600">
+                                      {messageText}
+                                    </div>
                                   ) : null}
                                   {round.replies.length ? (
                                     <div className="space-y-2 border-t border-gray-100 pt-3">
@@ -1536,7 +1536,9 @@ export function ScheduleBProductsDrawer({
                                               ) : null}
                                             </div>
                                             {replyText ? (
-                                              <p className="line-clamp-4 whitespace-pre-line text-xs text-gray-600">{replyText}</p>
+                                              <div className="whitespace-pre-wrap break-words rounded-md bg-white/80 px-3 py-2 text-xs leading-5 text-gray-600">
+                                                {replyText}
+                                              </div>
                                             ) : null}
                                           </div>
                                         )

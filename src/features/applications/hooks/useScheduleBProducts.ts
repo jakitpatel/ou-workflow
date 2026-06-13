@@ -12,7 +12,7 @@ import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { useUser } from '@/context/UserContext'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
-import type { KashProduct, ScheduleBProduct } from '@/types/application'
+import type { ApplicationEmail, KashProduct, ScheduleBProduct } from '@/types/application'
 
 export type ScheduleBProductRow = {
   id: string
@@ -159,6 +159,69 @@ const todayLabel = () =>
   new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
 const valueText = (value: unknown) => String(value ?? '').trim()
+
+const normalizeEmailBodyText = (value: unknown) =>
+  String(value ?? '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/\u00a0/g, ' ')
+    .trim()
+
+const decodeHtmlEntities = (value: string) =>
+  value
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+
+const extractPrimaryEmailHtmlContent = (value: string) => {
+  const mainCellMatch = value.match(
+    /<td[^>]*padding:26px 28px[^>]*>([\s\S]*?)<\/td>/i,
+  )
+  if (mainCellMatch?.[1]) return mainCellMatch[1]
+
+  const bodyMatch = value.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i)
+  if (bodyMatch?.[1]) return bodyMatch[1]
+
+  return value
+}
+
+const htmlToPlainTextWithSpacing = (value: string) =>
+  decodeHtmlEntities(extractPrimaryEmailHtmlContent(value))
+    .replace(/<div[^>]*display\s*:\s*none[^>]*>[\s\S]*?<\/div>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p\s*>/gi, '\n\n')
+    .replace(/<\/div\s*>/gi, '\n')
+    .replace(/<\/li\s*>/gi, '\n')
+    .replace(/<li\b[^>]*>/gi, '- ')
+    .replace(/<\/tr\s*>/gi, '\n')
+    .replace(/<\/td\s*>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+export const getScheduleBCommunicationMessageBody = (email: ApplicationEmail) => {
+  const plainTextBody =
+    normalizeEmailBodyText(email.MessageTextPlain) ||
+    normalizeEmailBodyText(email.PlainText) ||
+    normalizeEmailBodyText(email.Text)
+
+  if (plainTextBody) {
+    return plainTextBody
+  }
+
+  const htmlBody = String(email.MessageText ?? '')
+  if (!htmlBody) return ''
+
+  return htmlToPlainTextWithSpacing(htmlBody)
+}
 
 const toYn = (value: unknown) => {
   const normalized = valueText(value).toLowerCase()
@@ -480,7 +543,6 @@ export function useSendScheduleBCommunicationEmail() {
       }
 
       const htmlEmail = buildHtmlEmailFromPlainText(body, {
-        preheader: subject,
         title: 'OU Kosher Schedule B',
       })
 
