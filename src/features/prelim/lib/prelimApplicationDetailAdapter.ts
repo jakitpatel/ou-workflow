@@ -177,10 +177,12 @@ const mapPrelimProducts = (plants: PrelimPlant[], companyName?: string) =>
           ? 'Consumer / Industrial'
           : product.Industrial
             ? 'Industrial'
-            : 'Consumer',
-      bulkShipped: false,
-      certification: 'Pending Review',
-      status: product.status ?? product.plantStatus ?? 'Pending',
+            : product.Retail
+              ? 'Consumer'
+              : '',
+      bulkShipped: undefined,
+      certification: '',
+      status: product.status ?? product.plantStatus ?? '',
       plantName: plant.plantName ?? '',
     })),
   )

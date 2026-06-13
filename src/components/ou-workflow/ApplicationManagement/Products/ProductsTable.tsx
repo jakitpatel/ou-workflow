@@ -20,6 +20,12 @@ type Props = {
   dataSource?: 'application' | 'prelim'
 }
 
+const hasDisplayValue = (value: unknown) => {
+  if (value === null || value === undefined) return false
+  if (typeof value === 'boolean') return true
+  return String(value).trim() !== ''
+}
+
 export default function ProductsTable({ application, dataSource = 'application' }: Props) {
   const { role, roles } = useUser();
   
@@ -40,6 +46,26 @@ export default function ProductsTable({ application, dataSource = 'application' 
         ) || []
       : (application.products as ProductRow[]) || [];
   const filteredProducts = productData;
+  const showSourceColumn = dataSource !== 'prelim' || productData.some(product => hasDisplayValue(product.source));
+  const showBrandColumn = productData.some(product => hasDisplayValue(product.brandName));
+  const showLabelCompanyColumn = productData.some(product => hasDisplayValue(product.labelCompany));
+  const showTypeColumn = productData.some(product => hasDisplayValue(product.ConsumerIndustrial));
+  const showBulkShippedColumn =
+    dataSource !== 'prelim' || productData.some(product => hasDisplayValue(product.bulkShipped));
+  const showCertificationColumn =
+    dataSource !== 'prelim' || productData.some(product => hasDisplayValue(product.certification));
+  const showStatusColumn =
+    dataSource !== 'prelim' || productData.some(product => hasDisplayValue(product.status));
+  const visibleColumnCount =
+    1 +
+    (showSourceColumn ? 1 : 0) +
+    (showBrandColumn ? 1 : 0) +
+    (showLabelCompanyColumn ? 1 : 0) +
+    (showTypeColumn ? 1 : 0) +
+    (showBulkShippedColumn ? 1 : 0) +
+    (showCertificationColumn ? 1 : 0) +
+    (showStatusColumn ? 1 : 0) +
+    (canEditProducts ? 1 : 0);
 
   // Calculate statistics
   const stats = {
@@ -122,14 +148,28 @@ export default function ProductsTable({ application, dataSource = 'application' 
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Source</th>
+                {showSourceColumn && (
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Source</th>
+                )}
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Product Name</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Brand Name</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Label Company</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Bulk Shipped</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Certification</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                {showBrandColumn && (
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Brand Name</th>
+                )}
+                {showLabelCompanyColumn && (
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Label Company</th>
+                )}
+                {showTypeColumn && (
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
+                )}
+                {showBulkShippedColumn && (
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Bulk Shipped</th>
+                )}
+                {showCertificationColumn && (
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Certification</th>
+                )}
+                {showStatusColumn && (
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                )}
                 {canEditProducts && <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>}
               </tr>
             </thead>
@@ -142,48 +182,78 @@ export default function ProductsTable({ application, dataSource = 'application' 
                       product.source === 'Form Data' ? 'bg-orange-50/30' : ''
                     }`}
                   >
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                        product.source === "Form Data" 
-                          ? 'bg-orange-100 text-orange-800 border border-orange-200' 
-                          : 'bg-purple-100 text-purple-800 border border-purple-200'
-                      }`}>
-                        {product.source}
-                      </span>
-                    </td>
+                    {showSourceColumn && (
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {hasDisplayValue(product.source) ? (
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                            product.source === "Form Data" 
+                              ? 'bg-orange-100 text-orange-800 border border-orange-200' 
+                              : 'bg-purple-100 text-purple-800 border border-purple-200'
+                          }`}>
+                            {product.source}
+                          </span>
+                        ) : null}
+                      </td>
+                    )}
                     <td className="py-3 px-4">
-                      <span className="font-medium text-gray-900">{product.labelName}</span>
+                      <span className="font-medium text-gray-900">{product.labelName || '-'}</span>
                     </td>
-                    <td className="py-3 px-4 text-gray-700">{product.brandName}</td>
-                    <td className="py-3 px-4 text-gray-700">{product.labelCompany}</td>
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${
-                        product.ConsumerIndustrial === "Industrial" 
-                          ? 'bg-blue-100 text-blue-800 border border-blue-200' 
-                          : 'bg-green-100 text-green-800 border border-green-200'
-                      }`}>
-                        {product.ConsumerIndustrial}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                        product.bulkShipped === true 
-                          ? 'bg-green-100 text-green-800 border border-green-200' 
-                          : 'bg-gray-100 text-gray-700 border border-gray-200'
-                      }`}>
-                        {product.bulkShipped === true ? "Yes" : "No"}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-medium">
-                        {product.certification}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-md text-xs font-medium">
-                        {product.status}
-                      </span>
-                    </td>
+                    {showBrandColumn && <td className="py-3 px-4 text-gray-700">{product.brandName || '-'}</td>}
+                    {showLabelCompanyColumn && (
+                      <td className="py-3 px-4 text-gray-700">{product.labelCompany || '-'}</td>
+                    )}
+                    {showTypeColumn && (
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {hasDisplayValue(product.ConsumerIndustrial) ? (
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${
+                            product.ConsumerIndustrial === "Industrial" 
+                              ? 'bg-blue-100 text-blue-800 border border-blue-200' 
+                              : 'bg-green-100 text-green-800 border border-green-200'
+                          }`}>
+                            {product.ConsumerIndustrial}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                    )}
+                    {showBulkShippedColumn && (
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {hasDisplayValue(product.bulkShipped) ? (
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                            product.bulkShipped === true 
+                              ? 'bg-green-100 text-green-800 border border-green-200' 
+                              : 'bg-gray-100 text-gray-700 border border-gray-200'
+                          }`}>
+                            {product.bulkShipped === true ? "Yes" : "No"}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                    )}
+                    {showCertificationColumn && (
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {hasDisplayValue(product.certification) ? (
+                          <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-medium">
+                            {product.certification}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                    )}
+                    {showStatusColumn && (
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {hasDisplayValue(product.status) ? (
+                          <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-md text-xs font-medium">
+                            {product.status}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                    )}
                     {canEditProducts && (
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -207,7 +277,7 @@ export default function ProductsTable({ application, dataSource = 'application' 
                 ))
               ) : (
                 <tr>
-                  <td colSpan={canEditProducts ? 9 : 8} className="py-12 text-center">
+                  <td colSpan={visibleColumnCount} className="py-12 text-center">
                     <div className="text-gray-400">
                       <p className="text-sm font-medium">No products found</p>
                       <p className="text-xs mt-1">No products have been added yet</p>
