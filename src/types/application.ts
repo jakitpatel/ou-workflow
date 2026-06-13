@@ -468,6 +468,11 @@ export interface ApplicationEmail {
   tag?: string | null;
 }
 
+export interface RawApplicationEntry {
+  prompt?: string;
+  answer?: string;
+}
+
 export interface ApplicationDetail {
   applicationId: string;
   status: string;
@@ -490,6 +495,7 @@ export interface ApplicationDetail {
   messages?: WFApplicationMessage[];
   taskEvents?: TaskEvent[];
   emails?: ApplicationEmail[];
+  raw_data?: RawApplicationEntry[];
 }
 
 export type ScheduleAIngredient = {

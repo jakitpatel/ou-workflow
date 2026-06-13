@@ -83,6 +83,7 @@ type PrelimApplicationDetail = {
   externalReferenceId?: number
   files?: UploadedFile[]
   plants?: PrelimPlant[]
+  raw_data?: ApplicationDetail['raw_data']
   status?: string
   submissionDate?: string
   submission_files?: any[]
@@ -277,5 +278,6 @@ export function mapPrelimApplicationDetailToApplicationDetail(
     messages: [],
     taskEvents: [],
     emails: [],
+    raw_data: detail.raw_data ?? [],
   }
 }

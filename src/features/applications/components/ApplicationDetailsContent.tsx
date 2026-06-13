@@ -30,6 +30,7 @@ import ProductsTable from '@/components/ou-workflow/ApplicationManagement/Produc
 import ActivityLog from '@/components/ou-workflow/ApplicationManagement/ActivityLog'
 import FilesList from '@/components/ou-workflow/ApplicationManagement/FilesList'
 import IngredientMgmt from '@/components/ou-workflow/ApplicationManagement/Ingredients'
+import RawApplicationPanel from '@/components/ou-workflow/ApplicationManagement/RawApplicationPanel'
 import QuoteInfo from '@/components/ou-workflow/ApplicationManagement/QuoteInfo'
 import TaskEventsPanel from '@/components/ou-workflow/ApplicationManagement/TaskEventsPanel'
 import type { ApplicationDetail, ApplicationEmail } from '@/types/application'
@@ -99,6 +100,7 @@ const TABS = [
   { id: 'plants', label: 'Plants', icon: Building },
   { id: 'products', label: 'Products', icon: Package },
   { id: 'ingredients', label: 'Ingredients', icon: Beaker },
+  { id: 'raw-application', label: 'Raw Application', icon: FileText },
   { id: 'quote', label: 'Quote', icon: FileText },
   { id: 'activity', label: 'Recent Activity', icon: AlertCircle },
   { id: 'task-events', label: 'Task Events', icon: ClipboardList },
@@ -777,6 +779,7 @@ export function ApplicationDetailsContent({
                 setShowRecentOnly={setShowRecentOnly}
               />
             )}
+            {activeTab === 'raw-application' && <RawApplicationPanel entries={application.raw_data} />}
             {activeTab === 'quote' && <QuoteInfo application={application} />}
             {activeTab === 'activity' && <ActivityLog recentActivity={recentActivity} comments={comments} />}
             {activeTab === 'task-events' && <TaskEventsPanel taskEvents={sortedTaskEvents} />}
