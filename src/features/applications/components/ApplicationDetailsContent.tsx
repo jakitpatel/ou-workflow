@@ -66,6 +66,7 @@ type Props = {
   mode?: ApplicationDetailsMode
   applicationId?: string | number
   showInterfaceLabel?: boolean
+  dataSource?: 'application' | 'prelim'
 }
 
 const resolveApplicationId = (
@@ -514,6 +515,7 @@ export function ApplicationDetailsContent({
   mode = 'page',
   applicationId,
   showInterfaceLabel = true,
+  dataSource = 'application',
 }: Props) {
   const [activeTab, setActiveTab] = useState('overview')
   const [editMode] = useState(false)
@@ -766,10 +768,11 @@ export function ApplicationDetailsContent({
             {activeTab === 'company' && <CompanySection application={application} editMode={editMode} />}
             {activeTab === 'contacts' && <ContactsSection application={application} editMode={editMode} />}
             {activeTab === 'plants' && <PlantsSection application={application} editMode={editMode} />}
-            {activeTab === 'products' && <ProductsTable application={application} />}
+            {activeTab === 'products' && <ProductsTable application={application} dataSource={dataSource} />}
             {activeTab === 'ingredients' && (
               <IngredientMgmt
                 application={application}
+                dataSource={dataSource}
                 showRecentOnly={showRecentOnly}
                 setShowRecentOnly={setShowRecentOnly}
               />

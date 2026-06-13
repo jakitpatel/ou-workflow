@@ -3,7 +3,24 @@ import type { ApplicationDetail } from "@/types/application";
 import { Package, Pencil, Trash2, Plus } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 
-export default function ProductsTable({ application }: { application: ApplicationDetail }) {
+type ProductRow = {
+  id?: string
+  source?: string
+  labelName?: string
+  brandName?: string
+  labelCompany?: string
+  ConsumerIndustrial?: string
+  bulkShipped?: boolean
+  certification?: string
+  status?: string
+}
+
+type Props = {
+  application: ApplicationDetail
+  dataSource?: 'application' | 'prelim'
+}
+
+export default function ProductsTable({ application, dataSource = 'application' }: Props) {
   const { role, roles } = useUser();
   
   const userRoles =
@@ -14,7 +31,14 @@ export default function ProductsTable({ application }: { application: Applicatio
       : [];
   
   const canEditProducts = userRoles.includes("product_role");
-  const productData = application.products || [];
+  const productData: ProductRow[] =
+    dataSource === 'prelim'
+      ? (
+          application.products?.length
+            ? (application.products as ProductRow[])
+            : application.preferences?.prelimPlantsRaw?.flatMap((plant: any) => plant.products ?? [])
+        ) || []
+      : (application.products as ProductRow[]) || [];
   const filteredProducts = productData;
 
   // Calculate statistics
@@ -170,7 +194,7 @@ export default function ProductsTable({ application }: { application: Applicatio
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => onDeleteProduct(product.id)}
+                            onClick={() => product.id && onDeleteProduct(product.id)}
                             className="text-red-600 hover:text-red-800 transition-colors p-1 hover:bg-red-50 rounded"
                             title="Delete Product"
                           >

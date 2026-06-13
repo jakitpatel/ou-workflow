@@ -1,15 +1,38 @@
 import type { ApplicationDetail } from "@/types/application";
 
+type IngredientRow = {
+  status?: string
+  ncrcId?: string
+  ingredient?: string
+  manufacturer?: string
+  brand?: string
+  packaging?: string
+  certification?: string
+  addedDate?: string
+  addedBy?: string
+}
+
+type Props = {
+  application: ApplicationDetail
+  dataSource?: 'application' | 'prelim'
+  showRecentOnly: boolean
+  setShowRecentOnly: (value: boolean) => void
+}
+
 export default function IngredientMgmt({ 
   application, 
+  dataSource = 'application',
   showRecentOnly, 
   setShowRecentOnly 
-}: { 
-  application: ApplicationDetail, 
-  showRecentOnly: boolean, 
-  setShowRecentOnly: (value: boolean) => void 
-}) {
-  const ingredientData = application.ingredients || [];
+}: Props) {
+  const ingredientData: IngredientRow[] =
+    dataSource === 'prelim'
+      ? (
+          application.ingredients?.length
+            ? (application.ingredients as IngredientRow[])
+            : application.preferences?.prelimPlantsRaw?.flatMap((plant: any) => plant.ingredients ?? [])
+        ) || []
+      : (application.ingredients as IngredientRow[]) || [];
   const filteredIngredients = showRecentOnly 
     ? ingredientData.filter(i => i.status === 'Recent') 
     : ingredientData;

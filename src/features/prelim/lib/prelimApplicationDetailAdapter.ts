@@ -44,6 +44,33 @@ type PrelimPlant = {
   ingredients?: any[]
 }
 
+type PrelimProduct = {
+  SubmissionProductId?: number
+  JotFormProductId?: number
+  productName?: string
+  BrandName?: string
+  inHouse?: boolean
+  privateLabel?: boolean
+  privateLabelCo?: string
+  Industrial?: boolean
+  Retail?: boolean
+  status?: string
+  plantStatus?: string
+}
+
+type PrelimIngredient = {
+  SubmissionIngredientId?: number
+  JotFormIngredientId?: number
+  UKDID?: string
+  rawMaterialCode?: string
+  ingredientLabelName?: string
+  manufacturer?: string
+  brandName?: string
+  packagedOrBulk?: string
+  certifyingAgency?: string
+  plantStatus?: string
+}
+
 type PrelimApplicationDetail = {
   OUCertified?: boolean
   companyAdresses?: PrelimCompanyAddress[]
@@ -135,6 +162,50 @@ const mapFiles = (detail: PrelimApplicationDetail): UploadedFile[] => {
   }))
 }
 
+const mapPrelimProducts = (plants: PrelimPlant[], companyName?: string) =>
+  plants.flatMap((plant) =>
+    (plant.products ?? []).map((product: PrelimProduct, index: number) => ({
+      ...product,
+      id: String(product.SubmissionProductId ?? product.JotFormProductId ?? `${plant.PlantId ?? plant.plantNumber ?? 'plant'}-${index}`),
+      source: 'Form Data',
+      labelName: product.productName ?? product.BrandName ?? '',
+      brandName: product.BrandName ?? '',
+      labelCompany: product.privateLabel ? product.privateLabelCo ?? companyName ?? '' : companyName ?? '',
+      ConsumerIndustrial:
+        product.Industrial && product.Retail
+          ? 'Consumer / Industrial'
+          : product.Industrial
+            ? 'Industrial'
+            : 'Consumer',
+      bulkShipped: false,
+      certification: 'Pending Review',
+      status: product.status ?? product.plantStatus ?? 'Pending',
+      plantName: plant.plantName ?? '',
+    })),
+  )
+
+const mapPrelimIngredients = (plants: PrelimPlant[], submissionDate?: string) =>
+  plants.flatMap((plant) =>
+    (plant.ingredients ?? []).map((ingredient: PrelimIngredient, index: number) => ({
+      ...ingredient,
+      id: String(
+        ingredient.SubmissionIngredientId ??
+          ingredient.JotFormIngredientId ??
+          `${plant.PlantId ?? plant.plantNumber ?? 'plant'}-${index}`,
+      ),
+      status: ingredient.plantStatus ?? 'Submitted',
+      ncrcId: ingredient.UKDID ?? '',
+      ingredient: ingredient.ingredientLabelName ?? '',
+      manufacturer: ingredient.manufacturer ?? '',
+      brand: ingredient.brandName ?? '',
+      packaging: (ingredient.packagedOrBulk ?? '').toLowerCase(),
+      certification: ingredient.certifyingAgency ?? ingredient.UKDID ?? '',
+      addedDate: submissionDate ?? '',
+      addedBy: 'Form Data',
+      plantName: plant.plantName ?? '',
+    })),
+  )
+
 export function mapPrelimApplicationDetailToApplicationDetail(
   detail: PrelimApplicationDetail,
 ): ApplicationDetail {
@@ -193,12 +264,13 @@ export function mapPrelimApplicationDetailToApplicationDetail(
       role: plant.jobTitle ?? '',
       type: 'Primary Contact',
     })),
-    products: plants.flatMap((plant) => plant.products ?? []),
-    ingredients: plants.flatMap((plant) => plant.ingredients ?? []),
+    products: mapPrelimProducts(plants, detail.companyName),
+    ingredients: mapPrelimIngredients(plants, detail.submissionDate),
     preferences: {
       plantCount: plants.length,
       companyAddress: primaryCompanyAddress,
       companyPhone: detail.companyPhone,
+      prelimPlantsRaw: plants,
     },
     files: mapFiles(detail),
     quotes: [],

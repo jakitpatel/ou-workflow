@@ -49,6 +49,7 @@ export function ApplicationDetailsDrawer({ open, applicationId, onClose }: Props
               application={data}
               mode="drawer"
               applicationId={resolvedApplicationId}
+              dataSource="application"
             />
           ) : null}
         </div>
