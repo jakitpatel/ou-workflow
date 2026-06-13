@@ -12,7 +12,7 @@ import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { useUser } from '@/context/UserContext'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
-import type { KashIngredient, ScheduleAIngredient } from '@/types/application'
+import type { ApplicationEmail, KashIngredient, ScheduleAIngredient } from '@/types/application'
 
 export type ScheduleAIngredientRow = {
   id: string
@@ -116,6 +116,44 @@ const todayLabel = () =>
   new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
 const valueText = (value: unknown) => String(value ?? '').trim()
+
+const normalizeEmailBodyText = (value: unknown) =>
+  String(value ?? '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/\u00a0/g, ' ')
+    .trim()
+
+const htmlToPlainTextWithSpacing = (value: string) =>
+  value
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p\s*>/gi, '\n\n')
+    .replace(/<\/div\s*>/gi, '\n')
+    .replace(/<\/li\s*>/gi, '\n')
+    .replace(/<li\b[^>]*>/gi, '- ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+export const getScheduleACommunicationMessageBody = (email: ApplicationEmail) => {
+  const plainTextBody =
+    normalizeEmailBodyText(email.MessageTextPlain) ||
+    normalizeEmailBodyText(email.PlainText) ||
+    normalizeEmailBodyText(email.Text)
+
+  if (plainTextBody) {
+    return plainTextBody
+  }
+
+  const htmlBody = String(email.MessageText ?? '')
+  if (!htmlBody) return ''
+
+  return htmlToPlainTextWithSpacing(htmlBody)
+}
 
 const getRecordValue = (record: Record<string, unknown>, fieldNames: string[]) =>
   fieldNames.map((fieldName) => valueText(record[fieldName])).find(Boolean) ?? ''
