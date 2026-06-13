@@ -1,5 +1,5 @@
 import type { ApplicationDetail } from "@/types/application";
-import { MapPin, User, Factory, CheckCircle, AlertCircle } from "lucide-react";
+import { MapPin, User, Factory, CheckCircle } from "lucide-react";
 
 export default function PlantsSection({ 
   application, 
