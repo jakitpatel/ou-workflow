@@ -57,6 +57,9 @@ export function NcrcDashboardContent() {
     open: boolean
     applicationId?: string | number
     applicationName?: string
+    visitId?: string | number | null
+    appVars?: ApplicantAppVars | null
+    assignedRoles?: AssignedRole[]
     taskInstanceId?: string | number
     taskName?: string
   }>({
@@ -229,6 +232,9 @@ export function NcrcDashboardContent() {
         open: true,
         applicationId: application.applicationId,
         applicationName: application.company,
+        visitId: application.visit_id ?? application.visitId ?? application.appvars?.visit_id ?? null,
+        appVars: application.appvars ?? null,
+        assignedRoles: application.assignedRoles,
         taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
         taskName: action.name,
       })
@@ -455,6 +461,9 @@ export function NcrcDashboardContent() {
         open={scheduleBDrawerState.open}
         applicationId={scheduleBDrawerState.applicationId}
         applicationName={scheduleBDrawerState.applicationName}
+        visitId={scheduleBDrawerState.visitId}
+        appVars={scheduleBDrawerState.appVars}
+        assignedRoles={scheduleBDrawerState.assignedRoles}
         taskInstanceId={scheduleBDrawerState.taskInstanceId}
         taskName={scheduleBDrawerState.taskName}
         onClose={() => setScheduleBDrawerState({ open: false })}

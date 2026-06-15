@@ -10,6 +10,7 @@ import {
 } from '@/features/applications/api'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { useUser } from '@/context/UserContext'
+import { executeRequest, parseErrorBody, resolveApiBaseUrl } from '@/shared/api/httpClient'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import type { ApplicationEmail, KashProduct, ScheduleBProduct } from '@/types/application'
@@ -159,6 +160,124 @@ const todayLabel = () =>
   new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
 const valueText = (value: unknown) => String(value ?? '').trim()
+
+const buildS3HttpUrl = (value: string) => {
+  const match = value.match(/^s3:\/\/([^/]+)\/(.+)$/i)
+  if (!match) return ''
+
+  const [, bucket, key] = match
+  const encodedKey = key
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/')
+
+  return `https://${bucket}.s3.amazonaws.com/${encodedKey}`
+}
+
+export const resolveScheduleBDocumentUrl = (value?: string | null) => {
+  const trimmed = valueText(value)
+  if (!trimmed) return ''
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  if (/^s3:\/\//i.test(trimmed)) return buildS3HttpUrl(trimmed)
+
+  const publicPath = trimmed.replace(/^\/+/, '')
+  return `/${publicPath}`
+}
+
+const buildWorkflowFileBaseUrl = () => resolveApiBaseUrl().replace(/\/api\/?$/i, '')
+
+export async function fetchScheduleBEirDocumentBlob({
+  wfFileId,
+  token,
+  download = false,
+}: {
+  wfFileId: string | number
+  token?: string | null
+  download?: boolean
+}): Promise<Blob> {
+  const normalizedWfFileId = valueText(wfFileId)
+  if (!normalizedWfFileId) {
+    throw new Error('Workflow file id is required.')
+  }
+
+  const endpoint = download ? 'download_file' : 'file'
+  const url = `${buildWorkflowFileBaseUrl()}/${endpoint}/${encodeURIComponent(normalizedWfFileId)}`
+  const requestHeaders: Record<string, string> = {}
+
+  if (token) {
+    requestHeaders.Authorization = `Bearer ${token}`
+  }
+
+  const response = await executeRequest(
+    url,
+    {
+      method: 'GET',
+      headers: requestHeaders,
+    },
+    token,
+  )
+
+  if (!response.ok) {
+    const errorBody = await parseErrorBody(response)
+    const message =
+      (errorBody as { message?: string; error?: string } | null)?.message ??
+      (errorBody as { message?: string; error?: string } | null)?.error ??
+      `Request failed: ${response.status} ${response.statusText}`
+
+    throw new Error(message)
+  }
+
+  return await response.blob()
+}
+
+export function useScheduleBEirDocument({
+  wfFileId,
+  enabled = true,
+}: {
+  wfFileId?: string | number | null
+  enabled?: boolean
+}) {
+  const { token } = useUser()
+  const normalizedWfFileId =
+    wfFileId === undefined || wfFileId === null ? undefined : valueText(wfFileId)
+  const [objectUrl, setObjectUrl] = useState('')
+
+  const query = useQuery({
+    queryKey: ['schedule-b-eir-document', normalizedWfFileId],
+    queryFn: () =>
+      fetchScheduleBEirDocumentBlob({
+        wfFileId: normalizedWfFileId ?? '',
+        token: token ?? undefined,
+      }),
+    enabled: Boolean(enabled && normalizedWfFileId),
+    ...queryOptionDefaults.applicationScheduleBProducts,
+  })
+
+  useEffect(() => {
+    if (!query.data) {
+      setObjectUrl((current) => {
+        if (current) URL.revokeObjectURL(current)
+        return ''
+      })
+      return
+    }
+
+    const nextObjectUrl = URL.createObjectURL(query.data)
+    setObjectUrl((current) => {
+      if (current) URL.revokeObjectURL(current)
+      return nextObjectUrl
+    })
+
+    return () => {
+      URL.revokeObjectURL(nextObjectUrl)
+    }
+  }, [query.data])
+
+  return {
+    ...query,
+    objectUrl,
+  }
+}
 
 const normalizeEmailBodyText = (value: unknown) =>
   String(value ?? '')

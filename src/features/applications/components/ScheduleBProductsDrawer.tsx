@@ -24,9 +24,11 @@ import { ApplicationDetailsDrawer } from '@/features/applications/components/App
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import {
   CANNED_NOTES,
+  fetchScheduleBEirDocumentBlob,
   getScheduleBCommunicationMessageBody,
   mapApplicationProductRow,
   mapKashProductRow,
+  resolveScheduleBDocumentUrl,
   type ScheduleBProductFilter,
   type ScheduleBProductRow,
   type ScheduleBProductSortKey,
@@ -35,18 +37,20 @@ import {
   getAssignedRoleValue,
   useCreateScheduleBProduct,
   useScheduleBCommunicationMessages,
+  useScheduleBEirDocument,
   useScheduleBProducts,
   useScheduleBScratchpad,
   useSendScheduleBCommunicationEmail,
 } from '@/features/applications/hooks/useScheduleBProducts'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
-import type { ApplicationEmail, AssignedRole } from '@/types/application'
+import type { ApplicantAppVars, ApplicationEmail, AssignedRole } from '@/types/application'
 
 type Props = {
   open: boolean
   applicationId?: string | number
   applicationName?: string
   visitId?: string | number | null
+  appVars?: ApplicantAppVars | null
   assignedRoles?: AssignedRole[]
   taskInstanceId?: string | number | null
   taskName?: string
@@ -73,7 +77,6 @@ const EMPTY_ADD_ROW_DRAFT: ScheduleBProductDraft = {
   artwork: '',
 }
 
-const EIR_DOCUMENT_FILENAME = 'PIINSPECTN_14056484_Initial_Inspection_Aloha_Medicinals_001.pdf'
 const EIR_PREVIEW_HTML = `<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827}.page{max-width:760px;margin:28px auto;background:white;min-height:920px;box-shadow:0 12px 30px rgba(15,23,42,.14);padding:52px}.meta{color:#6b7280;font-size:12px}.title{font-size:20px;font-weight:700;text-align:center;margin:18px 0 28px}.section{border-top:1px solid #d1d5db;padding-top:16px;margin-top:20px}.h{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#374151}.p{font-size:13px;line-height:1.55;color:#374151}.stamp{display:inline-block;border:1px solid #f59e0b;background:#fffbeb;color:#92400e;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:700}</style></head><body><div class="page"><p class="meta">OU Direct - Visit ID 14056484 - Apr 10, 2026</p><div class="title">Initial Inspection Report</div><p class="stamp">Sample EIR for demonstration</p><div class="section"><p class="h">Facility observations</p><p class="p">Line 1 was clean and no non-kosher equipment was observed. Dairy products are stored in a designated separate area.</p></div><div class="section"><p class="h">Product observations</p><p class="p">Palm Shortening, Rosemary Extract, and an unlabeled Dough Conditioner were observed on-site and were not present on the original Schedule B submission.</p></div><div class="section"><p class="h">Follow-up required</p><p class="p">Confirm LOCs and supplier details for missing or unclear products before Schedule B can proceed.</p></div></div></body></html>`
 
 const EIR_AI_FINDINGS = [
@@ -105,6 +108,27 @@ const EIR_AI_RECOMMENDATIONS = [
 ]
 
 const textValue = (value: unknown) => String(value ?? '').trim()
+
+const formatDisplayDate = (value?: string | null) => {
+  if (!value) return ''
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
+  return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+const getDocumentFilename = (value?: string | null) => {
+  const trimmed = textValue(value)
+  if (!trimmed) return 'Inspection report'
+  const normalized = trimmed.replace(/\\/g, '/')
+  return normalized.split('/').pop() || 'Inspection report'
+}
+
+const isPreviewableDocument = (value?: string | null) => {
+  const filename = getDocumentFilename(value).toLowerCase()
+  return ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.txt', '.html', '.htm'].some((extension) =>
+    filename.endsWith(extension),
+  )
+}
 
 type ScheduleBRoundMessageCard = {
   email: ApplicationEmail
@@ -549,6 +573,7 @@ export function ScheduleBProductsDrawer({
   applicationId,
   applicationName,
   visitId,
+  appVars,
   assignedRoles,
   taskInstanceId,
   taskName,
@@ -569,6 +594,7 @@ export function ScheduleBProductsDrawer({
   const [sendError, setSendError] = useState('')
   const [sentMessage, setSentMessage] = useState('')
   const [eirAiOpen, setEirAiOpen] = useState(true)
+  const [isEirDownloadPending, setIsEirDownloadPending] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [importText, setImportText] = useState('')
   const [importFilename, setImportFilename] = useState('')
@@ -592,7 +618,17 @@ export function ScheduleBProductsDrawer({
   const { scratchpad, buildScheduleBExportRows } = scratchpadApi
   const assignedRfr = useMemo(() => getAssignedRoleValue(assignedRoles, 'RFR'), [assignedRoles])
   const eirSubmitterLabel = assignedRfr === 'Not yet Assigned' ? 'the assigned RFR' : assignedRfr
-  const visitIdLabel = textValue(visitId)
+  const visitIdLabel = textValue(visitId ?? appVars?.visit_id)
+  const actualVisitDate = formatDisplayDate(appVars?.actual_visit_date)
+  const eirWorkflowFileId = textValue(appVars?.wf_file_id)
+  const eirDisplayName = textValue(appVars?.filename) || getDocumentFilename(appVars?.rfr_file_url)
+  const eirDocumentPath = textValue(appVars?.rfr_file_url)
+  const eirDocumentUrl = resolveScheduleBDocumentUrl(appVars?.rfr_file_url)
+  const eirDocumentFilename = eirDisplayName
+  const canPreviewEirDocument = isPreviewableDocument(appVars?.rfr_file_url)
+  const hasWorkflowEirDocument = Boolean(eirWorkflowFileId && eirDisplayName)
+  const effectiveEirNotRequired = scratchpad.eirNotRequired && !hasWorkflowEirDocument
+  const effectiveEirReceived = hasWorkflowEirDocument || scratchpad.eirReceived
   const sendRoundEmailMutation = useSendScheduleBCommunicationEmail()
   const {
     data: backendRoundEmails = [],
@@ -602,6 +638,14 @@ export function ScheduleBProductsDrawer({
   } = useScheduleBCommunicationMessages({
     applicationId: open ? resolvedApplicationId : undefined,
     taskInstanceId,
+  })
+  const {
+    objectUrl: eirViewerUrl,
+    isLoading: isEirViewerLoading,
+    error: eirViewerError,
+  } = useScheduleBEirDocument({
+    wfFileId: hasWorkflowEirDocument ? eirWorkflowFileId : undefined,
+    enabled: open && activeTab === 'eir' && hasWorkflowEirDocument,
   })
 
   const contact = useMemo(
@@ -910,14 +954,81 @@ export function ScheduleBProductsDrawer({
   }
 
   const downloadEirDocument = () => {
-    downloadTextFile(EIR_DOCUMENT_FILENAME.replace(/\.pdf$/i, '.html'), EIR_PREVIEW_HTML, 'text/html;charset=utf-8;')
+    if (hasWorkflowEirDocument) {
+      setIsEirDownloadPending(true)
+      void (async () => {
+        try {
+          const blob = await fetchScheduleBEirDocumentBlob({
+            wfFileId: eirWorkflowFileId,
+            token: token ?? undefined,
+            download: true,
+          })
+          const href = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = href
+          link.download = eirDocumentFilename
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          window.setTimeout(() => URL.revokeObjectURL(href), 1000)
+        } catch (downloadError) {
+          toast.error(downloadError instanceof Error ? downloadError.message : 'Failed to download EIR document.')
+        } finally {
+          setIsEirDownloadPending(false)
+        }
+      })()
+      return
+    }
+
+    if (eirDocumentUrl) {
+      const link = document.createElement('a')
+      link.href = eirDocumentUrl
+      link.download = eirDocumentFilename
+      link.target = '_blank'
+      link.rel = 'noopener noreferrer'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      return
+    }
+
+    downloadTextFile(`${eirDocumentFilename}.html`, EIR_PREVIEW_HTML, 'text/html;charset=utf-8;')
   }
 
   const openEirDocument = () => {
+    if (hasWorkflowEirDocument) {
+      if (eirViewerUrl) {
+        window.open(eirViewerUrl, '_blank', 'noopener,noreferrer')
+      } else if (isEirViewerLoading) {
+        toast.message('Loading EIR document...')
+      } else if (eirViewerError) {
+        toast.error(eirViewerError instanceof Error ? eirViewerError.message : 'Failed to load EIR document.')
+      }
+      return
+    }
+
+    if (eirDocumentUrl) {
+      window.open(eirDocumentUrl, '_blank', 'noopener,noreferrer')
+      return
+    }
+
     const blob = new Blob([EIR_PREVIEW_HTML], { type: 'text/html;charset=utf-8;' })
     const href = URL.createObjectURL(blob)
     window.open(href, '_blank', 'noopener,noreferrer')
     window.setTimeout(() => URL.revokeObjectURL(href), 1000)
+  }
+
+  const handleSimulateEirReceived = () => {
+    scratchpadApi.markEirReceived()
+
+    if (eirDocumentUrl) {
+      window.open(eirDocumentUrl, '_blank', 'noopener,noreferrer')
+      return
+    }
+
+    if (eirDocumentPath) {
+      toast.warning('RFR file path is available, but it could not be converted into a browser-openable URL.')
+    }
   }
 
   const markScheduleBReady = async () => {
@@ -1559,14 +1670,14 @@ export function ScheduleBProductsDrawer({
                   <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
                     <h2 className="mb-4 text-2xl font-semibold text-gray-900">Inspection Report (EIR)</h2>
 
-                    {!scratchpad.eirReceived && !scratchpad.eirNotRequired ? (
+                    {!effectiveEirReceived && !effectiveEirNotRequired ? (
                       <div className="mb-6 flex items-center gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3">
                         <AlertCircle className="h-5 w-5 shrink-0 text-red-500" />
                         <p className="text-sm font-semibold text-red-800">Awaiting EIR Submission - NCRC will be notified on receipt to review and forward to the IA Manager</p>
                       </div>
                     ) : null}
 
-                    {scratchpad.eirNotRequired ? (
+                    {effectiveEirNotRequired ? (
                       <div className="mb-6 flex items-center gap-3 rounded-lg border border-gray-300 bg-gray-50 px-4 py-3">
                         <FileText className="h-5 w-5 shrink-0 text-gray-500" />
                         <p className="text-sm font-semibold text-gray-800">EIR marked not required for this application.</p>
@@ -1578,15 +1689,15 @@ export function ScheduleBProductsDrawer({
                         <div className="flex items-center justify-between border-b border-gray-100 py-2">
                           <span className="text-sm font-medium text-gray-600">Inspection Status</span>
                           <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
-                            scratchpad.eirNotRequired
+                            effectiveEirNotRequired
                               ? 'border-gray-200 bg-gray-100 text-gray-700'
                               : scratchpad.eirReviewComplete
                                 ? 'border-green-200 bg-green-100 text-green-800'
-                                : scratchpad.eirReceived
+                                : effectiveEirReceived
                                   ? 'border-blue-200 bg-blue-100 text-blue-800'
                                   : 'border-yellow-200 bg-yellow-100 text-yellow-800'
                           }`}>
-                            {scratchpad.eirNotRequired ? 'Not Required' : scratchpad.eirReviewComplete ? 'Review Complete' : scratchpad.eirReceived ? 'Report Received' : 'Awaiting Report'}
+                            {effectiveEirNotRequired ? 'Not Required' : scratchpad.eirReviewComplete ? 'Review Complete' : effectiveEirReceived ? 'Report Received' : 'Awaiting Report'}
                           </span>
                         </div>
                         <div className="flex items-center justify-between border-b border-gray-100 py-2">
@@ -1599,27 +1710,38 @@ export function ScheduleBProductsDrawer({
                         </div>
                         <div className="flex items-center justify-between border-b border-gray-100 py-2">
                           <span className="text-sm font-medium text-gray-600">Inspection Date</span>
-                          <span className="text-sm font-semibold text-gray-900">Apr 10, 2026</span>
+                          <span className="text-sm font-semibold text-gray-900">{actualVisitDate || '-'}</span>
                         </div>
-                        <div className="flex items-center justify-between py-2">
+                        <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-2">
+                          <span className="text-sm font-medium text-gray-600">Reported Actual Visit Date</span>
+                          <span className="text-right text-sm font-semibold text-gray-900">{actualVisitDate || '-'}</span>
+                        </div>
+                        <div className="flex items-start justify-between gap-4 py-2">
+                          <span className="text-sm font-medium text-gray-600">RFR File URL (Name)</span>
+                          <span className="max-w-[26rem] break-all text-right text-xs font-medium text-gray-700">
+                            {eirDisplayName || '-'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-gray-100 py-2">
                           <span className="text-sm font-medium text-gray-600">Days Since Visit</span>
-                          <span className={scratchpad.eirReceived || scratchpad.eirNotRequired ? 'text-sm font-semibold text-gray-900' : 'text-sm font-semibold text-red-600'}>
-                            {scratchpad.eirReceived || scratchpad.eirNotRequired ? 'Report accounted for' : '6 days - overdue'}
+                          <span className={effectiveEirReceived || effectiveEirNotRequired ? 'text-sm font-semibold text-gray-900' : 'text-sm font-semibold text-red-600'}>
+                            {effectiveEirReceived || effectiveEirNotRequired ? 'Report accounted for' : '6 days - overdue'}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {scratchpad.eirReceived ? (
+                    {effectiveEirReceived ? (
                       <div>
                         <div className="flex flex-wrap items-center justify-between gap-2 rounded-t-lg border border-gray-200 bg-gray-50 px-4 py-3">
                           <div className="flex items-start gap-3">
                             <FileText className="mt-0.5 h-8 w-8 shrink-0 text-red-400" strokeWidth={1.5} />
                             <div>
-                              <p className="text-sm font-medium text-gray-900">{EIR_DOCUMENT_FILENAME}</p>
-                              <p className="mt-0.5 text-xs text-gray-500">
-                                446 KB - Submitted via OU Direct - <span className="font-medium text-amber-700">Sample EIR for demonstration - actual submitted report would appear here</span>
-                              </p>
+                              <p className="text-sm font-medium text-gray-900">{eirDocumentFilename}</p>
+                              <p className="mt-0.5 text-xs text-gray-500">Submitted via OU Direct</p>
+                              {eirDocumentPath ? (
+                                <p className="mt-1 break-all text-[11px] text-gray-500">{eirDocumentPath}</p>
+                              ) : null}
                             </div>
                           </div>
                           <div className="flex shrink-0 items-center gap-2">
@@ -1627,13 +1749,43 @@ export function ScheduleBProductsDrawer({
                               <ExternalLink className="h-3.5 w-3.5" />
                               Open in new tab
                             </button>
-                            <button type="button" onClick={downloadEirDocument} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700">
+                            <button type="button" onClick={downloadEirDocument} disabled={isEirDownloadPending} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300">
                               <Download className="h-3.5 w-3.5" />
-                              Download
+                              {isEirDownloadPending ? 'Downloading...' : 'Download'}
                             </button>
                           </div>
                         </div>
-                        <iframe title="EIR PDF" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100" srcDoc={EIR_PREVIEW_HTML} />
+                        {hasWorkflowEirDocument ? (
+                          isEirViewerLoading ? (
+                            <div className="rounded-b-lg border-x border-b border-gray-200 bg-gray-50 p-8 text-center">
+                              <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
+                              <p className="text-sm text-gray-600">Loading EIR document...</p>
+                            </div>
+                          ) : eirViewerError ? (
+                            <div className="rounded-b-lg border-x border-b border-gray-200 bg-red-50 p-8 text-center">
+                              <AlertCircle className="mx-auto mb-3 h-12 w-12 text-red-300" strokeWidth={1.5} />
+                              <p className="text-sm text-red-700">
+                                {eirViewerError instanceof Error ? eirViewerError.message : 'Failed to load EIR document.'}
+                              </p>
+                            </div>
+                          ) : eirViewerUrl ? (
+                            <iframe title="EIR document" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100" src={eirViewerUrl} />
+                          ) : (
+                            <div className="rounded-b-lg border-x border-b border-gray-200 bg-gray-50 p-8 text-center">
+                              <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
+                              <p className="text-sm text-gray-600">EIR document is not ready to preview yet.</p>
+                            </div>
+                          )
+                        ) : eirDocumentUrl && canPreviewEirDocument ? (
+                          <iframe title="EIR document" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100" src={eirDocumentUrl} />
+                        ) : eirDocumentUrl ? (
+                          <div className="rounded-b-lg border-x border-b border-gray-200 bg-gray-50 p-8 text-center">
+                            <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
+                            <p className="text-sm text-gray-600">This file type opens in a new tab or downloads from the RFR document link.</p>
+                          </div>
+                        ) : (
+                          <iframe title="EIR preview" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100" srcDoc={EIR_PREVIEW_HTML} />
+                        )}
                       </div>
                     ) : (
                       <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
@@ -1642,7 +1794,7 @@ export function ScheduleBProductsDrawer({
                       </div>
                     )}
 
-                    {scratchpad.eirReceived ? (
+                    {effectiveEirReceived ? (
                       <div className="mt-5 overflow-hidden rounded-lg border border-violet-200 bg-violet-50/60">
                         <div className="flex items-center justify-between border-b border-violet-200 bg-violet-100/70 px-4 py-2.5">
                           <div className="flex flex-wrap items-center gap-2">
@@ -1717,7 +1869,7 @@ export function ScheduleBProductsDrawer({
                       </div>
                     ) : null}
 
-                    {scratchpad.eirReceived && !scratchpad.eirReviewComplete ? (
+                    {effectiveEirReceived && !scratchpad.eirReviewComplete ? (
                       <div className="mt-5 rounded-lg border border-purple-200 bg-purple-50 p-4">
                         <div className="mb-2 flex items-center gap-2">
                           <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-purple-300 text-[10px] font-semibold text-purple-600">IA</span>
@@ -1738,17 +1890,17 @@ export function ScheduleBProductsDrawer({
                     ) : null}
 
                     <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
-                      {!scratchpad.eirReceived && !scratchpad.eirNotRequired ? (
-                        <button type="button" onClick={scratchpadApi.markEirReceived} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                      {!effectiveEirReceived && !effectiveEirNotRequired ? (
+                        <button type="button" onClick={handleSimulateEirReceived} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
                           Simulate EIR received
                         </button>
                       ) : null}
-                      {!scratchpad.eirReceived ? (
+                      {!effectiveEirReceived ? (
                         <button type="button" onClick={scratchpadApi.markEirNotRequired} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
                           Mark EIR not required
                         </button>
                       ) : null}
-                      {scratchpad.eirNotRequired ? (
+                      {effectiveEirNotRequired ? (
                         <button type="button" onClick={scratchpadApi.clearEirNotRequired} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
                           Clear not required
                         </button>
