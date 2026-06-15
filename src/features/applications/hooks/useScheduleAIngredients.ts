@@ -117,6 +117,29 @@ const todayLabel = () =>
 
 const valueText = (value: unknown) => String(value ?? '').trim()
 
+const buildS3HttpUrl = (value: string) => {
+  const match = value.match(/^s3:\/\/([^/]+)\/(.+)$/i)
+  if (!match) return ''
+
+  const [, bucket, key] = match
+  const encodedKey = key
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/')
+
+  return `https://${bucket}.s3.amazonaws.com/${encodedKey}`
+}
+
+export const resolveScheduleADocumentUrl = (value?: string | null) => {
+  const trimmed = valueText(value)
+  if (!trimmed) return ''
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  if (/^s3:\/\//i.test(trimmed)) return buildS3HttpUrl(trimmed)
+
+  const publicPath = trimmed.replace(/^\/+/, '')
+  return `/${publicPath}`
+}
+
 const normalizeEmailBodyText = (value: unknown) =>
   String(value ?? '')
     .replace(/\r\n/g, '\n')

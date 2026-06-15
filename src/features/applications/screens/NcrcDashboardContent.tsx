@@ -17,7 +17,7 @@ import { useTaskActions } from '@/features/tasks/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { Route } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
-import type { Applicant, AssignedRole, Task } from '@/types/application'
+import type { Applicant, ApplicantAppVars, AssignedRole, Task } from '@/types/application'
 import type { NoteTab, TaskNotesDrawerTabConfig } from '@/features/tasks/notes/TaskNotesDrawer'
 
 const SHOW_APPLICANT_STATS_CARDS = false
@@ -46,6 +46,7 @@ export function NcrcDashboardContent() {
     applicationId?: string | number
     applicationName?: string
     visitId?: string | number | null
+    appVars?: ApplicantAppVars | null
     assignedRoles?: AssignedRole[]
     taskInstanceId?: string | number
     taskName?: string
@@ -214,7 +215,8 @@ export function NcrcDashboardContent() {
         open: true,
         applicationId: application.applicationId,
         applicationName: application.company,
-        visitId: application.visit_id ?? application.visitId ?? null,
+        visitId: application.visit_id ?? application.visitId ?? application.appvars?.visit_id ?? null,
+        appVars: application.appvars ?? null,
         assignedRoles: application.assignedRoles,
         taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
         taskName: action.name,
@@ -443,6 +445,7 @@ export function NcrcDashboardContent() {
         applicationId={scheduleADrawerState.applicationId}
         applicationName={scheduleADrawerState.applicationName}
         visitId={scheduleADrawerState.visitId}
+        appVars={scheduleADrawerState.appVars}
         assignedRoles={scheduleADrawerState.assignedRoles}
         taskInstanceId={scheduleADrawerState.taskInstanceId}
         taskName={scheduleADrawerState.taskName}

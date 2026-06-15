@@ -295,6 +295,13 @@ export type Stage = {
 };
 export type AssignedRole = Record<string, string | boolean | null | undefined>;
 
+export type ApplicantAppVars = {
+  visit_id?: number | string | null;
+  rfr_file_url?: string | null;
+  actual_visit_date?: string | null;
+  wf_file_id?: number | string | null;
+};
+
 type ResolvedCompany = {
   companyName?: string
   Id?: string
@@ -325,6 +332,7 @@ export type Applicant = {
   applicationId: number;
   visit_id?: number | string | null;
   visitId?: number | string | null;
+  appvars?: ApplicantAppVars | null;
   companyId?: number;
   company: string;
   plantId?: number;

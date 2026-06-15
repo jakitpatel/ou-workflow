@@ -12,12 +12,28 @@ export type BackendApplicant = Omit<Applicant, 'stages'> & {
   plantName?: string
   visit_id?: number | string | null
   visitId?: number | string | null
+  appvars?: Applicant['appvars']
+  GlobalData?: string | null
 } & Partial<Applicant>
 
 export type BackendApplicantsResponse = {
   data?: BackendApplicant[]
   meta?: Partial<ApplicantsResponse['meta']>
   status?: ApplicantsResponse['status']
+}
+
+function extractAppVars(applicant: BackendApplicant): Applicant['appvars'] {
+  if (applicant.appvars) return applicant.appvars
+
+  const globalDataText = String(applicant.GlobalData ?? '').trim()
+  if (!globalDataText) return null
+
+  try {
+    const parsed = JSON.parse(globalDataText) as { appvars?: Applicant['appvars'] | null }
+    return parsed.appvars ?? null
+  } catch {
+    return null
+  }
 }
 
 export function mapApplicantsResponse(
@@ -27,12 +43,14 @@ export function mapApplicantsResponse(
     const normalizedStages = Object.fromEntries(
       Object.entries(applicant.stages ?? {}).map(([key, value]) => [key.toLowerCase(), value]),
     ) as Record<string, Stage>
+    const appvars = extractAppVars(applicant)
 
     return {
       ...(applicant as Partial<Applicant>),
       id: applicant.id ?? applicant.applicationId ?? 0,
       applicationId: applicant.applicationId ?? applicant.id ?? 0,
-      visit_id: applicant.visit_id ?? applicant.visitId ?? null,
+      visit_id: applicant.visit_id ?? applicant.visitId ?? appvars?.visit_id ?? null,
+      appvars,
       company: applicant.company ?? applicant.companyName ?? '',
       plant: applicant.plant ?? applicant.plantName ?? '',
       region: applicant.region ?? '',
