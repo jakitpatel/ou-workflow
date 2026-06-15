@@ -300,6 +300,7 @@ export type ApplicantAppVars = {
   rfr_file_url?: string | null;
   actual_visit_date?: string | null;
   wf_file_id?: number | string | null;
+  filename?: string | null;
 };
 
 type ResolvedCompany = {
