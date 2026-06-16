@@ -33,6 +33,7 @@ import IngredientMgmt from '@/components/ou-workflow/ApplicationManagement/Ingre
 import RawApplicationPanel from '@/components/ou-workflow/ApplicationManagement/RawApplicationPanel'
 import QuoteInfo from '@/components/ou-workflow/ApplicationManagement/QuoteInfo'
 import TaskEventsPanel from '@/components/ou-workflow/ApplicationManagement/TaskEventsPanel'
+import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer'
 import type { ApplicationDetail, ApplicationEmail } from '@/types/application'
 
 type CompletionStatus = 'incomplete' | 'complete' | 'dispatched'
@@ -108,6 +109,8 @@ const TABS = [
   { id: 'files', label: 'File Management', icon: Upload },
   { id: 'notes', label: 'Messages', icon: MessageSquare },
 ] as const
+
+const SCHEDULE_A_TAB = { id: 'schedule-a', label: 'Schedule A', icon: ClipboardList } as const
 
 const STATUS_BADGES: Record<string, string> = {
   'Not Started': 'bg-gray-100 text-gray-800',
@@ -541,6 +544,10 @@ export function ApplicationDetailsContent({
     dataSource === 'prelim'
       ? 'Intake Application Review & Management'
       : 'Application Review & Management'
+  const tabs = useMemo(
+    () => (dataSource === 'application' ? [...TABS.slice(0, 6), SCHEDULE_A_TAB, ...TABS.slice(6)] : TABS),
+    [dataSource],
+  )
   const applicationNotes = useTaskNotesDrawerState({
     applicationId: resolvedApplicationId,
   })
@@ -748,7 +755,7 @@ export function ApplicationDetailsContent({
       <div className={mode === 'page' ? 'mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8' : 'min-h-0 flex-1 p-3'}>
         <div className={mode === 'page' ? 'flex' : 'flex h-full min-h-0'}>
           <nav className={mode === 'page' ? 'mr-8 w-64 space-y-1' : 'mr-3 w-48 shrink-0 space-y-1 overflow-y-auto pr-1'}>
-            {TABS.map(tab => {
+            {tabs.map(tab => {
               const Icon = tab.icon
               return (
                 <button
@@ -782,6 +789,24 @@ export function ApplicationDetailsContent({
                 showRecentOnly={showRecentOnly}
                 setShowRecentOnly={setShowRecentOnly}
               />
+            )}
+            {dataSource === 'application' && activeTab === 'schedule-a' && resolvedApplicationId !== null && (
+              <ScheduleAIngredientsDrawer
+                open
+                mode="embedded"
+                readOnly
+                applicationId={resolvedApplicationId}
+                applicationName={applicationDisplayName}
+                visitId={application.visit_id ?? null}
+                appVars={application.appvars ?? null}
+                assignedRoles={application.assignedRoles}
+                onClose={() => {}}
+              />
+            )}
+            {dataSource === 'application' && activeTab === 'schedule-a' && resolvedApplicationId === null && (
+              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
+                Schedule A is unavailable because this application does not have a valid application ID.
+              </div>
             )}
             {activeTab === 'raw-application' && <RawApplicationPanel entries={application.raw_data} />}
             {activeTab === 'quote' && <QuoteInfo application={application} />}
