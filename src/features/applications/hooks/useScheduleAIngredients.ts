@@ -1047,10 +1047,6 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
     updateScratchpad((current) => ({ ...current, eirReceived: true, eirNotRequired: false }))
   }, [updateScratchpad])
 
-  const markEirNotRequired = useCallback(() => {
-    updateScratchpad((current) => ({ ...current, eirNotRequired: true, eirReceived: false, eirReviewComplete: false }))
-  }, [updateScratchpad])
-
   const clearEirNotRequired = useCallback(() => {
     updateScratchpad((current) => ({ ...current, eirNotRequired: false }))
   }, [updateScratchpad])
@@ -1126,7 +1122,6 @@ export function useScheduleAScratchpad(applicationId?: string | number) {
     resolveRoundItem,
     requestRoundFollowup,
     markEirReceived,
-    markEirNotRequired,
     clearEirNotRequired,
     markEirReviewComplete,
     requestEirIngredientEntry,

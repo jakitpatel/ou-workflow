@@ -760,19 +760,6 @@ export function ScheduleAIngredientsDrawer({
     window.setTimeout(() => URL.revokeObjectURL(href), 1000)
   }
 
-  const handleSimulateEirReceived = () => {
-    scratchpadApi.markEirReceived()
-
-    if (eirDocumentUrl) {
-      window.open(eirDocumentUrl, '_blank', 'noopener,noreferrer')
-      return
-    }
-
-    if (eirDocumentPath) {
-      toast.warning('RFR file path is available, but it could not be converted into a browser-openable URL.')
-    }
-  }
-
   const markScheduleAReady = async () => {
     if (counts.resolved < counts.all) {
       toast.warning('All application ingredients items are not resolved')
@@ -1494,16 +1481,6 @@ export function ScheduleAIngredientsDrawer({
                     ) : null}
 
                       <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
-                      {!effectiveEirReceived && !effectiveEirNotRequired ? (
-                        <button type="button" onClick={handleSimulateEirReceived} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                          Simulate EIR received
-                        </button>
-                      ) : null}
-                      {!effectiveEirReceived ? (
-                        <button type="button" onClick={scratchpadApi.markEirNotRequired} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                          Mark EIR not required
-                        </button>
-                      ) : null}
                       {effectiveEirNotRequired ? (
                         <button type="button" onClick={scratchpadApi.clearEirNotRequired} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
                           Clear not required
