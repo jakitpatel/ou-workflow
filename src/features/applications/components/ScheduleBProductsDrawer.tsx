@@ -55,6 +55,8 @@ type Props = {
   assignedRoles?: AssignedRole[]
   taskInstanceId?: string | number | null
   taskName?: string
+  mode?: 'drawer' | 'embedded'
+  readOnly?: boolean
   onClose: () => void
 }
 
@@ -550,6 +552,8 @@ export function ScheduleBProductsDrawer({
   assignedRoles,
   taskInstanceId,
   taskName,
+  mode = 'drawer',
+  readOnly = false,
   onClose,
 }: Props) {
   const [activeTab, setActiveTab] = useState<DrawerTab>('products')
@@ -574,18 +578,20 @@ export function ScheduleBProductsDrawer({
   const [isImporting, setIsImporting] = useState(false)
   const productsHeaderRef = useRef<HTMLDivElement | null>(null)
   const productsTableRef = useRef<HTMLTableElement | null>(null)
+  const isEmbedded = mode === 'embedded'
+  const isActive = isEmbedded || open
 
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const { token, username } = useUser()
-  const { data, isLoading, error } = useScheduleBProducts(open ? resolvedApplicationId : undefined)
+  const { data, isLoading, error } = useScheduleBProducts(isActive ? resolvedApplicationId : undefined)
   const createProductMutation = useCreateScheduleBProduct(resolvedApplicationId)
   const completeScheduleBTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
     includePrelimLists: true,
     onError: (message) => toast.error(message),
   })
-  const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
+  const { data: applicationDetail } = useApplicationDetail(isActive ? resolvedApplicationId : undefined)
   const scratchpadApi = useScheduleBScratchpad(resolvedApplicationId)
   const { scratchpad, buildScheduleBExportRows } = scratchpadApi
   const assignedRfr = useMemo(() => getAssignedRoleValue(assignedRoles, 'RFR'), [assignedRoles])
@@ -609,7 +615,7 @@ export function ScheduleBProductsDrawer({
     error: roundHistoryError,
     refetch: refetchRoundHistory,
   } = useScheduleBCommunicationMessages({
-    applicationId: open ? resolvedApplicationId : undefined,
+    applicationId: isActive ? resolvedApplicationId : undefined,
     taskInstanceId,
   })
   const {
@@ -620,7 +626,7 @@ export function ScheduleBProductsDrawer({
   } = useScheduleBEirDocument({
     wfFileId: hasWorkflowEirDocument ? eirWorkflowFileId : undefined,
     filename: eirDocumentFilename,
-    enabled: open && activeTab === 'eir' && hasWorkflowEirDocument,
+    enabled: isActive && activeTab === 'eir' && hasWorkflowEirDocument,
   })
 
   const contact = useMemo(
@@ -684,7 +690,7 @@ export function ScheduleBProductsDrawer({
   const noteColSpan = currentColumns.length + 2
 
   useEffect(() => {
-    if (!open || activeTab !== 'products') return
+    if (!isActive || activeTab !== 'products') return
 
     const syncStickyTableHeader = () => {
       const headerHeight = productsHeaderRef.current?.offsetHeight ?? 76
@@ -705,7 +711,7 @@ export function ScheduleBProductsDrawer({
       observer?.disconnect()
       window.removeEventListener('resize', syncStickyTableHeader)
     }
-  }, [activeTab, ingView, open])
+  }, [activeTab, ingView, isActive])
 
   const renderApplicationValue = (value: string) => value || <span className="text-red-400 text-xs italic">-</span>
 
@@ -713,7 +719,7 @@ export function ScheduleBProductsDrawer({
     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(value)}`}>{value || '-'}</span>
   )
 
-  if (!open) return null
+  if (!isActive) return null
 
   const setSort = (key: ScheduleBProductSortKey) => {
     if (sortKey === key) {
@@ -789,6 +795,7 @@ export function ScheduleBProductsDrawer({
   }
 
   const generateRound = () => {
+    if (readOnly) return
     const round = scratchpadApi.generateRound({
       rows: allRows,
       applicationName,
@@ -1003,6 +1010,7 @@ export function ScheduleBProductsDrawer({
   }
 
   const markScheduleBReady = async () => {
+    if (readOnly) return
     if (counts.resolved < counts.all) {
       toast.warning('All application products items are not resolved')
       return
@@ -1037,54 +1045,22 @@ export function ScheduleBProductsDrawer({
   const stickyTableHeaderClass =
     'sticky z-10 bg-gray-50 px-3 py-2.5 text-xs font-semibold text-gray-600 shadow-[inset_0_-1px_0_#e5e7eb]'
   const stickyTableHeaderStyle = { top: 'var(--schedule-b-ing-header-height, 76px)' }
-
-  return (
-    <>
-      <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
-        <div
-          className={`fixed right-0 top-0 flex h-full w-full max-w-[96vw] flex-col overflow-hidden bg-white shadow-2xl ${panelWidth}`}
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div className="flex items-center justify-between border-b bg-gray-800 px-4 py-3 text-white">
-            <div className="min-w-0">
-              <h3 className="truncate text-lg font-semibold leading-tight">{applicationName || 'Schedule B Products'}</h3>
-              <p className="text-xs text-gray-300">
-                App #{resolvedApplicationId ?? '-'} {taskName ? `- ${taskName}` : ''}
-              </p>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setExpanded((current) => !current)}
-                className="rounded p-1 text-gray-200 hover:bg-gray-700 hover:text-white"
-                aria-label={expanded ? 'Collapse drawer' : 'Expand drawer'}
-              >
-                {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded p-1 text-gray-200 hover:bg-gray-700 hover:text-white"
-                aria-label="Close Schedule B drawer"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="min-h-0 flex-1 bg-gray-50">
+  const content = (
+    <div className="min-h-0 flex-1 bg-gray-50">
             <div className="flex h-full min-h-0 flex-col">
               <div className="shrink-0 border-b bg-white px-4 py-3">
                 <div className="flex flex-wrap items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedApplicationId(resolvedApplicationId ?? null)}
-                    disabled={!resolvedApplicationId}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    View Application
-                  </button>
+                  {!isEmbedded ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedApplicationId(resolvedApplicationId ?? null)}
+                      disabled={!resolvedApplicationId}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      View Application
+                    </button>
+                  ) : null}
                 </div>
 
                 <nav className="mt-3 -mb-1 flex gap-1 overflow-x-auto text-sm" aria-label="Drawer sections">
@@ -1142,7 +1118,7 @@ export function ScheduleBProductsDrawer({
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        {ingView === 'application' ? (
+                        {ingView === 'application' && !readOnly ? (
                           !scratchpad.scheduleBReady ? (
                             <button type="button" onClick={markScheduleBReady} disabled={completeScheduleBTaskMutation.isPending} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300">
                               <Check className="h-3.5 w-3.5" />
@@ -1189,25 +1165,29 @@ export function ScheduleBProductsDrawer({
                               <FileText className="h-3.5 w-3.5 text-green-600" />
                               Export to Excel
                             </button>
-                            <button
-                              type="button"
-                              onClick={openImportModal}
-                              disabled={createProductMutation.isPending || isImporting}
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-                              title="Import rows from CSV or tab-delimited text"
-                            >
-                              <Upload className="h-3.5 w-3.5" />
-                              Import
-                            </button>
-                            <button
-                              type="button"
-                              onClick={startAddRow}
-                              disabled={isAddingRow || createProductMutation.isPending}
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                              Add Row
-                            </button>
+                            {!readOnly ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={openImportModal}
+                                  disabled={createProductMutation.isPending || isImporting}
+                                  className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                                  title="Import rows from CSV or tab-delimited text"
+                                >
+                                  <Upload className="h-3.5 w-3.5" />
+                                  Import
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={startAddRow}
+                                  disabled={isAddingRow || createProductMutation.isPending}
+                                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                  Add Row
+                                </button>
+                              </>
+                            ) : null}
                           </>
                         ) : null}
                       </div>
@@ -1242,11 +1222,11 @@ export function ScheduleBProductsDrawer({
                                 </button>
                               </th>
                             ))}
-                            {ingView === 'application' ? <th className={`w-28 ${stickyTableHeaderClass}`} style={stickyTableHeaderStyle}>Actions</th> : null}
+                            {ingView === 'application' && !readOnly ? <th className={`w-28 ${stickyTableHeaderClass}`} style={stickyTableHeaderStyle}>Actions</th> : null}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                          {ingView === 'application' && isAddingRow ? (
+                          {ingView === 'application' && isAddingRow && !readOnly ? (
                             <tr className="border-b border-blue-100 border-l-4 border-l-blue-400 bg-blue-50/60">
                               <td className="w-8 px-2 py-2 text-xs text-blue-400">+</td>
                               <td className="px-3 py-2">
@@ -1403,8 +1383,8 @@ export function ScheduleBProductsDrawer({
                                     <td className="px-3 py-3">{renderKashrusStatus(row.status)}</td>
                                   </>
                                 )}
-                                {ingView === 'application' ? (
-                                  <td className="px-3 py-3">
+                                  {ingView === 'application' && !readOnly ? (
+                                    <td className="px-3 py-3">
                                     <div className="flex flex-nowrap items-center gap-1">
                                       {resolved ? null : (
                                         <>
@@ -1417,8 +1397,8 @@ export function ScheduleBProductsDrawer({
                                   </td>
                                 ) : null}
                               </tr>
-                              {ingView === 'application' && flagged && !resolved ? (
-                                <CannedNoteRow
+                                {ingView === 'application' && flagged && !resolved && !readOnly ? (
+                                  <CannedNoteRow
                                   rowId={row.id}
                                   note={scratchpad.flags[row.id]?.note ?? ''}
                                   colSpan={noteColSpan}
@@ -1491,15 +1471,17 @@ export function ScheduleBProductsDrawer({
                           {roundMessageCards.length ? `${roundMessageCards.length} round${roundMessageCards.length === 1 ? '' : 's'}` : 'No rounds yet'}
                         </Pill>
                       </div>
-                      <button
-                        type="button"
-                        onClick={generateRound}
-                        disabled={!counts.flagged || Boolean(latestRound)}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-                      >
-                        <MessageSquare className="h-3.5 w-3.5" />
-                        Generate Round {nextRoundNumber} Email
-                      </button>
+                      {!readOnly ? (
+                        <button
+                          type="button"
+                          onClick={generateRound}
+                          disabled={!counts.flagged || Boolean(latestRound)}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                        >
+                          <MessageSquare className="h-3.5 w-3.5" />
+                          Generate Round {nextRoundNumber} Email
+                        </button>
+                      ) : null}
                     </div>
 
                     {latestRound ? (
@@ -1519,6 +1501,7 @@ export function ScheduleBProductsDrawer({
                                 value={latestRound.email.to}
                                 placeholder="No contact email found"
                                 onChange={(event) => scratchpadApi.updateRoundEmailTo(latestRound.id, event.target.value)}
+                                readOnly={readOnly}
                               />
                             </div>
                             <div className="flex items-center gap-2 text-xs">
@@ -1532,6 +1515,7 @@ export function ScheduleBProductsDrawer({
                             className="w-full resize-y rounded border border-blue-200 bg-white px-2 py-1.5 font-mono text-xs text-blue-900 focus:outline-none focus:ring-1 focus:ring-blue-400"
                             value={latestRound.email.body}
                             onChange={(event) => scratchpadApi.updateRoundEmailBody(latestRound.id, event.target.value)}
+                            readOnly={readOnly}
                           />
                           {sendError ? <div className="mt-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">{sendError}</div> : null}
                           {sentMessage ? <div className="mt-2 rounded border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700">{sentMessage}</div> : null}
@@ -1540,10 +1524,12 @@ export function ScheduleBProductsDrawer({
                               <Copy className="h-3.5 w-3.5" />
                               {copied ? 'Copied' : 'Copy'}
                             </button>
-                            <button type="button" onClick={() => void sendRoundEmail()} disabled={sendRoundEmailMutation.isPending} className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60">
-                              <Send className="h-3.5 w-3.5" />
-                              {sendRoundEmailMutation.isPending ? 'Sending...' : 'Send Email'}
-                            </button>
+                            {!readOnly ? (
+                              <button type="button" onClick={() => void sendRoundEmail()} disabled={sendRoundEmailMutation.isPending} className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60">
+                                <Send className="h-3.5 w-3.5" />
+                                {sendRoundEmailMutation.isPending ? 'Sending...' : 'Send Email'}
+                              </button>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -1767,7 +1753,7 @@ export function ScheduleBProductsDrawer({
                       </div>
                     )}
 
-                    {effectiveEirReceived && !scratchpad.eirReviewComplete ? (
+                    {effectiveEirReceived && !scratchpad.eirReviewComplete && !readOnly ? (
                       <div className="mt-5 rounded-lg border border-purple-200 bg-purple-50 p-4">
                         <div className="mb-2 flex items-center gap-2">
                           <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-purple-300 text-[10px] font-semibold text-purple-600">IA</span>
@@ -1788,7 +1774,7 @@ export function ScheduleBProductsDrawer({
                     ) : null}
 
                     <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
-                      {effectiveEirNotRequired ? (
+                      {effectiveEirNotRequired && !readOnly ? (
                         <button type="button" onClick={scratchpadApi.clearEirNotRequired} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
                           Clear not required
                         </button>
@@ -1800,9 +1786,57 @@ export function ScheduleBProductsDrawer({
               </div>
             </div>
           </div>
+  )
+
+  return (
+    <>
+      {isEmbedded ? (
+        <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+          <div className="shrink-0 border-b bg-gray-800 px-4 py-3 text-white">
+            <div className="min-w-0">
+              <h3 className="truncate text-lg font-semibold leading-tight">{applicationName || 'Schedule B'}</h3>
+              <p className="text-xs text-gray-300">App #{resolvedApplicationId ?? '-'}</p>
+            </div>
+          </div>
+          {content}
         </div>
-      </div>
-      {importOpen ? (
+      ) : (
+        <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
+          <div
+            className={`fixed right-0 top-0 flex h-full w-full max-w-[96vw] flex-col overflow-hidden bg-white shadow-2xl ${panelWidth}`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b bg-gray-800 px-4 py-3 text-white">
+              <div className="min-w-0">
+                <h3 className="truncate text-lg font-semibold leading-tight">{applicationName || 'Schedule B Products'}</h3>
+                <p className="text-xs text-gray-300">
+                  App #{resolvedApplicationId ?? '-'} {taskName ? `- ${taskName}` : ''}
+                </p>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setExpanded((current) => !current)}
+                  className="rounded p-1 text-gray-200 hover:bg-gray-700 hover:text-white"
+                  aria-label={expanded ? 'Collapse drawer' : 'Expand drawer'}
+                >
+                  {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded p-1 text-gray-200 hover:bg-gray-700 hover:text-white"
+                  aria-label="Close Schedule B drawer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            {content}
+          </div>
+        </div>
+      )}
+      {!isEmbedded && importOpen ? (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" onClick={closeImportModal}>
           <div
             className="w-full max-w-3xl rounded-xl bg-white shadow-2xl"
@@ -1896,11 +1930,13 @@ export function ScheduleBProductsDrawer({
           </div>
         </div>
       ) : null}
-      <ApplicationDetailsDrawer
-        open={selectedApplicationId !== null}
-        applicationId={selectedApplicationId ?? undefined}
-        onClose={() => setSelectedApplicationId(null)}
-      />
+      {!isEmbedded ? (
+        <ApplicationDetailsDrawer
+          open={selectedApplicationId !== null}
+          applicationId={selectedApplicationId ?? undefined}
+          onClose={() => setSelectedApplicationId(null)}
+        />
+      ) : null}
     </>
   )
 }

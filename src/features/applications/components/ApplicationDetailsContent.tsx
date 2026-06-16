@@ -34,6 +34,7 @@ import RawApplicationPanel from '@/components/ou-workflow/ApplicationManagement/
 import QuoteInfo from '@/components/ou-workflow/ApplicationManagement/QuoteInfo'
 import TaskEventsPanel from '@/components/ou-workflow/ApplicationManagement/TaskEventsPanel'
 import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer'
+import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer'
 import type { ApplicationDetail, ApplicationEmail } from '@/types/application'
 
 type CompletionStatus = 'incomplete' | 'complete' | 'dispatched'
@@ -111,6 +112,7 @@ const TABS = [
 ] as const
 
 const SCHEDULE_A_TAB = { id: 'schedule-a', label: 'Schedule A', icon: ClipboardList } as const
+const SCHEDULE_B_TAB = { id: 'schedule-b', label: 'Schedule B', icon: Package } as const
 
 const STATUS_BADGES: Record<string, string> = {
   'Not Started': 'bg-gray-100 text-gray-800',
@@ -545,7 +547,10 @@ export function ApplicationDetailsContent({
       ? 'Intake Application Review & Management'
       : 'Application Review & Management'
   const tabs = useMemo(
-    () => (dataSource === 'application' ? [...TABS.slice(0, 6), SCHEDULE_A_TAB, ...TABS.slice(6)] : TABS),
+    () =>
+      dataSource === 'application'
+        ? [...TABS.slice(0, 6), SCHEDULE_A_TAB, SCHEDULE_B_TAB, ...TABS.slice(6)]
+        : TABS,
     [dataSource],
   )
   const applicationNotes = useTaskNotesDrawerState({
@@ -806,6 +811,24 @@ export function ApplicationDetailsContent({
             {dataSource === 'application' && activeTab === 'schedule-a' && resolvedApplicationId === null && (
               <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
                 Schedule A is unavailable because this application does not have a valid application ID.
+              </div>
+            )}
+            {dataSource === 'application' && activeTab === 'schedule-b' && resolvedApplicationId !== null && (
+              <ScheduleBProductsDrawer
+                open
+                mode="embedded"
+                readOnly
+                applicationId={resolvedApplicationId}
+                applicationName={applicationDisplayName}
+                visitId={application.visit_id ?? null}
+                appVars={application.appvars ?? null}
+                assignedRoles={application.assignedRoles}
+                onClose={() => {}}
+              />
+            )}
+            {dataSource === 'application' && activeTab === 'schedule-b' && resolvedApplicationId === null && (
+              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
+                Schedule B is unavailable because this application does not have a valid application ID.
               </div>
             )}
             {activeTab === 'raw-application' && <RawApplicationPanel entries={application.raw_data} />}
