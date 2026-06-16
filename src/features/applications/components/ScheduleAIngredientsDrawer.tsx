@@ -91,7 +91,7 @@ const getDocumentFilename = (value?: string | null) => {
 
 const isPreviewableDocument = (value?: string | null) => {
   const filename = getDocumentFilename(value).toLowerCase()
-  return ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.txt', '.html', '.htm'].some((extension) =>
+  return ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.txt', '.html', '.htm', '.doc', '.docx', '.rtf'].some((extension) =>
     filename.endsWith(extension),
   )
 }
@@ -484,10 +484,12 @@ export function ScheduleAIngredientsDrawer({
   })
   const {
     objectUrl: eirViewerUrl,
+    previewHtml: eirPreviewHtml,
     isLoading: isEirViewerLoading,
     error: eirViewerError,
   } = useScheduleAEirDocument({
     wfFileId: hasWorkflowEirDocument ? eirWorkflowFileId : undefined,
+    filename: eirDocumentFilename,
     enabled: open && activeTab === 'eir' && hasWorkflowEirDocument,
   })
 
@@ -728,7 +730,16 @@ export function ScheduleAIngredientsDrawer({
 
   const openEirDocument = () => {
     if (hasWorkflowEirDocument) {
-      if (eirViewerUrl) {
+      if (eirPreviewHtml) {
+        const previewWindow = window.open('', '_blank', 'noopener,noreferrer')
+        if (!previewWindow) {
+          toast.error('Unable to open the document preview in a new tab.')
+          return
+        }
+        previewWindow.document.open()
+        previewWindow.document.write(eirPreviewHtml)
+        previewWindow.document.close()
+      } else if (eirViewerUrl) {
         window.open(eirViewerUrl, '_blank', 'noopener,noreferrer')
       } else if (isEirViewerLoading) {
         toast.message('Loading EIR document...')
@@ -1434,6 +1445,8 @@ export function ScheduleAIngredientsDrawer({
                                 {eirViewerError instanceof Error ? eirViewerError.message : 'Failed to load EIR document.'}
                               </p>
                             </div>
+                          ) : eirPreviewHtml ? (
+                            <iframe title="EIR document preview" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-white" srcDoc={eirPreviewHtml} />
                           ) : eirViewerUrl ? (
                             <iframe title="EIR document" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100" src={eirViewerUrl} />
                           ) : (
@@ -1447,7 +1460,7 @@ export function ScheduleAIngredientsDrawer({
                         ) : eirDocumentUrl ? (
                           <div className="rounded-b-lg border-x border-b border-gray-200 bg-gray-50 p-8 text-center">
                             <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
-                            <p className="text-sm text-gray-600">This file type opens in a new tab or downloads from the RFR document link.</p>
+                            <p className="text-sm text-gray-600">This file type could not be rendered directly in the viewer. Use the document actions above to open or download it.</p>
                           </div>
                         ) : (
                           <iframe title="EIR preview" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100" srcDoc={EIR_PREVIEW_HTML} />

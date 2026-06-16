@@ -158,6 +158,131 @@ export const resolveScheduleADocumentUrl = (value?: string | null) => {
 
 const buildWorkflowFileBaseUrl = () => resolveApiBaseUrl().replace(/\/api\/?$/i, '')
 
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
+const buildDocumentPreviewHtml = (title: string, body: string) => `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>${escapeHtml(title)}</title>
+    <style>
+      body {
+        margin: 0;
+        background: #f3f4f6;
+        font-family: Arial, sans-serif;
+        color: #111827;
+      }
+      .page {
+        max-width: 860px;
+        margin: 24px auto;
+        background: #ffffff;
+        min-height: 100vh;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+        padding: 40px;
+      }
+      .title {
+        margin: 0 0 10px;
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .note {
+        margin: 0 0 24px;
+        color: #6b7280;
+        font-size: 13px;
+      }
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1 class="title">${escapeHtml(title)}</h1>
+      <p class="note">Word document preview generated in-app.</p>
+      <pre>${escapeHtml(body)}</pre>
+    </div>
+  </body>
+</html>`
+
+const stripRtf = (value: string) =>
+  value
+    .replace(/\\par[d]?/g, '\n')
+    .replace(/\\tab/g, '\t')
+    .replace(/\\'[0-9a-fA-F]{2}/g, ' ')
+    .replace(/\\[a-z]+-?\d* ?/g, '')
+    .replace(/[{}]/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+const normalizeExtractedText = (value: string) =>
+  value
+    .replace(/\u0000/g, '')
+    .replace(/[^\S\r\n]+/g, ' ')
+    .replace(/[^\x09\x0A\x0D\x20-\x7E\u00A0-\u024F]/g, ' ')
+    .replace(/ +\n/g, '\n')
+    .replace(/\n +/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+const extractReadableText = (value: string) => {
+  const normalized = normalizeExtractedText(value)
+  if (!normalized) return ''
+
+  const lines = normalized
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter((line) => /[A-Za-z0-9]/.test(line) && line.length >= 2)
+
+  return lines.join('\n').trim()
+}
+
+const decodeWordArrayBuffer = (buffer: ArrayBuffer) => {
+  const decoders = ['utf-16le', 'utf-8', 'windows-1252'] as const
+  const candidates = decoders
+    .map((encoding) => {
+      try {
+        const decoded = new TextDecoder(encoding).decode(buffer)
+        const normalized = decoded.includes('{\\rtf') ? stripRtf(decoded) : extractReadableText(decoded)
+        return normalized
+      } catch {
+        return ''
+      }
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)
+
+  return candidates[0] ?? ''
+}
+
+const buildWordDocumentPreviewHtml = async (blob: Blob, filename: string) => {
+  const extension = filename.split('.').pop()?.toLowerCase() ?? ''
+
+  if (extension === 'txt') {
+    const text = normalizeExtractedText(await blob.text())
+    return text ? buildDocumentPreviewHtml(filename, text) : ''
+  }
+
+  if (extension === 'html' || extension === 'htm') {
+    return await blob.text()
+  }
+
+  const extractedText = decodeWordArrayBuffer(await blob.arrayBuffer())
+  if (!extractedText) return ''
+
+  return buildDocumentPreviewHtml(filename, extractedText)
+}
+
 export async function fetchScheduleAEirDocumentBlob({
   wfFileId,
   token,
@@ -204,18 +329,22 @@ export async function fetchScheduleAEirDocumentBlob({
 
 export function useScheduleAEirDocument({
   wfFileId,
+  filename,
   enabled = true,
 }: {
   wfFileId?: string | number | null
+  filename?: string | null
   enabled?: boolean
 }) {
   const { token } = useUser()
   const normalizedWfFileId =
     wfFileId === undefined || wfFileId === null ? undefined : valueText(wfFileId)
+  const normalizedFilename = valueText(filename)
   const [objectUrl, setObjectUrl] = useState('')
+  const [previewHtml, setPreviewHtml] = useState('')
 
   const query = useQuery({
-    queryKey: ['schedule-a-eir-document', normalizedWfFileId],
+    queryKey: ['schedule-a-eir-document', normalizedWfFileId, normalizedFilename],
     queryFn: () =>
       fetchScheduleAEirDocumentBlob({
         wfFileId: normalizedWfFileId ?? '',
@@ -231,6 +360,7 @@ export function useScheduleAEirDocument({
         if (current) URL.revokeObjectURL(current)
         return ''
       })
+      setPreviewHtml('')
       return
     }
 
@@ -240,14 +370,26 @@ export function useScheduleAEirDocument({
       return nextObjectUrl
     })
 
+    void (async () => {
+      const extension = normalizedFilename.split('.').pop()?.toLowerCase() ?? ''
+      if (!['doc', 'docx', 'rtf', 'txt', 'htm', 'html'].includes(extension)) {
+        setPreviewHtml('')
+        return
+      }
+
+      const nextPreviewHtml = await buildWordDocumentPreviewHtml(query.data, normalizedFilename || 'Inspection report')
+      setPreviewHtml(nextPreviewHtml)
+    })()
+
     return () => {
       URL.revokeObjectURL(nextObjectUrl)
     }
-  }, [query.data])
+  }, [normalizedFilename, query.data])
 
   return {
     ...query,
     objectUrl,
+    previewHtml,
   }
 }
 
