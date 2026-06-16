@@ -161,6 +161,21 @@ const todayLabel = () =>
 
 const valueText = (value: unknown) => String(value ?? '').trim()
 
+export const getDaysSinceVisit = (value?: string | null, now = new Date()) => {
+  const normalized = valueText(value)
+  if (!normalized) return null
+
+  const datePart = normalized.match(/^\d{4}-\d{2}-\d{2}/)?.[0]
+  const parsed = datePart ? new Date(`${datePart}T00:00:00`) : new Date(normalized)
+  if (Number.isNaN(parsed.getTime())) return null
+
+  const visitDate = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate())
+  const currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const millisecondsPerDay = 24 * 60 * 60 * 1000
+
+  return Math.max(0, Math.floor((currentDate.getTime() - visitDate.getTime()) / millisecondsPerDay))
+}
+
 const buildS3HttpUrl = (value: string) => {
   const match = value.match(/^s3:\/\/([^/]+)\/(.+)$/i)
   if (!match) return ''

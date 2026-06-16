@@ -25,6 +25,7 @@ import { useApplicationDetail } from '@/features/applications/hooks/useApplicati
 import {
   CANNED_NOTES,
   fetchScheduleBEirDocumentBlob,
+  getDaysSinceVisit,
   getScheduleBCommunicationMessageBody,
   mapApplicationProductRow,
   mapKashProductRow,
@@ -78,34 +79,6 @@ const EMPTY_ADD_ROW_DRAFT: ScheduleBProductDraft = {
 }
 
 const EIR_PREVIEW_HTML = `<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827}.page{max-width:760px;margin:28px auto;background:white;min-height:920px;box-shadow:0 12px 30px rgba(15,23,42,.14);padding:52px}.meta{color:#6b7280;font-size:12px}.title{font-size:20px;font-weight:700;text-align:center;margin:18px 0 28px}.section{border-top:1px solid #d1d5db;padding-top:16px;margin-top:20px}.h{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#374151}.p{font-size:13px;line-height:1.55;color:#374151}.stamp{display:inline-block;border:1px solid #f59e0b;background:#fffbeb;color:#92400e;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:700}</style></head><body><div class="page"><p class="meta">OU Direct - Visit ID 14056484 - Apr 10, 2026</p><div class="title">Initial Inspection Report</div><p class="stamp">Sample EIR for demonstration</p><div class="section"><p class="h">Facility observations</p><p class="p">Line 1 was clean and no non-kosher equipment was observed. Dairy products are stored in a designated separate area.</p></div><div class="section"><p class="h">Product observations</p><p class="p">Palm Shortening, Rosemary Extract, and an unlabeled Dough Conditioner were observed on-site and were not present on the original Schedule B submission.</p></div><div class="section"><p class="h">Follow-up required</p><p class="p">Confirm LOCs and supplier details for missing or unclear products before Schedule B can proceed.</p></div></div></body></html>`
-
-const EIR_AI_FINDINGS = [
-  '3 products observed on-site were NOT listed on the original application: Palm Shortening, Rosemary Extract (Kemin Naturals), and an unlabeled Dough Conditioner - all must be added to Schedule B before certification can proceed.',
-  'Whey Protein Concentrate drum had no visible kosher certification at time of inspection. Supplier and LOC must be confirmed.',
-  'Natural Flavors: Givaudan drum identified on Line 1, but specific flavor code not confirmed. LOC cannot be verified without the code.',
-  "Margarine listed generically as 'Cargill' on the application - RFR could not confirm the specific product. LOC required.",
-  'Facility generally clean: no non-kosher equipment on Line 1, no recent switchovers, and dairy products are stored in a designated separate area.',
-]
-
-const EIR_AI_PRODUCTS = [
-  { name: 'Wheat Flour', notes: 'Observed in production area', onScheduleB: true },
-  { name: 'Canola Oil', notes: 'Matched to Schedule B', onScheduleB: true },
-  { name: 'Margarine', notes: 'Cargill product observed - exact item unclear', onScheduleB: true },
-  { name: 'Whey Protein Concentrate', notes: 'No visible certification on drum', onScheduleB: true },
-  { name: 'Natural Flavors', notes: 'Givaudan drum observed - flavor code not confirmed', onScheduleB: true },
-  { name: 'Palm Shortening', notes: 'Observed on Line 1 - NOT on original application', onScheduleB: false },
-  { name: 'Rosemary Extract', notes: 'Kemin Naturals, used as antioxidant - NOT on original application', onScheduleB: false },
-  { name: 'Dough Conditioner', notes: 'Unlabeled bag, origin unknown - NOT on original application', onScheduleB: false },
-]
-
-const EIR_AI_RECOMMENDATIONS = [
-  'Add Palm Shortening to Schedule B - observed in production but missing from application. Supplier and kosher certification required.',
-  'Add Rosemary Extract (Kemin Naturals) to Schedule B - antioxidant use observed on Line 1. Certification status unknown.',
-  'Add Dough Conditioner to Schedule B - unlabeled bag of unknown origin observed. Company must identify supplier and obtain OU approval before continued use.',
-  'Margarine: confirm specific Cargill product and obtain LOC before Schedule B can be finalized.',
-  'Whey Protein Concentrate: confirm certified supplier and provide LOC - no certification was visible on drum during inspection.',
-  'Natural Flavors: obtain Givaudan flavor code and verify LOC status.',
-]
 
 const textValue = (value: unknown) => String(value ?? '').trim()
 
@@ -593,7 +566,6 @@ export function ScheduleBProductsDrawer({
   const [copied, setCopied] = useState(false)
   const [sendError, setSendError] = useState('')
   const [sentMessage, setSentMessage] = useState('')
-  const [eirAiOpen, setEirAiOpen] = useState(true)
   const [isEirDownloadPending, setIsEirDownloadPending] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [importText, setImportText] = useState('')
@@ -620,6 +592,7 @@ export function ScheduleBProductsDrawer({
   const eirSubmitterLabel = assignedRfr === 'Not yet Assigned' ? 'the assigned RFR' : assignedRfr
   const visitIdLabel = textValue(visitId ?? appVars?.visit_id)
   const actualVisitDate = formatDisplayDate(appVars?.actual_visit_date)
+  const daysSinceVisit = getDaysSinceVisit(appVars?.actual_visit_date)
   const eirWorkflowFileId = textValue(appVars?.wf_file_id)
   const eirDisplayName = textValue(appVars?.filename) || getDocumentFilename(appVars?.rfr_file_url)
   const eirDocumentPath = textValue(appVars?.rfr_file_url)
@@ -1725,7 +1698,7 @@ export function ScheduleBProductsDrawer({
                         <div className="flex items-center justify-between border-t border-gray-100 py-2">
                           <span className="text-sm font-medium text-gray-600">Days Since Visit</span>
                           <span className={effectiveEirReceived || effectiveEirNotRequired ? 'text-sm font-semibold text-gray-900' : 'text-sm font-semibold text-red-600'}>
-                            {effectiveEirReceived || effectiveEirNotRequired ? 'Report accounted for' : '6 days - overdue'}
+                            {daysSinceVisit === null ? '-' : `${daysSinceVisit} day${daysSinceVisit === 1 ? '' : 's'}`}
                           </span>
                         </div>
                       </div>
@@ -1793,81 +1766,6 @@ export function ScheduleBProductsDrawer({
                         <p className="text-sm text-gray-500">EIR document will appear here once {eirSubmitterLabel} submits via OU Direct</p>
                       </div>
                     )}
-
-                    {effectiveEirReceived ? (
-                      <div className="mt-5 overflow-hidden rounded-lg border border-violet-200 bg-violet-50/60">
-                        <div className="flex items-center justify-between border-b border-violet-200 bg-violet-100/70 px-4 py-2.5">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-semibold text-violet-700">Claude - EIR summary</span>
-                            <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
-                              {EIR_AI_PRODUCTS.filter((product) => !product.onScheduleB).length} not on Schedule B
-                            </span>
-                          </div>
-                          <button type="button" onClick={() => setEirAiOpen((current) => !current)} className="inline-flex items-center gap-1 text-xs font-medium text-violet-700 hover:text-violet-900">
-                            {eirAiOpen ? 'Collapse' : 'Expand'}
-                            <ArrowUp className={`h-3.5 w-3.5 transition-transform ${eirAiOpen ? '' : 'rotate-180'}`} />
-                          </button>
-                        </div>
-                        {eirAiOpen ? (
-                          <div className="space-y-4 p-4">
-                            <div>
-                              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-violet-700">Key findings</p>
-                              <ul className="space-y-1 text-sm text-gray-700">
-                                {EIR_AI_FINDINGS.map((finding) => (
-                                  <li key={finding} className="flex items-start gap-1.5">
-                                    <span className="mt-0.5 shrink-0 text-amber-500">&gt;</span>
-                                    <span>{finding}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                            <div>
-                              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-violet-700">Products observed vs. Schedule B</p>
-                              <div className="overflow-hidden rounded-lg border border-violet-200 bg-white">
-                                <table className="w-full text-sm">
-                                  <thead>
-                                    <tr className="bg-violet-50 text-left text-xs font-semibold text-violet-700">
-                                      <th className="px-3 py-1.5">Product</th>
-                                      <th className="px-3 py-1.5">Notes</th>
-                                      <th className="px-3 py-1.5">On Schedule B</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {EIR_AI_PRODUCTS.map((product) => (
-                                      <tr key={product.name} className={`border-b border-amber-100 last:border-0 ${product.onScheduleB ? '' : 'bg-amber-50'}`}>
-                                        <td className="px-3 py-1.5 font-medium text-gray-900">{product.name}</td>
-                                        <td className="px-3 py-1.5 text-gray-600">{product.notes}</td>
-                                        <td className="px-3 py-1.5">
-                                          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${
-                                            product.onScheduleB
-                                              ? 'border-green-200 bg-green-100 text-green-800'
-                                              : 'border-red-200 bg-red-100 text-red-800'
-                                          }`}>
-                                            {product.onScheduleB ? 'Yes' : 'No'}
-                                          </span>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-                            <div>
-                              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-red-700">Recommended actions</p>
-                              <ul className="space-y-1 text-sm text-gray-700">
-                                {EIR_AI_RECOMMENDATIONS.map((recommendation) => (
-                                  <li key={recommendation} className="flex items-start gap-1.5">
-                                    <span className="mt-0.5 shrink-0 text-red-500">&gt;</span>
-                                    <span>{recommendation}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                            <p className="border-t border-violet-200 pt-1 text-[11px] text-violet-600/80">AI-generated from the inspection report. Review and confirm before acting - nothing here changes Schedule B automatically.</p>
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
 
                     {effectiveEirReceived && !scratchpad.eirReviewComplete ? (
                       <div className="mt-5 rounded-lg border border-purple-200 bg-purple-50 p-4">
