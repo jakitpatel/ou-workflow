@@ -4,6 +4,7 @@ import type { Match } from '@/features/prelim/model/resolution'
 type Props = {
   selectedMatch: Match | null
   onCreateNew: () => void | Promise<void>
+  canCreate?: boolean
   onConfirmEdit: () => void
   onConfirmMatch: () => void | Promise<void>
   onCancelEdit: () => void
@@ -17,6 +18,7 @@ type Props = {
 export function PrelimResolutionActions({
   selectedMatch,
   onCreateNew,
+  canCreate: canCreateOverride,
   onConfirmEdit,
   onConfirmMatch,
   onCancelEdit,
@@ -27,7 +29,7 @@ export function PrelimResolutionActions({
   isEditMode,
 }: Props) {
   const canConfirm = isActionable && !!selectedMatch && !isCreatingNew && !isSubmitting
-  const canCreate = isActionable && !isCreatingNew && !isSubmitting
+  const canCreate = canCreateOverride ?? (isActionable && !isCreatingNew && !isSubmitting)
 
   return (
     <div className="flex justify-end gap-2 border-t border-gray-100 bg-[#f8fafc] px-4 py-2.5">

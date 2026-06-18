@@ -24,6 +24,13 @@ type AppCompanyValue = {
   }
 }
 
+type AppContactValue = {
+  name?: string
+  title?: string
+  phone?: string
+  email?: string
+}
+
 type AppPlantValue = {
   plantName?: string
   processDescription?: string
@@ -46,6 +53,29 @@ type PlantApiAttributes = {
   PLANT_ID: number
   NAME: string
   ACTIVE: number
+}
+
+type ContactApiAttributes = {
+  Title: string
+  FirstName: string
+  LastName: string
+  Voice: string
+  EMail: string
+  Cell: string
+  Active: number
+}
+
+type CompanyContactApiAttributes = {
+  Company_ID: number
+  CompanyTitle: string
+  PrimaryCT: string
+  BillingCT: string
+  WebCT: string
+  OtherCT: string
+  Active: number
+  ContactID: number
+  PoCT: string
+  CopackerCT: string
 }
 
 function toPositiveInteger(value: string | number | null | undefined): number | null {
@@ -149,6 +179,87 @@ function buildPlantAddressPayloadFromApplication(
         S_CheckSum: '',
       },
       type: 'PLANTADDRESSTB',
+    },
+  }
+}
+
+function splitContactName(fullName?: string) {
+  const normalized = (fullName ?? '').trim().replace(/\s+/g, ' ')
+  if (!normalized) {
+    return {
+      firstName: '',
+      lastName: '',
+    }
+  }
+
+  const [firstName = '', ...lastNameParts] = normalized.split(' ')
+  return {
+    firstName,
+    lastName: lastNameParts.join(' '),
+  }
+}
+
+function buildContactPayloadFromApplication(appValue: AppContactValue): {
+  data: { attributes: ContactApiAttributes; type: 'Contacts' }
+} {
+  const { firstName, lastName } = splitContactName(appValue.name)
+
+  return {
+    data: {
+      attributes: {
+        Title: appValue.title ?? '',
+        FirstName: firstName,
+        LastName: lastName,
+        Voice: appValue.phone ?? '',
+        EMail: appValue.email ?? '',
+        Cell: appValue.phone ?? '',
+        Active: 1,
+      },
+      type: 'Contacts',
+    },
+  }
+}
+
+function buildCompanyContactPayloadFromApplication({
+  companyId,
+  companyTitle,
+  contactId,
+  isPrimary,
+  isBilling,
+}: {
+  companyId: string | number
+  companyTitle?: string
+  contactId: string | number
+  isPrimary: boolean
+  isBilling: boolean
+}): {
+  data: { attributes: CompanyContactApiAttributes; type: 'companycontacts_tb' }
+} {
+  const parsedCompanyId = toPositiveInteger(companyId)
+  if (parsedCompanyId == null) {
+    throw createApiError('Invalid company id for companycontacts_tb payload')
+  }
+
+  const parsedContactId = toPositiveInteger(contactId)
+  if (parsedContactId == null) {
+    throw createApiError('Invalid contact id for companycontacts_tb payload')
+  }
+
+  return {
+    data: {
+      attributes: {
+        Company_ID: parsedCompanyId,
+        CompanyTitle: companyTitle ?? '',
+        PrimaryCT: isPrimary ? 'Y' : 'N',
+        BillingCT: isBilling ? 'Y' : 'N',
+        WebCT: 'N',
+        OtherCT: 'N',
+        Active: 1,
+        ContactID: parsedContactId,
+        PoCT: 'N',
+        CopackerCT: 'N',
+      },
+      type: 'companycontacts_tb',
     },
   }
 }
@@ -305,6 +416,52 @@ export async function createPlantAddressFromApplication({
   const body = buildPlantAddressPayloadFromApplication(appValue, plantId)
   return await fetchWithAuth({
     path: '/api/PLANTADDRESSTB',
+    method: 'POST',
+    body,
+    token,
+  })
+}
+
+export async function createContactFromApplication({
+  appValue,
+  token,
+}: {
+  appValue: AppContactValue
+  token?: string | null
+}): Promise<any> {
+  const body = buildContactPayloadFromApplication(appValue)
+  return await fetchWithAuth({
+    path: '/api/Contacts',
+    method: 'POST',
+    body,
+    token,
+  })
+}
+
+export async function createCompanyContactLinkFromApplication({
+  companyId,
+  companyTitle,
+  contactId,
+  isPrimary,
+  isBilling,
+  token,
+}: {
+  companyId: string | number
+  companyTitle?: string
+  contactId: string | number
+  isPrimary: boolean
+  isBilling: boolean
+  token?: string | null
+}): Promise<any> {
+  const body = buildCompanyContactPayloadFromApplication({
+    companyId,
+    companyTitle,
+    contactId,
+    isPrimary,
+    isBilling,
+  })
+  return await fetchWithAuth({
+    path: '/api/companycontacts_tb',
     method: 'POST',
     body,
     token,

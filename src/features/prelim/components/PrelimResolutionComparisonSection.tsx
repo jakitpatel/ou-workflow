@@ -37,6 +37,8 @@ type Props = {
   setEditablePlantData: Dispatch<SetStateAction<PlantData>>
   onMatchChange: (event: ChangeEvent<HTMLSelectElement>) => void
   onCreateNew: () => void | Promise<void>
+  onCreatePrimaryCompanyContact?: () => void | Promise<void>
+  onCreateBillingCompanyContact?: () => void | Promise<void>
   onConfirmEdit: () => void
   onConfirmMatch: () => void | Promise<void>
   onCancelEdit: () => void
@@ -66,6 +68,8 @@ export function PrelimResolutionComparisonSection({
   setEditablePlantData,
   onMatchChange,
   onCreateNew,
+  onCreatePrimaryCompanyContact,
+  onCreateBillingCompanyContact,
   onConfirmEdit,
   onConfirmMatch,
   onCancelEdit,
@@ -76,10 +80,15 @@ export function PrelimResolutionComparisonSection({
   isSubmitting,
   isEditMode,
 }: Props) {
-  const sectionActions = (isActionable: boolean) => (
+  const sectionActions = (
+    isActionable: boolean,
+    onCreateNewAction: () => void | Promise<void> = onCreateNew,
+    canCreate?: boolean
+  ) => (
     <PrelimResolutionActions
       selectedMatch={selectedMatch}
-      onCreateNew={onCreateNew}
+      onCreateNew={onCreateNewAction}
+      canCreate={canCreate}
       onConfirmEdit={onConfirmEdit}
       onConfirmMatch={onConfirmMatch}
       onCancelEdit={onCancelEdit}
@@ -215,7 +224,11 @@ export function PrelimResolutionComparisonSection({
                 }))
               }
             />
-            {sectionActions(contactSectionActionable)}
+            {sectionActions(
+              contactSectionActionable,
+              onCreatePrimaryCompanyContact ?? onCreateNew,
+              contactSectionActionable && !!selectedMatch
+            )}
           </ComparisonCard>
 
           <ComparisonCard title="Contact" badge="BILLING" badgeClass="bg-amber-100 text-amber-800">
@@ -230,7 +243,11 @@ export function PrelimResolutionComparisonSection({
                 }))
               }
             />
-            {sectionActions(contactSectionActionable)}
+            {sectionActions(
+              contactSectionActionable,
+              onCreateBillingCompanyContact ?? onCreateNew,
+              contactSectionActionable && !!selectedMatch
+            )}
           </ComparisonCard>
         </>
       ) : (

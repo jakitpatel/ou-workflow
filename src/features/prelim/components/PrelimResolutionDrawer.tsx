@@ -5,6 +5,8 @@ import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import {
   createCompanyAddressFromApplication,
+  createCompanyContactLinkFromApplication,
+  createContactFromApplication,
   createOrUpdateCompanyFromApplication,
   createPlantAddressFromApplication,
   createOrUpdatePlantFromApplication,
@@ -94,7 +96,7 @@ export function PrelimResolutionDrawer({
   const isCompany = type === 'company'
   const selectedMatchId = selectedMatch?.Id
 
-  const { data: companyDbResponse } = useQuery({
+  const { data: companyDbResponse, refetch: refetchCompanyDetails } = useQuery({
     queryKey: prelimQueryKeys.kashrusCompanyDetails(selectedMatchId),
     queryFn: () =>
       getCompanyDetailsFromKASH({
@@ -131,6 +133,52 @@ export function PrelimResolutionDrawer({
   const dbCompanyBillingContact = getBillingContact(companyDb?.companyContacts)
   const dbPlantPrimaryContact = getPrimaryContact(plantDb?.plantContacts)
   const dbPlantMarketingContact = getBillingContact(plantDb?.plantContacts)
+
+  const handleCreateCompanyContact = async (contactType: 'primary' | 'billing') => {
+    if (!contactSectionActionable || isSubmitting || !isCompany || !selectedMatch?.Id) return
+
+    const contactData =
+      contactType === 'primary' ? companyData.primaryContact : companyData.billingContact
+
+    if (!contactData) {
+      toast.error('No submitted contact data found to create')
+      return
+    }
+
+    setIsCreatingNew(true)
+    try {
+      const createdContact = await createContactFromApplication({
+        appValue: contactData,
+        token: token ?? undefined,
+      })
+      const createdContactId = extractCreatedRecordId(createdContact)
+      if (createdContactId == null) {
+        throw new Error('Contact created but contact id was missing from response')
+      }
+
+      await createCompanyContactLinkFromApplication({
+        companyId: selectedMatch.Id,
+        companyTitle: contactData.title ?? '',
+        contactId: createdContactId,
+        isPrimary: contactType === 'primary',
+        isBilling: contactType === 'billing',
+        token: token ?? undefined,
+      })
+
+      await Promise.allSettled([refetchCompanyDetails()])
+      toast.success(
+        contactType === 'primary'
+          ? 'Primary company contact created from application data'
+          : 'Billing contact created from application data'
+      )
+    } catch (error: any) {
+      const message =
+        error?.details?.message || error?.message || 'Failed to create contact from application data'
+      toast.error(message)
+    } finally {
+      setIsCreatingNew(false)
+    }
+  }
 
   const handleMatchChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const matchId = event.target.value
@@ -284,6 +332,8 @@ export function PrelimResolutionDrawer({
           setEditablePlantData={setEditablePlantData}
           onMatchChange={handleMatchChange}
           onCreateNew={handleCreateNew}
+          onCreatePrimaryCompanyContact={() => handleCreateCompanyContact('primary')}
+          onCreateBillingCompanyContact={() => handleCreateCompanyContact('billing')}
           onConfirmEdit={handleConfirmEdit}
           onConfirmMatch={handleConfirmMatch}
           onCancelEdit={handleCancelEdit}
