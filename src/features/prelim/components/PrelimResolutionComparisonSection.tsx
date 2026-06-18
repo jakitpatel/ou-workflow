@@ -39,6 +39,8 @@ type Props = {
   onCreateNew: () => void | Promise<void>
   onCreatePrimaryCompanyContact?: () => void | Promise<void>
   onCreateBillingCompanyContact?: () => void | Promise<void>
+  onCreatePrimaryPlantContact?: () => void | Promise<void>
+  onCreateMarketingPlantContact?: () => void | Promise<void>
   onConfirmEdit: () => void
   onConfirmMatch: () => void | Promise<void>
   onCancelEdit: () => void
@@ -70,6 +72,8 @@ export function PrelimResolutionComparisonSection({
   onCreateNew,
   onCreatePrimaryCompanyContact,
   onCreateBillingCompanyContact,
+  onCreatePrimaryPlantContact,
+  onCreateMarketingPlantContact,
   onConfirmEdit,
   onConfirmMatch,
   onCancelEdit,
@@ -326,7 +330,11 @@ export function PrelimResolutionComparisonSection({
                 }))
               }
             />
-            {sectionActions(contactSectionActionable)}
+            {sectionActions(
+              contactSectionActionable,
+              onCreatePrimaryPlantContact ?? onCreateNew,
+              contactSectionActionable && !!selectedMatch
+            )}
           </ComparisonCard>
 
           <ComparisonCard
@@ -347,7 +355,11 @@ export function PrelimResolutionComparisonSection({
                 }))
               }
             />
-            {sectionActions(contactSectionActionable)}
+            {sectionActions(
+              contactSectionActionable,
+              onCreateMarketingPlantContact ?? onCreateNew,
+              contactSectionActionable && !!selectedMatch
+            )}
           </ComparisonCard>
         </>
       )}

@@ -78,6 +78,24 @@ type CompanyContactApiAttributes = {
   CopackerCT: string
 }
 
+type PlantContactApiAttributes = {
+  Owns_ID: number
+  CompanyTitle: string
+  PrimaryCT: string
+  BillingCT: string
+  WebCT: string
+  OtherCT: string
+  Active: number
+  ContactID: number
+  InvoiceType: string
+  LOAtype: string
+  GPC: string
+  EIREmail: string
+  ScheduleBEmail: string
+  FormulaEmail: string
+  PoCT: string
+}
+
 function toPositiveInteger(value: string | number | null | undefined): number | null {
   const parsed = Number(value)
   return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : null
@@ -260,6 +278,59 @@ function buildCompanyContactPayloadFromApplication({
         CopackerCT: 'N',
       },
       type: 'companycontacts_tb',
+    },
+  }
+}
+
+function buildPlantContactPayloadFromApplication({
+  ownsId,
+  companyTitle,
+  contactId,
+  isPrimary,
+  isBilling,
+  isWeb,
+  isOther,
+}: {
+  ownsId: string | number
+  companyTitle?: string
+  contactId: string | number
+  isPrimary: boolean
+  isBilling: boolean
+  isWeb: boolean
+  isOther: boolean
+}): {
+  data: { attributes: PlantContactApiAttributes; type: 'plantcontacts_tb' }
+} {
+  const parsedOwnsId = toPositiveInteger(ownsId)
+  if (parsedOwnsId == null) {
+    throw createApiError('Invalid owns id for plantcontacts_tb payload')
+  }
+
+  const parsedContactId = toPositiveInteger(contactId)
+  if (parsedContactId == null) {
+    throw createApiError('Invalid contact id for plantcontacts_tb payload')
+  }
+
+  return {
+    data: {
+      attributes: {
+        Owns_ID: parsedOwnsId,
+        CompanyTitle: companyTitle ?? '',
+        PrimaryCT: isPrimary ? 'Y' : 'N',
+        BillingCT: isBilling ? 'Y' : 'N',
+        WebCT: isWeb ? 'Y' : 'N',
+        OtherCT: isOther ? 'Y' : 'N',
+        Active: 1,
+        ContactID: parsedContactId,
+        InvoiceType: '',
+        LOAtype: '',
+        GPC: '',
+        EIREmail: '',
+        ScheduleBEmail: '',
+        FormulaEmail: '',
+        PoCT: 'N',
+      },
+      type: 'plantcontacts_tb',
     },
   }
 }
@@ -462,6 +533,42 @@ export async function createCompanyContactLinkFromApplication({
   })
   return await fetchWithAuth({
     path: '/api/companycontacts_tb',
+    method: 'POST',
+    body,
+    token,
+  })
+}
+
+export async function createPlantContactLinkFromApplication({
+  ownsId,
+  companyTitle,
+  contactId,
+  isPrimary,
+  isBilling,
+  isWeb,
+  isOther,
+  token,
+}: {
+  ownsId: string | number
+  companyTitle?: string
+  contactId: string | number
+  isPrimary: boolean
+  isBilling: boolean
+  isWeb: boolean
+  isOther: boolean
+  token?: string | null
+}): Promise<any> {
+  const body = buildPlantContactPayloadFromApplication({
+    ownsId,
+    companyTitle,
+    contactId,
+    isPrimary,
+    isBilling,
+    isWeb,
+    isOther,
+  })
+  return await fetchWithAuth({
+    path: '/api/plantcontacts_tb',
     method: 'POST',
     body,
     token,
