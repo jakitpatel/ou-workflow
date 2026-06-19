@@ -2,6 +2,7 @@ import { ErrorDialog } from '@/components/ErrorDialog';
 import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
 import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
 import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal';
+import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer';
 import { InspectionAssignmentDrawer } from '@/features/applications/components/InspectionAssignmentDrawer';
 import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer';
 import { InspectionVisitDateDrawer } from '@/features/applications/components/InspectionVisitDateDrawer';
@@ -51,6 +52,8 @@ export function TaskDashboardContent() {
     setInspectionAssignmentDrawerState,
     inspectionVisitDateDrawerState,
     setInspectionVisitDateDrawerState,
+    contractDrawerState,
+    setContractDrawerState,
     selectedAction,
     executeAction,
     completeTaskWithResult,
@@ -178,6 +181,15 @@ export function TaskDashboardContent() {
         applicant={inspectionVisitDateDrawerState.applicant}
         task={inspectionVisitDateDrawerState.task}
         onClose={() => setInspectionVisitDateDrawerState({ open: false })}
+      />
+      <ContractStageDrawer
+        open={contractDrawerState.open}
+        applicant={contractDrawerState.applicant}
+        applicationId={contractDrawerState.applicationId}
+        applicationName={contractDrawerState.applicationName}
+        taskInstanceId={contractDrawerState.taskInstanceId}
+        taskName={contractDrawerState.taskName}
+        onClose={() => setContractDrawerState({ open: false })}
       />
     </>
   );

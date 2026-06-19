@@ -5,6 +5,7 @@ import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModa
 import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal'
 import { NcrcDashboardControls } from '@/features/applications/components/NcrcDashboardControls'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
+import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer'
 import { InspectionAssignmentDrawer } from '@/features/applications/components/InspectionAssignmentDrawer'
 import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer'
 import { InspectionVisitDateDrawer } from '@/features/applications/components/InspectionVisitDateDrawer'
@@ -86,6 +87,18 @@ export function NcrcDashboardContent() {
     open: boolean
     applicant?: Applicant
     task?: Task
+  }>({
+    open: false,
+  })
+  const [contractDrawerState, setContractDrawerState] = useState<{
+    open: boolean
+    applicant?: Applicant
+    applicationId?: string | number
+    applicationName?: string
+    taskInstanceId?: string | number
+    taskName?: string
+    appVars?: ApplicantAppVars | null
+    assignedRoles?: AssignedRole[]
   }>({
     open: false,
   })
@@ -267,6 +280,20 @@ export function NcrcDashboardContent() {
         open: true,
         applicant: application,
         task: action,
+      })
+      return
+    }
+
+    if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.CONTRACT) {
+      setContractDrawerState({
+        open: true,
+        applicant: application,
+        applicationId: application.applicationId,
+        applicationName: application.company,
+        taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
+        taskName: action.name,
+        appVars: application.appvars ?? null,
+        assignedRoles: application.assignedRoles,
       })
       return
     }
@@ -488,6 +515,17 @@ export function NcrcDashboardContent() {
         applicant={inspectionVisitDateDrawerState.applicant}
         task={inspectionVisitDateDrawerState.task}
         onClose={() => setInspectionVisitDateDrawerState({ open: false })}
+      />
+      <ContractStageDrawer
+        open={contractDrawerState.open}
+        applicant={contractDrawerState.applicant}
+        applicationId={contractDrawerState.applicationId}
+        applicationName={contractDrawerState.applicationName}
+        taskInstanceId={contractDrawerState.taskInstanceId}
+        taskName={contractDrawerState.taskName}
+        appVars={contractDrawerState.appVars}
+        assignedRoles={contractDrawerState.assignedRoles}
+        onClose={() => setContractDrawerState({ open: false })}
       />
     </>
   )

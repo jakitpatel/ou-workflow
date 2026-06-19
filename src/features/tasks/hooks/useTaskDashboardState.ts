@@ -74,6 +74,15 @@ type InspectionTaskDrawerState = {
   task?: Task
 }
 
+type ContractDrawerState = {
+  open: boolean
+  applicant?: Applicant
+  applicationId?: string | number
+  applicationName?: string
+  taskInstanceId?: string | number
+  taskName?: string
+}
+
 const DEBOUNCE_DELAY = 700
 const PAGE_LIMIT = 50
 
@@ -228,6 +237,10 @@ const getTaskActionPresentation = (application: TaskDashboardAction) => {
     return { type: 'schedule-b' as const }
   }
 
+  if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.CONTRACT) {
+    return { type: 'contract' as const }
+  }
+
   if (
     actionType === TASK_TYPES.ACTION &&
     [TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].includes(
@@ -303,6 +316,9 @@ export function useTaskDashboardState() {
     useState<InspectionTaskDrawerState>({
       open: false,
     })
+  const [contractDrawerState, setContractDrawerState] = useState<ContractDrawerState>({
+    open: false,
+  })
 
   const { username, role, roles, token } = useUser()
   const { paginationMode } = useAppPreferences()
@@ -678,6 +694,18 @@ export function useTaskDashboardState() {
         return
       }
 
+      if (actionPresentation.type === 'contract') {
+        setContractDrawerState({
+          open: true,
+          applicant: inspectionApplicant,
+          applicationId: action.applicationId,
+          applicationName: action.companyName ?? action.plantName,
+          taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
+          taskName: action.taskName ?? action.name,
+        })
+        return
+      }
+
       if (actionPresentation.type === 'upload') {
         setShowUploadModal(action)
       }
@@ -739,6 +767,8 @@ export function useTaskDashboardState() {
     setInspectionAssignmentDrawerState,
     inspectionVisitDateDrawerState,
     setInspectionVisitDateDrawerState,
+    contractDrawerState,
+    setContractDrawerState,
     selectedAction,
     executeAction,
     completeTaskWithResult,
