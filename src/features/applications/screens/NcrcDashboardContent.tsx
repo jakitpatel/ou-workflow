@@ -284,7 +284,7 @@ export function NcrcDashboardContent() {
       return
     }
 
-    if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.CONTRACT) {
+    if ((actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.CONTRACT) || (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION && action.name.toLowerCase().includes('contract'))) {
       setContractDrawerState({
         open: true,
         applicant: application,
