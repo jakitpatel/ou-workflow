@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Check,
   ChevronRight,
+  ClipboardList,
   FileText,
   Mail,
   Scale,
@@ -16,8 +17,6 @@ import {
   createApplicationMessage,
   type ApplicationMessagePayload,
 } from '@/features/applications/api'
-import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer'
-import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
@@ -46,6 +45,29 @@ const LABELING_RULES = [
   'Marketing materials should clearly state that only products bearing the OU symbol are certified.',
 ]
 
+type ContractPreviewProductRow = {
+  ConsumerIndustrial?: string
+  brandName?: string
+  bulkShipped?: boolean | string
+  certification?: string
+  labelCompany?: string
+  labelName?: string
+  status?: string
+}
+
+type ContractPreviewIngredientRow = {
+  addedBy?: string
+  addedDate?: string
+  brand?: string
+  certification?: string
+  ingredient?: string
+  manufacturer?: string
+  ncrcId?: number | string
+  packaging?: string
+  source?: string
+  status?: string
+}
+
 const textValue = (value: unknown) => String(value ?? '').trim()
 
 const formatDate = (value?: string | null) => {
@@ -67,6 +89,20 @@ const formatCurrency = (value: string | number) => {
     currency: 'USD',
     minimumFractionDigits: 2,
   })
+}
+
+const hasDisplayValue = (value: unknown) => {
+  if (value === null || value === undefined) return false
+  if (typeof value === 'boolean') return true
+  return String(value).trim() !== ''
+}
+
+const toYesNoValue = (value: boolean | string | undefined) => {
+  if (value === true) return 'Yes'
+  const normalized = String(value ?? '').trim().toLowerCase()
+  if (normalized === 'y' || normalized === 'yes' || normalized === 'true') return 'Yes'
+  if (normalized === 'n' || normalized === 'no' || normalized === 'false') return 'No'
+  return '-'
 }
 
 const getAssignedRoleValue = (assignedRoles: AssignedRole[] | undefined, roleName: string) => {
@@ -158,7 +194,6 @@ export function ContractStageDrawer({
   applicationName,
   taskInstanceId,
   taskName,
-  appVars,
   assignedRoles,
   onClose,
 }: Props) {
@@ -235,7 +270,17 @@ export function ContractStageDrawer({
       ),
     [applicationDetail?.companyContacts],
   )
-  const appVarsFromDetail = applicationDetail?.appvars ?? appVars ?? applicant?.appvars ?? null
+  const contractIngredients = useMemo(
+    () =>
+      ((applicationDetail?.ingredients as ContractPreviewIngredientRow[] | undefined) ?? []).filter(
+        Boolean,
+      ),
+    [applicationDetail?.ingredients],
+  )
+  const contractProducts = useMemo(
+    () => ((applicationDetail?.products as ContractPreviewProductRow[] | undefined) ?? []).filter(Boolean),
+    [applicationDetail?.products],
+  )
 
   const packageItems = [
     'Certification Agreement',
@@ -347,31 +392,219 @@ Rabbinic Coordinator`
 
   const previewContent =
     previewTab === 'a' ? (
-      <ScheduleAIngredientsDrawer
-        open
-        mode="embedded"
-        applicationId={resolvedApplicationId}
-        applicationName={companyName}
-        visitId={appVarsFromDetail?.visit_id}
-        appVars={appVarsFromDetail}
-        assignedRoles={detailAssignedRoles}
-        taskInstanceId={taskInstanceId}
-        taskName={taskName}
-        onClose={() => {}}
-      />
+      <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+              Schedule A
+            </div>
+            <h4 className="mt-2 text-2xl font-semibold text-gray-900">Ingredients</h4>
+            <p className="mt-2 text-sm text-gray-500">
+              Pulled live from the application detail ingredient list for the contract preview.
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
+            <ClipboardList className="h-3.5 w-3.5" />
+            {contractIngredients.length} Ingredient{contractIngredients.length === 1 ? '' : 's'}
+          </div>
+        </div>
+
+        <div className="mt-5 overflow-x-auto rounded-lg border border-gray-200">
+          <table className="min-w-full bg-white text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Ingredient Name
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Manufacturer
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Brand
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Packaging
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Symbol / Certification
+                </th>
+                <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {contractIngredients.length > 0 ? (
+                contractIngredients.map((ingredient, index) => {
+                  const status = hasDisplayValue(ingredient.status) ? String(ingredient.status) : '-'
+
+                  return (
+                    <tr
+                      key={`${ingredient.ingredient ?? 'ingredient'}-${index}`}
+                      className="hover:bg-gray-50"
+                    >
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {ingredient.ingredient || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {ingredient.manufacturer || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">{ingredient.brand || '-'}</td>
+                      <td className="px-4 py-3">
+                        {hasDisplayValue(ingredient.packaging) ? (
+                          <span className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+                            {ingredient.packaging}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {hasDisplayValue(ingredient.certification) ? (
+                          <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+                            {ingredient.certification}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {status !== '-' ? (
+                          <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                            {status}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center">
+                    <div className="text-gray-400">
+                      <p className="text-sm font-medium">No ingredients found</p>
+                      <p className="mt-1 text-xs">
+                        No application-detail ingredients are available for this contract preview.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     ) : previewTab === 'b' ? (
-      <ScheduleBProductsDrawer
-        open
-        mode="embedded"
-        applicationId={resolvedApplicationId}
-        applicationName={companyName}
-        visitId={appVarsFromDetail?.visit_id}
-        appVars={appVarsFromDetail}
-        assignedRoles={detailAssignedRoles}
-        taskInstanceId={taskInstanceId}
-        taskName={taskName}
-        onClose={() => {}}
-      />
+      <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
+              Schedule B
+            </div>
+            <h4 className="mt-2 text-2xl font-semibold text-gray-900">Products</h4>
+            <p className="mt-2 text-sm text-gray-500">
+              Pulled live from the application detail product list for the contract preview.
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
+            <ClipboardList className="h-3.5 w-3.5" />
+            {contractProducts.length} Product{contractProducts.length === 1 ? '' : 's'}
+          </div>
+        </div>
+
+        <div className="mt-5 overflow-x-auto rounded-lg border border-gray-200">
+          <table className="min-w-full bg-white text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Label Name
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Brand
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Label Company
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Designation
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Bulk
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Symbol
+                </th>
+                <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {contractProducts.length > 0 ? (
+                contractProducts.map((product, index) => {
+                  const designation = hasDisplayValue(product.ConsumerIndustrial)
+                    ? String(product.ConsumerIndustrial)
+                    : '-'
+                  const status = hasDisplayValue(product.status) ? String(product.status) : '-'
+
+                  return (
+                    <tr key={`${product.labelName ?? 'product'}-${index}`} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {product.labelName || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">{product.brandName || '-'}</td>
+                      <td className="px-4 py-3 text-gray-700">{product.labelCompany || '-'}</td>
+                      <td className="px-4 py-3">
+                        {designation !== '-' ? (
+                          <span className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+                            {designation}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700">
+                          {toYesNoValue(product.bulkShipped)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {hasDisplayValue(product.certification) ? (
+                          <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+                            {product.certification}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {status !== '-' ? (
+                          <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                            {status}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center">
+                    <div className="text-gray-400">
+                      <p className="text-sm font-medium">No products found</p>
+                      <p className="mt-1 text-xs">No application-detail products are available for this contract preview.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     ) : previewTab === 'cover' ? (
       <div className="space-y-5 rounded-xl border border-gray-200 bg-white p-6">
         <div className="border-b border-gray-200 pb-4">
