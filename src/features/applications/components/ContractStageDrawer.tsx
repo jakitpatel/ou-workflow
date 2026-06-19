@@ -50,6 +50,7 @@ type ContractPreviewProductRow = {
   brandName?: string
   bulkShipped?: boolean | string
   certification?: string
+  labelNo?: string | number
   labelCompany?: string
   labelName?: string
   status?: string
@@ -414,22 +415,13 @@ Rabbinic Coordinator`
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Ingredient Name
+                  Name
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Manufacturer
-                </th>
-                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Brand
-                </th>
-                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Packaging
-                </th>
-                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Symbol / Certification
+                  Group - Certificate
                 </th>
                 <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Status
+                  Approved
                 </th>
               </tr>
             </thead>
@@ -437,6 +429,9 @@ Rabbinic Coordinator`
               {contractIngredients.length > 0 ? (
                 contractIngredients.map((ingredient, index) => {
                   const status = hasDisplayValue(ingredient.status) ? String(ingredient.status) : '-'
+                  const certificate = hasDisplayValue(ingredient.certification)
+                    ? String(ingredient.certification)
+                    : '-'
 
                   return (
                     <tr
@@ -447,22 +442,9 @@ Rabbinic Coordinator`
                         {ingredient.ingredient || '-'}
                       </td>
                       <td className="px-4 py-3 text-gray-700">
-                        {ingredient.manufacturer || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">{ingredient.brand || '-'}</td>
-                      <td className="px-4 py-3">
-                        {hasDisplayValue(ingredient.packaging) ? (
-                          <span className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-                            {ingredient.packaging}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {hasDisplayValue(ingredient.certification) ? (
+                        {certificate !== '-' ? (
                           <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
-                            {ingredient.certification}
+                            {certificate}
                           </span>
                         ) : (
                           <span className="text-gray-400">-</span>
@@ -482,7 +464,7 @@ Rabbinic Coordinator`
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center">
+                  <td colSpan={3} className="px-4 py-12 text-center">
                     <div className="text-gray-400">
                       <p className="text-sm font-medium">No ingredients found</p>
                       <p className="mt-1 text-xs">
@@ -519,6 +501,9 @@ Rabbinic Coordinator`
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Label #
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
                   Label Name
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
@@ -529,6 +514,9 @@ Rabbinic Coordinator`
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
                   Designation
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  C/I
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
                   Bulk
@@ -547,15 +535,22 @@ Rabbinic Coordinator`
                   const designation = hasDisplayValue(product.ConsumerIndustrial)
                     ? String(product.ConsumerIndustrial)
                     : '-'
+                  const labelNumber = hasDisplayValue(product.labelNo)
+                    ? String(product.labelNo)
+                    : '-'
                   const status = hasDisplayValue(product.status) ? String(product.status) : '-'
 
                   return (
                     <tr key={`${product.labelName ?? 'product'}-${index}`} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-gray-700">{labelNumber}</td>
                       <td className="px-4 py-3 font-medium text-gray-900">
                         {product.labelName || '-'}
                       </td>
                       <td className="px-4 py-3 text-gray-700">{product.brandName || '-'}</td>
                       <td className="px-4 py-3 text-gray-700">{product.labelCompany || '-'}</td>
+                      <td className="px-4 py-3 text-gray-700">
+                        <span className="text-gray-400">-</span>
+                      </td>
                       <td className="px-4 py-3">
                         {designation !== '-' ? (
                           <span className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
@@ -593,7 +588,7 @@ Rabbinic Coordinator`
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center">
+                  <td colSpan={9} className="px-4 py-12 text-center">
                     <div className="text-gray-400">
                       <p className="text-sm font-medium">No products found</p>
                       <p className="mt-1 text-xs">No application-detail products are available for this contract preview.</p>
