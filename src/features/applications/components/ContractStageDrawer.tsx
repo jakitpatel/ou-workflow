@@ -492,9 +492,7 @@ export function ContractStageDrawer({
   const [annualFee, setAnnualFee] = useState(DEFAULT_ANNUAL_FEE)
   const [certificationInvoiceComment, setCertificationInvoiceComment] = useState('')
   const [includeInvoiceComment, setIncludeInvoiceComment] = useState(false)
-  const [productionProcedures, setProductionProcedures] = useState(
-    'Plant personnel will use only approved ingredients and certified labels for OU products.',
-  )
+  const [productionProcedures, setProductionProcedures] = useState('')
   const [noProductionProcedures, setNoProductionProcedures] = useState(true)
   const [pulledOpen, setPulledOpen] = useState(true)
   const [legalReviewNeeded, setLegalReviewNeeded] = useState(false)
@@ -534,9 +532,7 @@ export function ContractStageDrawer({
     setAnnualFee(DEFAULT_ANNUAL_FEE)
     setCertificationInvoiceComment('')
     setIncludeInvoiceComment(false)
-    setProductionProcedures(
-      'Plant personnel will use only approved ingredients and certified labels for OU products.',
-    )
+    setProductionProcedures('')
     setNoProductionProcedures(true)
     setPulledOpen(true)
     setAgreementClauses(cloneAgreementClauses(BASE_AGREEMENT_CLAUSES))
@@ -1572,7 +1568,7 @@ Rabbinic Coordinator`
         </div>
         <h4 className="mt-2 text-2xl font-semibold text-gray-900">Production Procedures</h4>
         <div className="mt-5 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">
-          {noProductionProcedures ? 'None supplied.' : productionProcedures}
+          {noProductionProcedures ? 'None.' : productionProcedures}
         </div>
       </div>
     ) : previewTab === 'e' ? (
@@ -2221,7 +2217,7 @@ Rabbinic Coordinator`
                     </div>
                     <textarea
                       rows={2}
-                      placeholder="Dedicated line, kosherization, bulk-shipment notes..."
+                      placeholder="Dedicated line, kosherization, bulk-shipment notes…"
                       value={productionProcedures}
                       disabled={noProductionProcedures}
                       onChange={(event) => setProductionProcedures(event.target.value)}
