@@ -44,6 +44,7 @@ type PreviewTab =
   | 'e'
   | 'invoice'
   | 'pla'
+  | '__old_cover'
   | '__old_agreement'
 
 const DEFAULT_ANNUAL_FEE = '2500'
@@ -454,6 +455,7 @@ export function ContractStageDrawer({
   const [waitForPayment, setWaitForPayment] = useState(true)
   const [plaBodyOpen, setPlaBodyOpen] = useState(false)
   const [selectedPlaCompany, setSelectedPlaCompany] = useState('')
+  const [coverEmailOpen, setCoverEmailOpen] = useState(false)
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [isSendingEmail, setIsSendingEmail] = useState(false)
@@ -485,6 +487,7 @@ export function ContractStageDrawer({
     setEditingClauseText('')
     setPlaBodyOpen(false)
     setSelectedPlaCompany('')
+    setCoverEmailOpen(false)
   }, [open, taskInstanceId])
 
   const detailAssignedRoles = applicationDetail?.assignedRoles ?? assignedRoles
@@ -635,6 +638,12 @@ export function ContractStageDrawer({
     toast.success(`Saved as v${nextVersionNumber} - change captured for Legal review`)
   }
 
+  const invoiceNumber = `KCM-${resolvedApplicationId ?? 'DRAFT'}`
+  const invoiceAccountNumber = resolvedApplicationId ? `OU-${resolvedApplicationId}` : 'OU-DRAFT'
+  const invoiceDate = formatShortDate(effectiveDate)
+  const invoiceAmount = formatCurrency(annualFee)
+  const invoiceTotal = `${invoiceAmount} USD`
+
   const packageItems = [
     'Certification Agreement',
     'Schedule A - Ingredients',
@@ -646,6 +655,40 @@ export function ContractStageDrawer({
     ...(hasPrivateLabelAgreements
       ? privateLabelGroups.map((group) => `Private Label Agreement - ${group.labelCompany}`)
       : []),
+  ]
+  const coverPackageItems = [
+    {
+      label: 'Certification Agreement',
+      sub: 'Master agreement - new company',
+    },
+    {
+      label: 'Schedule A - Ingredients',
+      sub: 'Approved ingredients list',
+    },
+    {
+      label: 'Schedule B - Products',
+      sub: hasPrivateLabelAgreements ? 'In-house + private-label products' : 'Certified products',
+    },
+    {
+      label: 'Schedule C - Plants & Fee',
+      sub: `${plantLabel || 'Plant'} - ${formatCurrency(annualFee)}/yr`,
+    },
+    {
+      label: 'Schedule D - Production Procedures',
+      sub: noProductionProcedures ? 'None' : 'Specified',
+    },
+    {
+      label: 'Schedule E - Labeling Requirements',
+      sub: 'OU symbol & label use',
+    },
+    {
+      label: 'Contract Invoice',
+      sub: `${invoiceNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
+    },
+    ...privateLabelGroups.map((group) => ({
+      label: `Private Label Agreement - ${group.labelCompany}`,
+      sub: `${group.products.length} product${group.products.length === 1 ? '' : 's'} - incl. Schedule A + Invoice`,
+    })),
   ]
 
   const readyToGenerate =
@@ -667,11 +710,6 @@ export function ContractStageDrawer({
       : readyToGenerate
         ? 'Ready'
         : 'In Progress'
-  const invoiceNumber = `KCM-${resolvedApplicationId ?? 'DRAFT'}`
-  const invoiceAccountNumber = resolvedApplicationId ? `OU-${resolvedApplicationId}` : 'OU-DRAFT'
-  const invoiceDate = formatShortDate(effectiveDate)
-  const invoiceAmount = formatCurrency(annualFee)
-  const invoiceTotal = `${invoiceAmount} USD`
   const billingLines =
     (companyAddress || plantAddress || '')
       .split(',')
@@ -982,6 +1020,175 @@ Rabbinic Coordinator`
         </div>
       </div>
     ) : previewTab === 'cover' ? (
+      <div className="rounded-xl border border-gray-200 bg-white p-6">
+        {coverEmailOpen ? (
+          <div className="font-sans">
+            <button
+              type="button"
+              onClick={() => setCoverEmailOpen(false)}
+              className="mb-3 text-xs font-semibold text-[#185087] hover:underline"
+            >
+              Back to cover
+            </button>
+            <div className="overflow-hidden rounded-[10px] border border-gray-200">
+              <div className="flex gap-3 border-b border-gray-100 px-3.5 py-2 text-[12.5px]">
+                <span className="w-[58px] shrink-0 pt-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">
+                  From
+                </span>
+                <span>OU Kashruth Division - {rcName} &lt;{username ?? 'rc@ou.org'}&gt;</span>
+              </div>
+              <div className="flex gap-3 border-b border-gray-100 px-3.5 py-2 text-[12.5px]">
+                <span className="w-[58px] shrink-0 pt-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">
+                  To
+                </span>
+                <span>
+                  {contact.name || 'Company Contact'}
+                  {contact.email ? ` <${contact.email}>` : ''}
+                </span>
+              </div>
+              <div className="flex gap-3 border-b border-gray-100 px-3.5 py-2 text-[12.5px]">
+                <span className="w-[58px] shrink-0 pt-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">
+                  Cc
+                </span>
+                <span>{rcName} &lt;{username ?? 'rc@ou.org'}&gt;</span>
+              </div>
+              <div className="flex gap-3 border-b border-gray-100 px-3.5 py-2 text-[12.5px]">
+                <span className="w-[58px] shrink-0 pt-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">
+                  Subject
+                </span>
+                <span>
+                  <strong>Kosher Certification Contract - {companyName}</strong>
+                </span>
+              </div>
+              <div className="whitespace-pre-line px-3.5 py-3.5 text-[12.5px] leading-6 text-[#1e1e2e]">
+                {emailBody}
+              </div>
+              <div className="border-t border-gray-100 bg-gray-50 px-3.5 py-3">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                  Attachment
+                </div>
+                <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12.5px]">
+                  <FileText className="h-4 w-4 text-[#185087]" />
+                  <span className="font-semibold text-[#1e1e2e]">
+                    Certification_Package_{companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf
+                  </span>
+                  <span className="ml-auto text-[11px] text-gray-400">
+                    {coverPackageItems.length} documents - cover sheet enclosed
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              {emailSent ? (
+                <div className="rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5 text-[12.5px] font-bold text-green-700">
+                  Sent via Outlook to {contact.email || contact.name || 'company contact'} - package
+                  logged to the application communications.
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isSendingEmail}
+                  onClick={handleSendEmail}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#185087] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#13406c] disabled:cursor-not-allowed disabled:bg-gray-300"
+                >
+                  <Send className="h-4 w-4" />
+                  {isSendingEmail ? 'Sending...' : 'Send via Outlook'}
+                </button>
+              )}
+              <p className="text-[11px] text-gray-400">
+                Routes through Outlook (Microsoft 365 / Graph). You confirm before it sends.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="font-sans">
+            <div className="mb-2.5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setCoverEmailOpen(true)}
+                className="inline-flex items-center gap-2 rounded-md bg-[#185087] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#13406c]"
+              >
+                <Mail className="h-4 w-4" />
+                Email package
+              </button>
+            </div>
+            <div className="mb-4 flex items-start justify-between border-b-2 border-[#185087] pb-3">
+              <div>
+                <div className="font-serif text-lg font-bold tracking-tight text-[#185087]">
+                  ORTHODOX UNION
+                </div>
+                <div className="mt-0.5 text-[10.5px] text-gray-500">
+                  Kashruth Division - 40 Rector Street, 4th Floor, New York, NY 10006
+                </div>
+              </div>
+              <div className="text-right text-[11px] text-gray-500">
+                {formatFullDate(effectiveDate)}
+                <br />
+                Re: Kosher Certification Contract
+              </div>
+            </div>
+
+            <p className="mb-3 text-[12.5px] leading-6 text-[#1e1e2e]">
+              <strong>{companyName}</strong>
+              <br />
+              {billingLines.map((line) => (
+                <span key={line}>
+                  {line}
+                  <br />
+                </span>
+              ))}
+              Att: {contact.name || 'Company Contact'}
+            </p>
+            <p className="mb-3 text-[12.5px] leading-6 text-[#1e1e2e]">
+              Dear {contact.name || 'Company Contact'}:
+            </p>
+            <p className="mb-3 text-[12.5px] leading-6 text-[#1e1e2e]">
+              Enclosed please find the following documents comprising the kosher certification
+              contract package for <strong>{companyName}</strong>. Please review, sign where
+              indicated, and return together with payment of the enclosed invoice
+              {hasPrivateLabelAgreements ? 's' : ''}.
+            </p>
+
+            <div className="mb-2 mt-4 flex items-baseline justify-between text-[10px] font-bold uppercase tracking-wide text-gray-400">
+              <span>Package Contents</span>
+              <span className="font-semibold normal-case tracking-normal text-gray-600">
+                {coverPackageItems.length} items
+              </span>
+            </div>
+            <div className="mb-4 overflow-hidden rounded-lg border border-gray-200">
+              {coverPackageItems.map((item, index) => (
+                <div
+                  key={item.label}
+                  className="flex items-start gap-3 border-b border-gray-100 px-3.5 py-2.5 last:border-b-0"
+                >
+                  <div className="mt-0.5 flex h-[21px] w-[21px] shrink-0 items-center justify-center rounded-full bg-[#185087] text-[10.5px] font-bold text-white">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <div className="text-[12.5px] font-semibold text-[#1e1e2e]">{item.label}</div>
+                    <div className="mt-0.5 text-[11px] text-gray-500">{item.sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="mb-3 text-[12.5px] leading-6 text-[#1e1e2e]">
+              We wish you much success in this certification.
+            </p>
+            <p className="mt-5 text-[12.5px] leading-6 text-[#1e1e2e]">
+              Sincerely,
+              <br />
+              <br />
+              {rcName}
+              <br />
+              Rabbinic Coordinator
+              <br />
+              Union of Orthodox Jewish Congregations of America
+            </p>
+          </div>
+        )}
+      </div>
+    ) : previewTab === '__old_cover' ? (
       <div className="space-y-5 rounded-xl border border-gray-200 bg-white p-6">
         <div className="border-b border-gray-200 pb-4">
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
