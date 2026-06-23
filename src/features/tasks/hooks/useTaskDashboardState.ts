@@ -154,6 +154,7 @@ const buildInspectionApplicant = (selectedTask: ApplicationTask, tasks: Applicat
   return {
     id: selectedTask.applicationId,
     applicationId: selectedTask.applicationId,
+    isNewCompany: selectedTask.isNewCompany,
     companyId: selectedTask.companyId,
     company: selectedTask.companyName ?? '',
     plantId: selectedTask.plantId,

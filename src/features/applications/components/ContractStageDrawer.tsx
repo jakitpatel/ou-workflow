@@ -322,6 +322,11 @@ const formatShortDate = (value?: string | null) => {
   )}/${parsed.getFullYear()}`
 }
 
+const getYearFromDateValue = (value?: string | null) => {
+  const parsed = new Date(`${value}T00:00:00`)
+  return Number.isNaN(parsed.getTime()) ? new Date().getFullYear() : parsed.getFullYear()
+}
+
 const formatMonthDay = (value?: string | null) => {
   if (!value) return '-'
   const parsed = new Date(`${value}T00:00:00`)
@@ -514,6 +519,7 @@ export function ContractStageDrawer({
   applicationName,
   taskInstanceId,
   taskName,
+  appVars,
   assignedRoles,
   onClose,
 }: Props) {
@@ -674,7 +680,10 @@ export function ContractStageDrawer({
   const selectedPrivateLabelInvoiceAccount = selectedPrivateLabelInvoiceCompany
     ? `PL-${String(resolvedApplicationId ?? 'DRAFT')}`
     : 'PL-DRAFT'
-  const contractTypeLabel = 'New Company Certification'
+  const isNewCompanyContract = applicant?.isNewCompany !== false
+  const contractTypeLabel = isNewCompanyContract
+    ? 'New Company Certification'
+    : 'Plant Addendum (existing company)'
   const maxClauseVersion = Math.max(...clauseVersions.map((version) => version.n))
   const isLatestClauseVersion = activeClauseVersion === maxClauseVersion
   const visibleAgreementClauses =
@@ -724,6 +733,23 @@ export function ContractStageDrawer({
   const invoiceDate = formatShortDate(effectiveDate)
   const invoiceAmount = formatCurrency(annualFee)
   const invoiceTotal = `${invoiceAmount} USD`
+  const paymentCycleYear = getYearFromDateValue(effectiveDate)
+  const companyPaymentCycleStart =
+    textValue(appVars?.companyPaymentCycleStart) ||
+    textValue(appVars?.paymentCycleStart) ||
+    textValue(appVars?.cycleStart) ||
+    textValue((applicant as Record<string, unknown> | undefined)?.companyPaymentCycleStart) ||
+    textValue((applicant as Record<string, unknown> | undefined)?.paymentCycleStart) ||
+    textValue((applicant as Record<string, unknown> | undefined)?.cycleStart) ||
+    `${paymentCycleYear}-01-01`
+  const companyPaymentCycleEnd =
+    textValue(appVars?.companyPaymentCycleEnd) ||
+    textValue(appVars?.paymentCycleEnd) ||
+    textValue(appVars?.cycleEnd) ||
+    textValue((applicant as Record<string, unknown> | undefined)?.companyPaymentCycleEnd) ||
+    textValue((applicant as Record<string, unknown> | undefined)?.paymentCycleEnd) ||
+    textValue((applicant as Record<string, unknown> | undefined)?.cycleEnd) ||
+    `${paymentCycleYear}-12-31`
 
   const packageItems = [
     'Certification Agreement',
@@ -740,7 +766,7 @@ export function ContractStageDrawer({
   const coverPackageItems = [
     {
       label: 'Certification Agreement',
-      sub: 'Master agreement - new company',
+      sub: `Master agreement - ${isNewCompanyContract ? 'new company' : 'plant addendum'}`,
     },
     {
       label: 'Schedule A - Ingredients',
@@ -794,17 +820,6 @@ export function ContractStageDrawer({
     (noProductionProcedures || Boolean(productionProcedures.trim())) &&
     (!legalReviewNeeded || legalApproved)
   const readyToAdvance = packageGenerated && contractSigned && invoicePaid
-  const stageStatus = packageGenerated
-    ? readyToAdvance
-      ? 'Ready to Complete'
-      : contractSigned
-        ? 'Awaiting Payment'
-        : 'Awaiting Signature'
-    : legalReviewNeeded && !legalApproved
-      ? 'Legal Review'
-      : readyToGenerate
-        ? 'Ready'
-        : 'In Progress'
   const contractProgressSteps = [
     { label: 'Generate Inv.', complete: packageGenerated },
     { label: 'Contract Sent', complete: emailSent },
@@ -829,11 +844,13 @@ export function ContractStageDrawer({
           .filter(Boolean)
       : [companyAddress || plantAddress || 'Address on file']
   const invoiceTermStart = (() => {
+    if (!isNewCompanyContract) return formatFullDate(effectiveDate)
     const parsed = new Date(`${effectiveDate}T00:00:00`)
     if (Number.isNaN(parsed.getTime())) return formatFullDate(effectiveDate)
     return formatFullDate(new Date(parsed.getFullYear(), parsed.getMonth(), 1).toISOString().slice(0, 10))
   })()
   const invoiceTermEnd = (() => {
+    if (!isNewCompanyContract) return formatFullDate(companyPaymentCycleEnd)
     const parsed = new Date(`${effectiveDate}T00:00:00`)
     if (Number.isNaN(parsed.getTime())) return formatFullDate(effectiveDate)
     return formatFullDate(new Date(parsed.getFullYear() + 1, parsed.getMonth() + 1, 0).toISOString().slice(0, 10))
@@ -2445,20 +2462,6 @@ Rabbinic Coordinator`
                 ))}
               </div>
             </div>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-gray-600">
-              <span>{stageStatus}</span>
-              <span>
-                {packageGenerated
-                  ? contractSigned
-                    ? invoicePaid
-                      ? 'Contract signed and paid. Ready to complete.'
-                      : 'Contract signed. Waiting for payment before completion.'
-                    : 'Package generated. Waiting for signed return.'
-                  : legalReviewNeeded && !legalApproved
-                    ? 'Legal sign-off is required before the RC is notified.'
-                    : 'Configure the invoice and contract set, then notify the RC.'}
-              </span>
-            </div>
           </div>
 
           <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden px-6 py-5 xl:grid-cols-[440px_minmax(0,1fr)]">
@@ -2496,6 +2499,21 @@ Rabbinic Coordinator`
                       {formatMonthDay(effectiveDate)}." Backdating allowed.
                     </span>
                   </label>
+
+                  {!isNewCompanyContract ? (
+                    <label className="block text-sm">
+                      <span className="text-[12.5px] font-semibold text-gray-700">
+                        Company payment cycle
+                      </span>
+                      <div className="mt-1 w-full rounded-[7px] border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600">
+                        {formatShortDate(companyPaymentCycleStart)} - {formatShortDate(companyPaymentCycleEnd)}
+                      </div>
+                      <span className="mt-1 block text-[11.5px] leading-5 text-gray-500">
+                        Pulled from the company record - the new plant&apos;s invoice is prorated to
+                        sync with this cycle.
+                      </span>
+                    </label>
+                  ) : null}
 
                   <label className="block text-sm">
                     <span className="text-[12.5px] font-semibold text-gray-700">

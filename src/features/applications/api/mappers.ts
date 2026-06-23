@@ -51,6 +51,7 @@ export function mapApplicantsResponse(
       applicationId: applicant.applicationId ?? applicant.id ?? 0,
       visit_id: applicant.visit_id ?? applicant.visitId ?? appvars?.visit_id ?? null,
       appvars,
+      isNewCompany: applicant.isNewCompany,
       company: applicant.company ?? applicant.companyName ?? '',
       plant: applicant.plant ?? applicant.plantName ?? '',
       region: applicant.region ?? '',

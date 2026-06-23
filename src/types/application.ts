@@ -301,6 +301,12 @@ export type ApplicantAppVars = {
   actual_visit_date?: string | null;
   wf_file_id?: number | string | null;
   filename?: string | null;
+  cycleStart?: string | null;
+  cycleEnd?: string | null;
+  paymentCycleStart?: string | null;
+  paymentCycleEnd?: string | null;
+  companyPaymentCycleStart?: string | null;
+  companyPaymentCycleEnd?: string | null;
 };
 
 type ResolvedCompany = {
@@ -334,6 +340,7 @@ export type Applicant = {
   visit_id?: number | string | null;
   visitId?: number | string | null;
   appvars?: ApplicantAppVars | null;
+  isNewCompany?: boolean;
   companyId?: number;
   company: string;
   plantId?: number;
@@ -678,6 +685,7 @@ export interface ApplicationTask {
   status: "PENDING" | "COMPLETED" | string; // can extend as needed
   taskInstanceId: number;
   taskName: string;              // e.g., "Send NDA"
+  isNewCompany?: boolean;
   taskDescription: string;       // e.g., "Send the NDA to the client"
   taskType: string;              // e.g., "CONFIRM"
   TaskType?: string;
