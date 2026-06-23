@@ -21,7 +21,7 @@ export {
   fetchTaskRoles,
 } from '@/features/tasks/api'
 
-export { fetchProfileLayout, fetchRoles, saveProfileLayout } from '@/features/profile/api'
+export { fetchProfileLayout, fetchRoles, fetchUserPerson, saveProfileLayout } from '@/features/profile/api'
 
 export {
   buildCompanyPayloadFromApplication,

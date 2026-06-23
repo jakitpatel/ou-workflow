@@ -14,11 +14,12 @@ import {
   saveStoredAppPreferences,
   type StoredAppPreferences,
 } from "@/context/appPreferencesStorage";
-import { fetchProfileLayout } from "@/features/profile/api";
+import { fetchProfileLayout, fetchUserPerson, type UserPerson } from "@/features/profile/api";
 import { registerUserContext } from "@/shared/api/httpClient";
 import type { PaginationMode, StageLayout } from "@/types/application";
 
 type AppPreferencesContextType = StoredAppPreferences & {
+  userPerson: UserPerson | null;
   setApiBaseUrl: (url: string | null) => void;
   setStageLayout: (layout: StageLayout) => void;
   setPaginationMode: (mode: PaginationMode) => void;
@@ -39,6 +40,7 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
   const [paginationMode, setPaginationMode] = useState<PaginationMode>(
     stored.paginationMode,
   );
+  const [userPerson, setUserPerson] = useState<UserPerson | null>(null);
 
   useEffect(() => {
     saveStoredAppPreferences({
@@ -54,12 +56,26 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!token || !username) {
+      setUserPerson(null);
       return;
     }
 
     let cancelled = false;
 
     async function loadProfilePreferences() {
+      try {
+        const person = await fetchUserPerson({
+          token,
+          username: username ?? undefined,
+        });
+
+        if (!cancelled) {
+          setUserPerson(person);
+        }
+      } catch (error) {
+        console.warn("Failed to hydrate user person:", error);
+      }
+
       try {
         const records = await fetchProfileLayout({
           token,
@@ -110,12 +126,13 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
       apiBaseUrl,
       stageLayout,
       paginationMode,
+      userPerson,
       setApiBaseUrl,
       setStageLayout,
       setPaginationMode,
       resetAppPreferences,
     }),
-    [apiBaseUrl, stageLayout, paginationMode],
+    [apiBaseUrl, stageLayout, paginationMode, userPerson],
   );
 
   return (

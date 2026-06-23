@@ -6,6 +6,48 @@ import type { ApplicationTasksResponse } from '@/types/application'
 const createApiError = (message: string, status?: number, details?: unknown) =>
   createAppError(message, { status, details, code: 'API_ERROR' })
 
+type JsonApiRecord<TAttributes> = {
+  id?: string
+  type?: string
+  attributes?: TAttributes
+}
+
+type JsonApiListResponse<TAttributes> = {
+  data?: JsonApiRecord<TAttributes>[]
+}
+
+type UserPersonAttributes = {
+  KashLogin?: string
+  First?: string
+  Last?: string
+  FirstName?: string
+  LastName?: string
+  Prefix?: string
+}
+
+export type UserPerson = {
+  kashLogin: string
+  firstName: string
+  lastName: string
+  prefix: string
+}
+
+const normalizeUserPerson = (
+  record: JsonApiRecord<UserPersonAttributes> | undefined,
+): UserPerson | null => {
+  const attributes = record?.attributes
+  if (!attributes) {
+    return null
+  }
+
+  return {
+    kashLogin: String(attributes.KashLogin ?? '').trim(),
+    firstName: String(attributes.FirstName ?? attributes.First ?? '').trim(),
+    lastName: String(attributes.LastName ?? attributes.Last ?? '').trim(),
+    prefix: String(attributes.Prefix ?? '').trim(),
+  }
+}
+
 export async function fetchRoles({
   token,
 }: {
@@ -74,4 +116,27 @@ export async function fetchProfileLayout({
   })
 
   return response.data
+}
+
+export async function fetchUserPerson({
+  token,
+  username,
+}: {
+  token?: string | null
+  username?: string
+}): Promise<UserPerson | null> {
+  const params = new URLSearchParams()
+  if (username) {
+    params.append('filter[KashLogin]', username)
+  }
+
+  const queryString = params.toString()
+  const path = `/api/Person_TB${queryString ? `?${queryString}` : ''}`
+
+  const response = await fetchWithAuth<JsonApiListResponse<UserPersonAttributes>>({
+    path,
+    token,
+  })
+
+  return normalizeUserPerson(response.data?.[0])
 }
