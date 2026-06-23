@@ -3,7 +3,6 @@ import {
   ChevronRight,
   ClipboardList,
   FileText,
-  Mail,
   Send,
   X,
 } from 'lucide-react'
@@ -40,16 +39,22 @@ type PreviewTab =
   | 'e'
   | 'invoice'
   | 'pla'
+  | 'plInvoice'
   | '__old_cover'
   | '__old_agreement'
 
 const DEFAULT_ANNUAL_FEE = '2500'
 const LABELING_RULES = [
-  'Packaging should include the product name, brand, and company name so it can be matched to the certification record.',
-  'The OU symbol may only appear on authorized certified products.',
-  'The symbol should be printed as part of the original packaging, not added separately by sticker or stamp.',
-  'Dairy, meat, fish, and similar designations must appear next to the OU symbol when required.',
-  'Marketing materials should clearly state that only products bearing the OU symbol are certified.',
+  'Packaging of certified product must include Product name, brand name, and Company name so a recipient can match it to the Letter of Certification.',
+  'The OU may only be placed on products authorized and certified on your Schedule B. The OU-D must be used on Dairy products.',
+  'Private Label Product may not bear the OU unless a Private Label Agreement (three-way licensing agreement) is signed.',
+  'The OU symbol cannot be rubber-stamped or applied as a sticker separate from the original packaging.',
+  'The OU does not dictate size, color, or placement, but recommends it appear conspicuously - typically right of the product name.',
+  'Dairy products must have the "D" or "Dairy" in equal-size font to the OU symbol; not as a subscript.',
+  'OU-certified product may not contain a non-certified food item.',
+  'When bundling items of different status, the OU should appear on individual items, not the composite bag/tray.',
+  'Not recommended to print the OU on blank boxes/cartons/bags, since not all products in a plant may be certified.',
+  'A website/brochure bearing the OU must include "Products certified when bearing the OU symbol" or "Not all products are OU certified."',
 ]
 
 type ContractPreviewProductRow = {
@@ -403,13 +408,15 @@ const getPreviewTabLabel = (tab: PreviewTab) => {
       return 'Cover'
     case 'pla':
       return 'PLA'
+    case 'plInvoice':
+      return 'PL Invoice'
     default:
       return 'Preview'
   }
 }
 
 const getPreviewTabOrder = (tab: PreviewTab) =>
-  ['invoice', 'agreement', 'a', 'b', 'c', 'd', 'e', 'cover', 'pla'].indexOf(tab)
+  ['invoice', 'agreement', 'a', 'b', 'c', 'd', 'e', 'cover', 'pla', 'plInvoice'].indexOf(tab)
 
 function Section({
   title,
@@ -545,7 +552,6 @@ export function ContractStageDrawer({
   const [invoicePaid, setInvoicePaid] = useState(false)
   const [plaBodyOpen, setPlaBodyOpen] = useState(false)
   const [selectedPlaCompany, setSelectedPlaCompany] = useState('')
-  const [coverEmailOpen, setCoverEmailOpen] = useState(false)
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [isSendingEmail, setIsSendingEmail] = useState(false)
@@ -574,7 +580,6 @@ export function ContractStageDrawer({
     setEditingClauseText('')
     setPlaBodyOpen(false)
     setSelectedPlaCompany('')
-    setCoverEmailOpen(false)
   }, [open, taskInstanceId])
 
   const detailAssignedRoles = applicationDetail?.assignedRoles ?? assignedRoles
@@ -659,6 +664,16 @@ export function ContractStageDrawer({
   const selectedPrivateLabelGroup =
     privateLabelGroups.find((group) => group.labelCompany === selectedPlaCompany) ?? privateLabelGroups[0]
   const hasPrivateLabelAgreements = privateLabelGroups.length > 0
+  const selectedPrivateLabelInvoiceCompany =
+    selectedPrivateLabelGroup?.labelCompany ?? privateLabelGroups[0]?.labelCompany ?? ''
+  const selectedPrivateLabelInvoiceId = selectedPrivateLabelInvoiceCompany
+    ? `PL-${resolvedApplicationId ?? 'DRAFT'}-${privateLabelGroups.findIndex(
+        (group) => group.labelCompany === selectedPrivateLabelInvoiceCompany,
+      ) + 1}`
+    : 'PL-DRAFT'
+  const selectedPrivateLabelInvoiceAccount = selectedPrivateLabelInvoiceCompany
+    ? `PL-${String(resolvedApplicationId ?? 'DRAFT')}`
+    : 'PL-DRAFT'
   const contractTypeLabel = 'New Company Certification'
   const maxClauseVersion = Math.max(...clauseVersions.map((version) => version.n))
   const isLatestClauseVersion = activeClauseVersion === maxClauseVersion
@@ -754,6 +769,22 @@ export function ContractStageDrawer({
     ...privateLabelGroups.map((group) => ({
       label: `Private Label Agreement - ${group.labelCompany}`,
       sub: `${group.products.length} product${group.products.length === 1 ? '' : 's'} - incl. Schedule A + Invoice`,
+    })),
+  ]
+  const coverSeparateAttachments = [
+    {
+      label: 'Certification Invoice',
+      sub: `${invoiceNumber} - ${formatCurrency(annualFee)} - separate attachment`,
+      file: `Certification_Invoice_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
+      desc: `${invoiceNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
+      tab: 'invoice' as PreviewTab,
+    },
+    ...privateLabelGroups.map((group) => ({
+      label: `Private Label Agreement - ${group.labelCompany}`,
+      sub: 'agreement + PL invoice in one document - created by Yudi - separate attachment',
+      file: `PLA_${group.labelCompany.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
+      desc: `${group.labelCompany} - agreement + PL invoice (one document)`,
+      tab: 'pla' as PreviewTab,
     })),
   ]
 
@@ -1097,15 +1128,32 @@ Rabbinic Coordinator`
       </div>
     ) : previewTab === 'cover' ? (
       <div className="rounded-xl border border-gray-200 bg-white p-6">
-        {coverEmailOpen ? (
+        {packageGenerated ? (
           <div className="font-sans">
-            <button
-              type="button"
-              onClick={() => setCoverEmailOpen(false)}
-              className="mb-3 text-xs font-semibold text-[#185087] hover:underline"
-            >
-              Back to cover
-            </button>
+            <div className="mb-2.5 flex items-center justify-between gap-3">
+              <span className="text-xs font-semibold text-green-700">
+                Package generated - {coverSeparateAttachments.length + 1} attachment
+                {coverSeparateAttachments.length === 0 ? '' : 's'}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setPackageGenerated(false)
+                  setEmailSent(false)
+                }}
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+              >
+                Re-generate
+              </button>
+            </div>
+
+            {emailSent ? (
+              <div className="mb-3 rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5 text-[12.5px] font-bold text-green-700">
+                Sent via Outlook to {contact.email || contact.name || 'company contact'} - package
+                logged to the application communications.
+              </div>
+            ) : null}
+
             <div className="overflow-hidden rounded-[10px] border border-gray-200">
               <div className="flex gap-3 border-b border-gray-100 px-3.5 py-2 text-[12.5px]">
                 <span className="w-[58px] shrink-0 pt-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">
@@ -1136,31 +1184,57 @@ Rabbinic Coordinator`
                   <strong>Kosher Certification Contract - {companyName}</strong>
                 </span>
               </div>
-              <div className="whitespace-pre-line px-3.5 py-3.5 text-[12.5px] leading-6 text-[#1e1e2e]">
-                {emailBody}
+              <div className="px-3.5 py-3.5">
+                <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                  Cover letter - editable (email body)
+                </div>
+                <textarea
+                  readOnly
+                  value={emailBody}
+                  className="min-h-[172px] w-full resize-y rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-[12.5px] leading-6 text-[#1e1e2e]"
+                />
               </div>
               <div className="border-t border-gray-100 bg-gray-50 px-3.5 py-3">
                 <div className="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                  Attachment
+                  Attachments - {coverSeparateAttachments.length + 1}
                 </div>
-                <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12.5px]">
+                <div className="mb-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12.5px]">
                   <FileText className="h-4 w-4 text-[#185087]" />
                   <span className="font-semibold text-[#1e1e2e]">
                     Certification_Package_{companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf
                   </span>
                   <span className="ml-auto text-[11px] text-gray-400">
-                    {coverPackageItems.length} documents - cover sheet enclosed
+                    Agreement + Schedules A-E - {coverPackageItems.length} documents
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTab('agreement')}
+                    className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
+                  >
+                    View
+                  </button>
                 </div>
+                {coverSeparateAttachments.map((attachment) => (
+                  <div
+                    key={attachment.file}
+                    className="mb-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12.5px] last:mb-0"
+                  >
+                    <FileText className="h-4 w-4 text-[#185087]" />
+                    <span className="font-semibold text-[#1e1e2e]">{attachment.file}</span>
+                    <span className="ml-auto text-[11px] text-gray-400">{attachment.desc}</span>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTab(attachment.tab)}
+                      className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
+                    >
+                      View
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              {emailSent ? (
-                <div className="rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5 text-[12.5px] font-bold text-green-700">
-                  Sent via Outlook to {contact.email || contact.name || 'company contact'} - package
-                  logged to the application communications.
-                </div>
-              ) : (
+              {!emailSent ? (
                 <button
                   type="button"
                   disabled={isSendingEmail}
@@ -1170,9 +1244,11 @@ Rabbinic Coordinator`
                   <Send className="h-4 w-4" />
                   {isSendingEmail ? 'Sending...' : 'Send via Outlook'}
                 </button>
-              )}
+              ) : null}
               <p className="text-[11px] text-gray-400">
-                Routes through Outlook (Microsoft 365 / Graph). You confirm before it sends.
+                The cover letter is the email body - edit it above. The schedules are one PDF; the
+                invoice and any PLA are separate attachments. Click View on any to review it before
+                sending.
               </p>
             </div>
           </div>
@@ -1181,11 +1257,14 @@ Rabbinic Coordinator`
             <div className="mb-2.5 flex justify-end">
               <button
                 type="button"
-                onClick={() => setCoverEmailOpen(true)}
+                onClick={() => {
+                  setPackageGenerated(true)
+                  toast.success('Contract package generated')
+                }}
                 className="inline-flex items-center gap-2 rounded-md bg-[#185087] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#13406c]"
               >
-                <Mail className="h-4 w-4" />
-                Email package
+                <FileText className="h-4 w-4" />
+                Generate Contract Package
               </button>
             </div>
             <div className="mb-4 flex items-start justify-between border-b-2 border-[#185087] pb-3">
@@ -1204,31 +1283,18 @@ Rabbinic Coordinator`
               </div>
             </div>
 
-            <p className="mb-3 text-[12.5px] leading-6 text-[#1e1e2e]">
-              <strong>{companyName}</strong>
-              <br />
-              {billingLines.map((line) => (
-                <span key={line}>
-                  {line}
-                  <br />
-                </span>
-              ))}
-              Att: {contact.name || 'Company Contact'}
-            </p>
-            <p className="mb-3 text-[12.5px] leading-6 text-[#1e1e2e]">
-              Dear {contact.name || 'Company Contact'}:
-            </p>
-            <p className="mb-3 text-[12.5px] leading-6 text-[#1e1e2e]">
-              Enclosed please find the following documents comprising the kosher certification
-              contract package for <strong>{companyName}</strong>. Please review, sign where
-              indicated, and return together with payment of the enclosed invoice
-              {hasPrivateLabelAgreements ? 's' : ''}.
+            <p className="mb-3 text-[12.5px] leading-6 text-gray-600">
+              The contract schedules are combined into <strong>one PDF</strong>. The certification
+              invoice and any PLA{hasPrivateLabelAgreements && privateLabelGroups.length > 1 ? 's' : ''}{' '}
+              go out as <strong>separate attachments</strong>. Click{' '}
+              <strong>Generate Contract Package</strong> to build them, then review and edit the cover
+              letter before sending.
             </p>
 
             <div className="mb-2 mt-4 flex items-baseline justify-between text-[10px] font-bold uppercase tracking-wide text-gray-400">
-              <span>Package Contents</span>
+              <span>Contract Package - one PDF</span>
               <span className="font-semibold normal-case tracking-normal text-gray-600">
-                {coverPackageItems.length} items
+                {coverPackageItems.length} documents
               </span>
             </div>
             <div className="mb-4 overflow-hidden rounded-lg border border-gray-200">
@@ -1248,19 +1314,28 @@ Rabbinic Coordinator`
               ))}
             </div>
 
-            <p className="mb-3 text-[12.5px] leading-6 text-[#1e1e2e]">
-              We wish you much success in this certification.
-            </p>
-            <p className="mt-5 text-[12.5px] leading-6 text-[#1e1e2e]">
-              Sincerely,
-              <br />
-              <br />
-              {rcName}
-              <br />
-              Rabbinic Coordinator
-              <br />
-              Union of Orthodox Jewish Congregations of America
-            </p>
+            <div className="mb-2 mt-4 flex items-baseline justify-between text-[10px] font-bold uppercase tracking-wide text-gray-400">
+              <span>Separate Attachments</span>
+              <span className="font-semibold normal-case tracking-normal text-gray-600">
+                {coverSeparateAttachments.length}
+              </span>
+            </div>
+            <div className="overflow-hidden rounded-lg border border-gray-200">
+              {coverSeparateAttachments.map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-start gap-3 border-b border-gray-100 px-3.5 py-2.5 last:border-b-0"
+                >
+                  <div className="mt-0.5 flex h-[21px] w-[21px] shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10.5px] font-bold text-slate-500">
+                    <FileText className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <div className="text-[12.5px] font-semibold text-[#1e1e2e]">{item.label}</div>
+                    <div className="mt-0.5 text-[11px] text-gray-500">{item.sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -1563,23 +1638,18 @@ Rabbinic Coordinator`
         </div>
       </div>
     ) : previewTab === 'c' ? (
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <div className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-          Schedule C
-        </div>
-        <h4 className="mt-2 text-2xl font-semibold text-gray-900">Plants & Fee</h4>
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <div className="rounded-lg border border-gray-200 p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Plant</div>
-            <div className="mt-2 font-medium text-gray-900">{plantLabel}</div>
-            <div className="mt-1 text-sm text-gray-600">{companyAddress || 'Address on file'}</div>
-          </div>
-          <div className="rounded-lg border border-gray-200 p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Annual Fee</div>
-            <div className="mt-2 text-2xl font-semibold text-gray-900">{formatCurrency(annualFee)}</div>
-            <div className="mt-1 text-sm text-gray-600">Effective {formatDate(effectiveDate)}</div>
-          </div>
-        </div>
+      <div className="rounded-xl border border-gray-200 bg-white p-6 font-serif text-[13.5px] leading-relaxed text-slate-800">
+        <h4 className="mb-3 font-bold text-slate-700">Schedule C - Plants</h4>
+        <p className="mb-1">
+          <MergeField token="plant_name" value={plantLabel} />
+        </p>
+        <p className="mb-3">
+          <MergeField token="plant_address" value={plantAddress || companyAddress || 'Address on file'} />
+        </p>
+        <p>
+          Company shall pay an annual certification fee of{' '}
+          <MergeField token="annual_fee" value={formatCurrency(annualFee)} /> for this plant.
+        </p>
       </div>
     ) : previewTab === 'd' ? (
       <div className="rounded-xl border border-gray-200 bg-white p-6">
@@ -1592,19 +1662,20 @@ Rabbinic Coordinator`
         </div>
       </div>
     ) : previewTab === 'e' ? (
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <div className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-          Schedule E
-        </div>
-        <h4 className="mt-2 text-2xl font-semibold text-gray-900">Labeling Requirements</h4>
-        <div className="mt-5 space-y-3">
+      <div className="rounded-xl border border-gray-200 bg-white p-6 font-sans text-[12.5px] text-slate-800">
+        <h4 className="mb-1 font-serif text-[13.5px] font-bold text-slate-700">
+          Schedule E - Labeling Requirements
+        </h4>
+        <p className="mb-3 text-[12px] text-slate-400">
+          Standard OU trademark-placement template - inserted automatically, static.
+        </p>
+        <ol className="list-decimal space-y-1.5 pl-5">
           {LABELING_RULES.map((rule, index) => (
-            <div key={rule} className="flex gap-3 rounded-lg border border-gray-200 px-4 py-3">
-              <div className="font-semibold text-blue-700">{index + 1}.</div>
-              <p className="text-sm leading-6 text-gray-700">{rule}</p>
-            </div>
+            <li key={`${index}-${rule}`} className="leading-5 text-slate-800">
+              {rule}
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     ) : previewTab === 'pla' ? (
       <div className="rounded-xl border border-gray-200 bg-white p-6">
@@ -1781,6 +1852,268 @@ Rabbinic Coordinator`
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
             No private-label products on Schedule B - no PLA required.
           </div>
+        )}
+      </div>
+    ) : previewTab === 'plInvoice' ? (
+      <div className="rounded-xl border border-gray-200 bg-white p-6">
+        {selectedPrivateLabelGroup ? (
+          <div>
+            {privateLabelGroups.length > 1 ? (
+              <div className="mb-3 flex flex-wrap gap-2 rounded-lg bg-amber-50 p-2 font-sans">
+                {privateLabelGroups.map((group) => (
+                  <button
+                    key={group.labelCompany}
+                    type="button"
+                    onClick={() => setSelectedPlaCompany(group.labelCompany)}
+                    className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${
+                      selectedPrivateLabelGroup.labelCompany === group.labelCompany
+                        ? 'border-amber-800 bg-amber-800 text-white'
+                        : 'border-amber-200 bg-white text-amber-900 hover:bg-amber-100'
+                    }`}
+                  >
+                    {group.labelCompany}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="mb-2 font-sans text-[10.5px] font-bold uppercase tracking-wide text-slate-500">
+              Private Label Invoice{' '}
+              <span className="font-medium normal-case text-slate-400">
+                - one per PL company - parallel to the contract - not a gate
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <div className="min-w-[560px] rounded-md border border-gray-300 bg-white p-5 font-sans text-[11px] leading-normal text-[#1e1e2e]">
+                <div className="mb-4 flex items-start gap-3">
+                  <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-sm bg-[#185087] p-1 text-center text-[6px] font-bold leading-tight text-white">
+                    KOSHER CERTIFICATION SERVICE
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-serif text-[11.5px] font-semibold tracking-wide">
+                      UNION OF ORTHODOX JEWISH CONGREGATIONS OF AMERICA
+                    </div>
+                    <div className="mt-0.5 text-[10px] text-gray-700">
+                      FORTY RECTOR STREET, 4TH FLOOR / NEW YORK, NY 10006
+                    </div>
+                  </div>
+                  <div className="font-serif text-2xl font-bold tracking-wide text-[#185087]">
+                    INVOICE
+                  </div>
+                </div>
+
+                <table className="mb-4 w-full border-collapse border border-gray-400">
+                  <thead>
+                    <tr>
+                      {['Invoice Number', 'Invoice Date', 'Amount', 'Account Number'].map((label) => (
+                        <th
+                          key={label}
+                          className="border-r border-gray-300 px-2 py-1 text-center text-[9.5px] font-bold last:border-r-0"
+                        >
+                          {label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      {[
+                        selectedPrivateLabelInvoiceId,
+                        invoiceDate,
+                        '$250.00',
+                        selectedPrivateLabelInvoiceAccount,
+                      ].map((value) => (
+                        <td
+                          key={value}
+                          className="border-r border-t border-gray-300 px-2 py-1 text-center text-[11px] font-bold last:border-r-0"
+                        >
+                          {value}
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div className="mb-2 grid grid-cols-[1.1fr_1fr_1.05fr] items-start gap-3">
+                  <div className="text-[10.5px] leading-normal">
+                    <strong>{companyName}</strong>
+                    <br />
+                    {billingLines.map((line) => (
+                      <span key={`pl-bill-${line}`}>
+                        {line}
+                        <br />
+                      </span>
+                    ))}
+                    <div className="mt-1.5">Att: {contact.name || 'Company Contact'}</div>
+                  </div>
+                  <div className="pt-1 text-center text-[10px] font-semibold italic leading-normal text-[#185087]">
+                    The Orthodox Union strongly urges all customers to pay by ACH, wire, or credit card
+                    to avoid check fraud. It&apos;s safer and quicker.
+                  </div>
+                  <div className="border border-gray-400 text-[9.5px]">
+                    <div className="border-b border-gray-400 bg-blue-100 px-2 py-0.5 font-bold text-blue-900">
+                      Online Payments: oudirect.org
+                    </div>
+                    <div className="border-b border-gray-400 bg-blue-100 px-2 py-0.5 font-bold text-blue-900">
+                      Wire/ACH Bank Info:
+                    </div>
+                    <div className="px-2 py-1 leading-normal">
+                      <b className="inline-block w-[58px]">Bank:</b>IDB
+                      <br />
+                      <b className="inline-block w-[58px]">Account:</b>Orthodox Union
+                      <br />
+                      <b className="inline-block w-[58px]">Account #:</b>1353211
+                      <br />
+                      <b className="inline-block w-[58px]">ABA #:</b>026009768
+                      <br />
+                      <b className="inline-block w-[58px]">Swift #:</b>IDBYUS33
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-4 text-center text-[9.5px] italic text-gray-700">
+                  For wire transfers, please reference your account and invoice numbers on all
+                  transactions.
+                </div>
+
+                <div className="mb-4 grid grid-cols-[1fr_1.5fr] items-start gap-3">
+                  <div className="text-[10.5px] leading-normal">
+                    {companyName}
+                    <br />
+                    {billingLines.map((line) => (
+                      <span key={`pl-billto-${line}`}>
+                        {line}
+                        <br />
+                      </span>
+                    ))}
+                  </div>
+                  <div className="border border-gray-400">
+                    <div className="border-b border-gray-400 px-2 py-1 text-center text-[10px] font-bold">
+                      For questions or comments, contact your Rabbinic Coordinator.
+                    </div>
+                    <div className="px-2 py-1 text-center text-[10px]">
+                      {rcName} &nbsp;&nbsp; (212) 563-4000 &nbsp;&nbsp; {rcEmail}
+                    </div>
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr>
+                          {['Invoice #', 'Invoice Date', 'Amount', 'Due Date', 'Account #'].map((label) => (
+                            <th
+                              key={label}
+                              className="border-r border-t border-gray-300 px-1 py-1 text-center text-[8.5px] font-bold last:border-r-0"
+                            >
+                              {label}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          {[
+                            selectedPrivateLabelInvoiceId,
+                            invoiceDate,
+                            '$250.00',
+                            '',
+                            selectedPrivateLabelInvoiceAccount,
+                          ].map((value, index) => (
+                            <td
+                              key={`${value}-${index}`}
+                              className="border-r border-t border-gray-300 px-1 py-1 text-center text-[9.5px] font-bold last:border-r-0"
+                            >
+                              {value || '\u00a0'}
+                            </td>
+                          ))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <table className="mb-4 w-full border-collapse border border-gray-400">
+                  <tbody>
+                    <tr className="bg-[#d9d9d9] font-bold">
+                      <td className="px-2 py-1 text-[10px]">DESCRIPTION</td>
+                      <td className="px-2 py-1 text-right text-[10px]" colSpan={2}>
+                        Amount
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-2 py-1">
+                        <strong>Initial Private Label</strong>
+                      </td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1 text-center text-[9.5px] font-bold">
+                        Fees
+                      </td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1 text-center text-[9.5px] font-bold">
+                        Expenses
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-2 py-1"></td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1 text-right">
+                        $250.00
+                      </td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
+                    </tr>
+                    <tr className="bg-[#d9d9d9] font-bold">
+                      <td className="px-2 py-1">Details</td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
+                    </tr>
+                    <tr>
+                      <td className="px-2 py-1">
+                        <strong>Distributor(s):</strong>
+                      </td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
+                    </tr>
+                    <tr>
+                      <td className="px-2 py-1">{selectedPrivateLabelGroup.labelCompany}</td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1 text-right">
+                        $250.00
+                      </td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
+                    </tr>
+                    <tr>
+                      <td className="px-2 py-1 text-[10px] italic text-gray-700">
+                        Invoice for period {formatFullDate(effectiveDate)} to {invoiceTermEnd}.
+                      </td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
+                    </tr>
+                    <tr className="border-t border-gray-400 bg-[#d9d9d9] text-[11px] font-bold">
+                      <td className="px-2 py-1">Total Amount Due</td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1 text-right">
+                        $250.00 USD
+                      </td>
+                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div className="mt-1 flex items-start justify-between gap-3 text-[9.5px]">
+                  <div>
+                    <span className="font-bold">UNION OF ORTHODOX JEWISH CONGREGATIONS OF AMERICA</span>
+                    <br />
+                    40 Rector St, 4th Floor, New York, NY 10006
+                    <br />
+                    (212) 563-4000 fax (212) 564-9058
+                  </div>
+                  <div>Payable in US Dollars</div>
+                </div>
+              </div>
+            </div>
+
+            <p className="mb-0 mt-2 font-sans text-[11px] text-slate-500">
+              Created by Yudi (Products) in Kashrus and sent to the customer with the contract - a
+              separate invoice per private-label company. PL payment isn&apos;t tracked in this workflow.
+            </p>
+          </div>
+        ) : (
+          <p className="text-[13px] text-slate-500">
+            No private-label products on Schedule B - no PL invoice.
+          </p>
         )}
       </div>
     ) : (
@@ -2473,9 +2806,10 @@ Rabbinic Coordinator`
                       ['e', 'E · Labeling'],
                       ['invoice', 'Invoice'],
                       ['pla', 'PLA'],
+                      ['plInvoice', 'PL Invoice'],
                     ].map(([value]) => {
                       const tab = value as PreviewTab
-                      if (tab === 'pla' && !hasPrivateLabelAgreements) return null
+                      if ((tab === 'pla' || tab === 'plInvoice') && !hasPrivateLabelAgreements) return null
 
                       return (
                         <button
