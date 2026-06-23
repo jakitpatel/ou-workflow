@@ -29,6 +29,7 @@ type JwtPayload = Record<string, unknown> & {
 };
 
 export type AuthenticatedSessionUser = {
+  email: string;
   username: string;
   roles: UserRole[] | null;
   delegated: UserRole[] | null;
@@ -124,6 +125,7 @@ export function toAuthenticatedSessionUser(
   userInfo: SessionUserInfo,
 ): AuthenticatedSessionUser {
   return {
+    email: userInfo.email,
     username: userInfo.username,
     roles: userInfo.roles,
     delegated: userInfo.delegated,
@@ -258,6 +260,7 @@ export async function loadAuthenticatedSessionUserFromCognitoCallback({
 export function setupLocalDevSession({
   accessToken,
   idToken,
+  email,
   username,
   roles,
   delegated,
@@ -265,6 +268,7 @@ export function setupLocalDevSession({
 }: {
   accessToken: string;
   idToken: string;
+  email?: string;
   username: string;
   roles: UserRole[] | null;
   delegated: UserRole[] | null;
@@ -276,6 +280,7 @@ export function setupLocalDevSession({
   });
 
   return {
+    email: email ?? String(decodeJwtPayload(idToken).email ?? ""),
     username,
     roles,
     delegated,

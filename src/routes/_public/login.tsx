@@ -87,6 +87,7 @@ function LoginPage() {
 
         login(
           {
+            email: localDevUser.email,
             username: localDevUser.username,
             role: localDevUser.role,
             roles: localDevUser.roles,

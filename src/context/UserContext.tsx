@@ -30,6 +30,7 @@ function clearStoredUser() {
 }
 
 type StoredUser = {
+  email: string | null;
   username: string | null;
   role: string | null;
   roles: UserRole[] | null;
@@ -44,6 +45,7 @@ type UserContextType = StoredUser & {
   setDelegated: (roles: UserRole[] | null) => void;
   login: (
     data: {
+      email?: string | null;
       username?: string | null;
       role?: string;
       roles?: UserRole[] | null;
@@ -59,6 +61,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: ReactNode }) {
   const stored = loadStoredUser();
 
+  const [email, setEmail] = useState(stored?.email ?? null);
   const [username, setUsername] = useState(stored?.username ?? null);
   const [role, setRole] = useState<string | null>(stored?.role ?? null);
   const [roles, setRoles] = useState<UserRole[] | null>(stored?.roles ?? null);
@@ -71,16 +74,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     saveStoredUser({
+      email,
       username,
       role,
       roles,
       delegated,
       loginTime,
     });
-  }, [username, role, roles, delegated, loginTime]);
+  }, [email, username, role, roles, delegated, loginTime]);
 
   const login = (
     data: {
+      email?: string | null;
       username?: string | null;
       role?: string;
       roles?: UserRole[] | null;
@@ -88,6 +93,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     },
     onComplete?: () => void,
   ) => {
+    setEmail(data.email ?? null);
     setUsername(data.username ?? null);
     setRole(data.role ?? null);
     setRoles(data.roles ?? null);
@@ -100,6 +106,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    setEmail(null);
     setUsername(null);
     setRole(null);
     setRoles(null);
@@ -113,6 +120,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<UserContextType>(
     () => ({
+      email,
       username,
       role,
       roles,
@@ -125,7 +133,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       login,
       logout,
     }),
-    [username, role, roles, delegated, loginTime, token],
+    [email, username, role, roles, delegated, loginTime, token],
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

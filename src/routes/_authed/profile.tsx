@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useState } from 'react'
-import { Check, Code, Server, Shield, User } from 'lucide-react'
+import { Check, Code, Mail, Server, Shield, User } from 'lucide-react'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { useSaveProfileLayoutMutation } from '@/features/profile/hooks/useSaveProfileLayoutMutation'
@@ -37,6 +37,7 @@ function InfoCard({
 
 function ProfilePage() {
   const {
+    email,
     username,
     token,
     role,
@@ -135,6 +136,7 @@ function ProfilePage() {
             </div>
             <dl className="px-6 py-5 space-y-4">
               <InfoCard icon={User} label="Username" value={username || 'Not available'} />
+              <InfoCard icon={Mail} label="Email" value={email || 'Not available'} />
               <InfoCard icon={Shield} label="Active Role" value={getActiveRoleDisplay()} />
             </dl>
           </section>
