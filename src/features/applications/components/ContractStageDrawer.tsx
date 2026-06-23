@@ -1,14 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Check,
   ChevronRight,
   ClipboardList,
   FileText,
   Mail,
-  Scale,
   Send,
-  Stamp,
-  Wallet,
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -387,16 +383,53 @@ const getPrimaryContact = (
   return { name, email, title }
 }
 
+const getPreviewTabLabel = (tab: PreviewTab) => {
+  switch (tab) {
+    case 'invoice':
+      return 'Invoice'
+    case 'agreement':
+      return 'Agreement'
+    case 'a':
+      return 'A - Ingred'
+    case 'b':
+      return 'B - Prod'
+    case 'c':
+      return 'C - Plants'
+    case 'd':
+      return 'D - Proc'
+    case 'e':
+      return 'E - Label'
+    case 'cover':
+      return 'Cover'
+    case 'pla':
+      return 'PLA'
+    default:
+      return 'Preview'
+  }
+}
+
+const getPreviewTabOrder = (tab: PreviewTab) =>
+  ['invoice', 'agreement', 'a', 'b', 'c', 'd', 'e', 'cover', 'pla'].indexOf(tab)
+
 function Section({
   title,
+  count,
   children,
 }: {
   title: React.ReactNode
+  count?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 text-sm font-semibold text-gray-900">{title}</div>
+    <section className="rounded-[10px] border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.7px] text-gray-700">
+        {title}
+        {count ? (
+          <span className="ml-auto text-[11.5px] font-medium normal-case tracking-normal text-gray-400">
+            {count}
+          </span>
+        ) : null}
+      </div>
       {children}
     </section>
   )
@@ -479,7 +512,7 @@ export function ContractStageDrawer({
 }: Props) {
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
-  const { token, username } = useUser()
+  const { email, token, username } = useUser()
   const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
@@ -487,14 +520,14 @@ export function ContractStageDrawer({
     onError: (message) => toast.error(message),
   })
 
-  const [previewTab, setPreviewTab] = useState<PreviewTab>('agreement')
+  const [previewTab, setPreviewTab] = useState<PreviewTab>('invoice')
+  const [showMergeFieldsHint, setShowMergeFieldsHint] = useState(false)
   const [effectiveDate, setEffectiveDate] = useState(getDefaultEffectiveDate)
   const [annualFee, setAnnualFee] = useState(DEFAULT_ANNUAL_FEE)
   const [certificationInvoiceComment, setCertificationInvoiceComment] = useState('')
   const [includeInvoiceComment, setIncludeInvoiceComment] = useState(false)
   const [productionProcedures, setProductionProcedures] = useState('')
   const [noProductionProcedures, setNoProductionProcedures] = useState(true)
-  const [pulledOpen, setPulledOpen] = useState(true)
   const [legalReviewNeeded, setLegalReviewNeeded] = useState(false)
   const [legalApproved, setLegalApproved] = useState(false)
   const [agreementClauses, setAgreementClauses] = useState<AgreementClause[]>(() =>
@@ -510,7 +543,6 @@ export function ContractStageDrawer({
   const [packageGenerated, setPackageGenerated] = useState(false)
   const [contractSigned, setContractSigned] = useState(false)
   const [invoicePaid, setInvoicePaid] = useState(false)
-  const [waitForPayment, setWaitForPayment] = useState(true)
   const [plaBodyOpen, setPlaBodyOpen] = useState(false)
   const [selectedPlaCompany, setSelectedPlaCompany] = useState('')
   const [coverEmailOpen, setCoverEmailOpen] = useState(false)
@@ -520,12 +552,12 @@ export function ContractStageDrawer({
 
   useEffect(() => {
     if (!open) return
-    setPreviewTab('agreement')
+    setPreviewTab('invoice')
+    setShowMergeFieldsHint(false)
     setLegalApproved(false)
     setPackageGenerated(false)
     setContractSigned(false)
     setInvoicePaid(false)
-    setWaitForPayment(true)
     setShowEmailPreview(false)
     setEmailSent(false)
     setEffectiveDate(getDefaultEffectiveDate())
@@ -534,7 +566,6 @@ export function ContractStageDrawer({
     setIncludeInvoiceComment(false)
     setProductionProcedures('')
     setNoProductionProcedures(true)
-    setPulledOpen(true)
     setAgreementClauses(cloneAgreementClauses(BASE_AGREEMENT_CLAUSES))
     setClauseVersions([initialClauseVersion(BASE_AGREEMENT_CLAUSES)])
     setActiveClauseVersion(1)
@@ -552,6 +583,7 @@ export function ContractStageDrawer({
     textValue(applicant?.assignedRC) ||
     textValue(username) ||
     'Assigned RC'
+  const rcEmail = email || (username && username.includes('@') ? username : 'rc@ou.org')
   const ncrcName = textValue(username) || 'Current User'
   const detailCompany = applicationDetail?.company?.[0]
   const detailCompanyRecord = detailCompany as Record<string, unknown> | undefined
@@ -628,28 +660,6 @@ export function ContractStageDrawer({
     privateLabelGroups.find((group) => group.labelCompany === selectedPlaCompany) ?? privateLabelGroups[0]
   const hasPrivateLabelAgreements = privateLabelGroups.length > 0
   const contractTypeLabel = 'New Company Certification'
-  const pulledRows = [
-    ['Company name', companyName, 'Pulled from the company record. Edit it there.'],
-    ['Plant name', plantLabel, 'Pulled from the plant record. Edit it there.'],
-    ['Plant address', plantAddress || 'Address on file', 'Pulled from the plant record. Edit it there.'],
-    ['OU signer - Rabbinic Coordinator', rcName, 'RC assigned to this company.'],
-    ['Company signer', [contact.name, contact.title].filter(Boolean).join(' - ') || 'Company Contact', 'Company contact record.'],
-    ['Company contact', [companyAddress, companyPhone].filter(Boolean).join(' - ') || 'Company record on file', 'Company record.'],
-  ]
-  const reviewSections: Array<[string, boolean]> = [
-    ['Agreement body', true],
-    ['Schedule A - Ingredients', true],
-    ['Schedule B - Products', true],
-    ['Schedule C - Plants & Fee', Boolean(plantLabel && annualFee)],
-    ['Schedule D - Production', noProductionProcedures || Boolean(productionProcedures.trim())],
-    ['Schedule E - Labeling', true],
-    ...(hasPrivateLabelAgreements
-      ? [[`Private Label Agreement${privateLabelGroups.length > 1 ? `s (${privateLabelGroups.length})` : ''}`, true] as [string, boolean]]
-      : []),
-    ...(legalReviewNeeded ? ([['Legal review', legalApproved]] as Array<[string, boolean]>) : []),
-    ['Signatures', true],
-  ]
-  const completeReviewSections = reviewSections.filter(([, complete]) => complete).length
   const maxClauseVersion = Math.max(...clauseVersions.map((version) => version.n))
   const isLatestClauseVersion = activeClauseVersion === maxClauseVersion
   const visibleAgreementClauses =
@@ -752,20 +762,30 @@ export function ContractStageDrawer({
     Boolean(annualFee) &&
     (noProductionProcedures || Boolean(productionProcedures.trim())) &&
     (!legalReviewNeeded || legalApproved)
-  const readyToAdvance = packageGenerated && contractSigned && (!waitForPayment || invoicePaid)
+  const readyToAdvance = packageGenerated && contractSigned && invoicePaid
   const stageStatus = packageGenerated
     ? readyToAdvance
       ? 'Ready to Complete'
       : contractSigned
-        ? waitForPayment && !invoicePaid
-          ? 'Awaiting Payment'
-          : 'Ready to Advance'
+        ? 'Awaiting Payment'
         : 'Awaiting Signature'
     : legalReviewNeeded && !legalApproved
       ? 'Legal Review'
       : readyToGenerate
         ? 'Ready'
         : 'In Progress'
+  const contractProgressSteps = [
+    { label: 'Generate Inv.', complete: packageGenerated },
+    { label: 'Contract Sent', complete: emailSent },
+    { label: 'Contract signed', complete: contractSigned },
+    { label: 'Paid', complete: invoicePaid },
+  ].map((step, index, steps) => {
+    const firstIncompleteIndex = steps.findIndex((item) => !item.complete)
+    return {
+      ...step,
+      current: firstIncompleteIndex === index,
+    }
+  })
   const billingLines =
     (companyAddress || plantAddress || '')
       .split(',')
@@ -796,7 +816,7 @@ Enclosed please find the kosher certification contract package for ${companyName
 Package contents:
 ${packageItems.map((item, index) => `${index + 1}. ${item}`).join('\n')}
 
-Please review, sign where indicated, and return the signed agreement${waitForPayment ? ' together with payment of the enclosed invoice' : ''}.
+Please review, sign where indicated, and return the signed agreement together with payment of the enclosed invoice.
 
 Sincerely,
 ${rcName}
@@ -1091,7 +1111,7 @@ Rabbinic Coordinator`
                 <span className="w-[58px] shrink-0 pt-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">
                   From
                 </span>
-                <span>OU Kashruth Division - {rcName} &lt;{username ?? 'rc@ou.org'}&gt;</span>
+                <span>OU Kashruth Division - {rcName} &lt;{rcEmail}&gt;</span>
               </div>
               <div className="flex gap-3 border-b border-gray-100 px-3.5 py-2 text-[12.5px]">
                 <span className="w-[58px] shrink-0 pt-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">
@@ -1106,7 +1126,7 @@ Rabbinic Coordinator`
                 <span className="w-[58px] shrink-0 pt-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">
                   Cc
                 </span>
-                <span>{rcName} &lt;{username ?? 'rc@ou.org'}&gt;</span>
+                <span>{rcName} &lt;{rcEmail}&gt;</span>
               </div>
               <div className="flex gap-3 border-b border-gray-100 px-3.5 py-2 text-[12.5px]">
                 <span className="w-[58px] shrink-0 pt-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">
@@ -1881,7 +1901,7 @@ Rabbinic Coordinator`
                   For questions or comments, contact your Rabbinic Coordinator.
                 </div>
                 <div className="px-2 py-1 text-center text-[10px]">
-                  {rcName} &nbsp;&nbsp; (212) 563-4000 &nbsp;&nbsp; {username ?? 'rc@ou.org'}
+                  {rcName} &nbsp;&nbsp; (212) 563-4000 &nbsp;&nbsp; {rcEmail}
                 </div>
                 <table className="w-full border-collapse">
                   <thead>
@@ -2062,69 +2082,72 @@ Rabbinic Coordinator`
             </div>
           </div>
 
-          <div className="border-b bg-white px-6 py-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-800">
-                  {stageStatus}
-                </span>
-                <span className="text-sm text-gray-600">
-                  {packageGenerated
-                    ? contractSigned
-                      ? waitForPayment && !invoicePaid
-                        ? 'Contract signed. Waiting for payment before completion.'
-                        : 'Contract package is ready to complete.'
-                      : 'Package generated. Waiting for signed return.'
-                    : legalReviewNeeded && !legalApproved
-                      ? 'Legal sign-off is required before generating the package.'
-                      : 'Configure the package and generate the contract set.'}
-                </span>
+          <div className="border-b bg-[#f3f4f6] px-6 py-4">
+            <div className="rounded-xl border border-gray-200 bg-white px-5 py-3">
+              <div className="flex flex-wrap items-center gap-3">
+                {contractProgressSteps.map((step, index) => (
+                  <div
+                    key={step.label}
+                    className={`flex min-w-[150px] flex-1 items-center gap-2 text-[12.5px] ${
+                      step.complete
+                        ? 'text-green-600'
+                        : step.current
+                          ? 'font-bold text-[#185087]'
+                          : 'text-gray-400'
+                    }`}
+                  >
+                    <span
+                      className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                        step.complete
+                          ? 'bg-green-600 text-white'
+                          : step.current
+                            ? 'bg-[#185087] text-white shadow-[0_0_0_4px_rgba(24,80,135,0.15)]'
+                            : 'bg-gray-200 text-gray-400'
+                      }`}
+                    >
+                      {step.complete ? '✓' : index + 1}
+                    </span>
+                    {step.label}
+                  </div>
+                ))}
               </div>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <span className={`rounded-full px-2.5 py-1 ${packageGenerated ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                  Package {packageGenerated ? 'Generated' : 'Draft'}
-                </span>
-                <span className={`rounded-full px-2.5 py-1 ${contractSigned ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                  Signature {contractSigned ? 'Received' : 'Pending'}
-                </span>
-                <span className={`rounded-full px-2.5 py-1 ${invoicePaid ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                  Payment {invoicePaid ? 'Paid' : 'Pending'}
-                </span>
-              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-gray-600">
+              <span>{stageStatus}</span>
+              <span>
+                {packageGenerated
+                  ? contractSigned
+                    ? invoicePaid
+                      ? 'Contract signed and paid. Ready to complete.'
+                      : 'Contract signed. Waiting for payment before completion.'
+                    : 'Package generated. Waiting for signed return.'
+                  : legalReviewNeeded && !legalApproved
+                    ? 'Legal sign-off is required before the RC is notified.'
+                    : 'Configure the invoice and contract set, then notify the RC.'}
+              </span>
             </div>
           </div>
 
           <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden px-6 py-5 xl:grid-cols-[440px_minmax(0,1fr)]">
             <div className="min-h-0 space-y-4 overflow-y-auto pr-1">
               <Section title="Contract Type">
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-xs font-medium text-gray-500">Determined by the system</div>
-                      <div className="mt-1 text-sm font-semibold text-gray-900">{contractTypeLabel}</div>
-                    </div>
-                    <span className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-bold text-green-700">
-                      Set
-                    </span>
+                <div className="flex items-start justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <div className="min-w-0">
+                    <div className="text-[11.5px] font-medium text-gray-500">Determined by the system</div>
+                    <div className="mt-1 text-[13.5px] font-semibold leading-5 text-gray-900">{contractTypeLabel}</div>
                   </div>
+                  <span className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-bold text-green-700">
+                    Set
+                  </span>
                 </div>
-                <p className="mt-2 text-xs leading-5 text-gray-500">
+                <p className="mt-2 text-[11.5px] leading-5 text-gray-500">
                   Set from the application - a workflow is either a new-company contract or a plant
                   addendum, never both.
                 </p>
               </Section>
 
-              <Section
-                title={
-                  <span className="flex items-center justify-between gap-3">
-                    <span>Merge Fields &mdash; You Enter</span>
-                    <span className="text-[11px] font-medium normal-case tracking-normal text-gray-400">
-                      the only fields needing input
-                    </span>
-                  </span>
-                }
-              >
-                <div className="space-y-3">
+              <Section title="Create Invoice" count="invoice details">
+                <div className="space-y-3.5">
                   <label className="block text-sm">
                     <span className="text-[12.5px] font-semibold text-gray-700">
                       Effective date <span className="text-red-600">*</span>
@@ -2133,13 +2156,14 @@ Rabbinic Coordinator`
                       type="date"
                       value={effectiveDate}
                       onChange={(event) => setEffectiveDate(event.target.value)}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                      className="mt-1 w-full rounded-[7px] border border-slate-300 bg-white px-3 py-2 text-sm text-[#1e1e2e] focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
                     />
                     <span className="mt-1 block text-[11.5px] leading-5 text-gray-500">
                       Defaults to the first of the current month - reads "the first day of{' '}
                       {formatMonthDay(effectiveDate)}." Backdating allowed.
                     </span>
                   </label>
+
                   <label className="block text-sm">
                     <span className="text-[12.5px] font-semibold text-gray-700">
                       Annual certification fee <span className="text-red-600">*</span>
@@ -2151,9 +2175,10 @@ Rabbinic Coordinator`
                       <input
                         type="number"
                         step="0.01"
+                        placeholder="4,860.00"
                         value={annualFee}
                         onChange={(event) => setAnnualFee(event.target.value)}
-                        className="w-full rounded-lg border border-gray-300 py-2 pl-7 pr-3"
+                        className="w-full rounded-[7px] border border-slate-300 bg-white py-2 pl-7 pr-3 text-sm text-[#1e1e2e] focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
                       />
                     </div>
                     <span className="mt-1 block text-[11.5px] leading-5 text-gray-500">
@@ -2161,6 +2186,7 @@ Rabbinic Coordinator`
                       <b>{formatCurrency(annualFee)}</b>.
                     </span>
                   </label>
+
                   <label className="block text-sm">
                     <span className="text-[12.5px] font-semibold text-gray-700">
                       Certification invoice comment
@@ -2170,14 +2196,14 @@ Rabbinic Coordinator`
                       value={certificationInvoiceComment}
                       placeholder="Comment for the certification invoice..."
                       onChange={(event) => setCertificationInvoiceComment(event.target.value)}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+                      className="mt-1 w-full rounded-[7px] border border-slate-300 bg-white px-3 py-2 text-sm text-[#1e1e2e] focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
                     />
-                    <label className="mt-2 flex items-center gap-2 text-xs font-semibold text-gray-700">
+                    <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs font-semibold text-gray-700">
                       <input
                         type="checkbox"
                         checked={includeInvoiceComment}
                         onChange={(event) => setIncludeInvoiceComment(event.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300"
+                        className="h-3.5 w-3.5 rounded border-gray-300"
                       />
                       Include on invoice
                     </label>
@@ -2187,417 +2213,189 @@ Rabbinic Coordinator`
                         : 'Kept internal - not included on the invoice.'}
                     </span>
                   </label>
-                  <label className="block text-sm">
-                    <span className="text-[12.5px] font-semibold text-gray-700">
-                      Production procedures
-                    </span>
-                    <div className="mb-2 mt-1 flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setNoProductionProcedures(true)}
-                        className={`rounded-md border px-3 py-1.5 text-sm font-semibold ${
-                          noProductionProcedures
-                            ? 'border-green-600 bg-green-600 text-white'
-                            : 'border-gray-300 bg-white text-gray-600'
-                        }`}
-                      >
-                        None
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setNoProductionProcedures(false)}
-                        className={`rounded-md border px-3 py-1.5 text-sm font-semibold ${
-                          !noProductionProcedures
-                            ? 'border-green-600 bg-green-600 text-white'
-                            : 'border-gray-300 bg-white text-gray-600'
-                        }`}
-                      >
-                        Specify
-                      </button>
-                    </div>
-                    <textarea
-                      rows={2}
-                      placeholder="Dedicated line, kosherization, bulk-shipment notes…"
-                      value={productionProcedures}
-                      disabled={noProductionProcedures}
-                      onChange={(event) => setProductionProcedures(event.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 disabled:bg-gray-100"
-                    />
-                    <span className="mt-1 block text-[11.5px] leading-5 text-gray-500">
-                      Goes to Schedule D. Usually "None."
-                    </span>
-                  </label>
                 </div>
               </Section>
 
-              <Section
-                title={
+              <Section title="Schedule D - Production" count="production procedures">
+                <div className="mb-2 flex gap-2">
                   <button
                     type="button"
-                    onClick={() => setPulledOpen((current) => !current)}
-                    className="flex w-full items-center justify-between gap-3 text-left"
+                    onClick={() => setNoProductionProcedures(true)}
+                    className={`rounded-md border px-3 py-1.5 text-sm font-semibold ${
+                      noProductionProcedures
+                        ? 'border-[#58942F] bg-[#58942F] text-white'
+                        : 'border-gray-300 bg-white text-gray-600'
+                    }`}
                   >
-                    <span>
-                      Merge Fields &mdash; On File{' '}
-                      <span className="text-[11px] font-medium normal-case tracking-normal text-gray-400">
-                        {pulledRows.length}, read-only
-                      </span>
-                    </span>
-                    <span className="text-gray-400">{pulledOpen ? 'Collapse' : 'Expand'}</span>
+                    None
                   </button>
-                }
-              >
-                {pulledOpen ? (
-                  <div className="space-y-2 text-sm">
-                    {pulledRows.map(([label, value, hint]) => (
-                      <div
-                        key={label}
-                        className="flex items-start justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3"
-                      >
-                        <div className="min-w-0">
-                          <div className="text-[11.5px] font-medium text-gray-500">{label}</div>
-                          <div className="mt-1 text-[13.5px] font-semibold leading-5 text-gray-900">
-                            {value || '-'}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => toast.info(hint)}
-                          className="whitespace-nowrap text-[11.5px] font-semibold text-blue-700 hover:underline"
-                        >
-                          Edit at source
-                        </button>
+                  <button
+                    type="button"
+                    onClick={() => setNoProductionProcedures(false)}
+                    className={`rounded-md border px-3 py-1.5 text-sm font-semibold ${
+                      !noProductionProcedures
+                        ? 'border-[#58942F] bg-[#58942F] text-white'
+                        : 'border-gray-300 bg-white text-gray-600'
+                    }`}
+                  >
+                    Specify
+                  </button>
+                </div>
+                <textarea
+                  rows={2}
+                  placeholder="Dedicated line, kosherization, bulk-shipment notes..."
+                  value={productionProcedures}
+                  disabled={noProductionProcedures}
+                  onChange={(event) => setProductionProcedures(event.target.value)}
+                  className="w-full rounded-[7px] border border-slate-300 bg-white px-3 py-2 text-sm text-[#1e1e2e] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
+                />
+                <p className="mt-1 text-[11.5px] leading-5 text-gray-500">
+                  Usually "None." Pulls into Schedule D of the agreement.
+                </p>
+              </Section>
+
+              <Section title="Agreement Revisions">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-[13.5px] font-semibold text-[#1e1e2e]">
+                        Boilerplate changed or legal input needed?
                       </div>
-                    ))}
-                    <p className="text-[11.5px] leading-5 text-gray-500">
-                      Read-only here - edited at the source record so values never drift.
-                    </p>
+                      <p className="mt-1 text-xs leading-5 text-gray-500">
+                        {legalReviewNeeded
+                          ? 'Routes to Legal for sign-off before the RC is notified.'
+                          : 'Standard template - no legal review required.'}
+                      </p>
+                    </div>
+                    <TogglePillGroup value={legalReviewNeeded} onChange={setLegalReviewNeeded} />
                   </div>
+                  {legalReviewNeeded ? (
+                    <div
+                      className={`mt-3 text-xs font-semibold ${
+                        legalApproved ? 'text-green-700' : 'text-violet-700'
+                      }`}
+                    >
+                      Legal: {legalApproved ? 'signed off' : 'awaiting sign-off'}
+                    </div>
+                  ) : null}
+                </div>
+                {legalReviewNeeded && !legalApproved ? (
+                  <button
+                    type="button"
+                    disabled={!Boolean(annualFee)}
+                    onClick={() => setLegalApproved(true)}
+                    className="mt-3 w-full rounded-lg bg-violet-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+                  >
+                    Mark Legal Approved
+                  </button>
                 ) : null}
               </Section>
 
-              <Section
-                title={
-                  <span className="flex items-center justify-between gap-3">
-                    <span>Review &amp; Generate</span>
-                    <span className="text-[11px] font-medium normal-case tracking-normal text-gray-400">
-                      {completeReviewSections}/{reviewSections.length} sections
-                    </span>
-                  </span>
-                }
-              >
-                <div className="space-y-4">
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                          <Scale className="h-4 w-4 text-violet-600" />
-                          Boilerplate changed or legal input needed?
-                        </div>
-                        <p className="mt-1 text-xs leading-5 text-gray-500">
-                          {legalReviewNeeded
-                            ? 'Routes to Legal for sign-off before the RC is notified.'
-                            : 'Standard template - no legal review required.'}
-                        </p>
+              <Section title="RC Assigned to Company" count="rabbinic coordinator">
+                <div className="rounded-[7px] border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600">
+                  {rcName}
+                </div>
+                <div className="mt-2 rounded-[7px] border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600">
+                  {rcEmail}
+                </div>
+                <p className="mt-1 text-[11.5px] leading-5 text-gray-500">
+                  Existing company - RC derived from Kashrus. Prints on the agreement, invoice, and email.
+                </p>
+                <div className="mt-3 border-t border-gray-100 pt-3">
+                  {packageGenerated ? (
+                    <div className="space-y-2">
+                      <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-[12.5px] font-semibold text-green-700">
+                        RC notified for approval - sent as a live link to review.
                       </div>
-                      <TogglePillGroup value={legalReviewNeeded} onChange={setLegalReviewNeeded} />
-                    </div>
-                    {legalReviewNeeded ? (
-                      <div className="mt-3 text-xs font-semibold text-violet-700">
-                        Legal: {legalApproved ? 'signed off' : 'awaiting sign-off'}
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="space-y-2">
-                    {reviewSections.map(([label, complete]) => (
-                      <div
-                        key={label}
-                        className={`flex items-center gap-2 text-sm font-medium ${
-                          complete ? 'text-gray-900' : 'text-gray-400'
-                        }`}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPackageGenerated(false)
+                          setContractSigned(false)
+                          setInvoicePaid(false)
+                          setEmailSent(false)
+                        }}
+                        className="w-full rounded-[7px] border border-gray-300 bg-white px-3 py-2 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50"
                       >
-                        <span className={complete ? 'text-green-600' : 'text-gray-300'}>
-                          {complete ? '✓' : '○'}
-                        </span>
-                        {label}
-                      </div>
-                    ))}
-                  </div>
-                  {legalReviewNeeded && !legalApproved ? (
-                    <button
-                      type="button"
-                      onClick={() => setLegalApproved(true)}
-                      className="w-full rounded-lg bg-violet-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-800"
-                    >
-                      Mark Legal Approved
-                    </button>
+                        Re-open for edits
+                      </button>
+                    </div>
+                  ) : legalReviewNeeded && !legalApproved ? (
+                    <>
+                      <p className="mb-2 text-[12.5px] font-semibold text-violet-700">
+                        Finish Legal sign-off before notifying the RC.
+                      </p>
+                      <button type="button" disabled className="w-full rounded-lg bg-gray-300 px-4 py-2.5 text-sm font-bold text-white">
+                        Notify RC for approval
+                      </button>
+                    </>
+                  ) : !readyToGenerate ? (
+                    <>
+                      <p className="mb-2 text-[12.5px] font-semibold text-amber-700">
+                        Enter the annual certification fee to continue.
+                      </p>
+                      <button type="button" disabled className="w-full rounded-lg bg-gray-300 px-4 py-2.5 text-sm font-bold text-white">
+                        Notify RC for approval
+                      </button>
+                    </>
                   ) : (
                     <button
                       type="button"
-                      disabled={!readyToGenerate}
                       onClick={() => {
                         setPackageGenerated(true)
+                        setPreviewTab('cover')
                         toast.success('RC notified for approval')
                       }}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#58942F] px-4 py-2.5 text-sm font-bold text-white hover:bg-green-700"
                     >
                       <FileText className="h-4 w-4" />
                       Notify RC for approval
                     </button>
                   )}
-                  <button
-                    type="button"
-                    disabled={!packageGenerated}
-                    onClick={() => setShowEmailPreview(true)}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Mail className="h-4 w-4" />
-                    Review Email
-                  </button>
-                  {packageGenerated ? (
-                    <div className="space-y-3 rounded-lg border border-green-200 bg-green-50 p-3">
-                      <div className="text-sm font-semibold text-green-800">
-                        RC notified for approval - sent as a live link to review.
-                      </div>
-                      <div className="rounded-lg border border-green-200 bg-white p-3">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                              <Stamp className="h-4 w-4 text-green-600" />
-                              Contract returned signed
-                            </div>
-                          </div>
-                          <TogglePillGroup value={contractSigned} onChange={setContractSigned} />
-                        </div>
-                      </div>
-                      <div className="rounded-lg border border-green-200 bg-white p-3">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                              <Wallet className="h-4 w-4 text-amber-600" />
-                              Await payment before advancing?
-                            </div>
-                          </div>
-                          <TogglePillGroup value={waitForPayment} onChange={setWaitForPayment} />
-                        </div>
-                      </div>
-                      <div className="rounded-lg border border-green-200 bg-white p-3">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                              <Check className="h-4 w-4 text-green-600" />
-                              Contract invoice paid
-                            </div>
-                          </div>
-                          <TogglePillGroup value={invoicePaid} onChange={setInvoicePaid} />
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        disabled={!readyToAdvance || confirmTaskMutation.isPending}
-                        onClick={handleCompleteTask}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-gray-300"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                        {confirmTaskMutation.isPending ? 'Completing...' : 'Move to Certification Stage'}
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </Section>
-
-              {false ? (
-                <>
-              <Section title="1. Contract Setup">
-                <div className="space-y-3">
-                  <label className="block text-sm">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Effective Date
-                    </span>
-                    <input
-                      type="date"
-                      value={effectiveDate}
-                      onChange={(event) => setEffectiveDate(event.target.value)}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
-                    />
-                  </label>
-                  <label className="block text-sm">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Annual Fee
-                    </span>
-                    <input
-                      value={annualFee}
-                      onChange={(event) => setAnnualFee(event.target.value)}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
-                    />
-                  </label>
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">No special production procedures?</div>
-                        <div className="mt-1 text-xs text-gray-500">
-                          Matches the demo behavior for a simple “none” Schedule D.
-                        </div>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={noProductionProcedures}
-                        onChange={(event) => setNoProductionProcedures(event.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
-                    </div>
-                  </div>
-                  <label className="block text-sm">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Production Procedures
-                    </span>
-                    <textarea
-                      rows={4}
-                      value={productionProcedures}
-                      disabled={noProductionProcedures}
-                      onChange={(event) => setProductionProcedures(event.target.value)}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 disabled:bg-gray-100"
-                    />
-                  </label>
-                </div>
-              </Section>
-
-              <Section title="2. Pulled Records">
-                <div className="space-y-3 text-sm">
-                  <div className="rounded-lg border border-gray-200 p-3">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Company</div>
-                    <div className="mt-1 font-medium text-gray-900">{companyName}</div>
-                    <div className="mt-1 text-gray-600">{companyAddress || 'Address on file'}</div>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="rounded-lg border border-gray-200 p-3">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Signer</div>
-                      <div className="mt-1 font-medium text-gray-900">{contact.name}</div>
-                      <div className="mt-1 text-gray-600">
-                        {[contact.title, contact.email].filter(Boolean).join(' · ') || 'Primary contact'}
-                      </div>
-                    </div>
-                    <div className="rounded-lg border border-gray-200 p-3">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">OU Roles</div>
-                      <div className="mt-1 font-medium text-gray-900">RC: {rcName}</div>
-                      <div className="mt-1 text-gray-600">NCRC: {ncrcName}</div>
-                    </div>
-                  </div>
-                </div>
-              </Section>
-
-              <Section title="3. Generate Package">
-                <div className="space-y-4">
-                  <div className="rounded-lg border border-gray-200 p-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                          <Scale className="h-4 w-4 text-violet-600" />
-                          Legal review required?
-                        </div>
-                        <p className="mt-1 text-xs text-gray-500">
-                          Standard templates can be generated directly. If boilerplate changed, require legal sign-off first.
-                        </p>
-                      </div>
-                      <TogglePillGroup value={legalReviewNeeded} onChange={setLegalReviewNeeded} />
-                    </div>
-                  </div>
-
-                  {legalReviewNeeded ? (
-                    <div className="rounded-lg border border-violet-200 bg-violet-50 p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-medium text-violet-900">Legal Status</div>
-                          <div className="mt-1 text-xs text-violet-700">
-                            {legalApproved ? 'Legal signed off on the package.' : 'Awaiting legal sign-off before generation.'}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setLegalApproved((current) => !current)}
-                          className="rounded-lg border border-violet-300 bg-white px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100"
-                        >
-                          {legalApproved ? 'Clear Sign-off' : 'Mark Legal Approved'}
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
-                    The package includes the agreement body, schedules, and the invoice preview, matching the demo’s contract stage flow.
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={!readyToGenerate}
-                      onClick={() => {
-                        setPackageGenerated(true)
-                        toast.success('Contract package generated')
-                      }}
-                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-                    >
-                      <FileText className="h-4 w-4" />
-                      {packageGenerated ? 'Regenerate Package' : 'Generate Package'}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!packageGenerated}
-                      onClick={() => setShowEmailPreview(true)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <Mail className="h-4 w-4" />
-                      Review Email
-                    </button>
-                  </div>
                 </div>
               </Section>
 
               {packageGenerated ? (
-                <Section title="4. Completion">
-                  <div className="space-y-4">
-                    <div className="rounded-lg border border-gray-200 p-3">
+                <Section title="Completion">
+                  <div className="space-y-3">
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                            <Stamp className="h-4 w-4 text-green-600" />
+                          <div className="text-[13.5px] font-semibold text-[#1e1e2e]">
                             Signed contract received?
                           </div>
-                          <p className="mt-1 text-xs text-gray-500">
-                            Mirrors the demo’s post-generation stage tracking.
+                          <p className="mt-1 text-xs leading-5 text-gray-500">
+                            Signed contract is required before advancing to Certification.
                           </p>
                         </div>
                         <TogglePillGroup value={contractSigned} onChange={setContractSigned} />
                       </div>
                     </div>
-                    <div className="rounded-lg border border-gray-200 p-3">
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                            <Wallet className="h-4 w-4 text-amber-600" />
-                            Wait for payment before advancing?
+                          <div className="text-[13.5px] font-semibold text-[#1e1e2e]">
+                            Await payment before advancing?
                           </div>
-                          <p className="mt-1 text-xs text-gray-500">
-                            When disabled, the task can complete on signature alone and payment stays flagged.
+                          <p className="mt-1 text-xs leading-5 text-gray-500">
+                            New company - signed contract and paid invoice both required.
                           </p>
                         </div>
-                        <TogglePillGroup
-                          value={waitForPayment}
-                          onChange={setWaitForPayment}
-                          trueLabel="Wait"
-                          falseLabel="Skip"
-                        />
+                        <div className="inline-flex rounded-lg border border-gray-300 bg-white p-1">
+                          <span className="rounded-md bg-[#58942F] px-3 py-1.5 text-sm font-medium text-white">
+                            Yes
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="rounded-lg border border-gray-200 p-3">
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                            <Check className="h-4 w-4 text-green-600" />
-                            Invoice paid?
+                          <div className="text-[13.5px] font-semibold text-[#1e1e2e]">
+                            Contract invoice paid
                           </div>
-                          <p className="mt-1 text-xs text-gray-500">
-                            Use this to reflect Kashrus payment status in the drawer flow.
+                          <p className="mt-1 text-xs leading-5 text-gray-500">
+                            Payment status mirrors the Kashrus invoice state.
                           </p>
                         </div>
                         <TogglePillGroup value={invoicePaid} onChange={setInvoicePaid} />
@@ -2612,27 +2410,19 @@ Rabbinic Coordinator`
                       type="button"
                       disabled={!readyToAdvance || confirmTaskMutation.isPending}
                       onClick={handleCompleteTask}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-gray-300"
                     >
                       <ChevronRight className="h-4 w-4" />
-                      {confirmTaskMutation.isPending ? 'Completing...' : 'Complete Contract Task'}
+                      {confirmTaskMutation.isPending ? 'Completing...' : 'Move to Certification Stage'}
                     </button>
                   </div>
                 </Section>
               ) : null}
-                </>
-              ) : null}
-            </div>
 
-            <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-              <div className="shrink-0 border-b px-5 py-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
-                      Live Preview
-                    </div>
-                    <div className="mt-1 text-sm text-gray-600">{stageStatus}</div>
-                  </div>
+            </div>
+            <div className="flex min-h-0 flex-col overflow-hidden rounded-[10px] border border-gray-200 bg-white shadow-sm xl:sticky xl:top-5">
+              <div className="shrink-0 border-b-2 border-slate-200 bg-white px-4 py-3.5">
+                <div className="mb-2.5 flex flex-wrap items-center justify-end gap-3">
                   {legalReviewNeeded && previewTab === 'agreement' ? (
                     <div className="flex flex-wrap items-center gap-3">
                       <label className="flex cursor-pointer items-center gap-1.5 text-[12px] font-semibold text-slate-500">
@@ -2662,7 +2452,17 @@ Rabbinic Coordinator`
                       </select>
                     </div>
                   ) : null}
-                  <div className="flex flex-wrap gap-2">
+                  <label className="flex cursor-pointer items-center gap-1.5 text-[12px] font-semibold text-slate-500">
+                    <input
+                      type="checkbox"
+                      checked={showMergeFieldsHint}
+                      onChange={(event) => setShowMergeFieldsHint(event.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-gray-300"
+                    />
+                    Show merge fields
+                  </label>
+                </div>
+                <div className="flex flex-wrap gap-1 rounded-[9px] bg-[#eef1f5] p-1">
                     {[
                       ['cover', 'Cover'],
                       ['agreement', 'Agreement'],
@@ -2673,26 +2473,35 @@ Rabbinic Coordinator`
                       ['e', 'E · Labeling'],
                       ['invoice', 'Invoice'],
                       ['pla', 'PLA'],
-                    ].map(([value, label]) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => setPreviewTab(value as PreviewTab)}
-                        className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                          previewTab === value
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                    ].map(([value]) => {
+                      const tab = value as PreviewTab
+                      if (tab === 'pla' && !hasPrivateLabelAgreements) return null
+
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setPreviewTab(tab)}
+                          style={{ order: getPreviewTabOrder(tab) }}
+                          className={`rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                            previewTab === value
+                              ? 'border-[#185087] bg-[#185087] text-white shadow-sm'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900'
+                          }`}
+                        >
+                          {getPreviewTabLabel(tab)}
+                        </button>
+                      )
+                    })}
                   </div>
-                </div>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#f7f8fb] p-5">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#f7f8fb] p-5 font-serif text-[13.5px] leading-relaxed">
                 {previewContent}
               </div>
+              <p className="shrink-0 px-4 pb-3 pt-2 text-[11px] text-slate-400">
+                Yellow = auto-merged from records / your entries / live tables.
+                {showMergeFieldsHint ? ' Hover highlighted values to see the merge token.' : ''}
+              </p>
             </div>
           </div>
         </div>
