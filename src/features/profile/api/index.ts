@@ -127,11 +127,11 @@ export async function fetchUserPerson({
 }): Promise<UserPerson | null> {
   const params = new URLSearchParams()
   if (username) {
-    params.append('filter[KashLogin]', username)
+    params.append('filter[KashLogIn]', username)
   }
 
   const queryString = params.toString()
-  const path = `/api/Person_TB${queryString ? `?${queryString}` : ''}`
+  const path = `/api/PERSONTB${queryString ? `?${queryString}` : ''}`
 
   const response = await fetchWithAuth<JsonApiListResponse<UserPersonAttributes>>({
     path,
