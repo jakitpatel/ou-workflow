@@ -76,8 +76,7 @@ ${username ?? ''}`
       title: RC_NOTIFICATION_SUBJECT,
       preheader: `RC assignment for ${companyName}`,
     })
-    const payload: ApplicationMessagePayload & { type: string } = {
-      MessageID: null,
+    const payload: ApplicationMessagePayload = {
       ApplicationID: normalizeApplicationId(applicationId),
       FromUser: username ?? '',
       ToUser: rcUserName.trim(),
@@ -86,15 +85,11 @@ ${username ?? ''}`
       MessageTextPlain: htmlEmail.text,
       MessageType: 'Text',
       Priority: 'NORMAL',
-      SentDate: '',
+      SentDate: new Date().toISOString(),
       TemplateName: 'initial-inspection',
       TaskInstanceId: taskInstanceId ?? null,
       isPrivate: false,
-      parentMessageId: null,
-      toReply: null,
-      CCUser: null,
       BCCUser: 'productAutomation@ou.org',
-      type: 'WFApplicationMessage',
     }
 
     setIsSendingRcNotification(true)
