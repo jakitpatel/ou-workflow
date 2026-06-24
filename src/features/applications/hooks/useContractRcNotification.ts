@@ -88,7 +88,7 @@ ${username ?? ''}`
       SentDate: new Date().toISOString(),
       TemplateName: 'initial-inspection',
       TaskInstanceId: taskInstanceId ?? null,
-      isPrivate: false,
+      isPrivate: true,
       BCCUser: 'productAutomation@ou.org',
     }
 
