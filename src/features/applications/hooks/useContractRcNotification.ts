@@ -81,7 +81,7 @@ ${username ?? ''}`
       FromUser: username ?? '',
       ToUser: rcUserName.trim(),
       Subject: RC_NOTIFICATION_SUBJECT,
-      MessageText: htmlEmail.html,
+      MessageText: htmlEmail.text,
       MessageTextPlain: htmlEmail.text,
       MessageType: 'Text',
       Priority: 'NORMAL',
