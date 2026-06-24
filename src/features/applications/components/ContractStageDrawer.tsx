@@ -14,6 +14,7 @@ import {
   type ApplicationMessagePayload,
 } from '@/features/applications/api'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
+import { useContractRcNotification } from '@/features/applications/hooks/useContractRcNotification'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
@@ -528,6 +529,10 @@ export function ContractStageDrawer({
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const { email, token, username } = useUser()
+  const { isSendingRcNotification, notifyRcForApproval } = useContractRcNotification({
+    token,
+    username,
+  })
   const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
   const isNewCompanyContract = applicant?.isNewCompany !== false
   const {
@@ -949,6 +954,22 @@ Rabbinic Coordinator`
       toast.error(error instanceof Error ? error.message : 'Unable to send contract email')
     } finally {
       setIsSendingEmail(false)
+    }
+  }
+
+  const handleNotifyRcForApproval = async () => {
+    try {
+      await notifyRcForApproval({
+        applicationId: resolvedApplicationId,
+        companyName,
+        rcUserName: isNewCompanyContract ? selectedRc?.userName : rcName,
+        taskInstanceId,
+      })
+      setPackageGenerated(true)
+      setPreviewTab('cover')
+      toast.success('RC notified for approval')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to notify RC for approval')
     }
   }
 
@@ -2813,15 +2834,12 @@ Rabbinic Coordinator`
                   ) : (
                     <button
                       type="button"
-                      onClick={() => {
-                        setPackageGenerated(true)
-                        setPreviewTab('cover')
-                        toast.success('RC notified for approval')
-                      }}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#58942F] px-4 py-2.5 text-sm font-bold text-white hover:bg-green-700"
+                      disabled={isSendingRcNotification}
+                      onClick={handleNotifyRcForApproval}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#58942F] px-4 py-2.5 text-sm font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                     >
                       <FileText className="h-4 w-4" />
-                      Notify RC for approval
+                      {isSendingRcNotification ? 'Notifying...' : 'Notify RC for approval'}
                     </button>
                   )}
                 </div>
