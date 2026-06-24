@@ -3,6 +3,7 @@ import {
   ChevronRight,
   ClipboardList,
   FileText,
+  Search,
   Send,
   X,
 } from 'lucide-react'
@@ -533,7 +534,7 @@ export function ContractStageDrawer({
     data: rcLookupList = [],
     isError: isRcLookupError,
     isLoading: isRcLookupLoading,
-  } = useUserListByRole('api/vSelectRFR', { enabled: open && isNewCompanyContract })
+  } = useUserListByRole('api/vSelectNCRC', { enabled: open && isNewCompanyContract })
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
     includePrelimLists: true,
@@ -569,6 +570,7 @@ export function ContractStageDrawer({
   const [emailSent, setEmailSent] = useState(false)
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [selectedRcLookupKey, setSelectedRcLookupKey] = useState('')
+  const [rcSearch, setRcSearch] = useState('')
 
   useEffect(() => {
     if (!open) return
@@ -595,6 +597,7 @@ export function ContractStageDrawer({
     setPlaBodyOpen(false)
     setSelectedPlaCompany('')
     setSelectedRcLookupKey('')
+    setRcSearch('')
   }, [open, taskInstanceId])
 
   const detailAssignedRoles = applicationDetail?.assignedRoles ?? assignedRoles
@@ -617,6 +620,16 @@ export function ContractStageDrawer({
     [rcLookupList],
   )
   const selectedRc = rcOptions.find((option) => option.lookupKey === selectedRcLookupKey)
+  const filteredRcOptions = useMemo(() => {
+    const query = rcSearch.trim().toLowerCase()
+    if (!query) return rcOptions
+
+    return rcOptions.filter((option) =>
+      [option.name, option.userName, option.email].some((value) =>
+        value.toLowerCase().includes(query),
+      ),
+    )
+  }, [rcOptions, rcSearch])
   const rcName = isNewCompanyContract ? selectedRc?.name || 'Select RC' : existingRcName
   const rcEmail = isNewCompanyContract ? selectedRc?.email || '' : existingRcEmail
   const ncrcName = textValue(username) || 'Current User'
@@ -2669,41 +2682,79 @@ Rabbinic Coordinator`
               <Section title="RC Assigned to Company" count="rabbinic coordinator">
                 {isNewCompanyContract ? (
                   <>
-                    <label className="block text-sm">
+                    <div className="text-sm">
                       <span className="text-[12.5px] font-semibold text-gray-700">
                         Select RC <span className="text-red-600">*</span>
                       </span>
-                      <select
-                        value={selectedRcLookupKey}
-                        disabled={packageGenerated}
-                        onChange={(event) => setSelectedRcLookupKey(event.target.value)}
-                        className="mt-1 w-full rounded-[7px] border border-slate-300 bg-white px-3 py-2 text-sm text-[#1e1e2e] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
-                      >
-                        <option value="">
-                          {isRcLookupLoading
-                            ? 'Loading RC list...'
-                            : isRcLookupError
-                              ? 'Unable to load RC list'
-                              : 'Select RC'}
-                        </option>
-                        {rcOptions.map((option) => (
-                          <option key={option.lookupKey} value={option.lookupKey}>
-                            {[option.name, option.userName, option.email].filter(Boolean).join(' - ')}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    {selectedRc ? (
-                      <div className="mt-3 rounded-[7px] border border-blue-200 bg-blue-50 px-3 py-2 text-sm">
-                        <div className="font-semibold text-blue-950">{selectedRc.name}</div>
-                        {selectedRc.userName ? (
-                          <div className="mt-1 text-xs text-blue-800">{selectedRc.userName}</div>
-                        ) : null}
-                        {selectedRc.email ? (
-                          <div className="mt-1 text-xs text-blue-700">{selectedRc.email}</div>
-                        ) : null}
-                      </div>
-                    ) : null}
+                      {selectedRc ? (
+                        <div className="mt-1 rounded-[7px] border border-blue-200 bg-blue-50 px-3 py-2">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="font-semibold text-blue-950">{selectedRc.name}</div>
+                              {selectedRc.userName ? (
+                                <div className="mt-1 text-xs text-blue-800">{selectedRc.userName}</div>
+                              ) : null}
+                              {selectedRc.email ? (
+                                <div className="mt-1 text-xs text-blue-700">{selectedRc.email}</div>
+                              ) : null}
+                            </div>
+                            {!packageGenerated ? (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedRcLookupKey('')}
+                                className="rounded px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                              >
+                                Change
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-1">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            <input
+                              value={rcSearch}
+                              onChange={(event) => setRcSearch(event.target.value)}
+                              placeholder="Search by name, username, or email..."
+                              className="w-full rounded-[7px] border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-[#1e1e2e] focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
+                            />
+                          </div>
+                          <div className="mt-2 max-h-60 space-y-2 overflow-y-auto">
+                            {isRcLookupLoading ? (
+                              <div className="rounded border border-gray-200 bg-white px-3 py-6 text-center text-sm text-gray-500">
+                                Loading RC list...
+                              </div>
+                            ) : isRcLookupError ? (
+                              <div className="rounded border border-red-200 bg-red-50 px-3 py-6 text-center text-sm text-red-700">
+                                Unable to load RC list.
+                              </div>
+                            ) : filteredRcOptions.length === 0 ? (
+                              <div className="rounded border border-gray-200 bg-white px-3 py-6 text-center text-sm text-gray-500">
+                                No RC matches found.
+                              </div>
+                            ) : (
+                              filteredRcOptions.map((option) => (
+                                <button
+                                  key={option.lookupKey}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedRcLookupKey(option.lookupKey)
+                                    setRcSearch('')
+                                  }}
+                                  className="w-full rounded border border-gray-200 bg-white p-3 text-left hover:border-blue-300 hover:bg-blue-50"
+                                >
+                                  <div className="font-medium text-gray-900">{option.name}</div>
+                                  <div className="mt-1 text-xs text-gray-500">
+                                    {[option.userName, option.email].filter(Boolean).join(' - ') || '-'}
+                                  </div>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <>
