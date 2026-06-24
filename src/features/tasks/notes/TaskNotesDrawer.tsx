@@ -350,6 +350,70 @@ const renderNoteTextWithMentionHighlight = (text: string, currentUsername?: stri
   return parts.length === 0 ? text : parts
 }
 
+const urlPattern = /https?:\/\/[^\s<]+/gi
+
+const renderNoteTextContent = (
+  text: string,
+  currentUsername?: string | null,
+  options: { highlightMentions?: boolean; linkClassName?: string } = {},
+) => {
+  const parts: ReactNode[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  urlPattern.lastIndex = 0
+
+  while ((match = urlPattern.exec(text)) !== null) {
+    const rawUrl = match[0]
+    const matchIndex = match.index
+    const trailingPunctuation = rawUrl.match(/[)\].,;:!?]+$/)?.[0] ?? ''
+    const href = trailingPunctuation ? rawUrl.slice(0, -trailingPunctuation.length) : rawUrl
+
+    if (matchIndex > lastIndex) {
+      const beforeUrl = text.slice(lastIndex, matchIndex)
+      parts.push(
+        options.highlightMentions
+          ? renderNoteTextWithMentionHighlight(beforeUrl, currentUsername)
+          : beforeUrl,
+      )
+    }
+
+    parts.push(
+      <a
+        key={`${matchIndex}-${href}`}
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className={options.linkClassName ?? 'break-all font-medium text-blue-700 underline'}
+        onClick={(event) => event.stopPropagation()}
+      >
+        {href}
+      </a>,
+    )
+
+    if (trailingPunctuation) {
+      parts.push(trailingPunctuation)
+    }
+
+    lastIndex = matchIndex + rawUrl.length
+  }
+
+  if (lastIndex < text.length) {
+    const remainingText = text.slice(lastIndex)
+    parts.push(
+      options.highlightMentions
+        ? renderNoteTextWithMentionHighlight(remainingText, currentUsername)
+        : remainingText,
+    )
+  }
+
+  return parts.length > 0
+    ? parts
+    : options.highlightMentions
+      ? renderNoteTextWithMentionHighlight(text, currentUsername)
+      : text
+}
+
 const getMetaValue = (note: TaskNote, ...keys: string[]): string => {
   for (const key of keys) {
     const value = normalizeNoteValue((note as any)?.[key])
@@ -1395,8 +1459,12 @@ export function TaskNotesDrawer({
                 const messageIsOwn = isCurrentUserMessage(messageFromName, currentUsername)
                 const messageNoteIsRead = isNoteRead(messageNote)
                 const messageIsMarkingRead = markingReadMessageId === messageId
-                const messageRenderedText =
-                  isPublicTab ? renderNoteTextWithMentionHighlight(messageText, currentUsername) : messageText
+                const messageRenderedText = renderNoteTextContent(messageText, currentUsername, {
+                  highlightMentions: isPublicTab,
+                  linkClassName: messageIsOwn
+                    ? 'break-all font-medium text-white underline'
+                    : 'break-all font-medium text-blue-700 underline',
+                })
                 const messageReactions = getReactionSummaryFromNote(messageNote, currentUsername)
                 const isReactionPickerOpen = Boolean(reactionPickerOpenById[messageId])
                 const isActionMenuOpen = Boolean(actionMenuOpenById[messageId])
@@ -1520,7 +1588,7 @@ export function TaskNotesDrawer({
                               : isRootMessage
                                 ? `${rootTone.card} ${rootTone.text}`
                                 : 'border-slate-200 bg-white text-slate-900'
-                          } ${isSelectedReplyTarget ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-slate-50 shadow-md' : ''} ${isIncomingTab && !messageNoteIsRead && canMarkMessageRead ? 'cursor-pointer' : ''}`}
+                          } whitespace-pre-wrap ${isSelectedReplyTarget ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-slate-50 shadow-md' : ''} ${isIncomingTab && !messageNoteIsRead && canMarkMessageRead ? 'cursor-pointer' : ''}`}
                           onClick={() => {
                             if (!isIncomingTab || messageNoteIsRead || !canMarkMessageRead) return
                             void onIncomingNoteClick?.(messageNote)
@@ -1980,7 +2048,11 @@ export function TaskNotesDrawer({
                             Notes For: <span className="text-slate-900">{noteTaskName}</span>
                           </p>
                         ) : null}
-                        <p className="mt-2 text-sm leading-5 text-slate-900">{getNoteText(note)}</p>
+                        <div className="mt-2 whitespace-pre-wrap text-sm leading-5 text-slate-900">
+                          {renderNoteTextContent(getNoteText(note), currentUsername, {
+                            highlightMentions: isPublicTab,
+                          })}
+                        </div>
                         <div className="mt-2" />
                       </article>
                     )

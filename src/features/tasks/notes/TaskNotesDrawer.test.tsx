@@ -539,6 +539,73 @@ describe('TaskNotesDrawer', () => {
     expect(screen.getAllByRole('button', { name: /❤️/i }).length).toBeGreaterThan(0)
   })
 
+  it('preserves plain-text line breaks and linkifies URLs in My Messages Direct threads', () => {
+    const applicationUrl =
+      'https://devlinux03.nyc.ou.org/ou-workflow/ncrc-dashboard?q=&status=all&priority=all&page=0&myOnly=true&applicationId=3574'
+
+    renderWithProviders(
+      <TaskNotesDrawer
+        open
+        applicantCompany="My Messages"
+        contextType="application"
+        taskName="Current User"
+        activeTab="incoming"
+        incomingNotes={[
+          {
+            MessageID: 1424,
+            MessageText: `Dear RC,
+You have been selected to be the RC for Allfresh Food Products, Inc.
+
+please review the following application
+
+${applicationUrl}
+
+
+thank you
+
+NCRC
+SHOUKI.BENJAMIN`,
+            FromUser: 'SHOUKI.BENJAMIN',
+            ToUser: 'SHOUKI.BENJAMIN',
+            SentDate: '2026-06-24T09:15:28.820381',
+            isPrivate: true,
+            isRead: false,
+            parentMessageId: 0,
+          } as TaskNote,
+        ]}
+        outgoingNotes={[]}
+        mentionNotes={[]}
+        privateNotes={[]}
+        loadingIncoming={false}
+        loadingOutgoing={false}
+        loadingMention={false}
+        loadingPrivate={false}
+        composeText=""
+        composeToUserId={null}
+        composePrivate={false}
+        currentUsername="SHOUKI.BENJAMIN"
+        isSubmitting={false}
+        error=""
+        showMyNotesThreadType
+        hideComposer
+        hidePrivacyToggle
+        onClose={() => {}}
+        onTabChange={() => {}}
+        onComposeTextChange={() => {}}
+        onComposeToUserChange={() => {}}
+        onComposePrivateChange={() => {}}
+        onSubmit={() => {}}
+        onReplySubmit={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /expand thread from shouki.benjamin/i }))
+
+    const link = screen.getByRole('link', { name: applicationUrl })
+    expect(link.getAttribute('href')).toBe(applicationUrl)
+    expect(link.closest('.whitespace-pre-wrap')).toBeTruthy()
+  })
+
   it('keeps ToUser empty when replying to a public My Notes thread', async () => {
     const onReplySubmit = vi.fn().mockResolvedValue(undefined)
 
