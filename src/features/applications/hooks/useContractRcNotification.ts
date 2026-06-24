@@ -10,6 +10,11 @@ const RC_NOTIFICATION_SUBJECT = 'OU Kosher - You have been selected to be the RC
 
 const getWorkflowBaseUrl = () => resolveApiBaseUrl().replace(/\/api\/?$/i, '').replace(/\/$/, '')
 
+const getAppBasePath = () => {
+  const basePath = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+  return basePath && basePath !== '/' ? basePath : ''
+}
+
 const normalizeApplicationId = (applicationId: string | number) => {
   const value = String(applicationId).trim()
   const numericValue = Number(value)
@@ -26,7 +31,13 @@ const buildApplicationReviewUrl = (applicationId: string | number) => {
     applicationId: String(applicationId),
   })
 
-  return `${getWorkflowBaseUrl()}/ou-workflow/ncrc-dashboard?${params.toString()}`
+  const appPath = `${getAppBasePath()}/ou-workflow/ncrc-dashboard?${params.toString()}`
+
+  if (typeof window !== 'undefined') {
+    return new URL(appPath, window.location.origin).toString()
+  }
+
+  return `${getWorkflowBaseUrl()}${appPath}`
 }
 
 type NotifyRcForApprovalParams = {
