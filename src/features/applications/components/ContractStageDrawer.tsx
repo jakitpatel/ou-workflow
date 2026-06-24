@@ -29,6 +29,8 @@ type Props = {
   taskName?: string
   appVars?: ApplicantAppVars | null
   assignedRoles?: AssignedRole[]
+  mode?: 'drawer' | 'embedded'
+  readOnly?: boolean
   onClose: () => void
 }
 
@@ -524,8 +526,11 @@ export function ContractStageDrawer({
   taskName,
   appVars,
   assignedRoles,
+  mode = 'drawer',
+  readOnly = false,
   onClose,
 }: Props) {
+  const isEmbedded = mode === 'embedded'
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const { email, token, username } = useUser()
@@ -539,7 +544,7 @@ export function ContractStageDrawer({
     data: rcLookupList = [],
     isError: isRcLookupError,
     isLoading: isRcLookupLoading,
-  } = useUserListByRole('api/vSelectNCRC', { enabled: open && isNewCompanyContract })
+  } = useUserListByRole('api/vSelectNCRC', { enabled: open && isNewCompanyContract && !readOnly })
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
     includePrelimLists: true,
@@ -635,8 +640,8 @@ export function ContractStageDrawer({
       ),
     )
   }, [rcOptions, rcSearch])
-  const rcName = isNewCompanyContract ? selectedRc?.name || 'Select RC' : existingRcName
-  const rcEmail = isNewCompanyContract ? selectedRc?.email || '' : existingRcEmail
+  const rcName = isNewCompanyContract ? selectedRc?.name || (readOnly ? existingRcName : 'Select RC') : existingRcName
+  const rcEmail = isNewCompanyContract ? selectedRc?.email || (readOnly ? existingRcEmail : '') : existingRcEmail
   const ncrcName = textValue(username) || 'Current User'
   const detailCompany = applicationDetail?.company?.[0]
   const detailCompanyRecord = detailCompany as Record<string, unknown> | undefined
@@ -2456,9 +2461,20 @@ Rabbinic Coordinator`
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/45" onClick={onClose}>
+      <div
+        className={
+          isEmbedded
+            ? 'flex h-full min-h-[44rem] flex-col overflow-hidden rounded-lg border border-gray-200 bg-[#f5f7fb] shadow-sm'
+            : 'fixed inset-0 z-50 bg-black/45'
+        }
+        onClick={isEmbedded ? undefined : onClose}
+      >
         <div
-          className="fixed right-0 top-0 flex h-full w-full max-w-[98vw] flex-col overflow-hidden bg-[#f5f7fb] shadow-2xl xl:max-w-[92vw]"
+          className={
+            isEmbedded
+              ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f5f7fb]'
+              : 'fixed right-0 top-0 flex h-full w-full max-w-[98vw] flex-col overflow-hidden bg-[#f5f7fb] shadow-2xl xl:max-w-[92vw]'
+          }
           onClick={(event) => event.stopPropagation()}
         >
           <div className="border-b bg-gray-950 px-6 py-4 text-white">
@@ -2479,14 +2495,16 @@ Rabbinic Coordinator`
                   <span className="rounded-full bg-white/10 px-2.5 py-1">NCRC: {ncrcName}</span>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded p-1 text-gray-300 hover:bg-white/10 hover:text-white"
-                aria-label="Close contract stage drawer"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              {!isEmbedded ? (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded p-1 text-gray-300 hover:bg-white/10 hover:text-white"
+                  aria-label="Close contract stage drawer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              ) : null}
             </div>
           </div>
 
@@ -2549,8 +2567,9 @@ Rabbinic Coordinator`
                     <input
                       type="date"
                       value={effectiveDate}
+                      disabled={readOnly}
                       onChange={(event) => setEffectiveDate(event.target.value)}
-                      className="mt-1 w-full rounded-[7px] border border-slate-300 bg-white px-3 py-2 text-sm text-[#1e1e2e] focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
+                      className="mt-1 w-full rounded-[7px] border border-slate-300 bg-white px-3 py-2 text-sm text-[#1e1e2e] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
                     />
                     <span className="mt-1 block text-[11.5px] leading-5 text-gray-500">
                       Defaults to the first of the current month - reads "the first day of{' '}
@@ -2586,8 +2605,9 @@ Rabbinic Coordinator`
                         step="0.01"
                         placeholder="4,860.00"
                         value={annualFee}
+                        disabled={readOnly}
                         onChange={(event) => setAnnualFee(event.target.value)}
-                        className="w-full rounded-[7px] border border-slate-300 bg-white py-2 pl-7 pr-3 text-sm text-[#1e1e2e] focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
+                        className="w-full rounded-[7px] border border-slate-300 bg-white py-2 pl-7 pr-3 text-sm text-[#1e1e2e] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
                       />
                     </div>
                     <span className="mt-1 block text-[11.5px] leading-5 text-gray-500">
@@ -2604,13 +2624,15 @@ Rabbinic Coordinator`
                       rows={2}
                       value={certificationInvoiceComment}
                       placeholder="Comment for the certification invoice..."
+                      disabled={readOnly}
                       onChange={(event) => setCertificationInvoiceComment(event.target.value)}
-                      className="mt-1 w-full rounded-[7px] border border-slate-300 bg-white px-3 py-2 text-sm text-[#1e1e2e] focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
+                      className="mt-1 w-full rounded-[7px] border border-slate-300 bg-white px-3 py-2 text-sm text-[#1e1e2e] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
                     />
                     <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs font-semibold text-gray-700">
                       <input
                         type="checkbox"
                         checked={includeInvoiceComment}
+                        disabled={readOnly}
                         onChange={(event) => setIncludeInvoiceComment(event.target.checked)}
                         className="h-3.5 w-3.5 rounded border-gray-300"
                       />
@@ -2629,8 +2651,9 @@ Rabbinic Coordinator`
                 <div className="mb-2 flex gap-2">
                   <button
                     type="button"
+                    disabled={readOnly}
                     onClick={() => setNoProductionProcedures(true)}
-                    className={`rounded-md border px-3 py-1.5 text-sm font-semibold ${
+                    className={`rounded-md border px-3 py-1.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
                       noProductionProcedures
                         ? 'border-[#58942F] bg-[#58942F] text-white'
                         : 'border-gray-300 bg-white text-gray-600'
@@ -2640,8 +2663,9 @@ Rabbinic Coordinator`
                   </button>
                   <button
                     type="button"
+                    disabled={readOnly}
                     onClick={() => setNoProductionProcedures(false)}
-                    className={`rounded-md border px-3 py-1.5 text-sm font-semibold ${
+                    className={`rounded-md border px-3 py-1.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
                       !noProductionProcedures
                         ? 'border-[#58942F] bg-[#58942F] text-white'
                         : 'border-gray-300 bg-white text-gray-600'
@@ -2654,7 +2678,7 @@ Rabbinic Coordinator`
                   rows={2}
                   placeholder="Dedicated line, kosherization, bulk-shipment notes..."
                   value={productionProcedures}
-                  disabled={noProductionProcedures}
+                  disabled={readOnly || noProductionProcedures}
                   onChange={(event) => setProductionProcedures(event.target.value)}
                   className="w-full rounded-[7px] border border-slate-300 bg-white px-3 py-2 text-sm text-[#1e1e2e] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
                 />
@@ -2676,7 +2700,15 @@ Rabbinic Coordinator`
                           : 'Standard template - no legal review required.'}
                       </p>
                     </div>
-                    <TogglePillGroup value={legalReviewNeeded} onChange={setLegalReviewNeeded} />
+                    {readOnly ? (
+                      <div className="inline-flex rounded-lg border border-gray-300 bg-white p-1">
+                        <span className="rounded-md bg-gray-700 px-3 py-1.5 text-sm font-medium text-white">
+                          {legalReviewNeeded ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                    ) : (
+                      <TogglePillGroup value={legalReviewNeeded} onChange={setLegalReviewNeeded} />
+                    )}
                   </div>
                   {legalReviewNeeded ? (
                     <div
@@ -2688,7 +2720,7 @@ Rabbinic Coordinator`
                     </div>
                   ) : null}
                 </div>
-                {legalReviewNeeded && !legalApproved ? (
+                {legalReviewNeeded && !legalApproved && !readOnly ? (
                   <button
                     type="button"
                     disabled={!Boolean(annualFee)}
@@ -2701,7 +2733,7 @@ Rabbinic Coordinator`
               </Section>
 
               <Section title="RC Assigned to Company" count="rabbinic coordinator">
-                {isNewCompanyContract ? (
+                {isNewCompanyContract && !readOnly ? (
                   <>
                     <div className="text-sm">
                       <span className="text-[12.5px] font-semibold text-gray-700">
@@ -2793,7 +2825,11 @@ Rabbinic Coordinator`
                     : 'Existing company - RC derived from Kashrus. Prints on the agreement, invoice, and email.'}
                 </p>
                 <div className="mt-3 border-t border-gray-100 pt-3">
-                  {packageGenerated ? (
+                  {readOnly ? (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] font-semibold text-slate-600">
+                      Read-only contract preview. Workflow actions are available from the task dashboard.
+                    </div>
+                  ) : packageGenerated ? (
                     <div className="space-y-2">
                       <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-[12.5px] font-semibold text-green-700">
                         RC notified for approval - sent as a live link to review.
@@ -2845,7 +2881,7 @@ Rabbinic Coordinator`
                 </div>
               </Section>
 
-              {packageGenerated ? (
+              {packageGenerated && !readOnly ? (
                 <Section title="Completion">
                   <div className="space-y-3">
                     <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
@@ -3052,15 +3088,17 @@ Rabbinic Coordinator`
               >
                 Close
               </button>
-              <button
-                type="button"
-                disabled={isSendingEmail}
-                onClick={handleSendEmail}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-              >
-                <Send className="h-4 w-4" />
-                {isSendingEmail ? 'Sending...' : 'Record Email'}
-              </button>
+              {!readOnly ? (
+                <button
+                  type="button"
+                  disabled={isSendingEmail}
+                  onClick={handleSendEmail}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                >
+                  <Send className="h-4 w-4" />
+                  {isSendingEmail ? 'Sending...' : 'Record Email'}
+                </button>
+              ) : null}
             </div>
           </div>
         </div>

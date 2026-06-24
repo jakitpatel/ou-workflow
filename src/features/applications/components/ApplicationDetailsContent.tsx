@@ -35,6 +35,7 @@ import QuoteInfo from '@/components/ou-workflow/ApplicationManagement/QuoteInfo'
 import TaskEventsPanel from '@/components/ou-workflow/ApplicationManagement/TaskEventsPanel'
 import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer'
 import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer'
+import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer'
 import type { ApplicationDetail, ApplicationEmail } from '@/types/application'
 
 type CompletionStatus = 'incomplete' | 'complete' | 'dispatched'
@@ -113,6 +114,7 @@ const TABS = [
 
 const SCHEDULE_A_TAB = { id: 'schedule-a', label: 'Schedule A', icon: ClipboardList } as const
 const SCHEDULE_B_TAB = { id: 'schedule-b', label: 'Schedule B', icon: Package } as const
+const CONTRACT_TAB = { id: 'contract', label: 'Contract', icon: FileText } as const
 
 const STATUS_BADGES: Record<string, string> = {
   'Not Started': 'bg-gray-100 text-gray-800',
@@ -549,7 +551,7 @@ export function ApplicationDetailsContent({
   const tabs = useMemo(
     () =>
       dataSource === 'application'
-        ? [...TABS.slice(0, 6), SCHEDULE_A_TAB, SCHEDULE_B_TAB, ...TABS.slice(6)]
+        ? [...TABS.slice(0, 6), SCHEDULE_A_TAB, SCHEDULE_B_TAB, CONTRACT_TAB, ...TABS.slice(6)]
         : TABS,
     [dataSource],
   )
@@ -829,6 +831,24 @@ export function ApplicationDetailsContent({
             {dataSource === 'application' && activeTab === 'schedule-b' && resolvedApplicationId === null && (
               <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
                 Schedule B is unavailable because this application does not have a valid application ID.
+              </div>
+            )}
+            {dataSource === 'application' && activeTab === 'contract' && resolvedApplicationId !== null && (
+              <ContractStageDrawer
+                open
+                mode="embedded"
+                readOnly
+                applicationId={resolvedApplicationId}
+                applicationName={applicationDisplayName}
+                appVars={application.appvars ?? null}
+                assignedRoles={application.assignedRoles}
+                taskName="Contract"
+                onClose={() => {}}
+              />
+            )}
+            {dataSource === 'application' && activeTab === 'contract' && resolvedApplicationId === null && (
+              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
+                Contract is unavailable because this application does not have a valid application ID.
               </div>
             )}
             {activeTab === 'raw-application' && <RawApplicationPanel entries={application.raw_data} />}
