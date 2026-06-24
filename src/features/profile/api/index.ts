@@ -17,19 +17,17 @@ type JsonApiListResponse<TAttributes> = {
 }
 
 type UserPersonAttributes = {
-  KashLogin?: string
-  First?: string
-  Last?: string
-  FirstName?: string
-  LastName?: string
-  Prefix?: string
+  KashLogIn?: string
+  FIRST?: string
+  LAST?: string
+  PREFIX?: string
 }
 
 export type UserPerson = {
-  kashLogin: string
-  firstName: string
-  lastName: string
-  prefix: string
+  KashLogIn: string
+  FIRST: string
+  LAST: string
+  PREFIX: string
 }
 
 const normalizeUserPerson = (
@@ -41,10 +39,10 @@ const normalizeUserPerson = (
   }
 
   return {
-    kashLogin: String(attributes.KashLogin ?? '').trim(),
-    firstName: String(attributes.FirstName ?? attributes.First ?? '').trim(),
-    lastName: String(attributes.LastName ?? attributes.Last ?? '').trim(),
-    prefix: String(attributes.Prefix ?? '').trim(),
+    KashLogIn: String(attributes.KashLogIn ?? '').trim(),
+    FIRST: String(attributes.FIRST ?? '').trim(),
+    LAST: String(attributes.LAST ?? '').trim(),
+    PREFIX: String(attributes.PREFIX ?? '').trim(),
   }
 }
 

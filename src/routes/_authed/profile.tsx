@@ -137,12 +137,12 @@ function ProfilePage() {
             <dl className="px-6 py-5 space-y-4">
               <InfoCard icon={User} label="Username" value={username || 'Not available'} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <InfoCard icon={User} label="First Name" value={userPerson?.firstName || 'Not available'} />
-                <InfoCard icon={User} label="Last Name" value={userPerson?.lastName || 'Not available'} />
+                <InfoCard icon={User} label="First Name" value={userPerson?.FIRST ?? ''} />
+                <InfoCard icon={User} label="Last Name" value={userPerson?.LAST ?? ''} />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <InfoCard icon={Mail} label="Email" value={email || 'Not available'} />
-                <InfoCard icon={User} label="Prefix" value={userPerson?.prefix || 'Not available'} />
+                <InfoCard icon={User} label="Prefix" value={userPerson?.PREFIX ?? ''} />
               </div>
               <InfoCard icon={Shield} label="Active Role" value={getActiveRoleDisplay()} />
             </dl>
