@@ -13,6 +13,7 @@ import {
   type ApplicationMessagePayload,
 } from '@/features/applications/api'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
+import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import type { Applicant, ApplicantAppVars, AssignedRole } from '@/types/application'
@@ -527,6 +528,12 @@ export function ContractStageDrawer({
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const { email, token, username } = useUser()
   const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
+  const isNewCompanyContract = applicant?.isNewCompany !== false
+  const {
+    data: rcLookupList = [],
+    isError: isRcLookupError,
+    isLoading: isRcLookupLoading,
+  } = useUserListByRole('api/vSelectRFR', { enabled: open && isNewCompanyContract })
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
     includePrelimLists: true,
@@ -561,6 +568,7 @@ export function ContractStageDrawer({
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [selectedRcLookupKey, setSelectedRcLookupKey] = useState('')
 
   useEffect(() => {
     if (!open) return
@@ -586,15 +594,31 @@ export function ContractStageDrawer({
     setEditingClauseText('')
     setPlaBodyOpen(false)
     setSelectedPlaCompany('')
+    setSelectedRcLookupKey('')
   }, [open, taskInstanceId])
 
   const detailAssignedRoles = applicationDetail?.assignedRoles ?? assignedRoles
-  const rcName =
+  const existingRcName =
     getAssignedRoleValue(detailAssignedRoles, 'RC') ||
     textValue(applicant?.assignedRC) ||
     textValue(username) ||
     'Assigned RC'
-  const rcEmail = email || (username && username.includes('@') ? username : 'rc@ou.org')
+  const existingRcEmail = email || (username && username.includes('@') ? username : 'rc@ou.org')
+  const rcOptions = useMemo(
+    () =>
+      rcLookupList
+        .map((item) => ({
+          lookupKey: textValue(item.lookupKey || item.id || item.userName || item.name),
+          name: textValue(item.fullName || item.name || item.userName || item.id),
+          userName: textValue(item.userName || item.id),
+          email: textValue(item.email),
+        }))
+        .filter((item) => item.lookupKey && item.name),
+    [rcLookupList],
+  )
+  const selectedRc = rcOptions.find((option) => option.lookupKey === selectedRcLookupKey)
+  const rcName = isNewCompanyContract ? selectedRc?.name || 'Select RC' : existingRcName
+  const rcEmail = isNewCompanyContract ? selectedRc?.email || '' : existingRcEmail
   const ncrcName = textValue(username) || 'Current User'
   const detailCompany = applicationDetail?.company?.[0]
   const detailCompanyRecord = detailCompany as Record<string, unknown> | undefined
@@ -680,7 +704,6 @@ export function ContractStageDrawer({
   const selectedPrivateLabelInvoiceAccount = selectedPrivateLabelInvoiceCompany
     ? `PL-${String(resolvedApplicationId ?? 'DRAFT')}`
     : 'PL-DRAFT'
-  const isNewCompanyContract = applicant?.isNewCompany !== false
   const contractTypeLabel = isNewCompanyContract
     ? 'New Company Certification'
     : 'Plant Addendum (existing company)'
@@ -817,6 +840,7 @@ export function ContractStageDrawer({
   const readyToGenerate =
     Boolean(effectiveDate) &&
     Boolean(annualFee) &&
+    (!isNewCompanyContract || Boolean(selectedRc)) &&
     (noProductionProcedures || Boolean(productionProcedures.trim())) &&
     (!legalReviewNeeded || legalApproved)
   const readyToAdvance = packageGenerated && contractSigned && invoicePaid
@@ -2643,14 +2667,58 @@ Rabbinic Coordinator`
               </Section>
 
               <Section title="RC Assigned to Company" count="rabbinic coordinator">
-                <div className="rounded-[7px] border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600">
-                  {rcName}
-                </div>
-                <div className="mt-2 rounded-[7px] border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600">
-                  {rcEmail}
-                </div>
+                {isNewCompanyContract ? (
+                  <>
+                    <label className="block text-sm">
+                      <span className="text-[12.5px] font-semibold text-gray-700">
+                        Select RC <span className="text-red-600">*</span>
+                      </span>
+                      <select
+                        value={selectedRcLookupKey}
+                        disabled={packageGenerated}
+                        onChange={(event) => setSelectedRcLookupKey(event.target.value)}
+                        className="mt-1 w-full rounded-[7px] border border-slate-300 bg-white px-3 py-2 text-sm text-[#1e1e2e] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
+                      >
+                        <option value="">
+                          {isRcLookupLoading
+                            ? 'Loading RC list...'
+                            : isRcLookupError
+                              ? 'Unable to load RC list'
+                              : 'Select RC'}
+                        </option>
+                        {rcOptions.map((option) => (
+                          <option key={option.lookupKey} value={option.lookupKey}>
+                            {[option.name, option.userName, option.email].filter(Boolean).join(' - ')}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {selectedRc ? (
+                      <div className="mt-3 rounded-[7px] border border-blue-200 bg-blue-50 px-3 py-2 text-sm">
+                        <div className="font-semibold text-blue-950">{selectedRc.name}</div>
+                        {selectedRc.userName ? (
+                          <div className="mt-1 text-xs text-blue-800">{selectedRc.userName}</div>
+                        ) : null}
+                        {selectedRc.email ? (
+                          <div className="mt-1 text-xs text-blue-700">{selectedRc.email}</div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <div className="rounded-[7px] border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600">
+                      {rcName}
+                    </div>
+                    <div className="mt-2 rounded-[7px] border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600">
+                      {rcEmail}
+                    </div>
+                  </>
+                )}
                 <p className="mt-1 text-[11.5px] leading-5 text-gray-500">
-                  Existing company - RC derived from Kashrus. Prints on the agreement, invoice, and email.
+                  {isNewCompanyContract
+                    ? 'New company - select the RC from Kashrus. Prints on the agreement, invoice, and email.'
+                    : 'Existing company - RC derived from Kashrus. Prints on the agreement, invoice, and email.'}
                 </p>
                 <div className="mt-3 border-t border-gray-100 pt-3">
                   {packageGenerated ? (
@@ -2683,7 +2751,9 @@ Rabbinic Coordinator`
                   ) : !readyToGenerate ? (
                     <>
                       <p className="mb-2 text-[12.5px] font-semibold text-amber-700">
-                        Enter the annual certification fee to continue.
+                        {isNewCompanyContract && !selectedRc
+                          ? 'Select the RC assigned to the company to continue.'
+                          : 'Enter the annual certification fee to continue.'}
                       </p>
                       <button type="button" disabled className="w-full rounded-lg bg-gray-300 px-4 py-2.5 text-sm font-bold text-white">
                         Notify RC for approval
