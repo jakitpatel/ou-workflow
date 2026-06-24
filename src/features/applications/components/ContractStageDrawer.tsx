@@ -1632,9 +1632,21 @@ Rabbinic Coordinator`
           </p>
           <div className="leading-relaxed text-slate-600">
             <p>
+              By: <MergeField token="ou_admin" value="Rabbi A. Stern" />
+            </p>
+            <p className="mb-3">Title: Rabbinic Administrator</p>
+            <p>
+              By: <MergeField token="ou_director" value="Rabbi D. Epstien" />
+            </p>
+            <p className="mb-3">Title: Director, New Companies Department</p>
+            <p>
               By: <MergeField token="ou_rc" value={rcName} />
             </p>
             <p className="mb-3">Title: Rabbinic Coordinator</p>
+            <p>
+              By: <MergeField token="ou_jkc" value="Rabbi E. Katz" />
+            </p>
+            <p className="mb-3">Title: Joint Kashruth Commission</p>
             <p className="mt-2">Address: 40 Rector St, New York, NY 10004</p>
             <p>Phone Number: (212) 563-4000</p>
             <p>Facsimile Number: (212) 564-9058</p>
