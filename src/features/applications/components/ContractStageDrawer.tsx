@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  Check,
   ChevronRight,
   ClipboardList,
   FileText,
@@ -590,6 +591,7 @@ export function ContractStageDrawer({
   const [emailSent, setEmailSent] = useState(false)
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [selectedRcLookupKey, setSelectedRcLookupKey] = useState('')
+  const [savedRcLookupKey, setSavedRcLookupKey] = useState('')
   const [rcSearch, setRcSearch] = useState('')
 
   useEffect(() => {
@@ -620,6 +622,7 @@ export function ContractStageDrawer({
     setPlaBodyOpen(false)
     setSelectedPlaCompany('')
     setSelectedRcLookupKey('')
+    setSavedRcLookupKey('')
     setRcSearch('')
   }, [open, taskInstanceId])
 
@@ -644,6 +647,7 @@ export function ContractStageDrawer({
     [rcLookupList],
   )
   const selectedRc = rcOptions.find((option) => option.lookupKey === selectedRcLookupKey)
+  const selectedRcSaved = Boolean(selectedRc && selectedRc.lookupKey === savedRcLookupKey)
   const filteredRcOptions = useMemo(() => {
     const query = rcSearch.trim().toLowerCase()
     if (!query) return rcOptions
@@ -935,21 +939,21 @@ Rabbinic Coordinator`
 
   if (!open) return null
 
-  const handleSelectRc = async (option: (typeof rcOptions)[number]) => {
-    if (!isNewCompanyContract) {
-      setSelectedRcLookupKey(option.lookupKey)
-      setRcSearch('')
-      return
-    }
+  const handleSelectRc = (option: (typeof rcOptions)[number]) => {
+    setSelectedRcLookupKey(option.lookupKey)
+    setRcSearch('')
+  }
+
+  const handleSaveSelectedRc = async () => {
+    if (!selectedRc || !isNewCompanyContract) return
 
     try {
       await assignContractRcToCompany({
         applicationId: resolvedApplicationId,
         taskInstanceId,
-        assignee: option.assigneeValue || option.userName || option.lookupKey || option.name,
+        assignee: selectedRc.assigneeValue || selectedRc.userName || selectedRc.lookupKey || selectedRc.name,
       })
-      setSelectedRcLookupKey(option.lookupKey)
-      setRcSearch('')
+      setSavedRcLookupKey(selectedRc.lookupKey)
       toast.success('RC assigned to company')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to assign RC to company')
@@ -2827,9 +2831,21 @@ Rabbinic Coordinator`
                 {isNewCompanyContract && !readOnly ? (
                   <>
                     <div className="text-sm">
-                      <span className="text-[12.5px] font-semibold text-gray-700">
-                        Select RC <span className="text-red-600">*</span>
-                      </span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[12.5px] font-semibold text-gray-700">
+                          Select RC <span className="text-red-600">*</span>
+                        </span>
+                        <button
+                          type="button"
+                          title="Save selected RC"
+                          aria-label="Save selected RC"
+                          disabled={!selectedRc || selectedRcSaved || isAssigningContractRc}
+                          onClick={handleSaveSelectedRc}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-green-200 bg-green-50 text-green-700 hover:border-green-300 hover:bg-green-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                      </div>
                       {selectedRc ? (
                         <div className="mt-1 rounded-[7px] border border-blue-200 bg-blue-50 px-3 py-2">
                           <div className="flex items-start justify-between gap-3">
@@ -2846,12 +2862,22 @@ Rabbinic Coordinator`
                               <button
                                 type="button"
                                 disabled={isAssigningContractRc}
-                                onClick={() => setSelectedRcLookupKey('')}
+                                onClick={() => {
+                                  setSelectedRcLookupKey('')
+                                  setSavedRcLookupKey('')
+                                }}
                                 className="rounded px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:text-blue-300"
                               >
                                 Change
                               </button>
                             ) : null}
+                          </div>
+                          <div
+                            className={`mt-2 text-xs font-semibold ${
+                              selectedRcSaved ? 'text-green-700' : 'text-amber-700'
+                            }`}
+                          >
+                            {selectedRcSaved ? 'RC saved.' : 'Click the check button to save this RC.'}
                           </div>
                         </div>
                       ) : (
@@ -2888,7 +2914,7 @@ Rabbinic Coordinator`
                                   key={option.lookupKey}
                                   type="button"
                                   disabled={isAssigningContractRc}
-                                  onClick={() => void handleSelectRc(option)}
+                                  onClick={() => handleSelectRc(option)}
                                   className="w-full rounded border border-gray-200 bg-white p-3 text-left hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                   <div className="font-medium text-gray-900">{option.name}</div>
