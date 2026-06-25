@@ -3,6 +3,7 @@ import {
   createApplicationMessage,
   type ApplicationMessagePayload,
 } from '@/features/applications/api'
+import { assignTask } from '@/features/tasks/api'
 import { resolveApiBaseUrl } from '@/shared/api/httpClient'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 
@@ -19,6 +20,12 @@ const normalizeApplicationId = (applicationId: string | number) => {
   const value = String(applicationId).trim()
   const numericValue = Number(value)
   return Number.isFinite(numericValue) && value !== '' ? numericValue : value
+}
+
+const normalizeNumericApplicationId = (applicationId: string | number) => {
+  const value = String(applicationId).trim()
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) && value !== '' ? numericValue : null
 }
 
 const buildApplicationReviewUrl = (applicationId: string | number) => {
@@ -47,6 +54,12 @@ type NotifyRcForApprovalParams = {
   taskInstanceId?: string | number
 }
 
+type AssignContractRcParams = {
+  applicationId?: string | number
+  assignee?: string
+  taskInstanceId?: string | number
+}
+
 export function useContractRcNotification({
   token,
   username,
@@ -55,6 +68,44 @@ export function useContractRcNotification({
   username?: string | null
 }) {
   const [isSendingRcNotification, setIsSendingRcNotification] = useState(false)
+  const [isAssigningContractRc, setIsAssigningContractRc] = useState(false)
+
+  const assignContractRcToCompany = async ({
+    applicationId,
+    assignee,
+    taskInstanceId,
+  }: AssignContractRcParams) => {
+    if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
+      throw new Error('Application id is required before assigning the RC.')
+    }
+
+    const appId = normalizeNumericApplicationId(applicationId)
+    if (appId === null) {
+      throw new Error('A numeric application id is required before assigning the RC.')
+    }
+
+    if (taskInstanceId === undefined || taskInstanceId === null || String(taskInstanceId).trim() === '') {
+      throw new Error('Task instance id is required before assigning the RC.')
+    }
+
+    if (!assignee?.trim()) {
+      throw new Error('Select an RC before assigning the role.')
+    }
+
+    setIsAssigningContractRc(true)
+    try {
+      await assignTask({
+        appId,
+        taskId: String(taskInstanceId).trim(),
+        role: 'RC',
+        assignee: assignee.trim(),
+        capacity: 'DESIGNATED',
+        token: token ?? undefined,
+      })
+    } finally {
+      setIsAssigningContractRc(false)
+    }
+  }
 
   const notifyRcForApproval = async ({
     applicationId,
@@ -115,6 +166,8 @@ ${username ?? ''}`
   }
 
   return {
+    assignContractRcToCompany,
+    isAssigningContractRc,
     isSendingRcNotification,
     notifyRcForApproval,
   }

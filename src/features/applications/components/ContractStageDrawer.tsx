@@ -534,7 +534,12 @@ export function ContractStageDrawer({
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const { email, token, username } = useUser()
-  const { isSendingRcNotification, notifyRcForApproval } = useContractRcNotification({
+  const {
+    assignContractRcToCompany,
+    isAssigningContractRc,
+    isSendingRcNotification,
+    notifyRcForApproval,
+  } = useContractRcNotification({
     token,
     username,
   })
@@ -622,6 +627,7 @@ export function ContractStageDrawer({
       rcLookupList
         .map((item) => ({
           lookupKey: textValue(item.lookupKey || item.id || item.userName || item.name),
+          assigneeValue: textValue(item.assigneeValue || item.userName || item.id || item.lookupKey),
           name: textValue(item.fullName || item.name || item.userName || item.id),
           userName: textValue(item.userName || item.id),
           email: textValue(item.email),
@@ -918,6 +924,27 @@ ${rcName}
 Rabbinic Coordinator`
 
   if (!open) return null
+
+  const handleSelectRc = async (option: (typeof rcOptions)[number]) => {
+    if (!isNewCompanyContract) {
+      setSelectedRcLookupKey(option.lookupKey)
+      setRcSearch('')
+      return
+    }
+
+    try {
+      await assignContractRcToCompany({
+        applicationId: resolvedApplicationId,
+        taskInstanceId,
+        assignee: option.assigneeValue || option.userName || option.lookupKey || option.name,
+      })
+      setSelectedRcLookupKey(option.lookupKey)
+      setRcSearch('')
+      toast.success('RC assigned to company')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to assign RC to company')
+    }
+  }
 
   const handleSendEmail = async () => {
     if (!resolvedApplicationId) {
@@ -2766,8 +2793,9 @@ Rabbinic Coordinator`
                             {!packageGenerated ? (
                               <button
                                 type="button"
+                                disabled={isAssigningContractRc}
                                 onClick={() => setSelectedRcLookupKey('')}
-                                className="rounded px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                                className="rounded px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:text-blue-300"
                               >
                                 Change
                               </button>
@@ -2790,6 +2818,10 @@ Rabbinic Coordinator`
                               <div className="rounded border border-gray-200 bg-white px-3 py-6 text-center text-sm text-gray-500">
                                 Loading RC list...
                               </div>
+                            ) : isAssigningContractRc ? (
+                              <div className="rounded border border-blue-200 bg-blue-50 px-3 py-6 text-center text-sm text-blue-700">
+                                Assigning RC...
+                              </div>
                             ) : isRcLookupError ? (
                               <div className="rounded border border-red-200 bg-red-50 px-3 py-6 text-center text-sm text-red-700">
                                 Unable to load RC list.
@@ -2803,11 +2835,9 @@ Rabbinic Coordinator`
                                 <button
                                   key={option.lookupKey}
                                   type="button"
-                                  onClick={() => {
-                                    setSelectedRcLookupKey(option.lookupKey)
-                                    setRcSearch('')
-                                  }}
-                                  className="w-full rounded border border-gray-200 bg-white p-3 text-left hover:border-blue-300 hover:bg-blue-50"
+                                  disabled={isAssigningContractRc}
+                                  onClick={() => void handleSelectRc(option)}
+                                  className="w-full rounded border border-gray-200 bg-white p-3 text-left hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                   <div className="font-medium text-gray-900">{option.name}</div>
                                   <div className="mt-1 text-xs text-gray-500">
