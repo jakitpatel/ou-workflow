@@ -589,6 +589,7 @@ export function ContractStageDrawer({
   const [selectedPlaCompany, setSelectedPlaCompany] = useState('')
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
+  const [coverLetterBody, setCoverLetterBody] = useState('')
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [selectedRcLookupKey, setSelectedRcLookupKey] = useState('')
   const [savedRcLookupKey, setSavedRcLookupKey] = useState('')
@@ -607,6 +608,7 @@ export function ContractStageDrawer({
     setContractInvoicePdfUrl(null)
     setShowEmailPreview(false)
     setEmailSent(false)
+    setCoverLetterBody('')
     setEffectiveDate(getDefaultEffectiveDate())
     setAnnualFee(DEFAULT_ANNUAL_FEE)
     setCertificationInvoiceComment('')
@@ -795,7 +797,9 @@ export function ContractStageDrawer({
   const invoiceNumber = contractInvoiceId ?? 'no invoice id'
   const invoiceDisplayNumber = contractInvoiceId ? `#${contractInvoiceId}` : '#Draft'
   const contractInvoiceDocumentUrl = contractInvoiceDownloadLink || contractInvoicePdfUrl
-  const invoiceAccountNumber = resolvedApplicationId ? `OU-${resolvedApplicationId}` : 'OU-DRAFT'
+  const invoiceCompanyId = textValue(applicant?.companyId)
+  const invoiceAccountNumber = invoiceCompanyId ? `OU-${invoiceCompanyId}` : 'OU-DRAFT'
+  const hasGeneratedContractInvoice = Boolean(contractInvoiceId || contractInvoiceDocumentUrl)
   const invoiceDate = formatShortDate(effectiveDate)
   const invoiceAmount = formatCurrency(annualFee)
   const invoiceTotal = `${invoiceAmount} USD`
@@ -1007,7 +1011,7 @@ Rabbinic Coordinator`
 
     setIsSendingEmail(true)
     try {
-      const htmlEmail = buildHtmlEmailFromPlainText(emailBody, {
+      const htmlEmail = buildHtmlEmailFromPlainText(coverLetterBody, {
         title: emailSubject,
         preheader: `Contract package for ${companyName}`,
       })
@@ -1051,6 +1055,7 @@ Rabbinic Coordinator`
         taskInstanceId,
       })
       setPackageGenerated(true)
+      setCoverLetterBody(emailBody)
       setPreviewTab('cover')
       toast.success('RC notified for approval')
     } catch (error) {
@@ -1349,9 +1354,10 @@ Rabbinic Coordinator`
                   Cover letter - editable (email body)
                 </div>
                 <textarea
-                  readOnly
-                  value={emailBody}
-                  className="min-h-[172px] w-full resize-y rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-[12.5px] leading-6 text-[#1e1e2e]"
+                  value={coverLetterBody}
+                  disabled={emailSent}
+                  onChange={(event) => setCoverLetterBody(event.target.value)}
+                  className="min-h-[172px] w-full resize-y rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-[12.5px] leading-6 text-[#1e1e2e] focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10 disabled:bg-gray-50 disabled:text-gray-500"
                 />
               </div>
               <div className="border-t border-gray-100 bg-gray-50 px-3.5 py-3">
@@ -1419,6 +1425,7 @@ Rabbinic Coordinator`
                 type="button"
                 onClick={() => {
                   setPackageGenerated(true)
+                  setCoverLetterBody(emailBody)
                   toast.success('Contract package generated')
                 }}
                 className="inline-flex items-center gap-2 rounded-md bg-[#185087] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#13406c]"
@@ -3084,12 +3091,16 @@ Rabbinic Coordinator`
                       {!readOnly ? (
                         <button
                           type="button"
-                          disabled={isGeneratingContractInvoice || !annualFee}
+                          disabled={isGeneratingContractInvoice || !annualFee || hasGeneratedContractInvoice}
                           onClick={handleGenerateContractInvoice}
                           className="inline-flex items-center gap-1.5 rounded-md bg-[#185087] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#133f6b] disabled:cursor-not-allowed disabled:bg-gray-300"
                         >
                           <FileText className="h-3.5 w-3.5" />
-                          {isGeneratingContractInvoice ? 'Generating...' : 'Generate Invoice'}
+                          {isGeneratingContractInvoice
+                            ? 'Generating...'
+                            : hasGeneratedContractInvoice
+                              ? 'Invoice Generated'
+                              : 'Generate Invoice'}
                         </button>
                       ) : null}
                     </div>
@@ -3216,7 +3227,7 @@ Rabbinic Coordinator`
                 </div>
               </div>
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">
-                {emailBody.split('\n').map((line, index) =>
+                {coverLetterBody.split('\n').map((line, index) =>
                   line ? (
                     <p key={`${line}-${index}`} className={index === 0 ? undefined : 'mt-3'}>
                       {line}
