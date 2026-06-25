@@ -1632,19 +1632,19 @@ Rabbinic Coordinator`
           </p>
           <div className="leading-relaxed text-slate-600">
             <p>
-              By: <MergeField token="ou_admin" value="Rabbi A. Stern" />
+              By: <MergeField token="ou_admin" value="" emptyWidth="min-w-[180px]" />
             </p>
             <p className="mb-3">Title: Rabbinic Administrator</p>
             <p>
-              By: <MergeField token="ou_director" value="Rabbi D. Epstien" />
+              By: <MergeField token="ou_director" value="" emptyWidth="min-w-[180px]" />
             </p>
             <p className="mb-3">Title: Director, New Companies Department</p>
             <p>
-              By: <MergeField token="ou_rc" value={rcName} />
+              By: <MergeField token="ou_rc" value="" emptyWidth="min-w-[180px]" />
             </p>
             <p className="mb-3">Title: Rabbinic Coordinator</p>
             <p>
-              By: <MergeField token="ou_jkc" value="Rabbi E. Katz" />
+              By: <MergeField token="ou_jkc" value="" emptyWidth="min-w-[180px]" />
             </p>
             <p className="mb-3">Title: Joint Kashruth Commission</p>
             <p className="mt-2">Address: 40 Rector St, New York, NY 10004</p>
