@@ -536,7 +536,9 @@ export function ContractStageDrawer({
   const { email, token, username } = useUser()
   const {
     assignContractRcToCompany,
+    generateContractInvoice,
     isAssigningContractRc,
+    isGeneratingContractInvoice,
     isSendingRcNotification,
     notifyRcForApproval,
   } = useContractRcNotification({
@@ -579,6 +581,9 @@ export function ContractStageDrawer({
   const [packageGenerated, setPackageGenerated] = useState(false)
   const [contractSigned, setContractSigned] = useState(false)
   const [invoicePaid, setInvoicePaid] = useState(false)
+  const [contractInvoiceId, setContractInvoiceId] = useState<string | null>(null)
+  const [contractInvoiceDownloadLink, setContractInvoiceDownloadLink] = useState<string | null>(null)
+  const [contractInvoicePdfUrl, setContractInvoicePdfUrl] = useState<string | null>(null)
   const [plaBodyOpen, setPlaBodyOpen] = useState(false)
   const [selectedPlaCompany, setSelectedPlaCompany] = useState('')
   const [showEmailPreview, setShowEmailPreview] = useState(false)
@@ -595,6 +600,9 @@ export function ContractStageDrawer({
     setPackageGenerated(false)
     setContractSigned(false)
     setInvoicePaid(false)
+    setContractInvoiceId(null)
+    setContractInvoiceDownloadLink(null)
+    setContractInvoicePdfUrl(null)
     setShowEmailPreview(false)
     setEmailSent(false)
     setEffectiveDate(getDefaultEffectiveDate())
@@ -780,7 +788,9 @@ export function ContractStageDrawer({
     toast.success(`Saved as v${nextVersionNumber} - change captured for Legal review`)
   }
 
-  const invoiceNumber = `KCM-${resolvedApplicationId ?? 'DRAFT'}`
+  const invoiceNumber = contractInvoiceId ?? 'no invoice id'
+  const invoiceDisplayNumber = contractInvoiceId ? `#${contractInvoiceId}` : '#Draft'
+  const contractInvoiceDocumentUrl = contractInvoiceDownloadLink || contractInvoicePdfUrl
   const invoiceAccountNumber = resolvedApplicationId ? `OU-${resolvedApplicationId}` : 'OU-DRAFT'
   const invoiceDate = formatShortDate(effectiveDate)
   const invoiceAmount = formatCurrency(annualFee)
@@ -842,7 +852,7 @@ export function ContractStageDrawer({
     },
     {
       label: 'Contract Invoice',
-      sub: `${invoiceNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
+      sub: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
     },
     ...privateLabelGroups.map((group) => ({
       label: `Private Label Agreement - ${group.labelCompany}`,
@@ -852,9 +862,9 @@ export function ContractStageDrawer({
   const coverSeparateAttachments = [
     {
       label: 'Certification Invoice',
-      sub: `${invoiceNumber} - ${formatCurrency(annualFee)} - separate attachment`,
+      sub: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - separate attachment`,
       file: `Certification_Invoice_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
-      desc: `${invoiceNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
+      desc: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
       tab: 'invoice' as PreviewTab,
     },
     ...privateLabelGroups.map((group) => ({
@@ -943,6 +953,45 @@ Rabbinic Coordinator`
       toast.success('RC assigned to company')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to assign RC to company')
+    }
+  }
+
+  const handleGenerateContractInvoice = async () => {
+    const fee = Number(annualFee)
+
+    try {
+      const result = await generateContractInvoice({
+        applicationId: resolvedApplicationId,
+        applicationName: companyName,
+        taskInstanceId,
+        taskName,
+        applicant: applicant
+          ? {
+              id: applicant.id,
+              applicationId: applicant.applicationId,
+              companyId: applicant.companyId,
+              company: applicant.company,
+              externalReferenceId: applicant.externalReferenceId,
+              plant: applicant.plant,
+              plantId: applicant.plantId,
+              region: applicant.region,
+            }
+          : undefined,
+        fee,
+        invoiceDate: effectiveDate,
+        internalNotes:
+          includeInvoiceComment && certificationInvoiceComment.trim()
+            ? certificationInvoiceComment.trim()
+            : undefined,
+        recipient: contact.email || contact.name || undefined,
+      })
+
+      setContractInvoiceId(result.invoiceId)
+      setContractInvoiceDownloadLink(result.downloadLink || null)
+      setContractInvoicePdfUrl(result.invoicePdfUrl || null)
+      toast.success(`Invoice ${result.invoiceId} generated`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to generate invoice')
     }
   }
 
@@ -2265,6 +2314,9 @@ Rabbinic Coordinator`
               </div>
               <div className="font-serif text-2xl font-bold tracking-wide text-[#185087]">
                 INVOICE
+                <div className="mt-0.5 text-right font-mono text-[11px] font-semibold tracking-normal text-slate-500">
+                  {invoiceDisplayNumber}
+                </div>
               </div>
             </div>
 
@@ -2991,6 +3043,31 @@ Rabbinic Coordinator`
             <div className="flex min-h-0 flex-col overflow-hidden rounded-[10px] border border-gray-200 bg-white shadow-sm xl:sticky xl:top-5">
               <div className="shrink-0 border-b-2 border-slate-200 bg-white px-4 py-3.5">
                 <div className="mb-2.5 flex flex-wrap items-center justify-end gap-3">
+                  {previewTab === 'invoice' ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {contractInvoiceDocumentUrl ? (
+                        <a
+                          href={contractInvoiceDocumentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          Open Invoice
+                        </a>
+                      ) : null}
+                      {!readOnly ? (
+                        <button
+                          type="button"
+                          disabled={isGeneratingContractInvoice || !annualFee}
+                          onClick={handleGenerateContractInvoice}
+                          className="inline-flex items-center gap-1.5 rounded-md bg-[#185087] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#133f6b] disabled:cursor-not-allowed disabled:bg-gray-300"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          {isGeneratingContractInvoice ? 'Generating...' : 'Generate Invoice'}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {legalReviewNeeded && previewTab === 'agreement' ? (
                     <div className="flex flex-wrap items-center gap-3">
                       <label className="flex cursor-pointer items-center gap-1.5 text-[12px] font-semibold text-slate-500">

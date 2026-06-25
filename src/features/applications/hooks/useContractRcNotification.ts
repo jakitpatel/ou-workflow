@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import {
   createApplicationMessage,
+  generateInspectionInvoice,
   type ApplicationMessagePayload,
+  type GenerateInspectionInvoiceResponse,
 } from '@/features/applications/api'
 import { assignTask } from '@/features/tasks/api'
 import { resolveApiBaseUrl } from '@/shared/api/httpClient'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
+import type { Applicant } from '@/types/application'
 
 const RC_NOTIFICATION_SUBJECT = 'OU Kosher - You have been selected to be the RC'
 
@@ -60,6 +63,18 @@ type AssignContractRcParams = {
   taskInstanceId?: string | number
 }
 
+type GenerateContractInvoiceParams = {
+  applicationId?: string | number
+  applicationName?: string
+  taskInstanceId?: string | number
+  taskName?: string
+  applicant?: Partial<Applicant>
+  fee: number
+  invoiceDate: string
+  internalNotes?: string
+  recipient?: string
+}
+
 export function useContractRcNotification({
   token,
   username,
@@ -69,6 +84,7 @@ export function useContractRcNotification({
 }) {
   const [isSendingRcNotification, setIsSendingRcNotification] = useState(false)
   const [isAssigningContractRc, setIsAssigningContractRc] = useState(false)
+  const [isGeneratingContractInvoice, setIsGeneratingContractInvoice] = useState(false)
 
   const assignContractRcToCompany = async ({
     applicationId,
@@ -165,9 +181,61 @@ ${username ?? ''}`
     }
   }
 
+  const generateContractInvoice = async ({
+    applicationId,
+    applicationName,
+    taskInstanceId,
+    taskName,
+    applicant,
+    fee,
+    invoiceDate,
+    internalNotes,
+    recipient,
+  }: GenerateContractInvoiceParams): Promise<GenerateInspectionInvoiceResponse> => {
+    if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
+      throw new Error('Application id is required before generating the invoice.')
+    }
+
+    if (!Number.isFinite(fee) || fee <= 0) {
+      throw new Error('Enter the annual certification fee before generating the invoice.')
+    }
+
+    if (!invoiceDate.trim()) {
+      throw new Error('Effective date is required before generating the invoice.')
+    }
+
+    setIsGeneratingContractInvoice(true)
+    try {
+      return await generateInspectionInvoice({
+        payload: {
+          applicationId,
+          applicationName,
+          TaskInstanceId: taskInstanceId ?? null,
+          taskName,
+          applicant,
+          inspectionNeeded: false,
+          feeRequired: true,
+          awaitPayment: true,
+          rfr: null,
+          fee,
+          expense: 0,
+          invoiceDate,
+          internalNotes,
+          recipient,
+          letterTemplate: 'contract-invoice',
+        },
+        token: token ?? undefined,
+      })
+    } finally {
+      setIsGeneratingContractInvoice(false)
+    }
+  }
+
   return {
     assignContractRcToCompany,
+    generateContractInvoice,
     isAssigningContractRc,
+    isGeneratingContractInvoice,
     isSendingRcNotification,
     notifyRcForApproval,
   }
