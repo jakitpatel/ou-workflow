@@ -10,15 +10,10 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
-import {
-  createApplicationMessage,
-  type ApplicationMessagePayload,
-} from '@/features/applications/api'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import { useContractRcNotification } from '@/features/applications/hooks/useContractRcNotification'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
-import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import type { Applicant, ApplicantAppVars, AssignedRole } from '@/types/application'
 
 type Props = {
@@ -542,8 +537,10 @@ export function ContractStageDrawer({
     isAssigningContractRc,
     isGeneratingContractPackage,
     isGeneratingContractInvoice,
+    isSendingContractEmail,
     isSendingRcNotification,
     notifyRcForApproval,
+    sendContractPackageEmail,
   } = useContractRcNotification({
     token,
     username,
@@ -593,7 +590,6 @@ export function ContractStageDrawer({
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [coverLetterBody, setCoverLetterBody] = useState('')
-  const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [selectedRcLookupKey, setSelectedRcLookupKey] = useState('')
   const [savedRcLookupKey, setSavedRcLookupKey] = useState('')
   const [rcSearch, setRcSearch] = useState('')
@@ -889,6 +885,12 @@ export function ContractStageDrawer({
     })),
   ]
   const contractPackageDocumentUrl = contractPackageDownloadUrl
+  const contractEmailAttachments = [
+    contractPackageDocumentUrl
+      ? `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf <${contractPackageDocumentUrl}>`
+      : `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
+    ...coverSeparateAttachments.map((attachment) => attachment.file),
+  ].join(', ')
 
   const readyToGenerate =
     Boolean(effectiveDate) &&
@@ -1111,37 +1113,17 @@ ${packageUrl}`
   }
 
   const handleSendEmail = async () => {
-    if (!resolvedApplicationId) {
-      toast.error('Application id is required before sending the contract email.')
-      return
-    }
-
-    setIsSendingEmail(true)
     try {
-      const htmlEmail = buildHtmlEmailFromPlainText(coverLetterBody, {
-        title: emailSubject,
-        preheader: `Contract package for ${companyName}`,
-      })
-
-      const payload: ApplicationMessagePayload = {
-        ApplicationID: resolvedApplicationId,
-        FromUser: senderEmail || undefined,
-        ToUser: contact.email || contact.name || undefined,
-        CCUser: rcEmail || undefined,
-        Subject: emailSubject,
-        MessageText: htmlEmail.html,
-        MessageTextPlain: htmlEmail.text,
-        PlainText: htmlEmail.text,
-        Text: htmlEmail.text,
-        MessageType: 'Email',
-        Priority: 'NORMAL',
-        SentDate: new Date().toISOString(),
-        TaskInstanceId: taskInstanceId ?? undefined,
-      }
-
-      await createApplicationMessage({
-        payload,
-        token: token ?? undefined,
+      await sendContractPackageEmail({
+        applicationId: resolvedApplicationId,
+        attachments: contractEmailAttachments,
+        body: coverLetterBody,
+        ccUser: rcEmail,
+        companyName,
+        fromUser: senderEmail,
+        subject: emailSubject,
+        taskInstanceId,
+        toUser: contact.email || contact.name || undefined,
       })
 
       setEmailSent(true)
@@ -1149,8 +1131,6 @@ ${packageUrl}`
       toast.success('Contract package email recorded')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to send contract email')
-    } finally {
-      setIsSendingEmail(false)
     }
   }
 
@@ -1534,12 +1514,12 @@ ${packageUrl}`
               {!emailSent ? (
                 <button
                   type="button"
-                  disabled={isSendingEmail}
+                  disabled={isSendingContractEmail}
                   onClick={handleSendEmail}
                   className="inline-flex items-center gap-2 rounded-lg bg-[#185087] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#13406c] disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
                   <Send className="h-4 w-4" />
-                  {isSendingEmail ? 'Sending...' : 'Send Email'}
+                  {isSendingContractEmail ? 'Sending...' : 'Send Email'}
                 </button>
               ) : null}
               <p className="text-[11px] text-gray-400">
@@ -1628,6 +1608,16 @@ ${packageUrl}`
                     <div className="text-[12.5px] font-semibold text-[#1e1e2e]">{item.label}</div>
                     <div className="mt-0.5 text-[11px] text-gray-500">{item.sub}</div>
                   </div>
+                  {item.label === 'Certification Invoice' && contractInvoiceDocumentUrl ? (
+                    <a
+                      href={contractInvoiceDocumentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-auto shrink-0 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087] hover:bg-blue-100"
+                    >
+                      Open Invoice
+                    </a>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -3384,12 +3374,12 @@ ${packageUrl}`
               {!readOnly ? (
                 <button
                   type="button"
-                  disabled={isSendingEmail}
+                  disabled={isSendingContractEmail}
                   onClick={handleSendEmail}
                   className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
                   <Send className="h-4 w-4" />
-                  {isSendingEmail ? 'Sending...' : 'Record Email'}
+                  {isSendingContractEmail ? 'Sending...' : 'Record Email'}
                 </button>
               ) : null}
             </div>

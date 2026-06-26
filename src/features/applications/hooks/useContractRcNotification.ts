@@ -82,6 +82,18 @@ type GenerateContractPackageParams = {
   payload: GenerateContractPackagePayload
 }
 
+type SendContractPackageEmailParams = {
+  applicationId?: string | number
+  attachments?: string
+  body: string
+  ccUser?: string
+  companyName: string
+  fromUser?: string
+  subject: string
+  taskInstanceId?: string | number
+  toUser?: string
+}
+
 export function useContractRcNotification({
   token,
   username,
@@ -93,6 +105,7 @@ export function useContractRcNotification({
   const [isAssigningContractRc, setIsAssigningContractRc] = useState(false)
   const [isGeneratingContractInvoice, setIsGeneratingContractInvoice] = useState(false)
   const [isGeneratingContractPackage, setIsGeneratingContractPackage] = useState(false)
+  const [isSendingContractEmail, setIsSendingContractEmail] = useState(false)
 
   const assignContractRcToCompany = async ({
     applicationId,
@@ -257,6 +270,66 @@ ${username ?? ''}`
     }
   }
 
+  const sendContractPackageEmail = async ({
+    applicationId,
+    attachments,
+    body,
+    ccUser,
+    companyName,
+    fromUser,
+    subject,
+    taskInstanceId,
+    toUser,
+  }: SendContractPackageEmailParams) => {
+    if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
+      throw new Error('Application id is required before sending the contract email.')
+    }
+
+    if (!body.trim()) {
+      throw new Error('Cover letter body is required before sending the contract email.')
+    }
+
+    const email = buildHtmlEmailFromPlainText(body, {
+      title: subject,
+      preheader: `Contract package for ${companyName}`,
+    })
+
+    const payload: ApplicationMessagePayload = {
+      MessageID: null,
+      ApplicationID: normalizeApplicationId(applicationId),
+      FromUser: fromUser || username || null,
+      ToUser: toUser || null,
+      CCUser: ccUser || null,
+      Subject: subject,
+      MessageText: email.html,
+      MessageTextPlain: email.text,
+      PlainText: email.text,
+      Text: email.text,
+      MessageType: 'Email',
+      Priority: 'NORMAL',
+      SentDate: new Date().toISOString(),
+      TemplateName: 'contract-package',
+      TaskInstanceId: taskInstanceId ?? null,
+      isPrivate: false,
+      parentMessageId: null,
+      toReply: null,
+      isRead: false,
+      tag: null,
+      BCCUser: 'productAutomation@ou.org',
+      Attachments: attachments || null,
+    }
+
+    setIsSendingContractEmail(true)
+    try {
+      await createApplicationMessage({
+        payload,
+        token: token ?? undefined,
+      })
+    } finally {
+      setIsSendingContractEmail(false)
+    }
+  }
+
   return {
     assignContractRcToCompany,
     generateContractPackage,
@@ -264,7 +337,9 @@ ${username ?? ''}`
     isAssigningContractRc,
     isGeneratingContractPackage,
     isGeneratingContractInvoice,
+    isSendingContractEmail,
     isSendingRcNotification,
     notifyRcForApproval,
+    sendContractPackageEmail,
   }
 }
