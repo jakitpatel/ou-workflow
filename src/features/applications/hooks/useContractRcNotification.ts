@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import {
   createApplicationMessage,
+  generateContractPackage as postGenerateContractPackage,
   generateInspectionInvoice,
   type ApplicationMessagePayload,
+  type GenerateContractPackagePayload,
+  type GenerateContractPackageResponse,
   type GenerateInspectionInvoiceResponse,
 } from '@/features/applications/api'
 import { assignTask } from '@/features/tasks/api'
@@ -75,6 +78,10 @@ type GenerateContractInvoiceParams = {
   recipient?: string
 }
 
+type GenerateContractPackageParams = {
+  payload: GenerateContractPackagePayload
+}
+
 export function useContractRcNotification({
   token,
   username,
@@ -85,6 +92,7 @@ export function useContractRcNotification({
   const [isSendingRcNotification, setIsSendingRcNotification] = useState(false)
   const [isAssigningContractRc, setIsAssigningContractRc] = useState(false)
   const [isGeneratingContractInvoice, setIsGeneratingContractInvoice] = useState(false)
+  const [isGeneratingContractPackage, setIsGeneratingContractPackage] = useState(false)
 
   const assignContractRcToCompany = async ({
     applicationId,
@@ -231,10 +239,30 @@ ${username ?? ''}`
     }
   }
 
+  const generateContractPackage = async ({
+    payload,
+  }: GenerateContractPackageParams): Promise<GenerateContractPackageResponse> => {
+    if (payload.applicationId === undefined || payload.applicationId === null || String(payload.applicationId).trim() === '') {
+      throw new Error('Application id is required before generating the contract package.')
+    }
+
+    setIsGeneratingContractPackage(true)
+    try {
+      return await postGenerateContractPackage({
+        payload,
+        token: token ?? undefined,
+      })
+    } finally {
+      setIsGeneratingContractPackage(false)
+    }
+  }
+
   return {
     assignContractRcToCompany,
+    generateContractPackage,
     generateContractInvoice,
     isAssigningContractRc,
+    isGeneratingContractPackage,
     isGeneratingContractInvoice,
     isSendingRcNotification,
     notifyRcForApproval,

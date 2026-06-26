@@ -537,8 +537,10 @@ export function ContractStageDrawer({
   const { email, token, username } = useUser()
   const {
     assignContractRcToCompany,
+    generateContractPackage,
     generateContractInvoice,
     isAssigningContractRc,
+    isGeneratingContractPackage,
     isGeneratingContractInvoice,
     isSendingRcNotification,
     notifyRcForApproval,
@@ -585,6 +587,7 @@ export function ContractStageDrawer({
   const [contractInvoiceId, setContractInvoiceId] = useState<string | null>(null)
   const [contractInvoiceDownloadLink, setContractInvoiceDownloadLink] = useState<string | null>(null)
   const [contractInvoicePdfUrl, setContractInvoicePdfUrl] = useState<string | null>(null)
+  const [contractPackageDownloadUrl, setContractPackageDownloadUrl] = useState<string | null>(null)
   const [plaBodyOpen, setPlaBodyOpen] = useState(false)
   const [selectedPlaCompany, setSelectedPlaCompany] = useState('')
   const [showEmailPreview, setShowEmailPreview] = useState(false)
@@ -606,6 +609,7 @@ export function ContractStageDrawer({
     setContractInvoiceId(null)
     setContractInvoiceDownloadLink(null)
     setContractInvoicePdfUrl(null)
+    setContractPackageDownloadUrl(null)
     setShowEmailPreview(false)
     setEmailSent(false)
     setCoverLetterBody('')
@@ -706,6 +710,7 @@ export function ContractStageDrawer({
       ),
     [applicationDetail?.companyContacts],
   )
+  const senderEmail = textValue(email) || textValue(username)
   const contractIngredients = useMemo(
     () =>
       ((applicationDetail?.ingredients as ContractPreviewIngredientRow[] | undefined) ?? []).filter(
@@ -859,7 +864,7 @@ export function ContractStageDrawer({
       sub: 'OU symbol & label use',
     },
     {
-      label: 'Contract Invoice',
+      label: 'Certification Invoice',
       sub: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
     },
     ...privateLabelGroups.map((group) => ({
@@ -883,6 +888,7 @@ export function ContractStageDrawer({
       tab: 'pla' as PreviewTab,
     })),
   ]
+  const contractPackageDocumentUrl = contractPackageDownloadUrl
 
   const readyToGenerate =
     Boolean(effectiveDate) &&
@@ -940,6 +946,11 @@ Please review, sign where indicated, and return the signed agreement together wi
 Sincerely,
 ${rcName}
 Rabbinic Coordinator`
+
+  const emailBodyWithPackageUrl = (packageUrl: string) => `${emailBody}
+
+Certification package:
+${packageUrl}`
 
   if (!open) return null
 
@@ -1003,6 +1014,102 @@ Rabbinic Coordinator`
     }
   }
 
+  const handleGenerateContractPackage = async () => {
+    try {
+      const invoiceUrl = contractInvoiceDocumentUrl || ''
+      const packagePayload = {
+        applicationId: resolvedApplicationId,
+        applicationName: companyName,
+        TaskInstanceId: taskInstanceId ?? null,
+        taskName,
+        applicant: applicant
+          ? {
+              id: applicant.id,
+              applicationId: applicant.applicationId,
+              companyId: applicant.companyId,
+              company: applicant.company,
+              externalReferenceId: applicant.externalReferenceId,
+              plant: applicant.plant,
+              plantId: applicant.plantId,
+              region: applicant.region,
+            }
+          : undefined,
+        generatedAt: new Date().toISOString(),
+        coverLetter: {
+          subject: emailSubject,
+          body: emailBody,
+        },
+        invoice: {
+          title: 'Certification Invoice',
+          invoiceId: contractInvoiceId,
+          invoiceNumber,
+          displayNumber: invoiceDisplayNumber,
+          download_url: invoiceUrl,
+          downloadUrl: invoiceUrl,
+          fee: Number(annualFee),
+          amount: invoiceAmount,
+          total: invoiceTotal,
+          invoiceDate: effectiveDate,
+          termStart: invoiceTermStart,
+          termEnd: invoiceTermEnd,
+          billingLines,
+          comment:
+            includeInvoiceComment && certificationInvoiceComment.trim()
+              ? certificationInvoiceComment.trim()
+              : '',
+          recipient: contact.email || contact.name || '',
+          status: invoicePaid ? 'paid' : 'awaiting payment',
+        },
+        agreement: {
+          title: 'Certification Agreement',
+          contractType: contractTypeLabel,
+          effectiveDate,
+          companyName,
+          companyAddress,
+          plantLabel,
+          plantAddress,
+          rcName,
+          rcEmail,
+          clauses: visibleAgreementClauses,
+          legalReviewNeeded,
+          legalApproved,
+        },
+        schedules: {
+          scheduleAIngredients: contractIngredients,
+          scheduleBProducts: contractProducts,
+          scheduleCPlantsAndFee: {
+            plantLabel,
+            plantAddress,
+            annualFee: Number(annualFee),
+            effectiveDate,
+            paymentCycleStart: companyPaymentCycleStart,
+            paymentCycleEnd: companyPaymentCycleEnd,
+          },
+          scheduleDProductionProcedures: {
+            hasProductionProcedures: !noProductionProcedures,
+            procedures: noProductionProcedures ? '' : productionProcedures,
+          },
+          scheduleELabelingRequirements: LABELING_RULES,
+        },
+        privateLabelAgreements: privateLabelGroups.map((group) => ({
+          labelCompany: group.labelCompany,
+          products: group.products,
+          selected: group.labelCompany === selectedPrivateLabelGroup?.labelCompany,
+        })),
+      }
+
+      const result = await generateContractPackage({ payload: packagePayload })
+      const packageUrl = result.certificationPackagePdfUrl || result.downloadUrl
+      setContractPackageDownloadUrl(packageUrl)
+      setPackageGenerated(true)
+      setCoverLetterBody(emailBodyWithPackageUrl(packageUrl))
+      setPreviewTab('cover')
+      toast.success('Contract package generated')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to generate contract package')
+    }
+  }
+
   const handleSendEmail = async () => {
     if (!resolvedApplicationId) {
       toast.error('Application id is required before sending the contract email.')
@@ -1018,8 +1125,9 @@ Rabbinic Coordinator`
 
       const payload: ApplicationMessagePayload = {
         ApplicationID: resolvedApplicationId,
-        FromUser: username ?? undefined,
+        FromUser: senderEmail || undefined,
         ToUser: contact.email || contact.name || undefined,
+        CCUser: rcEmail || undefined,
         Subject: emailSubject,
         MessageText: htmlEmail.html,
         MessageTextPlain: htmlEmail.text,
@@ -1055,7 +1163,7 @@ Rabbinic Coordinator`
         taskInstanceId,
       })
       setPackageGenerated(true)
-      setCoverLetterBody(emailBody)
+      setCoverLetterBody(contractPackageDocumentUrl ? emailBodyWithPackageUrl(contractPackageDocumentUrl) : emailBody)
       setPreviewTab('cover')
       toast.success('RC notified for approval')
     } catch (error) {
@@ -1305,6 +1413,7 @@ Rabbinic Coordinator`
                 onClick={() => {
                   setPackageGenerated(false)
                   setEmailSent(false)
+                  setContractPackageDownloadUrl(null)
                 }}
                 className="rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50"
               >
@@ -1314,7 +1423,7 @@ Rabbinic Coordinator`
 
             {emailSent ? (
               <div className="mb-3 rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5 text-[12.5px] font-bold text-green-700">
-                Sent via Outlook to {contact.email || contact.name || 'company contact'} - package
+                Email sent to {contact.email || contact.name || 'company contact'} - package
                 logged to the application communications.
               </div>
             ) : null}
@@ -1324,7 +1433,7 @@ Rabbinic Coordinator`
                 <span className="w-[58px] shrink-0 pt-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">
                   From
                 </span>
-                <span>OU Kashruth Division - {rcName} &lt;{rcEmail}&gt;</span>
+                <span>{senderEmail || 'Logged-in user email not available'}</span>
               </div>
               <div className="flex gap-3 border-b border-gray-100 px-3.5 py-2 text-[12.5px]">
                 <span className="w-[58px] shrink-0 pt-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">
@@ -1372,13 +1481,24 @@ Rabbinic Coordinator`
                   <span className="ml-auto text-[11px] text-gray-400">
                     Agreement + Schedules A-E - {coverPackageItems.length} documents
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewTab('agreement')}
-                    className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
-                  >
-                    View
-                  </button>
+                  {contractPackageDocumentUrl ? (
+                    <a
+                      href={contractPackageDocumentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
+                    >
+                      Open
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTab('agreement')}
+                      className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
+                    >
+                      View
+                    </button>
+                  )}
                 </div>
                 {coverSeparateAttachments.map((attachment) => (
                   <div
@@ -1388,13 +1508,24 @@ Rabbinic Coordinator`
                     <FileText className="h-4 w-4 text-[#185087]" />
                     <span className="font-semibold text-[#1e1e2e]">{attachment.file}</span>
                     <span className="ml-auto text-[11px] text-gray-400">{attachment.desc}</span>
-                    <button
-                      type="button"
-                      onClick={() => setPreviewTab(attachment.tab)}
-                      className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
-                    >
-                      View
-                    </button>
+                    {attachment.label === 'Certification Invoice' && contractInvoiceDocumentUrl ? (
+                      <a
+                        href={contractInvoiceDocumentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
+                      >
+                        Open Invoice
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewTab(attachment.tab)}
+                        className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
+                      >
+                        View
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1408,7 +1539,7 @@ Rabbinic Coordinator`
                   className="inline-flex items-center gap-2 rounded-lg bg-[#185087] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#13406c] disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
                   <Send className="h-4 w-4" />
-                  {isSendingEmail ? 'Sending...' : 'Send via Outlook'}
+                  {isSendingEmail ? 'Sending...' : 'Send Email'}
                 </button>
               ) : null}
               <p className="text-[11px] text-gray-400">
@@ -1423,15 +1554,12 @@ Rabbinic Coordinator`
             <div className="mb-2.5 flex justify-end">
               <button
                 type="button"
-                onClick={() => {
-                  setPackageGenerated(true)
-                  setCoverLetterBody(emailBody)
-                  toast.success('Contract package generated')
-                }}
-                className="inline-flex items-center gap-2 rounded-md bg-[#185087] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#13406c]"
+                disabled={isGeneratingContractPackage}
+                onClick={handleGenerateContractPackage}
+                className="inline-flex items-center gap-2 rounded-md bg-[#185087] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#13406c] disabled:cursor-not-allowed disabled:bg-gray-300"
               >
                 <FileText className="h-4 w-4" />
-                Generate Contract Package
+                {isGeneratingContractPackage ? 'Generating...' : 'Generate Contract Package'}
               </button>
             </div>
             <div className="mb-4 flex items-start justify-between border-b-2 border-[#185087] pb-3">
@@ -2968,6 +3096,7 @@ Rabbinic Coordinator`
                           setContractSigned(false)
                           setInvoicePaid(false)
                           setEmailSent(false)
+                          setContractPackageDownloadUrl(null)
                         }}
                         className="w-full rounded-[7px] border border-gray-300 bg-white px-3 py-2 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50"
                       >
@@ -3214,8 +3343,16 @@ Rabbinic Coordinator`
             <div className="space-y-4 px-5 py-4">
               <div className="rounded-lg border border-gray-200">
                 <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
+                  <span className="font-medium text-gray-500">From</span>
+                  <span>{senderEmail || '-'}</span>
+                </div>
+                <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
                   <span className="font-medium text-gray-500">To</span>
                   <span>{contact.email || contact.name || '-'}</span>
+                </div>
+                <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
+                  <span className="font-medium text-gray-500">Cc</span>
+                  <span>{rcEmail || '-'}</span>
                 </div>
                 <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
                   <span className="font-medium text-gray-500">Subject</span>

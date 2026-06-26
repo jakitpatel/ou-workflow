@@ -491,6 +491,30 @@ export type GenerateInspectionInvoiceResponse = {
   raw: unknown
 }
 
+export type GenerateContractPackagePayload = {
+  applicationId?: string | number
+  applicationName?: string
+  TaskInstanceId?: string | number | null
+  taskName?: string
+  applicant?: Partial<Applicant>
+  generatedAt: string
+  coverLetter: {
+    subject: string
+    body: string
+    packagePdfUrl?: string
+  }
+  invoice: Record<string, unknown>
+  agreement: Record<string, unknown>
+  schedules: Record<string, unknown>
+  privateLabelAgreements: Array<Record<string, unknown>>
+}
+
+export type GenerateContractPackageResponse = {
+  certificationPackagePdfUrl: string
+  downloadUrl: string
+  raw: unknown
+}
+
 function readStringFromRecord(record: Record<string, unknown>, keys: string[]): string {
   for (const key of keys) {
     const value = record[key]
@@ -556,6 +580,54 @@ export async function generateInspectionInvoice({
     invoiceId,
     downloadLink,
     invoicePdfUrl,
+    raw: response,
+  }
+}
+
+export async function generateContractPackage({
+  payload,
+  token,
+}: {
+  payload: GenerateContractPackagePayload
+  token?: string | null
+}): Promise<GenerateContractPackageResponse> {
+  const response = await fetchWithAuth<unknown>({
+    path: '/generatepackage',
+    method: 'POST',
+    body: payload,
+    token,
+  })
+  const responseRecord =
+    response && typeof response === 'object' && !Array.isArray(response)
+      ? (response as Record<string, unknown>)
+      : {}
+  const data =
+    responseRecord.data && typeof responseRecord.data === 'object' && !Array.isArray(responseRecord.data)
+      ? (responseRecord.data as Record<string, unknown>)
+      : responseRecord
+
+  const certificationPackagePdfUrl = readStringFromRecord(data, [
+    'Certification_Package_pdf',
+    'certificationPackagePdf',
+    'certification_package_pdf',
+    'packagePdfUrl',
+    'package_pdf_url',
+  ])
+  const downloadUrl = readStringFromRecord(data, [
+    'download_url',
+    'downloadUrl',
+    'downloadLink',
+    'download_link',
+    'url',
+  ])
+
+  if (!certificationPackagePdfUrl && !downloadUrl) {
+    throw createApiError('Contract package generated but no package PDF URL was returned.', 500, response)
+  }
+
+  return {
+    certificationPackagePdfUrl,
+    downloadUrl,
     raw: response,
   }
 }
