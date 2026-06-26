@@ -2661,16 +2661,7 @@ ${packageUrl}`
               <span className="mt-0.5 block text-[11.5px]">Source: Kashrus - Posted by Accounting.</span>
             </div>
           </div>
-        ) : (
-          <div className="mt-3 flex flex-wrap gap-2 font-sans">
-            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10.5px] font-bold text-amber-800">
-              Awaiting payment
-            </span>
-            <span className="rounded-full border border-dashed border-gray-300 px-2.5 py-1 text-[10.5px] font-bold text-gray-400">
-              Auto-updates from Kashrus
-            </span>
-          </div>
-        )}
+        ) : null}
 
         <p className="mt-2 font-sans text-[11px] text-slate-500">
           Created in KCM/Kashrus - invoice ID Kashrus-generated - payment auto-detected. Comment
