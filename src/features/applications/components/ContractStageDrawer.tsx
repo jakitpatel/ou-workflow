@@ -683,6 +683,7 @@ export function ContractStageDrawer({
   onClose,
 }: Props) {
   const isEmbedded = mode === 'embedded'
+  const isWorkflowReadOnly = readOnly || isEmbedded
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const { email, token, username } = useUser()
@@ -708,7 +709,7 @@ export function ContractStageDrawer({
     data: rcLookupList = [],
     isError: isRcLookupError,
     isLoading: isRcLookupLoading,
-  } = useUserListByRole('api/vSelectNCRC', { enabled: open && isNewCompanyContract && !readOnly })
+  } = useUserListByRole('api/vSelectNCRC', { enabled: open && isNewCompanyContract && !isWorkflowReadOnly })
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
     includePrelimLists: true,
@@ -877,8 +878,8 @@ export function ContractStageDrawer({
       ),
     )
   }, [rcOptions, rcSearch])
-  const rcName = isNewCompanyContract ? selectedRc?.name || (readOnly ? existingRcName : 'Select RC') : existingRcName
-  const rcEmail = isNewCompanyContract ? selectedRc?.email || (readOnly ? existingRcEmail : '') : existingRcEmail
+  const rcName = isNewCompanyContract ? selectedRc?.name || (isWorkflowReadOnly ? existingRcName : 'Select RC') : existingRcName
+  const rcEmail = isNewCompanyContract ? selectedRc?.email || (isWorkflowReadOnly ? existingRcEmail : '') : existingRcEmail
   const ncrcName = textValue(username) || 'Current User'
   const detailCompany = applicationDetail?.company?.[0]
   const detailCompanyRecord = detailCompany as Record<string, unknown> | undefined
@@ -1754,23 +1755,25 @@ ${packageUrl}`
                 Package generated - {coverSeparateAttachments.length + 1} attachment
                 {coverSeparateAttachments.length === 0 ? '' : 's'}
               </span>
-              <button
-                type="button"
-                onClick={async () => {
-                  setPackageGenerated(false)
-                  setEmailSent(false)
-                  setContractPackageDownloadUrl(null)
-                  await saveCurrentContractStageState({
-                    nextContractPackageDownloadUrl: null,
-                    nextEmailSent: false,
-                    nextPackageGenerated: false,
-                    nextStage: 'GenerateInvoice',
-                  })
-                }}
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50"
-              >
-                Re-generate
-              </button>
+              {!isWorkflowReadOnly ? (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setPackageGenerated(false)
+                    setEmailSent(false)
+                    setContractPackageDownloadUrl(null)
+                    await saveCurrentContractStageState({
+                      nextContractPackageDownloadUrl: null,
+                      nextEmailSent: false,
+                      nextPackageGenerated: false,
+                      nextStage: 'GenerateInvoice',
+                    })
+                  }}
+                  className="rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                >
+                  Re-generate
+                </button>
+              ) : null}
             </div>
 
             {emailSent ? (
@@ -1816,7 +1819,7 @@ ${packageUrl}`
                 </div>
                 <textarea
                   value={coverLetterBody}
-                  disabled={emailSent}
+                  disabled={emailSent || isWorkflowReadOnly}
                   onChange={(event) => setCoverLetterBody(event.target.value)}
                   className="min-h-[172px] w-full resize-y rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-[12.5px] leading-6 text-[#1e1e2e] focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10 disabled:bg-gray-50 disabled:text-gray-500"
                 />
@@ -1883,7 +1886,7 @@ ${packageUrl}`
               </div>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              {!emailSent ? (
+              {!emailSent && !isWorkflowReadOnly ? (
                 <button
                   type="button"
                   disabled={isSendingContractEmail}
@@ -1903,17 +1906,19 @@ ${packageUrl}`
           </div>
         ) : (
           <div className="font-sans">
-            <div className="mb-2.5 flex justify-end">
-              <button
-                type="button"
-                disabled={isGeneratingContractPackage}
-                onClick={handleGenerateContractPackage}
-                className="inline-flex items-center gap-2 rounded-md bg-[#185087] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#13406c] disabled:cursor-not-allowed disabled:bg-gray-300"
-              >
-                <FileText className="h-4 w-4" />
-                {isGeneratingContractPackage ? 'Generating...' : 'Generate Contract Package'}
-              </button>
-            </div>
+            {!isWorkflowReadOnly ? (
+              <div className="mb-2.5 flex justify-end">
+                <button
+                  type="button"
+                  disabled={isGeneratingContractPackage}
+                  onClick={handleGenerateContractPackage}
+                  className="inline-flex items-center gap-2 rounded-md bg-[#185087] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#13406c] disabled:cursor-not-allowed disabled:bg-gray-300"
+                >
+                  <FileText className="h-4 w-4" />
+                  {isGeneratingContractPackage ? 'Generating...' : 'Generate Contract Package'}
+                </button>
+              </div>
+            ) : null}
             <div className="mb-4 flex items-start justify-between border-b-2 border-[#185087] pb-3">
               <div>
                 <div className="font-serif text-lg font-bold tracking-tight text-[#185087]">
@@ -1933,9 +1938,15 @@ ${packageUrl}`
             <p className="mb-3 text-[12.5px] leading-6 text-gray-600">
               The contract schedules are combined into <strong>one PDF</strong>. The certification
               invoice and any PLA{hasPrivateLabelAgreements && privateLabelGroups.length > 1 ? 's' : ''}{' '}
-              go out as <strong>separate attachments</strong>. Click{' '}
-              <strong>Generate Contract Package</strong> to build them, then review and edit the cover
-              letter before sending.
+              go out as <strong>separate attachments</strong>.
+              {isWorkflowReadOnly
+                ? ' Package generation is available from the workflow task.'
+                : (
+                    <>
+                      {' '}Click <strong>Generate Contract Package</strong> to build them, then review and edit the cover
+                      letter before sending.
+                    </>
+                  )}
             </p>
 
             <div className="mb-2 mt-4 flex items-baseline justify-between text-[10px] font-bold uppercase tracking-wide text-gray-400">
@@ -3150,7 +3161,7 @@ ${packageUrl}`
                     <input
                       type="date"
                       value={effectiveDate}
-                      disabled={readOnly}
+                      disabled={isWorkflowReadOnly}
                       onChange={(event) => setEffectiveDate(event.target.value)}
                       className="mt-1 w-full rounded-[7px] border border-slate-300 bg-white px-3 py-2 text-sm text-[#1e1e2e] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
                     />
@@ -3188,7 +3199,7 @@ ${packageUrl}`
                         step="0.01"
                         placeholder="4,860.00"
                         value={annualFee}
-                        disabled={readOnly}
+                        disabled={isWorkflowReadOnly}
                         onChange={(event) => setAnnualFee(event.target.value)}
                         className="w-full rounded-[7px] border border-slate-300 bg-white py-2 pl-7 pr-3 text-sm text-[#1e1e2e] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
                       />
@@ -3207,7 +3218,7 @@ ${packageUrl}`
                       rows={2}
                       value={certificationInvoiceComment}
                       placeholder="Comment for the certification invoice..."
-                      disabled={readOnly}
+                      disabled={isWorkflowReadOnly}
                       onChange={(event) => setCertificationInvoiceComment(event.target.value)}
                       className="mt-1 w-full rounded-[7px] border border-slate-300 bg-white px-3 py-2 text-sm text-[#1e1e2e] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
                     />
@@ -3215,7 +3226,7 @@ ${packageUrl}`
                       <input
                         type="checkbox"
                         checked={includeInvoiceComment}
-                        disabled={readOnly}
+                        disabled={isWorkflowReadOnly}
                         onChange={(event) => setIncludeInvoiceComment(event.target.checked)}
                         className="h-3.5 w-3.5 rounded border-gray-300"
                       />
@@ -3234,7 +3245,7 @@ ${packageUrl}`
                 <div className="mb-2 flex gap-2">
                   <button
                     type="button"
-                    disabled={readOnly}
+                    disabled={isWorkflowReadOnly}
                     onClick={() => setNoProductionProcedures(true)}
                     className={`rounded-md border px-3 py-1.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
                       noProductionProcedures
@@ -3246,7 +3257,7 @@ ${packageUrl}`
                   </button>
                   <button
                     type="button"
-                    disabled={readOnly}
+                    disabled={isWorkflowReadOnly}
                     onClick={() => setNoProductionProcedures(false)}
                     className={`rounded-md border px-3 py-1.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
                       !noProductionProcedures
@@ -3261,7 +3272,7 @@ ${packageUrl}`
                   rows={2}
                   placeholder="Dedicated line, kosherization, bulk-shipment notes..."
                   value={productionProcedures}
-                  disabled={readOnly || noProductionProcedures}
+                  disabled={isWorkflowReadOnly || noProductionProcedures}
                   onChange={(event) => setProductionProcedures(event.target.value)}
                   className="w-full rounded-[7px] border border-slate-300 bg-white px-3 py-2 text-sm text-[#1e1e2e] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
                 />
@@ -3283,7 +3294,7 @@ ${packageUrl}`
                           : 'Standard template - no legal review required.'}
                       </p>
                     </div>
-                    {readOnly ? (
+                    {isWorkflowReadOnly ? (
                       <div className="inline-flex rounded-lg border border-gray-300 bg-white p-1">
                         <span className="rounded-md bg-gray-700 px-3 py-1.5 text-sm font-medium text-white">
                           {legalReviewNeeded ? 'Yes' : 'No'}
@@ -3303,7 +3314,7 @@ ${packageUrl}`
                     </div>
                   ) : null}
                 </div>
-                {legalReviewNeeded && !legalApproved && !readOnly ? (
+                {legalReviewNeeded && !legalApproved && !isWorkflowReadOnly ? (
                   <button
                     type="button"
                     disabled={!Boolean(annualFee)}
@@ -3316,7 +3327,7 @@ ${packageUrl}`
               </Section>
 
               <Section title="RC Assigned to Company" count="rabbinic coordinator">
-                {isNewCompanyContract && !readOnly ? (
+                {isNewCompanyContract && !isWorkflowReadOnly ? (
                   <>
                     <div className="text-sm">
                       <div className="flex items-center justify-between gap-2">
@@ -3433,7 +3444,7 @@ ${packageUrl}`
                     : 'Existing company - RC derived from Kashrus. Prints on the agreement, invoice, and email.'}
                 </p>
                 <div className="mt-3 border-t border-gray-100 pt-3">
-                  {readOnly ? (
+                  {isWorkflowReadOnly ? (
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] font-semibold text-slate-600">
                       Read-only contract preview. Workflow actions are available from the task dashboard.
                     </div>
@@ -3498,7 +3509,7 @@ ${packageUrl}`
                 </div>
               </Section>
 
-              {packageGenerated && !readOnly ? (
+              {packageGenerated && !isWorkflowReadOnly ? (
                 <Section title="Completion">
                   <div className="space-y-3">
                     <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
@@ -3596,7 +3607,7 @@ ${packageUrl}`
                           Open Invoice
                         </a>
                       ) : null}
-                      {!readOnly ? (
+                      {!isWorkflowReadOnly ? (
                         <button
                           type="button"
                           disabled={isGeneratingContractInvoice || !annualFee || hasGeneratedContractInvoice}
@@ -3760,7 +3771,7 @@ ${packageUrl}`
               >
                 Close
               </button>
-              {!readOnly ? (
+              {!isWorkflowReadOnly ? (
                 <button
                   type="button"
                   disabled={isSendingContractEmail}
