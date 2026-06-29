@@ -8,7 +8,7 @@ import {
   type GenerateContractPackageResponse,
   type GenerateInspectionInvoiceResponse,
 } from '@/features/applications/api'
-import { assignTask } from '@/features/tasks/api'
+import { assignTask, patchTaskResult } from '@/features/tasks/api'
 import { resolveApiBaseUrl } from '@/shared/api/httpClient'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import type { Applicant } from '@/types/application'
@@ -94,6 +94,12 @@ type SendContractPackageEmailParams = {
   toUser?: string
 }
 
+type SaveContractStageStateParams = {
+  guiDisplayResult?: string
+  savedState: unknown
+  taskInstanceId?: string | number
+}
+
 export function useContractRcNotification({
   token,
   username,
@@ -106,6 +112,23 @@ export function useContractRcNotification({
   const [isGeneratingContractInvoice, setIsGeneratingContractInvoice] = useState(false)
   const [isGeneratingContractPackage, setIsGeneratingContractPackage] = useState(false)
   const [isSendingContractEmail, setIsSendingContractEmail] = useState(false)
+
+  const saveContractStageState = async ({
+    guiDisplayResult,
+    savedState,
+    taskInstanceId,
+  }: SaveContractStageStateParams) => {
+    if (taskInstanceId === undefined || taskInstanceId === null || String(taskInstanceId).trim() === '') {
+      return
+    }
+
+    await patchTaskResult({
+      taskId: String(taskInstanceId).trim(),
+      result: { savedState },
+      guiDisplayResult,
+      token: token ?? undefined,
+    })
+  }
 
   const assignContractRcToCompany = async ({
     applicationId,
@@ -340,6 +363,7 @@ ${username ?? ''}`
     isSendingContractEmail,
     isSendingRcNotification,
     notifyRcForApproval,
+    saveContractStageState,
     sendContractPackageEmail,
   }
 }

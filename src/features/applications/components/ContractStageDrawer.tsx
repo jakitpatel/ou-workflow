@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check,
   ChevronRight,
@@ -12,9 +12,10 @@ import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import { useContractRcNotification } from '@/features/applications/hooks/useContractRcNotification'
+import { getInspectionStatusSavedState } from '@/features/applications/utils/inspectionStatusDetails'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
-import type { Applicant, ApplicantAppVars, AssignedRole } from '@/types/application'
+import type { Applicant, ApplicantAppVars, AssignedRole, Task } from '@/types/application'
 
 type Props = {
   open: boolean
@@ -96,6 +97,72 @@ type ClauseVersion = {
   author: string
   ts: string
   clauses: AgreementClause[]
+}
+
+type ContractStageSavedStage =
+  | 'setup'
+  | 'NotifyRC'
+  | 'GenerateInvoice'
+  | 'GeneratePackage'
+  | 'Contract Sent(Send Email)'
+  | 'Contract Signed'
+  | 'Paid'
+  | 'Completed'
+
+type ContractRcOption = {
+  lookupKey: string
+  assigneeValue: string
+  name: string
+  userName: string
+  email: string
+}
+
+type ContractStageSavedState = {
+  version?: number
+  stage?: ContractStageSavedStage
+  setup?: {
+    effectiveDate?: string
+    annualFee?: string
+    certificationInvoiceComment?: string
+    includeInvoiceComment?: boolean
+    productionProcedures?: string
+    noProductionProcedures?: boolean
+    legalReviewNeeded?: boolean
+    legalApproved?: boolean
+    selectedRcLookupKey?: string
+    savedRcLookupKey?: string
+    rc?: Partial<ContractRcOption> | null
+    coverLetterBody?: string
+    selectedPlaCompany?: string
+  }
+  invoice?: {
+    generated?: boolean
+    invoiceId?: string | null
+    downloadLink?: string | null
+    invoicePdfUrl?: string | null
+    generatedAt?: string
+    recipient?: string
+  }
+  package?: {
+    generated?: boolean
+    downloadUrl?: string | null
+    generatedAt?: string
+  }
+  email?: {
+    sent?: boolean
+    sentAt?: string | null
+    subject?: string
+    toUser?: string
+    ccUser?: string
+    attachments?: string
+  }
+  completion?: {
+    contractSigned?: boolean
+    contractSignedAt?: string | null
+    paid?: boolean
+    paidAt?: string | null
+    completedAt?: string | null
+  }
 }
 
 const BASE_AGREEMENT_CLAUSES: AgreementClause[] = [
@@ -394,6 +461,46 @@ const getPrimaryContact = (
   return { name, email, title }
 }
 
+const getRawTaskInstanceId = (task: unknown): string => {
+  const taskRecord = task && typeof task === 'object' ? (task as Record<string, unknown>) : {}
+  return String(taskRecord.TaskInstanceId ?? taskRecord.taskInstanceId ?? taskRecord.id ?? '').trim()
+}
+
+const findTaskById = (applicant: Applicant | undefined, taskId: string): Task | null => {
+  if (!taskId) return null
+
+  const tasks = Object.values(applicant?.stages ?? {}).flatMap((stage) => stage.tasks ?? [])
+  return (tasks.find((task) => getRawTaskInstanceId(task) === taskId) as Task | undefined) ?? null
+}
+
+const isContractStageSavedStage = (value: unknown): value is ContractStageSavedStage =>
+  value === 'setup' ||
+  value === 'NotifyRC' ||
+  value === 'GenerateInvoice' ||
+  value === 'GeneratePackage' ||
+  value === 'Contract Sent(Send Email)' ||
+  value === 'Contract Signed' ||
+  value === 'Paid' ||
+  value === 'Completed'
+
+const restoreContractRcOption = (
+  rc: Partial<ContractRcOption> | null | undefined,
+): ContractRcOption | null => {
+  if (!rc) return null
+
+  const lookupKey = textValue(rc.lookupKey || rc.userName || rc.assigneeValue || rc.name)
+  const name = textValue(rc.name || rc.userName || lookupKey)
+  if (!lookupKey && !name) return null
+
+  return {
+    lookupKey: lookupKey || name,
+    assigneeValue: textValue(rc.assigneeValue || rc.userName || lookupKey || name),
+    name: name || lookupKey,
+    userName: textValue(rc.userName || rc.assigneeValue || lookupKey),
+    email: textValue(rc.email),
+  }
+}
+
 const getPreviewTabLabel = (tab: PreviewTab) => {
   switch (tab) {
     case 'invoice':
@@ -540,6 +647,7 @@ export function ContractStageDrawer({
     isSendingContractEmail,
     isSendingRcNotification,
     notifyRcForApproval,
+    saveContractStageState,
     sendContractPackageEmail,
   } = useContractRcNotification({
     token,
@@ -592,10 +700,15 @@ export function ContractStageDrawer({
   const [coverLetterBody, setCoverLetterBody] = useState('')
   const [selectedRcLookupKey, setSelectedRcLookupKey] = useState('')
   const [savedRcLookupKey, setSavedRcLookupKey] = useState('')
+  const [restoredRc, setRestoredRc] = useState<ContractRcOption | null>(null)
   const [rcSearch, setRcSearch] = useState('')
+  const restoredTaskKeyRef = useRef('')
 
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      restoredTaskKeyRef.current = ''
+      return
+    }
     setPreviewTab('invoice')
     setShowMergeFieldsHint(false)
     setLegalApproved(false)
@@ -625,8 +738,61 @@ export function ContractStageDrawer({
     setSelectedPlaCompany('')
     setSelectedRcLookupKey('')
     setSavedRcLookupKey('')
+    setRestoredRc(null)
     setRcSearch('')
   }, [open, taskInstanceId])
+
+  useEffect(() => {
+    const contractTaskId = String(taskInstanceId ?? '').trim()
+    const restoreKey = `${contractTaskId}:${open ? 'open' : 'closed'}`
+    if (!open || !contractTaskId || restoredTaskKeyRef.current === restoreKey) return
+
+    const currentTask = findTaskById(applicant, contractTaskId)
+    const savedState = getInspectionStatusSavedState<ContractStageSavedState>(
+      (currentTask as any)?.StatusDetails ??
+        (currentTask as any)?.statusDetails ??
+        (currentTask as any)?.Result ??
+        (currentTask as any)?.result,
+    )
+    restoredTaskKeyRef.current = restoreKey
+    if (!savedState) return
+
+    const setup = savedState.setup ?? {}
+    const invoice = savedState.invoice ?? {}
+    const contractPackage = savedState.package ?? {}
+    const emailState = savedState.email ?? {}
+    const completion = savedState.completion ?? {}
+    const nextRestoredRc = restoreContractRcOption(setup.rc)
+    const nextStage = isContractStageSavedStage(savedState.stage) ? savedState.stage : 'setup'
+
+    setEffectiveDate(setup.effectiveDate || getDefaultEffectiveDate())
+    setAnnualFee(setup.annualFee || DEFAULT_ANNUAL_FEE)
+    setCertificationInvoiceComment(setup.certificationInvoiceComment || '')
+    setIncludeInvoiceComment(Boolean(setup.includeInvoiceComment))
+    setProductionProcedures(setup.productionProcedures || '')
+    setNoProductionProcedures(setup.noProductionProcedures ?? true)
+    setLegalReviewNeeded(Boolean(setup.legalReviewNeeded))
+    setLegalApproved(Boolean(setup.legalApproved))
+    setSelectedRcLookupKey(setup.selectedRcLookupKey || nextRestoredRc?.lookupKey || '')
+    setSavedRcLookupKey(setup.savedRcLookupKey || nextRestoredRc?.lookupKey || '')
+    setRestoredRc(nextRestoredRc)
+    setSelectedPlaCompany(setup.selectedPlaCompany || '')
+    setContractInvoiceId(invoice.invoiceId ?? null)
+    setContractInvoiceDownloadLink(invoice.downloadLink ?? null)
+    setContractInvoicePdfUrl(invoice.invoicePdfUrl ?? null)
+    setContractPackageDownloadUrl(contractPackage.downloadUrl ?? null)
+    setPackageGenerated(Boolean(contractPackage.generated || emailState.sent))
+    setEmailSent(Boolean(emailState.sent))
+    setContractSigned(Boolean(completion.contractSigned))
+    setInvoicePaid(Boolean(completion.paid))
+    setCoverLetterBody(setup.coverLetterBody || '')
+
+    if (contractPackage.generated || emailState.sent || nextStage === 'NotifyRC') {
+      setPreviewTab('cover')
+    } else if (invoice.generated || invoice.invoiceId) {
+      setPreviewTab('invoice')
+    }
+  }, [applicant, open, taskInstanceId])
 
   const detailAssignedRoles = applicationDetail?.assignedRoles ?? assignedRoles
   const existingRcName =
@@ -648,7 +814,9 @@ export function ContractStageDrawer({
         .filter((item) => item.lookupKey && item.name),
     [rcLookupList],
   )
-  const selectedRc = rcOptions.find((option) => option.lookupKey === selectedRcLookupKey)
+  const selectedRc =
+    rcOptions.find((option) => option.lookupKey === selectedRcLookupKey) ??
+    (restoredRc?.lookupKey === selectedRcLookupKey ? restoredRc : null)
   const selectedRcSaved = Boolean(selectedRc && selectedRc.lookupKey === savedRcLookupKey)
   const filteredRcOptions = useMemo(() => {
     const query = rcSearch.trim().toLowerCase()
@@ -954,6 +1122,127 @@ Rabbinic Coordinator`
 Certification package:
 ${packageUrl}`
 
+  const buildContractSavedState = ({
+    nextContractInvoiceDownloadLink = contractInvoiceDownloadLink,
+    nextContractInvoiceId = contractInvoiceId,
+    nextContractInvoicePdfUrl = contractInvoicePdfUrl,
+    nextContractPackageDownloadUrl = contractPackageDownloadUrl,
+    nextContractSigned = contractSigned,
+    nextEmailSent = emailSent,
+    nextInvoicePaid = invoicePaid,
+    nextPackageGenerated = packageGenerated,
+    nextStage = 'setup',
+    nextCoverLetterBody = coverLetterBody,
+    nextEmailSentAt,
+    nextContractSignedAt,
+    nextPaidAt,
+    nextCompletedAt,
+  }: {
+    nextContractInvoiceDownloadLink?: string | null
+    nextContractInvoiceId?: string | null
+    nextContractInvoicePdfUrl?: string | null
+    nextContractPackageDownloadUrl?: string | null
+    nextContractSigned?: boolean
+    nextEmailSent?: boolean
+    nextInvoicePaid?: boolean
+    nextPackageGenerated?: boolean
+    nextStage?: ContractStageSavedStage
+    nextCoverLetterBody?: string
+    nextEmailSentAt?: string | null
+    nextContractSignedAt?: string | null
+    nextPaidAt?: string | null
+    nextCompletedAt?: string | null
+  } = {}): ContractStageSavedState => ({
+    version: 1,
+    stage: nextStage,
+    setup: {
+      effectiveDate,
+      annualFee,
+      certificationInvoiceComment,
+      includeInvoiceComment,
+      productionProcedures,
+      noProductionProcedures,
+      legalReviewNeeded,
+      legalApproved,
+      selectedRcLookupKey,
+      savedRcLookupKey,
+      rc: selectedRc
+        ? {
+            lookupKey: selectedRc.lookupKey,
+            assigneeValue: selectedRc.assigneeValue,
+            name: selectedRc.name,
+            userName: selectedRc.userName,
+            email: selectedRc.email,
+          }
+        : null,
+      coverLetterBody: nextCoverLetterBody,
+      selectedPlaCompany,
+    },
+    invoice: {
+      generated: Boolean(nextContractInvoiceId || nextContractInvoiceDownloadLink || nextContractInvoicePdfUrl),
+      invoiceId: nextContractInvoiceId,
+      downloadLink: nextContractInvoiceDownloadLink,
+      invoicePdfUrl: nextContractInvoicePdfUrl,
+      generatedAt: nextContractInvoiceId ? new Date().toISOString() : undefined,
+      recipient: contact.email || contact.name || '',
+    },
+    package: {
+      generated: nextPackageGenerated,
+      downloadUrl: nextContractPackageDownloadUrl,
+      generatedAt: nextPackageGenerated ? new Date().toISOString() : undefined,
+    },
+    email: {
+      sent: nextEmailSent,
+      sentAt: nextEmailSentAt,
+      subject: emailSubject,
+      toUser: contact.email || contact.name || '',
+      ccUser: rcEmail,
+      attachments: contractEmailAttachments,
+    },
+    completion: {
+      contractSigned: nextContractSigned,
+      contractSignedAt: nextContractSigned ? nextContractSignedAt ?? new Date().toLocaleString() : null,
+      paid: nextInvoicePaid,
+      paidAt: nextInvoicePaid ? nextPaidAt ?? new Date().toLocaleString() : null,
+      completedAt: nextCompletedAt,
+    },
+  })
+
+  const getContractGuiDisplayResult = ({
+    nextContractInvoiceId = contractInvoiceId,
+    nextContractSigned = contractSigned,
+    nextEmailSent = emailSent,
+    nextInvoicePaid = invoicePaid,
+    nextPackageGenerated = packageGenerated,
+  }: {
+    nextContractInvoiceId?: string | null
+    nextContractSigned?: boolean
+    nextEmailSent?: boolean
+    nextInvoicePaid?: boolean
+    nextPackageGenerated?: boolean
+  } = {}) =>
+    `{Invoice:${nextContractInvoiceId || 'Not generated'}, Package:${
+      nextPackageGenerated ? 'Generated' : 'Pending'
+    }, Email:${nextEmailSent ? 'Sent' : 'Pending'}, Signed:${
+      nextContractSigned ? 'Yes' : 'No'
+    }, Paid:${nextInvoicePaid ? 'Yes' : 'No'}}`
+
+  const saveCurrentContractStageState = async (
+    options: Parameters<typeof buildContractSavedState>[0] = {},
+  ) => {
+    await saveContractStageState({
+      taskInstanceId,
+      savedState: buildContractSavedState(options),
+      guiDisplayResult: getContractGuiDisplayResult({
+        nextContractInvoiceId: options.nextContractInvoiceId,
+        nextContractSigned: options.nextContractSigned,
+        nextEmailSent: options.nextEmailSent,
+        nextInvoicePaid: options.nextInvoicePaid,
+        nextPackageGenerated: options.nextPackageGenerated,
+      }),
+    })
+  }
+
   if (!open) return null
 
   const handleSelectRc = (option: (typeof rcOptions)[number]) => {
@@ -971,6 +1260,7 @@ ${packageUrl}`
         assignee: selectedRc.assigneeValue || selectedRc.userName || selectedRc.lookupKey || selectedRc.name,
       })
       setSavedRcLookupKey(selectedRc.lookupKey)
+      await saveCurrentContractStageState({ nextStage: 'setup' })
       toast.success('RC assigned to company')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to assign RC to company')
@@ -1010,6 +1300,12 @@ ${packageUrl}`
       setContractInvoiceId(result.invoiceId)
       setContractInvoiceDownloadLink(result.downloadLink || null)
       setContractInvoicePdfUrl(result.invoicePdfUrl || null)
+      await saveCurrentContractStageState({
+        nextContractInvoiceId: result.invoiceId,
+        nextContractInvoiceDownloadLink: result.downloadLink || null,
+        nextContractInvoicePdfUrl: result.invoicePdfUrl || null,
+        nextStage: 'GenerateInvoice',
+      })
       toast.success(`Invoice ${result.invoiceId} generated`)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to generate invoice')
@@ -1101,11 +1397,17 @@ ${packageUrl}`
       }
 
       const result = await generateContractPackage({ payload: packagePayload })
-      const packageUrl = result.certificationPackagePdfUrl || result.downloadUrl
+      const packageUrl = result.certificationPackagePdfUrl || result.downloadUrl || null
       setContractPackageDownloadUrl(packageUrl)
       setPackageGenerated(true)
-      setCoverLetterBody(emailBodyWithPackageUrl(packageUrl))
+      setCoverLetterBody(packageUrl ? emailBodyWithPackageUrl(packageUrl) : emailBody)
       setPreviewTab('cover')
+      await saveCurrentContractStageState({
+        nextContractPackageDownloadUrl: packageUrl,
+        nextCoverLetterBody: packageUrl ? emailBodyWithPackageUrl(packageUrl) : emailBody,
+        nextPackageGenerated: true,
+        nextStage: 'GeneratePackage',
+      })
       toast.success('Contract package generated')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to generate contract package')
@@ -1128,6 +1430,11 @@ ${packageUrl}`
 
       setEmailSent(true)
       setShowEmailPreview(false)
+      await saveCurrentContractStageState({
+        nextEmailSent: true,
+        nextEmailSentAt: new Date().toLocaleString(),
+        nextStage: 'Contract Sent(Send Email)',
+      })
       toast.success('Contract package email recorded')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to send contract email')
@@ -1142,9 +1449,13 @@ ${packageUrl}`
         rcUserName: isNewCompanyContract ? selectedRc?.userName : rcName,
         taskInstanceId,
       })
-      setPackageGenerated(true)
       setCoverLetterBody(contractPackageDocumentUrl ? emailBodyWithPackageUrl(contractPackageDocumentUrl) : emailBody)
       setPreviewTab('cover')
+      await saveCurrentContractStageState({
+        nextCoverLetterBody: contractPackageDocumentUrl ? emailBodyWithPackageUrl(contractPackageDocumentUrl) : emailBody,
+        nextPackageGenerated: packageGenerated,
+        nextStage: 'NotifyRC',
+      })
       toast.success('RC notified for approval')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to notify RC for approval')
@@ -1164,6 +1475,10 @@ ${packageUrl}`
       username: username ?? undefined,
       result: 'completed',
       completionNotes: `Contract package completed via Contract Stage${invoicePaid ? ' with payment received' : ''}.`,
+    })
+    await saveCurrentContractStageState({
+      nextCompletedAt: new Date().toLocaleString(),
+      nextStage: 'Completed',
     })
 
     toast.success('Contract task completed')
@@ -1390,10 +1705,16 @@ ${packageUrl}`
               </span>
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   setPackageGenerated(false)
                   setEmailSent(false)
                   setContractPackageDownloadUrl(null)
+                  await saveCurrentContractStageState({
+                    nextContractPackageDownloadUrl: null,
+                    nextEmailSent: false,
+                    nextPackageGenerated: false,
+                    nextStage: 'GenerateInvoice',
+                  })
                 }}
                 className="rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50"
               >
@@ -3072,12 +3393,20 @@ ${packageUrl}`
                       </div>
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           setPackageGenerated(false)
                           setContractSigned(false)
                           setInvoicePaid(false)
                           setEmailSent(false)
                           setContractPackageDownloadUrl(null)
+                          await saveCurrentContractStageState({
+                            nextContractPackageDownloadUrl: null,
+                            nextContractSigned: false,
+                            nextEmailSent: false,
+                            nextInvoicePaid: false,
+                            nextPackageGenerated: false,
+                            nextStage: 'GenerateInvoice',
+                          })
                         }}
                         className="w-full rounded-[7px] border border-gray-300 bg-white px-3 py-2 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50"
                       >
@@ -3131,7 +3460,16 @@ ${packageUrl}`
                             Signed contract is required before advancing to Certification.
                           </p>
                         </div>
-                        <TogglePillGroup value={contractSigned} onChange={setContractSigned} />
+                        <TogglePillGroup
+                          value={contractSigned}
+                          onChange={async (value) => {
+                            setContractSigned(value)
+                            await saveCurrentContractStageState({
+                              nextContractSigned: value,
+                              nextStage: value ? 'Contract Signed' : 'GeneratePackage',
+                            })
+                          }}
+                        />
                       </div>
                     </div>
                     <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
@@ -3161,7 +3499,16 @@ ${packageUrl}`
                             Payment status mirrors the Kashrus invoice state.
                           </p>
                         </div>
-                        <TogglePillGroup value={invoicePaid} onChange={setInvoicePaid} />
+                        <TogglePillGroup
+                          value={invoicePaid}
+                          onChange={async (value) => {
+                            setInvoicePaid(value)
+                            await saveCurrentContractStageState({
+                              nextInvoicePaid: value,
+                              nextStage: value ? 'Paid' : 'GeneratePackage',
+                            })
+                          }}
+                        />
                       </div>
                     </div>
                     {emailSent ? (
