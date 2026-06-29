@@ -501,6 +501,55 @@ const restoreContractRcOption = (
   }
 }
 
+const parseContractJsonLikeObject = (value: string): unknown | null => {
+  const text = value.trim()
+  if (!text) return null
+
+  const candidates = [
+    text,
+    text
+      .replace(/'/g, '"')
+      .replace(/\bTrue\b/g, 'true')
+      .replace(/\bFalse\b/g, 'false')
+      .replace(/\bNone\b/g, 'null'),
+  ]
+
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(candidate)
+    } catch {
+      // Try the next tolerated backend serialization format.
+    }
+  }
+
+  return null
+}
+
+const getContractStageSavedState = (value: unknown): ContractStageSavedState | null => {
+  const sharedParsedState = getInspectionStatusSavedState<ContractStageSavedState>(value)
+  if (sharedParsedState) return sharedParsedState
+
+  if (!value) return null
+
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    const savedState = record.savedState ?? record.SavedState
+    if (typeof savedState === 'string') return getContractStageSavedState(savedState)
+    if (savedState && typeof savedState === 'object') return savedState as ContractStageSavedState
+
+    const statusDetails = record.StatusDetails ?? record.statusDetails
+    if (statusDetails) return getContractStageSavedState(statusDetails)
+
+    const attributes = record.attributes
+    if (attributes && typeof attributes === 'object') return getContractStageSavedState(attributes)
+
+    return null
+  }
+
+  const parsed = parseContractJsonLikeObject(String(value))
+  return parsed ? getContractStageSavedState(parsed) : null
+}
+
 const getPreviewTabLabel = (tab: PreviewTab) => {
   switch (tab) {
     case 'invoice':
@@ -748,7 +797,7 @@ export function ContractStageDrawer({
     if (!open || !contractTaskId || restoredTaskKeyRef.current === restoreKey) return
 
     const currentTask = findTaskById(applicant, contractTaskId)
-    const savedState = getInspectionStatusSavedState<ContractStageSavedState>(
+    const savedState = getContractStageSavedState(
       (currentTask as any)?.StatusDetails ??
         (currentTask as any)?.statusDetails ??
         (currentTask as any)?.Result ??
@@ -1214,14 +1263,16 @@ ${packageUrl}`
     nextEmailSent = emailSent,
     nextInvoicePaid = invoicePaid,
     nextPackageGenerated = packageGenerated,
+    nextRc = selectedRc,
   }: {
     nextContractInvoiceId?: string | null
     nextContractSigned?: boolean
     nextEmailSent?: boolean
     nextInvoicePaid?: boolean
     nextPackageGenerated?: boolean
+    nextRc?: ContractRcOption | null
   } = {}) =>
-    `{Invoice:${nextContractInvoiceId || 'Not generated'}, Package:${
+    `{RC:${nextRc ? `${nextRc.name}${nextRc.userName ? ` (${nextRc.userName})` : ''}` : rcName || '-'}, Invoice:${nextContractInvoiceId || 'Not generated'}, Package:${
       nextPackageGenerated ? 'Generated' : 'Pending'
     }, Email:${nextEmailSent ? 'Sent' : 'Pending'}, Signed:${
       nextContractSigned ? 'Yes' : 'No'
