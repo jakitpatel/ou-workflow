@@ -1123,10 +1123,10 @@ export function ContractStageDrawer({
     contractPackageDocumentUrl
       ? `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf <${contractPackageDocumentUrl}>`
       : `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
-    ...coverSeparateAttachments.map((attachment) => attachment.file),
     ...extraEmailAttachments.map((attachment) =>
       attachment.fileUrl ? `${attachment.fileName} <${attachment.fileUrl}>` : attachment.fileName,
     ),
+    ...coverSeparateAttachments.map((attachment) => attachment.file),
   ].join(', ')
   const coverAttachmentCount = coverSeparateAttachments.length + extraEmailAttachments.length + 1
 
@@ -1273,10 +1273,10 @@ ${packageUrl}`
         contractPackageDocumentUrl
           ? `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf <${contractPackageDocumentUrl}>`
           : `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
-        ...coverSeparateAttachments.map((attachment) => attachment.file),
         ...nextExtraEmailAttachments.map((attachment) =>
           attachment.fileUrl ? `${attachment.fileName} <${attachment.fileUrl}>` : attachment.fileName,
         ),
+        ...coverSeparateAttachments.map((attachment) => attachment.file),
       ].join(', '),
       customAttachments: nextExtraEmailAttachments,
     },
@@ -1553,7 +1553,11 @@ ${packageUrl}`
       setExtraEmailAttachments(nextAttachments)
       await saveCurrentContractStageState({
         nextExtraEmailAttachments: nextAttachments,
-        nextStage: emailSent ? 'Contract Sent(Send Email)' : 'GeneratePackage',
+        nextStage: emailSent
+          ? 'Contract Sent(Send Email)'
+          : packageGenerated
+            ? 'GeneratePackage'
+            : 'GenerateInvoice',
       })
       toast.success(
         selectedFiles.length === 1
@@ -2123,10 +2127,34 @@ ${packageUrl}`
             <div className="mb-2 mt-4 flex items-baseline justify-between text-[10px] font-bold uppercase tracking-wide text-gray-400">
               <span>Separate Attachments</span>
               <span className="font-semibold normal-case tracking-normal text-gray-600">
-                {coverSeparateAttachments.length}
+                {coverSeparateAttachments.length + extraEmailAttachments.length}
               </span>
             </div>
             <div className="overflow-hidden rounded-lg border border-gray-200">
+              {extraEmailAttachments.map((attachment) => (
+                <div
+                  key={`${attachment.fileName}-${attachment.uploadedAt ?? ''}`}
+                  className="flex items-start gap-3 border-b border-gray-100 px-3.5 py-2.5 last:border-b-0"
+                >
+                  <div className="mt-0.5 flex h-[21px] w-[21px] shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10.5px] font-bold text-slate-500">
+                    <FileText className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <div className="text-[12.5px] font-semibold text-[#1e1e2e]">{attachment.fileName}</div>
+                    <div className="mt-0.5 text-[11px] text-gray-500">Uploaded attachment</div>
+                  </div>
+                  {attachment.fileUrl ? (
+                    <a
+                      href={attachment.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-auto shrink-0 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087] hover:bg-blue-100"
+                    >
+                      Open
+                    </a>
+                  ) : null}
+                </div>
+              ))}
               {coverSeparateAttachments.map((item) => (
                 <div
                   key={item.label}
@@ -2151,6 +2179,57 @@ ${packageUrl}`
                   ) : null}
                 </div>
               ))}
+              {!isWorkflowReadOnly ? (
+                <div
+                  onDragEnter={(event) => {
+                    event.preventDefault()
+                    setIsAttachmentDragOver(true)
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault()
+                    setIsAttachmentDragOver(true)
+                  }}
+                  onDragLeave={(event) => {
+                    event.preventDefault()
+                    if (event.currentTarget === event.target) {
+                      setIsAttachmentDragOver(false)
+                    }
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    void handleUploadEmailAttachments(event.dataTransfer.files)
+                  }}
+                  className={`border-t border-dashed px-3.5 py-3 text-center text-[12.5px] transition-colors ${
+                    isAttachmentDragOver
+                      ? 'border-[#185087] bg-blue-50 text-[#185087]'
+                      : 'border-gray-200 bg-white text-gray-500'
+                  }`}
+                >
+                  <input
+                    ref={emailAttachmentInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(event) => {
+                      if (event.target.files) {
+                        void handleUploadEmailAttachments(event.target.files)
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={isUploadingContractAttachment}
+                    onClick={() => emailAttachmentInputRef.current?.click()}
+                    className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-[12px] font-semibold text-[#185087] hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    {isUploadingContractAttachment ? 'Uploading...' : 'Add Attachment'}
+                  </button>
+                  <div className="mt-1 text-[11px] text-gray-400">
+                    Drop files here or choose files to include with the package email.
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         )}
