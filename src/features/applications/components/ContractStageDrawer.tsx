@@ -6,6 +6,7 @@ import {
   FileText,
   Search,
   Send,
+  Upload,
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -117,6 +118,12 @@ type ContractRcOption = {
   email: string
 }
 
+type ContractEmailAttachment = {
+  fileName: string
+  fileUrl?: string
+  uploadedAt?: string
+}
+
 type ContractStageSavedState = {
   version?: number
   stage?: ContractStageSavedStage
@@ -155,6 +162,7 @@ type ContractStageSavedState = {
     toUser?: string
     ccUser?: string
     attachments?: string
+    customAttachments?: ContractEmailAttachment[]
   }
   completion?: {
     contractSigned?: boolean
@@ -696,9 +704,11 @@ export function ContractStageDrawer({
     isGeneratingContractInvoice,
     isSendingContractEmail,
     isSendingRcNotification,
+    isUploadingContractAttachment,
     notifyRcForApproval,
     saveContractStageState,
     sendContractPackageEmail,
+    uploadContractEmailAttachment,
   } = useContractRcNotification({
     token,
     username,
@@ -752,7 +762,10 @@ export function ContractStageDrawer({
   const [savedRcLookupKey, setSavedRcLookupKey] = useState('')
   const [restoredRc, setRestoredRc] = useState<ContractRcOption | null>(null)
   const [rcSearch, setRcSearch] = useState('')
+  const [extraEmailAttachments, setExtraEmailAttachments] = useState<ContractEmailAttachment[]>([])
+  const [isAttachmentDragOver, setIsAttachmentDragOver] = useState(false)
   const restoredTaskKeyRef = useRef('')
+  const emailAttachmentInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     if (!open) {
@@ -790,6 +803,8 @@ export function ContractStageDrawer({
     setSavedRcLookupKey('')
     setRestoredRc(null)
     setRcSearch('')
+    setExtraEmailAttachments([])
+    setIsAttachmentDragOver(false)
   }, [open, taskInstanceId])
 
   useEffect(() => {
@@ -836,6 +851,7 @@ export function ContractStageDrawer({
     setContractSigned(Boolean(completion.contractSigned))
     setInvoicePaid(Boolean(completion.paid))
     setCoverLetterBody(setup.coverLetterBody || '')
+    setExtraEmailAttachments(Array.isArray(emailState.customAttachments) ? emailState.customAttachments : [])
 
     if (contractPackage.generated || emailState.sent || nextStage === 'NotifyRC') {
       setPreviewTab('cover')
@@ -1108,7 +1124,11 @@ export function ContractStageDrawer({
       ? `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf <${contractPackageDocumentUrl}>`
       : `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
     ...coverSeparateAttachments.map((attachment) => attachment.file),
+    ...extraEmailAttachments.map((attachment) =>
+      attachment.fileUrl ? `${attachment.fileName} <${attachment.fileUrl}>` : attachment.fileName,
+    ),
   ].join(', ')
+  const coverAttachmentCount = coverSeparateAttachments.length + extraEmailAttachments.length + 1
 
   const readyToGenerate =
     Boolean(effectiveDate) &&
@@ -1183,6 +1203,7 @@ ${packageUrl}`
     nextPackageGenerated = packageGenerated,
     nextStage = 'setup',
     nextCoverLetterBody = coverLetterBody,
+    nextExtraEmailAttachments = extraEmailAttachments,
     nextEmailSentAt,
     nextContractSignedAt,
     nextPaidAt,
@@ -1198,6 +1219,7 @@ ${packageUrl}`
     nextPackageGenerated?: boolean
     nextStage?: ContractStageSavedStage
     nextCoverLetterBody?: string
+    nextExtraEmailAttachments?: ContractEmailAttachment[]
     nextEmailSentAt?: string | null
     nextContractSignedAt?: string | null
     nextPaidAt?: string | null
@@ -1247,7 +1269,16 @@ ${packageUrl}`
       subject: emailSubject,
       toUser: contact.email || contact.name || '',
       ccUser: rcEmail,
-      attachments: contractEmailAttachments,
+      attachments: [
+        contractPackageDocumentUrl
+          ? `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf <${contractPackageDocumentUrl}>`
+          : `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
+        ...coverSeparateAttachments.map((attachment) => attachment.file),
+        ...nextExtraEmailAttachments.map((attachment) =>
+          attachment.fileUrl ? `${attachment.fileName} <${attachment.fileUrl}>` : attachment.fileName,
+        ),
+      ].join(', '),
+      customAttachments: nextExtraEmailAttachments,
     },
     completion: {
       contractSigned: nextContractSigned,
@@ -1490,6 +1521,52 @@ ${packageUrl}`
       toast.success('Contract package email recorded')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to send contract email')
+    }
+  }
+
+  const handleUploadEmailAttachments = async (files: FileList | File[]) => {
+    const selectedFiles = Array.from(files).filter((file) => file.size > 0)
+    if (selectedFiles.length === 0) return
+
+    if (!resolvedApplicationId) {
+      toast.error('Application id is required before uploading an attachment.')
+      return
+    }
+
+    try {
+      const uploadedAttachments = await Promise.all(
+        selectedFiles.map(async (file) => {
+          const uploaded = await uploadContractEmailAttachment({
+            applicationId: resolvedApplicationId,
+            file,
+            taskInstanceId,
+          })
+
+          return {
+            fileName: uploaded.fileName || file.name,
+            fileUrl: uploaded.fileUrl || undefined,
+            uploadedAt: new Date().toISOString(),
+          }
+        }),
+      )
+      const nextAttachments = [...extraEmailAttachments, ...uploadedAttachments]
+      setExtraEmailAttachments(nextAttachments)
+      await saveCurrentContractStageState({
+        nextExtraEmailAttachments: nextAttachments,
+        nextStage: emailSent ? 'Contract Sent(Send Email)' : 'GeneratePackage',
+      })
+      toast.success(
+        selectedFiles.length === 1
+          ? `${selectedFiles[0].name} added to attachments`
+          : `${selectedFiles.length} files added to attachments`,
+      )
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to upload attachment')
+    } finally {
+      setIsAttachmentDragOver(false)
+      if (emailAttachmentInputRef.current) {
+        emailAttachmentInputRef.current.value = ''
+      }
     }
   }
 
@@ -1752,8 +1829,8 @@ ${packageUrl}`
           <div className="font-sans">
             <div className="mb-2.5 flex items-center justify-between gap-3">
               <span className="text-xs font-semibold text-green-700">
-                Package generated - {coverSeparateAttachments.length + 1} attachment
-                {coverSeparateAttachments.length === 0 ? '' : 's'}
+                Package generated - {coverAttachmentCount} attachment
+                {coverAttachmentCount === 1 ? '' : 's'}
               </span>
               {!isWorkflowReadOnly ? (
                 <button
@@ -1826,7 +1903,7 @@ ${packageUrl}`
               </div>
               <div className="border-t border-gray-100 bg-gray-50 px-3.5 py-3">
                 <div className="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                  Attachments - {coverSeparateAttachments.length + 1}
+                  Attachments - {coverAttachmentCount}
                 </div>
                 <div className="mb-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12.5px]">
                   <FileText className="h-4 w-4 text-[#185087]" />
@@ -1883,6 +1960,77 @@ ${packageUrl}`
                     )}
                   </div>
                 ))}
+                {extraEmailAttachments.map((attachment) => (
+                  <div
+                    key={`${attachment.fileName}-${attachment.uploadedAt ?? ''}`}
+                    className="mb-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12.5px] last:mb-0"
+                  >
+                    <FileText className="h-4 w-4 text-[#185087]" />
+                    <span className="font-semibold text-[#1e1e2e]">{attachment.fileName}</span>
+                    <span className="ml-auto text-[11px] text-gray-400">Uploaded attachment</span>
+                    {attachment.fileUrl ? (
+                      <a
+                        href={attachment.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
+                      >
+                        Open
+                      </a>
+                    ) : null}
+                  </div>
+                ))}
+                {!emailSent && !isWorkflowReadOnly ? (
+                  <div
+                    onDragEnter={(event) => {
+                      event.preventDefault()
+                      setIsAttachmentDragOver(true)
+                    }}
+                    onDragOver={(event) => {
+                      event.preventDefault()
+                      setIsAttachmentDragOver(true)
+                    }}
+                    onDragLeave={(event) => {
+                      event.preventDefault()
+                      if (event.currentTarget === event.target) {
+                        setIsAttachmentDragOver(false)
+                      }
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault()
+                      void handleUploadEmailAttachments(event.dataTransfer.files)
+                    }}
+                    className={`mt-3 rounded-lg border border-dashed px-3 py-3 text-center text-[12.5px] transition-colors ${
+                      isAttachmentDragOver
+                        ? 'border-[#185087] bg-blue-50 text-[#185087]'
+                        : 'border-gray-300 bg-white text-gray-500'
+                    }`}
+                  >
+                    <input
+                      ref={emailAttachmentInputRef}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={(event) => {
+                        if (event.target.files) {
+                          void handleUploadEmailAttachments(event.target.files)
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={isUploadingContractAttachment}
+                      onClick={() => emailAttachmentInputRef.current?.click()}
+                      className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-[12px] font-semibold text-[#185087] hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      {isUploadingContractAttachment ? 'Uploading...' : 'Add Attachment'}
+                    </button>
+                    <div className="mt-1 text-[11px] text-gray-400">
+                      Drop files here or choose files to add them after the package and invoice.
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">

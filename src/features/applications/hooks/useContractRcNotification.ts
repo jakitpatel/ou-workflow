@@ -3,6 +3,7 @@ import {
   createApplicationMessage,
   generateContractPackage as postGenerateContractPackage,
   generateInspectionInvoice,
+  uploadApplicationFile,
   type ApplicationMessagePayload,
   type GenerateContractPackagePayload,
   type GenerateContractPackageResponse,
@@ -94,10 +95,67 @@ type SendContractPackageEmailParams = {
   toUser?: string
 }
 
+type UploadContractEmailAttachmentParams = {
+  applicationId?: string | number
+  file: File
+  taskInstanceId?: string | number
+}
+
+type UploadedContractEmailAttachment = {
+  fileName: string
+  fileUrl: string
+  raw: unknown
+}
+
 type SaveContractStageStateParams = {
   guiDisplayResult?: string
   savedState: unknown
   taskInstanceId?: string | number
+}
+
+const readStringFromRecord = (record: Record<string, unknown>, keys: string[]): string => {
+  for (const key of keys) {
+    const value = record[key]
+    if (value !== null && value !== undefined && String(value).trim() !== '') {
+      return String(value).trim()
+    }
+  }
+  return ''
+}
+
+const normalizeUploadedContractAttachment = (
+  response: unknown,
+  fallbackFileName: string,
+): UploadedContractEmailAttachment => {
+  const responseRecord =
+    response && typeof response === 'object' && !Array.isArray(response)
+      ? (response as Record<string, unknown>)
+      : {}
+  const data =
+    responseRecord.data && typeof responseRecord.data === 'object' && !Array.isArray(responseRecord.data)
+      ? (responseRecord.data as Record<string, unknown>)
+      : responseRecord
+  const attributes =
+    data.attributes && typeof data.attributes === 'object' && !Array.isArray(data.attributes)
+      ? (data.attributes as Record<string, unknown>)
+      : {}
+  const source = { ...data, ...attributes }
+
+  return {
+    fileName:
+      readStringFromRecord(source, ['FileName', 'fileName', 'filename', 'name', 'originalName']) ||
+      fallbackFileName,
+    fileUrl: readStringFromRecord(source, [
+      'FilePath',
+      'filePath',
+      'file_url',
+      'fileUrl',
+      'downloadUrl',
+      'download_url',
+      'url',
+    ]),
+    raw: response,
+  }
 }
 
 export function useContractRcNotification({
@@ -112,6 +170,7 @@ export function useContractRcNotification({
   const [isGeneratingContractInvoice, setIsGeneratingContractInvoice] = useState(false)
   const [isGeneratingContractPackage, setIsGeneratingContractPackage] = useState(false)
   const [isSendingContractEmail, setIsSendingContractEmail] = useState(false)
+  const [isUploadingContractAttachment, setIsUploadingContractAttachment] = useState(false)
 
   const saveContractStageState = async ({
     guiDisplayResult,
@@ -353,6 +412,30 @@ ${username ?? ''}`
     }
   }
 
+  const uploadContractEmailAttachment = async ({
+    applicationId,
+    file,
+    taskInstanceId,
+  }: UploadContractEmailAttachmentParams): Promise<UploadedContractEmailAttachment> => {
+    if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
+      throw new Error('Application id is required before uploading an attachment.')
+    }
+
+    setIsUploadingContractAttachment(true)
+    try {
+      const response = await uploadApplicationFile({
+        file,
+        applicationId,
+        taskInstanceID: taskInstanceId ?? null,
+        description: 'Contract package email attachment',
+        token: token ?? undefined,
+      })
+      return normalizeUploadedContractAttachment(response, file.name)
+    } finally {
+      setIsUploadingContractAttachment(false)
+    }
+  }
+
   return {
     assignContractRcToCompany,
     generateContractPackage,
@@ -362,8 +445,10 @@ ${username ?? ''}`
     isGeneratingContractInvoice,
     isSendingContractEmail,
     isSendingRcNotification,
+    isUploadingContractAttachment,
     notifyRcForApproval,
     saveContractStageState,
     sendContractPackageEmail,
+    uploadContractEmailAttachment,
   }
 }
