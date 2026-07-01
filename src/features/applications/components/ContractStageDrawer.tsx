@@ -993,6 +993,8 @@ export function ContractStageDrawer({
   const invoiceDate = formatShortDate(effectiveDate)
   const invoiceAmount = formatCurrency(annualFee)
   const invoiceTotal = `${invoiceAmount} USD`
+  const formatAttachmentReference = (fileName: string, fileUrl?: string | null) =>
+    fileUrl ? `${fileName}<${fileUrl}>` : fileName
   const paymentCycleYear = getYearFromDateValue(effectiveDate)
   const companyPaymentCycleStart =
     textValue(appVars?.companyPaymentCycleStart) ||
@@ -1056,6 +1058,7 @@ export function ContractStageDrawer({
           label: 'Certification Invoice',
           sub: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - separate attachment`,
           file: `Certification_Invoice_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
+          fileUrl: contractInvoiceDocumentUrl || undefined,
           desc: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
           tab: 'invoice' as PreviewTab,
         },
@@ -1063,13 +1066,16 @@ export function ContractStageDrawer({
     : []
   const contractPackageDocumentUrl = contractPackageDownloadUrl
   const contractEmailAttachments = [
-    contractPackageDocumentUrl
-      ? `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf <${contractPackageDocumentUrl}>`
-      : `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
-    ...extraEmailAttachments.map((attachment) =>
-      attachment.fileUrl ? `${attachment.fileName} <${attachment.fileUrl}>` : attachment.fileName,
+    formatAttachmentReference(
+      `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
+      contractPackageDocumentUrl,
     ),
-    ...coverSeparateAttachments.map((attachment) => attachment.file),
+    ...extraEmailAttachments.map((attachment) =>
+      formatAttachmentReference(attachment.fileName, attachment.fileUrl),
+    ),
+    ...coverSeparateAttachments.map((attachment) =>
+      formatAttachmentReference(attachment.file, attachment.fileUrl),
+    ),
   ].join(', ')
   const coverAttachmentCount = coverSeparateAttachments.length + extraEmailAttachments.length + 1
 
@@ -1212,13 +1218,16 @@ ${packageUrl}`
       toUser: contact.email || contact.name || '',
       ccUser: rcEmail,
       attachments: [
-        contractPackageDocumentUrl
-          ? `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf <${contractPackageDocumentUrl}>`
-          : `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
-        ...nextExtraEmailAttachments.map((attachment) =>
-          attachment.fileUrl ? `${attachment.fileName} <${attachment.fileUrl}>` : attachment.fileName,
+        formatAttachmentReference(
+          `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
+          contractPackageDocumentUrl,
         ),
-        ...coverSeparateAttachments.map((attachment) => attachment.file),
+        ...nextExtraEmailAttachments.map((attachment) =>
+          formatAttachmentReference(attachment.fileName, attachment.fileUrl),
+        ),
+        ...coverSeparateAttachments.map((attachment) =>
+          formatAttachmentReference(attachment.file, attachment.fileUrl),
+        ),
       ].join(', '),
       customAttachments: nextExtraEmailAttachments,
     },
