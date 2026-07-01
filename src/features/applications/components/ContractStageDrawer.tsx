@@ -1050,15 +1050,17 @@ export function ContractStageDrawer({
       sub: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
     },
   ]
-  const coverSeparateAttachments = [
-    {
-      label: 'Certification Invoice',
-      sub: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - separate attachment`,
-      file: `Certification_Invoice_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
-      desc: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
-      tab: 'invoice' as PreviewTab,
-    },
-  ]
+  const coverSeparateAttachments = contractInvoiceId
+    ? [
+        {
+          label: 'Certification Invoice',
+          sub: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - separate attachment`,
+          file: `Certification_Invoice_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
+          desc: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
+          tab: 'invoice' as PreviewTab,
+        },
+      ]
+    : []
   const contractPackageDocumentUrl = contractPackageDownloadUrl
   const contractEmailAttachments = [
     contractPackageDocumentUrl
