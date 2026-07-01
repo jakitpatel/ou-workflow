@@ -506,7 +506,6 @@ export type GenerateContractPackagePayload = {
   invoice: Record<string, unknown>
   agreement: Record<string, unknown>
   schedules: Record<string, unknown>
-  privateLabelAgreements: Array<Record<string, unknown>>
 }
 
 export type GenerateContractPackageResponse = {

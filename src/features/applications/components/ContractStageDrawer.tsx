@@ -41,8 +41,6 @@ type PreviewTab =
   | 'd'
   | 'e'
   | 'invoice'
-  | 'pla'
-  | 'plInvoice'
   | '__old_cover'
   | '__old_agreement'
 
@@ -50,7 +48,6 @@ const DEFAULT_ANNUAL_FEE = '2500'
 const LABELING_RULES = [
   'Packaging of certified product must include Product name, brand name, and Company name so a recipient can match it to the Letter of Certification.',
   'The OU may only be placed on products authorized and certified on your Schedule B. The OU-D must be used on Dairy products.',
-  'Private Label Product may not bear the OU unless a Private Label Agreement (three-way licensing agreement) is signed.',
   'The OU symbol cannot be rubber-stamped or applied as a sticker separate from the original packaging.',
   'The OU does not dictate size, color, or placement, but recommends it appear conspicuously - typically right of the product name.',
   'Dairy products must have the "D" or "Dairy" in equal-size font to the OU symbol; not as a subscript.',
@@ -140,7 +137,6 @@ type ContractStageSavedState = {
     savedRcLookupKey?: string
     rc?: Partial<ContractRcOption> | null
     coverLetterBody?: string
-    selectedPlaCompany?: string
   }
   invoice?: {
     generated?: boolean
@@ -241,15 +237,13 @@ const STANDARD_AGREEMENT_BODY = [
       '(5) Unused Labels. The Company shall not remove unused labels and/or packaging materials bearing the OU Symbol from a Plant without first obtaining the prior written consent of the OU; provided, however, that upon termination of this Agreement in accordance with Section VI, all unused labels and packaging materials bearing the OU Symbol shall be, at the OU\'s option, immediately (a) transferred to a new plant which has been certified by the OU, (b) destroyed, or the OU Symbol immediately excised therefrom, in each instance, in the presence of OU Representatives (as defined in Section IV below), or (c) remitted to the OU. The Company hereby agrees to pay the reasonable fees and expenses of the OU for the supervision of the Company\'s compliance with this Section I(B)(5) by OU Representatives.',
       '(6) Annual Certification Fee. The Company shall pay to the OU the Annual Certification Fee (as defined in Section II) in accordance with Section II.',
       '(7) Actions. The Company, at its own expense, shall take any and all actions reasonably required by the OU in connection with obtaining and/or maintaining a Certification.',
-      '(8) Private Label Products. Certification of Private Label (as defined below) products shall be governed by a separate private label agreement among the OU, the Company and the applicable private label/distribution company. For purposes of this Agreement, "Private Label" shall mean a label or brand name that is not owned or controlled by the Company (e.g., a label that the Company uses pursuant to a licensing agreement).',
-      '(9) No Passover Use. The Certifications contemplated by this Agreement do not include Certifications of the Products for Passover use. Certification of a Product for use on Passover requires a separate agreement between the Company and the OU.',
     ],
   },
   {
     title: 'II. Fees and Expenses.',
     paragraphs: [
       '(A) Annual Certification Fee. The Company agrees to timely and fully pay to the OU an annual certification fee (the "Annual Certification Fee") for each year during the Term. The first Annual Certification Fee shall be payable by the Company to the OU on the Effective Date for the period beginning on the Effective Date and ending on the first anniversary of the Effective Date. Thereafter, for each subsequent year during the Term, the Annual Certification Fee shall be paid by the Company to the OU, in full and in advance, at least fifteen (15) days prior to the beginning of each such subsequent year during the Term. The Annual Certification Fee for the initial year during the Term shall be specified in the Schedule C, and shall be paid to the OU in United States Dollars (USD). [FOR FOREIGN COMPANIES] To the extent that Company shall be required to withhold taxes from any fee or expenses payable to the OU, the amount of such fee or expense shall be increased so that the amount actually remitted to the OU shall equal the amount stated on such invoice from the OU. The amount of the Annual Certification Fee for subsequent years during the Term shall be subject to adjustments by the OU, in its sole discretion. The OU shall attempt to notify the Company of the amount of the Annual Certification Fee for each subsequent year during the Term at least thirty (30) days prior to the beginning of each such subsequent year.',
-      '(B) Other Fees and Expenses. The Company may be subject to additional fees in addition to the Annual Certification Fee, such as special production fees, Passover certification fees, private label fees, and other fees and expenses referenced herein or contemplated hereby. The Company also shall pay the reasonable travel expenses of the OU Representative(s) in the event that an administrative visit or review by the OU is required or appropriate or as otherwise contemplated hereby. All fees and expenses payable by the Company to the OU hereunder, other than the Annual Certification Fee, shall be paid by the Company to the OU within twenty (20) calendar days following the Company\'s receipt of an invoice from the OU with respect to such fees and expenses.',
+      '(B) Other Fees and Expenses. The Company may be subject to additional fees in addition to the Annual Certification Fee, such as special production fees, Passover certification fees, and other fees and expenses referenced herein or contemplated hereby. The Company also shall pay the reasonable travel expenses of the OU Representative(s) in the event that an administrative visit or review by the OU is required or appropriate or as otherwise contemplated hereby. All fees and expenses payable by the Company to the OU hereunder, other than the Annual Certification Fee, shall be paid by the Company to the OU within twenty (20) calendar days following the Company\'s receipt of an invoice from the OU with respect to such fees and expenses.',
     ],
   },
   {
@@ -576,17 +570,13 @@ const getPreviewTabLabel = (tab: PreviewTab) => {
       return 'E - Label'
     case 'cover':
       return 'Cover'
-    case 'pla':
-      return 'PLA'
-    case 'plInvoice':
-      return 'PL Invoice'
     default:
       return 'Preview'
   }
 }
 
 const getPreviewTabOrder = (tab: PreviewTab) =>
-  ['invoice', 'agreement', 'a', 'b', 'c', 'd', 'e', 'cover', 'pla', 'plInvoice'].indexOf(tab)
+  ['invoice', 'agreement', 'a', 'b', 'c', 'd', 'e', 'cover'].indexOf(tab)
 
 function Section({
   title,
@@ -753,8 +743,6 @@ export function ContractStageDrawer({
   const [contractInvoiceDownloadLink, setContractInvoiceDownloadLink] = useState<string | null>(null)
   const [contractInvoicePdfUrl, setContractInvoicePdfUrl] = useState<string | null>(null)
   const [contractPackageDownloadUrl, setContractPackageDownloadUrl] = useState<string | null>(null)
-  const [plaBodyOpen, setPlaBodyOpen] = useState(false)
-  const [selectedPlaCompany, setSelectedPlaCompany] = useState('')
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [coverLetterBody, setCoverLetterBody] = useState('')
@@ -797,8 +785,6 @@ export function ContractStageDrawer({
     setShowClauseChanges(false)
     setEditingClauseId(null)
     setEditingClauseText('')
-    setPlaBodyOpen(false)
-    setSelectedPlaCompany('')
     setSelectedRcLookupKey('')
     setSavedRcLookupKey('')
     setRestoredRc(null)
@@ -841,7 +827,6 @@ export function ContractStageDrawer({
     setSelectedRcLookupKey(setup.selectedRcLookupKey || nextRestoredRc?.lookupKey || '')
     setSavedRcLookupKey(setup.savedRcLookupKey || nextRestoredRc?.lookupKey || '')
     setRestoredRc(nextRestoredRc)
-    setSelectedPlaCompany(setup.selectedPlaCompany || '')
     setContractInvoiceId(invoice.invoiceId ?? null)
     setContractInvoiceDownloadLink(invoice.downloadLink ?? null)
     setContractInvoicePdfUrl(invoice.invoicePdfUrl ?? null)
@@ -952,36 +937,6 @@ export function ContractStageDrawer({
     () => ((applicationDetail?.products as ContractPreviewProductRow[] | undefined) ?? []).filter(Boolean),
     [applicationDetail?.products],
   )
-  const privateLabelGroups = useMemo(() => {
-    const groups = new Map<string, ContractPreviewProductRow[]>()
-
-    contractProducts.forEach((product) => {
-      const labelCompany = textValue(product.labelCompany)
-      const isPrivateLabel =
-        Boolean(labelCompany) && labelCompany.toLowerCase() !== companyName.toLowerCase()
-
-      if (!isPrivateLabel) return
-      groups.set(labelCompany, [...(groups.get(labelCompany) ?? []), product])
-    })
-
-    return Array.from(groups.entries()).map(([labelCompany, products]) => ({
-      labelCompany,
-      products,
-    }))
-  }, [companyName, contractProducts])
-  const selectedPrivateLabelGroup =
-    privateLabelGroups.find((group) => group.labelCompany === selectedPlaCompany) ?? privateLabelGroups[0]
-  const hasPrivateLabelAgreements = privateLabelGroups.length > 0
-  const selectedPrivateLabelInvoiceCompany =
-    selectedPrivateLabelGroup?.labelCompany ?? privateLabelGroups[0]?.labelCompany ?? ''
-  const selectedPrivateLabelInvoiceId = selectedPrivateLabelInvoiceCompany
-    ? `PL-${resolvedApplicationId ?? 'DRAFT'}-${privateLabelGroups.findIndex(
-        (group) => group.labelCompany === selectedPrivateLabelInvoiceCompany,
-      ) + 1}`
-    : 'PL-DRAFT'
-  const selectedPrivateLabelInvoiceAccount = selectedPrivateLabelInvoiceCompany
-    ? `PL-${String(resolvedApplicationId ?? 'DRAFT')}`
-    : 'PL-DRAFT'
   const contractTypeLabel = isNewCompanyContract
     ? 'New Company Certification'
     : 'Plant Addendum (existing company)'
@@ -1064,9 +1019,6 @@ export function ContractStageDrawer({
     'Schedule D - Production Procedures',
     'Schedule E - Labeling Requirements',
     'Certification Invoice',
-    ...(hasPrivateLabelAgreements
-      ? privateLabelGroups.map((group) => `Private Label Agreement - ${group.labelCompany}`)
-      : []),
   ]
   const coverPackageItems = [
     {
@@ -1079,7 +1031,7 @@ export function ContractStageDrawer({
     },
     {
       label: 'Schedule B - Products',
-      sub: hasPrivateLabelAgreements ? 'In-house + private-label products' : 'Certified products',
+      sub: 'Certified products',
     },
     {
       label: 'Schedule C - Plants & Fee',
@@ -1097,10 +1049,6 @@ export function ContractStageDrawer({
       label: 'Certification Invoice',
       sub: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
     },
-    ...privateLabelGroups.map((group) => ({
-      label: `Private Label Agreement - ${group.labelCompany}`,
-      sub: `${group.products.length} product${group.products.length === 1 ? '' : 's'} - incl. Schedule A + Invoice`,
-    })),
   ]
   const coverSeparateAttachments = [
     {
@@ -1110,13 +1058,6 @@ export function ContractStageDrawer({
       desc: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
       tab: 'invoice' as PreviewTab,
     },
-    ...privateLabelGroups.map((group) => ({
-      label: `Private Label Agreement - ${group.labelCompany}`,
-      sub: 'agreement + PL invoice in one document - created by Yudi - separate attachment',
-      file: `PLA_${group.labelCompany.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
-      desc: `${group.labelCompany} - agreement + PL invoice (one document)`,
-      tab: 'pla' as PreviewTab,
-    })),
   ]
   const contractPackageDocumentUrl = contractPackageDownloadUrl
   const contractEmailAttachments = [
@@ -1248,7 +1189,6 @@ ${packageUrl}`
           }
         : null,
       coverLetterBody: nextCoverLetterBody,
-      selectedPlaCompany,
     },
     invoice: {
       generated: Boolean(nextContractInvoiceId || nextContractInvoiceDownloadLink || nextContractInvoicePdfUrl),
@@ -1472,11 +1412,6 @@ ${packageUrl}`
           },
           scheduleELabelingRequirements: LABELING_RULES,
         },
-        privateLabelAgreements: privateLabelGroups.map((group) => ({
-          labelCompany: group.labelCompany,
-          products: group.products,
-          selected: group.labelCompany === selectedPrivateLabelGroup?.labelCompany,
-        })),
       }
 
       const result = await generateContractPackage({ payload: packagePayload })
@@ -2051,8 +1986,7 @@ ${packageUrl}`
               ) : null}
               <p className="text-[11px] text-gray-400">
                 The cover letter is the email body - edit it above. The schedules are one PDF; the
-                invoice and any PLA are separate attachments. Click View on any to review it before
-                sending.
+                invoice is a separate attachment. Click View to review it before sending.
               </p>
             </div>
           </div>
@@ -2089,8 +2023,7 @@ ${packageUrl}`
 
             <p className="mb-3 text-[12.5px] leading-6 text-gray-600">
               The contract schedules are combined into <strong>one PDF</strong>. The certification
-              invoice and any PLA{hasPrivateLabelAgreements && privateLabelGroups.length > 1 ? 's' : ''}{' '}
-              go out as <strong>separate attachments</strong>.
+              invoice goes out as a <strong>separate attachment</strong>.
               {isWorkflowReadOnly
                 ? ' Package generation is available from the workflow task.'
                 : (
@@ -2495,11 +2428,6 @@ ${packageUrl}`
         <div className="mt-5 border-t border-slate-200 pt-3 font-sans text-[12px] text-slate-500">
           Attached: Schedule A (Ingredients) - B (Products) - C (Plants & Fee) - D
           (Production Procedures) - E (Labeling Requirements)
-          {hasPrivateLabelAgreements
-            ? ` - ${privateLabelGroups.length} Private Label Agreement${
-                privateLabelGroups.length > 1 ? 's' : ''
-              }`
-            : ''}
         </div>
       </div>
     ) : previewTab === '__old_agreement' ? (
@@ -2583,445 +2511,6 @@ ${packageUrl}`
             </li>
           ))}
         </ol>
-      </div>
-    ) : previewTab === 'pla' ? (
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        {selectedPrivateLabelGroup ? (
-          <div className="font-serif text-[14px] leading-7 text-slate-800">
-            {privateLabelGroups.length > 1 ? (
-              <div className="mb-3 flex flex-wrap gap-2 rounded-lg bg-amber-50 p-2 font-sans">
-                {privateLabelGroups.map((group) => (
-                  <button
-                    key={group.labelCompany}
-                    type="button"
-                    onClick={() => setSelectedPlaCompany(group.labelCompany)}
-                    className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${
-                      selectedPrivateLabelGroup.labelCompany === group.labelCompany
-                        ? 'border-amber-800 bg-amber-800 text-white'
-                        : 'border-amber-200 bg-white text-amber-900 hover:bg-amber-100'
-                    }`}
-                  >
-                    {group.labelCompany}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-
-            <h4 className="mb-1 text-center text-[15px] font-bold tracking-wide">
-              PRIVATE LABEL AGREEMENT
-            </h4>
-            <div className="mb-3 flex flex-wrap items-center justify-center gap-2 font-sans">
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10.5px] font-semibold text-amber-700">
-                Awaiting co-signature
-              </span>
-              <span className="text-[10.5px] text-slate-400">
-                $250 - bundled into this contract - prepared in Products
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setPlaBodyOpen((current) => !current)}
-              className="mb-3 w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left font-sans text-[11px] font-bold uppercase tracking-wide text-amber-800"
-            >
-              {plaBodyOpen ? 'Agreement text - click to collapse' : 'Agreement text (static three-way form - click to expand)'}
-            </button>
-
-            {plaBodyOpen ? (
-              <div className="mb-4 rounded-lg border border-slate-200 p-4">
-                <p className="mb-2">
-                  <b>THIS PRIVATE LABEL AGREEMENT</b> (this "Agreement") is entered into as of{' '}
-                  <MergeField token="effective_date" value={formatFullDate(effectiveDate)} />{' '}
-                  ("Effective Date"), by and between the{' '}
-                  <b>Union of Orthodox Jewish Congregations of America</b>, a State of New York
-                  nonprofit corporation (the "OU"), and{' '}
-                  <MergeField token="company_name" value={companyName} />, located at{' '}
-                  <MergeField token="company_address" value={companyAddress || 'Address on file'} />{' '}
-                  (the "Company"), and{' '}
-                  <MergeField token="distributor" value={selectedPrivateLabelGroup.labelCompany} />,
-                  located at <MergeField token="distributor_address" value="Address on file" />{' '}
-                  (the "Distributor").
-                </p>
-                <p className="mb-2">
-                  <b>RECITALS:</b>
-                </p>
-                <p className="mb-2">
-                  WHEREAS, the OU performs Kosher certification services throughout the world and is
-                  the exclusive owner of the OU certification mark; and
-                </p>
-                <p className="mb-2">
-                  WHEREAS, the Company and Distributor would like the Company to produce
-                  Distributor's products and place an OU Symbol on certain Private Label Products;
-                </p>
-                <p className="mb-2">
-                  NOW, THEREFORE, the parties agree that certified Private Label Products shall be
-                  manufactured only at approved plants and only as listed on Schedule A.
-                </p>
-                <p className="mb-2">
-                  <b>SECTION 1. Certification of Private Label Products.</b> The certification of
-                  Private Label Products is contingent upon the Company and the OU having entered
-                  into, and being subject to, the Certification Agreement.
-                </p>
-                <p className="mb-2">
-                  <b>SECTION 2. Indemnification and Limitation of Liability.</b> The Distributor and
-                  Company agree to indemnify and hold the OU harmless from claims arising out of the
-                  Private Label Products.
-                </p>
-                <div className="mt-4 border-t border-slate-200 pt-3 text-[12.5px]">
-                  <p className="mb-3 italic">
-                    IN WITNESS WHEREOF, the Parties hereto have caused this Agreement to be
-                    executed as of the Effective Date.
-                  </p>
-                  <p className="mb-1">
-                    <b>"OU"</b> - UNION OF ORTHODOX JEWISH CONGREGATIONS OF AMERICA, KASHRUTH
-                    DIVISION
-                  </p>
-                  <p className="mb-3 text-slate-600">
-                    By: <MergeField token="ou_rc" value={rcName} /> - Rabbinic Coordinator
-                  </p>
-                  <p className="mb-1">
-                    <b>"COMPANY"</b> - <MergeField token="company_name" value={companyName} />
-                  </p>
-                  <p className="mb-3 text-slate-600">
-                    By: ______________________________ -{' '}
-                    <MergeField token="company_signer" value={contact.name} />
-                  </p>
-                  <p className="mb-1">
-                    <b>"DISTRIBUTOR"</b> -{' '}
-                    <MergeField token="distributor" value={selectedPrivateLabelGroup.labelCompany} />
-                  </p>
-                  <p className="text-slate-600">By: ______________________________</p>
-                </div>
-              </div>
-            ) : null}
-
-            <div className="mb-2 font-sans text-[10.5px] font-bold uppercase tracking-wide text-slate-500">
-              Schedule A
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full whitespace-nowrap font-sans text-[11.5px]">
-                <thead>
-                  <tr className="border-b border-slate-300 text-left text-[9.5px] uppercase tracking-wide text-slate-400">
-                    <th className="py-1 pr-2 font-semibold">Product Name<br />(By Company Name)</th>
-                    <th className="py-1 pr-2 font-semibold">Product Name<br />(By Distributor Name)</th>
-                    <th className="py-1 pr-2 font-semibold">Group</th>
-                    <th className="py-1 pr-2 font-semibold">Distributor<br />Brand Name</th>
-                    <th className="py-1 font-semibold">Symbol/<br />Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedPrivateLabelGroup.products.map((product, index) => (
-                    <tr key={`${product.labelName ?? 'pl'}-${index}`} className="border-b border-slate-100">
-                      <td className="py-1.5 pr-2 font-medium">{product.labelName || '-'}</td>
-                      <td className="py-1.5 pr-2">{product.labelName || '-'}</td>
-                      <td className="py-1.5 pr-2 text-slate-600">{product.group || 'Group 1'}</td>
-                      <td className="py-1.5 pr-2 text-slate-600">{product.brandName || '-'}</td>
-                      <td className="py-1.5 text-slate-600">{product.certification || product.status || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mb-2 mt-5 font-sans text-[10.5px] font-bold uppercase tracking-wide text-slate-500">
-              Location(s) of Plant or Manufacturing Site
-            </div>
-            <table className="w-full font-sans text-[11.5px]">
-              <thead>
-                <tr className="border-b border-slate-300 text-left text-[9.5px] uppercase tracking-wide text-slate-400">
-                  <th className="py-1 font-semibold">Name</th>
-                  <th className="py-1 font-semibold">Address</th>
-                  <th className="py-1 font-semibold">USDA Code</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="py-1.5 pr-2 font-medium">{companyName}</td>
-                  <td className="py-1.5 pr-2 text-slate-600">{plantAddress || 'Address on file'}</td>
-                  <td className="py-1.5 text-slate-600">-</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-3 font-sans text-sm text-amber-900">
-              <div className="text-[10.5px] font-bold uppercase tracking-wide text-amber-800">
-                Private Label Invoice
-              </div>
-              <div className="mt-1">
-                Initial Private Label - {selectedPrivateLabelGroup.labelCompany}: $250.00 USD
-              </div>
-              <div className="mt-1 text-xs text-amber-700">
-                Created in Products/Kashrus - invoice ID Kashrus-generated - payment auto-detected.
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
-            No private-label products on Schedule B - no PLA required.
-          </div>
-        )}
-      </div>
-    ) : previewTab === 'plInvoice' ? (
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        {selectedPrivateLabelGroup ? (
-          <div>
-            {privateLabelGroups.length > 1 ? (
-              <div className="mb-3 flex flex-wrap gap-2 rounded-lg bg-amber-50 p-2 font-sans">
-                {privateLabelGroups.map((group) => (
-                  <button
-                    key={group.labelCompany}
-                    type="button"
-                    onClick={() => setSelectedPlaCompany(group.labelCompany)}
-                    className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${
-                      selectedPrivateLabelGroup.labelCompany === group.labelCompany
-                        ? 'border-amber-800 bg-amber-800 text-white'
-                        : 'border-amber-200 bg-white text-amber-900 hover:bg-amber-100'
-                    }`}
-                  >
-                    {group.labelCompany}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-
-            <div className="mb-2 font-sans text-[10.5px] font-bold uppercase tracking-wide text-slate-500">
-              Private Label Invoice{' '}
-              <span className="font-medium normal-case text-slate-400">
-                - one per PL company - parallel to the contract - not a gate
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <div className="min-w-[560px] rounded-md border border-gray-300 bg-white p-5 font-sans text-[11px] leading-normal text-[#1e1e2e]">
-                <div className="mb-4 flex items-start gap-3">
-                  <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-sm bg-[#185087] p-1 text-center text-[6px] font-bold leading-tight text-white">
-                    KOSHER CERTIFICATION SERVICE
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-serif text-[11.5px] font-semibold tracking-wide">
-                      UNION OF ORTHODOX JEWISH CONGREGATIONS OF AMERICA
-                    </div>
-                    <div className="mt-0.5 text-[10px] text-gray-700">
-                      FORTY RECTOR STREET, 4TH FLOOR / NEW YORK, NY 10006
-                    </div>
-                  </div>
-                  <div className="font-serif text-2xl font-bold tracking-wide text-[#185087]">
-                    INVOICE
-                  </div>
-                </div>
-
-                <table className="mb-4 w-full border-collapse border border-gray-400">
-                  <thead>
-                    <tr>
-                      {['Invoice Number', 'Invoice Date', 'Amount', 'Account Number'].map((label) => (
-                        <th
-                          key={label}
-                          className="border-r border-gray-300 px-2 py-1 text-center text-[9.5px] font-bold last:border-r-0"
-                        >
-                          {label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      {[
-                        selectedPrivateLabelInvoiceId,
-                        invoiceDate,
-                        '$250.00',
-                        selectedPrivateLabelInvoiceAccount,
-                      ].map((value) => (
-                        <td
-                          key={value}
-                          className="border-r border-t border-gray-300 px-2 py-1 text-center text-[11px] font-bold last:border-r-0"
-                        >
-                          {value}
-                        </td>
-                      ))}
-                    </tr>
-                  </tbody>
-                </table>
-
-                <div className="mb-2 grid grid-cols-[1.1fr_1fr_1.05fr] items-start gap-3">
-                  <div className="text-[10.5px] leading-normal">
-                    <strong>{companyName}</strong>
-                    <br />
-                    {billingLines.map((line) => (
-                      <span key={`pl-bill-${line}`}>
-                        {line}
-                        <br />
-                      </span>
-                    ))}
-                    <div className="mt-1.5">Att: {contact.name || 'Company Contact'}</div>
-                  </div>
-                  <div className="pt-1 text-center text-[10px] font-semibold italic leading-normal text-[#185087]">
-                    The Orthodox Union strongly urges all customers to pay by ACH, wire, or credit card
-                    to avoid check fraud. It&apos;s safer and quicker.
-                  </div>
-                  <div className="border border-gray-400 text-[9.5px]">
-                    <div className="border-b border-gray-400 bg-blue-100 px-2 py-0.5 font-bold text-blue-900">
-                      Online Payments: oudirect.org
-                    </div>
-                    <div className="border-b border-gray-400 bg-blue-100 px-2 py-0.5 font-bold text-blue-900">
-                      Wire/ACH Bank Info:
-                    </div>
-                    <div className="px-2 py-1 leading-normal">
-                      <b className="inline-block w-[58px]">Bank:</b>IDB
-                      <br />
-                      <b className="inline-block w-[58px]">Account:</b>Orthodox Union
-                      <br />
-                      <b className="inline-block w-[58px]">Account #:</b>1353211
-                      <br />
-                      <b className="inline-block w-[58px]">ABA #:</b>026009768
-                      <br />
-                      <b className="inline-block w-[58px]">Swift #:</b>IDBYUS33
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-4 text-center text-[9.5px] italic text-gray-700">
-                  For wire transfers, please reference your account and invoice numbers on all
-                  transactions.
-                </div>
-
-                <div className="mb-4 grid grid-cols-[1fr_1.5fr] items-start gap-3">
-                  <div className="text-[10.5px] leading-normal">
-                    {companyName}
-                    <br />
-                    {billingLines.map((line) => (
-                      <span key={`pl-billto-${line}`}>
-                        {line}
-                        <br />
-                      </span>
-                    ))}
-                  </div>
-                  <div className="border border-gray-400">
-                    <div className="border-b border-gray-400 px-2 py-1 text-center text-[10px] font-bold">
-                      For questions or comments, contact your Rabbinic Coordinator.
-                    </div>
-                    <div className="px-2 py-1 text-center text-[10px]">
-                      {rcName} &nbsp;&nbsp; (212) 563-4000 &nbsp;&nbsp; {rcEmail}
-                    </div>
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr>
-                          {['Invoice #', 'Invoice Date', 'Amount', 'Due Date', 'Account #'].map((label) => (
-                            <th
-                              key={label}
-                              className="border-r border-t border-gray-300 px-1 py-1 text-center text-[8.5px] font-bold last:border-r-0"
-                            >
-                              {label}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          {[
-                            selectedPrivateLabelInvoiceId,
-                            invoiceDate,
-                            '$250.00',
-                            '',
-                            selectedPrivateLabelInvoiceAccount,
-                          ].map((value, index) => (
-                            <td
-                              key={`${value}-${index}`}
-                              className="border-r border-t border-gray-300 px-1 py-1 text-center text-[9.5px] font-bold last:border-r-0"
-                            >
-                              {value || '\u00a0'}
-                            </td>
-                          ))}
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <table className="mb-4 w-full border-collapse border border-gray-400">
-                  <tbody>
-                    <tr className="bg-[#d9d9d9] font-bold">
-                      <td className="px-2 py-1 text-[10px]">DESCRIPTION</td>
-                      <td className="px-2 py-1 text-right text-[10px]" colSpan={2}>
-                        Amount
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-2 py-1">
-                        <strong>Initial Private Label</strong>
-                      </td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1 text-center text-[9.5px] font-bold">
-                        Fees
-                      </td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1 text-center text-[9.5px] font-bold">
-                        Expenses
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-2 py-1"></td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1 text-right">
-                        $250.00
-                      </td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
-                    </tr>
-                    <tr className="bg-[#d9d9d9] font-bold">
-                      <td className="px-2 py-1">Details</td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
-                    </tr>
-                    <tr>
-                      <td className="px-2 py-1">
-                        <strong>Distributor(s):</strong>
-                      </td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
-                    </tr>
-                    <tr>
-                      <td className="px-2 py-1">{selectedPrivateLabelGroup.labelCompany}</td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1 text-right">
-                        $250.00
-                      </td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
-                    </tr>
-                    <tr>
-                      <td className="px-2 py-1 text-[10px] italic text-gray-700">
-                        Invoice for period {formatFullDate(effectiveDate)} to {invoiceTermEnd}.
-                      </td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
-                    </tr>
-                    <tr className="border-t border-gray-400 bg-[#d9d9d9] text-[11px] font-bold">
-                      <td className="px-2 py-1">Total Amount Due</td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1 text-right">
-                        $250.00 USD
-                      </td>
-                      <td className="w-[84px] border-l border-gray-300 px-2 py-1"></td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <div className="mt-1 flex items-start justify-between gap-3 text-[9.5px]">
-                  <div>
-                    <span className="font-bold">UNION OF ORTHODOX JEWISH CONGREGATIONS OF AMERICA</span>
-                    <br />
-                    40 Rector St, 4th Floor, New York, NY 10006
-                    <br />
-                    (212) 563-4000 fax (212) 564-9058
-                  </div>
-                  <div>Payable in US Dollars</div>
-                </div>
-              </div>
-            </div>
-
-            <p className="mb-0 mt-2 font-sans text-[11px] text-slate-500">
-              Created by Yudi (Products) in Kashrus and sent to the customer with the contract - a
-              separate invoice per private-label company. PL payment isn&apos;t tracked in this workflow.
-            </p>
-          </div>
-        ) : (
-          <p className="text-[13px] text-slate-500">
-            No private-label products on Schedule B - no PL invoice.
-          </p>
-        )}
       </div>
     ) : (
       <div className="rounded-xl border border-gray-200 bg-white p-6">
@@ -3275,7 +2764,7 @@ ${packageUrl}`
 
         <p className="mt-2 font-sans text-[11px] text-slate-500">
           Created in KCM/Kashrus - invoice ID Kashrus-generated - payment auto-detected. Comment
-          is entered under the certification fee. Runs parallel to any PLA invoices.
+          is entered under the certification fee.
         </p>
       </div>
     )
@@ -3900,11 +3389,8 @@ ${packageUrl}`
                       ['d', 'D · Procedures'],
                       ['e', 'E · Labeling'],
                       ['invoice', 'Invoice'],
-                      ['pla', 'PLA'],
-                      ['plInvoice', 'PL Invoice'],
                     ].map(([value]) => {
                       const tab = value as PreviewTab
-                      if ((tab === 'pla' || tab === 'plInvoice') && !hasPrivateLabelAgreements) return null
 
                       return (
                         <button
