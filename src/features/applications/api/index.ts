@@ -591,7 +591,7 @@ export async function generateContractPackage({
   token?: string | null
 }): Promise<GenerateContractPackageResponse> {
   const response = await fetchWithAuth<unknown>({
-    path: '/generatepackage',
+    path: '/generatePackage',
     method: 'POST',
     body: payload,
     token,
