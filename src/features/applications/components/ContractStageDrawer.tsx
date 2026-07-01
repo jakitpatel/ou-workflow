@@ -70,6 +70,14 @@ type ContractPreviewProductRow = {
 }
 
 type ContractPreviewIngredientRow = {
+  BrandName?: string
+  CTA?: string
+  CompanyName?: string
+  GRP?: string | number
+  IngredientInPlantStatus?: string
+  IngredientName?: string
+  RMC?: string
+  SYMBOL?: string
   addedBy?: string
   addedDate?: string
   brand?: string
@@ -421,6 +429,16 @@ const hasDisplayValue = (value: unknown) => {
   if (value === null || value === undefined) return false
   if (typeof value === 'boolean') return true
   return String(value).trim() !== ''
+}
+
+const displayText = (value: unknown) => (hasDisplayValue(value) ? String(value).trim() : '-')
+
+const readRecordText = (record: Record<string, unknown>, keys: string[]) => {
+  for (const key of keys) {
+    const value = record[key]
+    if (hasDisplayValue(value)) return String(value).trim()
+  }
+  return ''
 }
 
 const toYesNoValue = (value: boolean | string | undefined) => {
@@ -1663,56 +1681,93 @@ ${packageUrl}`
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Name
+                  RMC
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Group - Certificate
+                  IngredientName
                 </th>
-                <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Approved
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  CompanyName
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  BrandName
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  GRP / SYMBOL
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  IngredientInPlantStatus
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {contractIngredients.length > 0 ? (
                 contractIngredients.map((ingredient, index) => {
-                  const status = hasDisplayValue(ingredient.status) ? String(ingredient.status) : '-'
-                  const certificate = hasDisplayValue(ingredient.certification)
-                    ? String(ingredient.certification)
-                    : '-'
+                  const ingredientRecord = ingredient as Record<string, unknown>
+                  const rmc = readRecordText(ingredientRecord, ['RMC', 'rawMaterialCode', 'RawMaterialCode', 'rmc'])
+                  const cta = readRecordText(ingredientRecord, ['CTA', 'PlantCTA'])
+                  const ingredientName = readRecordText(ingredientRecord, [
+                    'IngredientName',
+                    'INGREDIENT_NAME',
+                    'ingredient',
+                    'ingredientLabelName',
+                  ])
+                  const companyName = readRecordText(ingredientRecord, [
+                    'CompanyName',
+                    'COMPANY_NAME',
+                    'manufacturer',
+                  ])
+                  const brandName = readRecordText(ingredientRecord, [
+                    'BrandName',
+                    'BRAND_NAME',
+                    'brandName',
+                    'brand',
+                  ])
+                  const group = readRecordText(ingredientRecord, ['GRP', 'group'])
+                  const symbol = readRecordText(ingredientRecord, [
+                    'SYMBOL',
+                    'certification',
+                    'certifyingAgency',
+                  ])
+                  const plantStatus = readRecordText(ingredientRecord, [
+                    'IngredientInPlantStatus',
+                    'plantStatus',
+                    'status',
+                  ])
 
                   return (
                     <tr
-                      key={`${ingredient.ingredient ?? 'ingredient'}-${index}`}
+                      key={`${ingredientName || rmc || 'ingredient'}-${index}`}
                       className="hover:bg-gray-50"
                     >
-                      <td className="px-4 py-3 font-medium text-gray-900">
-                        {ingredient.ingredient || '-'}
+                      <td className="px-4 py-3 align-top">
+                        <div className="font-medium text-gray-900">{displayText(rmc)}</div>
+                        {cta ? (
+                          <div className="mt-1 text-xs font-normal text-gray-500">CTA: {cta}</div>
+                        ) : null}
                       </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {certificate !== '-' ? (
-                          <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
-                            {certificate}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
+                      <td className="px-4 py-3 align-top text-gray-700">
+                        {displayText(ingredientName)}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        {status !== '-' ? (
-                          <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
-                            {status}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
+                      <td className="px-4 py-3 align-top text-gray-700">
+                        {displayText(companyName)}
+                      </td>
+                      <td className="px-4 py-3 align-top text-gray-700">
+                        {displayText(brandName)}
+                      </td>
+                      <td className="px-4 py-3 align-top text-gray-700">
+                        <div>{displayText(group)}</div>
+                        <div className="mt-1 text-xs text-gray-500">SYMBOL: {displayText(symbol)}</div>
+                      </td>
+                      <td className="px-4 py-3 align-top text-gray-700">
+                        {displayText(plantStatus)}
                       </td>
                     </tr>
                   )
                 })
               ) : (
                 <tr>
-                  <td colSpan={3} className="px-4 py-12 text-center">
+                  <td colSpan={6} className="px-4 py-12 text-center">
                     <div className="text-gray-400">
                       <p className="text-sm font-medium">No ingredients found</p>
                       <p className="mt-1 text-xs">
