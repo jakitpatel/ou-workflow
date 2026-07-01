@@ -503,19 +503,94 @@ const restoreContractRcOption = (
   }
 }
 
+const normalizePythonJsonLikeObject = (text: string) => {
+  let normalized = ''
+  let inSingleQuotedText = false
+  let inDoubleQuotedText = false
+  let escaped = false
+
+  for (const char of text) {
+    if (escaped) {
+      normalized += char
+      escaped = false
+      continue
+    }
+
+    if (char === '\\') {
+      normalized += char
+      escaped = true
+      continue
+    }
+
+    if (char === '"' && !inSingleQuotedText) {
+      inDoubleQuotedText = !inDoubleQuotedText
+      normalized += char
+      continue
+    }
+
+    if (char === "'" && !inDoubleQuotedText) {
+      inSingleQuotedText = !inSingleQuotedText
+      normalized += '"'
+      continue
+    }
+
+    normalized += char
+  }
+
+  let jsonText = ''
+  inDoubleQuotedText = false
+  escaped = false
+
+  for (let index = 0; index < normalized.length; index += 1) {
+    const char = normalized[index]
+
+    if (escaped) {
+      jsonText += char
+      escaped = false
+      continue
+    }
+
+    if (char === '\\') {
+      jsonText += char
+      escaped = true
+      continue
+    }
+
+    if (char === '"') {
+      inDoubleQuotedText = !inDoubleQuotedText
+      jsonText += char
+      continue
+    }
+
+    if (!inDoubleQuotedText) {
+      if (normalized.startsWith('True', index)) {
+        jsonText += 'true'
+        index += 3
+        continue
+      }
+      if (normalized.startsWith('False', index)) {
+        jsonText += 'false'
+        index += 4
+        continue
+      }
+      if (normalized.startsWith('None', index)) {
+        jsonText += 'null'
+        index += 3
+        continue
+      }
+    }
+
+    jsonText += char
+  }
+
+  return jsonText
+}
+
 const parseContractJsonLikeObject = (value: string): unknown | null => {
   const text = value.trim()
   if (!text) return null
 
-  const candidates = [
-    text,
-    text
-      .replace(/'/g, '"')
-      .replace(/\bTrue\b/g, 'true')
-      .replace(/\bFalse\b/g, 'false')
-      .replace(/\bNone\b/g, 'null'),
-  ]
-
+  const candidates = [text, normalizePythonJsonLikeObject(text)]
   for (const candidate of candidates) {
     try {
       return JSON.parse(candidate)
@@ -805,8 +880,8 @@ export function ContractStageDrawer({
         (currentTask as any)?.Result ??
         (currentTask as any)?.result,
     )
-    restoredTaskKeyRef.current = restoreKey
     if (!savedState) return
+    restoredTaskKeyRef.current = restoreKey
 
     const setup = savedState.setup ?? {}
     const invoice = savedState.invoice ?? {}
