@@ -58,7 +58,17 @@ const LABELING_RULES = [
 ]
 
 type ContractPreviewProductRow = {
+  BrandName?: string
+  CompanyName?: string
   ConsumerIndustrial?: string
+  LableType?: string
+  LabelType?: string
+  ProducedIn1Status?: string
+  ProductName?: string
+  STATUS?: string
+  SYMBOL?: string
+  UKID?: string | number
+  UKDID?: string | number
   brandName?: string
   bulkShipped?: boolean | string
   certification?: string
@@ -66,7 +76,9 @@ type ContractPreviewProductRow = {
   labelNo?: string | number
   labelCompany?: string
   labelName?: string
+  productName?: string
   status?: string
+  symbol?: string
 }
 
 type ContractPreviewIngredientRow = {
@@ -439,14 +451,6 @@ const readRecordText = (record: Record<string, unknown>, keys: string[]) => {
     if (hasDisplayValue(value)) return String(value).trim()
   }
   return ''
-}
-
-const toYesNoValue = (value: boolean | string | undefined) => {
-  if (value === true) return 'Yes'
-  const normalized = String(value ?? '').trim().toLowerCase()
-  if (normalized === 'y' || normalized === 'yes' || normalized === 'true') return 'Yes'
-  if (normalized === 'n' || normalized === 'no' || normalized === 'false') return 'No'
-  return '-'
 }
 
 const getAssignedRoleValue = (assignedRoles: AssignedRole[] | undefined, roleName: string) => {
@@ -1804,94 +1808,96 @@ ${packageUrl}`
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Label #
+                  ProductName
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Label Name
+                  BrandName
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Brand
+                  CompanyName
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Label Company
+                  LableType
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Designation
+                  SYMBOL / UKID
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  C/I
+                  STATUS
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Bulk
-                </th>
-                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Symbol
-                </th>
-                <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  Status
+                  ProducedIn1Status
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {contractProducts.length > 0 ? (
                 contractProducts.map((product, index) => {
-                  const designation = hasDisplayValue(product.ConsumerIndustrial)
-                    ? String(product.ConsumerIndustrial)
-                    : '-'
-                  const labelNumber = hasDisplayValue(product.labelNo)
-                    ? String(product.labelNo)
-                    : '-'
-                  const status = hasDisplayValue(product.status) ? String(product.status) : '-'
+                  const productRecord = product as Record<string, unknown>
+                  const productName = readRecordText(productRecord, [
+                    'ProductName',
+                    'PRODUCT_NAME',
+                    'productName',
+                    'labelName',
+                    'MerchProductName',
+                  ])
+                  const brandName = readRecordText(productRecord, [
+                    'BrandName',
+                    'BRAND_NAME',
+                    'brandName',
+                  ])
+                  const companyName = readRecordText(productRecord, [
+                    'CompanyName',
+                    'COMPANY_NAME',
+                    'labelCompany',
+                    'LABEL_COMPANY',
+                  ])
+                  const lableType = readRecordText(productRecord, [
+                    'LableType',
+                    'LabelType',
+                    'LABEL_TYPE',
+                  ])
+                  const symbol = readRecordText(productRecord, ['SYMBOL', 'symbol', 'certification'])
+                  const ukid = readRecordText(productRecord, ['UKID', 'UKDID'])
+                  const status = readRecordText(productRecord, ['STATUS', 'status'])
+                  const producedIn1Status = readRecordText(productRecord, [
+                    'ProducedIn1Status',
+                    'PRODUCED_IN1_STATUS',
+                    'producedIn1Status',
+                    'PlantStatus',
+                    'PLANT_STATUS',
+                  ])
 
                   return (
-                    <tr key={`${product.labelName ?? 'product'}-${index}`} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-gray-700">{labelNumber}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">
-                        {product.labelName || '-'}
+                    <tr key={`${productName || 'product'}-${index}`} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 align-top font-medium text-gray-900">
+                        {displayText(productName)}
                       </td>
-                      <td className="px-4 py-3 text-gray-700">{product.brandName || '-'}</td>
-                      <td className="px-4 py-3 text-gray-700">{product.labelCompany || '-'}</td>
-                      <td className="px-4 py-3 text-gray-700">
-                        <span className="text-gray-400">-</span>
+                      <td className="px-4 py-3 align-top text-gray-700">
+                        {displayText(brandName)}
                       </td>
-                      <td className="px-4 py-3">
-                        {designation !== '-' ? (
-                          <span className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-                            {designation}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
+                      <td className="px-4 py-3 align-top text-gray-700">
+                        {displayText(companyName)}
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700">
-                          {toYesNoValue(product.bulkShipped)}
-                        </span>
+                      <td className="px-4 py-3 align-top text-gray-700">
+                        {displayText(lableType)}
                       </td>
-                      <td className="px-4 py-3">
-                        {hasDisplayValue(product.certification) ? (
-                          <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
-                            {product.certification}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
+                      <td className="px-4 py-3 align-top text-gray-700">
+                        <div>{displayText(symbol)}</div>
+                        <div className="mt-1 text-xs text-gray-500">UKID: {displayText(ukid)}</div>
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        {status !== '-' ? (
-                          <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
-                            {status}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
+                      <td className="px-4 py-3 align-top text-gray-700">
+                        {displayText(status)}
+                      </td>
+                      <td className="px-4 py-3 align-top text-gray-700">
+                        {displayText(producedIn1Status)}
                       </td>
                     </tr>
                   )
                 })
               ) : (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center">
+                  <td colSpan={7} className="px-4 py-12 text-center">
                     <div className="text-gray-400">
                       <p className="text-sm font-medium">No products found</p>
                       <p className="mt-1 text-xs">No application-detail products are available for this contract preview.</p>
