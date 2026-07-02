@@ -806,7 +806,7 @@ export function ContractStageDrawer({
     data: rcLookupList = [],
     isError: isRcLookupError,
     isLoading: isRcLookupLoading,
-  } = useUserListByRole('api/vSelectNCRC', { enabled: open && isNewCompanyContract && !isWorkflowReadOnly })
+  } = useUserListByRole('api/vSelectRC', { enabled: open && isNewCompanyContract && !isWorkflowReadOnly })
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
     includePrelimLists: true,
