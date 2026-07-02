@@ -1270,72 +1270,78 @@ ${packageUrl}`
     nextContractSignedAt?: string | null
     nextPaidAt?: string | null
     nextCompletedAt?: string | null
-  } = {}): ContractStageSavedState => ({
-    version: 1,
-    stage: nextStage,
-    setup: {
-      effectiveDate,
-      annualFee,
-      certificationInvoiceComment,
-      includeInvoiceComment,
-      productionProcedures,
-      noProductionProcedures,
-      legalReviewNeeded,
-      legalApproved,
-      selectedRcLookupKey,
-      savedRcLookupKey,
-      rc: selectedRc
-        ? {
-            lookupKey: selectedRc.lookupKey,
-            assigneeValue: selectedRc.assigneeValue,
-            name: selectedRc.name,
-            userName: selectedRc.userName,
-            email: selectedRc.email,
-          }
-        : null,
-      coverLetterBody: nextCoverLetterBody,
-    },
-    invoice: {
-      generated: Boolean(nextContractInvoiceId || nextContractInvoiceDownloadLink || nextContractInvoicePdfUrl),
-      invoiceId: nextContractInvoiceId,
-      downloadLink: nextContractInvoiceDownloadLink,
-      invoicePdfUrl: nextContractInvoicePdfUrl,
-      generatedAt: nextContractInvoiceId ? new Date().toISOString() : undefined,
-      recipient: contact.email || contact.name || '',
-    },
-    package: {
-      generated: nextPackageGenerated,
-      downloadUrl: nextContractPackageDownloadUrl,
-      generatedAt: nextPackageGenerated ? new Date().toISOString() : undefined,
-    },
-    email: {
-      sent: nextEmailSent,
-      sentAt: nextEmailSentAt,
-      subject: emailSubject,
-      toUser: contact.email || contact.name || '',
-      ccUser: rcEmail,
-      attachments: [
-        formatAttachmentReference(
-          `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
-          contractPackageDocumentUrl,
-        ),
-        ...nextExtraEmailAttachments.map((attachment) =>
-          formatAttachmentReference(attachment.fileName, attachment.fileUrl),
-        ),
-        ...coverSeparateAttachments.map((attachment) =>
-          formatAttachmentReference(attachment.file, attachment.fileUrl),
-        ),
-      ].join(', '),
-      customAttachments: nextExtraEmailAttachments,
-    },
-    completion: {
-      contractSigned: nextContractSigned,
-      contractSignedAt: nextContractSigned ? nextContractSignedAt ?? new Date().toLocaleString() : null,
-      paid: nextInvoicePaid,
-      paidAt: nextInvoicePaid ? nextPaidAt ?? new Date().toLocaleString() : null,
-      completedAt: nextCompletedAt,
-    },
-  })
+  } = {}): ContractStageSavedState => {
+    const nextPackageFileName = `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`
+    const nextInvoiceFileName = `Certification_Invoice_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`
+    const nextInvoiceDocumentUrl = nextContractInvoiceDownloadLink || nextContractInvoicePdfUrl
+    const nextEmailAttachments = [
+      ...(nextPackageGenerated || nextContractPackageDownloadUrl
+        ? [formatAttachmentReference(nextPackageFileName, nextContractPackageDownloadUrl)]
+        : []),
+      ...nextExtraEmailAttachments.map((attachment) =>
+        formatAttachmentReference(attachment.fileName, attachment.fileUrl),
+      ),
+      ...(nextContractInvoiceId
+        ? [formatAttachmentReference(nextInvoiceFileName, nextInvoiceDocumentUrl)]
+        : []),
+    ].join(', ')
+
+    return {
+      version: 1,
+      stage: nextStage,
+      setup: {
+        effectiveDate,
+        annualFee,
+        certificationInvoiceComment,
+        includeInvoiceComment,
+        productionProcedures,
+        noProductionProcedures,
+        legalReviewNeeded,
+        legalApproved,
+        selectedRcLookupKey,
+        savedRcLookupKey,
+        rc: selectedRc
+          ? {
+              lookupKey: selectedRc.lookupKey,
+              assigneeValue: selectedRc.assigneeValue,
+              name: selectedRc.name,
+              userName: selectedRc.userName,
+              email: selectedRc.email,
+            }
+          : null,
+        coverLetterBody: nextCoverLetterBody,
+      },
+      invoice: {
+        generated: Boolean(nextContractInvoiceId || nextContractInvoiceDownloadLink || nextContractInvoicePdfUrl),
+        invoiceId: nextContractInvoiceId,
+        downloadLink: nextContractInvoiceDownloadLink,
+        invoicePdfUrl: nextContractInvoicePdfUrl,
+        generatedAt: nextContractInvoiceId ? new Date().toISOString() : undefined,
+        recipient: contact.email || contact.name || '',
+      },
+      package: {
+        generated: nextPackageGenerated,
+        downloadUrl: nextContractPackageDownloadUrl,
+        generatedAt: nextPackageGenerated ? new Date().toISOString() : undefined,
+      },
+      email: {
+        sent: nextEmailSent,
+        sentAt: nextEmailSentAt,
+        subject: emailSubject,
+        toUser: contact.email || contact.name || '',
+        ccUser: rcEmail,
+        attachments: nextEmailAttachments,
+        customAttachments: nextExtraEmailAttachments,
+      },
+      completion: {
+        contractSigned: nextContractSigned,
+        contractSignedAt: nextContractSigned ? nextContractSignedAt ?? new Date().toLocaleString() : null,
+        paid: nextInvoicePaid,
+        paidAt: nextInvoicePaid ? nextPaidAt ?? new Date().toLocaleString() : null,
+        completedAt: nextCompletedAt,
+      },
+    }
+  }
 
   const getContractGuiDisplayResult = ({
     nextContractInvoiceId = contractInvoiceId,
@@ -1617,6 +1623,51 @@ ${packageUrl}`
     }
   }
 
+  const handleRemoveContractPackageAttachment = async () => {
+    setContractPackageDownloadUrl(null)
+    setPackageGenerated(false)
+    setEmailSent(false)
+    setCoverLetterBody(emailBody)
+    await saveCurrentContractStageState({
+      nextContractPackageDownloadUrl: null,
+      nextCoverLetterBody: emailBody,
+      nextEmailSent: false,
+      nextPackageGenerated: false,
+      nextStage: 'GenerateInvoice',
+    })
+    toast.success('Generated contract package removed from attachments')
+  }
+
+  const handleRemoveInvoiceAttachment = async () => {
+    setContractInvoiceId(null)
+    setContractInvoiceDownloadLink(null)
+    setContractInvoicePdfUrl(null)
+    setInvoicePaid(false)
+    await saveCurrentContractStageState({
+      nextContractInvoiceDownloadLink: null,
+      nextContractInvoiceId: null,
+      nextContractInvoicePdfUrl: null,
+      nextInvoicePaid: false,
+      nextStage: packageGenerated ? 'GeneratePackage' : 'GenerateInvoice',
+    })
+    toast.success('Invoice attachment removed')
+  }
+
+  const handleRemoveExtraEmailAttachment = async (attachmentIndex: number) => {
+    const attachment = extraEmailAttachments[attachmentIndex]
+    const nextAttachments = extraEmailAttachments.filter((_, index) => index !== attachmentIndex)
+    setExtraEmailAttachments(nextAttachments)
+    await saveCurrentContractStageState({
+      nextExtraEmailAttachments: nextAttachments,
+      nextStage: emailSent
+        ? 'Contract Sent(Send Email)'
+        : packageGenerated
+          ? 'GeneratePackage'
+          : 'GenerateInvoice',
+    })
+    toast.success(`${attachment?.fileName || 'Attachment'} removed`)
+  }
+
   const handleNotifyRcForApproval = async () => {
     try {
       await notifyRcForApproval({
@@ -1697,7 +1748,10 @@ ${packageUrl}`
                   BrandName
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  GRP / SYMBOL
+                  Group
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  Symbol
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
                   IngredientInPlantStatus
@@ -1760,8 +1814,10 @@ ${packageUrl}`
                         {displayText(brandName)}
                       </td>
                       <td className="px-4 py-3 align-top text-gray-700">
-                        <div>{displayText(group)}</div>
-                        <div className="mt-1 text-xs text-gray-500">SYMBOL: {displayText(symbol)}</div>
+                        {displayText(group)}
+                      </td>
+                      <td className="px-4 py-3 align-top text-gray-700">
+                        {displayText(symbol)}
                       </td>
                       <td className="px-4 py-3 align-top text-gray-700">
                         {displayText(plantStatus)}
@@ -1771,7 +1827,7 @@ ${packageUrl}`
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center">
+                  <td colSpan={7} className="px-4 py-12 text-center">
                     <div className="text-gray-400">
                       <p className="text-sm font-medium">No ingredients found</p>
                       <p className="mt-1 text-xs">
@@ -1820,7 +1876,10 @@ ${packageUrl}`
                   LableType
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
-                  SYMBOL / UKID
+                  Symbol
+                </th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
+                  UKID
                 </th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600">
                   STATUS
@@ -1883,8 +1942,10 @@ ${packageUrl}`
                         {displayText(lableType)}
                       </td>
                       <td className="px-4 py-3 align-top text-gray-700">
-                        <div>{displayText(symbol)}</div>
-                        <div className="mt-1 text-xs text-gray-500">UKID: {displayText(ukid)}</div>
+                        {displayText(symbol)}
+                      </td>
+                      <td className="px-4 py-3 align-top text-gray-700">
+                        {displayText(ukid)}
                       </td>
                       <td className="px-4 py-3 align-top text-gray-700">
                         {displayText(status)}
@@ -1897,7 +1958,7 @@ ${packageUrl}`
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center">
+                  <td colSpan={8} className="px-4 py-12 text-center">
                     <div className="text-gray-400">
                       <p className="text-sm font-medium">No products found</p>
                       <p className="mt-1 text-xs">No application-detail products are available for this contract preview.</p>
@@ -2017,6 +2078,17 @@ ${packageUrl}`
                       View
                     </button>
                   )}
+                  {!emailSent && !isWorkflowReadOnly ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveContractPackageAttachment}
+                      title="Remove contract package attachment"
+                      aria-label="Remove contract package attachment"
+                      className="rounded-md border border-red-200 bg-red-50 p-1 text-red-600 hover:bg-red-100"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  ) : null}
                 </div>
                 {coverSeparateAttachments.map((attachment) => (
                   <div
@@ -2044,9 +2116,20 @@ ${packageUrl}`
                         View
                       </button>
                     )}
+                    {!emailSent && !isWorkflowReadOnly ? (
+                      <button
+                        type="button"
+                        onClick={handleRemoveInvoiceAttachment}
+                        title="Remove invoice attachment"
+                        aria-label="Remove invoice attachment"
+                        className="rounded-md border border-red-200 bg-red-50 p-1 text-red-600 hover:bg-red-100"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    ) : null}
                   </div>
                 ))}
-                {extraEmailAttachments.map((attachment) => (
+                {extraEmailAttachments.map((attachment, index) => (
                   <div
                     key={`${attachment.fileName}-${attachment.uploadedAt ?? ''}`}
                     className="mb-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12.5px] last:mb-0"
@@ -2063,6 +2146,19 @@ ${packageUrl}`
                       >
                         Open
                       </a>
+                    ) : null}
+                    {!emailSent && !isWorkflowReadOnly ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleRemoveExtraEmailAttachment(index)
+                        }}
+                        title="Remove uploaded attachment"
+                        aria-label={`Remove ${attachment.fileName}`}
+                        className="rounded-md border border-red-200 bg-red-50 p-1 text-red-600 hover:bg-red-100"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
                     ) : null}
                   </div>
                 ))}
@@ -2211,7 +2307,7 @@ ${packageUrl}`
               </span>
             </div>
             <div className="overflow-hidden rounded-lg border border-gray-200">
-              {extraEmailAttachments.map((attachment) => (
+              {extraEmailAttachments.map((attachment, index) => (
                 <div
                   key={`${attachment.fileName}-${attachment.uploadedAt ?? ''}`}
                   className="flex items-start gap-3 border-b border-gray-100 px-3.5 py-2.5 last:border-b-0"
@@ -2232,6 +2328,19 @@ ${packageUrl}`
                     >
                       Open
                     </a>
+                  ) : null}
+                  {!isWorkflowReadOnly ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleRemoveExtraEmailAttachment(index)
+                      }}
+                      title="Remove uploaded attachment"
+                      aria-label={`Remove ${attachment.fileName}`}
+                      className="shrink-0 rounded-md border border-red-200 bg-red-50 p-1 text-red-600 hover:bg-red-100"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   ) : null}
                 </div>
               ))}
@@ -2256,6 +2365,17 @@ ${packageUrl}`
                     >
                       Open Invoice
                     </a>
+                  ) : null}
+                  {!isWorkflowReadOnly ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveInvoiceAttachment}
+                      title="Remove invoice attachment"
+                      aria-label="Remove invoice attachment"
+                      className="shrink-0 rounded-md border border-red-200 bg-red-50 p-1 text-red-600 hover:bg-red-100"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   ) : null}
                 </div>
               ))}
