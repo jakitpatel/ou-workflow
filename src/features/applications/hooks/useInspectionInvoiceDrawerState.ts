@@ -846,6 +846,7 @@ export function useInspectionInvoiceDrawerState({
                 region: applicant.region,
               }
             : undefined,
+          invoiceType: 'inspection',
           inspectionNeeded,
           feeRequired,
           awaitPayment,

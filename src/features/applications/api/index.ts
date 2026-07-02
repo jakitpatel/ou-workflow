@@ -463,6 +463,7 @@ export type GenerateInspectionInvoicePayload = {
   TaskInstanceId?: string | number | null
   taskName?: string
   applicant?: Partial<Applicant>
+  invoiceType: 'inspection' | 'subscription'
   inspectionNeeded: boolean | null
   feeRequired: boolean | null
   awaitPayment: boolean

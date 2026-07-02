@@ -316,6 +316,7 @@ ${username ?? ''}`
           TaskInstanceId: taskInstanceId ?? null,
           taskName,
           applicant,
+          invoiceType: 'subscription',
           inspectionNeeded: false,
           feeRequired: true,
           awaitPayment: true,
