@@ -4,8 +4,18 @@ import { Package, Pencil, Trash2, Plus } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 
 type ProductRow = {
+  BrandName?: string
+  CompanyName?: string
   id?: string
   source?: string
+  ProductName?: string
+  LableType?: string
+  LabelType?: string
+  ProducedIn1Status?: string
+  STATUS?: string
+  SYMBOL?: string
+  UKID?: string | number
+  UKDID?: string | number
   labelName?: string
   brandName?: string
   labelCompany?: string
@@ -15,15 +25,21 @@ type ProductRow = {
   status?: string
 }
 
+const readRecordText = (record: Record<string, unknown>, keys: string[]) => {
+  for (const key of keys) {
+    const value = record[key]
+    if (value !== null && value !== undefined && String(value).trim() !== '') {
+      return String(value).trim()
+    }
+  }
+  return ''
+}
+
+const displayText = (value: string) => value || '-'
+
 type Props = {
   application: ApplicationDetail
   dataSource?: 'application' | 'prelim'
-}
-
-const hasDisplayValue = (value: unknown) => {
-  if (value === null || value === undefined) return false
-  if (typeof value === 'boolean') return true
-  return String(value).trim() !== ''
 }
 
 export default function ProductsTable({ application, dataSource = 'application' }: Props) {
@@ -46,26 +62,7 @@ export default function ProductsTable({ application, dataSource = 'application' 
         ) || []
       : (application.products as ProductRow[]) || [];
   const filteredProducts = productData;
-  const showSourceColumn = dataSource !== 'prelim' || productData.some(product => hasDisplayValue(product.source));
-  const showBrandColumn = productData.some(product => hasDisplayValue(product.brandName));
-  const showLabelCompanyColumn = productData.some(product => hasDisplayValue(product.labelCompany));
-  const showTypeColumn = productData.some(product => hasDisplayValue(product.ConsumerIndustrial));
-  const showBulkShippedColumn =
-    dataSource !== 'prelim' || productData.some(product => hasDisplayValue(product.bulkShipped));
-  const showCertificationColumn =
-    dataSource !== 'prelim' || productData.some(product => hasDisplayValue(product.certification));
-  const showStatusColumn =
-    dataSource !== 'prelim' || productData.some(product => hasDisplayValue(product.status));
-  const visibleColumnCount =
-    1 +
-    (showSourceColumn ? 1 : 0) +
-    (showBrandColumn ? 1 : 0) +
-    (showLabelCompanyColumn ? 1 : 0) +
-    (showTypeColumn ? 1 : 0) +
-    (showBulkShippedColumn ? 1 : 0) +
-    (showCertificationColumn ? 1 : 0) +
-    (showStatusColumn ? 1 : 0) +
-    (canEditProducts ? 1 : 0);
+  const visibleColumnCount = 8 + (canEditProducts ? 1 : 0);
 
   // Calculate statistics
   const stats = {
@@ -148,133 +145,94 @@ export default function ProductsTable({ application, dataSource = 'application' 
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                {showSourceColumn && (
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Source</th>
-                )}
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Product Name</th>
-                {showBrandColumn && (
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Brand Name</th>
-                )}
-                {showLabelCompanyColumn && (
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Label Company</th>
-                )}
-                {showTypeColumn && (
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
-                )}
-                {showBulkShippedColumn && (
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Bulk Shipped</th>
-                )}
-                {showCertificationColumn && (
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Certification</th>
-                )}
-                {showStatusColumn && (
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                )}
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">ProductName</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">BrandName</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">CompanyName</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">LableType</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">SYMBOL</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">UKID</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">STATUS</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">ProducedIn1Status</th>
                 {canEditProducts && <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
               {filteredProducts.length > 0 ? (
-                filteredProducts.map((product, index) => (
-                  <tr 
-                    key={index} 
-                    className={`hover:bg-gray-50 transition-colors ${
-                      product.source === 'Form Data' ? 'bg-orange-50/30' : ''
-                    }`}
-                  >
-                    {showSourceColumn && (
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        {hasDisplayValue(product.source) ? (
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                            product.source === "Form Data" 
-                              ? 'bg-orange-100 text-orange-800 border border-orange-200' 
-                              : 'bg-purple-100 text-purple-800 border border-purple-200'
-                          }`}>
-                            {product.source}
-                          </span>
-                        ) : null}
+                filteredProducts.map((product, index) => {
+                  const productRecord = product as Record<string, unknown>
+                  const productName = readRecordText(productRecord, [
+                    'ProductName',
+                    'PRODUCT_NAME',
+                    'productName',
+                    'labelName',
+                    'MerchProductName',
+                  ])
+                  const brandName = readRecordText(productRecord, [
+                    'BrandName',
+                    'BRAND_NAME',
+                    'brandName',
+                  ])
+                  const companyName = readRecordText(productRecord, [
+                    'CompanyName',
+                    'COMPANY_NAME',
+                    'labelCompany',
+                    'LABEL_COMPANY',
+                  ])
+                  const lableType = readRecordText(productRecord, [
+                    'LableType',
+                    'LabelType',
+                    'LABEL_TYPE',
+                  ])
+                  const symbol = readRecordText(productRecord, ['SYMBOL', 'symbol', 'certification'])
+                  const ukid = readRecordText(productRecord, ['UKID', 'UKDID'])
+                  const status = readRecordText(productRecord, ['STATUS', 'status'])
+                  const producedIn1Status = readRecordText(productRecord, [
+                    'ProducedIn1Status',
+                    'PRODUCED_IN1_STATUS',
+                    'producedIn1Status',
+                    'PlantStatus',
+                    'PLANT_STATUS',
+                  ])
+
+                  return (
+                    <tr
+                      key={`${productName || 'product'}-${index}`}
+                      className={`hover:bg-gray-50 transition-colors ${
+                        product.source === 'Form Data' ? 'bg-orange-50/30' : ''
+                      }`}
+                    >
+                      <td className="py-3 px-4 align-top">
+                        <span className="font-medium text-gray-900">{displayText(productName)}</span>
                       </td>
-                    )}
-                    <td className="py-3 px-4">
-                      <span className="font-medium text-gray-900">{product.labelName || '-'}</span>
-                    </td>
-                    {showBrandColumn && <td className="py-3 px-4 text-gray-700">{product.brandName || '-'}</td>}
-                    {showLabelCompanyColumn && (
-                      <td className="py-3 px-4 text-gray-700">{product.labelCompany || '-'}</td>
-                    )}
-                    {showTypeColumn && (
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        {hasDisplayValue(product.ConsumerIndustrial) ? (
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${
-                            product.ConsumerIndustrial === "Industrial" 
-                              ? 'bg-blue-100 text-blue-800 border border-blue-200' 
-                              : 'bg-green-100 text-green-800 border border-green-200'
-                          }`}>
-                            {product.ConsumerIndustrial}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                    )}
-                    {showBulkShippedColumn && (
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        {hasDisplayValue(product.bulkShipped) ? (
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                            product.bulkShipped === true 
-                              ? 'bg-green-100 text-green-800 border border-green-200' 
-                              : 'bg-gray-100 text-gray-700 border border-gray-200'
-                          }`}>
-                            {product.bulkShipped === true ? "Yes" : "No"}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                    )}
-                    {showCertificationColumn && (
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        {hasDisplayValue(product.certification) ? (
-                          <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-medium">
-                            {product.certification}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                    )}
-                    {showStatusColumn && (
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        {hasDisplayValue(product.status) ? (
-                          <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-md text-xs font-medium">
-                            {product.status}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                    )}
-                    {canEditProducts && (
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <button
-                            className="text-blue-600 hover:text-blue-800 transition-colors p-1 hover:bg-blue-50 rounded"
-                            title="Edit Product"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => product.id && onDeleteProduct(product.id)}
-                            className="text-red-600 hover:text-red-800 transition-colors p-1 hover:bg-red-50 rounded"
-                            title="Delete Product"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))
+                      <td className="py-3 px-4 align-top text-gray-700">{displayText(brandName)}</td>
+                      <td className="py-3 px-4 align-top text-gray-700">{displayText(companyName)}</td>
+                      <td className="py-3 px-4 align-top text-gray-700">{displayText(lableType)}</td>
+                      <td className="py-3 px-4 align-top text-gray-700">{displayText(symbol)}</td>
+                      <td className="py-3 px-4 align-top text-gray-700">{displayText(ukid)}</td>
+                      <td className="py-3 px-4 align-top text-gray-700">{displayText(status)}</td>
+                      <td className="py-3 px-4 align-top text-gray-700">{displayText(producedIn1Status)}</td>
+                      {canEditProducts && (
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <button
+                              className="text-blue-600 hover:text-blue-800 transition-colors p-1 hover:bg-blue-50 rounded"
+                              title="Edit Product"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => product.id && onDeleteProduct(product.id)}
+                              className="text-red-600 hover:text-red-800 transition-colors p-1 hover:bg-red-50 rounded"
+                              title="Delete Product"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })
               ) : (
                 <tr>
                   <td colSpan={visibleColumnCount} className="py-12 text-center">
