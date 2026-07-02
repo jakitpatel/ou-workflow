@@ -938,15 +938,25 @@ export function ScheduleAIngredientsDrawer({
                     <thead>
                       <tr className="border-b border-gray-200 bg-gray-50">
                         <th className={`w-8 ${stickyTableHeaderClass}`} style={stickyTableHeaderStyle}>#</th>
-                        {[
-                          ['rmc', 'RMC'],
-                          ['name', 'Ingredient Name'],
-                          ['source', 'Source'],
-                          ['brand', 'Brand Name'],
-                          ['group', 'Group'],
-                          ['certifier', 'Certifier'],
-                          ['plantStatus', 'Plant-Status'],
-                        ].map(([key, label]) => (
+                        {(ingView === 'kashrus'
+                          ? [
+                              ['rmc', 'RMC'],
+                              ['name', 'Ingredient Name'],
+                              ['companyName', 'CompanyName'],
+                              ['brand', 'Brand Name'],
+                              ['group', 'Group'],
+                              ['certifier', 'SYMBOL'],
+                              ['plantStatus', 'Plant-Status'],
+                            ]
+                          : [
+                              ['rmc', 'RMC'],
+                              ['name', 'Ingredient Name'],
+                              ['source', 'Source'],
+                              ['brand', 'Brand Name'],
+                              ['group', 'Group'],
+                              ['certifier', 'Certifier'],
+                              ['plantStatus', 'Plant-Status'],
+                            ]).map(([key, label]) => (
                           <th
                             key={key}
                             className={`${stickyTableHeaderClass} ${
@@ -1043,7 +1053,11 @@ export function ScheduleAIngredientsDrawer({
                                   </div>
                                 ) : null}
                               </td>
-                              <td className="px-3 py-3 text-gray-700">{row.source || '-'}</td>
+                              {ingView === 'kashrus' ? (
+                                <td className="px-3 py-3 text-gray-700">{row.companyName || '-'}</td>
+                              ) : (
+                                <td className="px-3 py-3 text-gray-700">{row.source || '-'}</td>
+                              )}
                               <td className="px-3 py-3 text-gray-700">{row.brand || '-'}</td>
                               <td className="px-3 py-3">
                                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${groupClass(row.group)}`}>{row.group || '-'}</span>

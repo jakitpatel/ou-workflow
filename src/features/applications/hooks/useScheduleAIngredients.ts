@@ -19,6 +19,7 @@ export type ScheduleAIngredientRow = {
   id: string
   ingredientId?: string
   name: string
+  companyName: string
   source: string
   brand: string
   rmc: string
@@ -33,7 +34,15 @@ export type ScheduleAIngredientRow = {
 }
 
 export type ScheduleAIngredientFilter = 'all' | 'flagged' | 'resolved' | 'halacha'
-export type ScheduleAIngredientSortKey = 'rmc' | 'name' | 'source' | 'brand' | 'group' | 'certifier' | 'plantStatus'
+export type ScheduleAIngredientSortKey =
+  | 'rmc'
+  | 'name'
+  | 'companyName'
+  | 'source'
+  | 'brand'
+  | 'group'
+  | 'certifier'
+  | 'plantStatus'
 export type ScheduleAIngredientView = 'application' | 'kashrus'
 
 export const UNASSIGNED_RFR_LABEL = 'Not yet Assigned'
@@ -535,6 +544,7 @@ export function mapApplicationIngredientRow(
     id: getApplicationIngredientRowId(ingredient, index),
     ingredientId: valueText(ingredient.IngredientId),
     name: valueText(ingredient.ingredientLabelName),
+    companyName: '',
     source: getRecordValue(record, ['source', 'Source', 'SOURCE', 'manufacturer']),
     brand: valueText(ingredient.brandName),
     rmc: valueText(ingredient.rawMaterialCode),
@@ -557,6 +567,7 @@ export function mapKashIngredientRow(ingredient: KashIngredient, index: number):
     id: getKashIngredientRowId(ingredient, index),
     ingredientId: '',
     name: valueText(ingredient.INGREDIENT_NAME),
+    companyName: valueText(ingredient.CompanyName) || valueText(ingredient.LABEL_COMPANY),
     source: valueText(ingredient.LABEL_COMPANY),
     brand: valueText(ingredient.BRAND_NAME),
     rmc: getRecordValue(ingredient as Record<string, unknown>, ['rawMaterialCode', 'RawMaterialCode', 'RMC', 'rmc']),

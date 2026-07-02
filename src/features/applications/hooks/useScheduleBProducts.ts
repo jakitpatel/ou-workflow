@@ -38,6 +38,7 @@ export type ScheduleBProductRow = {
   artwork: string
   typeLabel: string
   productDisplayId: string
+  producedIn1Status: string
   group: string
   certifier: string
   attachment: string
@@ -63,6 +64,7 @@ export type ScheduleBProductSortKey =
   | 'artwork'
   | 'typeLabel'
   | 'productDisplayId'
+  | 'producedIn1Status'
   | 'status'
 export type ScheduleBProductView = 'application' | 'kashrus'
 
@@ -160,6 +162,14 @@ const todayLabel = () =>
   new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
 const valueText = (value: unknown) => String(value ?? '').trim()
+
+const getRecordValue = (record: Record<string, unknown>, keys: string[]) => {
+  for (const key of keys) {
+    const value = record[key]
+    if (valueText(value)) return valueText(value)
+  }
+  return ''
+}
 
 export const getDaysSinceVisit = (value?: string | null, now = new Date()) => {
   const normalized = valueText(value)
@@ -628,6 +638,7 @@ export function mapApplicationProductRow(
     artwork: '',
     typeLabel: valueText(product.privateLabel).toLowerCase() === 'true' ? 'Private label' : 'In-house',
     productDisplayId: '',
+    producedIn1Status: '',
     group: '',
     certifier: symbol,
     attachment: '',
@@ -638,6 +649,7 @@ export function mapApplicationProductRow(
 }
 
 export function mapKashProductRow(product: KashProduct, index: number): ScheduleBProductRow {
+  const record = product as Record<string, unknown>
   const plantStatus = valueText(product.PLANT_STATUS)
   const dpm = valueText(product.DPM)
   const labelName = valueText(product.PRODUCT_NAME) || valueText(product.MerchProductName) || valueText(product.BRAND_NAME)
@@ -671,6 +683,14 @@ export function mapKashProductRow(product: KashProduct, index: number): Schedule
     artwork: '',
     typeLabel: valueText(product.LABEL_TYPE) || (valueText(product.LABEL_COMPANY) ? 'Private label' : 'In-house'),
     productDisplayId,
+    producedIn1Status:
+      getRecordValue(record, [
+        'ProducedIn1Status',
+        'PRODUCED_IN1_STATUS',
+        'producedIn1Status',
+        'PlantStatus',
+        'PLANT_STATUS',
+      ]) || plantStatus,
     group: valueText(product.GRP),
     certifier: symbol,
     attachment: '',

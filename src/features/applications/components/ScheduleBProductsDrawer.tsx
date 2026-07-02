@@ -515,13 +515,14 @@ const APPLICATION_COLUMNS: Array<{ key: ScheduleBProductSortKey; label: string; 
 ]
 
 const KASHRUS_COLUMNS: Array<{ key: ScheduleBProductSortKey; label: string; widthClass?: string }> = [
-  { key: 'labelName', label: 'Label Name' },
+  { key: 'labelName', label: 'Product Name' },
   { key: 'brand', label: 'Brand' },
-  { key: 'labelCo', label: 'Label Company' },
+  { key: 'labelCo', label: 'Company Name' },
   { key: 'typeLabel', label: 'Type' },
   { key: 'symbol', label: 'Symbol' },
   { key: 'productDisplayId', label: 'Product ID' },
   { key: 'status', label: 'Status' },
+  { key: 'producedIn1Status', label: 'ProducedIn1Status' },
 ]
 
 const YES_NO_OPTIONS = [
@@ -1381,6 +1382,7 @@ export function ScheduleBProductsDrawer({
                                     <td className="px-3 py-3 text-gray-700">{row.symbol || '-'}</td>
                                     <td className="px-3 py-3 font-mono text-xs text-gray-700">{row.productDisplayId || '-'}</td>
                                     <td className="px-3 py-3">{renderKashrusStatus(row.status)}</td>
+                                    <td className="px-3 py-3 text-gray-700">{row.producedIn1Status || '-'}</td>
                                   </>
                                 )}
                                   {ingView === 'application' && !readOnly ? (
