@@ -3,6 +3,7 @@ import {
   Check,
   ChevronRight,
   ClipboardList,
+  Download,
   FileText,
   Search,
   Send,
@@ -169,6 +170,7 @@ type ContractStageSavedState = {
   package?: {
     generated?: boolean
     downloadUrl?: string | null
+    packagePdfUrl?: string | null
     generatedAt?: string
   }
   email?: {
@@ -840,6 +842,7 @@ export function ContractStageDrawer({
   const [contractInvoiceDownloadLink, setContractInvoiceDownloadLink] = useState<string | null>(null)
   const [contractInvoicePdfUrl, setContractInvoicePdfUrl] = useState<string | null>(null)
   const [contractPackageDownloadUrl, setContractPackageDownloadUrl] = useState<string | null>(null)
+  const [contractPackagePdfUrl, setContractPackagePdfUrl] = useState<string | null>(null)
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [coverLetterBody, setCoverLetterBody] = useState('')
@@ -867,6 +870,7 @@ export function ContractStageDrawer({
     setContractInvoiceDownloadLink(null)
     setContractInvoicePdfUrl(null)
     setContractPackageDownloadUrl(null)
+    setContractPackagePdfUrl(null)
     setShowEmailPreview(false)
     setEmailSent(false)
     setCoverLetterBody('')
@@ -928,6 +932,7 @@ export function ContractStageDrawer({
     setContractInvoiceDownloadLink(invoice.downloadLink ?? null)
     setContractInvoicePdfUrl(invoice.invoicePdfUrl ?? null)
     setContractPackageDownloadUrl(contractPackage.downloadUrl ?? null)
+    setContractPackagePdfUrl(contractPackage.packagePdfUrl ?? null)
     setPackageGenerated(Boolean(contractPackage.generated || emailState.sent))
     setEmailSent(Boolean(emailState.sent))
     setContractSigned(Boolean(completion.contractSigned))
@@ -1083,7 +1088,8 @@ export function ContractStageDrawer({
 
   const invoiceNumber = contractInvoiceId ?? 'no invoice id'
   const invoiceDisplayNumber = contractInvoiceId ? `#${contractInvoiceId}` : '#Draft'
-  const contractInvoiceDocumentUrl = contractInvoiceDownloadLink || contractInvoicePdfUrl
+  const contractInvoiceDocumentUrl = contractInvoicePdfUrl || contractInvoiceDownloadLink
+  const contractInvoiceDownloadUrl = contractInvoiceDownloadLink || contractInvoicePdfUrl
   const invoiceCompanyId = textValue(applicant?.companyId)
   const invoiceAccountNumber = invoiceCompanyId ? `OU-${invoiceCompanyId}` : 'OU-DRAFT'
   const hasGeneratedContractInvoice = Boolean(contractInvoiceId || contractInvoiceDocumentUrl)
@@ -1161,7 +1167,8 @@ export function ContractStageDrawer({
         },
       ]
     : []
-  const contractPackageDocumentUrl = contractPackageDownloadUrl
+  const contractPackageDocumentUrl = contractPackagePdfUrl || contractPackageDownloadUrl
+  const contractPackageDownloadLink = contractPackageDownloadUrl || contractPackagePdfUrl
   const contractEmailAttachments = [
     formatAttachmentReference(
       `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
@@ -1243,6 +1250,7 @@ ${packageUrl}`
     nextContractInvoiceId = contractInvoiceId,
     nextContractInvoicePdfUrl = contractInvoicePdfUrl,
     nextContractPackageDownloadUrl = contractPackageDownloadUrl,
+    nextContractPackagePdfUrl = contractPackagePdfUrl,
     nextContractSigned = contractSigned,
     nextEmailSent = emailSent,
     nextInvoicePaid = invoicePaid,
@@ -1259,6 +1267,7 @@ ${packageUrl}`
     nextContractInvoiceId?: string | null
     nextContractInvoicePdfUrl?: string | null
     nextContractPackageDownloadUrl?: string | null
+    nextContractPackagePdfUrl?: string | null
     nextContractSigned?: boolean
     nextEmailSent?: boolean
     nextInvoicePaid?: boolean
@@ -1275,7 +1284,7 @@ ${packageUrl}`
     const nextInvoiceFileName = `Certification_Invoice_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`
     const nextInvoiceDocumentUrl = nextContractInvoiceDownloadLink || nextContractInvoicePdfUrl
     const nextEmailAttachments = [
-      ...(nextPackageGenerated || nextContractPackageDownloadUrl
+      ...(nextPackageGenerated || nextContractPackageDownloadUrl || nextContractPackagePdfUrl
         ? [formatAttachmentReference(nextPackageFileName, nextContractPackageDownloadUrl)]
         : []),
       ...nextExtraEmailAttachments.map((attachment) =>
@@ -1322,6 +1331,7 @@ ${packageUrl}`
       package: {
         generated: nextPackageGenerated,
         downloadUrl: nextContractPackageDownloadUrl,
+        packagePdfUrl: nextContractPackagePdfUrl,
         generatedAt: nextPackageGenerated ? new Date().toISOString() : undefined,
       },
       email: {
@@ -1529,13 +1539,17 @@ ${packageUrl}`
       }
 
       const result = await generateContractPackage({ payload: packagePayload })
-      const packageUrl = result.certificationPackagePdfUrl || result.downloadUrl || null
-      setContractPackageDownloadUrl(packageUrl)
+      const packagePdfUrl = result.certificationPackagePdfUrl || null
+      const packageDownloadUrl = result.downloadUrl || null
+      const packageUrl = packagePdfUrl || packageDownloadUrl
+      setContractPackageDownloadUrl(packageDownloadUrl)
+      setContractPackagePdfUrl(packagePdfUrl)
       setPackageGenerated(true)
       setCoverLetterBody(packageUrl ? emailBodyWithPackageUrl(packageUrl) : emailBody)
       setPreviewTab('cover')
       await saveCurrentContractStageState({
-        nextContractPackageDownloadUrl: packageUrl,
+        nextContractPackageDownloadUrl: packageDownloadUrl,
+        nextContractPackagePdfUrl: packagePdfUrl,
         nextCoverLetterBody: packageUrl ? emailBodyWithPackageUrl(packageUrl) : emailBody,
         nextPackageGenerated: true,
         nextStage: 'GeneratePackage',
@@ -1625,11 +1639,13 @@ ${packageUrl}`
 
   const handleRemoveContractPackageAttachment = async () => {
     setContractPackageDownloadUrl(null)
+    setContractPackagePdfUrl(null)
     setPackageGenerated(false)
     setEmailSent(false)
     setCoverLetterBody(emailBody)
     await saveCurrentContractStageState({
       nextContractPackageDownloadUrl: null,
+      nextContractPackagePdfUrl: null,
       nextCoverLetterBody: emailBody,
       nextEmailSent: false,
       nextPackageGenerated: false,
@@ -1986,8 +2002,10 @@ ${packageUrl}`
                     setPackageGenerated(false)
                     setEmailSent(false)
                     setContractPackageDownloadUrl(null)
+                    setContractPackagePdfUrl(null)
                     await saveCurrentContractStageState({
                       nextContractPackageDownloadUrl: null,
+                      nextContractPackagePdfUrl: null,
                       nextEmailSent: false,
                       nextPackageGenerated: false,
                       nextStage: 'GenerateInvoice',
@@ -2054,20 +2072,32 @@ ${packageUrl}`
                 </div>
                 <div className="mb-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12.5px]">
                   <FileText className="h-4 w-4 text-[#185087]" />
-                  <span className="font-semibold text-[#1e1e2e]">
-                    Certification_Package_{companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf
-                  </span>
-                  <span className="ml-auto text-[11px] text-gray-400">
-                    Agreement + Schedules A-E - {coverPackageItems.length} documents
-                  </span>
                   {contractPackageDocumentUrl ? (
                     <a
                       href={contractPackageDocumentUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
+                      className="font-semibold text-[#185087] underline-offset-2 hover:underline"
                     >
-                      Open
+                      Certification_Package_{companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf
+                    </a>
+                  ) : (
+                    <span className="font-semibold text-[#1e1e2e]">
+                      Certification_Package_{companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf
+                    </span>
+                  )}
+                  <span className="ml-auto text-[11px] text-gray-400">
+                    Agreement + Schedules A-E - {coverPackageItems.length} documents
+                  </span>
+                  {contractPackageDownloadLink ? (
+                    <a
+                      href={contractPackageDownloadLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Download
                     </a>
                   ) : (
                     <button
@@ -2096,16 +2126,28 @@ ${packageUrl}`
                     className="mb-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12.5px] last:mb-0"
                   >
                     <FileText className="h-4 w-4 text-[#185087]" />
-                    <span className="font-semibold text-[#1e1e2e]">{attachment.file}</span>
-                    <span className="ml-auto text-[11px] text-gray-400">{attachment.desc}</span>
-                    {attachment.label === 'Certification Invoice' && contractInvoiceDocumentUrl ? (
+                    {attachment.fileUrl ? (
                       <a
-                        href={contractInvoiceDocumentUrl}
+                        href={attachment.fileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
+                        className="font-semibold text-[#185087] underline-offset-2 hover:underline"
                       >
-                        Open Invoice
+                        {attachment.file}
+                      </a>
+                    ) : (
+                      <span className="font-semibold text-[#1e1e2e]">{attachment.file}</span>
+                    )}
+                    <span className="ml-auto text-[11px] text-gray-400">{attachment.desc}</span>
+                    {attachment.label === 'Certification Invoice' && contractInvoiceDownloadUrl ? (
+                      <a
+                        href={contractInvoiceDownloadUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Download
                       </a>
                     ) : (
                       <button
@@ -2353,17 +2395,29 @@ ${packageUrl}`
                     <FileText className="h-3.5 w-3.5" />
                   </div>
                   <div>
-                    <div className="text-[12.5px] font-semibold text-[#1e1e2e]">{item.label}</div>
+                    {item.label === 'Certification Invoice' && contractInvoiceDocumentUrl ? (
+                      <a
+                        href={contractInvoiceDocumentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[12.5px] font-semibold text-[#185087] underline-offset-2 hover:underline"
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      <div className="text-[12.5px] font-semibold text-[#1e1e2e]">{item.label}</div>
+                    )}
                     <div className="mt-0.5 text-[11px] text-gray-500">{item.sub}</div>
                   </div>
-                  {item.label === 'Certification Invoice' && contractInvoiceDocumentUrl ? (
+                  {item.label === 'Certification Invoice' && contractInvoiceDownloadUrl ? (
                     <a
-                      href={contractInvoiceDocumentUrl}
+                      href={contractInvoiceDownloadUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="ml-auto shrink-0 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087] hover:bg-blue-100"
+                      className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087] hover:bg-blue-100"
                     >
-                      Open Invoice
+                      <Download className="h-3.5 w-3.5" />
+                      Download
                     </a>
                   ) : null}
                   {!isWorkflowReadOnly ? (
@@ -3444,8 +3498,10 @@ ${packageUrl}`
                           setInvoicePaid(false)
                           setEmailSent(false)
                           setContractPackageDownloadUrl(null)
+                          setContractPackagePdfUrl(null)
                           await saveCurrentContractStageState({
                             nextContractPackageDownloadUrl: null,
+                            nextContractPackagePdfUrl: null,
                             nextContractSigned: false,
                             nextEmailSent: false,
                             nextInvoicePaid: false,
@@ -3580,14 +3636,15 @@ ${packageUrl}`
                 <div className="mb-2.5 flex flex-wrap items-center justify-end gap-3">
                   {previewTab === 'invoice' ? (
                     <div className="flex flex-wrap items-center gap-2">
-                      {contractInvoiceDocumentUrl ? (
+                      {contractInvoiceDownloadUrl ? (
                         <a
-                          href={contractInvoiceDocumentUrl}
+                          href={contractInvoiceDownloadUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                         >
-                          Open Invoice
+                          <Download className="h-3.5 w-3.5" />
+                          Download
                         </a>
                       ) : null}
                       {!isWorkflowReadOnly ? (

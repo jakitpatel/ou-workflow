@@ -610,6 +610,8 @@ export async function generateContractPackage({
     'Certification_Package_pdf',
     'certificationPackagePdf',
     'certification_package_pdf',
+    'packagePDFurl',
+    'packagePDFUrl',
     'packagePdfUrl',
     'package_pdf_url',
   ])
