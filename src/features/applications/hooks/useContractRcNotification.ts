@@ -1,16 +1,22 @@
 import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createApplicationMessage,
+  fetchApplicationMessages,
   generateContractPackage as postGenerateContractPackage,
   generateInspectionInvoice,
+  updateApplicationMessage,
   uploadApplicationFile,
   type ApplicationMessagePayload,
   type GenerateContractPackagePayload,
   type GenerateContractPackageResponse,
   type GenerateInspectionInvoiceResponse,
 } from '@/features/applications/api'
+import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { assignTask, patchTaskResult } from '@/features/tasks/api'
+import { useUser } from '@/context/UserContext'
 import { resolveApiBaseUrl } from '@/shared/api/httpClient'
+import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import type { Applicant } from '@/types/application'
 
@@ -95,6 +101,8 @@ type SendContractPackageEmailParams = {
   toUser?: string
 }
 
+export type SendContractCommunicationEmailInput = SendContractPackageEmailParams
+
 type UploadContractEmailAttachmentParams = {
   applicationId?: string | number
   file: File
@@ -156,6 +164,141 @@ const normalizeUploadedContractAttachment = (
     ]),
     raw: response,
   }
+}
+
+const getCreatedMessageId = (response: unknown) => {
+  const data = response && typeof response === 'object' && 'data' in response
+    ? (response as { data?: unknown }).data
+    : undefined
+  const attributes = data && typeof data === 'object' && 'attributes' in data
+    ? (data as { attributes?: Record<string, unknown> }).attributes
+    : undefined
+  const dataId = data && typeof data === 'object' && 'id' in data ? (data as { id?: unknown }).id : undefined
+
+  return String(attributes?.MessageID ?? dataId ?? '').trim()
+}
+
+const addRefMessageIdToSubject = (subject: string, messageId: string) => {
+  const cleanSubject = subject.replace(/,\s*refMessageId:\s*#?\d+/i, '').replace(/,\s*refMsgId:\s*#?\d+/i, '')
+  const roundMatch = cleanSubject.match(/,\s*Round\s+\d+\)?/i)
+  if (roundMatch?.index === undefined) return `${cleanSubject} (refMessageId: #${messageId})`
+
+  return `${cleanSubject.slice(0, roundMatch.index)}, refMessageId: #${messageId}${cleanSubject.slice(roundMatch.index)}`
+}
+
+export function useContractCommunicationMessages({
+  applicationId,
+  taskInstanceId,
+}: {
+  applicationId?: string | number
+  taskInstanceId?: string | number | null
+}) {
+  const { token } = useUser()
+  const normalizedApplicationId =
+    applicationId === undefined || applicationId === null ? undefined : String(applicationId)
+  const normalizedTaskInstanceId =
+    taskInstanceId === undefined || taskInstanceId === null ? undefined : String(taskInstanceId)
+
+  return useQuery({
+    queryKey: applicationsQueryKeys.contractMessages(normalizedApplicationId, normalizedTaskInstanceId),
+    queryFn: () =>
+      fetchApplicationMessages({
+        applicationId: normalizedApplicationId,
+        taskInstanceId: normalizedTaskInstanceId,
+        token: token ?? undefined,
+      }),
+    enabled: !!token && !!normalizedApplicationId,
+    ...queryOptionDefaults.applicationScheduleAIngredients,
+  })
+}
+
+export function useSendContractCommunicationEmail() {
+  const { token, username } = useUser()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      applicationId,
+      attachments,
+      body,
+      ccUser,
+      companyName,
+      fromUser,
+      subject,
+      taskInstanceId,
+      toUser,
+    }: SendContractCommunicationEmailInput) => {
+      if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
+        throw new Error('Application id is required before sending the contract email.')
+      }
+
+      if (!body.trim()) {
+        throw new Error('Cover letter body is required before sending the contract email.')
+      }
+
+      const email = buildHtmlEmailFromPlainText(body, {
+        title: subject,
+        preheader: `Contract package for ${companyName}`,
+      })
+
+      const createResponse = await createApplicationMessage({
+        payload: {
+          MessageID: null,
+          ApplicationID: normalizeApplicationId(applicationId),
+          FromUser: fromUser || username || null,
+          ToUser: toUser || null,
+          CCUser: ccUser || null,
+          Subject: subject,
+          MessageText: email.html,
+          MessageTextPlain: email.text,
+          PlainText: email.text,
+          Text: email.text,
+          MessageType: 'Email-Staging',
+          Priority: 'NORMAL',
+          SentDate: new Date().toISOString(),
+          TemplateName: 'contract-package',
+          TaskInstanceId: taskInstanceId ?? null,
+          isPrivate: false,
+          parentMessageId: null,
+          toReply: null,
+          isRead: false,
+          tag: null,
+          BCCUser: 'productAutomation@ou.org',
+          Attachments: attachments || null,
+        },
+        token: token ?? undefined,
+      })
+
+      const messageId = getCreatedMessageId(createResponse)
+      if (!messageId) {
+        throw new Error('Email was staged, but the response did not include a MessageID.')
+      }
+
+      return await updateApplicationMessage({
+        messageId,
+        token: token ?? undefined,
+        payload: {
+          MessageID: messageId,
+          MessageType: 'Email',
+          Subject: addRefMessageIdToSubject(subject, messageId),
+        },
+      })
+    },
+    onSuccess: async (_data, variables) => {
+      const normalizedApplicationId =
+        variables.applicationId === undefined || variables.applicationId === null
+          ? undefined
+          : String(variables.applicationId).trim()
+      const normalizedTaskInstanceId =
+        variables.taskInstanceId === undefined || variables.taskInstanceId === null
+          ? undefined
+          : String(variables.taskInstanceId).trim()
+
+      await queryClient.invalidateQueries({
+        queryKey: applicationsQueryKeys.contractMessages(normalizedApplicationId, normalizedTaskInstanceId),
+      })
+    },
+  })
 }
 
 export function useContractRcNotification({

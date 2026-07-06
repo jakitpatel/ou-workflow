@@ -3,8 +3,10 @@ import {
   Check,
   ChevronRight,
   ClipboardList,
+  Copy,
   Download,
   FileText,
+  MessageSquare,
   Search,
   Send,
   Upload,
@@ -13,11 +15,15 @@ import {
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
-import { useContractRcNotification } from '@/features/applications/hooks/useContractRcNotification'
+import {
+  useContractCommunicationMessages,
+  useContractRcNotification,
+  useSendContractCommunicationEmail,
+} from '@/features/applications/hooks/useContractRcNotification'
 import { getInspectionStatusSavedState } from '@/features/applications/utils/inspectionStatusDetails'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
-import type { Applicant, ApplicantAppVars, AssignedRole, Task } from '@/types/application'
+import type { Applicant, ApplicantAppVars, ApplicationEmail, AssignedRole, Task } from '@/types/application'
 
 type Props = {
   open: boolean
@@ -42,6 +48,7 @@ type PreviewTab =
   | 'd'
   | 'e'
   | 'invoice'
+  | 'communication'
   | '__old_cover'
   | '__old_agreement'
 
@@ -653,6 +660,8 @@ const getContractStageSavedState = (value: unknown): ContractStageSavedState | n
 
 const getPreviewTabLabel = (tab: PreviewTab) => {
   switch (tab) {
+    case 'communication':
+      return 'Communication'
     case 'invoice':
       return 'Invoice'
     case 'agreement':
@@ -675,7 +684,130 @@ const getPreviewTabLabel = (tab: PreviewTab) => {
 }
 
 const getPreviewTabOrder = (tab: PreviewTab) =>
-  ['invoice', 'agreement', 'a', 'b', 'c', 'd', 'e', 'cover'].indexOf(tab)
+  ['invoice', 'agreement', 'a', 'b', 'c', 'd', 'e', 'cover', 'communication'].indexOf(tab)
+
+type ContractRoundMessageCard = {
+  email: ApplicationEmail
+  replies: ApplicationEmail[]
+  roundNumber: number
+  subject: string
+}
+
+type ContractEmailDraft = {
+  roundNumber: number
+  to: string
+  cc: string
+  subject: string
+  body: string
+  attachments: string
+}
+
+const getEmailMessageId = (email: ApplicationEmail) => textValue(email.MessageID)
+
+const getEmailParentMessageId = (email: ApplicationEmail) => textValue(email.parentMessageId)
+
+const getRoundNumberFromSubject = (subject: string) => Number(subject.match(/round\s+(\d+)/i)?.[1] ?? 0)
+
+const getRefMessageIdFromSubject = (subject: string) => textValue(subject.match(/refMessageId:\s*#?(\d+)/i)?.[1] ?? subject.match(/refMsgId:\s*#?(\d+)/i)?.[1])
+
+const normalizeEmailBodyText = (value: unknown) =>
+  String(value ?? '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/\u00a0/g, ' ')
+    .trim()
+
+const decodeHtmlEntities = (value: string) =>
+  value
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+
+const htmlToPlainTextWithSpacing = (value: string) =>
+  decodeHtmlEntities(value)
+    .replace(/<div[^>]*display\s*:\s*none[^>]*>[\s\S]*?<\/div>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p\s*>/gi, '\n\n')
+    .replace(/<\/div\s*>/gi, '\n')
+    .replace(/<\/li\s*>/gi, '\n')
+    .replace(/<li\b[^>]*>/gi, '- ')
+    .replace(/<\/tr\s*>/gi, '\n')
+    .replace(/<\/td\s*>/gi, ' ')
+    .replace(/<[^>]*>/g, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+const getContractCommunicationMessageBody = (email: ApplicationEmail) => {
+  const plainTextBody =
+    normalizeEmailBodyText(email.MessageTextPlain) ||
+    normalizeEmailBodyText(email.PlainText) ||
+    normalizeEmailBodyText(email.Text)
+
+  if (plainTextBody) return plainTextBody
+  return htmlToPlainTextWithSpacing(String(email.MessageText ?? ''))
+}
+
+const formatMessageDate = (date?: string | null) => {
+  if (!date) return ''
+  const parsed = new Date(date)
+  if (Number.isNaN(parsed.getTime())) return date
+  return parsed.toLocaleDateString()
+}
+
+const buildContractRoundMessageCards = (emails: ApplicationEmail[]): ContractRoundMessageCard[] => {
+  const childrenByParentId = new Map<string, ApplicationEmail[]>()
+
+  emails.forEach((email) => {
+    const parentMessageId = getEmailParentMessageId(email)
+    if (!parentMessageId || parentMessageId === '0') return
+
+    const children = childrenByParentId.get(parentMessageId) ?? []
+    children.push(email)
+    childrenByParentId.set(parentMessageId, children)
+  })
+
+  const sortByMessageId = (a: ApplicationEmail, b: ApplicationEmail) =>
+    Number(a.MessageID ?? 0) - Number(b.MessageID ?? 0)
+
+  const collectReplies = (parentIds: string[], visited = new Set<string>()): ApplicationEmail[] =>
+    parentIds.flatMap((parentId) => {
+      if (!parentId || visited.has(parentId)) return []
+      visited.add(parentId)
+
+      return (childrenByParentId.get(parentId) ?? [])
+        .sort(sortByMessageId)
+        .flatMap((reply) => [reply, ...collectReplies([getEmailMessageId(reply)], visited)])
+    })
+
+  return emails
+    .map((email): ContractRoundMessageCard | null => {
+      const subject = textValue(email.Subject)
+      const roundNumber = getRoundNumberFromSubject(subject)
+      const parentMessageId = getEmailParentMessageId(email)
+      const isRootMessage = !parentMessageId || parentMessageId === '0'
+
+      if (!isRootMessage || roundNumber <= 0 || !/ou kosher.*contract package/i.test(subject)) return null
+
+      const replyParentIds = Array.from(new Set([getEmailMessageId(email), getRefMessageIdFromSubject(subject)].filter(Boolean)))
+
+      return {
+        email,
+        replies: collectReplies(replyParentIds),
+        roundNumber,
+        subject,
+      }
+    })
+    .filter((round): round is ContractRoundMessageCard => Boolean(round))
+    .sort((a, b) => b.roundNumber - a.roundNumber || Number(b.email.MessageID ?? 0) - Number(a.email.MessageID ?? 0))
+}
 
 function Section({
   title,
@@ -791,16 +923,24 @@ export function ContractStageDrawer({
     isAssigningContractRc,
     isGeneratingContractPackage,
     isGeneratingContractInvoice,
-    isSendingContractEmail,
     isSendingRcNotification,
     isUploadingContractAttachment,
     notifyRcForApproval,
     saveContractStageState,
-    sendContractPackageEmail,
     uploadContractEmailAttachment,
   } = useContractRcNotification({
     token,
     username,
+  })
+  const sendContractCommunicationEmailMutation = useSendContractCommunicationEmail()
+  const {
+    data: contractRoundEmails = [],
+    isLoading: isContractRoundHistoryLoading,
+    error: contractRoundHistoryError,
+    refetch: refetchContractRoundHistory,
+  } = useContractCommunicationMessages({
+    applicationId: open ? resolvedApplicationId : undefined,
+    taskInstanceId,
   })
   const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
   const isNewCompanyContract = applicant?.isNewCompany !== false
@@ -846,6 +986,10 @@ export function ContractStageDrawer({
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [coverLetterBody, setCoverLetterBody] = useState('')
+  const [contractEmailDraft, setContractEmailDraft] = useState<ContractEmailDraft | null>(null)
+  const [contractEmailCopied, setContractEmailCopied] = useState(false)
+  const [contractEmailSendError, setContractEmailSendError] = useState('')
+  const [contractEmailSentMessage, setContractEmailSentMessage] = useState('')
   const [selectedRcLookupKey, setSelectedRcLookupKey] = useState('')
   const [savedRcLookupKey, setSavedRcLookupKey] = useState('')
   const [restoredRc, setRestoredRc] = useState<ContractRcOption | null>(null)
@@ -874,6 +1018,10 @@ export function ContractStageDrawer({
     setShowEmailPreview(false)
     setEmailSent(false)
     setCoverLetterBody('')
+    setContractEmailDraft(null)
+    setContractEmailCopied(false)
+    setContractEmailSendError('')
+    setContractEmailSentMessage('')
     setEffectiveDate(getDefaultEffectiveDate())
     setAnnualFee(DEFAULT_ANNUAL_FEE)
     setCertificationInvoiceComment('')
@@ -1244,6 +1392,12 @@ Rabbinic Coordinator`
 
 Certification package:
 ${packageUrl}`
+  const contractRoundMessageCards = useMemo(
+    () => buildContractRoundMessageCards(contractRoundEmails),
+    [contractRoundEmails],
+  )
+  const nextContractRoundNumber =
+    contractRoundMessageCards.length + (contractEmailDraft ? 1 : 0) + 1
 
   const buildContractSavedState = ({
     nextContractInvoiceDownloadLink = contractInvoiceDownloadLink,
@@ -1560,30 +1714,74 @@ ${packageUrl}`
     }
   }
 
+  const generateContractCommunicationRound = () => {
+    if (isWorkflowReadOnly) return
+
+    const roundNumber = nextContractRoundNumber
+    const taskSubjectPart = taskInstanceId ? `, Task: #${taskInstanceId}` : ''
+    const subject = `OU Kosher - Contract Package for ${companyName} (App #${resolvedApplicationId ?? '-'}${taskSubjectPart}, Round ${roundNumber})`
+    const body = coverLetterBody.trim() || emailBody
+
+    setContractEmailDraft({
+      roundNumber,
+      to: contact.email || '',
+      cc: rcEmail,
+      subject,
+      body,
+      attachments: contractEmailAttachments,
+    })
+    setContractEmailSendError('')
+    setContractEmailSentMessage('')
+    setPreviewTab('communication')
+  }
+
+  const copyContractCommunicationEmail = async () => {
+    if (!contractEmailDraft) return
+    const text = `To: ${contractEmailDraft.to}\nCc: ${contractEmailDraft.cc}\nSubject: ${contractEmailDraft.subject}\nAttachments: ${contractEmailDraft.attachments}\n\n${contractEmailDraft.body}`
+    await navigator.clipboard?.writeText(text)
+    setContractEmailCopied(true)
+    window.setTimeout(() => setContractEmailCopied(false), 1500)
+  }
+
   const handleSendEmail = async () => {
     try {
-      await sendContractPackageEmail({
-        applicationId: resolvedApplicationId,
-        attachments: contractEmailAttachments,
+      const draft = contractEmailDraft ?? {
+        roundNumber: nextContractRoundNumber,
+        to: contact.email || '',
+        cc: rcEmail,
+        subject: emailSubject,
         body: coverLetterBody,
-        ccUser: rcEmail,
+        attachments: contractEmailAttachments,
+      }
+
+      await sendContractCommunicationEmailMutation.mutateAsync({
+        applicationId: resolvedApplicationId,
+        attachments: draft.attachments,
+        body: draft.body,
+        ccUser: draft.cc,
         companyName,
         fromUser: senderEmail,
-        subject: emailSubject,
+        subject: draft.subject,
         taskInstanceId,
-        toUser: contact.email || contact.name || undefined,
+        toUser: draft.to || contact.email || contact.name || undefined,
       })
 
       setEmailSent(true)
       setShowEmailPreview(false)
+      setContractEmailDraft(null)
+      setContractEmailSentMessage('Email sent and captured in application messages.')
+      setContractEmailSendError('')
       await saveCurrentContractStageState({
         nextEmailSent: true,
         nextEmailSentAt: new Date().toLocaleString(),
         nextStage: 'Contract Sent(Send Email)',
       })
+      await refetchContractRoundHistory()
       toast.success('Contract package email recorded')
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to send contract email')
+      const message = error instanceof Error ? error.message : 'Unable to send contract email'
+      setContractEmailSendError(message)
+      toast.error(message)
     }
   }
 
@@ -1614,6 +1812,25 @@ ${packageUrl}`
       )
       const nextAttachments = [...extraEmailAttachments, ...uploadedAttachments]
       setExtraEmailAttachments(nextAttachments)
+      setContractEmailDraft((current) =>
+        current
+          ? {
+              ...current,
+              attachments: [
+                formatAttachmentReference(
+                  `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
+                  contractPackageDocumentUrl,
+                ),
+                ...nextAttachments.map((attachment) =>
+                  formatAttachmentReference(attachment.fileName, attachment.fileUrl),
+                ),
+                ...coverSeparateAttachments.map((attachment) =>
+                  formatAttachmentReference(attachment.file, attachment.fileUrl),
+                ),
+              ].join(', '),
+            }
+          : current,
+      )
       await saveCurrentContractStageState({
         nextExtraEmailAttachments: nextAttachments,
         nextStage: emailSent
@@ -1643,6 +1860,7 @@ ${packageUrl}`
     setPackageGenerated(false)
     setEmailSent(false)
     setCoverLetterBody(emailBody)
+    setContractEmailDraft(null)
     await saveCurrentContractStageState({
       nextContractPackageDownloadUrl: null,
       nextContractPackagePdfUrl: null,
@@ -1659,6 +1877,7 @@ ${packageUrl}`
     setContractInvoiceDownloadLink(null)
     setContractInvoicePdfUrl(null)
     setInvoicePaid(false)
+    setContractEmailDraft(null)
     await saveCurrentContractStageState({
       nextContractInvoiceDownloadLink: null,
       nextContractInvoiceId: null,
@@ -1673,6 +1892,21 @@ ${packageUrl}`
     const attachment = extraEmailAttachments[attachmentIndex]
     const nextAttachments = extraEmailAttachments.filter((_, index) => index !== attachmentIndex)
     setExtraEmailAttachments(nextAttachments)
+    setContractEmailDraft((current) =>
+      current
+        ? {
+            ...current,
+            attachments: [
+              formatAttachmentReference(
+                `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
+                contractPackageDocumentUrl,
+              ),
+              ...nextAttachments.map((item) => formatAttachmentReference(item.fileName, item.fileUrl)),
+              ...coverSeparateAttachments.map((item) => formatAttachmentReference(item.file, item.fileUrl)),
+            ].join(', '),
+          }
+        : current,
+    )
     await saveCurrentContractStageState({
       nextExtraEmailAttachments: nextAttachments,
       nextStage: emailSent
@@ -1986,6 +2220,280 @@ ${packageUrl}`
           </table>
         </div>
       </div>
+    ) : previewTab === 'communication' ? (
+      <div className="space-y-4 font-sans">
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-[#185087]" />
+              <h4 className="text-base font-semibold text-gray-900">Contract Communication</h4>
+              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                {contractRoundMessageCards.length
+                  ? `${contractRoundMessageCards.length} round${contractRoundMessageCards.length === 1 ? '' : 's'}`
+                  : 'No rounds yet'}
+              </span>
+            </div>
+            {!isWorkflowReadOnly ? (
+              <button
+                type="button"
+                onClick={generateContractCommunicationRound}
+                disabled={!packageGenerated || Boolean(contractEmailDraft)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#185087] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#13406c] disabled:cursor-not-allowed disabled:bg-gray-300"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                Generate Round {nextContractRoundNumber} Email
+              </button>
+            ) : null}
+          </div>
+
+          {!packageGenerated ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+              Generate the contract package before creating the first communication round.
+            </div>
+          ) : null}
+
+          {contractEmailDraft ? (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold text-blue-800">
+                  Round {contractEmailDraft.roundNumber} email drafted
+                </p>
+                <span className="text-xs text-blue-600">{coverAttachmentCount} attachment{coverAttachmentCount === 1 ? '' : 's'}</span>
+              </div>
+              <div className="mb-2 space-y-1.5">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-14 shrink-0 font-medium text-blue-500">To</span>
+                  <input
+                    type="email"
+                    aria-label="Contract email To"
+                    className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 font-mono text-blue-900 outline-none focus:ring-1 focus:ring-blue-400"
+                    value={contractEmailDraft.to}
+                    placeholder="No contact email found"
+                    onChange={(event) =>
+                      setContractEmailDraft((current) =>
+                        current ? { ...current, to: event.target.value } : current,
+                      )
+                    }
+                    readOnly={isWorkflowReadOnly}
+                  />
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-14 shrink-0 font-medium text-blue-500">Cc</span>
+                  <input
+                    type="email"
+                    aria-label="Contract email Cc"
+                    className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 font-mono text-blue-900 outline-none focus:ring-1 focus:ring-blue-400"
+                    value={contractEmailDraft.cc}
+                    onChange={(event) =>
+                      setContractEmailDraft((current) =>
+                        current ? { ...current, cc: event.target.value } : current,
+                      )
+                    }
+                    readOnly={isWorkflowReadOnly}
+                  />
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-14 shrink-0 font-medium text-blue-500">Subject</span>
+                  <span className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 text-blue-900">
+                    {contractEmailDraft.subject}
+                  </span>
+                </div>
+              </div>
+              <textarea
+                rows={9}
+                aria-label="Contract email draft body"
+                className="w-full resize-y rounded border border-blue-200 bg-white px-2 py-1.5 font-mono text-xs text-blue-900 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                value={contractEmailDraft.body}
+                onChange={(event) =>
+                  setContractEmailDraft((current) =>
+                    current ? { ...current, body: event.target.value } : current,
+                  )
+                }
+                readOnly={isWorkflowReadOnly}
+              />
+              <div className="mt-2 rounded border border-blue-100 bg-white px-2 py-1.5 text-xs text-blue-900">
+                <span className="font-semibold">Attachments:</span>{' '}
+                {contractEmailDraft.attachments || 'Generated package, agreement, invoice, and uploaded files'}
+              </div>
+              {contractEmailSendError ? (
+                <div className="mt-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">
+                  {contractEmailSendError}
+                </div>
+              ) : null}
+              {contractEmailSentMessage ? (
+                <div className="mt-2 rounded border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700">
+                  {contractEmailSentMessage}
+                </div>
+              ) : null}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={copyContractCommunicationEmail}
+                  className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  {contractEmailCopied ? 'Copied' : 'Copy'}
+                </button>
+                {!isWorkflowReadOnly ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleSendEmail()}
+                    disabled={sendContractCommunicationEmailMutation.isPending}
+                    className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    {sendContractCommunicationEmailMutation.isPending ? 'Sending...' : 'Send Email'}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
+          {packageGenerated && !isWorkflowReadOnly ? (
+            <div
+              onDragEnter={(event) => {
+                event.preventDefault()
+                setIsAttachmentDragOver(true)
+              }}
+              onDragOver={(event) => {
+                event.preventDefault()
+                setIsAttachmentDragOver(true)
+              }}
+              onDragLeave={(event) => {
+                event.preventDefault()
+                if (event.currentTarget === event.target) setIsAttachmentDragOver(false)
+              }}
+              onDrop={(event) => {
+                event.preventDefault()
+                void handleUploadEmailAttachments(event.dataTransfer.files)
+              }}
+              className={`mt-3 rounded-lg border border-dashed px-3 py-3 text-center text-[12.5px] transition-colors ${
+                isAttachmentDragOver
+                  ? 'border-[#185087] bg-blue-50 text-[#185087]'
+                  : 'border-gray-300 bg-white text-gray-500'
+              }`}
+            >
+              <input
+                ref={emailAttachmentInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(event) => {
+                  if (event.target.files) void handleUploadEmailAttachments(event.target.files)
+                }}
+              />
+              <button
+                type="button"
+                disabled={isUploadingContractAttachment}
+                onClick={() => emailAttachmentInputRef.current?.click()}
+                className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-[12px] font-semibold text-[#185087] hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                {isUploadingContractAttachment ? 'Uploading...' : 'Add Attachment'}
+              </button>
+              <div className="mt-2 text-[11px] text-gray-400">
+                Current attachments: generated package, agreement, generated invoice, and {extraEmailAttachments.length} uploaded file{extraEmailAttachments.length === 1 ? '' : 's'}.
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <h4 className="mb-3 text-sm font-semibold text-gray-900">Messages</h4>
+          {isContractRoundHistoryLoading ? (
+            <p className="rounded-lg border border-dashed border-gray-300 px-4 py-6 text-center text-sm text-gray-500">
+              Loading messages...
+            </p>
+          ) : null}
+          {contractRoundHistoryError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              Failed to load messages: {contractRoundHistoryError instanceof Error ? contractRoundHistoryError.message : 'Unknown error'}
+            </p>
+          ) : null}
+          {!isContractRoundHistoryLoading && !contractRoundHistoryError && !contractRoundMessageCards.length ? (
+            <p className="py-2 text-xs text-gray-400">
+              No contract round messages found yet. Generate and send a round email to capture message and reply history.
+            </p>
+          ) : null}
+          {contractRoundMessageCards.length ? (
+            <div className="space-y-3">
+              {contractRoundMessageCards.map((round) => {
+                const messageText = getContractCommunicationMessageBody(round.email)
+                const sentDate = formatMessageDate(round.email.SentDate)
+                const hasResponses = round.replies.length > 0
+
+                return (
+                  <div key={round.email.MessageID ?? round.subject} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-gray-900">Round {round.roundNumber}</p>
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${hasResponses ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'}`}>
+                          {hasResponses ? 'Responded' : 'Awaiting Response'}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-400">{sentDate ? `Sent ${sentDate}` : 'Sent date unavailable'}</span>
+                    </div>
+                    <div className="space-y-3 px-4 py-3">
+                      <div className="grid gap-1 text-xs text-gray-600 md:grid-cols-[82px_1fr]">
+                        <span className="font-medium text-gray-500">To</span>
+                        <span>{round.email.ToUser || '-'}</span>
+                        <span className="font-medium text-gray-500">Subject</span>
+                        <span className="break-words text-gray-900">{round.subject}</span>
+                        {round.email.Attachments ? (
+                          <>
+                            <span className="font-medium text-gray-500">Attach</span>
+                            <span className="break-words">{round.email.Attachments}</span>
+                          </>
+                        ) : null}
+                      </div>
+                      {messageText ? (
+                        <div className="whitespace-pre-wrap break-words rounded-md bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-600">
+                          {messageText}
+                        </div>
+                      ) : null}
+                      {round.replies.length ? (
+                        <div className="space-y-2 border-t border-gray-100 pt-3">
+                          {round.replies.map((reply) => {
+                            const replyText = getContractCommunicationMessageBody(reply)
+                            const replyDate = formatMessageDate(reply.SentDate)
+
+                            return (
+                              <div key={reply.MessageID ?? `${round.email.MessageID}-${reply.SentDate}`} className="rounded-md border border-green-100 bg-green-50/60 px-3 py-2">
+                                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Reply</span>
+                                    <span className="text-xs font-medium text-gray-700">From {reply.FromUser || '-'}</span>
+                                  </div>
+                                  <span className="text-xs text-gray-400">{replyDate ? `Received ${replyDate}` : 'Received date unavailable'}</span>
+                                </div>
+                                <div className="mb-1 grid gap-1 text-xs text-gray-600 md:grid-cols-[82px_1fr]">
+                                  <span className="font-medium text-gray-500">To</span>
+                                  <span>{reply.ToUser || '-'}</span>
+                                  {reply.Subject ? (
+                                    <>
+                                      <span className="font-medium text-gray-500">Subject</span>
+                                      <span className="break-words text-gray-900">{reply.Subject}</span>
+                                    </>
+                                  ) : null}
+                                </div>
+                                {replyText ? (
+                                  <div className="whitespace-pre-wrap break-words rounded-md bg-white/80 px-3 py-2 text-xs leading-5 text-gray-600">
+                                    {replyText}
+                                  </div>
+                                ) : null}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : null}
+        </div>
+      </div>
     ) : previewTab === 'cover' ? (
       <div className="rounded-xl border border-gray-200 bg-white p-6">
         {packageGenerated ? (
@@ -2261,17 +2769,17 @@ ${packageUrl}`
               {!emailSent && !isWorkflowReadOnly ? (
                 <button
                   type="button"
-                  disabled={isSendingContractEmail}
-                  onClick={handleSendEmail}
+                  onClick={generateContractCommunicationRound}
+                  disabled={Boolean(contractEmailDraft)}
                   className="inline-flex items-center gap-2 rounded-lg bg-[#185087] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#13406c] disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
-                  <Send className="h-4 w-4" />
-                  {isSendingContractEmail ? 'Sending...' : 'Send Email'}
+                  <MessageSquare className="h-4 w-4" />
+                  Open Communication
                 </button>
               ) : null}
               <p className="text-[11px] text-gray-400">
                 The cover letter is the email body - edit it above. The schedules are one PDF; the
-                invoice is a separate attachment. Click View to review it before sending.
+                invoice is a separate attachment. Send and track replies from the Communication tab.
               </p>
             </div>
           </div>
@@ -3706,6 +4214,7 @@ ${packageUrl}`
                 <div className="flex flex-wrap gap-1 rounded-[9px] bg-[#eef1f5] p-1">
                     {[
                       ['cover', 'Cover'],
+                      ['communication', 'Communication'],
                       ['agreement', 'Agreement'],
                       ['a', 'A · Ingredients'],
                       ['b', 'B · Products'],
@@ -3811,12 +4320,12 @@ ${packageUrl}`
               {!isWorkflowReadOnly ? (
                 <button
                   type="button"
-                  disabled={isSendingContractEmail}
+                  disabled={sendContractCommunicationEmailMutation.isPending}
                   onClick={handleSendEmail}
                   className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
                   <Send className="h-4 w-4" />
-                  {isSendingContractEmail ? 'Sending...' : 'Record Email'}
+                  {sendContractCommunicationEmailMutation.isPending ? 'Sending...' : 'Record Email'}
                 </button>
               ) : null}
             </div>

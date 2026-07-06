@@ -22,6 +22,13 @@ export const applicationsQueryKeys = {
       applicationId ?? 'unknown',
       taskInstanceId ?? 'unknown',
     ] as const,
+  contractMessages: (applicationId?: string, taskInstanceId?: string) =>
+    [
+      ...applicationsQueryKeys.all,
+      'contract-messages',
+      applicationId ?? 'unknown',
+      taskInstanceId ?? 'unknown',
+    ] as const,
   scheduleBProducts: (applicationId?: string) =>
     [...applicationsQueryKeys.all, 'schedule-b-products', applicationId ?? 'unknown'] as const,
 } as const
