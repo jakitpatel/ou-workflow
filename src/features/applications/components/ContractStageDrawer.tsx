@@ -1737,7 +1737,7 @@ ${packageUrl}`
 
   const copyContractCommunicationEmail = async () => {
     if (!contractEmailDraft) return
-    const text = `To: ${contractEmailDraft.to}\nCc: ${contractEmailDraft.cc}\nSubject: ${contractEmailDraft.subject}\nAttachments: ${contractEmailDraft.attachments}\n\n${contractEmailDraft.body}`
+    const text = `To: ${contractEmailDraft.to}\nCc: ${contractEmailDraft.cc}\nSubject: ${contractEmailDraft.subject}\nAttachments: ${contractEmailAttachments}\n\n${contractEmailDraft.body}`
     await navigator.clipboard?.writeText(text)
     setContractEmailCopied(true)
     window.setTimeout(() => setContractEmailCopied(false), 1500)
@@ -1753,10 +1753,11 @@ ${packageUrl}`
         body: coverLetterBody,
         attachments: contractEmailAttachments,
       }
+      const attachments = contractEmailAttachments
 
       await sendContractCommunicationEmailMutation.mutateAsync({
         applicationId: resolvedApplicationId,
-        attachments: draft.attachments,
+        attachments,
         body: draft.body,
         ccUser: draft.cc,
         companyName,
@@ -2313,7 +2314,7 @@ ${packageUrl}`
               />
               <div className="mt-2 rounded border border-blue-100 bg-white px-2 py-1.5 text-xs text-blue-900">
                 <span className="font-semibold">Attachments:</span>{' '}
-                {contractEmailDraft.attachments || 'Generated package, agreement, invoice, and uploaded files'}
+                {contractEmailAttachments || 'Generated package, agreement, invoice, and uploaded files'}
               </div>
               {contractEmailSendError ? (
                 <div className="mt-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">
@@ -2345,54 +2346,6 @@ ${packageUrl}`
                     {sendContractCommunicationEmailMutation.isPending ? 'Sending...' : 'Send Email'}
                   </button>
                 ) : null}
-              </div>
-            </div>
-          ) : null}
-
-          {packageGenerated && !isWorkflowReadOnly ? (
-            <div
-              onDragEnter={(event) => {
-                event.preventDefault()
-                setIsAttachmentDragOver(true)
-              }}
-              onDragOver={(event) => {
-                event.preventDefault()
-                setIsAttachmentDragOver(true)
-              }}
-              onDragLeave={(event) => {
-                event.preventDefault()
-                if (event.currentTarget === event.target) setIsAttachmentDragOver(false)
-              }}
-              onDrop={(event) => {
-                event.preventDefault()
-                void handleUploadEmailAttachments(event.dataTransfer.files)
-              }}
-              className={`mt-3 rounded-lg border border-dashed px-3 py-3 text-center text-[12.5px] transition-colors ${
-                isAttachmentDragOver
-                  ? 'border-[#185087] bg-blue-50 text-[#185087]'
-                  : 'border-gray-300 bg-white text-gray-500'
-              }`}
-            >
-              <input
-                ref={emailAttachmentInputRef}
-                type="file"
-                multiple
-                className="hidden"
-                onChange={(event) => {
-                  if (event.target.files) void handleUploadEmailAttachments(event.target.files)
-                }}
-              />
-              <button
-                type="button"
-                disabled={isUploadingContractAttachment}
-                onClick={() => emailAttachmentInputRef.current?.click()}
-                className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-[12px] font-semibold text-[#185087] hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Upload className="h-3.5 w-3.5" />
-                {isUploadingContractAttachment ? 'Uploading...' : 'Add Attachment'}
-              </button>
-              <div className="mt-2 text-[11px] text-gray-400">
-                Current attachments: generated package, agreement, generated invoice, and {extraEmailAttachments.length} uploaded file{extraEmailAttachments.length === 1 ? '' : 's'}.
               </div>
             </div>
           ) : null}
