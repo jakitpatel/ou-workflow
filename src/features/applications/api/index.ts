@@ -487,6 +487,7 @@ export type GenerateInspectionInvoicePayload = {
 
 export type GenerateInspectionInvoiceResponse = {
   invoiceId: string
+  displayUrl: string
   downloadLink: string
   invoicePdfUrl: string
   raw: unknown
@@ -564,6 +565,12 @@ export async function generateInspectionInvoice({
     'pdf_url',
     'url',
   ])
+  const displayUrl = readStringFromRecord(data, [
+    'displayUrl',
+    'display_url',
+    'displayLink',
+    'display_link',
+  ])
   const invoicePdfUrl = readStringFromRecord(data, [
     'invoicePDFurl',
     'invoicePdfUrl',
@@ -578,6 +585,7 @@ export async function generateInspectionInvoice({
 
   return {
     invoiceId,
+    displayUrl,
     downloadLink,
     invoicePdfUrl,
     raw: response,

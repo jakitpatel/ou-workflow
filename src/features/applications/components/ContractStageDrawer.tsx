@@ -169,6 +169,7 @@ type ContractStageSavedState = {
   invoice?: {
     generated?: boolean
     invoiceId?: string | null
+    displayUrl?: string | null
     downloadLink?: string | null
     invoicePdfUrl?: string | null
     generatedAt?: string
@@ -979,6 +980,7 @@ export function ContractStageDrawer({
   const [contractSigned, setContractSigned] = useState(false)
   const [invoicePaid, setInvoicePaid] = useState(false)
   const [contractInvoiceId, setContractInvoiceId] = useState<string | null>(null)
+  const [contractInvoiceDisplayUrl, setContractInvoiceDisplayUrl] = useState<string | null>(null)
   const [contractInvoiceDownloadLink, setContractInvoiceDownloadLink] = useState<string | null>(null)
   const [contractInvoicePdfUrl, setContractInvoicePdfUrl] = useState<string | null>(null)
   const [contractPackageDownloadUrl, setContractPackageDownloadUrl] = useState<string | null>(null)
@@ -1011,6 +1013,7 @@ export function ContractStageDrawer({
     setContractSigned(false)
     setInvoicePaid(false)
     setContractInvoiceId(null)
+    setContractInvoiceDisplayUrl(null)
     setContractInvoiceDownloadLink(null)
     setContractInvoicePdfUrl(null)
     setContractPackageDownloadUrl(null)
@@ -1077,6 +1080,7 @@ export function ContractStageDrawer({
     setSavedRcLookupKey(setup.savedRcLookupKey || nextRestoredRc?.lookupKey || '')
     setRestoredRc(nextRestoredRc)
     setContractInvoiceId(invoice.invoiceId ?? null)
+    setContractInvoiceDisplayUrl(invoice.displayUrl ?? null)
     setContractInvoiceDownloadLink(invoice.downloadLink ?? null)
     setContractInvoicePdfUrl(invoice.invoicePdfUrl ?? null)
     setContractPackageDownloadUrl(contractPackage.downloadUrl ?? null)
@@ -1237,10 +1241,11 @@ export function ContractStageDrawer({
   const invoiceNumber = contractInvoiceId ?? 'no invoice id'
   const invoiceDisplayNumber = contractInvoiceId ? `#${contractInvoiceId}` : '#Draft'
   const contractInvoiceDocumentUrl = contractInvoicePdfUrl || contractInvoiceDownloadLink
+  const contractInvoiceDisplayLink = contractInvoiceDisplayUrl || contractInvoiceDocumentUrl
   const contractInvoiceDownloadUrl = contractInvoiceDownloadLink || contractInvoicePdfUrl
   const invoiceCompanyId = textValue(applicant?.companyId)
   const invoiceAccountNumber = invoiceCompanyId ? `OU-${invoiceCompanyId}` : 'OU-DRAFT'
-  const hasGeneratedContractInvoice = Boolean(contractInvoiceId || contractInvoiceDocumentUrl)
+  const hasGeneratedContractInvoice = Boolean(contractInvoiceId || contractInvoiceDisplayLink)
   const invoiceDate = formatShortDate(effectiveDate)
   const invoiceAmount = formatCurrency(annualFee)
   const invoiceTotal = `${invoiceAmount} USD`
@@ -1309,7 +1314,7 @@ export function ContractStageDrawer({
           label: 'Certification Invoice',
           sub: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - separate attachment`,
           file: `Certification_Invoice_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
-          fileUrl: contractInvoiceDocumentUrl || undefined,
+          fileUrl: contractInvoiceDisplayLink || undefined,
           desc: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
           tab: 'invoice' as PreviewTab,
         },
@@ -1400,6 +1405,7 @@ ${packageUrl}`
     contractRoundMessageCards.length + (contractEmailDraft ? 1 : 0) + 1
 
   const buildContractSavedState = ({
+    nextContractInvoiceDisplayUrl = contractInvoiceDisplayUrl,
     nextContractInvoiceDownloadLink = contractInvoiceDownloadLink,
     nextContractInvoiceId = contractInvoiceId,
     nextContractInvoicePdfUrl = contractInvoicePdfUrl,
@@ -1417,6 +1423,7 @@ ${packageUrl}`
     nextPaidAt,
     nextCompletedAt,
   }: {
+    nextContractInvoiceDisplayUrl?: string | null
     nextContractInvoiceDownloadLink?: string | null
     nextContractInvoiceId?: string | null
     nextContractInvoicePdfUrl?: string | null
@@ -1475,8 +1482,14 @@ ${packageUrl}`
         coverLetterBody: nextCoverLetterBody,
       },
       invoice: {
-        generated: Boolean(nextContractInvoiceId || nextContractInvoiceDownloadLink || nextContractInvoicePdfUrl),
+        generated: Boolean(
+          nextContractInvoiceId ||
+          nextContractInvoiceDisplayUrl ||
+          nextContractInvoiceDownloadLink ||
+          nextContractInvoicePdfUrl,
+        ),
         invoiceId: nextContractInvoiceId,
+        displayUrl: nextContractInvoiceDisplayUrl,
         downloadLink: nextContractInvoiceDownloadLink,
         invoicePdfUrl: nextContractInvoicePdfUrl,
         generatedAt: nextContractInvoiceId ? new Date().toISOString() : undefined,
@@ -1599,10 +1612,12 @@ ${packageUrl}`
       })
 
       setContractInvoiceId(result.invoiceId)
+      setContractInvoiceDisplayUrl(result.displayUrl || null)
       setContractInvoiceDownloadLink(result.downloadLink || null)
       setContractInvoicePdfUrl(result.invoicePdfUrl || null)
       await saveCurrentContractStageState({
         nextContractInvoiceId: result.invoiceId,
+        nextContractInvoiceDisplayUrl: result.displayUrl || null,
         nextContractInvoiceDownloadLink: result.downloadLink || null,
         nextContractInvoicePdfUrl: result.invoicePdfUrl || null,
         nextStage: 'GenerateInvoice',
@@ -1875,11 +1890,13 @@ ${packageUrl}`
 
   const handleRemoveInvoiceAttachment = async () => {
     setContractInvoiceId(null)
+    setContractInvoiceDisplayUrl(null)
     setContractInvoiceDownloadLink(null)
     setContractInvoicePdfUrl(null)
     setInvoicePaid(false)
     setContractEmailDraft(null)
     await saveCurrentContractStageState({
+      nextContractInvoiceDisplayUrl: null,
       nextContractInvoiceDownloadLink: null,
       nextContractInvoiceId: null,
       nextContractInvoicePdfUrl: null,
@@ -2856,9 +2873,9 @@ ${packageUrl}`
                     <FileText className="h-3.5 w-3.5" />
                   </div>
                   <div>
-                    {item.label === 'Certification Invoice' && contractInvoiceDocumentUrl ? (
+                    {item.label === 'Certification Invoice' && contractInvoiceDisplayLink ? (
                       <a
-                        href={contractInvoiceDocumentUrl}
+                        href={contractInvoiceDisplayLink}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[12.5px] font-semibold text-[#185087] underline-offset-2 hover:underline"
