@@ -264,6 +264,7 @@ export function useSendContractCommunicationEmail() {
           isRead: false,
           tag: null,
           BCCUser: 'productAutomation@ou.org',
+          replyTo: 'oucert@ou.org',
           Attachments: attachments || null,
         },
         token: token ?? undefined,
@@ -542,6 +543,7 @@ ${username ?? ''}`
       isRead: false,
       tag: null,
       BCCUser: 'productAutomation@ou.org',
+      replyTo: 'oucert@ou.org',
       Attachments: attachments || null,
     }
 
