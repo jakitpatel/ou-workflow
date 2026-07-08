@@ -134,7 +134,7 @@ function buildCompanyAddressPayloadFromApplication(
       attributes: {
         COMPANY_ID: parsedCompanyId,
         ADDRESS_SEQ_NUM: 0,
-        TYPE: '',
+        TYPE: 'Physical',
         ATTN: '',
         STREET1: appValue.companyAddress ?? '',
         STREET2: appValue.companyAddress2 ?? '',
