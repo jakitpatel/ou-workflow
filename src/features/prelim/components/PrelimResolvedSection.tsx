@@ -1,10 +1,15 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight, Building2, Factory } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { Applicant } from '@/types/application'
 import { useUser } from '@/context/UserContext'
-import { useTaskActions } from '@/features/tasks/hooks/useTaskActions'
+import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
+import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
+import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import { PrelimResolutionDrawer } from '@/features/prelim/components/PrelimResolutionDrawer'
+import { confirmTask } from '@/features/tasks/api'
+import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { Route as DashboardRoute } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
 import type {
   CompanyFromApplication,
@@ -41,6 +46,7 @@ export function PrelimResolvedSection({
 }: Props) {
   const [open, setOpen] = useState(true)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [drawerState, setDrawerState] = useState<DrawerState>({
     isOpen: false,
     type: 'company',
@@ -64,25 +70,56 @@ export function PrelimResolvedSection({
       (task) => isResolvePlantTask(task.name)
     ) || []
 
-  const { executeAction } = useTaskActions({
-    applications: application ? [application] : [],
-    token: token ?? undefined,
-    username: username ?? undefined,
-    onError: (msg) => console.error(msg),
-  })
+  const refreshApplication = async () => {
+    try {
+      const refreshed = await refreshApplicationInListCaches({
+        applicationId: application?.applicationId,
+        queryClient,
+        token: token ?? undefined,
+      })
 
-  const handleAssignCompany = (match: any) => {
+      if (!refreshed) {
+        await queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })
+      }
+    } catch {
+      await queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })
+    }
+
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.details() }),
+      queryClient.invalidateQueries({ queryKey: prelimQueryKeys.lists() }),
+      queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
+    ])
+  }
+
+  const handleAssignCompany = async (match: any) => {
     if (!companyTask || !username) return
 
     const result = String(match.Id)
-    executeAction(username, companyTask, result, null)
+    await confirmTask({
+      taskId: String(companyTask.TaskInstanceId ?? (companyTask as any).taskInstanceId ?? ''),
+      applicationId: application?.applicationId,
+      result,
+      token: token ?? undefined,
+      username: username ?? undefined,
+      capacity: companyTask.capacity ?? undefined,
+    })
+    await refreshApplication()
   }
 
-  const handleAssignPlant = (match: any, plantTask: any) => {
+  const handleAssignPlant = async (match: any, plantTask: any) => {
     if (!plantTask || !username) return
 
     const result = String(match.Id)
-    executeAction(username, plantTask, result, null)
+    await confirmTask({
+      taskId: String(plantTask.TaskInstanceId ?? (plantTask as any).taskInstanceId ?? ''),
+      applicationId: application?.applicationId,
+      result,
+      token: token ?? undefined,
+      username: username ?? undefined,
+      capacity: plantTask.capacity ?? undefined,
+    })
+    await refreshApplication()
   }
 
   const openCompanyDrawer = () => {
@@ -339,6 +376,7 @@ export function PrelimResolvedSection({
           data={companyDrawerData}
           matches={companyTask.companyMatchList || []}
           onAssign={handleAssignCompany}
+          onRefresh={refreshApplication}
           selectedId={resolved?.company?.Id}
           isActionable={isTaskPending(companyTask.status)}
           taskStatus={companyTask.status}
@@ -358,6 +396,7 @@ export function PrelimResolvedSection({
             onAssign={(match) =>
               handleAssignPlant(match, activePlantTask)
             }
+            onRefresh={refreshApplication}
             selectedId={
               activePlantIndex !== undefined
                 ? resolved?.plants?.[activePlantIndex]?.plant?.plantID

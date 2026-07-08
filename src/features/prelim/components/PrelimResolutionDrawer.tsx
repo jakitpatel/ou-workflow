@@ -47,6 +47,7 @@ export function PrelimResolutionDrawer({
   data,
   matches,
   onAssign,
+  onRefresh,
   selectedId,
   isActionable = true,
   taskStatus,
@@ -56,24 +57,31 @@ export function PrelimResolutionDrawer({
   const [isCreatingNew, setIsCreatingNew] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
+  const [createdMatch, setCreatedMatch] = useState<Match | null>(null)
   const [editableCompanyData, setEditableCompanyData] = useState<CompanyData>(() =>
     createDefaultCompanyData()
   )
   const [editablePlantData, setEditablePlantData] = useState<PlantData>(() =>
     createDefaultPlantData()
   )
-  const selectedIdNormalized = selectedId != null ? String(selectedId) : undefined
+  const selectedIdNormalized =
+    selectedId != null && String(selectedId).trim() !== '' ? String(selectedId) : undefined
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(
     matches.find((m) => String(m.Id) === selectedIdNormalized) ||
       (matches.length > 0 ? matches[0] : null)
   )
 
   useEffect(() => {
+    if (createdMatch) {
+      setSelectedMatch(createdMatch)
+      return
+    }
+
     const nextMatch =
       matches.find((m) => String(m.Id) === selectedIdNormalized) ??
       (matches.length > 0 ? matches[0] : null)
     setSelectedMatch(nextMatch)
-  }, [matches, selectedIdNormalized])
+  }, [createdMatch, matches, selectedIdNormalized])
 
   useEffect(() => {
     if (!isOpen) return
@@ -233,11 +241,13 @@ export function PrelimResolutionDrawer({
   const handleMatchChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const matchId = event.target.value
     if (matchId === 'create-new') {
+      setCreatedMatch(null)
       setSelectedMatch(null)
       return
     }
 
     const match = matches.find((m) => String(m.Id) === matchId)
+    setCreatedMatch(null)
     setSelectedMatch(match || null)
   }
 
@@ -245,7 +255,7 @@ export function PrelimResolutionDrawer({
     if (!drawerActionable || !selectedMatch) return false
     setIsSubmitting(true)
     try {
-      onAssign(selectedMatch)
+      await onAssign(selectedMatch)
       return true
     } catch (error: any) {
       const message =
@@ -284,11 +294,13 @@ export function PrelimResolutionDrawer({
           companyId: createdCompanyId,
           token: token ?? undefined,
         })
-        onAssign({
+        const nextMatch = {
           Id: createdCompanyId,
           Address: '',
           companyName: companyData.companyName,
-        })
+        }
+        setCreatedMatch(nextMatch)
+        setSelectedMatch(nextMatch)
       } else {
         const result = await createOrUpdatePlantFromApplication({
           appValue: plantData,
@@ -303,21 +315,39 @@ export function PrelimResolutionDrawer({
           plantId: createdPlantId,
           token: token ?? undefined,
         })
-        onAssign({
+        const nextMatch = {
           Id: createdPlantId,
           Address: '',
           plantName: plantData.plantName,
           PlantID: createdPlantId,
-        })
+        }
+        setCreatedMatch(nextMatch)
+        setSelectedMatch(nextMatch)
       }
-      toast.success('New record will be created from application data')
-      onClose()
+      await onRefresh?.()
+      toast.success(`New ${isCompany ? 'company' : 'plant'} created from application data`)
     } catch (error: any) {
       const message =
         error?.details?.message || error?.message || 'Failed to create record from application data'
       toast.error(message)
     } finally {
       setIsCreatingNew(false)
+    }
+  }
+
+  const handleCompleteTask = async () => {
+    if (!drawerActionable || isSubmitting || isCreatingNew || !selectedMatch) return
+
+    setIsSubmitting(true)
+    try {
+      await onAssign(selectedMatch)
+      toast.success('Task completed')
+      onClose()
+    } catch (error: any) {
+      const message = error?.details?.message || error?.message || 'Failed to complete task'
+      toast.error(message)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -398,7 +428,18 @@ export function PrelimResolutionDrawer({
         />
 
         <div className="border-t border-gray-200 bg-[#fafbfc] px-6 py-3.5">
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={handleCompleteTask}
+              disabled={!drawerActionable || isSubmitting || isCreatingNew || !selectedMatch}
+              className={`rounded-[7px] border px-4 py-2 text-[14px] font-medium ${
+                drawerActionable && !isSubmitting && !isCreatingNew && selectedMatch
+                  ? 'border-green-600 bg-green-600 text-white hover:bg-green-700'
+                  : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+              }`}
+            >
+              {isSubmitting ? 'Completing...' : 'Complete Task'}
+            </button>
             <button
               onClick={onClose}
               className="rounded-[7px] border border-gray-300 bg-[#f8fafc] px-4 py-2 text-[14px] font-medium text-gray-700 hover:bg-white"

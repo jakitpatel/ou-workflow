@@ -84,6 +84,9 @@ export function PrelimResolutionComparisonSection({
   isSubmitting,
   isEditMode,
 }: Props) {
+  const selectedMatchIsListed =
+    selectedMatch != null && matches.some((match) => String(match.Id) === String(selectedMatch.Id))
+
   const sectionActions = (
     isActionable: boolean,
     onCreateNewAction: () => void | Promise<void> = onCreateNew,
@@ -119,6 +122,12 @@ export function PrelimResolutionComparisonSection({
               {match.Id} ({match.matchRating}%)
             </option>
           ))}
+          {selectedMatch && !selectedMatchIsListed && (
+            <option value={String(selectedMatch.Id)}>
+              Created: {isCompany ? selectedMatch.companyName : selectedMatch.plantName} - #
+              {selectedMatch.Id}
+            </option>
+          )}
           <option value="create-new">
             + No Match - Create New {isCompany ? 'Company' : 'Plant'}
           </option>

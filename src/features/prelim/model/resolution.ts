@@ -101,7 +101,8 @@ export type PrelimResolutionDrawerProps = {
   type: 'company' | 'plant'
   data: CompanyData | PlantData
   matches: Match[]
-  onAssign: (match: Match) => void
+  onAssign: (match: Match) => void | Promise<void>
+  onRefresh?: () => void | Promise<void>
   selectedId?: string | number
   isActionable?: boolean
   taskStatus?: string
