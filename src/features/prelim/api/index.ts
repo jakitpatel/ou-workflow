@@ -62,6 +62,7 @@ type ContactApiAttributes = {
   Voice: string
   EMail: string
   Cell: string
+  EnteredBy: string
   Active: number
 }
 
@@ -217,7 +218,7 @@ function splitContactName(fullName?: string) {
   }
 }
 
-function buildContactPayloadFromApplication(appValue: AppContactValue): {
+function buildContactPayloadFromApplication(appValue: AppContactValue, username?: string): {
   data: { attributes: ContactApiAttributes; type: 'Contacts' }
 } {
   const { firstName, lastName } = splitContactName(appValue.name)
@@ -231,6 +232,7 @@ function buildContactPayloadFromApplication(appValue: AppContactValue): {
         Voice: appValue.phone ?? '',
         EMail: appValue.email ?? '',
         Cell: appValue.phone ?? '',
+        EnteredBy: username ?? '',
         Active: 1,
       },
       type: 'Contacts',
@@ -495,12 +497,14 @@ export async function createPlantAddressFromApplication({
 
 export async function createContactFromApplication({
   appValue,
+  username,
   token,
 }: {
   appValue: AppContactValue
+  username?: string
   token?: string | null
 }): Promise<any> {
-  const body = buildContactPayloadFromApplication(appValue)
+  const body = buildContactPayloadFromApplication(appValue, username)
   return await fetchWithAuth({
     path: '/api/Contacts',
     method: 'POST',

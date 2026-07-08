@@ -53,7 +53,7 @@ export function PrelimResolutionDrawer({
   taskStatus,
   readOnly = false,
 }: PrelimResolutionDrawerProps) {
-  const { token } = useUser()
+  const { token, username } = useUser()
   const [isCreatingNew, setIsCreatingNew] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
@@ -158,6 +158,7 @@ export function PrelimResolutionDrawer({
     try {
       const createdContact = await createContactFromApplication({
         appValue: contactData,
+        username: username ?? undefined,
         token: token ?? undefined,
       })
       const createdContactId = extractCreatedRecordId(createdContact)
@@ -205,6 +206,7 @@ export function PrelimResolutionDrawer({
     try {
       const createdContact = await createContactFromApplication({
         appValue: contactData,
+        username: username ?? undefined,
         token: token ?? undefined,
       })
       const createdContactId = extractCreatedRecordId(createdContact)
