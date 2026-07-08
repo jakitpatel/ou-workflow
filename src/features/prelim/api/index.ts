@@ -60,7 +60,7 @@ type ContactApiAttributes = {
   FirstName: string
   LastName: string
   Voice: string
-  EMail: string
+  Email: string
   Cell: string
   EnteredBy: string
   Active: number
@@ -230,7 +230,7 @@ function buildContactPayloadFromApplication(appValue: AppContactValue, username?
         FirstName: firstName,
         LastName: lastName,
         Voice: appValue.phone ?? '',
-        EMail: appValue.email ?? '',
+        Email: appValue.email ?? '',
         Cell: appValue.phone ?? '',
         EnteredBy: username ?? '',
         Active: 1,
