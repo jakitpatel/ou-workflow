@@ -251,16 +251,16 @@ function buildCompanyContactPayloadFromApplication({
   isPrimary: boolean
   isBilling: boolean
 }): {
-  data: { attributes: CompanyContactApiAttributes; type: 'companycontacts_tb' }
+  data: { attributes: CompanyContactApiAttributes; type: 'CompanyContacts' }
 } {
   const parsedCompanyId = toPositiveInteger(companyId)
   if (parsedCompanyId == null) {
-    throw createApiError('Invalid company id for companycontacts_tb payload')
+    throw createApiError('Invalid company id for CompanyContacts payload')
   }
 
   const parsedContactId = toPositiveInteger(contactId)
   if (parsedContactId == null) {
-    throw createApiError('Invalid contact id for companycontacts_tb payload')
+    throw createApiError('Invalid contact id for CompanyContacts payload')
   }
 
   return {
@@ -277,7 +277,7 @@ function buildCompanyContactPayloadFromApplication({
         PoCT: 'N',
         CopackerCT: 'N',
       },
-      type: 'companycontacts_tb',
+      type: 'CompanyContacts',
     },
   }
 }
@@ -532,7 +532,7 @@ export async function createCompanyContactLinkFromApplication({
     isBilling,
   })
   return await fetchWithAuth({
-    path: '/api/companycontacts_tb',
+    path: '/api/CompanyContacts',
     method: 'POST',
     body,
     token,
