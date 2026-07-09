@@ -301,16 +301,16 @@ function buildPlantContactPayloadFromApplication({
   isWeb: boolean
   isOther: boolean
 }): {
-  data: { attributes: PlantContactApiAttributes; type: 'plantcontacts_tb' }
+  data: { attributes: PlantContactApiAttributes; type: 'PlantContactTB' }
 } {
   const parsedOwnsId = toPositiveInteger(ownsId)
   if (parsedOwnsId == null) {
-    throw createApiError('Invalid owns id for plantcontacts_tb payload')
+    throw createApiError('Invalid owns id for PlantContactTB payload')
   }
 
   const parsedContactId = toPositiveInteger(contactId)
   if (parsedContactId == null) {
-    throw createApiError('Invalid contact id for plantcontacts_tb payload')
+    throw createApiError('Invalid contact id for PlantContactTB payload')
   }
 
   return {
@@ -332,7 +332,7 @@ function buildPlantContactPayloadFromApplication({
         FormulaEmail: '',
         PoCT: 'N',
       },
-      type: 'plantcontacts_tb',
+      type: 'PlantContactTB',
     },
   }
 }
@@ -572,7 +572,7 @@ export async function createPlantContactLinkFromApplication({
     isOther,
   })
   return await fetchWithAuth({
-    path: '/api/plantcontacts_tb',
+    path: '/api/PlantContactTB',
     method: 'POST',
     body,
     token,
