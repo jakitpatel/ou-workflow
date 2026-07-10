@@ -47,6 +47,9 @@ type Props = {
   onSaveAndConfirm: () => void | Promise<void>
   drawerActionable: boolean
   contactSectionActionable: boolean
+  isCreatedCompany: boolean
+  isCompanyMatchConfirmed: boolean
+  createdCompanyContacts: { primary: boolean; billing: boolean }
   isCreatingNew: boolean
   isSubmitting: boolean
   isEditMode: boolean
@@ -80,6 +83,9 @@ export function PrelimResolutionComparisonSection({
   onSaveAndConfirm,
   drawerActionable,
   contactSectionActionable,
+  isCreatedCompany,
+  isCompanyMatchConfirmed,
+  createdCompanyContacts,
   isCreatingNew,
   isSubmitting,
   isEditMode,
@@ -90,12 +96,16 @@ export function PrelimResolutionComparisonSection({
   const sectionActions = (
     isActionable: boolean,
     onCreateNewAction: () => void | Promise<void> = onCreateNew,
-    canCreate?: boolean
+    canCreate?: boolean,
+    canEdit?: boolean,
+    canConfirm?: boolean
   ) => (
     <PrelimResolutionActions
       selectedMatch={selectedMatch}
       onCreateNew={onCreateNewAction}
       canCreate={canCreate}
+      canEdit={canEdit}
+      canConfirm={canConfirm}
       onConfirmEdit={onConfirmEdit}
       onConfirmMatch={onConfirmMatch}
       onCancelEdit={onCancelEdit}
@@ -222,7 +232,13 @@ export function PrelimResolutionComparisonSection({
                 setEditableCompanyData((prev) => ({ ...prev, companyWebsite: value }))
               }
             />
-            {sectionActions(drawerActionable)}
+            {sectionActions(
+              drawerActionable,
+              onCreateNew,
+              drawerActionable && !selectedMatch && !isCreatedCompany,
+              false,
+              drawerActionable && !!selectedMatch && !isCreatedCompany && !isCompanyMatchConfirmed
+            )}
           </ComparisonCard>
 
           <ComparisonCard title="Company Contact" badge="PRIMARY" badgeClass="bg-blue-100 text-blue-800">
@@ -238,9 +254,11 @@ export function PrelimResolutionComparisonSection({
               }
             />
             {sectionActions(
-              contactSectionActionable,
+              false,
               onCreatePrimaryCompanyContact ?? onCreateNew,
-              contactSectionActionable && !!selectedMatch
+              contactSectionActionable && !!selectedMatch && !createdCompanyContacts.primary,
+              false,
+              false
             )}
           </ComparisonCard>
 
@@ -257,9 +275,11 @@ export function PrelimResolutionComparisonSection({
               }
             />
             {sectionActions(
-              contactSectionActionable,
+              false,
               onCreateBillingCompanyContact ?? onCreateNew,
-              contactSectionActionable && !!selectedMatch
+              contactSectionActionable && !!selectedMatch && !createdCompanyContacts.billing,
+              false,
+              false
             )}
           </ComparisonCard>
         </>

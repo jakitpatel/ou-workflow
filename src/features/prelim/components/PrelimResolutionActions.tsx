@@ -5,6 +5,8 @@ type Props = {
   selectedMatch: Match | null
   onCreateNew: () => void | Promise<void>
   canCreate?: boolean
+  canEdit?: boolean
+  canConfirm?: boolean
   onConfirmEdit: () => void
   onConfirmMatch: () => void | Promise<void>
   onCancelEdit: () => void
@@ -19,6 +21,8 @@ export function PrelimResolutionActions({
   selectedMatch,
   onCreateNew,
   canCreate: canCreateOverride,
+  canEdit: canEditOverride,
+  canConfirm: canConfirmOverride,
   onConfirmEdit,
   onConfirmMatch,
   onCancelEdit,
@@ -28,8 +32,11 @@ export function PrelimResolutionActions({
   isSubmitting,
   isEditMode,
 }: Props) {
-  const canConfirm = isActionable && !!selectedMatch && !isCreatingNew && !isSubmitting
-  const canCreate = canCreateOverride ?? (isActionable && !isCreatingNew && !isSubmitting)
+  const actionReady = !!selectedMatch && !isCreatingNew && !isSubmitting
+  const canConfirm = (canConfirmOverride ?? isActionable) && actionReady
+  const canEdit = (canEditOverride ?? isActionable) && actionReady
+  const canCreate =
+    (canCreateOverride ?? isActionable) && !isCreatingNew && !isSubmitting
 
   return (
     <div className="flex justify-end gap-2 border-t border-gray-100 bg-[#f8fafc] px-4 py-2.5">
@@ -49,9 +56,9 @@ export function PrelimResolutionActions({
 
           <button
             onClick={onSaveAndConfirm}
-            disabled={!canConfirm}
+            disabled={!canEdit}
             className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
-              canConfirm
+              canEdit
                 ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
                 : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
             }`}
@@ -77,9 +84,9 @@ export function PrelimResolutionActions({
 
           <button
             onClick={onConfirmEdit}
-            disabled={!canConfirm}
+            disabled={!canEdit}
             className={`inline-flex items-center gap-1.5 rounded-[7px] border px-4 py-1.5 text-[13px] font-semibold ${
-              canConfirm
+              canEdit
                 ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700'
                 : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
             }`}

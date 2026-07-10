@@ -58,6 +58,11 @@ export function PrelimResolutionDrawer({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [createdMatch, setCreatedMatch] = useState<Match | null>(null)
+  const [confirmedCompanyMatch, setConfirmedCompanyMatch] = useState<Match | null>(null)
+  const [createdCompanyContacts, setCreatedCompanyContacts] = useState({
+    primary: false,
+    billing: false,
+  })
   const [editableCompanyData, setEditableCompanyData] = useState<CompanyData>(() =>
     createDefaultCompanyData()
   )
@@ -170,11 +175,13 @@ export function PrelimResolutionDrawer({
         companyId: selectedMatch.Id,
         companyTitle: contactData.title ?? '',
         contactId: createdContactId,
-        isPrimary: contactType === 'primary',
-        isBilling: contactType === 'billing',
+        isPrimary: createdMatch != null && contactType === 'primary',
+        isBilling: createdMatch != null && contactType === 'billing',
+        isOther: createdMatch == null,
         token: token ?? undefined,
       })
 
+      setCreatedCompanyContacts((current) => ({ ...current, [contactType]: true }))
       await Promise.allSettled([refetchCompanyDetails()])
       toast.success(
         contactType === 'primary'
@@ -244,12 +251,16 @@ export function PrelimResolutionDrawer({
     const matchId = event.target.value
     if (matchId === 'create-new') {
       setCreatedMatch(null)
+      setConfirmedCompanyMatch(null)
+      setCreatedCompanyContacts({ primary: false, billing: false })
       setSelectedMatch(null)
       return
     }
 
     const match = matches.find((m) => String(m.Id) === matchId)
     setCreatedMatch(null)
+    setConfirmedCompanyMatch(null)
+    setCreatedCompanyContacts({ primary: false, billing: false })
     setSelectedMatch(match || null)
   }
 
@@ -270,6 +281,13 @@ export function PrelimResolutionDrawer({
   }
 
   const handleConfirmMatch = async () => {
+    if (isCompany) {
+      if (!drawerActionable || !selectedMatch || isSubmitting || isCreatingNew) return
+      setConfirmedCompanyMatch(selectedMatch)
+      toast.success('Company match selected')
+      return
+    }
+
     const saved = await saveMatchSelection()
     if (saved) {
       toast.success('Section confirmed - DB record matched')
@@ -303,6 +321,8 @@ export function PrelimResolutionDrawer({
         }
         setCreatedMatch(nextMatch)
         setSelectedMatch(nextMatch)
+        setConfirmedCompanyMatch(null)
+        setCreatedCompanyContacts({ primary: false, billing: false })
       } else {
         const result = await createOrUpdatePlantFromApplication({
           appValue: plantData,
@@ -393,6 +413,9 @@ export function PrelimResolutionDrawer({
           companyData={companyData}
           plantData={plantData}
           selectedMatch={selectedMatch}
+          isCreatedMatch={createdMatch != null}
+          bestMatch={matches[0] ?? null}
+          confirmedMatch={confirmedCompanyMatch}
           onClose={onClose}
         />
 
@@ -424,6 +447,9 @@ export function PrelimResolutionDrawer({
           onSaveAndConfirm={handleSaveAndConfirm}
           drawerActionable={drawerActionable}
           contactSectionActionable={contactSectionActionable}
+          isCreatedCompany={isCompany && createdMatch != null}
+          isCompanyMatchConfirmed={confirmedCompanyMatch != null}
+          createdCompanyContacts={createdCompanyContacts}
           isCreatingNew={isCreatingNew}
           isSubmitting={isSubmitting}
           isEditMode={isEditMode}

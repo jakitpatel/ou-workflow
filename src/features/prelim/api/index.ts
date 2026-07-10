@@ -246,12 +246,14 @@ function buildCompanyContactPayloadFromApplication({
   contactId,
   isPrimary,
   isBilling,
+  isOther,
 }: {
   companyId: string | number
   companyTitle?: string
   contactId: string | number
   isPrimary: boolean
   isBilling: boolean
+  isOther: boolean
 }): {
   data: { attributes: CompanyContactApiAttributes; type: 'CompanyContactTB' }
 } {
@@ -273,7 +275,7 @@ function buildCompanyContactPayloadFromApplication({
         PrimaryCT: isPrimary ? 'Y' : 'N',
         BillingCT: isBilling ? 'Y' : 'N',
         WebCT: 'N',
-        OtherCT: 'N',
+        OtherCT: isOther ? 'Y' : 'N',
         Active: 1,
         ContactID: parsedContactId,
         PoCT: 'N',
@@ -519,6 +521,7 @@ export async function createCompanyContactLinkFromApplication({
   contactId,
   isPrimary,
   isBilling,
+  isOther,
   token,
 }: {
   companyId: string | number
@@ -526,6 +529,7 @@ export async function createCompanyContactLinkFromApplication({
   contactId: string | number
   isPrimary: boolean
   isBilling: boolean
+  isOther: boolean
   token?: string | null
 }): Promise<any> {
   const body = buildCompanyContactPayloadFromApplication({
@@ -534,6 +538,7 @@ export async function createCompanyContactLinkFromApplication({
     contactId,
     isPrimary,
     isBilling,
+    isOther,
   })
   return await fetchWithAuth({
     path: '/api/CompanyContactTB',

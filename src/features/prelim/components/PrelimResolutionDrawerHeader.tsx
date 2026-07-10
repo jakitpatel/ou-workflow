@@ -7,6 +7,9 @@ type Props = {
   companyData: CompanyData
   plantData: PlantData
   selectedMatch: Match | null
+  isCreatedMatch: boolean
+  bestMatch: Match | null
+  confirmedMatch: Match | null
   onClose: () => void
 }
 
@@ -16,6 +19,9 @@ export function PrelimResolutionDrawerHeader({
   companyData,
   plantData,
   selectedMatch,
+  isCreatedMatch,
+  bestMatch,
+  confirmedMatch,
   onClose,
 }: Props) {
   const headerBgClass = isCompany ? 'bg-[#1e1e2e]' : 'bg-[#312e81]'
@@ -36,9 +42,17 @@ export function PrelimResolutionDrawerHeader({
               WF 26-00415
             </span>
             {isCompany ? (
-              <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
-                Best match: Co #{selectedMatch?.Id || 'N/A'}
-              </span>
+              <>
+                <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
+                  {isCreatedMatch ? 'Created' : 'Best match'}: Co #
+                  {isCreatedMatch ? selectedMatch?.Id || 'N/A' : bestMatch?.Id || 'N/A'}
+                </span>
+                {!isCreatedMatch && confirmedMatch && (
+                  <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
+                    Selected: Co #{confirmedMatch.Id}
+                  </span>
+                )}
+              </>
             ) : (
               <>
                 <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
