@@ -29,6 +29,10 @@ export type RawKashrusContact = PlantFromApplicationContact & {
   companytitle?: string
   PrimaryCT?: string
   BillingCT?: string
+  cc?: Array<{
+    PrimaryCT?: string | boolean
+    BillingCT?: string | boolean
+  }>
 }
 
 export type CompanyDbRecord = KashrusCompanyDetail & {

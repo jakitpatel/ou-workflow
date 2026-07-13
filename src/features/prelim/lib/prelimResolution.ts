@@ -163,7 +163,10 @@ export const getComparisonStatus = (
 export const pickFirstNonEmpty = (...values: Array<string | undefined>) =>
   values.find((value) => (value ?? '').trim() !== '') ?? ''
 
-const toYesNo = (value?: string) => (value ?? '').trim().toUpperCase()
+const toYesNo = (value?: string | boolean) => {
+  if (typeof value === 'boolean') return value ? 'Y' : 'N'
+  return (value ?? '').trim().toUpperCase()
+}
 
 export const getCompanyDbRecord = (
   companyDbResponse: unknown
@@ -240,14 +243,26 @@ export const formatContactName = (contact?: PlantFromApplicationContact) =>
 
 export const getPrimaryContact = (contacts?: PlantFromApplicationContact[]) => {
   if (!contacts?.length) return undefined
-  return contacts.find((contact) => toYesNo(contact.PrimaryCT) === 'Y') ?? contacts[0]
+  return contacts.find((contact) => hasContactRole(contact, 'PrimaryCT')) ?? contacts[0]
 }
 
-export const getBillingContact = (contacts?: PlantFromApplicationContact[]) => {
+const hasContactRole = (
+  contact: PlantFromApplicationContact,
+  role: 'PrimaryCT' | 'BillingCT'
+) => {
+  if (toYesNo(contact[role]) === 'Y') return true
+
+  const links = (contact as { cc?: Array<Record<string, string | boolean | undefined>> }).cc
+  return links?.some((link) => toYesNo(link[role]) === 'Y') ?? false
+}
+
+export const getBillingContact = (
+  contacts?: PlantFromApplicationContact[],
+  options: { fallbackToSecondary?: boolean } = {}
+) => {
   if (!contacts?.length) return undefined
-  return (
-    contacts.find((contact) => toYesNo(contact.BillingCT) === 'Y') ??
-    contacts.find((contact) => toYesNo(contact.PrimaryCT) !== 'Y') ??
-    contacts[0]
-  )
+  const billingContact = contacts.find((contact) => hasContactRole(contact, 'BillingCT'))
+  if (billingContact || options.fallbackToSecondary === false) return billingContact
+
+  return contacts.find((contact) => !hasContactRole(contact, 'PrimaryCT')) ?? contacts[0]
 }
