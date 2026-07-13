@@ -92,6 +92,12 @@ export function PrelimResolutionComparisonSection({
 }: Props) {
   const selectedMatchIsListed =
     selectedMatch != null && matches.some((match) => String(match.Id) === String(selectedMatch.Id))
+  const companySubmittedCityStateZip = formatSubmittedCityStateZip(
+    companyData.companyCity,
+    companyData.companyState,
+    companyData.ZipPostalCode
+  )
+  const companyDbCityStateZip = formatAddressCityStateZip(dbCompanyAddress) || selectedMatch?.City
 
   const sectionActions = (
     isActionable: boolean,
@@ -194,16 +200,9 @@ export function PrelimResolutionComparisonSection({
             />
             <ComparisonRow
               field="City / State / ZIP"
-              appValue={companyData.companyCity || ''}
-              dbValue={
-                formatAddressCityStateZip(dbCompanyAddress) ||
-                selectedMatch?.City ||
-                'Not on file'
-              }
-              status={getComparisonStatus(
-                companyData.companyCity,
-                dbCompanyAddress?.city || selectedMatch?.City
-              )}
+              appValue={companySubmittedCityStateZip}
+              dbValue={companyDbCityStateZip || 'Not on file'}
+              status={getComparisonStatus(companySubmittedCityStateZip, companyDbCityStateZip)}
               editable={isEditMode}
               onAppValueChange={(value) =>
                 setEditableCompanyData((prev) => ({ ...prev, companyCity: value }))
@@ -394,6 +393,14 @@ export function PrelimResolutionComparisonSection({
       )}
     </div>
   )
+}
+
+function formatSubmittedCityStateZip(
+  city?: string,
+  state?: string,
+  zip?: string
+) {
+  return [city, state, zip].filter((value) => (value ?? '').trim() !== '').join(', ')
 }
 
 type ContactData = {
