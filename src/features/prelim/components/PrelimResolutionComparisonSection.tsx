@@ -136,6 +136,7 @@ export function PrelimResolutionComparisonSection({
             <option key={String(match.Id)} value={String(match.Id)}>
               Match {idx + 1}: {isCompany ? match.companyName : match.plantName} - #
               {match.Id} ({match.matchRating}%)
+              {match.status ? ` - ${match.status}` : ''}
             </option>
           ))}
           {selectedMatch && !selectedMatchIsListed && (

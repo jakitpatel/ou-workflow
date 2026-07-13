@@ -92,6 +92,7 @@ export type Match = {
   Country?: string
   matchRating?: number
   matchReason?: string
+  status?: string
   OWNSID?: string | number
   WFID?: string | number
   PlantID?: string | number
