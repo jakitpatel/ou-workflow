@@ -212,7 +212,7 @@ Done:
 
 ### Step 2: Retire Workflow Modal Ownership
 
-Status: Important follow-up after Step 1 starts.
+Status: Done.
 
 Goal:
 
@@ -237,7 +237,20 @@ Instructions:
 3. Avoid changing modal behavior in the same commit as the move.
 4. Add tests only when behavior changes, not for mechanical import moves.
 
-Done when:
+Completed:
+
+- Moved task/action workflow modals to `src/features/tasks/modals`:
+  - `ActionModal`
+  - `ConditionalModal`
+  - `UploadNdaModal`
+- Moved application-owned dialogs to `src/features/applications/components`:
+  - `CancelApplicationDialog`
+  - `DashboardAppDialog`
+- Updated all application, task, prelim, and authenticated home consumers to use the new
+  feature-owned imports.
+- Kept component implementations, exports, props, and behavior unchanged during the move.
+
+Done:
 
 - `rg -n "@/components/ou-workflow/modal" src` returns no matches.
 - `src/components/ou-workflow/modal` can be deleted.

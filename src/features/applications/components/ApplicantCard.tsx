@@ -1,5 +1,5 @@
 import { Bot } from 'lucide-react'
-import { CancelApplicationDialog } from '@/components/ou-workflow/modal/CancelApplicationDialog'
+import { CancelApplicationDialog } from '@/features/applications/components/CancelApplicationDialog'
 import { ApplicantCardActions } from '@/features/applications/components/ApplicantCardActions'
 import { ApplicantAIAssistantPanel } from '@/features/applications/components/ApplicantAIAssistantPanel'
 import { ApplicantCardHeader } from '@/features/applications/components/ApplicantCardHeader'

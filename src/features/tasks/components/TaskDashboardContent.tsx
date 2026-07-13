@@ -1,7 +1,7 @@
 import { ErrorDialog } from '@/components/ErrorDialog';
-import { ActionModal } from '@/components/ou-workflow/modal/ActionModal';
-import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal';
-import { UploadNdaModal } from '@/components/ou-workflow/modal/UploadNdaModal';
+import { ActionModal } from '@/features/tasks/modals/ActionModal';
+import { ConditionalModal } from '@/features/tasks/modals/ConditionalModal';
+import { UploadNdaModal } from '@/features/tasks/modals/UploadNdaModal';
 import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer';
 import { InspectionAssignmentDrawer } from '@/features/applications/components/InspectionAssignmentDrawer';
 import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer';

@@ -1,5 +1,5 @@
-import { ActionModal } from '@/components/ou-workflow/modal/ActionModal'
-import { ConditionalModal } from '@/components/ou-workflow/modal/ConditionalModal'
+import { ActionModal } from '@/features/tasks/modals/ActionModal'
+import { ConditionalModal } from '@/features/tasks/modals/ConditionalModal'
 import { PrelimApplicationDetailsDrawer } from '@/features/prelim/components/PrelimApplicationDetailsDrawer'
 import { PrelimDashboardFilters } from '@/features/prelim/components/PrelimDashboardFilters'
 import { PrelimDashboardList } from '@/features/prelim/components/PrelimDashboardList'

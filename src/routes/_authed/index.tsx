@@ -8,7 +8,7 @@ import {
   Trash2,
   ChevronRight 
 } from 'lucide-react';
-import DashboardAppDialog from '@/components/ou-workflow/modal/DashboardAppDialog';
+import DashboardAppDialog from '@/features/applications/components/DashboardAppDialog';
 
 export const Route = createFileRoute('/_authed/')({
   component: HomePage,
