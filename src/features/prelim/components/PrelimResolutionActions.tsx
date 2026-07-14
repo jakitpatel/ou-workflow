@@ -7,6 +7,7 @@ type Props = {
   canCreate?: boolean
   canEdit?: boolean
   canConfirm?: boolean
+  createLabel?: string
   onConfirmEdit: () => void
   onConfirmMatch: () => void | Promise<void>
   onCancelEdit: () => void
@@ -23,6 +24,7 @@ export function PrelimResolutionActions({
   canCreate: canCreateOverride,
   canEdit: canEditOverride,
   canConfirm: canConfirmOverride,
+  createLabel = 'Create New',
   onConfirmEdit,
   onConfirmMatch,
   onCancelEdit,
@@ -79,7 +81,7 @@ export function PrelimResolutionActions({
             }`}
           >
             <Plus className="h-3.5 w-3.5" />
-            {isCreatingNew ? 'Creating...' : 'Create New'}
+            {isCreatingNew ? 'Creating...' : createLabel}
           </button>
 
           <button

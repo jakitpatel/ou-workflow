@@ -110,7 +110,8 @@ export function PrelimResolutionComparisonSection({
     onCreateNewAction: () => void | Promise<void> = onCreateNew,
     canCreate?: boolean,
     canEdit?: boolean,
-    canConfirm?: boolean
+    canConfirm?: boolean,
+    createLabel?: string
   ) => (
     <PrelimResolutionActions
       selectedMatch={selectedMatch}
@@ -118,6 +119,7 @@ export function PrelimResolutionComparisonSection({
       canCreate={canCreate}
       canEdit={canEdit}
       canConfirm={canConfirm}
+      createLabel={createLabel}
       onConfirmEdit={onConfirmEdit}
       onConfirmMatch={onConfirmMatch}
       onCancelEdit={onCancelEdit}
@@ -264,7 +266,8 @@ export function PrelimResolutionComparisonSection({
               onCreatePrimaryCompanyContact ?? onCreateNew,
               contactSectionActionable && !!selectedMatch && !createdCompanyContacts.primary,
               false,
-              false
+              false,
+              isCompanyMatchConfirmed ? 'Create as Other' : undefined
             )}
           </ComparisonCard>
 
@@ -285,7 +288,8 @@ export function PrelimResolutionComparisonSection({
               onCreateBillingCompanyContact ?? onCreateNew,
               contactSectionActionable && !!selectedMatch && !createdCompanyContacts.billing,
               false,
-              false
+              false,
+              isCompanyMatchConfirmed ? 'Create as Other' : undefined
             )}
           </ComparisonCard>
         </>
@@ -376,7 +380,8 @@ export function PrelimResolutionComparisonSection({
               onCreatePrimaryPlantContact ?? onCreateNew,
               contactSectionActionable && !!selectedMatch && !createdPlantContacts.primary,
               false,
-              false
+              false,
+              isPlantMatchConfirmed ? 'Create as Other' : undefined
             )}
           </ComparisonCard>
 
@@ -403,7 +408,8 @@ export function PrelimResolutionComparisonSection({
               onCreateMarketingPlantContact ?? onCreateNew,
               contactSectionActionable && !!selectedMatch && !createdPlantContacts.marketing,
               false,
-              false
+              false,
+              isPlantMatchConfirmed ? 'Create as Other' : undefined
             )}
           </ComparisonCard>
         </>
