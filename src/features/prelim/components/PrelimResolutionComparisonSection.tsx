@@ -570,18 +570,18 @@ function ComparisonRow({
       <div className="col-span-3 bg-[#fafbfc] text-sm font-medium text-gray-700">
         {field}
       </div>
-      <div className="col-span-4 text-[15px] text-gray-900">
+      <div className="col-span-4 min-w-0 break-words text-[15px] text-gray-900 [overflow-wrap:anywhere]">
         {editable && onAppValueChange ? (
           <input
             value={appValue}
             onChange={(e) => onAppValueChange(e.target.value)}
-            className="w-full rounded border-[1.5px] border-[#fbbf24] bg-amber-50 px-2.5 py-1.5 text-[14px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="w-full min-w-0 rounded border-[1.5px] border-[#fbbf24] bg-amber-50 px-2.5 py-1.5 text-[14px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
           />
         ) : (
           appValue || <span className="text-gray-400 italic">Empty</span>
         )}
       </div>
-      <div className="col-span-4 text-[15px] text-gray-600">
+      <div className="col-span-4 min-w-0 break-words text-[15px] text-gray-600 [overflow-wrap:anywhere]">
         {dbValue === 'Not on file' ? (
           <span className="italic text-gray-400">{dbValue}</span>
         ) : (
