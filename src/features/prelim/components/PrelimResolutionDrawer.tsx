@@ -140,8 +140,8 @@ export function PrelimResolutionDrawer({
   if (!isOpen) return null
 
   const isTaskCompleted = (taskStatus ?? '').trim().toLowerCase() === 'completed'
-  const drawerActionable = !readOnly && isActionable
-  const contactSectionActionable = !readOnly && (isActionable || isTaskCompleted)
+  const drawerActionable = !readOnly && isActionable && !isTaskCompleted
+  const contactSectionActionable = drawerActionable
   const companyData = editableCompanyData
   const plantData = editablePlantData
   const companyDb: CompanyDbRecord | undefined = getCompanyDbRecord(companyDbResponse)
@@ -474,9 +474,11 @@ export function PrelimResolutionDrawer({
           <div className="flex items-center justify-end gap-2">
             <button
               onClick={handleCompleteTask}
-              disabled={!drawerActionable || isSubmitting || isCreatingNew || !selectedMatch}
+              disabled={
+                isTaskCompleted || !drawerActionable || isSubmitting || isCreatingNew || !selectedMatch
+              }
               className={`rounded-[7px] border px-4 py-2 text-[14px] font-medium ${
-                drawerActionable && !isSubmitting && !isCreatingNew && selectedMatch
+                !isTaskCompleted && drawerActionable && !isSubmitting && !isCreatingNew && selectedMatch
                   ? 'border-green-600 bg-green-600 text-white hover:bg-green-700'
                   : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
               }`}
