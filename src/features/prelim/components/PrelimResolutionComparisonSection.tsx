@@ -267,7 +267,7 @@ export function PrelimResolutionComparisonSection({
               contactSectionActionable && !!selectedMatch && !createdCompanyContacts.primary,
               false,
               false,
-              isCompanyMatchConfirmed ? 'Create as Other' : undefined
+              selectedMatch && !isCreatedCompany ? 'Create as Other' : undefined
             )}
           </ComparisonCard>
 
@@ -289,7 +289,7 @@ export function PrelimResolutionComparisonSection({
               contactSectionActionable && !!selectedMatch && !createdCompanyContacts.billing,
               false,
               false,
-              isCompanyMatchConfirmed ? 'Create as Other' : undefined
+              selectedMatch && !isCreatedCompany ? 'Create as Other' : undefined
             )}
           </ComparisonCard>
         </>
@@ -381,7 +381,7 @@ export function PrelimResolutionComparisonSection({
               contactSectionActionable && !!selectedMatch && !createdPlantContacts.primary,
               false,
               false,
-              isPlantMatchConfirmed ? 'Create as Other' : undefined
+              selectedMatch && !isCreatedPlant ? 'Create as Other' : undefined
             )}
           </ComparisonCard>
 
@@ -409,7 +409,7 @@ export function PrelimResolutionComparisonSection({
               contactSectionActionable && !!selectedMatch && !createdPlantContacts.marketing,
               false,
               false,
-              isPlantMatchConfirmed ? 'Create as Other' : undefined
+              selectedMatch && !isCreatedPlant ? 'Create as Other' : undefined
             )}
           </ComparisonCard>
         </>
