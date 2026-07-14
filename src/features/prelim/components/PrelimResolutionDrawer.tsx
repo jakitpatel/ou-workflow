@@ -389,13 +389,12 @@ export function PrelimResolutionDrawer({
           applicationId,
           taskInstanceId,
           companyData,
+          companyId: selectedMatch?.Id,
+          createNewCompany: selectedMatch == null,
           token: token ?? undefined,
         })
       } else {
         const resolvedCompanyId = selectedMatch?.OWNSID ?? companyId
-        if (resolvedCompanyId == null || String(resolvedCompanyId).trim() === '') {
-          throw new Error('Company id is required to resolve plant')
-        }
 
         await resolvePlantFromApplication({
           applicationId,

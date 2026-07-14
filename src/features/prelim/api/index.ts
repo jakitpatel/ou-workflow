@@ -71,8 +71,9 @@ type ResolveContactPayload = {
 type ResolveCompanyPayload = {
   application_id: string | number
   task_instance_id: string | number
+  company_id?: string | number | null
   company_name: string
-  address: ResolveAddressPayload
+  address?: ResolveAddressPayload
   primary_contact: ResolveContactPayload
   billing_contact: ResolveContactPayload
 }
@@ -80,10 +81,10 @@ type ResolveCompanyPayload = {
 type ResolvePlantPayload = {
   application_id: string | number
   task_instance_id: string | number
-  company_id: string | number
+  company_id?: string | number | null
   plant_id?: string | number
   plant_name: string
-  address: ResolveAddressPayload
+  address?: ResolveAddressPayload
   primary_contact: ResolveContactPayload
   billing_contact: ResolveContactPayload
 }
@@ -291,36 +292,45 @@ function buildResolveCompanyPayload({
   applicationId,
   taskInstanceId,
   companyData,
+  companyId,
+  createNewCompany,
 }: {
   applicationId: string | number
   taskInstanceId: string | number
   companyData: CompanyData
+  companyId?: string | number
+  createNewCompany: boolean
 }): ResolveCompanyPayload {
   return {
     application_id: applicationId,
     task_instance_id: taskInstanceId,
+    ...(createNewCompany || companyId == null ? {} : { company_id: companyId }),
     company_name: companyData.companyName,
-    address: {
-      type: 'Physical',
-      attn: '',
-      street1: companyData.companyAddress,
-      street2: companyData.companyAddress2 ?? '',
-      city: companyData.companyCity,
-      state: companyData.companyState ?? '',
-      zip: companyData.ZipPostalCode ?? '',
-      country: companyData.companyCountry,
-    },
+    ...(createNewCompany
+      ? {
+          address: {
+            type: 'Physical',
+            attn: '',
+            street1: companyData.companyAddress,
+            street2: companyData.companyAddress2 ?? '',
+            city: companyData.companyCity,
+            state: companyData.companyState ?? '',
+            zip: companyData.ZipPostalCode ?? '',
+            country: companyData.companyCountry,
+          },
+        }
+      : {}),
     primary_contact: buildResolveContactPayload(companyData.primaryContact, {
-      PrimaryCT: 1,
+      PrimaryCT: createNewCompany ? 1 : 0,
       BillingCT: 0,
       WebCT: 0,
-      OtherCT: 0,
+      OtherCT: createNewCompany ? 0 : 1,
     }),
     billing_contact: buildResolveContactPayload(companyData.billingContact, {
       PrimaryCT: 0,
-      BillingCT: 1,
+      BillingCT: createNewCompany ? 1 : 0,
       WebCT: 0,
-      OtherCT: 0,
+      OtherCT: createNewCompany ? 0 : 1,
     }),
   }
 }
@@ -335,7 +345,7 @@ function buildResolvePlantPayload({
 }: {
   applicationId: string | number
   taskInstanceId: string | number
-  companyId: string | number
+  companyId?: string | number
   plantId?: string | number
   plantData: PlantData
   createNewPlant: boolean
@@ -343,19 +353,23 @@ function buildResolvePlantPayload({
   return {
     application_id: applicationId,
     task_instance_id: taskInstanceId,
-    company_id: companyId,
+    company_id: companyId == null || String(companyId).trim() === '' ? null : companyId,
     ...(createNewPlant || plantId == null ? {} : { plant_id: plantId }),
     plant_name: plantData.plantName,
-    address: {
-      type: 'Physical',
-      attn: '',
-      street1: plantData.plantAddress,
-      street2: '',
-      city: plantData.plantCity,
-      state: plantData.plantState ?? '',
-      zip: plantData.plantZip ?? '',
-      country: plantData.plantCountry,
-    },
+    ...(createNewPlant
+      ? {
+          address: {
+            type: 'Physical',
+            attn: '',
+            street1: plantData.plantAddress,
+            street2: '',
+            city: plantData.plantCity,
+            state: plantData.plantState ?? '',
+            zip: plantData.plantZip ?? '',
+            country: plantData.plantCountry,
+          },
+        }
+      : {}),
     primary_contact: buildResolveContactPayload(plantData.primaryContact, {
       PrimaryCT: createNewPlant ? 1 : 0,
       BillingCT: 0,
@@ -401,7 +415,7 @@ function buildCompanyContactPayloadFromApplication({
   isBilling,
   isOther,
 }: {
-  companyId: string | number
+  companyId?: string | number
   companyTitle?: string
   contactId: string | number
   isPrimary: boolean
@@ -741,17 +755,23 @@ export async function resolveCompanyFromApplication({
   applicationId,
   taskInstanceId,
   companyData,
+  companyId,
+  createNewCompany,
   token,
 }: {
   applicationId: string | number
   taskInstanceId: string | number
   companyData: CompanyData
+  companyId?: string | number
+  createNewCompany: boolean
   token?: string | null
 }): Promise<any> {
   const body = buildResolveCompanyPayload({
     applicationId,
     taskInstanceId,
     companyData,
+    companyId,
+    createNewCompany,
   })
 
   return await fetchWithAuth({
@@ -773,7 +793,7 @@ export async function resolvePlantFromApplication({
 }: {
   applicationId: string | number
   taskInstanceId: string | number
-  companyId: string | number
+  companyId?: string | number
   plantId?: string | number
   plantData: PlantData
   createNewPlant: boolean
