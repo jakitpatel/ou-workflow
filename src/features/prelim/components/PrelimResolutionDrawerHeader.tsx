@@ -59,8 +59,14 @@ export function PrelimResolutionDrawerHeader({
                   Co #{selectedMatch?.OWNSID || '182456'}
                 </span>
                 <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
-                  Best match: Pl #{selectedMatch?.Id || 'N/A'}
+                  {isCreatedMatch ? 'Created' : 'Best match'}: Plant#
+                  {isCreatedMatch ? selectedMatch?.Id || 'N/A' : bestMatch?.Id || 'N/A'}
                 </span>
+                {!isCreatedMatch && confirmedMatch && (
+                  <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
+                    Selected: Plant#{confirmedMatch.Id}
+                  </span>
+                )}
               </>
             )}
           </div>

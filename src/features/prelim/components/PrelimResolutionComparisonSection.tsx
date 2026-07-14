@@ -48,8 +48,11 @@ type Props = {
   drawerActionable: boolean
   contactSectionActionable: boolean
   isCreatedCompany: boolean
+  isCreatedPlant: boolean
   isCompanyMatchConfirmed: boolean
+  isPlantMatchConfirmed: boolean
   createdCompanyContacts: { primary: boolean; billing: boolean }
+  createdPlantContacts: { primary: boolean; marketing: boolean }
   isCreatingNew: boolean
   isSubmitting: boolean
   isEditMode: boolean
@@ -84,8 +87,11 @@ export function PrelimResolutionComparisonSection({
   drawerActionable,
   contactSectionActionable,
   isCreatedCompany,
+  isCreatedPlant,
   isCompanyMatchConfirmed,
+  isPlantMatchConfirmed,
   createdCompanyContacts,
+  createdPlantContacts,
   isCreatingNew,
   isSubmitting,
   isEditMode,
@@ -344,7 +350,13 @@ export function PrelimResolutionComparisonSection({
                 setEditablePlantData((prev) => ({ ...prev, processDescription: value }))
               }
             />
-            {sectionActions(drawerActionable)}
+            {sectionActions(
+              drawerActionable,
+              onCreateNew,
+              drawerActionable && !selectedMatch && !isCreatedPlant,
+              false,
+              drawerActionable && !!selectedMatch && !isCreatedPlant && !isPlantMatchConfirmed
+            )}
           </ComparisonCard>
 
           <ComparisonCard title="Plant Contact" badge="PRIMARY" badgeClass="bg-blue-100 text-blue-800">
@@ -360,9 +372,11 @@ export function PrelimResolutionComparisonSection({
               }
             />
             {sectionActions(
-              contactSectionActionable,
+              false,
               onCreatePrimaryPlantContact ?? onCreateNew,
-              contactSectionActionable && !!selectedMatch
+              contactSectionActionable && !!selectedMatch && !createdPlantContacts.primary,
+              false,
+              false
             )}
           </ComparisonCard>
 
@@ -385,9 +399,11 @@ export function PrelimResolutionComparisonSection({
               }
             />
             {sectionActions(
-              contactSectionActionable,
+              false,
               onCreateMarketingPlantContact ?? onCreateNew,
-              contactSectionActionable && !!selectedMatch
+              contactSectionActionable && !!selectedMatch && !createdPlantContacts.marketing,
+              false,
+              false
             )}
           </ComparisonCard>
         </>

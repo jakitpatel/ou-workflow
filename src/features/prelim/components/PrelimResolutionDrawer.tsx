@@ -59,9 +59,14 @@ export function PrelimResolutionDrawer({
   const [isEditMode, setIsEditMode] = useState(false)
   const [createdMatch, setCreatedMatch] = useState<Match | null>(null)
   const [confirmedCompanyMatch, setConfirmedCompanyMatch] = useState<Match | null>(null)
+  const [confirmedPlantMatch, setConfirmedPlantMatch] = useState<Match | null>(null)
   const [createdCompanyContacts, setCreatedCompanyContacts] = useState({
     primary: false,
     billing: false,
+  })
+  const [createdPlantContacts, setCreatedPlantContacts] = useState({
+    primary: false,
+    marketing: false,
   })
   const [editableCompanyData, setEditableCompanyData] = useState<CompanyData>(() =>
     createDefaultCompanyData()
@@ -227,13 +232,14 @@ export function PrelimResolutionDrawer({
         ownsId,
         companyTitle: contactData.title ?? '',
         contactId: createdContactId,
-        isPrimary: contactType === 'primary',
+        isPrimary: createdMatch != null && contactType === 'primary',
         isBilling: false,
         isWeb: false,
-        isOther: contactType === 'marketing',
+        isOther: createdMatch == null || contactType === 'marketing',
         token: token ?? undefined,
       })
 
+      setCreatedPlantContacts((current) => ({ ...current, [contactType]: true }))
       await Promise.allSettled([refetchPlantDetails()])
       toast.success(
         contactType === 'primary'
@@ -254,7 +260,9 @@ export function PrelimResolutionDrawer({
     if (matchId === 'create-new') {
       setCreatedMatch(null)
       setConfirmedCompanyMatch(null)
+      setConfirmedPlantMatch(null)
       setCreatedCompanyContacts({ primary: false, billing: false })
+      setCreatedPlantContacts({ primary: false, marketing: false })
       setSelectedMatch(null)
       return
     }
@@ -262,7 +270,9 @@ export function PrelimResolutionDrawer({
     const match = matches.find((m) => String(m.Id) === matchId)
     setCreatedMatch(null)
     setConfirmedCompanyMatch(null)
+    setConfirmedPlantMatch(null)
     setCreatedCompanyContacts({ primary: false, billing: false })
+    setCreatedPlantContacts({ primary: false, marketing: false })
     setSelectedMatch(match || null)
   }
 
@@ -290,11 +300,9 @@ export function PrelimResolutionDrawer({
       return
     }
 
-    const saved = await saveMatchSelection()
-    if (saved) {
-      toast.success('Section confirmed - DB record matched')
-      onClose()
-    }
+    if (!drawerActionable || !selectedMatch || isSubmitting || isCreatingNew) return
+    setConfirmedPlantMatch(selectedMatch)
+    toast.success('Plant match selected')
   }
 
   const handleCreateNew = async () => {
@@ -347,6 +355,8 @@ export function PrelimResolutionDrawer({
         }
         setCreatedMatch(nextMatch)
         setSelectedMatch(nextMatch)
+        setConfirmedPlantMatch(null)
+        setCreatedPlantContacts({ primary: false, marketing: false })
       }
       await onRefresh?.()
       toast.success(`New ${isCompany ? 'company' : 'plant'} created from application data`)
@@ -417,7 +427,7 @@ export function PrelimResolutionDrawer({
           selectedMatch={selectedMatch}
           isCreatedMatch={createdMatch != null}
           bestMatch={matches[0] ?? null}
-          confirmedMatch={confirmedCompanyMatch}
+          confirmedMatch={isCompany ? confirmedCompanyMatch : confirmedPlantMatch}
           onClose={onClose}
         />
 
@@ -450,8 +460,11 @@ export function PrelimResolutionDrawer({
           drawerActionable={drawerActionable}
           contactSectionActionable={contactSectionActionable}
           isCreatedCompany={isCompany && createdMatch != null}
+          isCreatedPlant={!isCompany && createdMatch != null}
           isCompanyMatchConfirmed={confirmedCompanyMatch != null}
+          isPlantMatchConfirmed={confirmedPlantMatch != null}
           createdCompanyContacts={createdCompanyContacts}
+          createdPlantContacts={createdPlantContacts}
           isCreatingNew={isCreatingNew}
           isSubmitting={isSubmitting}
           isEditMode={isEditMode}
