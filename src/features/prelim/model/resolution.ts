@@ -109,6 +109,9 @@ export type PrelimResolutionDrawerProps = {
   onAssign: (match: Match) => void | Promise<void>
   onRefresh?: () => void | Promise<void>
   selectedId?: string | number
+  applicationId?: string | number
+  taskInstanceId?: string | number
+  companyId?: string | number
   isActionable?: boolean
   taskStatus?: string
   readOnly?: boolean

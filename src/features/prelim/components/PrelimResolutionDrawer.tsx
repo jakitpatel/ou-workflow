@@ -12,6 +12,8 @@ import {
   createPlantContactLinkFromApplication,
   createOrUpdatePlantFromApplication,
   extractCreatedRecordId,
+  resolveCompanyFromApplication,
+  resolvePlantFromApplication,
 } from '@/features/prelim/api'
 import { getCompanyDetailsFromKASH, getPlantDetailsFromKASH } from '@/features/applications/api'
 import { PrelimResolutionComparisonSection } from '@/features/prelim/components/PrelimResolutionComparisonSection'
@@ -49,6 +51,9 @@ export function PrelimResolutionDrawer({
   onAssign,
   onRefresh,
   selectedId,
+  applicationId,
+  taskInstanceId,
+  companyId,
   isActionable = true,
   taskStatus,
   readOnly = false,
@@ -370,11 +375,39 @@ export function PrelimResolutionDrawer({
   }
 
   const handleCompleteTask = async () => {
-    if (!drawerActionable || isSubmitting || isCreatingNew || !selectedMatch) return
+    if (!drawerActionable || isSubmitting || isCreatingNew) return
+
+    if (applicationId == null || taskInstanceId == null) {
+      toast.error('Application id or task instance id is missing')
+      return
+    }
 
     setIsSubmitting(true)
     try {
-      await onAssign(selectedMatch)
+      if (isCompany) {
+        await resolveCompanyFromApplication({
+          applicationId,
+          taskInstanceId,
+          companyData,
+          token: token ?? undefined,
+        })
+      } else {
+        const resolvedCompanyId = selectedMatch?.OWNSID ?? companyId
+        if (resolvedCompanyId == null || String(resolvedCompanyId).trim() === '') {
+          throw new Error('Company id is required to resolve plant')
+        }
+
+        await resolvePlantFromApplication({
+          applicationId,
+          taskInstanceId,
+          companyId: resolvedCompanyId,
+          plantId: selectedMatch?.Id,
+          plantData,
+          createNewPlant: selectedMatch == null,
+          token: token ?? undefined,
+        })
+      }
+      await onRefresh?.()
       toast.success('Task completed')
       onClose()
     } catch (error: any) {
@@ -468,6 +501,7 @@ export function PrelimResolutionDrawer({
           isCreatingNew={isCreatingNew}
           isSubmitting={isSubmitting}
           isEditMode={isEditMode}
+          showSectionActions={false}
         />
 
         <div className="border-t border-gray-200 bg-[#fafbfc] px-6 py-3.5">
@@ -475,10 +509,10 @@ export function PrelimResolutionDrawer({
             <button
               onClick={handleCompleteTask}
               disabled={
-                isTaskCompleted || !drawerActionable || isSubmitting || isCreatingNew || !selectedMatch
+                isTaskCompleted || !drawerActionable || isSubmitting || isCreatingNew
               }
               className={`rounded-[7px] border px-4 py-2 text-[14px] font-medium ${
-                !isTaskCompleted && drawerActionable && !isSubmitting && !isCreatingNew && selectedMatch
+                !isTaskCompleted && drawerActionable && !isSubmitting && !isCreatingNew
                   ? 'border-green-600 bg-green-600 text-white hover:bg-green-700'
                   : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
               }`}

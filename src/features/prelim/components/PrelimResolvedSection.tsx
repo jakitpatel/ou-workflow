@@ -149,6 +149,9 @@ export function PrelimResolvedSection({
   const activePlantTask =
     activePlantIndex !== undefined ? plantTasks[activePlantIndex] : undefined
   const plantDrawerData = toPlantDrawerData(activePlantTask?.plantFromApplication)
+  const companyTaskInstanceId = companyTask?.TaskInstanceId ?? (companyTask as any)?.taskInstanceId
+  const activePlantTaskInstanceId =
+    activePlantTask?.TaskInstanceId ?? (activePlantTask as any)?.taskInstanceId
 
   const handleWfidClick = (wfid: string | number) => {
     const applicationId = Number(wfid)
@@ -378,6 +381,8 @@ export function PrelimResolvedSection({
           onAssign={handleAssignCompany}
           onRefresh={refreshApplication}
           selectedId={resolved?.company?.Id}
+          applicationId={application?.applicationId}
+          taskInstanceId={companyTaskInstanceId}
           isActionable={isTaskPending(companyTask.status)}
           taskStatus={companyTask.status}
           readOnly={isWithdrawn}
@@ -402,6 +407,9 @@ export function PrelimResolvedSection({
                 ? resolved?.plants?.[activePlantIndex]?.plant?.plantID
                 : undefined
             }
+            applicationId={application?.applicationId}
+            taskInstanceId={activePlantTaskInstanceId}
+            companyId={resolved?.company?.Id}
             isActionable={isTaskPending(activePlantTask.status)}
             taskStatus={activePlantTask.status}
             readOnly={isWithdrawn}

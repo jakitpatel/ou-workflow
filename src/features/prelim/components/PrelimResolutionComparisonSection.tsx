@@ -56,6 +56,7 @@ type Props = {
   isCreatingNew: boolean
   isSubmitting: boolean
   isEditMode: boolean
+  showSectionActions?: boolean
 }
 
 export function PrelimResolutionComparisonSection({
@@ -95,6 +96,7 @@ export function PrelimResolutionComparisonSection({
   isCreatingNew,
   isSubmitting,
   isEditMode,
+  showSectionActions = true,
 }: Props) {
   const selectedMatchIsListed =
     selectedMatch != null && matches.some((match) => String(match.Id) === String(selectedMatch.Id))
@@ -112,7 +114,7 @@ export function PrelimResolutionComparisonSection({
     canEdit?: boolean,
     canConfirm?: boolean,
     createLabel?: string
-  ) => (
+  ) => showSectionActions ? (
     <PrelimResolutionActions
       selectedMatch={selectedMatch}
       onCreateNew={onCreateNewAction}
@@ -129,7 +131,7 @@ export function PrelimResolutionComparisonSection({
       isSubmitting={isSubmitting}
       isEditMode={isEditMode}
     />
-  )
+  ) : null
 
   return (
     <div className="flex-1 overflow-y-auto bg-white px-7 py-7">

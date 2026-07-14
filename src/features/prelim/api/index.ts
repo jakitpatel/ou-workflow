@@ -2,6 +2,7 @@ import { createAppError } from '@/shared/api/errors'
 import { fetchWithAuth } from '@/shared/api/httpClient'
 import { addFilterParams, buildPaginationParams } from '@/shared/api/queryParams'
 import type { ApplicantsResponse } from '@/types/application'
+import type { CompanyData, PlantData, ResolutionContactData } from '@/features/prelim/model/resolution'
 import {
   mapPrelimApplicantsResponse,
   type BackendPrelimApplicantsResponse,
@@ -39,6 +40,52 @@ type AppPlantValue = {
   plantState?: string
   plantZip?: string
   plantCountry?: string
+}
+
+type ResolveAddressPayload = {
+  type: string
+  attn: string
+  street1: string
+  street2: string
+  city: string
+  state: string
+  zip: string
+  country: string
+}
+
+type ResolveContactPayload = {
+  CompanyTitle: string
+  PrimaryCT: number
+  BillingCT: number
+  WebCT: number
+  OtherCT: number
+  Title: string
+  FirstName: string
+  LastName: string
+  Voice: string
+  Fax: string
+  Email: string
+  Cell: string
+}
+
+type ResolveCompanyPayload = {
+  application_id: string | number
+  task_instance_id: string | number
+  company_name: string
+  address: ResolveAddressPayload
+  primary_contact: ResolveContactPayload
+  billing_contact: ResolveContactPayload
+}
+
+type ResolvePlantPayload = {
+  application_id: string | number
+  task_instance_id: string | number
+  company_id: string | number
+  plant_id?: string | number
+  plant_name: string
+  address: ResolveAddressPayload
+  primary_contact: ResolveContactPayload
+  billing_contact: ResolveContactPayload
 }
 
 type CompanyApiAttributes = {
@@ -215,6 +262,112 @@ function splitContactName(fullName?: string) {
   return {
     firstName,
     lastName: lastNameParts.join(' '),
+  }
+}
+
+function buildResolveContactPayload(
+  contact: ResolutionContactData | undefined,
+  flags: Pick<ResolveContactPayload, 'PrimaryCT' | 'BillingCT' | 'WebCT' | 'OtherCT'>,
+): ResolveContactPayload {
+  const { firstName, lastName } = splitContactName(contact?.name)
+
+  return {
+    CompanyTitle: contact?.title ?? '',
+    PrimaryCT: flags.PrimaryCT,
+    BillingCT: flags.BillingCT,
+    WebCT: flags.WebCT,
+    OtherCT: flags.OtherCT,
+    Title: contact?.title ?? '',
+    FirstName: firstName,
+    LastName: lastName,
+    Voice: contact?.phone ?? '',
+    Fax: '',
+    Email: contact?.email ?? '',
+    Cell: contact?.phone ?? '',
+  }
+}
+
+function buildResolveCompanyPayload({
+  applicationId,
+  taskInstanceId,
+  companyData,
+}: {
+  applicationId: string | number
+  taskInstanceId: string | number
+  companyData: CompanyData
+}): ResolveCompanyPayload {
+  return {
+    application_id: applicationId,
+    task_instance_id: taskInstanceId,
+    company_name: companyData.companyName,
+    address: {
+      type: 'Physical',
+      attn: '',
+      street1: companyData.companyAddress,
+      street2: companyData.companyAddress2 ?? '',
+      city: companyData.companyCity,
+      state: companyData.companyState ?? '',
+      zip: companyData.ZipPostalCode ?? '',
+      country: companyData.companyCountry,
+    },
+    primary_contact: buildResolveContactPayload(companyData.primaryContact, {
+      PrimaryCT: 1,
+      BillingCT: 0,
+      WebCT: 0,
+      OtherCT: 0,
+    }),
+    billing_contact: buildResolveContactPayload(companyData.billingContact, {
+      PrimaryCT: 0,
+      BillingCT: 1,
+      WebCT: 0,
+      OtherCT: 0,
+    }),
+  }
+}
+
+function buildResolvePlantPayload({
+  applicationId,
+  taskInstanceId,
+  companyId,
+  plantId,
+  plantData,
+  createNewPlant,
+}: {
+  applicationId: string | number
+  taskInstanceId: string | number
+  companyId: string | number
+  plantId?: string | number
+  plantData: PlantData
+  createNewPlant: boolean
+}): ResolvePlantPayload {
+  return {
+    application_id: applicationId,
+    task_instance_id: taskInstanceId,
+    company_id: companyId,
+    ...(createNewPlant || plantId == null ? {} : { plant_id: plantId }),
+    plant_name: plantData.plantName,
+    address: {
+      type: 'Physical',
+      attn: '',
+      street1: plantData.plantAddress,
+      street2: '',
+      city: plantData.plantCity,
+      state: plantData.plantState ?? '',
+      zip: plantData.plantZip ?? '',
+      country: plantData.plantCountry,
+    },
+    primary_contact: buildResolveContactPayload(plantData.primaryContact, {
+      PrimaryCT: createNewPlant ? 1 : 0,
+      BillingCT: 0,
+      WebCT: 0,
+      OtherCT: createNewPlant ? 0 : 1,
+    }),
+    billing_contact: buildResolveContactPayload(plantData.marketingContact, {
+      PrimaryCT: 0,
+      BillingCT: 0,
+      WebCT: 0,
+      OtherCT: 1,
+    }),
   }
 }
 
@@ -578,6 +731,65 @@ export async function createPlantContactLinkFromApplication({
   })
   return await fetchWithAuth({
     path: '/api/PlantContactTB',
+    method: 'POST',
+    body,
+    token,
+  })
+}
+
+export async function resolveCompanyFromApplication({
+  applicationId,
+  taskInstanceId,
+  companyData,
+  token,
+}: {
+  applicationId: string | number
+  taskInstanceId: string | number
+  companyData: CompanyData
+  token?: string | null
+}): Promise<any> {
+  const body = buildResolveCompanyPayload({
+    applicationId,
+    taskInstanceId,
+    companyData,
+  })
+
+  return await fetchWithAuth({
+    path: '/resolve_company',
+    method: 'POST',
+    body,
+    token,
+  })
+}
+
+export async function resolvePlantFromApplication({
+  applicationId,
+  taskInstanceId,
+  companyId,
+  plantId,
+  plantData,
+  createNewPlant,
+  token,
+}: {
+  applicationId: string | number
+  taskInstanceId: string | number
+  companyId: string | number
+  plantId?: string | number
+  plantData: PlantData
+  createNewPlant: boolean
+  token?: string | null
+}): Promise<any> {
+  const body = buildResolvePlantPayload({
+    applicationId,
+    taskInstanceId,
+    companyId,
+    plantId,
+    plantData,
+    createNewPlant,
+  })
+
+  return await fetchWithAuth({
+    path: '/resolve_plant',
     method: 'POST',
     body,
     token,
