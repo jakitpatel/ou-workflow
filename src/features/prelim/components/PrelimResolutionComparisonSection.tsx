@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import type { ChangeEvent, Dispatch, ReactNode, SetStateAction } from 'react'
+import { Edit } from 'lucide-react'
 import { PrelimResolutionActions } from '@/features/prelim/components/PrelimResolutionActions'
 import {
   formatAddressCityStateZip,
@@ -18,6 +20,14 @@ import type {
   PlantDbRecord,
 } from '@/features/prelim/model/resolution'
 import type { KashrusAddress, PlantFromApplicationContact } from '@/types/application'
+
+type EditableSection =
+  | 'company-info'
+  | 'company-primary'
+  | 'company-billing'
+  | 'plant-info'
+  | 'plant-primary'
+  | 'plant-marketing'
 
 type Props = {
   isCompany: boolean
@@ -98,6 +108,12 @@ export function PrelimResolutionComparisonSection({
   isEditMode,
   showSectionActions = true,
 }: Props) {
+  const [editableSection, setEditableSection] = useState<EditableSection | null>(null)
+  const toggleEditableSection = (section: EditableSection) => {
+    if (!drawerActionable) return
+    setEditableSection((current) => (current === section ? null : section))
+  }
+
   const selectedMatchIsListed =
     selectedMatch != null && matches.some((match) => String(match.Id) === String(selectedMatch.Id))
   const companySubmittedCityStateZip = formatSubmittedCityStateZip(
@@ -170,7 +186,12 @@ export function PrelimResolutionComparisonSection({
 
       {isCompany ? (
         <>
-          <ComparisonCard title="Company Information">
+          <ComparisonCard
+            title="Company Information"
+            editable={drawerActionable}
+            isEditing={editableSection === 'company-info'}
+            onToggleEdit={() => toggleEditableSection('company-info')}
+          >
             <ComparisonRow
               field="Company Name"
               appValue={companyData.companyName}
@@ -179,7 +200,7 @@ export function PrelimResolutionComparisonSection({
                 companyData.companyName,
                 getCompanyName(companyDb) || selectedMatch?.companyName
               )}
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'company-info'}
               onAppValueChange={(value) =>
                 setEditableCompanyData((prev) => ({ ...prev, companyName: value }))
               }
@@ -189,7 +210,7 @@ export function PrelimResolutionComparisonSection({
               appValue={companyData.companyName}
               dbValue="Not on file"
               status="not-on-file"
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'company-info'}
               onAppValueChange={(value) =>
                 setEditableCompanyData((prev) => ({ ...prev, companyName: value }))
               }
@@ -204,7 +225,7 @@ export function PrelimResolutionComparisonSection({
                 companyData.companyAddress,
                 formatAddressStreet(dbCompanyAddress) || selectedMatch?.Address
               )}
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'company-info'}
               onAppValueChange={(value) =>
                 setEditableCompanyData((prev) => ({ ...prev, companyAddress: value }))
               }
@@ -214,7 +235,7 @@ export function PrelimResolutionComparisonSection({
               appValue={companySubmittedCityStateZip}
               dbValue={companyDbCityStateZip || 'Not on file'}
               status={getComparisonStatus(companySubmittedCityStateZip, companyDbCityStateZip)}
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'company-info'}
               onAppValueChange={(value) =>
                 setEditableCompanyData((prev) => ({ ...prev, companyCity: value }))
               }
@@ -227,7 +248,7 @@ export function PrelimResolutionComparisonSection({
                 companyData.companyCountry,
                 dbCompanyAddress?.country || selectedMatch?.Country
               )}
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'company-info'}
               onAppValueChange={(value) =>
                 setEditableCompanyData((prev) => ({ ...prev, companyCountry: value }))
               }
@@ -237,7 +258,7 @@ export function PrelimResolutionComparisonSection({
               appValue={companyData.companyWebsite || ''}
               dbValue={companyDb?.companyWebsite || 'Not on file'}
               status={getComparisonStatus(companyData.companyWebsite, companyDb?.companyWebsite)}
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'company-info'}
               onAppValueChange={(value) =>
                 setEditableCompanyData((prev) => ({ ...prev, companyWebsite: value }))
               }
@@ -251,11 +272,18 @@ export function PrelimResolutionComparisonSection({
             )}
           </ComparisonCard>
 
-          <ComparisonCard title="Company Contact" badge="PRIMARY" badgeClass="bg-blue-100 text-blue-800">
+          <ComparisonCard
+            title="Company Contact"
+            badge="PRIMARY"
+            badgeClass="bg-blue-100 text-blue-800"
+            editable={drawerActionable}
+            isEditing={editableSection === 'company-primary'}
+            onToggleEdit={() => toggleEditableSection('company-primary')}
+          >
             <ContactRows
               contact={companyData.primaryContact}
               dbContact={dbCompanyPrimaryContact}
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'company-primary'}
               onChange={(key, value) =>
                 setEditableCompanyData((prev) => ({
                   ...prev,
@@ -273,11 +301,18 @@ export function PrelimResolutionComparisonSection({
             )}
           </ComparisonCard>
 
-          <ComparisonCard title="Contact" badge="BILLING" badgeClass="bg-amber-100 text-amber-800">
+          <ComparisonCard
+            title="Contact"
+            badge="BILLING"
+            badgeClass="bg-amber-100 text-amber-800"
+            editable={drawerActionable}
+            isEditing={editableSection === 'company-billing'}
+            onToggleEdit={() => toggleEditableSection('company-billing')}
+          >
             <ContactRows
               contact={companyData.billingContact}
               dbContact={dbCompanyBillingContact}
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'company-billing'}
               onChange={(key, value) =>
                 setEditableCompanyData((prev) => ({
                   ...prev,
@@ -297,7 +332,12 @@ export function PrelimResolutionComparisonSection({
         </>
       ) : (
         <>
-          <ComparisonCard title="Plant Information">
+          <ComparisonCard
+            title="Plant Information"
+            editable={drawerActionable}
+            isEditing={editableSection === 'plant-info'}
+            onToggleEdit={() => toggleEditableSection('plant-info')}
+          >
             <ComparisonRow
               field="Plant Name"
               appValue={plantData.plantName}
@@ -306,7 +346,7 @@ export function PrelimResolutionComparisonSection({
                 plantData.plantName,
                 getPlantName(plantDb) || selectedMatch?.plantName
               )}
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'plant-info'}
               onAppValueChange={(value) =>
                 setEditablePlantData((prev) => ({ ...prev, plantName: value }))
               }
@@ -324,7 +364,7 @@ export function PrelimResolutionComparisonSection({
                 plantData.plantAddress,
                 plantDb?.Address || formatAddressStreet(dbPlantAddress) || selectedMatch?.Address
               )}
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'plant-info'}
               onAppValueChange={(value) =>
                 setEditablePlantData((prev) => ({ ...prev, plantAddress: value }))
               }
@@ -341,7 +381,7 @@ export function PrelimResolutionComparisonSection({
                 plantData.plantCity,
                 dbPlantAddress?.city || selectedMatch?.City
               )}
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'plant-info'}
               onAppValueChange={(value) =>
                 setEditablePlantData((prev) => ({ ...prev, plantCity: value }))
               }
@@ -351,7 +391,7 @@ export function PrelimResolutionComparisonSection({
               appValue={plantData.processDescription || ''}
               dbValue={plantDb?.brieflySummarize || 'Not on file'}
               status={getComparisonStatus(plantData.processDescription, plantDb?.brieflySummarize)}
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'plant-info'}
               onAppValueChange={(value) =>
                 setEditablePlantData((prev) => ({ ...prev, processDescription: value }))
               }
@@ -365,11 +405,18 @@ export function PrelimResolutionComparisonSection({
             )}
           </ComparisonCard>
 
-          <ComparisonCard title="Plant Contact" badge="PRIMARY" badgeClass="bg-blue-100 text-blue-800">
+          <ComparisonCard
+            title="Plant Contact"
+            badge="PRIMARY"
+            badgeClass="bg-blue-100 text-blue-800"
+            editable={drawerActionable}
+            isEditing={editableSection === 'plant-primary'}
+            onToggleEdit={() => toggleEditableSection('plant-primary')}
+          >
             <ContactRows
               contact={plantData.primaryContact}
               dbContact={dbPlantPrimaryContact}
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'plant-primary'}
               onChange={(key, value) =>
                 setEditablePlantData((prev) => ({
                   ...prev,
@@ -393,11 +440,14 @@ export function PrelimResolutionComparisonSection({
             badgeClass="bg-violet-100 text-violet-700"
             note="- Not currently in Kashrus"
             isLast
+            editable={drawerActionable}
+            isEditing={editableSection === 'plant-marketing'}
+            onToggleEdit={() => toggleEditableSection('plant-marketing')}
           >
             <ContactRows
               contact={plantData.marketingContact}
               dbContact={dbPlantMarketingContact}
-              editable={isEditMode}
+              editable={isEditMode || editableSection === 'plant-marketing'}
               onChange={(key, value) =>
                 setEditablePlantData((prev) => ({
                   ...prev,
@@ -494,6 +544,9 @@ function ComparisonCard({
   badgeClass,
   note,
   isLast = false,
+  editable = false,
+  isEditing = false,
+  onToggleEdit,
   children,
 }: {
   title: string
@@ -501,20 +554,43 @@ function ComparisonCard({
   badgeClass?: string
   note?: string
   isLast?: boolean
+  editable?: boolean
+  isEditing?: boolean
+  onToggleEdit?: () => void
   children: ReactNode
 }) {
   return (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${isLast ? '' : 'mb-4'}`}>
-      <div className="border-y border-slate-200 bg-slate-100 px-4 py-2 flex items-center gap-2">
-        {badge && (
-          <span
-            className={`inline-flex items-center rounded px-2 py-0.5 text-[11.5px] font-bold uppercase tracking-wide ${badgeClass}`}
+      <div className="border-y border-slate-200 bg-slate-100 px-4 py-2 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          {badge && (
+            <span
+              className={`inline-flex items-center rounded px-2 py-0.5 text-[11.5px] font-bold uppercase tracking-wide ${badgeClass}`}
+            >
+              {badge}
+            </span>
+          )}
+          <h4 className="text-[13.5px] font-semibold tracking-wide text-slate-600">{title}</h4>
+          {note && <span className="text-xs italic text-gray-500">{note}</span>}
+        </div>
+        {onToggleEdit && (
+          <button
+            type="button"
+            onClick={onToggleEdit}
+            disabled={!editable}
+            title={isEditing ? 'Stop editing submitted values' : 'Edit submitted values'}
+            aria-label={isEditing ? 'Stop editing submitted values' : 'Edit submitted values'}
+            className={`inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded border transition-colors ${
+              editable
+                ? isEditing
+                  ? 'border-amber-300 bg-amber-100 text-amber-700 hover:bg-amber-200'
+                  : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+                : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300'
+            }`}
           >
-            {badge}
-          </span>
+            <Edit className="h-3.5 w-3.5" />
+          </button>
         )}
-        <h4 className="text-[13.5px] font-semibold tracking-wide text-slate-600">{title}</h4>
-        {note && <span className="text-xs italic text-gray-500">{note}</span>}
       </div>
       {children}
     </div>
