@@ -514,7 +514,7 @@ function buildPlantContactPayloadFromApplication({
         EIREmail: '',
         ScheduleBEmail: '',
         FormulaEmail: '',
-        PoCT: 'N',
+        PoCT: 'N'
       },
       type: 'PlantContactTB',
     },
