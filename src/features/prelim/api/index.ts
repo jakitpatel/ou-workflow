@@ -74,8 +74,8 @@ type ResolveCompanyPayload = {
   company_id?: string | number | null
   company_name: string
   address?: ResolveAddressPayload
-  primary_contact: ResolveContactPayload
-  billing_contact: ResolveContactPayload
+  primary_contact?: ResolveContactPayload
+  billing_contact?: ResolveContactPayload
 }
 
 type ResolvePlantPayload = {
@@ -85,8 +85,8 @@ type ResolvePlantPayload = {
   plant_id?: string | number
   plant_name: string
   address?: ResolveAddressPayload
-  primary_contact: ResolveContactPayload
-  billing_contact: ResolveContactPayload
+  primary_contact?: ResolveContactPayload
+  billing_contact?: ResolveContactPayload
 }
 
 type CompanyApiAttributes = {
@@ -269,8 +269,9 @@ function splitContactName(fullName?: string) {
 function buildResolveContactPayload(
   contact: ResolutionContactData | undefined,
   flags: Pick<ResolveContactPayload, 'PrimaryCT' | 'BillingCT' | 'WebCT' | 'OtherCT'>,
-): ResolveContactPayload {
+): ResolveContactPayload | undefined {
   const { firstName, lastName } = splitContactName(contact?.name)
+  if (!firstName && !lastName) return undefined
 
   return {
     CompanyTitle: contact?.title ?? '',
@@ -301,6 +302,19 @@ function buildResolveCompanyPayload({
   companyId?: string | number
   createNewCompany: boolean
 }): ResolveCompanyPayload {
+  const primaryContact = buildResolveContactPayload(companyData.primaryContact, {
+    PrimaryCT: createNewCompany ? 1 : 0,
+    BillingCT: 0,
+    WebCT: 0,
+    OtherCT: createNewCompany ? 0 : 1,
+  })
+  const billingContact = buildResolveContactPayload(companyData.billingContact, {
+    PrimaryCT: 0,
+    BillingCT: createNewCompany ? 1 : 0,
+    WebCT: 0,
+    OtherCT: createNewCompany ? 0 : 1,
+  })
+
   return {
     application_id: applicationId,
     task_instance_id: taskInstanceId,
@@ -320,18 +334,8 @@ function buildResolveCompanyPayload({
           },
         }
       : {}),
-    primary_contact: buildResolveContactPayload(companyData.primaryContact, {
-      PrimaryCT: createNewCompany ? 1 : 0,
-      BillingCT: 0,
-      WebCT: 0,
-      OtherCT: createNewCompany ? 0 : 1,
-    }),
-    billing_contact: buildResolveContactPayload(companyData.billingContact, {
-      PrimaryCT: 0,
-      BillingCT: createNewCompany ? 1 : 0,
-      WebCT: 0,
-      OtherCT: createNewCompany ? 0 : 1,
-    }),
+    ...(primaryContact ? { primary_contact: primaryContact } : {}),
+    ...(billingContact ? { billing_contact: billingContact } : {}),
   }
 }
 
@@ -350,6 +354,19 @@ function buildResolvePlantPayload({
   plantData: PlantData
   createNewPlant: boolean
 }): ResolvePlantPayload {
+  const primaryContact = buildResolveContactPayload(plantData.primaryContact, {
+    PrimaryCT: createNewPlant ? 1 : 0,
+    BillingCT: 0,
+    WebCT: 0,
+    OtherCT: createNewPlant ? 0 : 1,
+  })
+  const billingContact = buildResolveContactPayload(plantData.marketingContact, {
+    PrimaryCT: 0,
+    BillingCT: 0,
+    WebCT: 0,
+    OtherCT: 1,
+  })
+
   return {
     application_id: applicationId,
     task_instance_id: taskInstanceId,
@@ -370,18 +387,8 @@ function buildResolvePlantPayload({
           },
         }
       : {}),
-    primary_contact: buildResolveContactPayload(plantData.primaryContact, {
-      PrimaryCT: createNewPlant ? 1 : 0,
-      BillingCT: 0,
-      WebCT: 0,
-      OtherCT: createNewPlant ? 0 : 1,
-    }),
-    billing_contact: buildResolveContactPayload(plantData.marketingContact, {
-      PrimaryCT: 0,
-      BillingCT: 0,
-      WebCT: 0,
-      OtherCT: 1,
-    }),
+    ...(primaryContact ? { primary_contact: primaryContact } : {}),
+    ...(billingContact ? { billing_contact: billingContact } : {}),
   }
 }
 
