@@ -73,6 +73,7 @@ type ResolveCompanyPayload = {
   task_instance_id: string | number
   company_id?: string | number | null
   company_name: string
+  companyWebsite: string
   address?: ResolveAddressPayload
   primary_contact?: ResolveContactPayload
   billing_contact?: ResolveContactPayload
@@ -84,6 +85,7 @@ type ResolvePlantPayload = {
   company_id?: string | number | null
   plant_id?: string | number
   plant_name: string
+  companyWebsite: string
   address?: ResolveAddressPayload
   primary_contact?: ResolveContactPayload
   billing_contact?: ResolveContactPayload
@@ -328,6 +330,7 @@ function buildResolveCompanyPayload({
     task_instance_id: taskInstanceId,
     ...(createNewCompany || companyId == null ? {} : { company_id: companyId }),
     company_name: companyData.companyName,
+    companyWebsite: companyData.companyWebsite ?? '',
     ...(createNewCompany
       ? {
           address: {
@@ -381,6 +384,7 @@ function buildResolvePlantPayload({
     company_id: companyId == null || String(companyId).trim() === '' ? null : companyId,
     ...(createNewPlant || plantId == null ? {} : { plant_id: plantId }),
     plant_name: plantData.plantName,
+    companyWebsite: plantData.companyWebsite ?? '',
     ...(createNewPlant
       ? {
           address: {

@@ -41,6 +41,7 @@ export const createDefaultPlantData = (): PlantData => ({
   plantState: '',
   plantZip: '',
   plantCountry: '',
+  companyWebsite: '',
   plantNumber: undefined,
   processDescription: '',
   primaryContact: {

@@ -77,6 +77,7 @@ export type PlantData = {
   plantState?: string
   plantZip?: string
   plantCountry: string
+  companyWebsite?: string
   plantNumber?: number
   processDescription?: string
   primaryContact?: ResolutionContactData

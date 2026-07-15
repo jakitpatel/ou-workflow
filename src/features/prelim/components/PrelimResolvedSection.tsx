@@ -202,7 +202,10 @@ export function PrelimResolvedSection({
   const activePlantIndex = drawerState.plantIndex
   const activePlantTask =
     activePlantIndex !== undefined ? plantTasks[activePlantIndex] : undefined
-  const plantDrawerData = toPlantDrawerData(activePlantTask?.plantFromApplication)
+  const plantDrawerData = toPlantDrawerData(
+    activePlantTask?.plantFromApplication,
+    companyTask?.companyFromApplication?.companyWebsite
+  )
   const plantResolveSavedState = getResolveSavedState(
     activePlantTask?.StatusDetails ?? (activePlantTask as any)?.statusDetails
   )
@@ -627,7 +630,7 @@ function toCompanyDrawerData(data?: CompanyFromApplication) {
   }
 }
 
-function toPlantDrawerData(data?: PlantFromApplication) {
+function toPlantDrawerData(data?: PlantFromApplication, companyWebsite?: string) {
   type NewPlantContact = {
     IsPrimaryContact?: boolean
     contactFirst?: string
@@ -708,6 +711,7 @@ function toPlantDrawerData(data?: PlantFromApplication) {
     plantState: pickFirstNonEmpty(data?.plantState, data?.State, parsedAddress.state),
     plantZip: pickFirstNonEmpty(data?.plantZip, data?.Zip, parsedAddress.zip),
     plantCountry: pickFirstNonEmpty(data?.plantCountry, data?.Country, parsedAddress.country),
+    companyWebsite: companyWebsite ?? '',
     plantNumber: data?.plantNumber,
     processDescription: data?.brieflySummarize ?? '',
     primaryContact: toContact(primaryRaw),
