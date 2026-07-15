@@ -10,6 +10,7 @@ type Props = {
   isCreatedMatch: boolean
   bestMatch: Match | null
   confirmedMatch: Match | null
+  applicationId?: string | number
   completedSelectedId?: string | number
   completedResolveMethod?: 'Created' | 'Selected'
   onClose: () => void
@@ -24,6 +25,7 @@ export function PrelimResolutionDrawerHeader({
   isCreatedMatch,
   bestMatch,
   confirmedMatch,
+  applicationId,
   completedSelectedId,
   completedResolveMethod,
   onClose,
@@ -48,7 +50,7 @@ export function PrelimResolutionDrawerHeader({
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
-              WF 26-00415
+              AppId: {applicationId ?? 'N/A'}
             </span>
             {isCompany ? (
               <>

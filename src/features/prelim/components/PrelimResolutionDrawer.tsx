@@ -519,6 +519,7 @@ export function PrelimResolutionDrawer({
           isCreatedMatch={createdMatch != null}
           bestMatch={matches[0] ?? null}
           confirmedMatch={isCompany ? confirmedCompanyMatch : confirmedPlantMatch}
+          applicationId={applicationId}
           completedSelectedId={isTaskCompleted ? selectedId : undefined}
           completedResolveMethod={savedResolveMethod}
           onClose={onClose}
