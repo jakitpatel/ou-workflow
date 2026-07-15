@@ -37,6 +37,12 @@ export type CompanyFromApplication = {
   companyPhone?: string;
   companyWebsite?: string;
   ZipPostalCode?: string;
+  City?: string;
+  Country?: string;
+  State?: string;
+  Street1?: string;
+  Street2?: string;
+  Zip?: string;
   numberOfPlants?: number;
   whichCategory?: string;
   companyContacts?: CompanyFromApplicationContact[];
@@ -106,6 +112,12 @@ export type PlantFromApplication = {
   plantState?: string;
   plantCountry: string;
   plantZip?: string;
+  City?: string;
+  Country?: string;
+  State?: string;
+  Street1?: string;
+  Street2?: string;
+  Zip?: string;
   plantNumber?: number;
   plantPhone?: string;
   Address?: string;

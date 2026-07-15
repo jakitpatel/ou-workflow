@@ -122,6 +122,12 @@ export function PrelimResolutionComparisonSection({
     companyData.ZipPostalCode
   )
   const companyDbCityStateZip = formatAddressCityStateZip(dbCompanyAddress) || selectedMatch?.City
+  const plantSubmittedCityStateZip = formatSubmittedCityStateZip(
+    plantData.plantCity,
+    plantData.plantState,
+    plantData.plantZip
+  )
+  const plantDbCityStateZip = formatAddressCityStateZip(dbPlantAddress) || selectedMatch?.City
 
   const sectionActions = (
     isActionable: boolean,
@@ -371,19 +377,25 @@ export function PrelimResolutionComparisonSection({
             />
             <ComparisonRow
               field="City / State / ZIP"
-              appValue={plantData.plantCity || ''}
-              dbValue={
-                formatAddressCityStateZip(dbPlantAddress) ||
-                selectedMatch?.City ||
-                'Not on file'
-              }
-              status={getComparisonStatus(
-                plantData.plantCity,
-                dbPlantAddress?.city || selectedMatch?.City
-              )}
+              appValue={plantSubmittedCityStateZip}
+              dbValue={plantDbCityStateZip || 'Not on file'}
+              status={getComparisonStatus(plantSubmittedCityStateZip, plantDbCityStateZip)}
               editable={isEditMode || editableSection === 'plant-info'}
               onAppValueChange={(value) =>
                 setEditablePlantData((prev) => ({ ...prev, plantCity: value }))
+              }
+            />
+            <ComparisonRow
+              field="Country"
+              appValue={plantData.plantCountry || ''}
+              dbValue={dbPlantAddress?.country || selectedMatch?.Country || 'Not on file'}
+              status={getComparisonStatus(
+                plantData.plantCountry,
+                dbPlantAddress?.country || selectedMatch?.Country
+              )}
+              editable={isEditMode || editableSection === 'plant-info'}
+              onAppValueChange={(value) =>
+                setEditablePlantData((prev) => ({ ...prev, plantCountry: value }))
               }
             />
             <ComparisonRow
