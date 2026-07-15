@@ -20,6 +20,7 @@ export function JsonEditorView({
 
   useEffect(() => {
     if (!ref.current) return
+    
 
     editorRef.current = new JSONEditor(ref.current, {
       mode: 'tree',
