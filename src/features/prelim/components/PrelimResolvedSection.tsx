@@ -75,6 +75,19 @@ function getResolveSavedState(value: unknown): ResolveSavedState | null {
 
   if (typeof value === 'object') {
     const record = value as Record<string, unknown>
+    if ('resolveId' in record || 'resolveMethod' in record) {
+      return {
+        resolveId:
+          record.resolveId && typeof record.resolveId === 'object'
+            ? (record.resolveId as ResolveSavedState['resolveId'])
+            : undefined,
+        resolveMethod:
+          record.resolveMethod === 'Created' || record.resolveMethod === 'Selected'
+            ? record.resolveMethod
+            : undefined,
+      }
+    }
+
     const savedState = record.savedState ?? record.SavedState
     if (typeof savedState === 'string') return getResolveSavedState(savedState)
     if (savedState && typeof savedState === 'object') return savedState as ResolveSavedState
@@ -212,6 +225,13 @@ export function PrelimResolvedSection({
   const companyTaskInstanceId = companyTask?.TaskInstanceId ?? (companyTask as any)?.taskInstanceId
   const activePlantTaskInstanceId =
     activePlantTask?.TaskInstanceId ?? (activePlantTask as any)?.taskInstanceId
+  const completedCompanyId =
+    companyResolveSavedState?.resolveId?.companyId ?? resolved?.company?.Id
+  const completedPlantId =
+    plantResolveSavedState?.resolveId?.plantId ??
+    (activePlantIndex !== undefined
+      ? resolved?.plants?.[activePlantIndex]?.plant?.plantID
+      : undefined)
 
   const handleWfidClick = (wfid: string | number) => {
     const applicationId = Number(wfid)
@@ -440,7 +460,7 @@ export function PrelimResolvedSection({
           matches={companyTask.companyMatchList || []}
           onAssign={handleAssignCompany}
           onRefresh={refreshApplication}
-          selectedId={resolved?.company?.Id}
+          selectedId={completedCompanyId}
           applicationId={application?.applicationId}
           taskInstanceId={companyTaskInstanceId}
           savedResolveMethod={companyResolveSavedState?.resolveMethod}
@@ -463,11 +483,7 @@ export function PrelimResolvedSection({
               handleAssignPlant(match, activePlantTask)
             }
             onRefresh={refreshApplication}
-            selectedId={
-              activePlantIndex !== undefined
-                ? resolved?.plants?.[activePlantIndex]?.plant?.plantID
-                : undefined
-            }
+            selectedId={completedPlantId}
             applicationId={application?.applicationId}
             taskInstanceId={activePlantTaskInstanceId}
             companyId={resolved?.company?.Id}
