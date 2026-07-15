@@ -14,6 +14,7 @@ import {
   extractCreatedRecordId,
   resolveCompanyFromApplication,
   resolvePlantFromApplication,
+  saveResolveTaskState,
 } from '@/features/prelim/api'
 import { getCompanyDetailsFromKASH, getPlantDetailsFromKASH } from '@/features/applications/api'
 import { PrelimResolutionComparisonSection } from '@/features/prelim/components/PrelimResolutionComparisonSection'
@@ -54,6 +55,7 @@ export function PrelimResolutionDrawer({
   applicationId,
   taskInstanceId,
   companyId,
+  savedResolveMethod,
   isActionable = true,
   taskStatus,
   readOnly = false,
@@ -385,7 +387,7 @@ export function PrelimResolutionDrawer({
     setIsSubmitting(true)
     try {
       if (isCompany) {
-        await resolveCompanyFromApplication({
+        const result = await resolveCompanyFromApplication({
           applicationId,
           taskInstanceId,
           companyData,
@@ -393,10 +395,27 @@ export function PrelimResolutionDrawer({
           createNewCompany: selectedMatch == null,
           token: token ?? undefined,
         })
+        const resolvedCompanyId =
+          selectedMatch?.Id ??
+          result?.company_id ??
+          result?.companyId ??
+          result?.data?.attributes?.company_id ??
+          result?.data?.id
+
+        if (resolvedCompanyId != null && String(resolvedCompanyId).trim() !== '') {
+          await saveResolveTaskState({
+            taskInstanceId,
+            savedState: {
+              resolveId: { companyId: resolvedCompanyId },
+              resolveMethod: selectedMatch == null ? 'Created' : 'Selected',
+            },
+            token: token ?? undefined,
+          })
+        }
       } else {
         const resolvedCompanyId = selectedMatch?.OWNSID ?? companyId
 
-        await resolvePlantFromApplication({
+        const result = await resolvePlantFromApplication({
           applicationId,
           taskInstanceId,
           companyId: resolvedCompanyId,
@@ -405,6 +424,23 @@ export function PrelimResolutionDrawer({
           createNewPlant: selectedMatch == null,
           token: token ?? undefined,
         })
+        const resolvedPlantId =
+          selectedMatch?.Id ??
+          result?.plant_id ??
+          result?.plantId ??
+          result?.data?.attributes?.plant_id ??
+          result?.data?.id
+
+        if (resolvedPlantId != null && String(resolvedPlantId).trim() !== '') {
+          await saveResolveTaskState({
+            taskInstanceId,
+            savedState: {
+              resolveId: { plantId: resolvedPlantId },
+              resolveMethod: selectedMatch == null ? 'Created' : 'Selected',
+            },
+            token: token ?? undefined,
+          })
+        }
       }
       await onRefresh?.()
       toast.success('Task completed')
@@ -461,6 +497,7 @@ export function PrelimResolutionDrawer({
           bestMatch={matches[0] ?? null}
           confirmedMatch={isCompany ? confirmedCompanyMatch : confirmedPlantMatch}
           completedSelectedId={isTaskCompleted ? selectedId : undefined}
+          completedResolveMethod={savedResolveMethod}
           onClose={onClose}
         />
 

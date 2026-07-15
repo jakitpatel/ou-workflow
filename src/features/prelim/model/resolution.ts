@@ -112,6 +112,7 @@ export type PrelimResolutionDrawerProps = {
   applicationId?: string | number
   taskInstanceId?: string | number
   companyId?: string | number
+  savedResolveMethod?: 'Created' | 'Selected'
   isActionable?: boolean
   taskStatus?: string
   readOnly?: boolean

@@ -38,6 +38,57 @@ const isApplicationWithdrawn = (status?: string) => {
   return normalized === 'withdrawn' || normalized === 'wth'
 }
 
+type ResolveSavedState = {
+  resolveId?: {
+    companyId?: string | number
+    plantId?: string | number
+  }
+  resolveMethod?: 'Created' | 'Selected'
+}
+
+function parseJsonLike(value: string): unknown | null {
+  const text = value.trim()
+  if (!text) return null
+
+  const candidates = [
+    text,
+    text
+      .replace(/\bNone\b/g, 'null')
+      .replace(/\bTrue\b/g, 'true')
+      .replace(/\bFalse\b/g, 'false')
+      .replace(/'/g, '"'),
+  ]
+
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(candidate)
+    } catch {
+      // Try the next tolerated backend serialization format.
+    }
+  }
+
+  return null
+}
+
+function getResolveSavedState(value: unknown): ResolveSavedState | null {
+  if (!value) return null
+
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    const savedState = record.savedState ?? record.SavedState
+    if (typeof savedState === 'string') return getResolveSavedState(savedState)
+    if (savedState && typeof savedState === 'object') return savedState as ResolveSavedState
+
+    const statusDetails = record.StatusDetails ?? record.statusDetails
+    if (statusDetails) return getResolveSavedState(statusDetails)
+
+    return null
+  }
+
+  const parsed = parseJsonLike(String(value))
+  return parsed ? getResolveSavedState(parsed) : null
+}
+
 export function PrelimResolvedSection({
   application,
   loading,
@@ -145,10 +196,16 @@ export function PrelimResolvedSection({
   }
 
   const companyDrawerData = toCompanyDrawerData(companyTask?.companyFromApplication)
+  const companyResolveSavedState = getResolveSavedState(
+    companyTask?.StatusDetails ?? (companyTask as any)?.statusDetails
+  )
   const activePlantIndex = drawerState.plantIndex
   const activePlantTask =
     activePlantIndex !== undefined ? plantTasks[activePlantIndex] : undefined
   const plantDrawerData = toPlantDrawerData(activePlantTask?.plantFromApplication)
+  const plantResolveSavedState = getResolveSavedState(
+    activePlantTask?.StatusDetails ?? (activePlantTask as any)?.statusDetails
+  )
   const companyTaskInstanceId = companyTask?.TaskInstanceId ?? (companyTask as any)?.taskInstanceId
   const activePlantTaskInstanceId =
     activePlantTask?.TaskInstanceId ?? (activePlantTask as any)?.taskInstanceId
@@ -383,6 +440,7 @@ export function PrelimResolvedSection({
           selectedId={resolved?.company?.Id}
           applicationId={application?.applicationId}
           taskInstanceId={companyTaskInstanceId}
+          savedResolveMethod={companyResolveSavedState?.resolveMethod}
           isActionable={isTaskPending(companyTask.status)}
           taskStatus={companyTask.status}
           readOnly={isWithdrawn}
@@ -410,6 +468,7 @@ export function PrelimResolvedSection({
             applicationId={application?.applicationId}
             taskInstanceId={activePlantTaskInstanceId}
             companyId={resolved?.company?.Id}
+            savedResolveMethod={plantResolveSavedState?.resolveMethod}
             isActionable={isTaskPending(activePlantTask.status)}
             taskStatus={activePlantTask.status}
             readOnly={isWithdrawn}
@@ -458,7 +517,7 @@ function extractResolvedData(application?: Applicant) {
           task.plantSelected?.plantName ||
           task.plantFromApplication?.plantName ||
           '',
-        plantID: task.plantSelected?.PlantID || task.plantFromApplication?.plantID || '',
+        plantID: task.plantSelected?.PlantID || task.Result || task.plantFromApplication?.plantID || '',
         plantAddress:
           task.plantSelected?.Address ||
           task.plantFromApplication?.Address ||

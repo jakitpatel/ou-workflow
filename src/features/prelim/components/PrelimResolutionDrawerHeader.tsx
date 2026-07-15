@@ -11,6 +11,7 @@ type Props = {
   bestMatch: Match | null
   confirmedMatch: Match | null
   completedSelectedId?: string | number
+  completedResolveMethod?: 'Created' | 'Selected'
   onClose: () => void
 }
 
@@ -24,6 +25,7 @@ export function PrelimResolutionDrawerHeader({
   bestMatch,
   confirmedMatch,
   completedSelectedId,
+  completedResolveMethod,
   onClose,
 }: Props) {
   const headerBgClass = isCompany ? 'bg-[#1e1e2e]' : 'bg-[#312e81]'
@@ -31,6 +33,7 @@ export function PrelimResolutionDrawerHeader({
     completedSelectedId != null && String(completedSelectedId).trim() !== ''
       ? String(completedSelectedId)
       : ''
+  const completedLabel = completedResolveMethod ?? 'Selected'
 
   return (
     <div className={`${headerBgClass} text-white px-6 py-[18px]`}>
@@ -51,7 +54,7 @@ export function PrelimResolutionDrawerHeader({
               <>
                 {completedSelectedIdLabel ? (
                   <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
-                    Selected: Co #{completedSelectedIdLabel}
+                    {completedLabel}: Co #{completedSelectedIdLabel}
                   </span>
                 ) : (
                   <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
@@ -72,7 +75,7 @@ export function PrelimResolutionDrawerHeader({
                 </span>
                 {completedSelectedIdLabel ? (
                   <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
-                    Selected: Plant#{completedSelectedIdLabel}
+                    {completedLabel}: Plant#{completedSelectedIdLabel}
                   </span>
                 ) : (
                   <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">

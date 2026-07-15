@@ -89,6 +89,14 @@ type ResolvePlantPayload = {
   billing_contact?: ResolveContactPayload
 }
 
+type ResolveSavedState = {
+  resolveId: {
+    companyId?: string | number
+    plantId?: string | number
+  }
+  resolveMethod: 'Created' | 'Selected'
+}
+
 type CompanyApiAttributes = {
   COMPANY_ID?: number
   NAME: string
@@ -819,6 +827,34 @@ export async function resolvePlantFromApplication({
     path: '/resolve_plant',
     method: 'POST',
     body,
+    token,
+  })
+}
+
+export async function saveResolveTaskState({
+  taskInstanceId,
+  savedState,
+  token,
+}: {
+  taskInstanceId: string | number
+  savedState: ResolveSavedState
+  token?: string | null
+}): Promise<any> {
+  const taskId = String(taskInstanceId)
+  return await fetchWithAuth({
+    path: `/api/TaskInstance/${encodeURIComponent(taskId)}`,
+    method: 'PATCH',
+    body: {
+      data: {
+        id: taskId,
+        type: 'TaskInstance',
+        attributes: {
+          StatusDetails: JSON.stringify({
+            savedState: JSON.stringify(savedState),
+          }),
+        },
+      },
+    },
     token,
   })
 }
