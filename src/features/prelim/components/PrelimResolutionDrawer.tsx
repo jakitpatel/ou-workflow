@@ -43,6 +43,27 @@ import type {
 } from '@/features/prelim/model/resolution'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 
+const extractResolveResponseValue = (
+  response: any,
+  key: 'company_id' | 'plant_id'
+): string | number | undefined => {
+  const directValue =
+    response?.[key] ??
+    response?.data?.[key] ??
+    response?.data?.attributes?.[key] ??
+    response?.data?.id
+
+  if (directValue != null && String(directValue).trim() !== '') {
+    return directValue
+  }
+
+  const dataText = typeof response?.data === 'string' ? response.data : ''
+  if (!dataText) return undefined
+
+  const match = dataText.match(new RegExp(`"${key}"\\s*:\\s*"?([^",\\s]+)"?`))
+  return match?.[1]
+}
+
 export function PrelimResolutionDrawer({
   isOpen,
   onClose,
@@ -400,7 +421,8 @@ export function PrelimResolutionDrawer({
           result?.company_id ??
           result?.companyId ??
           result?.data?.attributes?.company_id ??
-          result?.data?.id
+          result?.data?.id ??
+          extractResolveResponseValue(result, 'company_id')
 
         if (resolvedCompanyId != null && String(resolvedCompanyId).trim() !== '') {
           await saveResolveTaskState({
@@ -429,7 +451,8 @@ export function PrelimResolutionDrawer({
           result?.plant_id ??
           result?.plantId ??
           result?.data?.attributes?.plant_id ??
-          result?.data?.id
+          result?.data?.id ??
+          extractResolveResponseValue(result, 'plant_id')
 
         if (resolvedPlantId != null && String(resolvedPlantId).trim() !== '') {
           await saveResolveTaskState({
