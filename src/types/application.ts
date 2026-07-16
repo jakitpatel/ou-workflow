@@ -45,7 +45,7 @@ export type CompanyFromApplication = {
   Zip?: string;
   numberOfPlants?: number;
   whichCategory?: string;
-  companyContacts?: CompanyFromApplicationContact[];
+  companyContacts?: ApplicationContactGroups;
 };
 
 export type CompanyMatch = {
@@ -86,7 +86,7 @@ export type KashrusPlantDetail = {
   plantName?: string;
   plantNumber?: number;
   plantAddresses?: KashrusAddress[];
-  plantContacts?: PlantFromApplicationContact[];
+  plantContacts?: ApplicationContactGroups;
 };
 
 export type KashrusCompanyDetailsResponse = {
@@ -123,7 +123,7 @@ export type PlantFromApplication = {
   Address?: string;
   plantID?: string | number;
   brieflySummarize?: string;
-  plantContacts?: PlantFromApplicationContact[];
+  plantContacts?: ApplicationContactGroups;
 };
 
 export type PlantFromApplicationContact = {
@@ -142,22 +142,24 @@ export type PlantFromApplicationContact = {
   pcID?: number;
 };
 
-export type CompanyFromApplicationContact = PlantFromApplicationContact & {
+export type SubmittedApplicationContact = {
   IsPrimaryContact?: boolean;
-  billingContact?: string;
-  billingContactEmail?: string;
-  billingContactFirst?: string;
-  billingContactLast?: string;
-  billingContactPhone?: string;
   contactEmail?: string;
-  contactEmail1?: string;
   contactFirst?: string;
-  contactFirst1?: string;
   contactLast?: string;
-  contactLast1?: string;
   contactPhone?: string;
-  contactPhone1?: string;
+  jobTitle?: string;
   jobTitle1?: string;
+  note?: string;
+};
+
+export type ApplicationContactGroups = {
+  primaryContact?: SubmittedApplicationContact[];
+  billingContact?: SubmittedApplicationContact[];
+  otherContact?: SubmittedApplicationContact[];
+  PrimaryContact?: SubmittedApplicationContact[];
+  BillingContact?: SubmittedApplicationContact[];
+  OtherContact?: SubmittedApplicationContact[];
 };
 
 export type PlantMatch = {

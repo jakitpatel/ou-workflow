@@ -13,9 +13,8 @@ import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { Route as DashboardRoute } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
 import type {
   CompanyFromApplication,
-  CompanyFromApplicationContact,
   PlantFromApplication,
-  PlantFromApplicationContact,
+  SubmittedApplicationContact,
 } from '@/types/application'
 
 type Props = {
@@ -589,45 +588,27 @@ function PlantsSkeleton() {
 }
 
 function toCompanyDrawerData(data?: CompanyFromApplication) {
-  const contacts = (data?.companyContacts ?? []) as CompanyFromApplicationContact[]
-  const primaryRaw =
-    contacts.find((c) => c.IsPrimaryContact === true) ??
-    contacts.find((c) => c.PrimaryCT === 'Y') ??
-    contacts[0]
-  const billingRaw =
-    contacts.find((c) => (c.billingContact ?? '').trim() !== '') ??
-    contacts.find((c) => (c.billingContactEmail ?? '').trim() !== '') ??
-    contacts.find((c) => (c.billingContactPhone ?? '').trim() !== '')
-
   const pickFirstNonEmpty = (...values: Array<string | undefined>) =>
     values.find((value) => (value ?? '').trim() !== '') ?? ''
 
-  const toPrimaryContact = (contact?: CompanyFromApplicationContact) => {
+  const firstContact = (
+    ...groups: Array<SubmittedApplicationContact[] | undefined>
+  ) => groups.flatMap((group) => group ?? []).find(hasSubmittedContactValue)
+
+  const toContact = (contact?: SubmittedApplicationContact) => {
     if (!contact) return undefined
-    const name = `${pickFirstNonEmpty(contact.contactFirst, contact.contactFirst1, contact.FirstName)} ${pickFirstNonEmpty(contact.contactLast, contact.contactLast1, contact.LastName)}`.trim()
+    const name = `${pickFirstNonEmpty(contact.contactFirst)} ${pickFirstNonEmpty(contact.contactLast)}`.trim()
     return {
       name,
-      title: pickFirstNonEmpty(contact.jobTitle1, contact.companytitle, contact.Title),
-      phone: pickFirstNonEmpty(
-        contact.contactPhone,
-        contact.contactPhone1,
-        contact.Cell,
-        contact.Voice
-      ),
-      email: pickFirstNonEmpty(contact.contactEmail, contact.contactEmail1, contact.EMail),
+      title: pickFirstNonEmpty(contact.jobTitle, contact.jobTitle1, contact.note),
+      phone: pickFirstNonEmpty(contact.contactPhone),
+      email: pickFirstNonEmpty(contact.contactEmail),
     }
   }
 
-  const toBillingContact = (contact?: CompanyFromApplicationContact) => {
-    if (!contact) return undefined
-    const name = `${pickFirstNonEmpty(contact.billingContactFirst)} ${pickFirstNonEmpty(contact.billingContactLast)}`.trim()
-    return {
-      name,
-      title: pickFirstNonEmpty(contact.billingContact),
-      phone: pickFirstNonEmpty(contact.billingContactPhone),
-      email: pickFirstNonEmpty(contact.billingContactEmail),
-    }
-  }
+  const contactGroups = data?.companyContacts
+  const primaryRaw = firstContact(contactGroups?.primaryContact, contactGroups?.PrimaryContact)
+  const billingRaw = firstContact(contactGroups?.billingContact, contactGroups?.BillingContact)
 
   return {
     companyName: data?.companyName ?? '',
@@ -641,44 +622,27 @@ function toCompanyDrawerData(data?: CompanyFromApplication) {
     companyWebsite: data?.companyWebsite ?? '',
     numberOfPlants: data?.numberOfPlants,
     whichCategory: data?.whichCategory,
-    primaryContact: toPrimaryContact(primaryRaw),
-    billingContact: toBillingContact(billingRaw),
+    primaryContact: toContact(primaryRaw),
+    billingContact: toContact(billingRaw),
   }
 }
 
 function toPlantDrawerData(data?: PlantFromApplication, companyWebsite?: string) {
-  type NewPlantContact = {
-    IsPrimaryContact?: boolean
-    contactFirst?: string
-    contactLast?: string
-    contactPhone?: string
-    contactEmail?: string
-    jobTitle?: string
-  }
-
-  const contacts = (data?.plantContacts ?? []) as Array<
-    PlantFromApplicationContact & NewPlantContact
-  >
-  const primaryRaw =
-    contacts.find((c) => c.IsPrimaryContact === true) ??
-    contacts.find((c) => c.PrimaryCT === 'Y') ??
-    contacts[0]
-  const secondaryRaw =
-    contacts.find((c) => c !== primaryRaw && c.IsPrimaryContact === false) ??
-    contacts.find((c) => c !== primaryRaw && c.PrimaryCT === 'N') ??
-    contacts.find((c) => c !== primaryRaw)
-
   const pickFirstNonEmpty = (...values: Array<string | undefined>) =>
     values.find((value) => (value ?? '').trim() !== '') ?? ''
 
-  const toContact = (contact?: PlantFromApplicationContact & NewPlantContact) => {
+  const firstContact = (
+    ...groups: Array<SubmittedApplicationContact[] | undefined>
+  ) => groups.flatMap((group) => group ?? []).find(hasSubmittedContactValue)
+
+  const toContact = (contact?: SubmittedApplicationContact) => {
     if (!contact) return undefined
-    const name = `${pickFirstNonEmpty(contact.contactFirst, contact.FirstName)} ${pickFirstNonEmpty(contact.contactLast, contact.LastName)}`.trim()
+    const name = `${pickFirstNonEmpty(contact.contactFirst)} ${pickFirstNonEmpty(contact.contactLast)}`.trim()
     return {
       name,
-      title: pickFirstNonEmpty(contact.jobTitle, contact.companytitle, contact.Title),
-      phone: pickFirstNonEmpty(contact.contactPhone, contact.Cell, contact.Voice),
-      email: pickFirstNonEmpty(contact.contactEmail, contact.EMail),
+      title: pickFirstNonEmpty(contact.jobTitle, contact.jobTitle1, contact.note),
+      phone: pickFirstNonEmpty(contact.contactPhone),
+      email: pickFirstNonEmpty(contact.contactEmail),
     }
   }
 
@@ -719,6 +683,9 @@ function toPlantDrawerData(data?: PlantFromApplication, companyWebsite?: string)
   }
 
   const parsedAddress = parseAddressFromSingleLine(data?.Address)
+  const contactGroups = data?.plantContacts
+  const primaryRaw = firstContact(contactGroups?.PrimaryContact, contactGroups?.primaryContact)
+  const secondaryRaw = firstContact(contactGroups?.OtherContact, contactGroups?.otherContact)
 
   return {
     plantName: data?.plantName ?? '',
@@ -733,4 +700,16 @@ function toPlantDrawerData(data?: PlantFromApplication, companyWebsite?: string)
     primaryContact: toContact(primaryRaw),
     marketingContact: toContact(secondaryRaw),
   }
+}
+
+function hasSubmittedContactValue(contact: SubmittedApplicationContact) {
+  return [
+    contact.contactFirst,
+    contact.contactLast,
+    contact.contactPhone,
+    contact.contactEmail,
+    contact.jobTitle,
+    contact.jobTitle1,
+    contact.note,
+  ].some((value) => (value ?? '').trim() !== '')
 }
