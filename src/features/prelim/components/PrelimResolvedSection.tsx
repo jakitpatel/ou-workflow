@@ -32,6 +32,7 @@ type DrawerState = {
 
 const isResolvePlantTask = (taskName?: string) => /^ResolvePlant\d*$/.test(taskName ?? '')
 const isTaskPending = (status?: string) => (status ?? '').trim().toLowerCase() === 'pending'
+const isTaskCompleted = (status?: string) => (status ?? '').trim().toLowerCase() === 'completed'
 const isApplicationWithdrawn = (status?: string) => {
   const normalized = (status ?? '').trim().toLowerCase()
   return normalized === 'withdrawn' || normalized === 'wth'
@@ -99,6 +100,31 @@ function getResolveSavedState(value: unknown): ResolveSavedState | null {
 
   const parsed = parseJsonLike(String(value))
   return parsed ? getResolveSavedState(parsed) : null
+}
+
+function getResolveMethodMarker(task: unknown): 'C' | 'M' | null {
+  const record = task as Record<string, unknown> | undefined
+  if (!record || !isTaskCompleted(String(record.status ?? ''))) return null
+
+  const savedState = getResolveSavedState(record.StatusDetails ?? record.statusDetails)
+  if (savedState?.resolveMethod === 'Created') return 'C'
+  if (savedState?.resolveMethod === 'Selected') return 'M'
+
+  return null
+}
+
+function ResolveMethodMarker({ marker }: { marker: 'C' | 'M' | null }) {
+  if (!marker) return null
+
+  return (
+    <span
+      className="mr-1 inline-flex h-5 min-w-5 items-center justify-center rounded bg-amber-300 px-1.5 text-[11px] font-extrabold leading-none text-amber-950 ring-1 ring-inset ring-amber-500"
+      title={marker === 'C' ? 'Created during resolution' : 'Matched/selected during resolution'}
+      aria-label={marker === 'C' ? 'Created during resolution' : 'Matched during resolution'}
+    >
+      {marker}
+    </span>
+  )
 }
 
 export function PrelimResolvedSection({
@@ -231,6 +257,7 @@ export function PrelimResolvedSection({
     (activePlantIndex !== undefined
       ? resolved?.plants?.[activePlantIndex]?.plant?.plantID
       : undefined)
+  const companyResolveMethodMarker = getResolveMethodMarker(companyTask)
 
   const handleWfidClick = (wfid: string | number) => {
     const applicationId = Number(wfid)
@@ -318,6 +345,7 @@ export function PrelimResolvedSection({
                     <div className="text-xs text-gray-500 space-y-0.5 min-w-0">
                       <div>
                         <span className="inline-flex items-center rounded-md bg-yellow-100 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
+                          <ResolveMethodMarker marker={companyResolveMethodMarker} />
                           CompanyID: {resolved.company.Id}
                         </span>
                       </div>
@@ -417,7 +445,8 @@ export function PrelimResolvedSection({
 
                         <div className="mt-1 flex items-start justify-between gap-3">
                           <div className="text-xs text-gray-500 space-y-0.5 min-w-0">
-                            <div>
+                            <div className="inline-flex items-center">
+                              <ResolveMethodMarker marker={getResolveMethodMarker(plantTasks[idx])} />
                               Plant ID: <span className="font-mono">{p.plant?.plantID}</span>
                             </div>
                             {p.plant?.plantAddress && (
