@@ -531,6 +531,7 @@ export async function fetchPrelimApplications({
   token,
   searchTerm,
   statusFilter,
+  applicationId,
 }: FetchPrelimApplicationsRequest = {}): Promise<ApplicantsResponse> {
   const params = buildPaginationParams(page, limit)
 
@@ -538,6 +539,10 @@ export async function fetchPrelimApplications({
     'filter[name]': searchTerm,
     'filter[status]': statusFilter,
   })
+
+  if (applicationId !== undefined) {
+    params.append('filter[applicationId]', String(applicationId))
+  }
 
   const response = await fetchWithAuth<BackendPrelimApplicantsResponse>({
     path: `/get_applications_v1?application_type=SUBMISSION&${params.toString()}`,
@@ -552,6 +557,7 @@ export type FetchPrelimApplicationsRequest = {
   token?: string | null
   searchTerm?: string
   statusFilter?: string
+  applicationId?: number
 }
 
 export async function fetchPrelimApplicationDetails(

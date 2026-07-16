@@ -9,6 +9,7 @@ export function PrelimDashboardContent() {
   const {
     q,
     status,
+    applicationId,
     applications,
     isLoading,
     expandedTaskPanel,
@@ -35,7 +36,12 @@ export function PrelimDashboardContent() {
     <div className="p-6 space-y-4">
       <h1 className="text-2xl font-bold">Application Intake</h1>
 
-      <PrelimDashboardFilters q={q} status={status} onChange={updateSearch} />
+      <PrelimDashboardFilters
+        q={q}
+        status={status}
+        applicationId={applicationId}
+        onChange={updateSearch}
+      />
 
       <PrelimDashboardList
         applications={applications}

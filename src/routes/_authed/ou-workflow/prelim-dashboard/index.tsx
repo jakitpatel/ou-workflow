@@ -4,6 +4,7 @@ type PrelimDashboardSearch = {
   q: string
   status: string
   page: number
+  applicationId?: number
 }
 
 export const Route = createFileRoute('/_authed/ou-workflow/prelim-dashboard/')({
@@ -12,6 +13,7 @@ export const Route = createFileRoute('/_authed/ou-workflow/prelim-dashboard/')({
       q: typeof search.q === 'string' ? search.q : '',
       status: typeof search.status === 'string' ? search.status : 'all',
       page: Number.isFinite(Number(search.page)) ? Number(search.page) : 0,
+      applicationId: search.applicationId ? Number(search.applicationId) : undefined,
     }
   },
 })

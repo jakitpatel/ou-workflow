@@ -9,12 +9,14 @@ const PAGE_LIMIT = 20
 export function usePrelimApplications({
   searchTerm,
   statusFilter,
+  applicationId,
   page,
   limit,
   enabled = true,
 }: {
   searchTerm?: string
   statusFilter?: string
+  applicationId?: number
   page: number
   limit?: number
   enabled?: boolean
@@ -26,6 +28,7 @@ export function usePrelimApplications({
     queryKey: prelimQueryKeys.list({
       searchTerm,
       statusFilter,
+      applicationId,
       page,
       limit: pageLimit,
     }),
@@ -34,6 +37,7 @@ export function usePrelimApplications({
         token: token ?? undefined,
         searchTerm,
         statusFilter,
+        applicationId,
         page,
         limit: pageLimit,
       }),

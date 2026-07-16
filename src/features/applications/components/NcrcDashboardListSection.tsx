@@ -13,6 +13,7 @@ type NcrcDashboardListSectionProps = {
   sentinelRef: React.RefObject<HTMLDivElement | null>
   onTaskAction: (event: React.MouseEvent, application: Applicant, action: Task) => void
   onCancelTask: (application: Applicant, action: Task, reason: string) => Promise<void>
+  onIntakeIdClick: (intakeId: string | number) => void
 }
 
 export function NcrcDashboardListSection({
@@ -26,6 +27,7 @@ export function NcrcDashboardListSection({
   sentinelRef,
   onTaskAction,
   onCancelTask,
+  onIntakeIdClick,
 }: NcrcDashboardListSectionProps) {
   return (
     <div className="pb-8">
@@ -45,6 +47,7 @@ export function NcrcDashboardListSection({
                 applicant={applicant}
                 handleTaskAction={onTaskAction}
                 handleCancelTask={onCancelTask}
+                onIntakeIdClick={onIntakeIdClick}
               />
             ))
           ) : (

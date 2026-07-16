@@ -1,6 +1,7 @@
 type PrelimListParams = {
   searchTerm?: string
   statusFilter?: string
+  applicationId?: number
   page?: number
   limit?: number
 }

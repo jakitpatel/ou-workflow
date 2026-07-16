@@ -15,9 +15,15 @@ type Props = {
   applicant: Applicant
   handleTaskAction: (e: React.MouseEvent, application: Applicant, action: Task) => void
   handleCancelTask: (application: Applicant, action: Task, reason: string) => Promise<void> | void
+  onIntakeIdClick: (intakeId: string | number) => void
 }
 
-export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }: Props) {
+export function ApplicantCard({
+  applicant,
+  handleTaskAction,
+  handleCancelTask,
+  onIntakeIdClick,
+}: Props) {
   const {
     applicationNotes,
     applicationNotesContextKey,
@@ -60,6 +66,7 @@ export function ApplicantCard({ applicant, handleTaskAction, handleCancelTask }:
           <ApplicantCardHeader
             applicant={applicant}
             isCritical={isCritical}
+            onIntakeIdClick={onIntakeIdClick}
             onViewApplicationDetails={handleViewApplicationDetails}
             priority={priority}
           />

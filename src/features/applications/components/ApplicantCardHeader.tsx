@@ -5,15 +5,20 @@ type Props = {
   applicant: Applicant
   isCritical: boolean
   onViewApplicationDetails: (id?: string | number) => void
+  onIntakeIdClick: (intakeId: string | number) => void
   priority: { label: string; color: string; textColor: string }
 }
 
 export function ApplicantCardHeader({
   applicant,
   isCritical,
+  onIntakeIdClick,
   onViewApplicationDetails,
   priority,
 }: Props) {
+  const intakeId = applicant.IntakeID ?? applicant.intakeId
+  const hasIntakeId = intakeId !== undefined && intakeId !== null && String(intakeId).trim() !== ''
+
   return (
     <div className="flex justify-between items-start">
       <div className="flex-1">
@@ -30,6 +35,20 @@ export function ApplicantCardHeader({
             <span className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700 flex-shrink-0">
               AppId: {applicant.applicationId}
             </span>
+          )}
+          {hasIntakeId && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                onIntakeIdClick(intakeId)
+              }}
+              className="inline-flex items-center rounded bg-sky-50 px-2 py-0.5 text-xs text-sky-700 ring-1 ring-inset ring-sky-200 transition-colors hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-1 flex-shrink-0"
+              title={`Open prelim dashboard for IntakeID ${intakeId}`}
+              aria-label={`Open prelim dashboard for IntakeID ${intakeId}`}
+            >
+              IntakeID: {intakeId}
+            </button>
           )}
         </div>
 

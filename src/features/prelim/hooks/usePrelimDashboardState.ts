@@ -30,12 +30,13 @@ export function usePrelimDashboardState() {
   const [showConditionModal, setShowConditionModal] = useState<Task | null | boolean>(null)
   const errorDialogRef = useRef<ErrorDialogRef>(null)
 
-  const { q, status, page } = search
+  const { q, status, page, applicationId } = search
   const debouncedSearch = useDebounce(q, DEBOUNCE_DELAY)
 
   const prelimApplicationsQuery = usePrelimApplications({
     searchTerm: debouncedSearch,
     statusFilter: status,
+    applicationId,
     page,
     limit: PAGE_LIMIT,
     enabled: true,
@@ -118,6 +119,7 @@ export function usePrelimDashboardState() {
   return {
     q,
     status,
+    applicationId,
     applications,
     isLoading: prelimApplicationsQuery.isLoading,
     expandedTaskPanel,

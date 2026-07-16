@@ -18,6 +18,7 @@ import { useTaskActions } from '@/features/tasks/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { Route } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
+import { Route as PrelimDashboardRoute } from '@/routes/_authed/ou-workflow/prelim-dashboard'
 import type { Applicant, ApplicantAppVars, AssignedRole, Task } from '@/types/application'
 import type { NoteTab, TaskNotesDrawerTabConfig } from '@/features/tasks/notes/TaskNotesDrawer'
 
@@ -361,6 +362,21 @@ export function NcrcDashboardContent() {
     openMyNotesDrawer()
   }
 
+  const handleIntakeIdClick = (intakeId: string | number) => {
+    const applicationId = Number(intakeId)
+    if (!Number.isFinite(applicationId)) return
+
+    navigate({
+      to: PrelimDashboardRoute.to,
+      search: {
+        q: '',
+        status: 'all',
+        page: 0,
+        applicationId,
+      },
+    })
+  }
+
   return (
     <>
       <div className="min-h-screen bg-gray-50">
@@ -401,6 +417,7 @@ export function NcrcDashboardContent() {
             sentinelRef={sentinelRef}
             onTaskAction={handleTaskAction}
             onCancelTask={handleCancelTask}
+            onIntakeIdClick={handleIntakeIdClick}
           />
         </div>
       </div>

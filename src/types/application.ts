@@ -351,6 +351,8 @@ export type ResolvedData = {
 export type Applicant = {
   id: number;
   applicationId: number;
+  IntakeID?: number | string | null;
+  intakeId?: number | string | null;
   visit_id?: number | string | null;
   visitId?: number | string | null;
   appvars?: ApplicantAppVars | null;

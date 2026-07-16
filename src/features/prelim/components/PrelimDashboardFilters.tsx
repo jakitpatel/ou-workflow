@@ -3,10 +3,11 @@ import { Search } from 'lucide-react'
 type Props = {
   q?: string
   status?: string
-  onChange: (next: { q?: string; status?: string; page: number }) => void
+  applicationId?: number
+  onChange: (next: { q?: string; status?: string; applicationId?: number; page: number }) => void
 }
 
-export function PrelimDashboardFilters({ q, status, onChange }: Props) {
+export function PrelimDashboardFilters({ q, status, applicationId, onChange }: Props) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
       <div className="flex items-center gap-4">
@@ -34,6 +35,17 @@ export function PrelimDashboardFilters({ q, status, onChange }: Props) {
           <option value="NEW">New</option>
           <option value="WTH">Withdrawn</option>
         </select>
+
+        {applicationId !== undefined && (
+          <button
+            type="button"
+            onClick={() => onChange({ applicationId: undefined, page: 0 })}
+            className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+            title="Clear application id filter"
+          >
+            AppId: {applicationId} x
+          </button>
+        )}
       </div>
     </div>
   )
