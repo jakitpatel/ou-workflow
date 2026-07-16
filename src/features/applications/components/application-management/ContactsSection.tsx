@@ -7,7 +7,7 @@ export default function ContactsSection({
   application: ApplicationDetail;
   editMode: boolean;
 }) {
-  const contacts = application.companyContacts || [];
+  const contacts = Array.isArray(application.companyContacts) ? application.companyContacts : [];
   const primaryContact = contacts.find(c => c.type === "Primary Contact");
   const otherContacts = contacts.filter(c => c.type !== "Primary Contact");
 

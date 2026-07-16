@@ -9,6 +9,7 @@ type PrelimCompanyAddress = {
 }
 
 type PrelimCompanyContact = {
+  IsPrimaryContact?: boolean
   billingContact?: string
   billingContactEmail?: string
   billingContactFirst?: string
@@ -20,6 +21,16 @@ type PrelimCompanyContact = {
   contactPhone?: string
   isPrimaryContact?: boolean
   jobTitle?: string
+  note?: string
+}
+
+type PrelimCompanyContactGroups = {
+  primaryContact?: PrelimCompanyContact[]
+  billingContact?: PrelimCompanyContact[]
+  otherContact?: PrelimCompanyContact[]
+  PrimaryContact?: PrelimCompanyContact[]
+  BillingContact?: PrelimCompanyContact[]
+  OtherContact?: PrelimCompanyContact[]
 }
 
 type PrelimPlant = {
@@ -75,7 +86,7 @@ type PrelimApplicationDetail = {
   OUCertified?: boolean
   companyAdresses?: PrelimCompanyAddress[]
   companyAddresses?: PrelimCompanyAddress[]
-  companyContacts?: PrelimCompanyContact[]
+  companyContacts?: PrelimCompanyContact[] | PrelimCompanyContactGroups
   companyName?: string
   companyPhone?: string
   companyWebsite?: string
@@ -95,19 +106,70 @@ const yesNo = (value?: boolean) => (value ? 'Yes' : 'No')
 const formatPersonName = (first?: string, last?: string) =>
   [first, last].filter(Boolean).join(' ').trim()
 
-const mapCompanyContacts = (contacts: PrelimCompanyContact[] = []): CompanyContact[] =>
-  contacts.flatMap((contact) => {
+const hasContactValue = (contact: PrelimCompanyContact) =>
+  [
+    contact.contactFirst,
+    contact.contactLast,
+    contact.contactEmail,
+    contact.contactPhone,
+    contact.jobTitle,
+    contact.note,
+  ].some((value) => String(value ?? '').trim() !== '')
+
+const toContactType = (groupType: string, contact: PrelimCompanyContact) => {
+  if (groupType === 'primary' || contact.isPrimaryContact || contact.IsPrimaryContact) {
+    return 'Primary Contact'
+  }
+
+  if (groupType === 'billing') return 'Billing Contact'
+  if (groupType === 'other') return 'Other Contact'
+
+  return contact.isPrimaryContact || contact.IsPrimaryContact ? 'Primary Contact' : 'Company Contact'
+}
+
+const flattenCompanyContacts = (
+  contacts?: PrelimCompanyContact[] | PrelimCompanyContactGroups,
+): Array<PrelimCompanyContact & { groupType?: string }> => {
+  if (!contacts) return []
+  if (Array.isArray(contacts)) return contacts.map((contact) => ({ ...contact }))
+
+  return [
+    ...(contacts.primaryContact ?? contacts.PrimaryContact ?? []).map((contact) => ({
+      ...contact,
+      groupType: 'primary',
+    })),
+    ...(contacts.billingContact ?? contacts.BillingContact ?? []).map((contact) => ({
+      ...contact,
+      groupType: 'billing',
+    })),
+    ...(contacts.otherContact ?? contacts.OtherContact ?? []).map((contact) => ({
+      ...contact,
+      groupType: 'other',
+    })),
+  ]
+}
+
+const mapCompanyContacts = (
+  contacts?: PrelimCompanyContact[] | PrelimCompanyContactGroups,
+): CompanyContact[] =>
+  flattenCompanyContacts(contacts).flatMap((contact) => {
+    if (!hasContactValue(contact)) return []
+
     const mappedContacts: CompanyContact[] = [
       {
         email: contact.contactEmail ?? '',
         name: formatPersonName(contact.contactFirst, contact.contactLast),
         phone: contact.contactPhone ?? '',
         role: contact.jobTitle ?? '',
-        type: contact.isPrimaryContact ? 'Primary Contact' : 'Company Contact',
+        type: toContactType(contact.groupType ?? '', contact),
       },
     ]
 
-    if (contact.billingContact && contact.billingContact !== 'Same as Company Contact') {
+    if (
+      contact.billingContact &&
+      contact.billingContact.trim() !== '' &&
+      contact.billingContact !== 'Same as Company Contact'
+    ) {
       mappedContacts.push({
         email: contact.billingContactEmail ?? '',
         name: formatPersonName(contact.billingContactFirst, contact.billingContactLast),
@@ -215,6 +277,7 @@ export function mapPrelimApplicationDetailToApplicationDetail(
   const companyAddresses = detail.companyAddresses ?? detail.companyAdresses ?? []
   const primaryCompanyAddress = companyAddresses[0]
   const plants = detail.plants ?? []
+  const companyContacts = mapCompanyContacts(detail.companyContacts)
 
   return {
     applicationId: String(detail.externalReferenceId ?? ''),
@@ -222,7 +285,7 @@ export function mapPrelimApplicationDetailToApplicationDetail(
     submissionDate: detail.submissionDate,
     kashrusCompanyId: '',
     kashrusStatus: detail.status ?? 'New',
-    primaryContact: mapCompanyContacts(detail.companyContacts)[0]?.name ?? '',
+    primaryContact: companyContacts.find((contact) => contact.type === 'Primary Contact')?.name ?? companyContacts[0]?.name ?? '',
     company: [
       {
         name: detail.companyName ?? '',
@@ -241,8 +304,8 @@ export function mapPrelimApplicationDetailToApplicationDetail(
       type: 'Physical',
       zip: address.ZipPostalCode ?? '',
     })),
-    companyContacts: mapCompanyContacts(detail.companyContacts),
-    contacts: mapCompanyContacts(detail.companyContacts).map((contact) => ({
+    companyContacts,
+    contacts: companyContacts.map((contact) => ({
       email: contact.email,
       name: contact.name,
       phone: contact.phone,
