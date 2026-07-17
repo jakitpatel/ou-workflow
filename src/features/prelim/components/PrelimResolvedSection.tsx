@@ -491,6 +491,7 @@ export function PrelimResolvedSection({
           selectedId={completedCompanyId}
           applicationId={application?.applicationId}
           taskInstanceId={companyTaskInstanceId}
+          taskCapacity={companyTask.capacity ?? undefined}
           savedResolveMethod={companyResolveSavedState?.resolveMethod}
           isActionable={isTaskPending(companyTask.status)}
           taskStatus={companyTask.status}
@@ -514,6 +515,7 @@ export function PrelimResolvedSection({
             selectedId={completedPlantId}
             applicationId={application?.applicationId}
             taskInstanceId={activePlantTaskInstanceId}
+            taskCapacity={activePlantTask.capacity ?? undefined}
             companyId={resolved?.company?.Id}
             savedResolveMethod={plantResolveSavedState?.resolveMethod}
             isActionable={isTaskPending(activePlantTask.status)}

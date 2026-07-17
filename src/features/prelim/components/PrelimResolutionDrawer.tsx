@@ -19,6 +19,7 @@ import {
 import { getCompanyDetailsFromKASH, getPlantDetailsFromKASH } from '@/features/applications/api'
 import { PrelimResolutionComparisonSection } from '@/features/prelim/components/PrelimResolutionComparisonSection'
 import { PrelimResolutionDrawerHeader } from '@/features/prelim/components/PrelimResolutionDrawerHeader'
+import { confirmTask } from '@/features/tasks/api'
 import {
   cloneCompanyData,
   clonePlantData,
@@ -75,6 +76,7 @@ export function PrelimResolutionDrawer({
   selectedId,
   applicationId,
   taskInstanceId,
+  taskCapacity,
   companyId,
   savedResolveMethod,
   isActionable = true,
@@ -407,6 +409,8 @@ export function PrelimResolutionDrawer({
 
     setIsSubmitting(true)
     try {
+      let resolvedTaskResult: string | number | undefined
+
       if (isCompany) {
         const result = await resolveCompanyFromApplication({
           applicationId,
@@ -425,6 +429,7 @@ export function PrelimResolutionDrawer({
           extractResolveResponseValue(result, 'company_id')
 
         if (resolvedCompanyId != null && String(resolvedCompanyId).trim() !== '') {
+          resolvedTaskResult = resolvedCompanyId
           await saveResolveTaskState({
             taskInstanceId,
             savedState: {
@@ -455,6 +460,7 @@ export function PrelimResolutionDrawer({
           extractResolveResponseValue(result, 'plant_id')
 
         if (resolvedPlantId != null && String(resolvedPlantId).trim() !== '') {
+          resolvedTaskResult = resolvedPlantId
           await saveResolveTaskState({
             taskInstanceId,
             savedState: {
@@ -465,6 +471,20 @@ export function PrelimResolutionDrawer({
           })
         }
       }
+
+      if (resolvedTaskResult == null || String(resolvedTaskResult).trim() === '') {
+        throw new Error(`Resolved ${isCompany ? 'company' : 'plant'} id is missing`)
+      }
+
+      await confirmTask({
+        taskId: String(taskInstanceId),
+        applicationId,
+        result: String(resolvedTaskResult),
+        token: token ?? undefined,
+        username: username ?? undefined,
+        capacity: taskCapacity,
+      })
+
       await onRefresh?.()
       toast.success('Task completed')
       onClose()
