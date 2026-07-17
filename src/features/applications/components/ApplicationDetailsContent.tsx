@@ -783,7 +783,11 @@ export function ApplicationDetailsContent({
 
           <div className={mode === 'page' ? 'min-w-0 flex-1' : 'min-w-0 flex-1 overflow-y-auto'}>
             {activeTab === 'overview' && (
-              <Overview application={application} allValidationsPassed={allValidationsPassed} />
+              <Overview
+                application={application}
+                allValidationsPassed={allValidationsPassed}
+                dataSource={dataSource}
+              />
             )}
             {activeTab === 'company' && <CompanySection application={application} editMode={editMode} />}
             {activeTab === 'contacts' && <ContactsSection application={application} editMode={editMode} />}

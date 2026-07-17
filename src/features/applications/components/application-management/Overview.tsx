@@ -2,13 +2,16 @@ import type { ApplicationDetail } from "@/types/application";
 
 export default function Overview({ 
   application, 
-  allValidationsPassed 
+  allValidationsPassed,
+  dataSource = 'application',
 }: { 
   application: ApplicationDetail, 
-  allValidationsPassed: boolean 
+  allValidationsPassed: boolean
+  dataSource?: 'application' | 'prelim'
 }) {
   const company = application?.company?.[0];
   const plant = application?.plants?.[0];
+  const isPrelimApplicationDetail = dataSource === 'prelim';
   
   // Calculate statistics
   const stats = {
@@ -61,12 +64,14 @@ export default function Overview({
               </span>
             </div>
             
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm font-medium text-gray-600">Quote Status</span>
-              <span className="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-full text-xs font-semibold">
-                Pending Acceptance
-              </span>
-            </div>
+            {!isPrelimApplicationDetail ? (
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-600">Quote Status</span>
+                <span className="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-full text-xs font-semibold">
+                  Pending Acceptance
+                </span>
+              </div>
+            ) : null}
             
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">Currently OU Certified</span>
@@ -111,19 +116,23 @@ export default function Overview({
               <span className="text-lg font-bold text-gray-900">{stats.ingredientCount}</span>
             </div>
             
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm font-medium text-gray-600">Recent Additions (24h)</span>
-              <span className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 bg-green-100 text-green-700 border border-green-200 rounded-lg text-sm font-bold">
-                {stats.recentAdditions}
-              </span>
-            </div>
-            
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm font-medium text-gray-600">NCRC DB Records</span>
-              <span className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-sm font-bold">
-                {stats.ncrcRecords}
-              </span>
-            </div>
+            {!isPrelimApplicationDetail ? (
+              <>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">Recent Additions (24h)</span>
+                  <span className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 bg-green-100 text-green-700 border border-green-200 rounded-lg text-sm font-bold">
+                    {stats.recentAdditions}
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">NCRC DB Records</span>
+                  <span className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-sm font-bold">
+                    {stats.ncrcRecords}
+                  </span>
+                </div>
+              </>
+            ) : null}
             
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">Uploaded Files</span>
