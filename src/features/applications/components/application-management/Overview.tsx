@@ -12,6 +12,7 @@ export default function Overview({
   const company = application?.company?.[0];
   const plant = application?.plants?.[0];
   const isPrelimApplicationDetail = dataSource === 'prelim';
+  const validationStatus = isPrelimApplicationDetail ? application.validationStatus ?? '' : null;
   
   // Calculate statistics
   const stats = {
@@ -37,7 +38,9 @@ export default function Overview({
           
           <div className="space-y-3">
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm font-medium text-gray-600">Kashrus DB Status</span>
+              <span className="text-sm font-medium text-gray-600">
+                {isPrelimApplicationDetail ? 'Application Status' : 'Kashrus DB Status'}
+              </span>
               <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-semibold">
                 {application.kashrusStatus}
               </span>
@@ -141,13 +144,17 @@ export default function Overview({
             
             <div className="flex items-center justify-between py-2">
               <span className="text-sm font-medium text-gray-600">Validation Status</span>
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
-                allValidationsPassed 
-                  ? 'bg-green-100 text-green-800 border-green-200' 
-                  : 'bg-red-100 text-red-800 border-red-200'
-              }`}>
-                {allValidationsPassed ? '✓ All Passed' : '⚠ Issues Found'}
-              </span>
+              {isPrelimApplicationDetail ? (
+                <span className="text-sm font-semibold text-gray-900">{validationStatus}</span>
+              ) : (
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
+                  allValidationsPassed 
+                    ? 'bg-green-100 text-green-800 border-green-200' 
+                    : 'bg-red-100 text-red-800 border-red-200'
+                }`}>
+                  {allValidationsPassed ? '✓ All Passed' : '⚠ Issues Found'}
+                </span>
+              )}
             </div>
           </div>
         </div>

@@ -98,6 +98,7 @@ type PrelimApplicationDetail = {
   status?: string
   submissionDate?: string
   submission_files?: any[]
+  validationStatus?: string
   whichCategory?: string
 }
 
@@ -282,6 +283,7 @@ export function mapPrelimApplicationDetailToApplicationDetail(
   return {
     applicationId: String(detail.externalReferenceId ?? ''),
     status: detail.status ?? 'New',
+    validationStatus: detail.validationStatus,
     submissionDate: detail.submissionDate,
     kashrusCompanyId: '',
     kashrusStatus: detail.status ?? 'New',
