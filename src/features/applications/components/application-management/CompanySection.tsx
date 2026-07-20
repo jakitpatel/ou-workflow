@@ -2,13 +2,19 @@ import type { ApplicationDetail } from "@/types/application";
 
 export default function CompanySection({ 
   application, 
-  editMode 
+  editMode,
+  dataSource = 'application',
 }: { 
   application: ApplicationDetail, 
   editMode: boolean 
+  dataSource?: 'application' | 'prelim'
 }) {
   const company = application?.company?.[0];
   const companyAddresses = application?.companyAddresses || [];
+  const companyId =
+    dataSource === 'prelim'
+      ? application.globalData?.company_id ?? application.kashrusCompanyId
+      : application.kashrusCompanyId;
   const physicalAddress = companyAddresses.find(
     (a) => a.type?.toLowerCase() === "physical"
   );
@@ -208,7 +214,7 @@ export default function CompanySection({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100">
             <span className="text-sm font-medium text-blue-700">Company ID</span>
-            <span className="text-sm font-bold text-blue-900">{application.kashrusCompanyId}</span>
+            <span className="text-sm font-bold text-blue-900">{companyId ?? '-'}</span>
           </div>
           
           <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100">

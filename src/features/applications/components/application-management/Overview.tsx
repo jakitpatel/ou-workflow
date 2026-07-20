@@ -1,11 +1,31 @@
 import type { ApplicationDetail } from "@/types/application";
 
-export default function Overview({ 
-  application, 
+function MatchMarker({ isNew }: { isNew?: boolean }) {
+  if (isNew == null) return null;
+
+  const marker = isNew ? 'C' : 'M';
+  const title = isNew ? 'Created' : 'Matched';
+
+  return (
+    <span
+      className={`mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full border text-[11px] font-bold ${
+        isNew
+          ? 'border-blue-200 bg-blue-100 text-blue-700'
+          : 'border-green-200 bg-green-100 text-green-700'
+      }`}
+      title={title}
+    >
+      {marker}
+    </span>
+  );
+}
+
+export default function Overview({
+  application,
   allValidationsPassed,
   dataSource = 'application',
-}: { 
-  application: ApplicationDetail, 
+}: {
+  application: ApplicationDetail,
   allValidationsPassed: boolean
   dataSource?: 'application' | 'prelim'
 }) {
@@ -13,7 +33,11 @@ export default function Overview({
   const plant = application?.plants?.[0];
   const isPrelimApplicationDetail = dataSource === 'prelim';
   const validationStatus = isPrelimApplicationDetail ? application.validationStatus ?? '' : null;
-  
+  const intakeData = isPrelimApplicationDetail ? application.globalData : undefined;
+  const companyId = intakeData?.company_id ?? application.kashrusCompanyId ?? '-';
+  const plantId = intakeData?.plant_id ?? plant?.plantId ?? '-';
+  const ownsId = intakeData?.owns_id ?? '-';
+
   // Calculate statistics
   const stats = {
     plantCount: application.preferences?.plantCount || 0,
@@ -27,7 +51,7 @@ export default function Overview({
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h2 className="text-2xl font-semibold text-gray-900 mb-6">Application Overview</h2>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Application Status Section */}
         <div className="space-y-4">
@@ -35,7 +59,7 @@ export default function Overview({
             <span className="w-1 h-6 bg-blue-600 rounded"></span>
             <h3 className="font-semibold text-gray-900 text-lg">Application Status</h3>
           </div>
-          
+
           <div className="space-y-3">
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">
@@ -45,28 +69,43 @@ export default function Overview({
                 {application.kashrusStatus}
               </span>
             </div>
-            
+
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm font-medium text-gray-600">Company ID</span>
+              <span className="text-sm font-medium text-gray-600">
+                <MatchMarker isNew={intakeData?.is_new_company} />
+                Company ID
+              </span>
               <span className="text-sm font-semibold text-green-700">
-                {application.kashrusCompanyId}
+                {companyId}
               </span>
             </div>
-            
+
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm font-medium text-gray-600">Plant ID</span>
+              <span className="text-sm font-medium text-gray-600">
+                <MatchMarker isNew={intakeData?.is_new_plant} />
+                Plant ID
+              </span>
               <span className="text-sm font-semibold text-green-700">
-                {plant?.plantId || '—'}
+                {plantId}
               </span>
             </div>
-            
+
+            {isPrelimApplicationDetail ? (
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-600">Owns ID</span>
+                <span className="text-sm font-semibold text-green-700">
+                  {ownsId}
+                </span>
+              </div>
+            ) : null}
+
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">Primary Contact</span>
               <span className="text-sm font-semibold text-purple-700">
                 {application.primaryContact}
               </span>
             </div>
-            
+
             {!isPrelimApplicationDetail ? (
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-sm font-medium text-gray-600">Quote Status</span>
@@ -75,7 +114,7 @@ export default function Overview({
                 </span>
               </div>
             ) : null}
-            
+
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">Currently OU Certified</span>
               <span className={`text-sm font-semibold ${
@@ -84,7 +123,7 @@ export default function Overview({
                 {company?.currentlyCertified || 'No'}
               </span>
             </div>
-            
+
             <div className="flex items-center justify-between py-2">
               <span className="text-sm font-medium text-gray-600">Previously Certified</span>
               <span className={`text-sm font-semibold ${
@@ -102,23 +141,23 @@ export default function Overview({
             <span className="w-1 h-6 bg-purple-600 rounded"></span>
             <h3 className="font-semibold text-gray-900 text-lg">Quick Stats</h3>
           </div>
-          
+
           <div className="space-y-3">
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">Plants</span>
               <span className="text-lg font-bold text-gray-900">{stats.plantCount}</span>
             </div>
-            
+
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">Total Products</span>
               <span className="text-lg font-bold text-gray-900">{stats.productCount}</span>
             </div>
-            
+
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">Total Ingredients</span>
               <span className="text-lg font-bold text-gray-900">{stats.ingredientCount}</span>
             </div>
-            
+
             {!isPrelimApplicationDetail ? (
               <>
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
@@ -127,7 +166,7 @@ export default function Overview({
                     {stats.recentAdditions}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-sm font-medium text-gray-600">NCRC DB Records</span>
                   <span className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-sm font-bold">
@@ -136,23 +175,23 @@ export default function Overview({
                 </div>
               </>
             ) : null}
-            
+
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">Uploaded Files</span>
               <span className="text-lg font-bold text-gray-900">{stats.uploadedFiles}</span>
             </div>
-            
+
             <div className="flex items-center justify-between py-2">
               <span className="text-sm font-medium text-gray-600">Validation Status</span>
               {isPrelimApplicationDetail ? (
                 <span className="text-sm font-semibold text-gray-900">{validationStatus}</span>
               ) : (
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
-                  allValidationsPassed 
-                    ? 'bg-green-100 text-green-800 border-green-200' 
+                  allValidationsPassed
+                    ? 'bg-green-100 text-green-800 border-green-200'
                     : 'bg-red-100 text-red-800 border-red-200'
                 }`}>
-                  {allValidationsPassed ? '✓ All Passed' : '⚠ Issues Found'}
+                  {allValidationsPassed ? 'All Passed' : 'Issues Found'}
                 </span>
               )}
             </div>

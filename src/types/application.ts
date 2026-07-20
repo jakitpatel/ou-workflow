@@ -505,10 +505,22 @@ export interface RawApplicationEntry {
   answer?: string;
 }
 
+export interface ApplicationGlobalData {
+  company_id?: number | string;
+  company_name?: string;
+  is_new_company?: boolean;
+  plant_id?: number | string;
+  owns_id?: number | string;
+  plant_name?: string;
+  is_new_plant?: boolean;
+  owns_status?: string;
+}
+
 export interface ApplicationDetail {
   applicationId: string;
   status: string;
   validationStatus?: string;
+  globalData?: ApplicationGlobalData;
   visit_id?: number | string | null;
   appvars?: ApplicantAppVars | null;
   assignedRoles?: AssignedRole[];

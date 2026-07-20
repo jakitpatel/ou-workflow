@@ -1,4 +1,4 @@
-import type { ApplicationDetail, CompanyContact, Plant, PlantContact, UploadedFile } from '@/types/application'
+import type { ApplicationDetail, ApplicationGlobalData, CompanyContact, Plant, PlantContact, UploadedFile } from '@/types/application'
 
 type PrelimCompanyAddress = {
   ZipPostalCode?: string
@@ -83,6 +83,7 @@ type PrelimIngredient = {
 }
 
 type PrelimApplicationDetail = {
+  GlobalData?: string | null
   OUCertified?: boolean
   companyAdresses?: PrelimCompanyAddress[]
   companyAddresses?: PrelimCompanyAddress[]
@@ -103,6 +104,17 @@ type PrelimApplicationDetail = {
 }
 
 const yesNo = (value?: boolean) => (value ? 'Yes' : 'No')
+
+const parseGlobalData = (value?: string | null): ApplicationGlobalData | undefined => {
+  const text = String(value ?? '').trim()
+  if (!text) return undefined
+
+  try {
+    return JSON.parse(text) as ApplicationGlobalData
+  } catch {
+    return undefined
+  }
+}
 
 const formatPersonName = (first?: string, last?: string) =>
   [first, last].filter(Boolean).join(' ').trim()
@@ -284,6 +296,7 @@ export function mapPrelimApplicationDetailToApplicationDetail(
     applicationId: String(detail.externalReferenceId ?? ''),
     status: detail.status ?? 'New',
     validationStatus: detail.validationStatus,
+    globalData: parseGlobalData(detail.GlobalData),
     submissionDate: detail.submissionDate,
     kashrusCompanyId: '',
     kashrusStatus: detail.status ?? 'New',
