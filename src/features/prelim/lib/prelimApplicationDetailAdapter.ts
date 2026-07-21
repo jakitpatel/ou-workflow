@@ -84,6 +84,7 @@ type PrelimIngredient = {
 
 type PrelimApplicationDetail = {
   GlobalData?: string | null
+  globalData?: Array<{ GlobalData?: string | null }>
   OUCertified?: boolean
   companyAdresses?: PrelimCompanyAddress[]
   companyAddresses?: PrelimCompanyAddress[]
@@ -115,6 +116,10 @@ const parseGlobalData = (value?: string | null): ApplicationGlobalData | undefin
     return undefined
   }
 }
+
+const getGlobalDataText = (detail: PrelimApplicationDetail) =>
+  detail.globalData?.find((entry) => String(entry.GlobalData ?? '').trim() !== '')?.GlobalData ??
+  detail.GlobalData
 
 const formatPersonName = (first?: string, last?: string) =>
   [first, last].filter(Boolean).join(' ').trim()
@@ -296,7 +301,7 @@ export function mapPrelimApplicationDetailToApplicationDetail(
     applicationId: String(detail.externalReferenceId ?? ''),
     status: detail.status ?? 'New',
     validationStatus: detail.validationStatus,
-    globalData: parseGlobalData(detail.GlobalData),
+    globalData: parseGlobalData(getGlobalDataText(detail)),
     submissionDate: detail.submissionDate,
     kashrusCompanyId: '',
     kashrusStatus: detail.status ?? 'New',
