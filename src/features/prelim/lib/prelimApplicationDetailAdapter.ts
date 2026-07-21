@@ -1,4 +1,12 @@
-import type { ApplicationDetail, ApplicationGlobalData, CompanyContact, Plant, PlantContact, UploadedFile } from '@/types/application'
+import type {
+  ApplicationDetail,
+  ApplicationGlobalData,
+  CompanyContact,
+  Plant,
+  PlantContact,
+  TaskEvent,
+  UploadedFile,
+} from '@/types/application'
 
 type PrelimCompanyAddress = {
   ZipPostalCode?: string
@@ -100,6 +108,7 @@ type PrelimApplicationDetail = {
   status?: string
   submissionDate?: string
   submission_files?: any[]
+  task_events?: TaskEvent[]
   validationStatus?: string
   whichCategory?: string
 }
@@ -361,7 +370,7 @@ export function mapPrelimApplicationDetailToApplicationDetail(
     files: mapFiles(detail),
     quotes: [],
     messages: [],
-    taskEvents: [],
+    taskEvents: detail.task_events ?? [],
     emails: [],
     raw_data: detail.raw_data ?? [],
   }
