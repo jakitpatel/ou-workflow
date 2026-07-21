@@ -3,7 +3,6 @@ import type React from 'react'
 import {
   Upload,
   CheckCircle,
-  AlertCircle,
   FileText,
   Building,
   Users,
@@ -105,7 +104,8 @@ const TABS = [
   { id: 'ingredients', label: 'Ingredients', icon: Beaker },
   { id: 'raw-application', label: 'Raw Application', icon: FileText },
   { id: 'quote', label: 'Quote', icon: FileText },
-  { id: 'activity', label: 'Recent Activity', icon: AlertCircle },
+  // Temporarily hidden from Application Details and Application Intake Details menus.
+  // { id: 'activity', label: 'Recent Activity', icon: AlertCircle },
   { id: 'task-events', label: 'Task Events', icon: ClipboardList },
   { id: 'emails', label: 'Emails', icon: Mail },
   { id: 'files', label: 'File Management', icon: Upload },
