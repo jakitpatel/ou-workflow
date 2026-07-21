@@ -549,10 +549,21 @@ export function ApplicationDetailsContent({
       ? 'Intake Application Review & Management'
       : 'Application Review & Management'
   const tabs = useMemo(
-    () =>
-      dataSource === 'application'
-        ? [...TABS.slice(0, 6), SCHEDULE_A_TAB, SCHEDULE_B_TAB, CONTRACT_TAB, ...TABS.slice(6)]
-        : TABS,
+    () => {
+      if (dataSource !== 'application') return TABS
+
+      const applicationTabs = TABS.filter(
+        tab => tab.id !== 'products' && tab.id !== 'ingredients',
+      )
+
+      return [
+        ...applicationTabs.slice(0, 4),
+        SCHEDULE_A_TAB,
+        SCHEDULE_B_TAB,
+        CONTRACT_TAB,
+        ...applicationTabs.slice(4),
+      ]
+    },
     [dataSource],
   )
   const applicationNotes = useTaskNotesDrawerState({
