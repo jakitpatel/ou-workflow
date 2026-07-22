@@ -112,6 +112,8 @@ type PrelimApplicationDetail = {
   submission_files?: any[]
   taskEvents?: TaskEvent[]
   task_events?: TaskEvent[]
+  ValidationStatus?: string
+  intakeValidatiomErrorDesc?: string
   validationStatus?: string
   whichCategory?: string
 }
@@ -319,7 +321,8 @@ export function mapPrelimApplicationDetailToApplicationDetail(
   return {
     applicationId: String(detail.externalReferenceId ?? ''),
     status: detail.status ?? 'New',
-    validationStatus: detail.validationStatus,
+    validationStatus: detail.ValidationStatus ?? detail.validationStatus,
+    validationErrorDesc: detail.intakeValidatiomErrorDesc,
     globalData: parseGlobalData(getGlobalDataText(detail)),
     submissionDate: detail.submissionDate,
     kashrusCompanyId: '',

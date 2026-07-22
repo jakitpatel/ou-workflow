@@ -520,6 +520,7 @@ export interface ApplicationDetail {
   applicationId: string;
   status: string;
   validationStatus?: string;
+  validationErrorDesc?: string;
   globalData?: ApplicationGlobalData;
   visit_id?: number | string | null;
   appvars?: ApplicantAppVars | null;

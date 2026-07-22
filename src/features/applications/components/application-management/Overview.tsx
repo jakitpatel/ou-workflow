@@ -33,6 +33,7 @@ export default function Overview({
   const plant = application?.plants?.[0];
   const isPrelimApplicationDetail = dataSource === 'prelim';
   const validationStatus = isPrelimApplicationDetail ? application.validationStatus ?? '' : null;
+  const validationErrorDesc = isPrelimApplicationDetail ? application.validationErrorDesc ?? '' : '';
   const intakeData = isPrelimApplicationDetail ? application.globalData : undefined;
   const companyId = intakeData?.company_id ?? application.kashrusCompanyId ?? '-';
   const plantId = intakeData?.plant_id ?? plant?.plantId ?? '-';
@@ -191,10 +192,10 @@ export default function Overview({
               <span className="text-lg font-bold text-gray-900">{stats.uploadedFiles}</span>
             </div>
 
-            <div className="flex items-center justify-between py-2">
+            <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">Validation Status</span>
               {isPrelimApplicationDetail ? (
-                <span className="text-sm font-semibold text-gray-900">{validationStatus}</span>
+                <span className="text-sm font-semibold text-gray-900">{validationStatus || '-'}</span>
               ) : (
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
                   allValidationsPassed
@@ -205,6 +206,24 @@ export default function Overview({
                 </span>
               )}
             </div>
+
+            {isPrelimApplicationDetail ? (
+              <div className="py-2">
+                <label
+                  htmlFor="intake-validation-error-desc"
+                  className="mb-2 block text-sm font-medium text-gray-600"
+                >
+                  ValidationErrorDesc
+                </label>
+                <textarea
+                  id="intake-validation-error-desc"
+                  className="min-h-[4.75rem] w-full resize-y rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium leading-5 text-gray-900"
+                  readOnly
+                  rows={3}
+                  value={validationErrorDesc}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
