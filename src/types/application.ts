@@ -518,6 +518,10 @@ export interface ApplicationGlobalData {
 
 export interface ApplicationDetail {
   applicationId: string;
+  PlantId?: number | string;
+  OwnsID?: number | string;
+  OwnsStatus?: string;
+  CompanyStatus?: string;
   status: string;
   validationStatus?: string;
   validationErrorDesc?: string;

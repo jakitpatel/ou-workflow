@@ -36,8 +36,12 @@ export default function Overview({
   const validationErrorDesc = isPrelimApplicationDetail ? application.validationErrorDesc ?? '' : '';
   const intakeData = isPrelimApplicationDetail ? application.globalData : undefined;
   const companyId = intakeData?.company_id ?? application.kashrusCompanyId ?? '-';
-  const plantId = intakeData?.plant_id ?? plant?.plantId ?? '-';
-  const applicationOwnsId = application.ownsid ?? '-';
+  const companyStatus = application.CompanyStatus ?? '-';
+  const plantId = isPrelimApplicationDetail
+    ? intakeData?.plant_id ?? plant?.plantId ?? '-'
+    : application.PlantId ?? plant?.plantId ?? '-';
+  const applicationOwnsId = application.OwnsID ?? application.ownsid ?? '-';
+  const applicationOwnsStatus = application.OwnsStatus ?? '-';
   const ownsId = intakeData?.owns_id ?? '-';
   const ownsStatus = intakeData?.owns_status ?? '-';
 
@@ -83,6 +87,15 @@ export default function Overview({
               </span>
             </div>
 
+            {!isPrelimApplicationDetail ? (
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-600">CompanyStatus</span>
+                <span className="text-sm font-semibold text-green-700">
+                  {companyStatus}
+                </span>
+              </div>
+            ) : null}
+
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">
                 <MatchMarker isNew={intakeData?.is_new_plant} />
@@ -97,7 +110,16 @@ export default function Overview({
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-sm font-medium text-gray-600">Owns ID</span>
                 <span className="text-sm font-semibold text-green-700">
-                  {applicationOwnsId}
+                {applicationOwnsId}
+              </span>
+            </div>
+          ) : null}
+
+            {!isPrelimApplicationDetail ? (
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-600">OwnsStatus</span>
+                <span className="text-sm font-semibold text-green-700">
+                  {applicationOwnsStatus}
                 </span>
               </div>
             ) : null}
