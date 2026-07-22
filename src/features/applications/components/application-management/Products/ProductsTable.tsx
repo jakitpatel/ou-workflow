@@ -20,8 +20,15 @@ type ProductRow = {
   brandName?: string
   labelCompany?: string
   ConsumerIndustrial?: string
-  bulkShipped?: boolean
+  bulk?: boolean | string
+  Bulk?: boolean | string
+  bulkShipment?: boolean | string
+  bulkShipped?: boolean | string
+  BulkShipment?: boolean | string
+  BulkShipped?: boolean | string
   certification?: string
+  list?: string
+  List?: string
   status?: string
 }
 
@@ -36,6 +43,11 @@ const readRecordText = (record: Record<string, unknown>, keys: string[]) => {
 }
 
 const displayText = (value: string) => value || '-'
+
+const displayValue = (value: unknown) => {
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  return displayText(String(value ?? '').trim())
+}
 
 type Props = {
   application: ApplicationDetail
@@ -53,6 +65,7 @@ export default function ProductsTable({ application, dataSource = 'application' 
       : [];
   
   const canEditProducts = userRoles.includes("product_role");
+  const isPrelimApplicationDetail = dataSource === 'prelim';
   const productData: ProductRow[] =
     dataSource === 'prelim'
       ? (
@@ -62,7 +75,7 @@ export default function ProductsTable({ application, dataSource = 'application' 
         ) || []
       : (application.products as ProductRow[]) || [];
   const filteredProducts = productData;
-  const visibleColumnCount = 8 + (canEditProducts ? 1 : 0);
+  const visibleColumnCount = (isPrelimApplicationDetail ? 8 : 8) + (canEditProducts ? 1 : 0);
 
   // Calculate statistics
   const stats = {
@@ -119,25 +132,26 @@ export default function ProductsTable({ application, dataSource = 'application' 
         )}
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-          <div className="text-3xl font-bold text-blue-700">{stats.total}</div>
-          <div className="text-sm font-medium text-blue-600 mt-1">Total Products</div>
+      {!isPrelimApplicationDetail ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+            <div className="text-3xl font-bold text-blue-700">{stats.total}</div>
+            <div className="text-sm font-medium text-blue-600 mt-1">Total Products</div>
+          </div>
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+            <div className="text-3xl font-bold text-green-700">{stats.consumer}</div>
+            <div className="text-sm font-medium text-green-600 mt-1">Consumer Products</div>
+          </div>
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+            <div className="text-3xl font-bold text-purple-700">{stats.bulkShipped}</div>
+            <div className="text-sm font-medium text-purple-600 mt-1">Bulk Shipped</div>
+          </div>
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
+            <div className="text-3xl font-bold text-orange-700">{stats.fromApplication}</div>
+            <div className="text-sm font-medium text-orange-600 mt-1">From Application</div>
+          </div>
         </div>
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
-          <div className="text-3xl font-bold text-green-700">{stats.consumer}</div>
-          <div className="text-sm font-medium text-green-600 mt-1">Consumer Products</div>
-        </div>
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
-          <div className="text-3xl font-bold text-purple-700">{stats.bulkShipped}</div>
-          <div className="text-sm font-medium text-purple-600 mt-1">Bulk Shipped</div>
-        </div>
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
-          <div className="text-3xl font-bold text-orange-700">{stats.fromApplication}</div>
-          <div className="text-sm font-medium text-orange-600 mt-1">From Application</div>
-        </div>
-      </div>
+      ) : null}
 
       {/* Table Section */}
       <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -150,9 +164,19 @@ export default function ProductsTable({ application, dataSource = 'application' 
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">CompanyName</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">LableType</th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">SYMBOL</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">UKID</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">STATUS</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">ProducedIn1Status</th>
+                {isPrelimApplicationDetail ? (
+                  <>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Consumer/Industrial</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Bulk Shipment</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">List</th>
+                  </>
+                ) : (
+                  <>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">UKID</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">STATUS</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">ProducedIn1Status</th>
+                  </>
+                )}
                 {canEditProducts && <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>}
               </tr>
             </thead>
@@ -186,6 +210,19 @@ export default function ProductsTable({ application, dataSource = 'application' 
                   const symbol = readRecordText(productRecord, ['SYMBOL', 'symbol', 'certification'])
                   const ukid = readRecordText(productRecord, ['UKID', 'UKDID'])
                   const status = readRecordText(productRecord, ['STATUS', 'status'])
+                  const consumerIndustrial = readRecordText(productRecord, [
+                    'ConsumerIndustrial',
+                    'Consumer/Industrial',
+                    'consumerIndustrial',
+                  ])
+                  const bulkShipment =
+                    productRecord.bulkShipped ??
+                    productRecord.BulkShipped ??
+                    productRecord.bulkShipment ??
+                    productRecord.BulkShipment ??
+                    productRecord.bulk ??
+                    productRecord.Bulk
+                  const list = readRecordText(productRecord, ['list', 'List', 'LIST'])
                   const producedIn1Status = readRecordText(productRecord, [
                     'ProducedIn1Status',
                     'PRODUCED_IN1_STATUS',
@@ -208,9 +245,19 @@ export default function ProductsTable({ application, dataSource = 'application' 
                       <td className="py-3 px-4 align-top text-gray-700">{displayText(companyName)}</td>
                       <td className="py-3 px-4 align-top text-gray-700">{displayText(lableType)}</td>
                       <td className="py-3 px-4 align-top text-gray-700">{displayText(symbol)}</td>
-                      <td className="py-3 px-4 align-top text-gray-700">{displayText(ukid)}</td>
-                      <td className="py-3 px-4 align-top text-gray-700">{displayText(status)}</td>
-                      <td className="py-3 px-4 align-top text-gray-700">{displayText(producedIn1Status)}</td>
+                      {isPrelimApplicationDetail ? (
+                        <>
+                          <td className="py-3 px-4 align-top text-gray-700">{displayText(consumerIndustrial)}</td>
+                          <td className="py-3 px-4 align-top text-gray-700">{displayValue(bulkShipment)}</td>
+                          <td className="py-3 px-4 align-top text-gray-700">{displayText(list)}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="py-3 px-4 align-top text-gray-700">{displayText(ukid)}</td>
+                          <td className="py-3 px-4 align-top text-gray-700">{displayText(status)}</td>
+                          <td className="py-3 px-4 align-top text-gray-700">{displayText(producedIn1Status)}</td>
+                        </>
+                      )}
                       {canEditProducts && (
                         <td className="py-3 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
@@ -248,14 +295,15 @@ export default function ProductsTable({ application, dataSource = 'application' 
         </div>
       </div>
 
-      {/* Info Banner */}
-      <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-800 leading-relaxed">
-          <strong className="font-semibold">Product Specifications:</strong> All products are submitted for OU Kosher certification. 
-          Product specifications and ingredient lists have been uploaded and verified. Manufacturing processes documented 
-          for each product category.
-        </p>
-      </div>
+      {!isPrelimApplicationDetail ? (
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800 leading-relaxed">
+            <strong className="font-semibold">Product Specifications:</strong> All products are submitted for OU Kosher certification. 
+            Product specifications and ingredient lists have been uploaded and verified. Manufacturing processes documented 
+            for each product category.
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

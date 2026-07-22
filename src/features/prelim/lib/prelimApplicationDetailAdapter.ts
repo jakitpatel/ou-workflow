@@ -68,10 +68,18 @@ type PrelimProduct = {
   JotFormProductId?: number
   productName?: string
   BrandName?: string
+  bulk?: boolean | string
+  Bulk?: boolean | string
+  bulkShipment?: boolean | string
+  bulkShipped?: boolean | string
+  BulkShipment?: boolean | string
+  BulkShipped?: boolean | string
   inHouse?: boolean
   privateLabel?: boolean
   privateLabelCo?: string
   Industrial?: boolean
+  List?: string
+  list?: string
   Retail?: boolean
   status?: string
   plantStatus?: string
@@ -281,7 +289,14 @@ const mapPrelimProducts = (plants: PrelimPlant[], companyName?: string) =>
             : product.Retail
               ? 'Consumer'
               : '',
-      bulkShipped: undefined,
+      bulkShipped:
+        product.bulkShipped ??
+        product.BulkShipped ??
+        product.bulkShipment ??
+        product.BulkShipment ??
+        product.bulk ??
+        product.Bulk,
+      list: product.list ?? product.List ?? '',
       certification: '',
       status: product.status ?? product.plantStatus ?? '',
       plantName: plant.plantName ?? '',
