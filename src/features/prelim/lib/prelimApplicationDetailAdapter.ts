@@ -94,6 +94,8 @@ type PrelimApplicationDetail = {
   GlobalData?: string | null
   globalData?: Array<{ GlobalData?: string | null }>
   OUCertified?: boolean
+  applicationinfo?: { taskEvents?: TaskEvent[] }
+  appplicationinfo?: { taskEvents?: TaskEvent[] }
   companyAdresses?: PrelimCompanyAddress[]
   companyAddresses?: PrelimCompanyAddress[]
   companyContacts?: PrelimCompanyContact[] | PrelimCompanyContactGroups
@@ -108,6 +110,7 @@ type PrelimApplicationDetail = {
   status?: string
   submissionDate?: string
   submission_files?: any[]
+  taskEvents?: TaskEvent[]
   task_events?: TaskEvent[]
   validationStatus?: string
   whichCategory?: string
@@ -129,6 +132,13 @@ const parseGlobalData = (value?: string | null): ApplicationGlobalData | undefin
 const getGlobalDataText = (detail: PrelimApplicationDetail) =>
   detail.globalData?.find((entry) => String(entry.GlobalData ?? '').trim() !== '')?.GlobalData ??
   detail.GlobalData
+
+const getPrelimTaskEvents = (detail: PrelimApplicationDetail): TaskEvent[] =>
+  detail.applicationinfo?.taskEvents ??
+  detail.appplicationinfo?.taskEvents ??
+  detail.taskEvents ??
+  detail.task_events ??
+  []
 
 const formatPersonName = (first?: string, last?: string) =>
   [first, last].filter(Boolean).join(' ').trim()
@@ -370,7 +380,7 @@ export function mapPrelimApplicationDetailToApplicationDetail(
     files: mapFiles(detail),
     quotes: [],
     messages: [],
-    taskEvents: detail.task_events ?? [],
+    taskEvents: getPrelimTaskEvents(detail),
     emails: [],
     raw_data: detail.raw_data ?? [],
   }
