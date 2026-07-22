@@ -521,6 +521,7 @@ export interface ApplicationDetail {
   status: string;
   validationStatus?: string;
   validationErrorDesc?: string;
+  ownsid?: number | string;
   globalData?: ApplicationGlobalData;
   visit_id?: number | string | null;
   appvars?: ApplicantAppVars | null;

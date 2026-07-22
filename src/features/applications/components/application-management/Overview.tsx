@@ -37,6 +37,7 @@ export default function Overview({
   const intakeData = isPrelimApplicationDetail ? application.globalData : undefined;
   const companyId = intakeData?.company_id ?? application.kashrusCompanyId ?? '-';
   const plantId = intakeData?.plant_id ?? plant?.plantId ?? '-';
+  const applicationOwnsId = application.ownsid ?? '-';
   const ownsId = intakeData?.owns_id ?? '-';
   const ownsStatus = intakeData?.owns_status ?? '-';
 
@@ -91,6 +92,15 @@ export default function Overview({
                 {plantId}
               </span>
             </div>
+
+            {!isPrelimApplicationDetail ? (
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-600">Owns ID</span>
+                <span className="text-sm font-semibold text-green-700">
+                  {applicationOwnsId}
+                </span>
+              </div>
+            ) : null}
 
             {isPrelimApplicationDetail ? (
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
