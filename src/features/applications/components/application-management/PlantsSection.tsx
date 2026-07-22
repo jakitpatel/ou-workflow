@@ -3,12 +3,18 @@ import { MapPin, User, Factory, CheckCircle } from "lucide-react";
 
 export default function PlantsSection({ 
   application, 
-  editMode 
+  editMode,
+  dataSource = 'application',
 }: { 
   application: ApplicationDetail; 
   editMode: boolean 
+  dataSource?: 'application' | 'prelim'
 }) {
   const plant = application?.plants?.[0];
+  const isPrelimApplicationDetail = dataSource === 'prelim';
+  const displayedPlantId = isPrelimApplicationDetail
+    ? application.globalData?.plant_id ?? plant?.plantId ?? ''
+    : plant?.plantId ?? '';
   const plantAddresses = application?.plantAddresses || [];
   const physicalAddress = plantAddresses.find(
     (a) => a.type?.toLowerCase() === "physical"
@@ -49,7 +55,7 @@ export default function PlantsSection({
           <div className="flex items-center gap-2">
             <span className="text-sm text-blue-700">Plant ID:</span>
             <span className="inline-flex items-center px-2.5 py-1 bg-blue-200 text-blue-900 rounded-md text-xs font-mono font-semibold">
-              {plant.plantId}
+              {displayedPlantId}
             </span>
           </div>
         </div>
