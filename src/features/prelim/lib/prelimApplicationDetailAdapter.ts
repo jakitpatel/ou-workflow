@@ -89,6 +89,7 @@ type PrelimIngredient = {
   SubmissionIngredientId?: number
   JotFormIngredientId?: number
   UKDID?: string
+  ukdid?: string
   rawMaterialCode?: string
   ingredientLabelName?: string
   manufacturer?: string
@@ -313,11 +314,13 @@ const mapPrelimIngredients = (plants: PrelimPlant[], submissionDate?: string) =>
           `${plant.PlantId ?? plant.plantNumber ?? 'plant'}-${index}`,
       ),
       status: ingredient.plantStatus ?? 'Submitted',
-      ncrcId: ingredient.UKDID ?? '',
+      ncrcId: ingredient.UKDID ?? ingredient.ukdid ?? '',
+      UKDID: ingredient.UKDID ?? ingredient.ukdid ?? '',
       ingredient: ingredient.ingredientLabelName ?? '',
       manufacturer: ingredient.manufacturer ?? '',
       brand: ingredient.brandName ?? '',
       packaging: (ingredient.packagedOrBulk ?? '').toLowerCase(),
+      group: ingredient.packagedOrBulk ?? '',
       certification: ingredient.certifyingAgency ?? ingredient.UKDID ?? '',
       addedDate: submissionDate ?? '',
       addedBy: 'Form Data',
