@@ -1,5 +1,4 @@
 // Application-related types
-
 export type ActionResult = "yes" | "no" | "pending" | "completed" | "in_progress";
 
 export type PaginationMode = 'paged' | 'infinite';

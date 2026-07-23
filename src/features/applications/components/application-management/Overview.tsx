@@ -38,7 +38,7 @@ export default function Overview({
   const companyId = intakeData?.company_id ?? application.kashrusCompanyId ?? '-';
   const companyStatus = application.CompanyStatus ?? '-';
   const plantId = isPrelimApplicationDetail
-    ? intakeData?.plant_id ?? plant?.plantId ?? '-'
+    ? intakeData?.plant_id ?? '-'
     : application.PlantId ?? plant?.plantId ?? '-';
   const applicationOwnsId = application.OwnsID ?? application.ownsid ?? '-';
   const applicationOwnsStatus = application.OwnsStatus ?? '-';
