@@ -21,21 +21,13 @@ export default function PlantsSection({
   editMode: boolean 
   dataSource?: 'application' | 'prelim'
 }) {
-  const plant = application?.plants?.[0];
   const isPrelimApplicationDetail = dataSource === 'prelim';
-  const displayedPlantId = isPrelimApplicationDetail
-    ? application.globalData?.plant_id ?? ''
-    : plant?.plantId ?? '';
-  const plantAddresses = application?.plantAddresses || [];
-  const physicalAddress = plantAddresses.find(
-    (a) => a.type?.toLowerCase() === "physical"
-  );
+  const plants = application?.plants ?? [];
+  const plantsToRender = isPrelimApplicationDetail ? plants : plants.slice(0, 1);
+  const plantAddresses = application?.plantAddresses ?? [];
   const plantContacts = normalizePlantContacts(application?.plantContacts);
-  const primaryContact = plantContacts.find(
-    (c) => c.type?.toLowerCase() === "primary contact"
-  ) ?? plantContacts[0];
 
-  if (!plant) {
+  if (plantsToRender.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-2xl font-semibold text-gray-900 mb-6">Plant Information</h2>
@@ -54,11 +46,29 @@ export default function PlantsSection({
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-        <h2 className="text-2xl font-semibold text-gray-900">Plant Information</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">
+          {isPrelimApplicationDetail && plantsToRender.length > 1
+            ? `Plant Information (${plantsToRender.length})`
+            : 'Plant Information'}
+        </h2>
       </div>
 
-      {/* Plant Header Card */}
-      <div className="mb-6 p-4 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg">
+      <div className={isPrelimApplicationDetail && plantsToRender.length > 1 ? 'max-h-[72vh] space-y-6 overflow-y-auto pr-2' : 'space-y-6'}>
+        {plantsToRender.map((plant, plantIndex) => {
+          const displayedPlantId = isPrelimApplicationDetail
+            ? plant.plantId || application.globalData?.plant_id || ''
+            : plant.plantId || '';
+          const physicalAddress = isPrelimApplicationDetail
+            ? plantAddresses[plantIndex]
+            : plantAddresses.find((a) => a.type?.toLowerCase() === "physical");
+          const primaryContact = isPrelimApplicationDetail
+            ? plantContacts[plantIndex]
+            : plantContacts.find((c) => c.type?.toLowerCase() === "primary contact") ?? plantContacts[0];
+
+          return (
+            <div key={`${plant.plantId || plant.id || plantIndex}`} className={isPrelimApplicationDetail && plantsToRender.length > 1 ? 'rounded-lg border border-gray-200 p-4' : ''}>
+              {/* Plant Header Card */}
+              <div className="mb-6 p-4 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <h3 className="text-lg font-semibold text-blue-900">
             Plant #{plant.id}: {plant.name}
@@ -366,6 +376,10 @@ export default function PlantsSection({
             </div>
           </div>
         </div>
+      </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
