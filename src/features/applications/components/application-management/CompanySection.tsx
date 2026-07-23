@@ -220,18 +220,18 @@ export default function CompanySection({
           <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100">
             <span className="text-sm font-medium text-blue-700">Status</span>
             <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-semibold">
-              {application.kashrusStatus}
+              {/*application.kashrusStatus*/}
             </span>
           </div>
           
           <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100">
             <span className="text-sm font-medium text-blue-700">Created</span>
-            <span className="text-sm font-bold text-blue-900">July 17, 2025</span>
+            <span className="text-sm font-bold text-blue-900"></span>
           </div>
           
           <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100">
             <span className="text-sm font-medium text-blue-700">Last Updated</span>
-            <span className="text-sm font-bold text-blue-900">July 18, 2025</span>
+            <span className="text-sm font-bold text-blue-900"></span>
           </div>
         </div>
       </div>
