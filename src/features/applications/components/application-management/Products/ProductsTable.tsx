@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import type { ApplicationDetail } from "@/types/application";
-import { Package, Pencil, Trash2, Plus } from "lucide-react";
+import { ExternalLink, Package, Pencil, Trash2, Plus } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 
 type ProductRow = {
@@ -30,6 +30,9 @@ type ProductRow = {
   list?: string
   List?: string
   status?: string
+  Artwork?: string
+  artwork?: string
+  artworkUrl?: string
 }
 
 const readRecordText = (record: Record<string, unknown>, keys: string[]) => {
@@ -47,6 +50,13 @@ const displayText = (value: string) => value || '-'
 const displayValue = (value: unknown) => {
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
   return displayText(String(value ?? '').trim())
+}
+
+const getArtworkHref = (value: string) => {
+  if (!value) return ''
+  if (/^https?:\/\//i.test(value)) return value
+  if (/^www\./i.test(value)) return `https://${value}`
+  return ''
 }
 
 type Props = {
@@ -75,7 +85,7 @@ export default function ProductsTable({ application, dataSource = 'application' 
         ) || []
       : (application.products as ProductRow[]) || [];
   const filteredProducts = productData;
-  const visibleColumnCount = (isPrelimApplicationDetail ? 8 : 8) + (canEditProducts ? 1 : 0);
+  const visibleColumnCount = (isPrelimApplicationDetail ? 9 : 8) + (canEditProducts ? 1 : 0);
 
   // Calculate statistics
   const stats = {
@@ -169,6 +179,7 @@ export default function ProductsTable({ application, dataSource = 'application' 
                     <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Consumer/Industrial</th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Bulk Shipment</th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">List</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">Artwork</th>
                   </>
                 ) : (
                   <>
@@ -223,6 +234,8 @@ export default function ProductsTable({ application, dataSource = 'application' 
                     productRecord.bulk ??
                     productRecord.Bulk
                   const list = readRecordText(productRecord, ['list', 'List', 'LIST'])
+                  const artwork = readRecordText(productRecord, ['Artwork', 'artwork', 'artworkUrl', 'ArtworkURL'])
+                  const artworkHref = getArtworkHref(artwork)
                   const producedIn1Status = readRecordText(productRecord, [
                     'ProducedIn1Status',
                     'PRODUCED_IN1_STATUS',
@@ -250,6 +263,22 @@ export default function ProductsTable({ application, dataSource = 'application' 
                           <td className="py-3 px-4 align-top text-gray-700">{displayText(consumerIndustrial)}</td>
                           <td className="py-3 px-4 align-top text-gray-700">{displayValue(bulkShipment)}</td>
                           <td className="py-3 px-4 align-top text-gray-700">{displayText(list)}</td>
+                          <td className="py-3 px-4 align-top">
+                            {artworkHref ? (
+                              <a
+                                href={artworkHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-700 hover:text-blue-800 hover:underline"
+                                title={artwork}
+                              >
+                                Artwork
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            ) : (
+                              <span className="text-gray-700">{displayText(artwork)}</span>
+                            )}
+                          </td>
                         </>
                       ) : (
                         <>

@@ -66,6 +66,9 @@ type PrelimPlant = {
 type PrelimProduct = {
   SubmissionProductId?: number
   JotFormProductId?: number
+  Artwork?: string
+  artwork?: string
+  artworkUrl?: string
   productName?: string
   BrandName?: string
   bulk?: boolean | string
