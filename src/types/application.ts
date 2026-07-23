@@ -513,6 +513,7 @@ export interface ApplicationGlobalData {
   owns_id?: number | string;
   plant_name?: string;
   is_new_plant?: boolean;
+  is_new_owns?: boolean;
   owns_status?: string;
 }
 

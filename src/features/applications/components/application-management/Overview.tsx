@@ -126,7 +126,10 @@ export default function Overview({
 
             {isPrelimApplicationDetail ? (
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-sm font-medium text-gray-600">Owns ID</span>
+                <span className="text-sm font-medium text-gray-600">
+                  <MatchMarker isNew={intakeData?.is_new_owns} />
+                  Owns ID
+                </span>
                 <span className="text-sm font-semibold text-green-700">
                   {ownsId}
                 </span>
