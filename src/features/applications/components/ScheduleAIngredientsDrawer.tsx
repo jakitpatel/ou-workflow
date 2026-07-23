@@ -182,11 +182,36 @@ const downloadTextFile = (filename: string, text: string, type = 'text/plain;cha
   window.setTimeout(() => URL.revokeObjectURL(href), 1000)
 }
 
-const primaryContact = (contacts?: Array<Record<string, unknown>>) => {
+type ContactRecord = Record<string, unknown>
+
+const contactGroup = (contacts: ContactRecord, key: string): ContactRecord[] => {
+  const value = contacts[key]
+  return Array.isArray(value) ? value as ContactRecord[] : []
+}
+
+const normalizeContacts = (contacts?: unknown): ContactRecord[] => {
+  if (!contacts) return []
+  if (Array.isArray(contacts)) return contacts as ContactRecord[]
+  if (typeof contacts !== 'object') return []
+
+  const contactGroups = contacts as ContactRecord
+
+  return [
+    ...contactGroup(contactGroups, 'primaryContact'),
+    ...contactGroup(contactGroups, 'PrimaryContact'),
+    ...contactGroup(contactGroups, 'billingContact'),
+    ...contactGroup(contactGroups, 'BillingContact'),
+    ...contactGroup(contactGroups, 'otherContact'),
+    ...contactGroup(contactGroups, 'OtherContact'),
+  ]
+}
+
+const primaryContact = (contacts?: unknown) => {
+  const normalizedContacts = normalizeContacts(contacts)
   const contact =
-    contacts?.find((item) => textValue(item.type ?? item.Type).toLowerCase() === 'primary contact') ??
-    contacts?.find((item) => textValue(item.IsPrimaryContact ?? item.isPrimaryContact).toLowerCase() === 'true') ??
-    contacts?.[0]
+    normalizedContacts.find((item) => textValue(item.type ?? item.Type).toLowerCase() === 'primary contact') ??
+    normalizedContacts.find((item) => textValue(item.IsPrimaryContact ?? item.isPrimaryContact).toLowerCase() === 'true') ??
+    normalizedContacts[0]
 
   const first = textValue(contact?.FirstName ?? contact?.firstName ?? contact?.contactFirst)
   const last = textValue(contact?.LastName ?? contact?.lastName ?? contact?.contactLast)
@@ -500,7 +525,7 @@ export function ScheduleAIngredientsDrawer({
   })
 
   const contact = useMemo(
-    () => primaryContact(applicationDetail?.companyContacts as Array<Record<string, unknown>> | undefined),
+    () => primaryContact(applicationDetail?.companyContacts),
     [applicationDetail?.companyContacts],
   )
 

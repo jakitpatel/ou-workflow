@@ -4,7 +4,7 @@ import { useUser } from "@/context/UserContext";
 import { useApplicationDetail } from "@/features/applications/hooks/useApplicationDetail";
 import { useUploadApplicationFileMutation } from "@/features/applications/hooks/useUploadApplicationFileMutation";
 import { TASK_CATEGORIES, TASK_TYPES } from "@/lib/constants/task";
-import type { Applicant, ApplicationTask, Task } from "@/types/application";
+import type { Applicant, ApplicationTask, CompanyContact, CompanyContactGroups, Task } from "@/types/application";
 
 type SelectedAction = {
   application: Applicant | Task | any;
@@ -23,6 +23,17 @@ type Props = {
     completionNotes?: string,
     applicationId?: string | number | null
   ) => void;
+};
+
+const normalizeCompanyContacts = (contacts?: CompanyContact[] | CompanyContactGroups): CompanyContact[] => {
+  if (!contacts) return [];
+  if (Array.isArray(contacts)) return contacts;
+
+  return [
+    ...(contacts.primaryContact ?? contacts.PrimaryContact ?? []),
+    ...(contacts.billingContact ?? contacts.BillingContact ?? []),
+    ...(contacts.otherContact ?? contacts.OtherContact ?? []),
+  ];
 };
 
 export const UploadNdaModal: React.FC<Props> = ({
@@ -118,7 +129,7 @@ export const UploadNdaModal: React.FC<Props> = ({
   );
 
   const companyContacts = useMemo(() => {
-    const contacts = applicationDetail?.companyContacts ?? [];
+    const contacts = normalizeCompanyContacts(applicationDetail?.companyContacts);
     return contacts.filter(
       (contact: any) => Boolean(contact?.email) && Boolean(contact?.name)
     );

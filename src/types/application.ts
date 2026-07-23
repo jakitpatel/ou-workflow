@@ -446,6 +446,16 @@ export interface CompanyContact {
   role?: string; // optional because some don't have it
   type: string;  // or "Primary Contact" | "Not Primary Contact"
 }
+
+export type CompanyContactGroups = {
+  primaryContact?: CompanyContact[];
+  billingContact?: CompanyContact[];
+  otherContact?: CompanyContact[];
+  PrimaryContact?: CompanyContact[];
+  BillingContact?: CompanyContact[];
+  OtherContact?: CompanyContact[];
+};
+
 export interface PlantAddress {
   street: string
   line2?: string
@@ -546,7 +556,7 @@ export interface ApplicationDetail {
   primaryContact?: string;
   company: Company[];
   companyAddresses?: CompanyAddress[];   // <--- typed
-  companyContacts?: CompanyContact[];    // <--- typed
+  companyContacts?: CompanyContact[] | CompanyContactGroups;    // <--- typed
   contacts: Contact[];
   plants: Plant[];
   plantAddresses?: PlantAddress[];

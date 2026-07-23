@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { generateInspectionInvoice, createApplicationMessage, fetchApplicationDetail } from '@/features/applications/api'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { useUser } from '@/context/UserContext'
-import type { Applicant, CompanyContact } from '@/types/application'
+import type { Applicant, CompanyContact, CompanyContactGroups } from '@/types/application'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { confirmTask, patchTaskGuiDisplayResult, patchTaskResult } from '@/features/tasks/api'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
@@ -130,6 +130,17 @@ const normalizeRfrText = (value: unknown) =>
     .trim()
 
 const normalizeContactText = normalizeRfrText
+
+const normalizeCompanyContacts = (contacts?: CompanyContact[] | CompanyContactGroups): CompanyContact[] => {
+  if (!contacts) return []
+  if (Array.isArray(contacts)) return contacts
+
+  return [
+    ...(contacts.primaryContact ?? contacts.PrimaryContact ?? []),
+    ...(contacts.billingContact ?? contacts.BillingContact ?? []),
+    ...(contacts.otherContact ?? contacts.OtherContact ?? []),
+  ]
+}
 
 const getContactBucket = (contact: CompanyContact): string | null => {
   const role = normalizeContactText(contact.role).toLowerCase()
@@ -498,7 +509,7 @@ export function useInspectionInvoiceDrawerState({
   }, [rfrSearch, rfrs])
   const recipientOptions = useMemo(
     () =>
-      (applicationDetail?.companyContacts ?? [])
+      normalizeCompanyContacts(applicationDetail?.companyContacts)
         .map(mapCompanyContactToRecipientOption)
         .filter((option): option is InspectionInvoiceRecipientOption => Boolean(option)),
     [applicationDetail?.companyContacts],
