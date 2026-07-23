@@ -24,7 +24,7 @@ export default function PlantsSection({
   const plant = application?.plants?.[0];
   const isPrelimApplicationDetail = dataSource === 'prelim';
   const displayedPlantId = isPrelimApplicationDetail
-    ? application.globalData?.plant_id ?? plant?.plantId ?? ''
+    ? application.globalData?.plant_id ?? ''
     : plant?.plantId ?? '';
   const plantAddresses = application?.plantAddresses || [];
   const physicalAddress = plantAddresses.find(
