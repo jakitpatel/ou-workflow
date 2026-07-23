@@ -1,5 +1,16 @@
-import type { ApplicationDetail } from "@/types/application";
+import type { ApplicationDetail, PlantContact } from "@/types/application";
 import { MapPin, User, Factory, CheckCircle } from "lucide-react";
+
+const normalizePlantContacts = (plantContacts: ApplicationDetail['plantContacts']): PlantContact[] => {
+  if (!plantContacts) return [];
+  if (Array.isArray(plantContacts)) return plantContacts;
+
+  return [
+    ...(plantContacts.primaryContact ?? plantContacts.PrimaryContact ?? []),
+    ...(plantContacts.billingContact ?? plantContacts.BillingContact ?? []),
+    ...(plantContacts.otherContact ?? plantContacts.OtherContact ?? []),
+  ];
+};
 
 export default function PlantsSection({ 
   application, 
@@ -19,10 +30,10 @@ export default function PlantsSection({
   const physicalAddress = plantAddresses.find(
     (a) => a.type?.toLowerCase() === "physical"
   );
-  const plantContacts = application?.plantContacts || [];
+  const plantContacts = normalizePlantContacts(application?.plantContacts);
   const primaryContact = plantContacts.find(
     (c) => c.type?.toLowerCase() === "primary contact"
-  );
+  ) ?? plantContacts[0];
 
   if (!plant) {
     return (

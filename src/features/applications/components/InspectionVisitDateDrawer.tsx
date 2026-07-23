@@ -11,7 +11,7 @@ import { getInspectionStatusInputParam } from '@/features/applications/utils/ins
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import { confirmTask, patchTaskGuiDisplayResult, scheduleVisit } from '@/features/tasks/api'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
-import type { Applicant, Task } from '@/types/application'
+import type { Applicant, PlantContact, PlantContactGroups, Task } from '@/types/application'
 
 type Props = {
   open: boolean
@@ -90,6 +90,17 @@ const getPreferredAddress = <T extends { type?: string }>(addresses?: T[]) => {
     addresses.find((address) => normalizeText(address.type).toLowerCase() === 'physical') ??
     addresses[0]
   )
+}
+
+const normalizePlantContacts = (plantContacts?: PlantContact[] | PlantContactGroups): PlantContact[] => {
+  if (!plantContacts) return []
+  if (Array.isArray(plantContacts)) return plantContacts
+
+  return [
+    ...(plantContacts.primaryContact ?? plantContacts.PrimaryContact ?? []),
+    ...(plantContacts.billingContact ?? plantContacts.BillingContact ?? []),
+    ...(plantContacts.otherContact ?? plantContacts.OtherContact ?? []),
+  ]
 }
 
 const getResolvedPlantAddress = (applicant?: Applicant) =>
@@ -248,10 +259,11 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
     const detailPlantAddress = getPreferredAddress(applicationDetail?.plantAddresses)
     const detailPlant = applicationDetail?.plants?.[0]
     const detailPlantName = pickFirstText(detailPlant?.name, applicant?.plant)
+    const detailContacts = normalizePlantContacts(applicationDetail?.plantContacts)
     const detailContact =
-      applicationDetail?.plantContacts?.find((contact) =>
+      detailContacts.find((contact) =>
         normalizeText(contact.type).toLowerCase().includes('primary'),
-      ) ?? applicationDetail?.plantContacts?.[0]
+      ) ?? detailContacts[0]
     const address = pickFirstText(
       formatAddressParts(
         detailPlantAddress?.street,

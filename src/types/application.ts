@@ -464,6 +464,15 @@ export interface PlantContact {
   type: string // "Primary Contact" | "Not Primary Contact" etc.
 }
 
+export type PlantContactGroups = {
+  primaryContact?: PlantContact[];
+  billingContact?: PlantContact[];
+  otherContact?: PlantContact[];
+  PrimaryContact?: PlantContact[];
+  BillingContact?: PlantContact[];
+  OtherContact?: PlantContact[];
+};
+
 export interface TaskEvent {
   Action: string;
   ActionBy?: string;
@@ -541,7 +550,7 @@ export interface ApplicationDetail {
   contacts: Contact[];
   plants: Plant[];
   plantAddresses?: PlantAddress[];
-  plantContacts?: PlantContact[];
+  plantContacts?: PlantContact[] | PlantContactGroups;
   products: any[];
   preferences?: any;
   files?: UploadedFile[];
