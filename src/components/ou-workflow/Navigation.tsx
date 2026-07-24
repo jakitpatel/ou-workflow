@@ -330,16 +330,6 @@ export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationP
         </Link>
 
         <Link
-          to={ROUTES.PROFILE}
-          className={linkClass(isActiveRoute('profile'))}
-          aria-current={isActiveRoute('profile') ? 'page' : undefined}
-          title="Profile"
-        >
-          <Settings className={iconClass} aria-hidden="true" />
-          {!collapsed ? <span className="truncate">Profile</span> : null}
-        </Link>
-
-        <Link
           to={ROUTES.PRELIM_DASHBOARD}
           search={{
             q: '',
@@ -352,6 +342,16 @@ export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationP
         >
           <Inbox className={iconClass} aria-hidden="true" />
           {!collapsed ? <span className="truncate">Application Intake Dashboard</span> : null}
+        </Link>
+
+        <Link
+          to={ROUTES.PROFILE}
+          className={linkClass(isActiveRoute('profile'))}
+          aria-current={isActiveRoute('profile') ? 'page' : undefined}
+          title="Profile"
+        >
+          <Settings className={iconClass} aria-hidden="true" />
+          {!collapsed ? <span className="truncate">Profile</span> : null}
         </Link>
       </nav>
 
