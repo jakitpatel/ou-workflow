@@ -58,7 +58,7 @@ export default function PlantsSection({
           const intakePlant = application.globalData?.plants?.[plantIndex];
           const displayedPlantId = isPrelimApplicationDetail
             ? intakePlant?.plant_id ?? application.globalData?.plant_id ?? ''
-            : plant.plantId || '';
+            : plant.plantID ?? plant.plantId ?? '';
           const physicalAddress = isPrelimApplicationDetail
             ? plantAddresses[plantIndex]
             : plantAddresses.find((a) => a.type?.toLowerCase() === "physical");
