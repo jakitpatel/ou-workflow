@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_public/login")({
 
 function LoginPage() {
   const { login } = useUser();
-  const { apiBaseUrl, setApiBaseUrl, stageLayout, paginationMode } = useAppPreferences();
+  const { apiBaseUrl, setApiBaseUrl, stageLayout, paginationMode, navigationMenuType } = useAppPreferences();
   const [error, setError] = useState("");
   const hasRedirectedRef = useRef(false);
 
@@ -110,6 +110,7 @@ function LoginPage() {
         apiBaseUrl: currentApiBaseUrl,
         stageLayout,
         paginationMode,
+        navigationMenuType,
       });
     } catch (err) {
       console.warn("[handleCognito] Failed to persist apiBaseUrl:", err);

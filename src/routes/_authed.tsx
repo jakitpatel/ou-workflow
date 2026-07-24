@@ -1,6 +1,8 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
-import { Navigation } from '@/components/ou-workflow/Navigation'
+import { useState } from 'react'
+import { LeftNavigation, Navigation } from '@/components/ou-workflow/Navigation'
 import { isAuthenticated } from '@/auth/authService'
+import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { storeAuthRedirect } from '@/features/auth/model/sessionManager'
 
 export const Route = createFileRoute('/_authed')({
@@ -15,6 +17,24 @@ export const Route = createFileRoute('/_authed')({
 })
 
 function AuthedLayout() {
+  const { navigationMenuType } = useAppPreferences()
+  const [leftNavCollapsed, setLeftNavCollapsed] = useState(false)
+
+  if (navigationMenuType === 'left') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <LeftNavigation collapsed={leftNavCollapsed} onCollapsedChange={setLeftNavCollapsed} />
+        <main
+          className={`min-h-screen transition-[padding] duration-200 ${
+            leftNavCollapsed ? 'pl-16' : 'pl-64'
+          }`}
+        >
+          <Outlet />
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navigation />

@@ -1,4 +1,4 @@
-import type { PaginationMode, StageLayout } from "@/types/application";
+import type { NavigationMenuType, PaginationMode, StageLayout } from "@/types/application";
 
 const SS_KEY = "app_preferences";
 
@@ -6,6 +6,7 @@ export type StoredAppPreferences = {
   apiBaseUrl: string | null;
   stageLayout: StageLayout;
   paginationMode: PaginationMode;
+  navigationMenuType: NavigationMenuType;
 };
 
 export function getDefaultAppPreferences(): StoredAppPreferences {
@@ -13,6 +14,7 @@ export function getDefaultAppPreferences(): StoredAppPreferences {
     apiBaseUrl: null,
     stageLayout: "mixed",
     paginationMode: "infinite",
+    navigationMenuType: "top",
   };
 }
 
@@ -31,6 +33,7 @@ export function loadStoredAppPreferences(): StoredAppPreferences {
       apiBaseUrl: parsed.apiBaseUrl ?? defaults.apiBaseUrl,
       stageLayout: parsed.stageLayout ?? defaults.stageLayout,
       paginationMode: parsed.paginationMode ?? defaults.paginationMode,
+      navigationMenuType: parsed.navigationMenuType ?? defaults.navigationMenuType,
     };
   } catch {
     return defaults;

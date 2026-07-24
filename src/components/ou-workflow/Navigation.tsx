@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Bell, User, BarChart3, ClipboardList, LogOut, Settings } from 'lucide-react'
+import { Bell, User, BarChart3, ClipboardList, LogOut, Settings, Inbox, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
@@ -14,10 +14,16 @@ const ROUTES = {
   PROFILE: '/profile',
   NCRC_DASHBOARD: '/ou-workflow/ncrc-dashboard',
   TASKS_DASHBOARD: '/ou-workflow/tasks-dashboard',
+  PRELIM_DASHBOARD: '/ou-workflow/prelim-dashboard',
 } as const
 
 type NavigationProps = {
   showMenu?: boolean
+}
+
+type LeftNavigationProps = {
+  collapsed: boolean
+  onCollapsedChange: (collapsed: boolean) => void
 }
 
 export function Navigation({ showMenu = true }: NavigationProps) {
@@ -221,5 +227,153 @@ export function Navigation({ showMenu = true }: NavigationProps) {
         </div>
       </div>
     </nav>
+  )
+}
+
+export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationProps) {
+  const location = useRouterState({ select: (s) => s.location.pathname })
+  const { username, role, logout } = useUser()
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+
+  const handleLogout = useCallback(() => {
+    logout()
+    navigate({ to: ROUTES.LOGIN })
+  }, [logout, navigate])
+
+  const refreshApplicationsDashboardData = useCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: applicationsQueryKeys.lists(),
+    })
+  }, [queryClient])
+
+  const refreshTasksDashboardData = useCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: tasksQueryKeys.lists(),
+    })
+  }, [queryClient])
+
+  const isActiveRoute = (path: string) => location.includes(path)
+  const navWidth = collapsed ? 'w-16' : 'w-64'
+
+  const linkClass = (active: boolean) =>
+    `flex h-10 items-center rounded-md px-3 text-sm font-medium transition-colors ${
+      active
+        ? 'bg-blue-100 text-blue-700'
+        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+    } ${collapsed ? 'justify-center' : 'gap-3'}`
+
+  const iconClass = collapsed ? 'h-5 w-5 shrink-0' : 'h-5 w-5 shrink-0'
+
+  return (
+    <aside
+      className={`fixed bottom-0 left-0 top-0 z-50 flex ${navWidth} flex-col border-r border-gray-200 bg-white shadow-sm transition-[width] duration-200`}
+      aria-label="Main navigation"
+    >
+      <div className="flex h-16 items-center justify-between border-b border-gray-200 px-3">
+        <Link
+          to={ROUTES.HOME}
+          className={`flex min-w-0 items-center ${collapsed ? 'justify-center' : 'gap-2'}`}
+          aria-label="Home"
+        >
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white">
+            OU
+          </div>
+          {!collapsed ? (
+            <span className="truncate text-sm font-semibold text-gray-900">Workflow System</span>
+          ) : null}
+        </Link>
+        <button
+          type="button"
+          onClick={() => onCollapsedChange(!collapsed)}
+          className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          aria-label={collapsed ? 'Expand navigation menu' : 'Collapse navigation menu'}
+          title={collapsed ? 'Expand' : 'Collapse'}
+        >
+          {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+        </button>
+      </div>
+
+      <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4">
+        <Link
+          to={ROUTES.NCRC_DASHBOARD}
+          onClick={refreshApplicationsDashboardData}
+          search={{
+            q: '',
+            status: 'all',
+            priority: 'all',
+            page: 0,
+            myOnly: true,
+          }}
+          className={linkClass(isActiveRoute('ncrc-dashboard'))}
+          aria-current={isActiveRoute('ncrc-dashboard') ? 'page' : undefined}
+          title="Application Dashboard"
+        >
+          <BarChart3 className={iconClass} aria-hidden="true" />
+          {!collapsed ? <span className="truncate">Application Dashboard</span> : null}
+        </Link>
+
+        <Link
+          to={ROUTES.TASKS_DASHBOARD}
+          onClick={refreshTasksDashboardData}
+          search={{
+            qs: '',
+            days: 'pending',
+            page: 0,
+          }}
+          className={linkClass(isActiveRoute('tasks-dashboard'))}
+          aria-current={isActiveRoute('tasks-dashboard') ? 'page' : undefined}
+          title="Tasks & Notifications"
+        >
+          <ClipboardList className={iconClass} aria-hidden="true" />
+          {!collapsed ? <span className="truncate">Tasks & Notifications</span> : null}
+        </Link>
+
+        <Link
+          to={ROUTES.PROFILE}
+          className={linkClass(isActiveRoute('profile'))}
+          aria-current={isActiveRoute('profile') ? 'page' : undefined}
+          title="Profile"
+        >
+          <Settings className={iconClass} aria-hidden="true" />
+          {!collapsed ? <span className="truncate">Profile</span> : null}
+        </Link>
+
+        <Link
+          to={ROUTES.PRELIM_DASHBOARD}
+          search={{
+            q: '',
+            status: 'all',
+            page: 0,
+          }}
+          className={linkClass(isActiveRoute('prelim-dashboard'))}
+          aria-current={isActiveRoute('prelim-dashboard') ? 'page' : undefined}
+          title="Application Intake Dashboard"
+        >
+          <Inbox className={iconClass} aria-hidden="true" />
+          {!collapsed ? <span className="truncate">Application Intake Dashboard</span> : null}
+        </Link>
+      </nav>
+
+      <div className="border-t border-gray-200 p-2">
+        {!collapsed ? (
+          <div className="mb-2 min-w-0 px-2 text-xs text-gray-500">
+            <div className="truncate">{username}</div>
+            {role ? <div className="truncate">{role}</div> : null}
+          </div>
+        ) : null}
+        <button
+          type="button"
+          className={`flex h-10 w-full items-center rounded-md px-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 ${
+            collapsed ? 'justify-center' : 'gap-3'
+          }`}
+          onClick={handleLogout}
+          title="Sign Out"
+        >
+          <LogOut className={iconClass} aria-hidden="true" />
+          {!collapsed ? <span>Sign Out</span> : null}
+        </button>
+      </div>
+    </aside>
   )
 }

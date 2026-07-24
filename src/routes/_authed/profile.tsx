@@ -5,7 +5,7 @@ import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { useSaveProfileLayoutMutation } from '@/features/profile/hooks/useSaveProfileLayoutMutation'
 import { getBuildInfo } from '@/lib/utils'
-import type { PaginationMode, StageLayout } from '@/types/application'
+import type { NavigationMenuType, PaginationMode, StageLayout } from '@/types/application'
 
 export const Route = createFileRoute('/_authed/profile')({
   component: ProfilePage,
@@ -44,7 +44,16 @@ function ProfilePage() {
     roles,
     setRole,
   } = useUser()
-  const { apiBaseUrl, stageLayout, setStageLayout, paginationMode, setPaginationMode, userPerson } =
+  const {
+    apiBaseUrl,
+    stageLayout,
+    setStageLayout,
+    paginationMode,
+    setPaginationMode,
+    navigationMenuType,
+    setNavigationMenuType,
+    userPerson,
+  } =
     useAppPreferences()
   const { version, buildTime } = getBuildInfo()
   const [showRoleChangeSuccess, setShowRoleChangeSuccess] = useState(false)
@@ -62,13 +71,16 @@ function ProfilePage() {
   const buildProfileLayout = ({
     nextStageLayout = stageLayout,
     nextPaginationMode = paginationMode,
+    nextNavigationMenuType = navigationMenuType,
   }: {
     nextStageLayout?: StageLayout
     nextPaginationMode?: PaginationMode
+    nextNavigationMenuType?: NavigationMenuType
   } = {}): string =>
     JSON.stringify({
       stageLayout: nextStageLayout,
       paginationMode: nextPaginationMode,
+      navigationMenuType: nextNavigationMenuType,
     })
 
   const saveProfileLayoutMutation = useSaveProfileLayoutMutation({
@@ -114,6 +126,16 @@ function ProfilePage() {
       token,
       username: username ?? '',
       profileLayout: buildProfileLayout({ nextPaginationMode: value }),
+    })
+  }
+
+  const handleNavigationMenuTypeChange = (value: NavigationMenuType) => {
+    if (value === navigationMenuType) return
+    setNavigationMenuType(value)
+    saveProfileLayoutMutation.mutate({
+      token,
+      username: username ?? '',
+      profileLayout: buildProfileLayout({ nextNavigationMenuType: value }),
     })
   }
 
@@ -230,6 +252,23 @@ function ProfilePage() {
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
                   Choose between classic pagination or scroll-to-load behavior
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Navigation Menu Type
+                </label>
+                <select
+                  value={navigationMenuType}
+                  onChange={(e) => handleNavigationMenuTypeChange(e.target.value as NavigationMenuType)}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
+                >
+                  <option value="top">Top</option>
+                  <option value="left">Left</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Choose whether primary navigation appears at the top or in a collapsible left menu
                 </p>
               </div>
 

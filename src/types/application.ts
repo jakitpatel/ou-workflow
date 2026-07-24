@@ -5,6 +5,8 @@ export type PaginationMode = 'paged' | 'infinite';
 
 export type StageLayout = 'horizontal' | 'mixed';
 
+export type NavigationMenuType = 'top' | 'left';
+
 export type UserRole = {
   name: string;
 }

@@ -16,13 +16,14 @@ import {
 } from "@/context/appPreferencesStorage";
 import { fetchProfileLayout, fetchUserPerson, type UserPerson } from "@/features/profile/api";
 import { registerUserContext } from "@/shared/api/httpClient";
-import type { PaginationMode, StageLayout } from "@/types/application";
+import type { NavigationMenuType, PaginationMode, StageLayout } from "@/types/application";
 
 type AppPreferencesContextType = StoredAppPreferences & {
   userPerson: UserPerson | null;
   setApiBaseUrl: (url: string | null) => void;
   setStageLayout: (layout: StageLayout) => void;
   setPaginationMode: (mode: PaginationMode) => void;
+  setNavigationMenuType: (type: NavigationMenuType) => void;
   resetAppPreferences: () => void;
 };
 
@@ -40,6 +41,9 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
   const [paginationMode, setPaginationMode] = useState<PaginationMode>(
     stored.paginationMode,
   );
+  const [navigationMenuType, setNavigationMenuType] = useState<NavigationMenuType>(
+    stored.navigationMenuType,
+  );
   const [userPerson, setUserPerson] = useState<UserPerson | null>(null);
 
   useEffect(() => {
@@ -47,8 +51,9 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
       apiBaseUrl,
       stageLayout,
       paginationMode,
+      navigationMenuType,
     });
-  }, [apiBaseUrl, stageLayout, paginationMode]);
+  }, [apiBaseUrl, stageLayout, paginationMode, navigationMenuType]);
 
   useEffect(() => {
     registerUserContext({ apiBaseUrl });
@@ -102,6 +107,10 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
         if (parsed.paginationMode) {
           setPaginationMode(parsed.paginationMode);
         }
+
+        if (parsed.navigationMenuType) {
+          setNavigationMenuType(parsed.navigationMenuType);
+        }
       } catch (error) {
         console.warn("Failed to hydrate profile layout:", error);
       }
@@ -118,6 +127,7 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
     setApiBaseUrl(defaults.apiBaseUrl);
     setStageLayout(defaults.stageLayout);
     setPaginationMode(defaults.paginationMode);
+    setNavigationMenuType(defaults.navigationMenuType);
     clearStoredAppPreferences();
   };
 
@@ -126,13 +136,15 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
       apiBaseUrl,
       stageLayout,
       paginationMode,
+      navigationMenuType,
       userPerson,
       setApiBaseUrl,
       setStageLayout,
       setPaginationMode,
+      setNavigationMenuType,
       resetAppPreferences,
     }),
-    [apiBaseUrl, stageLayout, paginationMode, userPerson],
+    [apiBaseUrl, stageLayout, paginationMode, navigationMenuType, userPerson],
   );
 
   return (
