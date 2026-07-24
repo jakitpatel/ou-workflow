@@ -35,15 +35,16 @@ export default function Overview({
   const validationStatus = isPrelimApplicationDetail ? application.validationStatus ?? '' : null;
   const validationErrorDesc = isPrelimApplicationDetail ? application.validationErrorDesc ?? '' : '';
   const intakeData = isPrelimApplicationDetail ? application.globalData : undefined;
+  const intakePlant = intakeData?.plants?.[0];
   const companyId = intakeData?.company_id ?? application.kashrusCompanyId ?? '-';
   const companyStatus = application.CompanyStatus ?? '-';
   const plantId = isPrelimApplicationDetail
-    ? intakeData?.plant_id ?? '-'
+    ? intakePlant?.plant_id ?? intakeData?.plant_id ?? '-'
     : application.PlantId ?? plant?.plantId ?? '-';
   const applicationOwnsId = application.OwnsID ?? application.ownsid ?? '-';
   const applicationOwnsStatus = application.OwnsStatus ?? '-';
-  const ownsId = intakeData?.owns_id ?? '-';
-  const ownsStatus = intakeData?.owns_status ?? '-';
+  const ownsId = intakePlant?.owns_id ?? intakeData?.owns_id ?? '-';
+  const ownsStatus = intakePlant?.owns_status ?? intakeData?.owns_status ?? '-';
 
   // Calculate statistics
   const stats = {
@@ -98,7 +99,7 @@ export default function Overview({
 
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">
-                <MatchMarker isNew={intakeData?.is_new_plant} />
+                <MatchMarker isNew={intakePlant?.is_new_plant ?? intakeData?.is_new_plant} />
                 Plant ID
               </span>
               <span className="text-sm font-semibold text-green-700">
@@ -127,7 +128,7 @@ export default function Overview({
             {isPrelimApplicationDetail ? (
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-sm font-medium text-gray-600">
-                  <MatchMarker isNew={intakeData?.is_new_owns} />
+                  <MatchMarker isNew={intakePlant?.is_new_owns ?? intakeData?.is_new_owns} />
                   Owns ID
                 </span>
                 <span className="text-sm font-semibold text-green-700">

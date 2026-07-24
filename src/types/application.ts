@@ -528,6 +528,16 @@ export interface ApplicationGlobalData {
   company_id?: number | string;
   company_name?: string;
   is_new_company?: boolean;
+  plants?: Array<{
+    company_id?: number | string;
+    plant_id?: number | string;
+    plant_name?: string;
+    owns_id?: number | string;
+    owns_status?: string;
+    is_new_plant?: boolean;
+    is_new_owns?: boolean;
+    WFID?: number | string;
+  }>;
   plant_id?: number | string;
   owns_id?: number | string;
   plant_name?: string;
