@@ -55,8 +55,9 @@ export default function PlantsSection({
 
       <div className={isPrelimApplicationDetail && plantsToRender.length > 1 ? 'max-h-[72vh] space-y-6 overflow-y-auto pr-2' : 'space-y-6'}>
         {plantsToRender.map((plant, plantIndex) => {
+          const intakePlant = application.globalData?.plants?.[plantIndex];
           const displayedPlantId = isPrelimApplicationDetail
-            ? plant.plantId || application.globalData?.plant_id || ''
+            ? intakePlant?.plant_id ?? application.globalData?.plant_id ?? ''
             : plant.plantId || '';
           const physicalAddress = isPrelimApplicationDetail
             ? plantAddresses[plantIndex]
