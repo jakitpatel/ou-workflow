@@ -36,11 +36,13 @@ export default function Overview({
   const validationErrorDesc = isPrelimApplicationDetail ? application.validationErrorDesc ?? '' : '';
   const intakeData = isPrelimApplicationDetail ? application.globalData : undefined;
   const intakePlant = intakeData?.plants?.[0];
-  const companyId = intakeData?.company_id ?? application.kashrusCompanyId ?? '-';
-  const companyStatus = application.CompanyStatus ?? '-';
+  const companyId = isPrelimApplicationDetail
+    ? intakeData?.company_id ?? application.kashrusCompanyId ?? '-'
+    : company?.companyID ?? application.kashrusCompanyId ?? '-';
+  const companyStatus = company?.Status ?? application.CompanyStatus ?? '-';
   const plantId = isPrelimApplicationDetail
     ? intakePlant?.plant_id ?? intakeData?.plant_id ?? '-'
-    : application.PlantId ?? plant?.plantId ?? '-';
+    : application.PlantID ?? application.PlantId ?? plant?.plantID ?? plant?.plantId ?? '-';
   const applicationOwnsId = application.OwnsID ?? application.ownsid ?? '-';
   const applicationOwnsStatus = application.OwnsStatus ?? '-';
   const ownsId = intakePlant?.owns_id ?? intakeData?.owns_id ?? '-';

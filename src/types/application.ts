@@ -387,6 +387,8 @@ export type Applicant = {
 
 export interface Company {
   name: string;
+  companyID?: number | string;
+  Status?: string;
   category?: string;
   currentlyCertified?: string;
   everCertified?: string;
@@ -395,7 +397,7 @@ export interface Company {
 
 export interface Contact { type:string; name:string; phone?:string; email?:string; title?:string; designated?:boolean }
 
-export interface Plant { id:number; plantId:string; name:string; address:any; contact:any; manufacturing:any; otherProducts?:boolean; otherProductsList?:string, otherPlantsProducing?:boolean, otherPlantsLocation?:string }
+export interface Plant { id:number; plantId:string; plantID?: number | string; name:string; address:any; contact:any; manufacturing:any; otherProducts?:boolean; otherProductsList?:string, otherPlantsProducing?:boolean, otherPlantsLocation?:string }
 
 export interface UploadedFile { 
   fileId?:number; 
@@ -549,6 +551,7 @@ export interface ApplicationGlobalData {
 export interface ApplicationDetail {
   applicationId: string;
   PlantId?: number | string;
+  PlantID?: number | string;
   OwnsID?: number | string;
   OwnsStatus?: string;
   CompanyStatus?: string;

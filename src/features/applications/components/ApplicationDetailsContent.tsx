@@ -803,7 +803,9 @@ export function ApplicationDetailsContent({
             {activeTab === 'company' && (
               <CompanySection application={application} editMode={editMode} dataSource={dataSource} />
             )}
-            {activeTab === 'contacts' && <ContactsSection application={application} editMode={editMode} />}
+            {activeTab === 'contacts' && (
+              <ContactsSection application={application} editMode={editMode} dataSource={dataSource} />
+            )}
             {activeTab === 'plants' && (
               <PlantsSection application={application} editMode={editMode} dataSource={dataSource} />
             )}

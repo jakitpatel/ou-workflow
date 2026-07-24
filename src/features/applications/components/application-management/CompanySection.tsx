@@ -14,7 +14,11 @@ export default function CompanySection({
   const companyId =
     dataSource === 'prelim'
       ? application.globalData?.company_id ?? application.kashrusCompanyId
-      : application.kashrusCompanyId;
+      : company?.companyID ?? application.kashrusCompanyId;
+  const companyStatus =
+    dataSource === 'prelim'
+      ? application.kashrusStatus
+      : company?.Status ?? application.CompanyStatus ?? application.kashrusStatus;
   const physicalAddress = companyAddresses.find(
     (a) => a.type?.toLowerCase() === "physical"
   );
@@ -220,7 +224,7 @@ export default function CompanySection({
           <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100">
             <span className="text-sm font-medium text-blue-700">Status</span>
             <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-semibold">
-              {/*application.kashrusStatus*/}
+              {companyStatus ?? '-'}
             </span>
           </div>
           

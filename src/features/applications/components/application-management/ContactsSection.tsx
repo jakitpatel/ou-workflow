@@ -1,13 +1,35 @@
-import type { ApplicationDetail } from "@/types/application";
+import type { ApplicationDetail, CompanyContact, CompanyContactGroups } from "@/types/application";
+
+const normalizeCompanyContacts = (
+  companyContacts: ApplicationDetail['companyContacts'],
+  dataSource: 'application' | 'prelim',
+): CompanyContact[] => {
+  if (Array.isArray(companyContacts)) return companyContacts;
+  if (!companyContacts) return [];
+
+  const groups = companyContacts as CompanyContactGroups;
+
+  if (dataSource === 'application') {
+    return [
+      ...(groups.primaryContact ?? groups.PrimaryContact ?? []),
+      ...(groups.billingContact ?? groups.BillingContact ?? []),
+      ...(groups.otherContact ?? groups.OtherContact ?? []),
+    ];
+  }
+
+  return [];
+};
 
 export default function ContactsSection({
   application,
   editMode,
+  dataSource = 'application',
 }: {
   application: ApplicationDetail;
   editMode: boolean;
+  dataSource?: 'application' | 'prelim';
 }) {
-  const contacts = Array.isArray(application.companyContacts) ? application.companyContacts : [];
+  const contacts = normalizeCompanyContacts(application.companyContacts, dataSource);
   const primaryContact = contacts.find(c => c.type === "Primary Contact");
   const otherContacts = contacts.filter(c => c.type !== "Primary Contact");
 
