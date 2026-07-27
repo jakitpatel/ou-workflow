@@ -49,6 +49,9 @@ export function usePrelimDashboardState() {
     enabled: !!selectedId,
     select: (data: any[]) => data?.[0] ?? null,
     ...queryOptionDefaults.prelimDetail,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
   })
 
   const updateSearch = (updates: Partial<typeof search>) => {
@@ -126,8 +129,11 @@ export function usePrelimDashboardState() {
     setExpandedTaskPanel,
     selectedId,
     setSelectedId,
-    applicationDetails: applicationDetailsQuery.data,
-    isDetailsLoading: applicationDetailsQuery.isLoading,
+    applicationDetails: applicationDetailsQuery.isFetching
+      ? null
+      : applicationDetailsQuery.data,
+    isDetailsLoading:
+      applicationDetailsQuery.isLoading || applicationDetailsQuery.isFetching,
     applicationDetailsError: applicationDetailsQuery.error,
     updateSearch,
     handleTaskAction,
