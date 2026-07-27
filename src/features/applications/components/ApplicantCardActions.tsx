@@ -24,8 +24,11 @@ export function ApplicantCardActions({
 }: Props) {
   const normalizedStatus = applicant?.status?.toLowerCase()
   const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth'
-  const intakeId = applicant.IntakeID ?? applicant.intakeId
-  const hasIntakeId = intakeId !== undefined && intakeId !== null && String(intakeId).trim() !== ''
+  const externalReferenceId = applicant.externalReferenceId
+  const hasExternalReferenceId =
+    externalReferenceId !== undefined &&
+    externalReferenceId !== null &&
+    String(externalReferenceId).trim() !== ''
 
   return (
     <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-4">
@@ -41,13 +44,17 @@ export function ApplicantCardActions({
         <button
           type="button"
           onClick={onViewIntakeDetails}
-          disabled={!hasIntakeId}
+          disabled={!hasExternalReferenceId}
           className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-            hasIntakeId
+            hasExternalReferenceId
               ? 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500'
               : 'cursor-not-allowed bg-indigo-100 text-indigo-300 focus:ring-indigo-200'
           }`}
-          title={hasIntakeId ? `View intake details for IntakeID ${intakeId}` : 'No IntakeID is available'}
+          title={
+            hasExternalReferenceId
+              ? `View intake details for external reference ${externalReferenceId}`
+              : 'No externalReferenceId is available'
+          }
         >
           View Intake Details
         </button>

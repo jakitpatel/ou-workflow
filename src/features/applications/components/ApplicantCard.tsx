@@ -33,18 +33,19 @@ export function ApplicantCard({
 }: Props) {
   const { token } = useUser()
   const [showIntakeDetailsDrawer, setShowIntakeDetailsDrawer] = useState(false)
-  const rawIntakeId = applicant.IntakeID ?? applicant.intakeId
-  const intakeId =
-    rawIntakeId !== undefined &&
-    rawIntakeId !== null &&
-    String(rawIntakeId).trim() !== '' &&
-    Number.isFinite(Number(rawIntakeId))
-      ? Number(rawIntakeId)
+  const rawExternalReferenceId = applicant.externalReferenceId
+  const externalReferenceId =
+    rawExternalReferenceId !== undefined &&
+    rawExternalReferenceId !== null &&
+    String(rawExternalReferenceId).trim() !== '' &&
+    Number.isFinite(Number(rawExternalReferenceId))
+      ? Number(rawExternalReferenceId)
       : null
   const intakeDetailsQuery = useQuery({
-    queryKey: prelimQueryKeys.detail(intakeId),
-    queryFn: () => fetchPrelimApplicationDetails(intakeId as number, token ?? undefined),
-    enabled: showIntakeDetailsDrawer && intakeId !== null,
+    queryKey: prelimQueryKeys.detail(externalReferenceId),
+    queryFn: () =>
+      fetchPrelimApplicationDetails(externalReferenceId as number, token ?? undefined),
+    enabled: showIntakeDetailsDrawer && externalReferenceId !== null,
     select: (data: any[]) => data?.[0] ?? null,
     ...queryOptionDefaults.prelimDetail,
   })
@@ -218,7 +219,7 @@ export function ApplicantCard({
       />
       <PrelimApplicationDetailsDrawer
         open={showIntakeDetailsDrawer}
-        externalReferenceId={intakeId}
+        externalReferenceId={externalReferenceId}
         data={intakeDetailsQuery.data}
         isLoading={intakeDetailsQuery.isLoading}
         error={intakeDetailsQuery.error}
