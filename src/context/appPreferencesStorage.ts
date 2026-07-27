@@ -14,7 +14,7 @@ export function getDefaultAppPreferences(): StoredAppPreferences {
     apiBaseUrl: null,
     stageLayout: "mixed",
     paginationMode: "infinite",
-    navigationMenuType: "top",
+    navigationMenuType: "left",
   };
 }
 

@@ -264,8 +264,8 @@ function ProfilePage() {
                   onChange={(e) => handleNavigationMenuTypeChange(e.target.value as NavigationMenuType)}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
                 >
-                  <option value="top">Top</option>
                   <option value="left">Left</option>
+                  <option value="top">Top</option>
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
                   Choose whether primary navigation appears at the top or in a collapsible left menu
