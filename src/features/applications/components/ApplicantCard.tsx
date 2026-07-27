@@ -1,4 +1,7 @@
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Bot } from 'lucide-react'
+import { useUser } from '@/context/UserContext'
 import { CancelApplicationDialog } from '@/features/applications/components/CancelApplicationDialog'
 import { ApplicantCardActions } from '@/features/applications/components/ApplicantCardActions'
 import { ApplicantAIAssistantPanel } from '@/features/applications/components/ApplicantAIAssistantPanel'
@@ -8,6 +11,10 @@ import { ApplicantProgressBar } from '@/features/applications/components/Applica
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
 import { ApplicationExpandedStage } from '@/features/applications/components/ApplicationExpandedStage'
 import { useApplicantCardState } from '@/features/applications/hooks/useApplicantCardState'
+import { fetchPrelimApplicationDetails } from '@/features/prelim/api'
+import { PrelimApplicationDetailsDrawer } from '@/features/prelim/components/PrelimApplicationDetailsDrawer'
+import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
+import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
 import type { Applicant, Task } from '@/types/application'
 
@@ -24,6 +31,24 @@ export function ApplicantCard({
   handleCancelTask,
   onIntakeIdClick,
 }: Props) {
+  const { token } = useUser()
+  const [showIntakeDetailsDrawer, setShowIntakeDetailsDrawer] = useState(false)
+  const rawIntakeId = applicant.IntakeID ?? applicant.intakeId
+  const intakeId =
+    rawIntakeId !== undefined &&
+    rawIntakeId !== null &&
+    String(rawIntakeId).trim() !== '' &&
+    Number.isFinite(Number(rawIntakeId))
+      ? Number(rawIntakeId)
+      : null
+  const intakeDetailsQuery = useQuery({
+    queryKey: prelimQueryKeys.detail(intakeId),
+    queryFn: () => fetchPrelimApplicationDetails(intakeId as number, token ?? undefined),
+    enabled: showIntakeDetailsDrawer && intakeId !== null,
+    select: (data: any[]) => data?.[0] ?? null,
+    ...queryOptionDefaults.prelimDetail,
+  })
+
   const {
     applicationNotes,
     applicationNotesContextKey,
@@ -144,6 +169,7 @@ export function ApplicantCard({
         applicant={applicant}
         onViewTasks={handleViewTasks}
         onViewDetails={() => setShowDetailsDrawer(true)}
+        onViewIntakeDetails={() => setShowIntakeDetailsDrawer(true)}
         filesByType={filesByType}
         canCancelApplication={canCancelApplication}
         canUndoWithdrawApplication={canUndoWithdrawApplication}
@@ -189,6 +215,14 @@ export function ApplicantCard({
         open={showDetailsDrawer}
         applicationId={applicant.applicationId}
         onClose={() => setShowDetailsDrawer(false)}
+      />
+      <PrelimApplicationDetailsDrawer
+        open={showIntakeDetailsDrawer}
+        externalReferenceId={intakeId}
+        data={intakeDetailsQuery.data}
+        isLoading={intakeDetailsQuery.isLoading}
+        error={intakeDetailsQuery.error}
+        onClose={() => setShowIntakeDetailsDrawer(false)}
       />
       <ApplicationDetailsDrawer
         open={applicationNotes.selectedApplicationId !== null}

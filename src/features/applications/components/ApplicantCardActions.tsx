@@ -8,6 +8,7 @@ type Props = {
   filesByType?: Record<string, any>
   onCancelApplication?: () => void
   onViewDetails: () => void
+  onViewIntakeDetails: () => void
   onViewTasks: (id?: string | number) => void
 }
 
@@ -18,10 +19,13 @@ export function ApplicantCardActions({
   filesByType,
   onCancelApplication,
   onViewDetails,
+  onViewIntakeDetails,
   onViewTasks,
 }: Props) {
   const normalizedStatus = applicant?.status?.toLowerCase()
   const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth'
+  const intakeId = applicant.IntakeID ?? applicant.intakeId
+  const hasIntakeId = intakeId !== undefined && intakeId !== null && String(intakeId).trim() !== ''
 
   return (
     <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-4">
@@ -33,6 +37,19 @@ export function ApplicantCardActions({
           className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           View App Details
+        </button>
+        <button
+          type="button"
+          onClick={onViewIntakeDetails}
+          disabled={!hasIntakeId}
+          className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            hasIntakeId
+              ? 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500'
+              : 'cursor-not-allowed bg-indigo-100 text-indigo-300 focus:ring-indigo-200'
+          }`}
+          title={hasIntakeId ? `View intake details for IntakeID ${intakeId}` : 'No IntakeID is available'}
+        >
+          View Intake Details
         </button>
         {!isWithdrawn && (
           <button
