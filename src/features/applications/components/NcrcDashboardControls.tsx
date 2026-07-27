@@ -1,4 +1,5 @@
 import { MessageSquareText, Search } from 'lucide-react'
+import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { ApplicantStatsCards } from '@/features/applications/components/ApplicantStatsCards'
 
 const PAGE_SIZE = 5
@@ -65,8 +66,14 @@ export function NcrcDashboardControls({
   onNextPage,
   onLastPage,
 }: NcrcDashboardControlsProps) {
+  const { navigationMenuType } = useAppPreferences()
+
   return (
-    <div className="sticky top-16 z-20 bg-gray-50 pb-4">
+    <div
+      className={`sticky z-20 bg-gray-50 pb-4 ${
+        navigationMenuType === 'left' ? 'top-0' : 'top-16'
+      }`}
+    >
       <div className="flex items-start justify-between gap-4 pt-6 pb-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Application Dashboard</h2>
