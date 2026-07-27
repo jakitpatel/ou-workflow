@@ -425,29 +425,34 @@ export function PrelimResolvedSection({
                             >
                               {p.ownsID ? 'ASSIGNED' : 'TO BE ASSIGNED'}
                             </span>
-                            {p.ownsID && (
-                              <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
-                                OWNSID: {p.ownsID}
-                              </span>
-                            )}
-                            {p.WFID && (
-                              <button
-                                type="button"
-                                onClick={() => handleWfidClick(p.WFID)}
-                                title={`Open workflow details for WFID ${p.WFID}`}
-                                className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                              >
-                                WFID: {p.WFID}
-                              </button>
-                            )}
                           </div>
                         </div>
 
                         <div className="mt-1 flex items-start justify-between gap-3">
                           <div className="text-xs text-gray-500 space-y-0.5 min-w-0">
-                            <div className="inline-flex items-center">
-                              <ResolveMethodMarker marker={getResolveMethodMarker(plantTasks[idx])} />
-                              Plant ID: <span className="font-mono">{p.plant?.plantID}</span>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="inline-flex items-center">
+                                <ResolveMethodMarker marker={getResolveMethodMarker(plantTasks[idx])} />
+                                Plant ID: <span className="font-mono">{p.plant?.plantID}</span>
+                              </span>
+                              {p.ownsID && (
+                                <span className="inline-flex items-center">
+                                  <ResolveMethodMarker marker={getResolveMethodMarker(plantTasks[idx])} />
+                                  <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
+                                    OWNSID: {p.ownsID}
+                                  </span>
+                                </span>
+                              )}
+                              {p.WFID && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleWfidClick(p.WFID)}
+                                  title={`Open workflow details for WFID ${p.WFID}`}
+                                  className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                                >
+                                  WFID: {p.WFID}
+                                </button>
+                              )}
                             </div>
                             {p.plant?.plantAddress && (
                               <div className="text-gray-400 truncate">

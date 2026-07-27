@@ -389,6 +389,8 @@ export type Applicant = {
 
 export interface Company {
   name: string;
+  companyId?: number | string;
+  status?: string;
   companyID?: number | string;
   Status?: string;
   category?: string;
@@ -552,6 +554,7 @@ export interface ApplicationGlobalData {
 
 export interface ApplicationDetail {
   applicationId: string;
+  companyId?: number | string;
   PlantId?: number | string;
   PlantID?: number | string;
   OwnsID?: number | string;

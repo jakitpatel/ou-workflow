@@ -796,7 +796,6 @@ export function ApplicationDetailsContent({
             {activeTab === 'overview' && (
               <Overview
                 application={application}
-                allValidationsPassed={allValidationsPassed}
                 dataSource={dataSource}
               />
             )}

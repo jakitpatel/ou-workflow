@@ -22,24 +22,21 @@ function MatchMarker({ isNew }: { isNew?: boolean }) {
 
 export default function Overview({
   application,
-  allValidationsPassed,
   dataSource = 'application',
 }: {
   application: ApplicationDetail,
-  allValidationsPassed: boolean
   dataSource?: 'application' | 'prelim'
 }) {
   const company = application?.company?.[0];
   const plant = application?.plants?.[0];
   const isPrelimApplicationDetail = dataSource === 'prelim';
-  const validationStatus = isPrelimApplicationDetail ? application.validationStatus ?? '' : null;
   const validationErrorDesc = isPrelimApplicationDetail ? application.validationErrorDesc ?? '' : '';
   const intakeData = isPrelimApplicationDetail ? application.globalData : undefined;
   const intakePlant = intakeData?.plants?.[0];
   const companyId = isPrelimApplicationDetail
     ? intakeData?.company_id ?? application.kashrusCompanyId ?? '-'
-    : company?.companyID ?? application.kashrusCompanyId ?? '-';
-  const companyStatus = company?.Status ?? application.CompanyStatus ?? '-';
+    : company?.companyId ?? '-';
+  const companyStatus = company?.status ?? '-';
   const plantId = isPrelimApplicationDetail
     ? intakePlant?.plant_id ?? intakeData?.plant_id ?? '-'
     : application.PlantID ?? application.PlantId ?? plant?.plantID ?? plant?.plantId ?? '-';
@@ -228,21 +225,6 @@ export default function Overview({
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">Uploaded Files</span>
               <span className="text-lg font-bold text-gray-900">{stats.uploadedFiles}</span>
-            </div>
-
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm font-medium text-gray-600">Validation Status</span>
-              {isPrelimApplicationDetail ? (
-                <span className="text-sm font-semibold text-gray-900">{validationStatus || '-'}</span>
-              ) : (
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
-                  allValidationsPassed
-                    ? 'bg-green-100 text-green-800 border-green-200'
-                    : 'bg-red-100 text-red-800 border-red-200'
-                }`}>
-                  {allValidationsPassed ? 'All Passed' : 'Issues Found'}
-                </span>
-              )}
             </div>
 
             {isPrelimApplicationDetail ? (
