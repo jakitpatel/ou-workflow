@@ -490,6 +490,8 @@ export function useInspectionInvoiceDrawerState({
   const [letterTemplate, setLetterTemplate] = useState(INSPECTION_LETTER_TEMPLATE)
   const [stage, setStage] = useState<InspectionInvoiceStage>('setup')
   const [showEmailPreview, setShowEmailPreview] = useState(false)
+  const [emailTo, setEmailTo] = useState('')
+  const [emailBody, setEmailBody] = useState('')
   const [sentAt, setSentAt] = useState<string | null>(null)
   const [paidAt, setPaidAt] = useState<string | null>(null)
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false)
@@ -975,7 +977,15 @@ export function useInspectionInvoiceDrawerState({
     }
   }
 
-  const openEmailPreview = () => {
+  const openEmailPreview = ({
+    messageText,
+    toUser,
+  }: {
+    messageText: string
+    toUser: string
+  }) => {
+    setEmailTo(toUser)
+    setEmailBody(messageText)
     setShowEmailPreview(true)
     setStage('outlook-opened')
   }
@@ -1105,6 +1115,8 @@ export function useInspectionInvoiceDrawerState({
     canGenerate,
     expenseAmount,
     expenses,
+    emailBody,
+    emailTo,
     extraRecipientEmail,
     fee,
     feeAmount,
@@ -1148,6 +1160,8 @@ export function useInspectionInvoiceDrawerState({
     pickRfr,
     setAwaitPayment,
     setExpenseAmount,
+    setEmailBody,
+    setEmailTo,
     setExtraRecipientEmail,
     setFeeAmount,
     setFeeRequiredValue,

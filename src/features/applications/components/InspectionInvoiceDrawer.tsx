@@ -188,7 +188,10 @@ Account Number: ${accountNumber || '-'}`
     }
 
     if (state.stage === 'generated' || state.stage === 'outlook-opened') {
-      state.openEmailPreview()
+      state.openEmailPreview({
+        messageText: emailMessageText,
+        toUser: recipientSendValue,
+      })
       return
     }
 
@@ -666,8 +669,16 @@ Account Number: ${accountNumber || '-'}`
               <div className="space-y-4 px-5 py-4">
                 <div className="rounded border border-gray-200">
                   <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
-                    <span className="font-medium text-gray-500">To</span>
-                    <span>{recipientLabel}</span>
+                    <label htmlFor="inspection-invoice-email-to" className="pt-2 font-medium text-gray-500">
+                      To
+                    </label>
+                    <input
+                      id="inspection-invoice-email-to"
+                      type="email"
+                      value={state.emailTo}
+                      onChange={(event) => state.setEmailTo(event.target.value)}
+                      className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
                   </div>
                   <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
                     <span className="font-medium text-gray-500">Subject</span>
@@ -678,14 +689,20 @@ Account Number: ${accountNumber || '-'}`
                     <span>{emailAttachment}</span>
                   </div>
                 </div>
-                <div className="rounded border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">
-                  {emailMessageText.split('\n').map((line, index) =>
-                    line ? (
-                      <p key={`${line}-${index}`} className={index === 0 ? undefined : 'mt-3'}>
-                        {line}
-                      </p>
-                    ) : null,
-                  )}
+                <div>
+                  <label
+                    htmlFor="inspection-invoice-email-body"
+                    className="mb-1 block text-sm font-medium text-gray-700"
+                  >
+                    Body
+                  </label>
+                  <textarea
+                    id="inspection-invoice-email-body"
+                    value={state.emailBody}
+                    onChange={(event) => state.setEmailBody(event.target.value)}
+                    rows={10}
+                    className="w-full resize-y rounded border border-gray-300 p-4 text-sm leading-6 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
                 </div>
               </div>
               <div className="flex items-center justify-end gap-2 border-t px-5 py-3">
@@ -698,14 +715,14 @@ Account Number: ${accountNumber || '-'}`
                 </button>
                 <button
                   type="button"
-                  disabled={state.isSendingEmail}
+                  disabled={state.isSendingEmail || !state.emailTo.trim() || !state.emailBody.trim()}
                   onClick={async () => {
                     try {
                       await state.sendEmail({
                         attachments: emailAttachment,
-                        messageText: emailMessageText,
+                        messageText: state.emailBody,
                         subject: emailSubject,
-                        toUser: recipientSendValue,
+                        toUser: state.emailTo.trim(),
                       })
                       toast.success('Email sent')
                     } catch (error) {
