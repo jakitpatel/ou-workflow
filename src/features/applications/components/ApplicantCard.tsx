@@ -171,6 +171,7 @@ export function ApplicantCard({
         onViewTasks={handleViewTasks}
         onViewDetails={() => setShowDetailsDrawer(true)}
         onViewIntakeDetails={() => setShowIntakeDetailsDrawer(true)}
+        showViewIntakeDetails={false}
         filesByType={filesByType}
         canCancelApplication={canCancelApplication}
         canUndoWithdrawApplication={canUndoWithdrawApplication}

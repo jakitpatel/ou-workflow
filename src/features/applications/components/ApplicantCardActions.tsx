@@ -10,6 +10,7 @@ type Props = {
   onViewDetails: () => void
   onViewIntakeDetails: () => void
   onViewTasks: (id?: string | number) => void
+  showViewIntakeDetails?: boolean
 }
 
 export function ApplicantCardActions({
@@ -21,6 +22,7 @@ export function ApplicantCardActions({
   onViewDetails,
   onViewIntakeDetails,
   onViewTasks,
+  showViewIntakeDetails = false,
 }: Props) {
   const normalizedStatus = applicant?.status?.toLowerCase()
   const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth'
@@ -41,23 +43,25 @@ export function ApplicantCardActions({
         >
           View App Details
         </button>
-        <button
-          type="button"
-          onClick={onViewIntakeDetails}
-          disabled={!hasExternalReferenceId}
-          className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-            hasExternalReferenceId
-              ? 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500'
-              : 'cursor-not-allowed bg-indigo-100 text-indigo-300 focus:ring-indigo-200'
-          }`}
-          title={
-            hasExternalReferenceId
-              ? `View intake details for external reference ${externalReferenceId}`
-              : 'No externalReferenceId is available'
-          }
-        >
-          View Intake Details
-        </button>
+        {showViewIntakeDetails && (
+          <button
+            type="button"
+            onClick={onViewIntakeDetails}
+            disabled={!hasExternalReferenceId}
+            className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              hasExternalReferenceId
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500'
+                : 'cursor-not-allowed bg-indigo-100 text-indigo-300 focus:ring-indigo-200'
+            }`}
+            title={
+              hasExternalReferenceId
+                ? `View intake details for external reference ${externalReferenceId}`
+                : 'No externalReferenceId is available'
+            }
+          >
+            View Intake Details
+          </button>
+        )}
         {!isWithdrawn && (
           <button
             onClick={() => onViewTasks(applicant.applicationId)}
