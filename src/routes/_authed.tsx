@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
-import { LeftNavigation, Navigation } from '@/components/ou-workflow/Navigation'
+import { LeftNavigation, Navigation } from '@/components/layout/Navigation'
 import { isAuthenticated } from '@/auth/authService'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { storeAuthRedirect } from '@/features/auth/model/sessionManager'

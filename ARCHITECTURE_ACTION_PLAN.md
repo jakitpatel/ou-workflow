@@ -20,7 +20,6 @@ The app already has the right direction:
 The remaining work is not a rewrite. It is finishing consistency around the remaining
 workflow-era seams:
 
-- workflow modals and navigation still live under `src/components/ou-workflow`
 - compatibility hook re-exports still exist under `src/components/ou-workflow/hooks`
 - query and mutation patterns are good but not fully uniform
 - production-path debug logging and local-dev auth behavior still need a policy
@@ -58,13 +57,9 @@ workflow-era seams:
   - `RawApplicationPanel`
   - `QuoteInfo`
   - `TaskEventsPanel`
-- Feature screens still import workflow modals:
-  - `ActionModal`
-  - `ConditionalModal`
-  - `UploadNdaModal`
-  - `CancelApplicationDialog`
-  - `DashboardAppDialog`
-- `_authed.tsx` still imports `Navigation` from `src/components/ou-workflow`.
+- Authenticated app-shell navigation now lives in `src/components/layout/Navigation.tsx`.
+- `_authed.tsx` preserves the current `navigationMenuType` preference and selects between
+  the top navigation and the newer collapsible left navigation.
 - `src/components/ou-workflow/hooks/*` still contains compatibility re-export files.
 - `src/shared/api/httpClient.ts` still contains debug logging.
 - `src/routes/_public/login.tsx` still embeds local-dev tokens for localhost testing.
@@ -257,13 +252,13 @@ Done:
 
 ### Step 3: Move Navigation Into App/Layout Ownership
 
-Status: Medium priority.
+Status: Done.
 
 Goal:
 
 - Stop authenticated layout from depending on workflow-owned navigation.
 
-Instructions:
+Completed instructions:
 
 1. Move `src/components/ou-workflow/Navigation.tsx` to `src/components/layout/Navigation.tsx`
    or `src/app/layout/Navigation.tsx`.
@@ -272,9 +267,22 @@ Instructions:
 4. If navigation contains workflow-specific logic, extract only generic shell first and leave
    workflow-specific helpers feature-owned.
 
-Done when:
+Completed:
 
+- Moved both authenticated navigation variants together:
+  - the responsive top navigation
+  - the newer collapsible left navigation
+- Preserved preference-driven selection through `navigationMenuType`.
+- Preserved the left-navigation collapsed state and corresponding content padding.
+- Preserved dashboard links, required search objects, active-route styling, logout behavior,
+  and application/task query invalidation.
+- Updated `_authed.tsx` to import navigation from `src/components/layout/Navigation.tsx`.
+
+Done:
+
+- `rg -n "components/ou-workflow/Navigation" src` returns no matches.
 - `_authed.tsx` has no import from `src/components/ou-workflow`.
+- `src/components/ou-workflow` now contains only compatibility hook re-exports.
 
 ### Step 4: Remove Compatibility Hook Re-Exports
 
@@ -425,12 +433,10 @@ Done when:
 
 ## Recommended Immediate Execution Order
 
-1. Move workflow modals to feature or layout ownership.
-2. Move navigation to layout/app ownership.
-3. Delete workflow hook re-exports and empty workflow folders.
-4. Standardize touched query/mutation hooks while doing feature work.
-5. Clean API debug logging and document local-dev auth.
-6. Expand focused tests around each changed workflow.
+1. Delete workflow hook re-exports and empty workflow folders.
+2. Standardize touched query/mutation hooks while doing feature work.
+3. Clean API debug logging and document local-dev auth.
+4. Expand focused tests around each changed workflow.
 
 ## Definition Of Done For The Architecture Migration
 

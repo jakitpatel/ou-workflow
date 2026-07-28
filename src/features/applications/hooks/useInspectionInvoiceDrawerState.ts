@@ -55,6 +55,14 @@ export type InspectionInvoiceRecipientOption = {
   type: string
 }
 
+export type InspectionInvoiceCustomer = {
+  addressLines: string[]
+  billingContactName: string
+  billingContactEmail: string
+  coordinatorName: string
+  coordinatorPhone: string
+}
+
 type InspectionInvoiceSavedState = {
   version?: number
   stage?: InspectionInvoiceStage
@@ -518,6 +526,35 @@ export function useInspectionInvoiceDrawerState({
     () => recipientOptions.find((option) => option.value === recipient) ?? null,
     [recipient, recipientOptions],
   )
+  const invoiceCustomer = useMemo<InspectionInvoiceCustomer>(() => {
+    const contacts = normalizeCompanyContacts(applicationDetail?.companyContacts)
+    const billingContact =
+      contacts.find((contact) => /billing|accounts payable/i.test(`${contact.type} ${contact.role ?? ''}`)) ??
+      contacts.find((contact) => /primary/i.test(contact.type)) ??
+      contacts[0]
+    const address =
+      applicationDetail?.companyAddresses?.find((item) => /billing/i.test(item.type)) ??
+      applicationDetail?.companyAddresses?.[0]
+    const coordinator = applicationDetail?.assignedRoles?.find((role) =>
+      /rabbinic coordinator|coordinator|\brc\b/i.test(
+        String((role as any).role ?? (role as any).Role ?? (role as any).name ?? ''),
+      ),
+    ) as any
+
+    return {
+      addressLines: [
+        address?.street,
+        address?.line2,
+        [address?.city, address?.state, address?.zip].filter(Boolean).join(', ').replace(/, ([^,]+)$/, ' $1'),
+        address?.country,
+      ].filter((line): line is string => Boolean(line?.trim())),
+      billingContactName: billingContact?.name ?? '',
+      billingContactEmail: billingContact?.email ?? '',
+      coordinatorName:
+        coordinator?.displayName ?? coordinator?.fullName ?? coordinator?.userName ?? coordinator?.name ?? '',
+      coordinatorPhone: coordinator?.phone ?? coordinator?.Phone ?? '',
+    }
+  }, [applicationDetail])
 
   useEffect(() => {
     const invoiceTaskId = String(taskInstanceId ?? '').trim()
@@ -1075,6 +1112,7 @@ export function useInspectionInvoiceDrawerState({
     filteredRfrs,
     inspectionNeeded,
     internalNotes,
+    invoiceCustomer,
     invoiceDate,
     invoiceDownloadLink,
     invoiceId,

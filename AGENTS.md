@@ -49,10 +49,11 @@ Run focused Vitest files when changing tested hooks/components.
   `src/features/*`.
 - Generic UI primitives live under `src/components/ui`.
 - Shared feedback UI lives under `src/components/feedback`.
+- Authenticated app-shell navigation lives under `src/components/layout`.
 - Remaining transitional workflow surfaces live under `src/components/ou-workflow`.
 
 Do not treat `src/components/ou-workflow` as a target for new feature code. It currently
-contains remaining workflow modals, navigation, and a few compatibility hook re-exports.
+contains only compatibility hook re-exports.
 
 ## Architecture Rules
 
@@ -77,6 +78,7 @@ contains remaining workflow modals, navigation, and a few compatibility hook re-
 - Root route: `src/routes/__root.tsx`
 - Public auth layout: `src/routes/_public.tsx`
 - Authenticated layout: `src/routes/_authed.tsx`
+- Authenticated navigation: `src/components/layout/Navigation.tsx`
 - Large dashboards are lazy-loaded through `index.lazy.tsx` route files.
 - Loader-backed routes should use `ensureQueryData` plus a consistent `errorComponent`.
 - Normalize search params in route `validateSearch`; feature code should receive normalized
@@ -161,8 +163,9 @@ These are known and should guide future cleanup:
 
 - Application Management detail sections now live under
   `src/features/applications/components/application-management`.
-- `src/components/ou-workflow/modal/*` is still shared by applications, tasks, and prelim.
-- `src/components/ou-workflow/Navigation.tsx` is still mounted by `_authed`.
+- `_authed.tsx` selects the top or collapsible left app-shell navigation using the
+  `navigationMenuType` preference.
+- Both authenticated navigation variants live in `src/components/layout/Navigation.tsx`.
 - `src/components/ou-workflow/hooks/*` still contains compatibility re-exports.
 - `src/api.ts` still exists as a compatibility layer, though active source imports should
   avoid it.

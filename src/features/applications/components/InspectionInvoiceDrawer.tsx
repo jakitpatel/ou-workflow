@@ -594,6 +594,7 @@ Account Number: ${accountNumber || '-'}`
 
           <InspectionInvoicePreview
             applicant={applicant}
+            customer={state.invoiceCustomer}
             expenseAmount={state.expenses}
             feeAmount={state.fee}
             invoiceDate={state.invoiceDate}
