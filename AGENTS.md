@@ -50,10 +50,8 @@ Run focused Vitest files when changing tested hooks/components.
 - Generic UI primitives live under `src/components/ui`.
 - Shared feedback UI lives under `src/components/feedback`.
 - Authenticated app-shell navigation lives under `src/components/layout`.
-- Remaining transitional workflow surfaces live under `src/components/ou-workflow`.
-
-Do not treat `src/components/ou-workflow` as a target for new feature code. It currently
-contains only compatibility hook re-exports.
+- The former `src/components/ou-workflow` compatibility surface has been removed. Do not
+  recreate it or add new imports through transitional paths.
 
 ## Architecture Rules
 
@@ -166,7 +164,8 @@ These are known and should guide future cleanup:
 - `_authed.tsx` selects the top or collapsible left app-shell navigation using the
   `navigationMenuType` preference.
 - Both authenticated navigation variants live in `src/components/layout/Navigation.tsx`.
-- `src/components/ou-workflow/hooks/*` still contains compatibility re-exports.
+- Application, task, and prelim consumers import hooks directly from their owning features.
+- `src/components/ou-workflow` has been removed.
 - `src/api.ts` still exists as a compatibility layer, though active source imports should
   avoid it.
 - Debug/error logging exists in API/auth/error paths. Remove noisy debug logs, but do not

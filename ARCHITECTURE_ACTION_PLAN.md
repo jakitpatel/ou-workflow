@@ -18,9 +18,8 @@ The app already has the right direction:
 - root and key route error handling through `RouteErrorView`
 
 The remaining work is not a rewrite. It is finishing consistency around the remaining
-workflow-era seams:
+architecture seams:
 
-- compatibility hook re-exports still exist under `src/components/ou-workflow/hooks`
 - query and mutation patterns are good but not fully uniform
 - production-path debug logging and local-dev auth behavior still need a policy
 - test coverage is thin compared with the amount of business logic
@@ -60,7 +59,8 @@ workflow-era seams:
 - Authenticated app-shell navigation now lives in `src/components/layout/Navigation.tsx`.
 - `_authed.tsx` preserves the current `navigationMenuType` preference and selects between
   the top navigation and the newer collapsible left navigation.
-- `src/components/ou-workflow/hooks/*` still contains compatibility re-export files.
+- Application, task, and prelim consumers import hooks directly from their owning features.
+- The former `src/components/ou-workflow` compatibility surface has been removed.
 - `src/shared/api/httpClient.ts` still contains debug logging.
 - `src/routes/_public/login.tsx` still embeds local-dev tokens for localhost testing.
 - Tests currently cover only a few high-value hooks/components.
@@ -282,26 +282,36 @@ Done:
 
 - `rg -n "components/ou-workflow/Navigation" src` returns no matches.
 - `_authed.tsx` has no import from `src/components/ou-workflow`.
-- `src/components/ou-workflow` now contains only compatibility hook re-exports.
+- At completion of Step 4, `src/components/ou-workflow` was removed after its final
+  compatibility hooks were deleted.
 
 ### Step 4: Remove Compatibility Hook Re-Exports
 
-Status: Low risk after import cleanup.
+Status: Done.
 
 Goal:
 
 - Delete stale workflow hook compatibility files.
 
-Instructions:
+Completed instructions:
 
 1. Check active imports:
    `rg -n "components/ou-workflow/hooks|@/components/ou-workflow/hooks" src`
 2. For each re-export still used, switch imports to the feature-owned hook.
 3. Delete unused files in `src/components/ou-workflow/hooks`.
 
-Done when:
+Completed:
 
-- The hooks folder is gone or empty.
+- Audited all six compatibility files and confirmed they only re-exported feature-owned
+  application, prelim, and task hooks.
+- Confirmed active source and test consumers already import directly from `src/features/*`.
+- Deleted all six compatibility re-export files.
+- Removed the empty `src/components/ou-workflow/hooks` and `src/components/ou-workflow`
+  directories.
+
+Done:
+
+- The hooks folder and workflow compatibility directory are gone.
 - No source imports mention `components/ou-workflow/hooks`.
 
 ### Step 5: Standardize Query And Mutation Patterns
@@ -417,8 +427,8 @@ Goal:
 Instructions:
 
 1. Delete `src/api.ts` only when `rg -n "@/api|src/api" src` is clean.
-2. Delete `src/components/ou-workflow` only when all sections, modals, navigation, and hooks
-   have moved.
+2. Keep the removed `src/components/ou-workflow` compatibility surface from being
+   reintroduced.
 3. Update `README.md`, `AGENTS.md`, and `docs/api-contracts.md` after final moves.
 4. Run:
    - `npm run typecheck`
@@ -433,10 +443,9 @@ Done when:
 
 ## Recommended Immediate Execution Order
 
-1. Delete workflow hook re-exports and empty workflow folders.
-2. Standardize touched query/mutation hooks while doing feature work.
-3. Clean API debug logging and document local-dev auth.
-4. Expand focused tests around each changed workflow.
+1. Standardize touched query/mutation hooks while doing feature work.
+2. Clean API debug logging and document local-dev auth.
+3. Expand focused tests around each changed workflow.
 
 ## Definition Of Done For The Architecture Migration
 
