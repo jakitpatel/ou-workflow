@@ -30,7 +30,7 @@ type DrawerState = {
   plantIndex?: number
 }
 
-const isResolvePlantTask = (taskName?: string) => /^ResolvePlant\d*$/.test(taskName ?? '')
+export const isResolvePlantTask = (taskName?: string) => /^ResolvePlant\d*$/.test(taskName ?? '')
 const isTaskPending = (status?: string) => (status ?? '').trim().toLowerCase() === 'pending'
 const isTaskCompleted = (status?: string) => (status ?? '').trim().toLowerCase() === 'completed'
 const isApplicationWithdrawn = (status?: string) => {
@@ -535,7 +535,7 @@ export function PrelimResolvedSection({
 }
 
 /* ---------------- Helper Function ---------------- */
-function extractResolvedData(application?: Applicant) {
+export function extractResolvedData(application?: Applicant) {
   const tasks = getStageTasks(application)
   if (!tasks) return null
 
@@ -623,7 +623,7 @@ function PlantsSkeleton() {
   )
 }
 
-function toCompanyDrawerData(data?: CompanyFromApplication) {
+export function toCompanyDrawerData(data?: CompanyFromApplication) {
   const pickFirstNonEmpty = (...values: Array<string | undefined>) =>
     values.find((value) => (value ?? '').trim() !== '') ?? ''
 
@@ -663,7 +663,7 @@ function toCompanyDrawerData(data?: CompanyFromApplication) {
   }
 }
 
-function toPlantDrawerData(data?: PlantFromApplication, companyWebsite?: string) {
+export function toPlantDrawerData(data?: PlantFromApplication, companyWebsite?: string) {
   const pickFirstNonEmpty = (...values: Array<string | undefined>) =>
     values.find((value) => (value ?? '').trim() !== '') ?? ''
 

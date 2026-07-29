@@ -14,6 +14,7 @@ import { plantHistory } from '@/features/tasks/model/plantHistory';
 import { PlantHistoryModal } from './PlantHistoryModal';
 import { TaskDashboardHeader } from './TaskDashboardHeader';
 import { TaskDashboardTable } from './TaskDashboardTable';
+import { TaskPrelimResolutionDrawer } from './TaskPrelimResolutionDrawer';
 
 export function TaskDashboardContent() {
   const {
@@ -54,6 +55,8 @@ export function TaskDashboardContent() {
     setInspectionVisitDateDrawerState,
     contractDrawerState,
     setContractDrawerState,
+    prelimResolutionDrawerState,
+    setPrelimResolutionDrawerState,
     selectedAction,
     executeAction,
     completeTaskWithResult,
@@ -190,6 +193,10 @@ export function TaskDashboardContent() {
         taskInstanceId={contractDrawerState.taskInstanceId}
         taskName={contractDrawerState.taskName}
         onClose={() => setContractDrawerState({ open: false })}
+      />
+      <TaskPrelimResolutionDrawer
+        {...prelimResolutionDrawerState}
+        onClose={() => setPrelimResolutionDrawerState({ open: false })}
       />
     </>
   );

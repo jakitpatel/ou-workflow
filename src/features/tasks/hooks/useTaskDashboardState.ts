@@ -83,6 +83,12 @@ type ContractDrawerState = {
   taskName?: string
 }
 
+type PrelimResolutionDrawerState = {
+  open: boolean
+  task?: ApplicationTask
+  companyTask?: ApplicationTask
+}
+
 const DEBOUNCE_DELAY = 700
 const PAGE_LIMIT = 50
 
@@ -202,6 +208,15 @@ const calculateTaskStats = (tasks: ApplicationTask[]) => {
 const getTaskActionPresentation = (application: TaskDashboardAction) => {
   const actionType = application.taskType?.toLowerCase()
   const actionCategory = (application.taskCategory || application.TaskCategory)?.toLowerCase()
+  const taskName = application.taskName ?? application.name
+
+  if (
+    actionType === TASK_TYPES.ACTION &&
+    actionCategory === TASK_CATEGORIES.INPUT &&
+    (taskName === 'ResolveCompany' || /^ResolvePlant\d*$/.test(taskName ?? ''))
+  ) {
+    return { type: 'prelim-resolution' as const }
+  }
 
   if (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION) {
     return { type: 'execute', assignee: 'Confirmed', result: 'no' as const }
@@ -320,6 +335,8 @@ export function useTaskDashboardState() {
   const [contractDrawerState, setContractDrawerState] = useState<ContractDrawerState>({
     open: false,
   })
+  const [prelimResolutionDrawerState, setPrelimResolutionDrawerState] =
+    useState<PrelimResolutionDrawerState>({ open: false })
 
   const { username, role, roles, token } = useUser()
   const { paginationMode } = useAppPreferences()
@@ -638,6 +655,19 @@ export function useTaskDashboardState() {
         return
       }
 
+      if (actionPresentation.type === 'prelim-resolution') {
+        setPrelimResolutionDrawerState({
+          open: true,
+          task: application,
+          companyTask: tasks.find(
+            (task) =>
+              task.applicationId === application.applicationId &&
+              task.taskName === 'ResolveCompany',
+          ),
+        })
+        return
+      }
+
       if (actionPresentation.type === 'assignment') {
         setShowActionModal(action)
         return
@@ -770,6 +800,8 @@ export function useTaskDashboardState() {
     setInspectionVisitDateDrawerState,
     contractDrawerState,
     setContractDrawerState,
+    prelimResolutionDrawerState,
+    setPrelimResolutionDrawerState,
     selectedAction,
     executeAction,
     completeTaskWithResult,

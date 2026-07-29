@@ -777,6 +777,13 @@ export interface ApplicationTask {
   daysOverdue: number;
   completedCapacity?: string | null;
   completedBy?: string | null;
+  capacity?: string;
+  companyFromApplication?: CompanyFromApplication;
+  companyMatchList?: CompanyMatch[];
+  companySelected?: CompanySelected;
+  plantFromApplication?: PlantFromApplication;
+  plantMatchList?: PlantMatch[];
+  plantSelected?: PlantSelected;
 }
 
 export interface ApplicationTasksResponse {

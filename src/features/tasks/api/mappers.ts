@@ -27,6 +27,9 @@ const mapApplicationTasksData = (
     const taskInstanceId = task.taskInstanceId ?? task.TaskInstanceId ?? 0
 
     return {
+      // Preserve task-specific payloads (including resolver match/application data)
+      // before normalizing the common dashboard fields below.
+      ...task,
       TaskCategory: taskCategory,
       taskCategory,
       applicationId: task.applicationId ?? 0,
@@ -63,6 +66,13 @@ const mapApplicationTasksData = (
       daysOverdue: task.daysOverdue ?? 0,
       completedCapacity: task.completedCapacity ?? null,
       completedBy: task.completedBy ?? null,
+      capacity: task.capacity,
+      companyFromApplication: task.companyFromApplication,
+      companyMatchList: task.companyMatchList,
+      companySelected: task.companySelected,
+      plantFromApplication: task.plantFromApplication,
+      plantMatchList: task.plantMatchList,
+      plantSelected: task.plantSelected,
     }
   })
 
