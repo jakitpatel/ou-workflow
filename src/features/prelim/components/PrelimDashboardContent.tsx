@@ -10,6 +10,7 @@ import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
 import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState'
 import { useUser } from '@/context/UserContext'
 import type { NoteTab, TaskNotesDrawerTabConfig } from '@/features/tasks/notes/TaskNotesDrawer'
+import { PageShell } from '@/components/layout/PageShell'
 
 const normalizeApplicationId = (value: unknown): number | undefined => {
   const parsed = Number(value)
@@ -117,10 +118,17 @@ export function PrelimDashboardContent() {
     setSelectedId(nextApplicationId)
   }
 
-  if (isLoading) return <p>Loading...</p>
+  if (isLoading) {
+    return (
+      <PageShell>
+        <p className="py-6">Loading...</p>
+      </PageShell>
+    )
+  }
 
   return (
-    <div className="p-6 space-y-4">
+    <PageShell>
+      <div className="space-y-4 py-6">
       <div className="flex items-start justify-between gap-4">
         <h1 className="text-2xl font-bold">Application Intake</h1>
         <button
@@ -216,6 +224,7 @@ export function PrelimDashboardContent() {
         onReplySubmit={myMessages.submitReply}
         onReactionTagChange={myMessages.updateMessageReactionTag}
       />
-    </div>
+      </div>
+    </PageShell>
   )
 }

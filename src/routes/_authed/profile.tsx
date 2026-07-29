@@ -6,6 +6,7 @@ import { useUser } from '@/context/UserContext'
 import { useSaveProfileLayoutMutation } from '@/features/profile/hooks/useSaveProfileLayoutMutation'
 import { getBuildInfo } from '@/lib/utils'
 import type { NavigationMenuType, PaginationMode, StageLayout } from '@/types/application'
+import { PageShell } from '@/components/layout/PageShell'
 
 export const Route = createFileRoute('/_authed/profile')({
   component: ProfilePage,
@@ -142,8 +143,8 @@ function ProfilePage() {
   const hasRoles = roles && roles.length > 0
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <PageShell>
+      <main className="py-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
           <p className="mt-2 text-sm text-gray-600">
@@ -309,6 +310,6 @@ function ProfilePage() {
           animation: fade-in 0.2s ease-out;
         }
       `}</style>
-    </div>
+    </PageShell>
   )
 }

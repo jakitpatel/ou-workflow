@@ -15,6 +15,7 @@ import { PlantHistoryModal } from './PlantHistoryModal';
 import { TaskDashboardHeader } from './TaskDashboardHeader';
 import { TaskDashboardTable } from './TaskDashboardTable';
 import { TaskPrelimResolutionDrawer } from './TaskPrelimResolutionDrawer';
+import { PageShell } from '@/components/layout/PageShell';
 
 export function TaskDashboardContent() {
   const {
@@ -73,34 +74,33 @@ export function TaskDashboardContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen max-w-7xl mx-auto bg-gray-50 p-6">
+      <PageShell>
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
             <p className="mt-4 text-gray-600">Loading tasks...</p>
           </div>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   if (isError) {
     return (
-      <div className="min-h-screen max-w-7xl mx-auto bg-gray-50 p-6">
+      <PageShell>
         <div className="rounded-lg border border-red-200 bg-red-50 p-4">
           <p className="font-medium text-red-800">Error loading tasks</p>
           <p className="mt-1 text-sm text-red-600">
             {error?.message || 'An unexpected error occurred'}
           </p>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6">
+      <PageShell>
           <TaskDashboardHeader
             daysFilter={daysFilter}
             role={role}
@@ -130,8 +130,7 @@ export function TaskDashboardContent() {
             handleApplicationTaskAction={handleTaskAction}
             handleShowPlantHistory={handleShowPlantHistory}
           />
-        </div>
-      </div>
+      </PageShell>
 
       <ActionModal {...{ showActionModal, setShowActionModal, executeAction, selectedAction }} />
       <ConditionalModal

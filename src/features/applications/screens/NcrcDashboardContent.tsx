@@ -21,6 +21,7 @@ import { Route } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
 import { Route as PrelimDashboardRoute } from '@/routes/_authed/ou-workflow/prelim-dashboard'
 import type { Applicant, ApplicantAppVars, AssignedRole, Task } from '@/types/application'
 import type { NoteTab, TaskNotesDrawerTabConfig } from '@/features/tasks/notes/TaskNotesDrawer'
+import { PageShell } from '@/components/layout/PageShell'
 
 const SHOW_APPLICANT_STATS_CARDS = false
 const normalizeApplicationId = (value: unknown): number | undefined => {
@@ -379,8 +380,7 @@ export function NcrcDashboardContent() {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6">
+      <PageShell>
           <NcrcDashboardControls
             q={q}
             status={status}
@@ -419,8 +419,7 @@ export function NcrcDashboardContent() {
             onCancelTask={handleCancelTask}
             onIntakeIdClick={handleIntakeIdClick}
           />
-        </div>
-      </div>
+      </PageShell>
 
       <ActionModal
         setShowActionModal={setShowActionModal}

@@ -1,5 +1,6 @@
 import { TaskFilters } from './TaskFilters';
 import { TaskStatsCards } from './TaskStatsCards';
+import { useAppPreferences } from '@/context/AppPreferencesContext';
 
 const dayFilterOptions = ['pending', 7, 30] as const;
 
@@ -40,6 +41,7 @@ export function TaskDashboardHeader({
   onNextPage,
   onLastPage,
 }: TaskDashboardHeaderProps) {
+  const { navigationMenuType } = useAppPreferences();
   const firstItem = totalCount === 0 ? 0 : page + 1;
   const lastItem = Math.min(page + pageSize, totalCount);
   const currentPage = Math.floor(page / pageSize) + 1;
@@ -47,7 +49,11 @@ export function TaskDashboardHeader({
   const isLastPage = page + pageSize >= totalCount;
 
   return (
-    <div className="sticky top-16 z-20 bg-gray-50 pb-4">
+    <div
+      className={`sticky z-20 bg-gray-50 pb-4 ${
+        navigationMenuType === 'left' ? 'top-0' : 'top-16'
+      }`}
+    >
       <header className="pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900">Tasks & Notifications</h1>
         <p className="mt-1 text-gray-600">

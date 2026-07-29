@@ -9,6 +9,7 @@ import {
   ChevronRight 
 } from 'lucide-react';
 import DashboardAppDialog from '@/features/applications/components/DashboardAppDialog';
+import { PageShell } from '@/components/layout/PageShell';
 
 export const Route = createFileRoute('/_authed/')({
   component: HomePage,
@@ -112,8 +113,8 @@ function HomePage() {
 
   
   return (
-    <main className="flex-1 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <PageShell className="bg-gradient-to-br from-gray-50 to-gray-100">
+      <main className="py-6">
         
         {/* Header Section */}
         <header className="text-center mb-12">
@@ -210,7 +211,7 @@ function HomePage() {
             */}
           </div>
         </section>
-      </div>
+      </main>
 
       {/* Dialogs */}
       {dialogMode && (
@@ -220,6 +221,6 @@ function HomePage() {
           onClose={closeDialog}
         />
       )}
-    </main>
+    </PageShell>
   );
 }
