@@ -1,4 +1,10 @@
-import type { KashrusAddress, PlantFromApplicationContact } from '@/types/application'
+import type {
+  CompanyFromApplication,
+  KashrusAddress,
+  PlantFromApplication,
+  PlantFromApplicationContact,
+  SubmittedApplicationContact,
+} from '@/types/application'
 import type {
   CompanyData,
   CompanyDbRecord,
@@ -7,6 +13,133 @@ import type {
   PlantDbRecord,
   RawKashrusAddress,
 } from '@/features/prelim/model/resolution'
+import type { Task } from '@/types/application'
+
+export const isResolvePlantTask = (taskName?: string) => /^ResolvePlant\d*$/.test(taskName ?? '')
+
+export const findPrelimResolutionTask = (
+  tasks: Task[],
+  dashboardTaskName?: string,
+): Task | undefined => {
+  if (dashboardTaskName === 'ResolveCompany') {
+    return tasks.find((task) => task.name === 'ResolveCompany')
+  }
+
+  if (!isResolvePlantTask(dashboardTaskName)) return undefined
+
+  const exactMatch = tasks.find((task) => task.name === dashboardTaskName)
+  if (exactMatch) return exactMatch
+
+  const plantTasks = tasks.filter((task) => isResolvePlantTask(task.name))
+  const suffix = dashboardTaskName?.match(/^ResolvePlant(\d+)$/)?.[1]
+  const plantIndex = suffix ? Math.max(Number(suffix) - 1, 0) : 0
+
+  return plantTasks[plantIndex]
+}
+
+const hasSubmittedContactValue = (contact: SubmittedApplicationContact) =>
+  [
+    contact.contactFirst,
+    contact.contactLast,
+    contact.contactPhone,
+    contact.contactEmail,
+    contact.jobTitle,
+    contact.jobTitle1,
+    contact.note,
+  ].some((value) => (value ?? '').trim() !== '')
+
+const toSubmittedContact = (contact?: SubmittedApplicationContact) => {
+  if (!contact) return undefined
+
+  return {
+    name: `${pickFirstNonEmpty(contact.contactFirst)} ${pickFirstNonEmpty(
+      contact.contactLast,
+    )}`.trim(),
+    title: pickFirstNonEmpty(contact.jobTitle, contact.jobTitle1, contact.note),
+    phone: pickFirstNonEmpty(contact.contactPhone),
+    email: pickFirstNonEmpty(contact.contactEmail),
+  }
+}
+
+const firstSubmittedContact = (...groups: Array<SubmittedApplicationContact[] | undefined>) =>
+  groups.flatMap((group) => group ?? []).find(hasSubmittedContactValue)
+
+export function toCompanyDrawerData(data?: CompanyFromApplication): CompanyData {
+  const contactGroups = data?.companyContacts
+  const primaryRaw = firstSubmittedContact(
+    contactGroups?.primaryContact,
+    contactGroups?.PrimaryContact,
+  )
+  const billingRaw = firstSubmittedContact(
+    contactGroups?.billingContact,
+    contactGroups?.BillingContact,
+  )
+
+  return {
+    companyName: data?.companyName ?? '',
+    companyAddress: pickFirstNonEmpty(data?.companyAddress, data?.Street1),
+    companyAddress2: pickFirstNonEmpty(data?.companyAddress2, data?.Street2),
+    companyCity: pickFirstNonEmpty(data?.companyCity, data?.City),
+    companyState: pickFirstNonEmpty(data?.companyState, data?.State),
+    ZipPostalCode: pickFirstNonEmpty(data?.ZipPostalCode, data?.Zip),
+    companyCountry: pickFirstNonEmpty(data?.companyCountry, data?.Country),
+    companyPhone: data?.companyPhone ?? '',
+    companyWebsite: data?.companyWebsite ?? '',
+    numberOfPlants: data?.numberOfPlants,
+    whichCategory: data?.whichCategory,
+    primaryContact: toSubmittedContact(primaryRaw),
+    billingContact: toSubmittedContact(billingRaw),
+  }
+}
+
+const parsePlantAddress = (address?: string) => {
+  const value = (address ?? '').trim()
+  if (!value) {
+    return { street: '', city: '', state: '', zip: '', country: '' }
+  }
+
+  const normalized = value.replace(/\s+/g, ' ')
+  const match = normalized.match(
+    /^(.*?),\s*([^,]+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)(?:\s+([A-Za-z]{2,}))?$/,
+  )
+
+  return match
+    ? {
+        street: match[1] ?? '',
+        city: match[2] ?? '',
+        state: match[3] ?? '',
+        zip: match[4] ?? '',
+        country: match[5] ?? '',
+      }
+    : { street: normalized, city: '', state: '', zip: '', country: '' }
+}
+
+export function toPlantDrawerData(data?: PlantFromApplication, companyWebsite?: string): PlantData {
+  const parsedAddress = parsePlantAddress(data?.Address)
+  const contactGroups = data?.plantContacts
+  const primaryRaw = firstSubmittedContact(
+    contactGroups?.PrimaryContact,
+    contactGroups?.primaryContact,
+  )
+  const secondaryRaw = firstSubmittedContact(
+    contactGroups?.OtherContact,
+    contactGroups?.otherContact,
+  )
+
+  return {
+    plantName: data?.plantName ?? '',
+    plantAddress: pickFirstNonEmpty(data?.plantAddress, data?.Street1, parsedAddress.street),
+    plantCity: pickFirstNonEmpty(data?.plantCity, data?.City, parsedAddress.city),
+    plantState: pickFirstNonEmpty(data?.plantState, data?.State, parsedAddress.state),
+    plantZip: pickFirstNonEmpty(data?.plantZip, data?.Zip, parsedAddress.zip),
+    plantCountry: pickFirstNonEmpty(data?.plantCountry, data?.Country, parsedAddress.country),
+    companyWebsite: companyWebsite ?? '',
+    plantNumber: data?.plantNumber,
+    processDescription: data?.brieflySummarize ?? '',
+    primaryContact: toSubmittedContact(primaryRaw),
+    marketingContact: toSubmittedContact(secondaryRaw),
+  }
+}
 
 export const createDefaultCompanyData = (): CompanyData => ({
   companyName: '',
@@ -128,7 +261,7 @@ export const countUpdatedPlantFields = (before: PlantData, after: PlantData) => 
 
 export const getComparisonStatus = (
   appValue: string | undefined,
-  dbValue: string | undefined
+  dbValue: string | undefined,
 ): ComparisonStatus => {
   if (!appValue && !dbValue) return 'empty'
   if (!dbValue || dbValue === 'Not on file') return 'not-on-file'
@@ -169,9 +302,7 @@ const toYesNo = (value?: string | boolean) => {
   return (value ?? '').trim().toUpperCase()
 }
 
-export const getCompanyDbRecord = (
-  companyDbResponse: unknown
-): CompanyDbRecord | undefined => {
+export const getCompanyDbRecord = (companyDbResponse: unknown): CompanyDbRecord | undefined => {
   if (Array.isArray(companyDbResponse)) {
     return companyDbResponse[0] as CompanyDbRecord | undefined
   }
@@ -213,13 +344,10 @@ const mapAddress = (address: RawKashrusAddress): KashrusAddress => ({
   type: address.TYPE,
 })
 
-export const getPhysicalAddress = (
-  addresses?: RawKashrusAddress[]
-): KashrusAddress | undefined => {
+export const getPhysicalAddress = (addresses?: RawKashrusAddress[]): KashrusAddress | undefined => {
   if (!addresses?.length) return undefined
   const physicalAddress =
-    addresses.find((addr) => (addr.TYPE ?? '').trim().toLowerCase() === 'physical') ??
-    addresses[0]
+    addresses.find((addr) => (addr.TYPE ?? '').trim().toLowerCase() === 'physical') ?? addresses[0]
   return mapAddress(physicalAddress)
 }
 
@@ -247,10 +375,7 @@ export const getPrimaryContact = (contacts?: PlantFromApplicationContact[]) => {
   return contacts.find((contact) => hasContactRole(contact, 'PrimaryCT')) ?? contacts[0]
 }
 
-const hasContactRole = (
-  contact: PlantFromApplicationContact,
-  role: 'PrimaryCT' | 'BillingCT'
-) => {
+const hasContactRole = (contact: PlantFromApplicationContact, role: 'PrimaryCT' | 'BillingCT') => {
   if (toYesNo(contact[role]) === 'Y') return true
 
   const links = (contact as { cc?: Array<Record<string, string | boolean | undefined>> }).cc
@@ -259,7 +384,7 @@ const hasContactRole = (
 
 export const getBillingContact = (
   contacts?: PlantFromApplicationContact[],
-  options: { fallbackToSecondary?: boolean } = {}
+  options: { fallbackToSecondary?: boolean } = {},
 ) => {
   if (!contacts?.length) return undefined
   const billingContact = contacts.find((contact) => hasContactRole(contact, 'BillingCT'))

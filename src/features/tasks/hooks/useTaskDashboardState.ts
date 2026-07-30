@@ -4,11 +4,7 @@ import { type ErrorDialogRef } from '@/components/ErrorDialog'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
-import {
-  detectRole,
-  getProgressStatus,
-  normalizeStatus,
-} from '@/lib/utils/taskHelpers'
+import { detectRole, getProgressStatus, normalizeStatus } from '@/lib/utils/taskHelpers'
 import type { Applicant, ApplicationTask, Task } from '@/types/application'
 import { useInfiniteTasks, useTasks } from '@/features/tasks/hooks/useTaskQueries'
 import {
@@ -141,7 +137,10 @@ const mapApplicationTaskToStageTask = (task: ApplicationTask): Task => ({
   GUIDisplayResult: task.GUIDisplayResult,
 })
 
-const buildInspectionApplicant = (selectedTask: ApplicationTask, tasks: ApplicationTask[]): Applicant => {
+const buildInspectionApplicant = (
+  selectedTask: ApplicationTask,
+  tasks: ApplicationTask[],
+): Applicant => {
   const relatedTasks = tasks.filter((task) => task.applicationId === selectedTask.applicationId)
   const stageTasks = relatedTasks.length > 0 ? relatedTasks : [selectedTask]
   const stages = stageTasks.reduce<Applicant['stages']>((acc, task) => {
@@ -289,9 +288,7 @@ const resolveCapacity = (action: TaskDashboardAction, username?: string | null) 
     assigneeValue.trim() !== '' &&
     assigneeValue.toUpperCase() !== 'NULL'
   ) {
-    return username?.toLowerCase() === assigneeValue.toLowerCase()
-      ? 'MEMBER'
-      : 'ASSISTANT'
+    return username?.toLowerCase() === assigneeValue.toLowerCase() ? 'MEMBER' : 'ASSISTANT'
   }
 
   return 'DESIGNATED'
@@ -374,12 +371,12 @@ export function useTaskDashboardState() {
   })
   const tasks =
     paginationMode === 'paged'
-      ? pagedTasksQuery.data?.data ?? []
-      : infiniteTasksQuery.data?.pages.flatMap((currentPage) => currentPage.data) ?? []
+      ? (pagedTasksQuery.data?.data ?? [])
+      : (infiniteTasksQuery.data?.pages.flatMap((currentPage) => currentPage.data) ?? [])
   const totalCount =
     paginationMode === 'paged'
-      ? pagedTasksQuery.data?.meta?.total_count ?? 0
-      : infiniteTasksQuery.data?.pages?.[0]?.meta?.total_count ?? 0
+      ? (pagedTasksQuery.data?.meta?.total_count ?? 0)
+      : (infiniteTasksQuery.data?.pages?.[0]?.meta?.total_count ?? 0)
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -418,8 +415,7 @@ export function useTaskDashboardState() {
     return visibleTasks.sort((a, b) => {
       const aPriority = normalizeStatus(a.priority)
       const bPriority = normalizeStatus(b.priority)
-      const priorityDiff =
-        (PRIORITY_ORDER[aPriority] ?? 99) - (PRIORITY_ORDER[bPriority] ?? 99)
+      const priorityDiff = (PRIORITY_ORDER[aPriority] ?? 99) - (PRIORITY_ORDER[bPriority] ?? 99)
 
       if (priorityDiff !== 0) return priorityDiff
       return (b.daysActive ?? 0) - (a.daysActive ?? 0)
@@ -602,9 +598,7 @@ export function useTaskDashboardState() {
       const taskId = action.taskInstanceId ?? action.TaskInstanceId ?? action.id
       const capacity = resolveCapacity(action, username)
       const resolvedApplicationId =
-        applicationId ??
-        action.applicationId ??
-        action.application?.applicationId
+        applicationId ?? action.applicationId ?? action.application?.applicationId
 
       confirmTaskMutation.mutate({
         taskId: String(taskId ?? ''),
@@ -659,11 +653,6 @@ export function useTaskDashboardState() {
         setPrelimResolutionDrawerState({
           open: true,
           task: application,
-          companyTask: tasks.find(
-            (task) =>
-              task.applicationId === application.applicationId &&
-              task.taskName === 'ResolveCompany',
-          ),
         })
         return
       }
@@ -776,7 +765,8 @@ export function useTaskDashboardState() {
     hasNextPage,
     sentinelRef,
     taskStats,
-    isLoading: paginationMode === 'paged' ? pagedTasksQuery.isLoading : infiniteTasksQuery.isLoading,
+    isLoading:
+      paginationMode === 'paged' ? pagedTasksQuery.isLoading : infiniteTasksQuery.isLoading,
     isError: paginationMode === 'paged' ? pagedTasksQuery.isError : infiniteTasksQuery.isError,
     error: paginationMode === 'paged' ? pagedTasksQuery.error : infiniteTasksQuery.error,
     isFetchingNextPage: infiniteTasksQuery.isFetchingNextPage,

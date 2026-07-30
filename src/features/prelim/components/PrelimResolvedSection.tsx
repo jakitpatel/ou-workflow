@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ChevronDown, ChevronRight, Building2, Factory } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
@@ -10,12 +10,14 @@ import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import { PrelimResolutionDrawer } from '@/features/prelim/components/PrelimResolutionDrawer'
 import { confirmTask } from '@/features/tasks/api'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
+import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
 import { Route as DashboardRoute } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
-import type {
-  CompanyFromApplication,
-  PlantFromApplication,
-  SubmittedApplicationContact,
-} from '@/types/application'
+import { mapTaskToAction } from '@/lib/utils/taskHelpers'
+import {
+  isResolvePlantTask,
+  toCompanyDrawerData,
+  toPlantDrawerData,
+} from '@/features/prelim/lib/prelimResolution'
 
 type Props = {
   application?: Applicant
@@ -30,7 +32,6 @@ type DrawerState = {
   plantIndex?: number
 }
 
-export const isResolvePlantTask = (taskName?: string) => /^ResolvePlant\d*$/.test(taskName ?? '')
 const isTaskPending = (status?: string) => (status ?? '').trim().toLowerCase() === 'pending'
 const isTaskCompleted = (status?: string) => (status ?? '').trim().toLowerCase() === 'completed'
 const isApplicationWithdrawn = (status?: string) => {
@@ -141,23 +142,52 @@ export function PrelimResolvedSection({
     type: 'company',
   })
 
-  const { token, username } = useUser()
+  const { token, username, role, roles, delegated } = useUser()
+  const { data: taskRolesAll = [] } = useFetchTaskRoles()
   const resolved = extractResolvedData(application)
   const isWithdrawn = isApplicationWithdrawn(application?.status)
-
-  if (!loading && !resolved) return null
 
   const progressVisible = isProgressVisible ?? defaultVisible
 
   const stageTasks = getStageTasks(application)
 
-  const companyTask = stageTasks?.find(
-    (task) => task.name === 'ResolveCompany'
-  )
-  const plantTasks =
-    stageTasks?.filter(
-      (task) => isResolvePlantTask(task.name)
-    ) || []
+  const companyTask = stageTasks?.find((task) => task.name === 'ResolveCompany')
+  const plantTasks = stageTasks?.filter((task) => isResolvePlantTask(task.name)) || []
+  const userRoles = useMemo(() => {
+    if (role?.toUpperCase() === 'ALL') {
+      return (roles ?? [])
+        .map((userRole) => userRole.name?.toLowerCase())
+        .filter((userRole): userRole is string => Boolean(userRole))
+    }
+
+    return role ? [role.toLowerCase()] : []
+  }, [role, roles])
+  const companyAction =
+    application && companyTask
+      ? mapTaskToAction({
+          task: companyTask,
+          application,
+          username,
+          userRoles,
+          delegated,
+          taskRolesAll,
+        })
+      : undefined
+  const plantActions =
+    application?.stages?.Intake?.tasks
+      ?.filter((task) => isResolvePlantTask(task.name))
+      .map((task) =>
+        mapTaskToAction({
+          task,
+          application,
+          username,
+          userRoles,
+          delegated,
+          taskRolesAll,
+        }),
+      ) ?? []
+
+  if (!loading && !resolved) return null
 
   const refreshApplication = async () => {
     try {
@@ -182,7 +212,7 @@ export function PrelimResolvedSection({
   }
 
   const handleAssignCompany = async (match: any) => {
-    if (!companyTask || !username) return
+    if (!companyTask || !companyAction || companyAction.disabled || !username) return
 
     const result = String(match.Id)
     await confirmTask({
@@ -191,13 +221,14 @@ export function PrelimResolvedSection({
       result,
       token: token ?? undefined,
       username: username ?? undefined,
-      capacity: companyTask.capacity ?? undefined,
+      capacity: companyAction.capacity,
     })
     await refreshApplication()
   }
 
-  const handleAssignPlant = async (match: any, plantTask: any) => {
-    if (!plantTask || !username) return
+  const handleAssignPlant = async (match: any, plantTask: any, plantIndex: number) => {
+    const plantAction = plantActions[plantIndex]
+    if (!plantTask || !plantAction || plantAction.disabled || !username) return
 
     const result = String(match.Id)
     await confirmTask({
@@ -206,12 +237,14 @@ export function PrelimResolvedSection({
       result,
       token: token ?? undefined,
       username: username ?? undefined,
-      capacity: plantTask.capacity ?? undefined,
+      capacity: plantAction.capacity,
     })
     await refreshApplication()
   }
 
   const openCompanyDrawer = () => {
+    if (!companyAction || companyAction.disabled) return
+
     setDrawerState({
       isOpen: true,
       type: 'company',
@@ -219,6 +252,8 @@ export function PrelimResolvedSection({
   }
 
   const openPlantDrawer = (index: number) => {
+    if (!plantActions[index] || plantActions[index].disabled) return
+
     setDrawerState({
       isOpen: true,
       type: 'plant',
@@ -235,23 +270,23 @@ export function PrelimResolvedSection({
 
   const companyDrawerData = toCompanyDrawerData(companyTask?.companyFromApplication)
   const companyResolveSavedState = getResolveSavedState(
-    companyTask?.StatusDetails ?? (companyTask as any)?.statusDetails
+    companyTask?.StatusDetails ?? (companyTask as any)?.statusDetails,
   )
   const activePlantIndex = drawerState.plantIndex
-  const activePlantTask =
-    activePlantIndex !== undefined ? plantTasks[activePlantIndex] : undefined
+  const activePlantTask = activePlantIndex !== undefined ? plantTasks[activePlantIndex] : undefined
+  const activePlantAction =
+    activePlantIndex !== undefined ? plantActions[activePlantIndex] : undefined
   const plantDrawerData = toPlantDrawerData(
     activePlantTask?.plantFromApplication,
-    companyTask?.companyFromApplication?.companyWebsite
+    companyTask?.companyFromApplication?.companyWebsite,
   )
   const plantResolveSavedState = getResolveSavedState(
-    activePlantTask?.StatusDetails ?? (activePlantTask as any)?.statusDetails
+    activePlantTask?.StatusDetails ?? (activePlantTask as any)?.statusDetails,
   )
   const companyTaskInstanceId = companyTask?.TaskInstanceId ?? (companyTask as any)?.taskInstanceId
   const activePlantTaskInstanceId =
     activePlantTask?.TaskInstanceId ?? (activePlantTask as any)?.taskInstanceId
-  const completedCompanyId =
-    companyResolveSavedState?.resolveId?.companyId ?? resolved?.company?.Id
+  const completedCompanyId = companyResolveSavedState?.resolveId?.companyId ?? resolved?.company?.Id
   const completedPlantId =
     plantResolveSavedState?.resolveId?.plantId ??
     (activePlantIndex !== undefined
@@ -280,254 +315,267 @@ export function PrelimResolvedSection({
     <div className="mt-6">
       {!progressVisible ? null : (
         <>
-      {/* Company Section */}
-      {loading ? (
-        <CompanySkeleton />
-      ) : (
-        resolved?.company && (
-          <div className="mb-4">
-            <div className="w-full rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 transition-colors hover:bg-yellow-100 hover:border-yellow-300">
-              {/* First Row */}
-              <div className="flex items-start gap-3">
-                <button
-                  type="button"
-                  onClick={() => setOpen(!open)}
-                  className="flex-shrink-0 hover:bg-yellow-200 rounded p-1 transition-colors"
-                >
-                  {open ? (
-                    <ChevronDown className="w-4 h-4 text-gray-600" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-gray-600" />
-                  )}
-                </button>
-
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center">
-                    <Building2 className="w-4 h-4 text-yellow-700" />
-                  </div>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-gray-900 mb-0.5">
-                        {resolved.company.companyName}
-                      </div>
-                    </div>
-
-                    <div className="flex-shrink-0 flex flex-wrap gap-1.5 justify-end">
-                      {resolved.company.executedBy && (
-                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
-                          {resolved.company.executedBy}
-                        </span>
-                      )}
-                      {resolved.company.CompletedDate && (
-                        <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
-                          {new Date(resolved.company.CompletedDate).toLocaleString()}
-                        </span>
-                      )}
-                      <span
-                        className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
-                          resolved.company.Id
-                            ? 'bg-green-50 text-green-700 border-green-200'
-                            : 'bg-orange-50 text-orange-700 border-orange-200'
-                        }`}
-                      >
-                        {resolved.company.Id ? 'ASSIGNED' : 'TO BE ASSIGNED'}
-                      </span>
-                      <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                        {loading ? '...' : resolved?.plants?.length || 0} plants
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-1 flex items-start justify-between gap-3">
-                    <div className="text-xs text-gray-500 space-y-0.5 min-w-0">
-                      <div>
-                        <span className="inline-flex items-center rounded-md bg-yellow-100 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
-                          <ResolveMethodMarker marker={companyResolveMethodMarker} />
-                          CompanyID: {resolved.company.Id}
-                        </span>
-                      </div>
-                      <div className="text-gray-500 truncate">{resolved.company.Address}</div>
-                    </div>
-
+          {/* Company Section */}
+          {loading ? (
+            <CompanySkeleton />
+          ) : (
+            resolved?.company && (
+              <div className="mb-4">
+                <div className="w-full rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 transition-colors hover:bg-yellow-100 hover:border-yellow-300">
+                  {/* First Row */}
+                  <div className="flex items-start gap-3">
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openCompanyDrawer()
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-yellow-300 bg-white px-3 py-1.5 text-xs font-medium text-yellow-700 hover:bg-yellow-50 transition-colors shadow-sm flex-shrink-0"
+                      onClick={() => setOpen(!open)}
+                      className="flex-shrink-0 hover:bg-yellow-200 rounded p-1 transition-colors"
                     >
-                      <Building2 className="w-3.5 h-3.5" />
-                      Resolve Co. ({companyTask?.companyMatchList?.length || 0})
+                      {open ? (
+                        <ChevronDown className="w-4 h-4 text-gray-600" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-gray-600" />
+                      )}
                     </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      )}
 
-      {/* Plants Section */}
-      {open && (
-        <div className="space-y-3">
-          {loading ? (
-            <PlantsSkeleton />
-          ) : (
-            resolved?.plants?.map((p, idx) => (
-              <div key={idx} className="ml-6 relative">
-                {/* Connection Line */}
-                <div
-                  className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-gray-300 to-transparent"
-                  style={{
-                    height:
-                      idx === (resolved.plants?.length ?? 0) - 1 ? '50%' : '100%',
-                  }}
-                />
-                <div className="absolute left-0 top-6 w-4 h-px bg-gray-300" />
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center">
+                        <Building2 className="w-4 h-4 text-yellow-700" />
+                      </div>
+                    </div>
 
-                {/* Plant Card */}
-                <div className="ml-6">
-                  <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
-                    {/* First Row */}
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                          <Factory className="w-4 h-4 text-gray-600" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-gray-900 mb-0.5">
+                            {resolved.company.companyName}
+                          </div>
+                        </div>
+
+                        <div className="flex-shrink-0 flex flex-wrap gap-1.5 justify-end">
+                          {resolved.company.executedBy && (
+                            <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                              {resolved.company.executedBy}
+                            </span>
+                          )}
+                          {resolved.company.CompletedDate && (
+                            <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                              {new Date(resolved.company.CompletedDate).toLocaleString()}
+                            </span>
+                          )}
+                          <span
+                            className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
+                              resolved.company.Id
+                                ? 'bg-green-50 text-green-700 border-green-200'
+                                : 'bg-orange-50 text-orange-700 border-orange-200'
+                            }`}
+                          >
+                            {resolved.company.Id ? 'ASSIGNED' : 'TO BE ASSIGNED'}
+                          </span>
+                          <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                            {loading ? '...' : resolved?.plants?.length || 0} plants
+                          </span>
                         </div>
                       </div>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <div className="text-sm font-medium text-gray-900">
-                            {p.plant?.plantName}
-                          </div>
-                          <div className="flex gap-1.5 flex-wrap justify-end">
-                            {p.plant?.executedBy && (
-                              <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
-                                {p.plant.executedBy}
-                              </span>
-                            )}
-                            {p.plant?.CompletedDate && (
-                              <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
-                                {new Date(p.plant.CompletedDate).toLocaleString()}
-                              </span>
-                            )}
-                            <span
-                              className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
-                                p.ownsID
-                                  ? 'bg-green-50 text-green-700 border-green-200'
-                                  : 'bg-orange-50 text-orange-700 border-orange-200'
-                              }`}
-                            >
-                              {p.ownsID ? 'ASSIGNED' : 'TO BE ASSIGNED'}
+                      <div className="mt-1 flex items-start justify-between gap-3">
+                        <div className="text-xs text-gray-500 space-y-0.5 min-w-0">
+                          <div>
+                            <span className="inline-flex items-center rounded-md bg-yellow-100 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
+                              <ResolveMethodMarker marker={companyResolveMethodMarker} />
+                              CompanyID: {resolved.company.Id}
                             </span>
                           </div>
+                          <div className="text-gray-500 truncate">{resolved.company.Address}</div>
                         </div>
 
-                        <div className="mt-1 flex items-start justify-between gap-3">
-                          <div className="text-xs text-gray-500 space-y-0.5 min-w-0">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="inline-flex items-center">
-                                <ResolveMethodMarker marker={getResolveMethodMarker(plantTasks[idx])} />
-                                Plant ID: <span className="font-mono">{p.plant?.plantID}</span>
-                              </span>
-                              {p.ownsID && (
-                                <span className="inline-flex items-center">
-                                  <ResolveMethodMarker marker={getResolveMethodMarker(plantTasks[idx])} />
-                                  <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
-                                    OWNSID: {p.ownsID}
-                                  </span>
-                                </span>
-                              )}
-                              {p.WFID && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleWfidClick(p.WFID)}
-                                  title={`Open workflow details for WFID ${p.WFID}`}
-                                  className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                                >
-                                  WFID: {p.WFID}
-                                </button>
-                              )}
-                            </div>
-                            {p.plant?.plantAddress && (
-                              <div className="text-gray-400 truncate">
-                                {p.plant.plantAddress}
-                              </div>
-                            )}
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              openPlantDrawer(idx)
-                            }}
-                            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm flex-shrink-0"
-                          >
-                            <Factory className="w-3.5 h-3.5" />
-                            Resolve ({plantTasks[idx]?.plantMatchList?.length || 0})
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          disabled={!companyAction || companyAction.disabled}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openCompanyDrawer()
+                          }}
+                          title={
+                            companyAction?.disabled
+                              ? 'You are not assigned or authorized to perform this task.'
+                              : 'Resolve company'
+                          }
+                          className="inline-flex items-center gap-1.5 rounded-md border border-yellow-300 bg-white px-3 py-1.5 text-xs font-medium text-yellow-700 transition-colors shadow-sm flex-shrink-0 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none"
+                        >
+                          <Building2 className="w-3.5 h-3.5" />
+                          Resolve Co. ({companyTask?.companyMatchList?.length || 0})
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            ))
+            )
           )}
-        </div>
-      )}
 
-      {/* Resolution Drawer */}
-      {drawerState.isOpen && drawerState.type === 'company' && companyTask && (
-        <PrelimResolutionDrawer
-          isOpen={drawerState.isOpen}
-          onClose={closeDrawer}
-          type="company"
-          data={companyDrawerData}
-          matches={companyTask.companyMatchList || []}
-          onAssign={handleAssignCompany}
-          onRefresh={refreshApplication}
-          selectedId={completedCompanyId}
-          applicationId={application?.applicationId}
-          taskInstanceId={companyTaskInstanceId}
-          taskCapacity={companyTask.capacity ?? undefined}
-          savedResolveMethod={companyResolveSavedState?.resolveMethod}
-          isActionable={isTaskPending(companyTask.status)}
-          taskStatus={companyTask.status}
-          readOnly={isWithdrawn}
-        />
-      )}
+          {/* Plants Section */}
+          {open && (
+            <div className="space-y-3">
+              {loading ? (
+                <PlantsSkeleton />
+              ) : (
+                resolved?.plants?.map((p, idx) => (
+                  <div key={idx} className="ml-6 relative">
+                    {/* Connection Line */}
+                    <div
+                      className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-gray-300 to-transparent"
+                      style={{
+                        height: idx === (resolved.plants?.length ?? 0) - 1 ? '50%' : '100%',
+                      }}
+                    />
+                    <div className="absolute left-0 top-6 w-4 h-px bg-gray-300" />
 
-      {drawerState.isOpen &&
-        drawerState.type === 'plant' &&
-        activePlantTask && (
-          <PrelimResolutionDrawer
-            isOpen={drawerState.isOpen}
-            onClose={closeDrawer}
-            type="plant"
-            data={plantDrawerData}
-            matches={activePlantTask.plantMatchList || []}
-            onAssign={(match) =>
-              handleAssignPlant(match, activePlantTask)
-            }
-            onRefresh={refreshApplication}
-            selectedId={completedPlantId}
-            applicationId={application?.applicationId}
-            taskInstanceId={activePlantTaskInstanceId}
-            taskCapacity={activePlantTask.capacity ?? undefined}
-            companyId={resolved?.company?.Id}
-            savedResolveMethod={plantResolveSavedState?.resolveMethod}
-            isActionable={isTaskPending(activePlantTask.status)}
-            taskStatus={activePlantTask.status}
-            readOnly={isWithdrawn}
-          />
-        )}
+                    {/* Plant Card */}
+                    <div className="ml-6">
+                      <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
+                        {/* First Row */}
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0">
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                              <Factory className="w-4 h-4 text-gray-600" />
+                            </div>
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <div className="text-sm font-medium text-gray-900">
+                                {p.plant?.plantName}
+                              </div>
+                              <div className="flex gap-1.5 flex-wrap justify-end">
+                                {p.plant?.executedBy && (
+                                  <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                                    {p.plant.executedBy}
+                                  </span>
+                                )}
+                                {p.plant?.CompletedDate && (
+                                  <span className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                                    {new Date(p.plant.CompletedDate).toLocaleString()}
+                                  </span>
+                                )}
+                                <span
+                                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium border whitespace-nowrap ${
+                                    p.ownsID
+                                      ? 'bg-green-50 text-green-700 border-green-200'
+                                      : 'bg-orange-50 text-orange-700 border-orange-200'
+                                  }`}
+                                >
+                                  {p.ownsID ? 'ASSIGNED' : 'TO BE ASSIGNED'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="mt-1 flex items-start justify-between gap-3">
+                              <div className="text-xs text-gray-500 space-y-0.5 min-w-0">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <span className="inline-flex items-center">
+                                    <ResolveMethodMarker
+                                      marker={getResolveMethodMarker(plantTasks[idx])}
+                                    />
+                                    Plant ID: <span className="font-mono">{p.plant?.plantID}</span>
+                                  </span>
+                                  {p.ownsID && (
+                                    <span className="inline-flex items-center">
+                                      <ResolveMethodMarker
+                                        marker={getResolveMethodMarker(plantTasks[idx])}
+                                      />
+                                      <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
+                                        OWNSID: {p.ownsID}
+                                      </span>
+                                    </span>
+                                  )}
+                                  {p.WFID && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleWfidClick(p.WFID)}
+                                      title={`Open workflow details for WFID ${p.WFID}`}
+                                      className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                                    >
+                                      WFID: {p.WFID}
+                                    </button>
+                                  )}
+                                </div>
+                                {p.plant?.plantAddress && (
+                                  <div className="text-gray-400 truncate">
+                                    {p.plant.plantAddress}
+                                  </div>
+                                )}
+                              </div>
+
+                              <button
+                                type="button"
+                                disabled={!plantActions[idx] || plantActions[idx].disabled}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  openPlantDrawer(idx)
+                                }}
+                                title={
+                                  plantActions[idx]?.disabled
+                                    ? 'You are not assigned or authorized to perform this task.'
+                                    : 'Resolve plant'
+                                }
+                                className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors shadow-sm flex-shrink-0 hover:bg-gray-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none"
+                              >
+                                <Factory className="w-3.5 h-3.5" />
+                                Resolve ({plantTasks[idx]?.plantMatchList?.length || 0})
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Resolution Drawer */}
+          {drawerState.isOpen && drawerState.type === 'company' && companyTask && (
+            <PrelimResolutionDrawer
+              isOpen={drawerState.isOpen}
+              onClose={closeDrawer}
+              type="company"
+              data={companyDrawerData}
+              matches={companyTask.companyMatchList || []}
+              onAssign={handleAssignCompany}
+              onRefresh={refreshApplication}
+              selectedId={completedCompanyId}
+              applicationId={application?.applicationId}
+              taskInstanceId={companyTaskInstanceId}
+              taskCapacity={companyAction?.capacity}
+              savedResolveMethod={companyResolveSavedState?.resolveMethod}
+              isActionable={isTaskPending(companyTask.status) && !companyAction?.disabled}
+              taskStatus={companyTask.status}
+              readOnly={isWithdrawn}
+            />
+          )}
+
+          {drawerState.isOpen && drawerState.type === 'plant' && activePlantTask && (
+            <PrelimResolutionDrawer
+              isOpen={drawerState.isOpen}
+              onClose={closeDrawer}
+              type="plant"
+              data={plantDrawerData}
+              matches={activePlantTask.plantMatchList || []}
+              onAssign={(match) =>
+                handleAssignPlant(match, activePlantTask, activePlantIndex ?? -1)
+              }
+              onRefresh={refreshApplication}
+              selectedId={completedPlantId}
+              applicationId={application?.applicationId}
+              taskInstanceId={activePlantTaskInstanceId}
+              taskCapacity={activePlantAction?.capacity}
+              companyId={resolved?.company?.Id}
+              savedResolveMethod={plantResolveSavedState?.resolveMethod}
+              isActionable={isTaskPending(activePlantTask.status) && !activePlantAction?.disabled}
+              taskStatus={activePlantTask.status}
+              readOnly={isWithdrawn}
+            />
+          )}
         </>
       )}
     </div>
@@ -567,15 +615,10 @@ export function extractResolvedData(application?: Applicant) {
       ownsID: task.plantSelected?.OWNSID || '',
       WFID: task.plantSelected?.WFID || '',
       plant: {
-        plantName:
-          task.plantSelected?.plantName ||
-          task.plantFromApplication?.plantName ||
-          '',
-        plantID: task.plantSelected?.PlantID || task.Result || task.plantFromApplication?.plantID || '',
-        plantAddress:
-          task.plantSelected?.Address ||
-          task.plantFromApplication?.Address ||
-          '',
+        plantName: task.plantSelected?.plantName || task.plantFromApplication?.plantName || '',
+        plantID:
+          task.plantSelected?.PlantID || task.Result || task.plantFromApplication?.plantID || '',
+        plantAddress: task.plantSelected?.Address || task.plantFromApplication?.Address || '',
         executedBy: task.executedBy || '',
         CompletedDate: task.CompletedDate || '',
       },
@@ -621,131 +664,4 @@ function PlantsSkeleton() {
       ))}
     </div>
   )
-}
-
-export function toCompanyDrawerData(data?: CompanyFromApplication) {
-  const pickFirstNonEmpty = (...values: Array<string | undefined>) =>
-    values.find((value) => (value ?? '').trim() !== '') ?? ''
-
-  const firstContact = (
-    ...groups: Array<SubmittedApplicationContact[] | undefined>
-  ) => groups.flatMap((group) => group ?? []).find(hasSubmittedContactValue)
-
-  const toContact = (contact?: SubmittedApplicationContact) => {
-    if (!contact) return undefined
-    const name = `${pickFirstNonEmpty(contact.contactFirst)} ${pickFirstNonEmpty(contact.contactLast)}`.trim()
-    return {
-      name,
-      title: pickFirstNonEmpty(contact.jobTitle, contact.jobTitle1, contact.note),
-      phone: pickFirstNonEmpty(contact.contactPhone),
-      email: pickFirstNonEmpty(contact.contactEmail),
-    }
-  }
-
-  const contactGroups = data?.companyContacts
-  const primaryRaw = firstContact(contactGroups?.primaryContact, contactGroups?.PrimaryContact)
-  const billingRaw = firstContact(contactGroups?.billingContact, contactGroups?.BillingContact)
-
-  return {
-    companyName: data?.companyName ?? '',
-    companyAddress: pickFirstNonEmpty(data?.companyAddress, data?.Street1),
-    companyAddress2: pickFirstNonEmpty(data?.companyAddress2, data?.Street2),
-    companyCity: pickFirstNonEmpty(data?.companyCity, data?.City),
-    companyState: pickFirstNonEmpty(data?.companyState, data?.State),
-    ZipPostalCode: pickFirstNonEmpty(data?.ZipPostalCode, data?.Zip),
-    companyCountry: pickFirstNonEmpty(data?.companyCountry, data?.Country),
-    companyPhone: data?.companyPhone ?? '',
-    companyWebsite: data?.companyWebsite ?? '',
-    numberOfPlants: data?.numberOfPlants,
-    whichCategory: data?.whichCategory,
-    primaryContact: toContact(primaryRaw),
-    billingContact: toContact(billingRaw),
-  }
-}
-
-export function toPlantDrawerData(data?: PlantFromApplication, companyWebsite?: string) {
-  const pickFirstNonEmpty = (...values: Array<string | undefined>) =>
-    values.find((value) => (value ?? '').trim() !== '') ?? ''
-
-  const firstContact = (
-    ...groups: Array<SubmittedApplicationContact[] | undefined>
-  ) => groups.flatMap((group) => group ?? []).find(hasSubmittedContactValue)
-
-  const toContact = (contact?: SubmittedApplicationContact) => {
-    if (!contact) return undefined
-    const name = `${pickFirstNonEmpty(contact.contactFirst)} ${pickFirstNonEmpty(contact.contactLast)}`.trim()
-    return {
-      name,
-      title: pickFirstNonEmpty(contact.jobTitle, contact.jobTitle1, contact.note),
-      phone: pickFirstNonEmpty(contact.contactPhone),
-      email: pickFirstNonEmpty(contact.contactEmail),
-    }
-  }
-
-  const parseAddressFromSingleLine = (address?: string) => {
-    const value = (address ?? '').trim()
-    if (!value) {
-      return {
-        street: '',
-        city: '',
-        state: '',
-        zip: '',
-        country: '',
-      }
-    }
-
-    const normalized = value.replace(/\s+/g, ' ')
-    const withCityMatch = normalized.match(
-      /^(.*?),\s*([^,]+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)(?:\s+([A-Za-z]{2,}))?$/
-    )
-
-    if (withCityMatch) {
-      return {
-        street: withCityMatch[1] ?? '',
-        city: withCityMatch[2] ?? '',
-        state: withCityMatch[3] ?? '',
-        zip: withCityMatch[4] ?? '',
-        country: withCityMatch[5] ?? '',
-      }
-    }
-
-    return {
-      street: normalized,
-      city: '',
-      state: '',
-      zip: '',
-      country: '',
-    }
-  }
-
-  const parsedAddress = parseAddressFromSingleLine(data?.Address)
-  const contactGroups = data?.plantContacts
-  const primaryRaw = firstContact(contactGroups?.PrimaryContact, contactGroups?.primaryContact)
-  const secondaryRaw = firstContact(contactGroups?.OtherContact, contactGroups?.otherContact)
-
-  return {
-    plantName: data?.plantName ?? '',
-    plantAddress: pickFirstNonEmpty(data?.plantAddress, data?.Street1, parsedAddress.street),
-    plantCity: pickFirstNonEmpty(data?.plantCity, data?.City, parsedAddress.city),
-    plantState: pickFirstNonEmpty(data?.plantState, data?.State, parsedAddress.state),
-    plantZip: pickFirstNonEmpty(data?.plantZip, data?.Zip, parsedAddress.zip),
-    plantCountry: pickFirstNonEmpty(data?.plantCountry, data?.Country, parsedAddress.country),
-    companyWebsite: companyWebsite ?? '',
-    plantNumber: data?.plantNumber,
-    processDescription: data?.brieflySummarize ?? '',
-    primaryContact: toContact(primaryRaw),
-    marketingContact: toContact(secondaryRaw),
-  }
-}
-
-function hasSubmittedContactValue(contact: SubmittedApplicationContact) {
-  return [
-    contact.contactFirst,
-    contact.contactLast,
-    contact.contactPhone,
-    contact.contactEmail,
-    contact.jobTitle,
-    contact.jobTitle1,
-    contact.note,
-  ].some((value) => (value ?? '').trim() !== '')
 }
