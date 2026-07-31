@@ -17,7 +17,7 @@ export default function CompanySection({
       : company?.companyID ?? application.kashrusCompanyId;
   const companyStatus =
     dataSource === 'prelim'
-      ? application.kashrusStatus
+      ? application.globalData?.company_status
       : company?.Status ?? application.CompanyStatus ?? application.kashrusStatus;
   const physicalAddress = companyAddresses.find(
     (a) => a.type?.toLowerCase() === "physical"

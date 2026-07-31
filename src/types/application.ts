@@ -533,6 +533,7 @@ export interface RawApplicationEntry {
 export interface ApplicationGlobalData {
   company_id?: number | string;
   company_name?: string;
+  company_status?: string;
   is_new_company?: boolean;
   plants?: Array<{
     company_id?: number | string;

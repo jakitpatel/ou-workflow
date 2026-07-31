@@ -20,6 +20,18 @@ const normalizeCompanyContacts = (
   return [];
 };
 
+const getContactHeadingClassName = (contactType: string) => {
+  if (contactType === 'Billing Contact') {
+    return 'border-blue-200 bg-blue-100 text-blue-800';
+  }
+
+  if (contactType === 'Other Contact') {
+    return 'border-emerald-200 bg-emerald-100 text-emerald-800';
+  }
+
+  return 'border-amber-200 bg-amber-100 text-amber-800';
+};
+
 export default function ContactsSection({
   application,
   editMode,
@@ -133,7 +145,15 @@ export default function ContactsSection({
             key={index}
             className="border border-gray-200 rounded-lg p-5 bg-white hover:border-gray-300 transition-colors"
           >
-
+            {dataSource === 'prelim' && (
+              <div className="flex items-center gap-2 mb-4">
+                <span
+                  className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${getContactHeadingClassName(contact.type)}`}
+                >
+                  {contact.type}
+                </span>
+              </div>
+            )}
 
             {/* Input Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
