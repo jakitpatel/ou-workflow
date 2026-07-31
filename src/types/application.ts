@@ -358,6 +358,7 @@ export type Applicant = {
   visit_id?: number | string | null;
   visitId?: number | string | null;
   appvars?: ApplicantAppVars | null;
+  globalData?: ApplicationGlobalData;
   isNewCompany?: boolean;
   companyId?: number;
   company: string;

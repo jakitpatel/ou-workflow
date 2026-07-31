@@ -1,4 +1,5 @@
 import type { Applicant, ApplicantsResponse, Stage } from '@/types/application'
+import { parsePrelimGlobalData } from '@/features/prelim/lib/prelimGlobalData'
 
 type BackendPrelimApplicant = Partial<Applicant> & {
   companyName?: string
@@ -9,6 +10,7 @@ type BackendPrelimApplicant = Partial<Applicant> & {
   ApplicationId?: number
   ApplicationID?: number
   id?: number
+  GlobalData?: string | null
   stages?: Record<string, Stage>
 }
 
@@ -29,6 +31,7 @@ export function mapPrelimApplicantsResponse(
       ...(applicant as Partial<Applicant>),
       id: applicant.id ?? applicationId,
       applicationId,
+      globalData: parsePrelimGlobalData(applicant.GlobalData),
       company: applicant.company ?? applicant.companyName ?? applicant.CompanyName ?? '',
       plant: applicant.plant ?? applicant.plantName ?? applicant.PlantName ?? '',
       region: applicant.region ?? '',

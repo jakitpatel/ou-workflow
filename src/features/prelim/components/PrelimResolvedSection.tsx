@@ -18,6 +18,7 @@ import {
   toCompanyDrawerData,
   toPlantDrawerData,
 } from '@/features/prelim/lib/prelimResolution'
+import { getOwnsResolutionMarker } from '@/features/prelim/lib/prelimGlobalData'
 
 type Props = {
   application?: Applicant
@@ -480,7 +481,10 @@ export function PrelimResolvedSection({
                                   {p.ownsID && (
                                     <span className="inline-flex items-center">
                                       <ResolveMethodMarker
-                                        marker={getResolveMethodMarker(plantTasks[idx])}
+                                        marker={getOwnsResolutionMarker(
+                                          application?.globalData,
+                                          p.plant?.plantID,
+                                        )}
                                       />
                                       <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
                                         OWNSID: {p.ownsID}
