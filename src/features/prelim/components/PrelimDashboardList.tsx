@@ -7,6 +7,10 @@ type Props = {
   onViewApplication: (externalReferenceId: string | number | null | undefined) => void
   handleCancelTask: (...args: any[]) => void
   handleTaskAction: (...args: any[]) => void
+  paginationMode: 'paged' | 'infinite'
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  sentinelRef: React.RefObject<HTMLDivElement | null>
 }
 
 export function PrelimDashboardList({
@@ -16,6 +20,10 @@ export function PrelimDashboardList({
   onViewApplication,
   handleCancelTask,
   handleTaskAction,
+  paginationMode,
+  hasNextPage,
+  isFetchingNextPage,
+  sentinelRef,
 }: Props) {
   return (
     <div className="flex flex-col gap-4">
@@ -34,6 +42,18 @@ export function PrelimDashboardList({
       ) : (
         <p className="text-gray-500">No applications found</p>
       )}
+      {paginationMode === 'infinite' && hasNextPage && <div ref={sentinelRef} className="h-1" />}
+      {paginationMode === 'infinite' && isFetchingNextPage && (
+        <p className="py-4 text-center text-sm text-gray-500">Loading more applications...</p>
+      )}
+      {paginationMode === 'infinite' &&
+        !hasNextPage &&
+        applications.length > 0 &&
+        !isFetchingNextPage && (
+          <p className="py-4 text-center text-sm text-gray-500">
+            All {applications.length} applications loaded
+          </p>
+        )}
     </div>
   )
 }

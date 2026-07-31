@@ -14,11 +14,7 @@ type Props = {
   expanded: boolean
   setExpanded: (id: string | null) => void
   handleCancelTask: (application: Applicant, action: Task, reason: string) => Promise<void> | void
-  handleTaskAction?: (
-    e: React.MouseEvent,
-    application: any,
-    action: any
-  ) => void
+  handleTaskAction?: (e: React.MouseEvent, application: any, action: any) => void
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -54,14 +50,11 @@ export function PrelimApplicationCard({
     () =>
       Object.entries(company.stages ?? {}).filter(
         ([stageName]) =>
-          stageName.toLowerCase() !== 'global' &&
-          stageName.toLowerCase() !== 'globalsubmission'
+          stageName.toLowerCase() !== 'global' && stageName.toLowerCase() !== 'globalsubmission',
       ),
-    [company.stages]
+    [company.stages],
   )
-  const [expandedStage, setExpandedStage] = useState<string | null>(
-    stageEntries[0]?.[0] ?? null
-  )
+  const [expandedStage, setExpandedStage] = useState<string | null>(stageEntries[0]?.[0] ?? null)
 
   useEffect(() => {
     if (stageEntries.length === 0) {
@@ -69,9 +62,7 @@ export function PrelimApplicationCard({
       return
     }
     setExpandedStage((prev) =>
-      prev && stageEntries.some(([stageName]) => stageName === prev)
-        ? prev
-        : stageEntries[0][0]
+      prev && stageEntries.some(([stageName]) => stageName === prev) ? prev : stageEntries[0][0],
     )
   }, [stageEntries])
 
@@ -92,7 +83,7 @@ export function PrelimApplicationCard({
     const taskRoles = normalizeTaskRoles(task.taskRoles)
     if (taskRoles.length === 0) return false
 
-    const hasIncludedRole = taskRolesAll.some(role => taskRoles.includes(role))
+    const hasIncludedRole = taskRolesAll.some((role) => taskRoles.includes(role))
     if (hasIncludedRole) return true
 
     const matchingRoles = userRoles.filter((r) => taskRoles.includes(r))
@@ -101,15 +92,14 @@ export function PrelimApplicationCard({
     const assignedRoles = Array.isArray(company?.assignedRoles) ? company.assignedRoles : []
     return assignedRoles.some((ar: any) =>
       matchingRoles.some(
-        (matchedRole) =>
-          ar?.[matchedRole.toUpperCase()]?.toLowerCase() === username?.toLowerCase()
-      )
+        (matchedRole) => ar?.[matchedRole.toUpperCase()]?.toLowerCase() === username?.toLowerCase(),
+      ),
     )
   }
 
   const pendingCancelTask = useMemo(() => {
     const globalStageEntry = Object.entries(company.stages ?? {}).find(
-      ([stageKey]) => stageKey.toLowerCase() === 'globalsubmission'
+      ([stageKey]) => stageKey.toLowerCase() === 'globalsubmission',
     )
     const globalTasks = globalStageEntry?.[1]?.tasks ?? []
 
@@ -118,14 +108,14 @@ export function PrelimApplicationCard({
         (task) =>
           task?.name?.toLowerCase() === 'cancel submission' &&
           task?.status?.toLowerCase() === 'pending' &&
-          hasCancelPermission(task)
+          hasCancelPermission(task),
       ) ?? null
     )
   }, [company.stages, company.assignedRoles, taskRolesAll, userRoles, username])
 
   const pendingUndoWithdrawTask = useMemo(() => {
     const globalStageEntry = Object.entries(company.stages ?? {}).find(
-      ([stageKey]) => stageKey.toLowerCase() === 'globalsubmission'
+      ([stageKey]) => stageKey.toLowerCase() === 'globalsubmission',
     )
     const globalTasks = globalStageEntry?.[1]?.tasks ?? []
 
@@ -168,13 +158,14 @@ export function PrelimApplicationCard({
   }
 
   return (
-    <div className="rounded-lg border bg-white shadow-sm transition hover:shadow-md p-4">
+    <div
+      data-app-id={company.applicationId}
+      className="rounded-lg border bg-white shadow-sm transition hover:shadow-md p-4"
+    >
       <div className="cursor-pointer">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 min-w-0">
-            <h3 className="text-base font-semibold text-gray-800 truncate">
-              {company.company}
-            </h3>
+            <h3 className="text-base font-semibold text-gray-800 truncate">{company.company}</h3>
             {company.externalReferenceId != null && (
               <span className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700 flex-shrink-0">
                 Ref: {company.externalReferenceId}
@@ -188,8 +179,7 @@ export function PrelimApplicationCard({
           </div>
 
           <div className="flex items-center gap-2">
-            {stageEntries
-              .map(([stageName, stage]) => (
+            {stageEntries.map(([stageName, stage]) => (
               <button
                 key={stageName}
                 disabled={isWithdrawn}
@@ -205,16 +195,18 @@ export function PrelimApplicationCard({
                   setExpandedStage(stageName)
                 }}
                 className={`px-4 py-1.5 rounded text-xs font-medium text-white transition-all ${
-                  isWithdrawn
-                    ? 'cursor-not-allowed opacity-55 grayscale'
-                    : ''
+                  isWithdrawn ? 'cursor-not-allowed opacity-55 grayscale' : ''
                 } ${
                   !isWithdrawn && expanded && expandedStage === stageName
                     ? 'ring-2 ring-blue-400 ring-offset-1'
                     : ''
                 }`}
                 style={{ backgroundColor: isWithdrawn ? '#9ca3af' : getStageColor(stage.status) }}
-                title={isWithdrawn ? 'Stage actions are disabled for withdrawn applications.' : `View ${stageName} tasks`}
+                title={
+                  isWithdrawn
+                    ? 'Stage actions are disabled for withdrawn applications.'
+                    : `View ${stageName} tasks`
+                }
               >
                 {stageName}
               </button>
@@ -279,8 +271,16 @@ export function PrelimApplicationCard({
                     ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
                     : 'bg-red-100 text-red-300 cursor-not-allowed focus:ring-red-200'
                 }`}
-                title={canCancelApplication ? 'Cancel Submission' : "This submission cannot be canceled due to its current status or your permissions."}
-                aria-label={canCancelApplication ? 'Cancel Submission' : "This submission cannot be canceled due to its current status or your permissions."}
+                title={
+                  canCancelApplication
+                    ? 'Cancel Submission'
+                    : 'This submission cannot be canceled due to its current status or your permissions.'
+                }
+                aria-label={
+                  canCancelApplication
+                    ? 'Cancel Submission'
+                    : 'This submission cannot be canceled due to its current status or your permissions.'
+                }
               >
                 Cancel Submission
               </button>
@@ -298,8 +298,16 @@ export function PrelimApplicationCard({
                     ? 'bg-amber-600 text-white hover:bg-amber-700 focus:ring-amber-500'
                     : 'bg-amber-100 text-amber-300 cursor-not-allowed focus:ring-amber-200'
                 }`}
-                title={canUndoWithdrawApplication ? 'Undo Cancel Submission' : 'Undo cancel is not available for this submission at the moment.'}
-                aria-label={canUndoWithdrawApplication ? 'Undo Cancel Submission' : 'Undo cancel is not available for this submission at the moment.'}
+                title={
+                  canUndoWithdrawApplication
+                    ? 'Undo Cancel Submission'
+                    : 'Undo cancel is not available for this submission at the moment.'
+                }
+                aria-label={
+                  canUndoWithdrawApplication
+                    ? 'Undo Cancel Submission'
+                    : 'Undo cancel is not available for this submission at the moment.'
+                }
               >
                 Undo Cancel Submission
               </button>

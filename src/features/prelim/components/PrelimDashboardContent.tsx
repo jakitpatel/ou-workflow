@@ -25,7 +25,20 @@ export function PrelimDashboardContent() {
     status,
     applicationId,
     applications,
+    paginationMode,
+    page,
+    totalCount,
+    totalPages,
     isLoading,
+    isError,
+    error,
+    hasNextPage,
+    isFetchingNextPage,
+    sentinelRef,
+    handleFirst,
+    handlePrev,
+    handleNext,
+    handleLast,
     expandedTaskPanel,
     setExpandedTaskPanel,
     selectedId,
@@ -129,101 +142,153 @@ export function PrelimDashboardContent() {
   return (
     <PageShell>
       <div className="space-y-4 py-6">
-      <div className="flex items-start justify-between gap-4">
-        <h1 className="text-2xl font-bold">Application Intake</h1>
-        <button
-          type="button"
-          onClick={handleOpenMyMessages}
-          className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm transition-colors hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          title={username ? `View messages for ${username}` : 'View my messages'}
-          aria-label={username ? `View messages for ${username}` : 'View my messages'}
-        >
-          <MessageSquareText className="h-4 w-4" />
-          My Messages
-        </button>
-      </div>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-2xl font-bold">Application Intake</h1>
+          <button
+            type="button"
+            onClick={handleOpenMyMessages}
+            className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 shadow-sm transition-colors hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            title={username ? `View messages for ${username}` : 'View my messages'}
+            aria-label={username ? `View messages for ${username}` : 'View my messages'}
+          >
+            <MessageSquareText className="h-4 w-4" />
+            My Messages
+          </button>
+        </div>
 
-      <PrelimDashboardFilters
-        q={q}
-        status={status}
-        applicationId={applicationId}
-        onChange={updateSearch}
-      />
+        <PrelimDashboardFilters
+          q={q}
+          status={status}
+          applicationId={applicationId}
+          onChange={updateSearch}
+        />
 
-      <PrelimDashboardList
-        applications={applications}
-        expandedTaskPanel={expandedTaskPanel}
-        setExpandedTaskPanel={setExpandedTaskPanel}
-        onViewApplication={(externalReferenceId) =>
-          setSelectedId(externalReferenceId == null ? null : Number(externalReferenceId))
-        }
-        handleCancelTask={handleCancelTask}
-        handleTaskAction={handleTaskAction}
-      />
+        {isError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-700">
+            Error loading applications: {(error as Error).message}
+          </div>
+        )}
 
-      <PrelimApplicationDetailsDrawer
-        open={selectedId !== null}
-        externalReferenceId={selectedId}
-        data={applicationDetails}
-        isLoading={isDetailsLoading}
-        error={applicationDetailsError}
-        onClose={() => setSelectedId(null)}
-      />
+        {paginationMode === 'paged' && !isError && (
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+            <span className="text-sm text-gray-600">
+              Showing {totalCount === 0 ? 0 : page + 1}-{Math.min(page + 5, totalCount)} of{' '}
+              {totalCount} applications
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleFirst}
+                disabled={page === 0}
+                className="rounded border px-3 py-1.5 text-sm disabled:opacity-50"
+              >
+                First
+              </button>
+              <button
+                onClick={handlePrev}
+                disabled={page === 0}
+                className="rounded border px-3 py-1.5 text-sm disabled:opacity-50"
+              >
+                Prev
+              </button>
+              <span className="px-2 text-sm">
+                Page {totalPages === 0 ? 0 : Math.floor(page / 5) + 1} of {totalPages}
+              </span>
+              <button
+                onClick={handleNext}
+                disabled={page + 5 >= totalCount}
+                className="rounded border px-3 py-1.5 text-sm disabled:opacity-50"
+              >
+                Next
+              </button>
+              <button
+                onClick={handleLast}
+                disabled={page + 5 >= totalCount}
+                className="rounded border px-3 py-1.5 text-sm disabled:opacity-50"
+              >
+                Last
+              </button>
+            </div>
+          </div>
+        )}
 
-      <ActionModal
-        setShowActionModal={setShowActionModal}
-        showActionModal={showActionModal}
-        executeAction={executeAction}
-        selectedAction={selectedAction}
-      />
-      <ConditionalModal
-        setShowConditionModal={setShowConditionModal}
-        showConditionModal={showConditionModal}
-        executeAction={executeAction}
-        selectedAction={selectedAction}
-      />
-      <TaskNotesDrawer
-        open={Boolean(myMessages.drawer)}
-        applicantCompany="My Messages"
-        contextType="application"
-        taskName={username?.trim() || 'Current User'}
-        activeTab={myMessagesActiveTab}
-        incomingNotes={[]}
-        outgoingNotes={[]}
-        mentionNotes={[]}
-        privateNotes={[]}
-        loadingIncoming={false}
-        loadingOutgoing={false}
-        loadingMention={false}
-        loadingPrivate={false}
-        composeText=""
-        composePrivate={false}
-        currentUsername={myMessages.currentUsername}
-        isSubmitting={myMessages.isSubmitting}
-        error={myMessages.error}
-        notesTitleOverride="My Messages"
-        currentLabelOverride="Logged In User"
-        customTabs={myMessagesTabs}
-        showMyNotesThreadType
-        hideComposer
-        hidePrivacyToggle
-        showPerNoteApplicationId
-        showViewApplicationAction
-        enableMessageFilters
-        onApplicationIdClick={handleViewApplicationFromMyMessages}
-        onViewApplicationClick={handleViewApplicationFromMyMessages}
-        onIncomingNoteClick={myMessages.markIncomingNoteRead}
-        markingReadMessageId={myMessages.markingReadMessageId}
-        reactingMessageId={myMessages.reactingMessageId}
-        onClose={myMessages.closeDrawer}
-        onTabChange={setMyMessagesActiveTab}
-        onComposeTextChange={() => {}}
-        onComposeToUserChange={() => {}}
-        onComposePrivateChange={() => {}}
-        onSubmit={() => {}}
-        onReplySubmit={myMessages.submitReply}
-        onReactionTagChange={myMessages.updateMessageReactionTag}
-      />
+        <PrelimDashboardList
+          applications={applications}
+          expandedTaskPanel={expandedTaskPanel}
+          setExpandedTaskPanel={setExpandedTaskPanel}
+          onViewApplication={(externalReferenceId) =>
+            setSelectedId(externalReferenceId == null ? null : Number(externalReferenceId))
+          }
+          handleCancelTask={handleCancelTask}
+          handleTaskAction={handleTaskAction}
+          paginationMode={paginationMode}
+          hasNextPage={Boolean(hasNextPage)}
+          isFetchingNextPage={isFetchingNextPage}
+          sentinelRef={sentinelRef}
+        />
+
+        <PrelimApplicationDetailsDrawer
+          open={selectedId !== null}
+          externalReferenceId={selectedId}
+          data={applicationDetails}
+          isLoading={isDetailsLoading}
+          error={applicationDetailsError}
+          onClose={() => setSelectedId(null)}
+        />
+
+        <ActionModal
+          setShowActionModal={setShowActionModal}
+          showActionModal={showActionModal}
+          executeAction={executeAction}
+          selectedAction={selectedAction}
+        />
+        <ConditionalModal
+          setShowConditionModal={setShowConditionModal}
+          showConditionModal={showConditionModal}
+          executeAction={executeAction}
+          selectedAction={selectedAction}
+        />
+        <TaskNotesDrawer
+          open={Boolean(myMessages.drawer)}
+          applicantCompany="My Messages"
+          contextType="application"
+          taskName={username?.trim() || 'Current User'}
+          activeTab={myMessagesActiveTab}
+          incomingNotes={[]}
+          outgoingNotes={[]}
+          mentionNotes={[]}
+          privateNotes={[]}
+          loadingIncoming={false}
+          loadingOutgoing={false}
+          loadingMention={false}
+          loadingPrivate={false}
+          composeText=""
+          composePrivate={false}
+          currentUsername={myMessages.currentUsername}
+          isSubmitting={myMessages.isSubmitting}
+          error={myMessages.error}
+          notesTitleOverride="My Messages"
+          currentLabelOverride="Logged In User"
+          customTabs={myMessagesTabs}
+          showMyNotesThreadType
+          hideComposer
+          hidePrivacyToggle
+          showPerNoteApplicationId
+          showViewApplicationAction
+          enableMessageFilters
+          onApplicationIdClick={handleViewApplicationFromMyMessages}
+          onViewApplicationClick={handleViewApplicationFromMyMessages}
+          onIncomingNoteClick={myMessages.markIncomingNoteRead}
+          markingReadMessageId={myMessages.markingReadMessageId}
+          reactingMessageId={myMessages.reactingMessageId}
+          onClose={myMessages.closeDrawer}
+          onTabChange={setMyMessagesActiveTab}
+          onComposeTextChange={() => {}}
+          onComposeToUserChange={() => {}}
+          onComposePrivateChange={() => {}}
+          onSubmit={() => {}}
+          onReplySubmit={myMessages.submitReply}
+          onReactionTagChange={myMessages.updateMessageReactionTag}
+        />
       </div>
     </PageShell>
   )
