@@ -11,9 +11,18 @@ const normalizeCompanyContacts = (
 
   if (dataSource === 'application') {
     return [
-      ...(groups.primaryContact ?? groups.PrimaryContact ?? []),
-      ...(groups.billingContact ?? groups.BillingContact ?? []),
-      ...(groups.otherContact ?? groups.OtherContact ?? []),
+      ...(groups.primaryContact ?? groups.PrimaryContact ?? []).map(contact => ({
+        ...contact,
+        type: 'Primary Contact',
+      })),
+      ...(groups.billingContact ?? groups.BillingContact ?? []).map(contact => ({
+        ...contact,
+        type: 'Billing Contact',
+      })),
+      ...(groups.otherContact ?? groups.OtherContact ?? []).map(contact => ({
+        ...contact,
+        type: 'Other Contact',
+      })),
     ];
   }
 
@@ -145,15 +154,13 @@ export default function ContactsSection({
             key={index}
             className="border border-gray-200 rounded-lg p-5 bg-white hover:border-gray-300 transition-colors"
           >
-            {dataSource === 'prelim' && (
-              <div className="flex items-center gap-2 mb-4">
-                <span
-                  className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${getContactHeadingClassName(contact.type)}`}
-                >
-                  {contact.type}
-                </span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 mb-4">
+              <span
+                className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold ${getContactHeadingClassName(contact.type)}`}
+              >
+                {contact.type}
+              </span>
+            </div>
 
             {/* Input Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
