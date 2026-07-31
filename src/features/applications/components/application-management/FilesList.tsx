@@ -1,15 +1,38 @@
 import type { ApplicationDetail } from "@/types/application";
-import { AlertCircle, Beaker, CheckCircle, Download, FileText, Package } from "lucide-react";
+import { AlertCircle, Beaker, CheckCircle, Download, Eye, FileText, Package } from "lucide-react";
+
+const OFFICE_FILE_EXTENSIONS = new Set(['doc', 'docx', 'xls', 'xlsx']);
+
+const getFileExtension = (fileName?: string, filePath?: string) => {
+  const value = String(fileName || filePath || '').split(/[?#]/)[0];
+  return value.includes('.') ? value.split('.').pop()?.toLowerCase() ?? '' : '';
+};
+
+const getOfficePreviewUrl = (fileUrl: string) => {
+  try {
+    const absoluteUrl = new URL(fileUrl, window.location.origin);
+    if (!['http:', 'https:'].includes(absoluteUrl.protocol)) return null;
+
+    return `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(absoluteUrl.href)}`;
+  } catch {
+    return null;
+  }
+};
 
 export default function FilesList({ application }: { application: ApplicationDetail }) {
   const uploadedFiles = application.files || [];
 
-  const downloadFile = (filePath: string) => {
+  const openFile = (filePath: string) => {
     if (!filePath) {
       return;
     }
 
     window.open(filePath, "_blank", "noopener,noreferrer");
+  };
+
+  const previewOfficeFile = (fileUrl: string) => {
+    const previewUrl = getOfficePreviewUrl(fileUrl);
+    if (previewUrl) openFile(previewUrl);
   };
 
   const getFileIcon = (type: string) => {
@@ -36,6 +59,11 @@ export default function FilesList({ application }: { application: ApplicationDet
         <div className="divide-y divide-gray-200 bg-white">
           {uploadedFiles.length > 0 ? (
             uploadedFiles.map((file, index) => {
+              const previewFileUrl = file.FilePath || file.DownloadUrl || file.fileURL || '';
+              const downloadUrl = file.DownloadUrl || file.FilePath || file.fileURL || '';
+              const extension = getFileExtension(file.FileName, previewFileUrl);
+              const isOfficeFile = OFFICE_FILE_EXTENSIONS.has(extension);
+              const officePreviewUrl = isOfficeFile ? getOfficePreviewUrl(previewFileUrl) : null;
               const leftMeta = [
                 { label: 'FileSize', value: file.FileSize },
                 { label: 'FileID', value: file.FileID ?? file.fileId }
@@ -60,7 +88,7 @@ export default function FilesList({ application }: { application: ApplicationDet
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between min-w-0">
                           <h3 className="min-w-0 flex-1 font-medium text-gray-900 truncate">
                             <a
-                              href={file.FilePath}
+                              href={officePreviewUrl ?? previewFileUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-blue-700 hover:text-blue-900 hover:underline"
@@ -92,8 +120,21 @@ export default function FilesList({ application }: { application: ApplicationDet
                               </span>
                             )}
 
+                            {officePreviewUrl && (
+                              <button
+                                type="button"
+                                onClick={() => previewOfficeFile(previewFileUrl)}
+                                className="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-indigo-700 underline-offset-2 transition-colors hover:text-indigo-900 hover:underline focus:outline-none"
+                                title="Preview this Office document in the browser"
+                              >
+                                <Eye className="h-4 w-4" />
+                                Preview
+                              </button>
+                            )}
+
                             <button
-                              onClick={() => downloadFile(file.FilePath)}
+                              type="button"
+                              onClick={() => openFile(downloadUrl)}
                               className="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-blue-700 underline-offset-2 transition-colors hover:text-blue-900 hover:underline focus:outline-none"
                               title="Download file"
                             >

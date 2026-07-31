@@ -408,6 +408,8 @@ export interface UploadedFile {
   FileID?: number;
   FileType:string; 
   FilePath:string; 
+  DownloadUrl?: string;
+  fileURL?: string;
   UploadedDate:string; 
   tag?:string; 
   Tag?: string;
