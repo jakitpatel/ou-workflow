@@ -95,14 +95,14 @@ export function getUserInfo(): SessionUserInfo | null {
   try {
     const idToken = getStoredIdToken();
     const accessToken = getStoredAccessToken();
-
+    console.log("Retrieved tokens:", { idToken, accessToken });
     if (!idToken || !accessToken) {
       return null;
     }
 
     const idPayload = decodeJwtPayload(idToken);
     const accessPayload = decodeJwtPayload(accessToken);
-
+    console.log("Decoded token payloads:", { accessPayload });
     return {
       email: String(idPayload.email ?? ""),
       username: String(accessPayload.app_username ?? ""),
