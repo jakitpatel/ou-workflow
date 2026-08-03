@@ -187,6 +187,18 @@ export function PrelimResolvedSection({
           taskRolesAll,
         }),
       ) ?? []
+  const canOpenCompanyResolution =
+    Boolean(companyTask) &&
+    (isTaskCompleted(companyTask?.status) || Boolean(companyAction && !companyAction.disabled))
+  const canOpenPlantResolution = (index: number) => {
+    const plantTask = plantTasks[index]
+    const plantAction = plantActions[index]
+
+    return (
+      Boolean(plantTask) &&
+      (isTaskCompleted(plantTask?.status) || Boolean(plantAction && !plantAction.disabled))
+    )
+  }
 
   if (!loading && !resolved) return null
 
@@ -244,7 +256,7 @@ export function PrelimResolvedSection({
   }
 
   const openCompanyDrawer = () => {
-    if (!companyAction || companyAction.disabled) return
+    if (!canOpenCompanyResolution) return
 
     setDrawerState({
       isOpen: true,
@@ -253,7 +265,7 @@ export function PrelimResolvedSection({
   }
 
   const openPlantDrawer = (index: number) => {
-    if (!plantActions[index] || plantActions[index].disabled) return
+    if (!canOpenPlantResolution(index)) return
 
     setDrawerState({
       isOpen: true,
@@ -390,15 +402,17 @@ export function PrelimResolvedSection({
 
                         <button
                           type="button"
-                          disabled={!companyAction || companyAction.disabled}
+                          disabled={!canOpenCompanyResolution}
                           onClick={(e) => {
                             e.stopPropagation()
                             openCompanyDrawer()
                           }}
                           title={
-                            companyAction?.disabled
+                            !canOpenCompanyResolution
                               ? 'You are not assigned or authorized to perform this task.'
-                              : 'Resolve company'
+                              : isTaskCompleted(companyTask?.status)
+                                ? 'View completed company resolution'
+                                : 'Resolve company'
                           }
                           className="inline-flex items-center gap-1.5 rounded-md border border-yellow-300 bg-white px-3 py-1.5 text-xs font-medium text-yellow-700 transition-colors shadow-sm flex-shrink-0 hover:bg-yellow-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none"
                         >
@@ -511,15 +525,17 @@ export function PrelimResolvedSection({
 
                               <button
                                 type="button"
-                                disabled={!plantActions[idx] || plantActions[idx].disabled}
+                                disabled={!canOpenPlantResolution(idx)}
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   openPlantDrawer(idx)
                                 }}
                                 title={
-                                  plantActions[idx]?.disabled
+                                  !canOpenPlantResolution(idx)
                                     ? 'You are not assigned or authorized to perform this task.'
-                                    : 'Resolve plant'
+                                    : isTaskCompleted(plantTasks[idx]?.status)
+                                      ? 'View completed plant resolution'
+                                      : 'Resolve plant'
                                 }
                                 className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors shadow-sm flex-shrink-0 hover:bg-gray-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none"
                               >
@@ -554,7 +570,7 @@ export function PrelimResolvedSection({
               savedResolveMethod={companyResolveSavedState?.resolveMethod}
               isActionable={isTaskPending(companyTask.status) && !companyAction?.disabled}
               taskStatus={companyTask.status}
-              readOnly={isWithdrawn}
+              readOnly={isWithdrawn || isTaskCompleted(companyTask.status)}
             />
           )}
 
@@ -577,7 +593,7 @@ export function PrelimResolvedSection({
               savedResolveMethod={plantResolveSavedState?.resolveMethod}
               isActionable={isTaskPending(activePlantTask.status) && !activePlantAction?.disabled}
               taskStatus={activePlantTask.status}
-              readOnly={isWithdrawn}
+              readOnly={isWithdrawn || isTaskCompleted(activePlantTask.status)}
             />
           )}
         </>
