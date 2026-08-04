@@ -1,6 +1,6 @@
-import { cognitoConfig } from "@/auth/cognitoConfig";
-import type { UserRole } from "@/types/application";
-import { exchangeAuthorizationCodeForTokens } from "./cognitoOAuth";
+import { cognitoConfig } from '@/auth/cognitoConfig'
+import type { UserRole } from '@/types/application'
+import { exchangeAuthorizationCodeForTokens } from './cognitoOAuth'
 import {
   clearPendingOAuthState,
   clearSessionArtifacts,
@@ -18,129 +18,161 @@ import {
   storeAuthRedirect,
   storePendingOAuthState,
   storeTokens,
-} from "./tokenStorage";
+} from './tokenStorage'
 
 type JwtPayload = Record<string, unknown> & {
-  exp?: number;
-  email?: string;
-  app_username?: string;
-  roles?: string[];
-  delegated?: string[];
-};
+  exp?: number
+  email?: string
+  app_username?: string
+  roles?: string[]
+  delegated?: string[]
+}
 
 export type AuthenticatedSessionUser = {
-  email: string;
-  username: string;
-  roles: UserRole[] | null;
-  delegated: UserRole[] | null;
-  role: string;
-  token: string;
-};
+  email: string
+  username: string
+  roles: UserRole[] | null
+  delegated: UserRole[] | null
+  role: string
+  token: string
+}
 
 export type SessionUserInfo = {
-  email: string;
-  username: string;
-  roles: UserRole[] | null;
-  delegated: UserRole[] | null;
-  access_token: string;
-  id_token: string;
-};
+  email: string
+  username: string
+  roles: UserRole[] | null
+  delegated: UserRole[] | null
+  access_token: string
+  id_token: string
+}
 
 function decodeJwtPayload(token: string): JwtPayload {
-  return JSON.parse(atob(token.split(".")[1])) as JwtPayload;
+  return JSON.parse(atob(token.split('.')[1])) as JwtPayload
 }
 
 function mapRoleNames(values: unknown): UserRole[] {
-  if (!Array.isArray(values)) {
-    return [];
+  if (Array.isArray(values)) {
+    return values
+      .map((value) => String(value).trim())
+      .filter(Boolean)
+      .map((name) => ({ name }))
   }
 
-  return values.map((value) => ({ name: String(value) }));
-}
+  if (typeof values !== 'string') {
+    return []
+  }
 
-export function getAccessToken(): string | null {
-  return getStoredAccessToken();
-}
-
-export function getIdToken(): string | null {
-  return getStoredIdToken();
-}
-
-export function isAuthenticated(): boolean {
-  const accessToken = getStoredAccessToken();
-  const idToken = getStoredIdToken();
-
-  if (!accessToken || !idToken) {
-    return false;
+  const serializedRoles = values.trim()
+  if (!serializedRoles) {
+    return []
   }
 
   try {
-    const payload = decodeJwtPayload(idToken);
-    const exp = Number(payload.exp) * 1000;
-
-    if (!exp || Date.now() >= exp) {
-      clearSessionArtifacts();
-      return false;
+    const parsedRoles: unknown = JSON.parse(serializedRoles)
+    if (Array.isArray(parsedRoles)) {
+      return mapRoleNames(parsedRoles)
     }
 
-    return true;
+    if (typeof parsedRoles === 'string') {
+      const name = parsedRoles.trim()
+      return name ? [{ name }] : []
+    }
+  } catch {
+    // Cognito may emit a single role or a comma-separated custom claim.
+  }
+
+  return serializedRoles
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => ({ name }))
+}
+
+export function getAccessToken(): string | null {
+  return getStoredAccessToken()
+}
+
+export function getIdToken(): string | null {
+  return getStoredIdToken()
+}
+
+export function isAuthenticated(): boolean {
+  const accessToken = getStoredAccessToken()
+  const idToken = getStoredIdToken()
+
+  if (!accessToken || !idToken) {
+    return false
+  }
+
+  try {
+    const payload = decodeJwtPayload(idToken)
+    const exp = Number(payload.exp) * 1000
+
+    if (!exp || Date.now() >= exp) {
+      clearSessionArtifacts()
+      return false
+    }
+
+    return true
   } catch (error) {
-    console.error("Error parsing token:", error);
-    clearSessionArtifacts();
-    return false;
+    console.error('Error parsing token:', error)
+    clearSessionArtifacts()
+    return false
   }
 }
 
 export function getUserInfo(): SessionUserInfo | null {
   try {
-    const idToken = getStoredIdToken();
-    const accessToken = getStoredAccessToken();
-    console.log("Retrieved tokens:", { idToken, accessToken });
+    const idToken = getStoredIdToken()
+    const accessToken = getStoredAccessToken()
+    console.log('Retrieved tokens:', { idToken, accessToken })
     if (!idToken || !accessToken) {
-      return null;
+      return null
     }
 
-    const idPayload = decodeJwtPayload(idToken);
-    const accessPayload = decodeJwtPayload(accessToken);
-    console.log("Decoded token payloads:", { accessPayload });
+    const idPayload = decodeJwtPayload(idToken)
+    const accessPayload = decodeJwtPayload(accessToken)
+    console.log('Decoded token payloads:', { accessPayload })
+    console.log('Access token payload properties:', Object.keys(accessPayload))
+    console.log('accessPayload.app_username:', accessPayload.app_username)
+    console.log('accessPayload.roles:', accessPayload.roles)
+    console.log('accessPayload.delegated:', accessPayload.delegated)
     return {
-      email: String(idPayload.email ?? ""),
-      username: String(accessPayload.app_username ?? ""),
+      email: String(idPayload.email ?? ''),
+      username: String(accessPayload.app_username ?? ''),
       roles: mapRoleNames(accessPayload.roles),
       delegated: mapRoleNames(accessPayload.delegated),
       access_token: accessToken,
       id_token: idToken,
-    };
+    }
   } catch (error) {
-    console.error("Error parsing user info:", error);
-    return null;
+    console.error('Error parsing user info:', error)
+    return null
   }
 }
 
 export function clearTokens(): void {
-  clearSessionArtifacts();
+  clearSessionArtifacts()
 }
 
-export function toAuthenticatedSessionUser(
-  userInfo: SessionUserInfo,
-): AuthenticatedSessionUser {
+export function toAuthenticatedSessionUser(userInfo: SessionUserInfo): AuthenticatedSessionUser {
   return {
     email: userInfo.email,
     username: userInfo.username,
     roles: userInfo.roles,
     delegated: userInfo.delegated,
-    role: "ALL",
+    role: 'ALL',
     token: userInfo.access_token,
-  };
+  }
 }
 
 export function getAuthenticatedSessionUser(): AuthenticatedSessionUser | null {
-  const userInfo = getUserInfo();
+  const userInfo = getUserInfo()
   if (!userInfo) {
-    return null;
+    return null
   }
 
-  return toAuthenticatedSessionUser(userInfo);
+  return toAuthenticatedSessionUser(userInfo)
 }
 
 export async function completeOAuthCallback({
@@ -149,63 +181,60 @@ export async function completeOAuthCallback({
   onClearUrl,
   exchangeCodeForTokens,
 }: {
-  search?: string;
-  pathname?: string;
-  onClearUrl?: (cleanPath: string) => void;
-  exchangeCodeForTokens: (params: {
-    code: string;
-    codeVerifier: string;
-  }) => Promise<{
-    access_token: string;
-    id_token: string;
-    refresh_token?: string;
-  }>;
+  search?: string
+  pathname?: string
+  onClearUrl?: (cleanPath: string) => void
+  exchangeCodeForTokens: (params: { code: string; codeVerifier: string }) => Promise<{
+    access_token: string
+    id_token: string
+    refresh_token?: string
+  }>
 }): Promise<SessionUserInfo | null> {
   if (hasHandledOAuthCallback()) {
-    return getUserInfo();
+    return getUserInfo()
   }
 
-  const urlParams = new URLSearchParams(search);
-  const code = urlParams.get("code");
-  const state = urlParams.get("state");
-  const error = urlParams.get("error");
+  const urlParams = new URLSearchParams(search)
+  const code = urlParams.get('code')
+  const state = urlParams.get('state')
+  const error = urlParams.get('error')
 
   if (error) {
-    const errorDescription = urlParams.get("error_description") || error;
-    throw new Error(errorDescription);
+    const errorDescription = urlParams.get('error_description') || error
+    throw new Error(errorDescription)
   }
 
   if (!code) {
-    console.warn("No authorization code found in URL.");
-    return null;
+    console.warn('No authorization code found in URL.')
+    return null
   }
 
-  const savedState = getOAuthState();
+  const savedState = getOAuthState()
   if (savedState && savedState !== state) {
-    throw new Error("Invalid state parameter - possible CSRF attack");
+    throw new Error('Invalid state parameter - possible CSRF attack')
   }
 
-  const codeVerifier = getCodeVerifier();
+  const codeVerifier = getCodeVerifier()
   if (!codeVerifier) {
-    throw new Error("No PKCE code_verifier found. Session issue.");
+    throw new Error('No PKCE code_verifier found. Session issue.')
   }
 
-  onClearUrl?.(pathname);
+  onClearUrl?.(pathname)
 
   const tokens = await exchangeCodeForTokens({
     code,
     codeVerifier,
-  });
+  })
 
   storeTokens({
     accessToken: tokens.access_token,
     idToken: tokens.id_token,
     refreshToken: tokens.refresh_token,
-  });
-  clearPendingOAuthState();
-  markOAuthCallbackHandled();
+  })
+  clearPendingOAuthState()
+  markOAuthCallbackHandled()
 
-  return getUserInfo();
+  return getUserInfo()
 }
 
 export async function loadAuthenticatedSessionUserFromCallback({
@@ -214,30 +243,27 @@ export async function loadAuthenticatedSessionUserFromCallback({
   onClearUrl,
   exchangeCodeForTokens,
 }: {
-  search?: string;
-  pathname?: string;
-  onClearUrl?: (cleanPath: string) => void;
-  exchangeCodeForTokens: (params: {
-    code: string;
-    codeVerifier: string;
-  }) => Promise<{
-    access_token: string;
-    id_token: string;
-    refresh_token?: string;
-  }>;
+  search?: string
+  pathname?: string
+  onClearUrl?: (cleanPath: string) => void
+  exchangeCodeForTokens: (params: { code: string; codeVerifier: string }) => Promise<{
+    access_token: string
+    id_token: string
+    refresh_token?: string
+  }>
 }): Promise<AuthenticatedSessionUser | null> {
   const userInfo = await completeOAuthCallback({
     search,
     pathname,
     onClearUrl,
     exchangeCodeForTokens,
-  });
+  })
 
   if (!userInfo) {
-    return null;
+    return null
   }
 
-  return toAuthenticatedSessionUser(userInfo);
+  return toAuthenticatedSessionUser(userInfo)
 }
 
 export async function loadAuthenticatedSessionUserFromCognitoCallback({
@@ -245,16 +271,16 @@ export async function loadAuthenticatedSessionUserFromCognitoCallback({
   pathname = window.location.pathname,
   onClearUrl,
 }: {
-  search?: string;
-  pathname?: string;
-  onClearUrl?: (cleanPath: string) => void;
+  search?: string
+  pathname?: string
+  onClearUrl?: (cleanPath: string) => void
 } = {}): Promise<AuthenticatedSessionUser | null> {
   return loadAuthenticatedSessionUserFromCallback({
     search,
     pathname,
     onClearUrl,
     exchangeCodeForTokens: exchangeAuthorizationCodeForTokens,
-  });
+  })
 }
 
 export function setupLocalDevSession({
@@ -264,60 +290,60 @@ export function setupLocalDevSession({
   username,
   roles,
   delegated,
-  role = "ALL",
+  role = 'ALL',
 }: {
-  accessToken: string;
-  idToken: string;
-  email?: string;
-  username: string;
-  roles: UserRole[] | null;
-  delegated: UserRole[] | null;
-  role?: string;
+  accessToken: string
+  idToken: string
+  email?: string
+  username: string
+  roles: UserRole[] | null
+  delegated: UserRole[] | null
+  role?: string
 }): AuthenticatedSessionUser {
   storeTokens({
     accessToken,
     idToken,
-  });
+  })
 
   return {
-    email: email ?? String(decodeJwtPayload(idToken).email ?? ""),
+    email: email ?? String(decodeJwtPayload(idToken).email ?? ''),
     username,
     roles,
     delegated,
     role,
     token: accessToken,
-  };
+  }
 }
 
 export async function refreshAccessToken(): Promise<string> {
-  const refreshToken = getRefreshToken();
+  const refreshToken = getRefreshToken()
   if (!refreshToken) {
-    throw new Error("No refresh token available");
+    throw new Error('No refresh token available')
   }
 
   const tokenResponse = await fetch(`https://${cognitoConfig.domain}/oauth2/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      grant_type: "refresh_token",
+      grant_type: 'refresh_token',
       client_id: cognitoConfig.userPoolWebClientId,
       refresh_token: refreshToken,
     }),
-  });
+  })
 
   if (!tokenResponse.ok) {
-    throw new Error(`Token refresh failed: ${await tokenResponse.text()}`);
+    throw new Error(`Token refresh failed: ${await tokenResponse.text()}`)
   }
 
-  const tokens = await tokenResponse.json();
+  const tokens = await tokenResponse.json()
 
   storeTokens({
     accessToken: tokens.access_token,
     idToken: tokens.id_token,
     refreshToken,
-  });
+  })
 
-  return tokens.access_token;
+  return tokens.access_token
 }
 
 export {
@@ -333,4 +359,4 @@ export {
   storeAuthRedirect,
   storePendingOAuthState,
   storeTokens,
-};
+}

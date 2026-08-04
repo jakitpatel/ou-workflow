@@ -93,16 +93,26 @@ export function UserProvider({ children }: { children: ReactNode }) {
     },
     onComplete?: () => void,
   ) => {
-    setEmail(data.email ?? null);
-    setUsername(data.username ?? null);
-    setRole(data.role ?? null);
-    setRoles(data.roles ?? null);
-    setDelegated(data.delegated ?? null);
-    setLoginTime(Date.now());
+    const storedUser: StoredUser = {
+      email: data.email ?? null,
+      username: data.username ?? null,
+      role: data.role ?? null,
+      roles: data.roles ?? null,
+      delegated: data.delegated ?? null,
+      loginTime: Date.now(),
+    };
 
-    requestAnimationFrame(() => {
-      onComplete?.();
-    });
+    // Persist before the completion callback, which may trigger a full-page reload.
+    saveStoredUser(storedUser);
+
+    setEmail(storedUser.email);
+    setUsername(storedUser.username);
+    setRole(storedUser.role);
+    setRoles(storedUser.roles);
+    setDelegated(storedUser.delegated);
+    setLoginTime(storedUser.loginTime);
+
+    onComplete?.();
   };
 
   const logout = () => {
