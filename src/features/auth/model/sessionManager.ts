@@ -134,9 +134,7 @@ export function getUserInfo(): SessionUserInfo | null {
     const accessPayload = decodeJwtPayload(accessToken)
     console.log('Decoded token payloads:', { accessPayload })
     console.log('Access token payload properties:', Object.keys(accessPayload))
-    console.log('accessPayload.app_username:', accessPayload.app_username)
     console.log('accessPayload.roles:', accessPayload.roles)
-    console.log('accessPayload.delegated:', accessPayload.delegated)
     return {
       email: String(idPayload.email ?? ''),
       username: String(accessPayload.app_username ?? ''),
