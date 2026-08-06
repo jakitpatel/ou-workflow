@@ -6,6 +6,7 @@ import { UploadNdaModal } from '@/features/tasks/modals/UploadNdaModal'
 import { NcrcDashboardControls } from '@/features/applications/components/NcrcDashboardControls'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
 import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer'
+import { CertificationStageDrawer } from '@/features/applications/components/CertificationStageDrawer'
 import { InspectionAssignmentDrawer } from '@/features/applications/components/InspectionAssignmentDrawer'
 import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer'
 import { InspectionVisitDateDrawer } from '@/features/applications/components/InspectionVisitDateDrawer'
@@ -14,7 +15,7 @@ import { ScheduleAIngredientsDrawer } from '@/features/applications/components/S
 import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer'
 import { useNcrcDashboardState } from '@/features/applications/hooks/useNcrcDashboardState'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
-import { useTaskActions } from '@/features/tasks/hooks/useTaskActions'
+import { isCertificateActionTask, useTaskActions } from '@/features/tasks/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { Route } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
@@ -104,6 +105,11 @@ export function NcrcDashboardContent() {
   }>({
     open: false,
   })
+  const [certificationDrawerState, setCertificationDrawerState] = useState<{
+    open: boolean
+    applicant?: Applicant
+    task?: Task
+  }>({ open: false })
   const [myNotesSelectedApplicationId, setMyNotesSelectedApplicationId] = useState<number | null>(
     null,
   )
@@ -227,6 +233,11 @@ export function NcrcDashboardContent() {
     }
     const actionType = normalizeTaskText(actionRecord.taskType ?? actionRecord.TaskType)
     const actionCategory = normalizeTaskText(actionRecord.taskCategory ?? actionRecord.TaskCategory)
+
+    if (isCertificateActionTask(action)) {
+      setCertificationDrawerState({ open: true, applicant: application, task: action })
+      return
+    }
 
     if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEA) {
       setScheduleADrawerState({
@@ -542,6 +553,17 @@ export function NcrcDashboardContent() {
         appVars={contractDrawerState.appVars}
         assignedRoles={contractDrawerState.assignedRoles}
         onClose={() => setContractDrawerState({ open: false })}
+      />
+      <CertificationStageDrawer
+        key={String(
+          certificationDrawerState.task?.TaskInstanceId ??
+            (certificationDrawerState.task as any)?.taskInstanceId ??
+            'certification-drawer',
+        )}
+        open={certificationDrawerState.open}
+        applicant={certificationDrawerState.applicant}
+        task={certificationDrawerState.task}
+        onClose={() => setCertificationDrawerState({ open: false })}
       />
     </>
   )

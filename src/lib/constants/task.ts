@@ -15,6 +15,7 @@ export const TASK_CATEGORIES = {
   ASSIGNMENT: 'assignment',
   ASSIGNMENT1: 'assignment1',
   CONTRACT: 'contract',
+  CERTIFICATE: 'certificate',
   EMAIL: 'email',
   SELECTOR: 'selector',
   INPUT: 'input',

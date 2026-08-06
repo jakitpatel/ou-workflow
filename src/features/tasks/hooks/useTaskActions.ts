@@ -24,6 +24,13 @@ export type SelectedTaskAction = {
   action: Task
 }
 
+const normalizeTaskValue = (value: unknown) => String(value ?? '').trim().toLowerCase()
+
+export const isCertificateActionTask = (action: Task): boolean =>
+  normalizeTaskValue(action.taskType ?? (action as any).TaskType) === TASK_TYPES.ACTION &&
+  normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
+    TASK_CATEGORIES.CERTIFICATE
+
 const buildInspectionFeeResult = (value: InspectionFeeChoice): string =>
   `{inspectionNeeded:${value.inspectionNeeded}, feeNeeded:${value.feeNeeded}}`
 
