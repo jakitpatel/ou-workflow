@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { generateInspectionInvoice, createApplicationMessage, fetchApplicationDetail } from '@/features/applications/api'
+import {
+  generateInspectionInvoice,
+  createApplicationMessage,
+  fetchApplicationDetail,
+} from '@/features/applications/api'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { useUser } from '@/context/UserContext'
 import type { Applicant, CompanyContact, CompanyContactGroups } from '@/types/application'
@@ -16,12 +20,7 @@ import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 
 export type InspectionInvoiceStage =
-  | 'setup'
-  | 'configured'
-  | 'generated'
-  | 'outlook-opened'
-  | 'sent-captured'
-  | 'paid'
+  'setup' | 'configured' | 'generated' | 'outlook-opened' | 'sent-captured' | 'paid'
 
 export const INSPECTION_LETTER_TEMPLATE = 'initial-inspection'
 export const APPLICATION_FEE_LETTER_TEMPLATE = 'application-fee'
@@ -139,7 +138,9 @@ const normalizeRfrText = (value: unknown) =>
 
 const normalizeContactText = normalizeRfrText
 
-const normalizeCompanyContacts = (contacts?: CompanyContact[] | CompanyContactGroups): CompanyContact[] => {
+const normalizeCompanyContacts = (
+  contacts?: CompanyContact[] | CompanyContactGroups,
+): CompanyContact[] => {
   if (!contacts) return []
   if (Array.isArray(contacts)) return contacts
 
@@ -156,7 +157,8 @@ const getContactBucket = (contact: CompanyContact): string | null => {
   const haystack = `${role} ${type}`
 
   if (type === 'primary contact' || role.includes('primary')) return 'Primary Contact'
-  if (haystack.includes('billing') || haystack.includes('accounts payable')) return 'Billing Contact'
+  if (haystack.includes('billing') || haystack.includes('accounts payable'))
+    return 'Billing Contact'
   if (haystack.includes('operation')) return 'Operation Contact'
 
   return null
@@ -213,7 +215,9 @@ const normalizeTaskText = (value: unknown) =>
 
 const getRawTaskInstanceId = (task: unknown): string => {
   const taskRecord = task && typeof task === 'object' ? (task as Record<string, unknown>) : {}
-  return String(taskRecord.TaskInstanceId ?? taskRecord.taskInstanceId ?? taskRecord.id ?? '').trim()
+  return String(
+    taskRecord.TaskInstanceId ?? taskRecord.taskInstanceId ?? taskRecord.id ?? '',
+  ).trim()
 }
 
 const formatStatusCurrency = (value: number) =>
@@ -227,10 +231,12 @@ const formatStatusCurrency = (value: number) =>
 const formatStatusInvoiceDate = (value: string) => {
   if (!value) return '-'
   const [year, month, day] = value.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  }).toUpperCase()
+  return new Date(year, month - 1, day)
+    .toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    })
+    .toUpperCase()
 }
 
 const getInvoiceStatusRfrValue = (rfr: InspectionInvoiceRfr | null) =>
@@ -348,12 +354,18 @@ const findInspectionAssignmentTaskId = (applicant?: Applicant): string => {
   const stages = applicant?.stages ?? {}
   const inspectionStage =
     stages.inspection ??
-    Object.entries(stages).find(([stageName]) => normalizeTaskText(stageName) === 'inspection')?.[1] ??
-    Object.entries(stages).find(([stageName]) => normalizeTaskText(stageName).includes('inspection'))?.[1]
+    Object.entries(stages).find(
+      ([stageName]) => normalizeTaskText(stageName) === 'inspection',
+    )?.[1] ??
+    Object.entries(stages).find(([stageName]) =>
+      normalizeTaskText(stageName).includes('inspection'),
+    )?.[1]
 
   const assignmentTask = inspectionStage?.tasks?.find((task) => {
     const taskRecord = task as Record<string, unknown>
-    const taskName = normalizeTaskText(taskRecord.name ?? taskRecord.taskName ?? taskRecord.TaskName)
+    const taskName = normalizeTaskText(
+      taskRecord.name ?? taskRecord.taskName ?? taskRecord.TaskName,
+    )
     const taskCategory = normalizeTaskText(taskRecord.taskCategory ?? taskRecord.TaskCategory)
     const taskType = normalizeTaskText(taskRecord.taskType ?? taskRecord.TaskType)
 
@@ -394,7 +406,9 @@ const toSavedRfr = (rfr: InspectionInvoiceRfr | null): Partial<InspectionInvoice
       }
     : null
 
-const toRestoredRfr = (rfr: Partial<InspectionInvoiceRfr> | null | undefined): InspectionInvoiceRfr | null => {
+const toRestoredRfr = (
+  rfr: Partial<InspectionInvoiceRfr> | null | undefined,
+): InspectionInvoiceRfr | null => {
   if (!rfr) return null
 
   const name = normalizeRfrText(rfr.name ?? rfr.fullName ?? rfr.userName ?? rfr.id)
@@ -497,6 +511,7 @@ export function useInspectionInvoiceDrawerState({
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false)
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [isMarkingPaid, setIsMarkingPaid] = useState(false)
+  const [isCompletingWithoutInspection, setIsCompletingWithoutInspection] = useState(false)
   const restoredTaskKeyRef = useRef('')
 
   const selectedRfr = useMemo(
@@ -512,8 +527,8 @@ export function useInspectionInvoiceDrawerState({
     const query = rfrSearch.trim().toLowerCase()
     if (!query) return rfrs
     return rfrs.filter((rfr) =>
-      [rfr.name, rfr.region, rfr.coverage, rfr.email, rfr.userName, rfr.fullName, rfr.state].some((value) =>
-        value.toLowerCase().includes(query),
+      [rfr.name, rfr.region, rfr.coverage, rfr.email, rfr.userName, rfr.fullName, rfr.state].some(
+        (value) => value.toLowerCase().includes(query),
       ),
     )
   }, [rfrSearch, rfrs])
@@ -531,7 +546,9 @@ export function useInspectionInvoiceDrawerState({
   const invoiceCustomer = useMemo<InspectionInvoiceCustomer>(() => {
     const contacts = normalizeCompanyContacts(applicationDetail?.companyContacts)
     const billingContact =
-      contacts.find((contact) => /billing|accounts payable/i.test(`${contact.type} ${contact.role ?? ''}`)) ??
+      contacts.find((contact) =>
+        /billing|accounts payable/i.test(`${contact.type} ${contact.role ?? ''}`),
+      ) ??
       contacts.find((contact) => /primary/i.test(contact.type)) ??
       contacts[0]
     const address =
@@ -547,13 +564,20 @@ export function useInspectionInvoiceDrawerState({
       addressLines: [
         address?.street,
         address?.line2,
-        [address?.city, address?.state, address?.zip].filter(Boolean).join(', ').replace(/, ([^,]+)$/, ' $1'),
+        [address?.city, address?.state, address?.zip]
+          .filter(Boolean)
+          .join(', ')
+          .replace(/, ([^,]+)$/, ' $1'),
         address?.country,
       ].filter((line): line is string => Boolean(line?.trim())),
       billingContactName: billingContact?.name ?? '',
       billingContactEmail: billingContact?.email ?? '',
       coordinatorName:
-        coordinator?.displayName ?? coordinator?.fullName ?? coordinator?.userName ?? coordinator?.name ?? '',
+        coordinator?.displayName ??
+        coordinator?.fullName ??
+        coordinator?.userName ??
+        coordinator?.name ??
+        '',
       coordinatorPhone: coordinator?.phone ?? coordinator?.Phone ?? '',
     }
   }, [applicationDetail])
@@ -599,19 +623,18 @@ export function useInspectionInvoiceDrawerState({
     setInvoiceId(generate.invoiceId ?? null)
     setInvoiceDownloadLink(generate.invoiceDownloadLink ?? null)
     setInvoicePdfUrl(generate.invoicePdfUrl ?? null)
-    setSentAt(email.sent ? email.sentAt ?? 'Sent' : null)
-    setPaidAt(payment.paid ? payment.paidAt ?? 'Paid' : null)
+    setSentAt(email.sent ? (email.sentAt ?? 'Sent') : null)
+    setPaidAt(payment.paid ? (payment.paidAt ?? 'Paid') : null)
 
-    const restoredStage =
-      isInvoiceStage(savedState.stage)
-        ? savedState.stage
-        : payment.paid
-          ? 'paid'
-          : email.sent
-            ? 'sent-captured'
-            : generate.invoiceId
-              ? 'generated'
-              : 'configured'
+    const restoredStage = isInvoiceStage(savedState.stage)
+      ? savedState.stage
+      : payment.paid
+        ? 'paid'
+        : email.sent
+          ? 'sent-captured'
+          : generate.invoiceId
+            ? 'generated'
+            : 'configured'
     setStage(restoredStage)
   }, [applicant, enabled, taskInstanceId])
 
@@ -628,6 +651,7 @@ export function useInspectionInvoiceDrawerState({
   const subtotal = fee + expenses
   const isLocked = ['generated', 'outlook-opened', 'sent-captured', 'paid'].includes(stage)
   const isApplicationFeeOnly = letterTemplate === APPLICATION_FEE_LETTER_TEMPLATE
+  const skipInvoiceWorkflow = inspectionNeeded === false && feeRequired === false
   const canGenerate =
     inspectionNeeded !== null &&
     (inspectionNeeded === false || Boolean(selectedRfrId)) &&
@@ -642,7 +666,11 @@ export function useInspectionInvoiceDrawerState({
     setStage(nextCanGenerate ? 'configured' : 'setup')
   }
 
-  const updateCachedInvoiceTaskResult = (taskId: string, guiDisplayResult: string, statusDetails?: unknown) => {
+  const updateCachedInvoiceTaskResult = (
+    taskId: string,
+    guiDisplayResult: string,
+    statusDetails?: unknown,
+  ) => {
     queryClient.setQueriesData({ queryKey: applicationsQueryKeys.lists() }, (current) =>
       withPatchedTaskGuiDisplayResult(current, taskId, guiDisplayResult, statusDetails),
     )
@@ -916,7 +944,8 @@ export function useInspectionInvoiceDrawerState({
           internalNotes,
           noInspectionReason,
           noFeeReason,
-          recipient: selectedRecipient?.email ?? (recipient === 'ADD_NEW' ? extraRecipientEmail : recipient),
+          recipient:
+            selectedRecipient?.email ?? (recipient === 'ADD_NEW' ? extraRecipientEmail : recipient),
           letterTemplate,
         },
       })
@@ -937,7 +966,11 @@ export function useInspectionInvoiceDrawerState({
       }
 
       const rfrResultValue =
-        selectedRfr?.userName || selectedRfr?.name || selectedRfr?.id || selectedRfr?.lookupKey || ''
+        selectedRfr?.userName ||
+        selectedRfr?.name ||
+        selectedRfr?.id ||
+        selectedRfr?.lookupKey ||
+        ''
       const assignmentStatusDetails = buildInspectionStatusDetails(`{RFR:${rfrResultValue}}`)
 
       await patchTaskResult({
@@ -963,11 +996,13 @@ export function useInspectionInvoiceDrawerState({
           applicationId: resolvedApplicationId,
           queryClient,
           token,
-        }).then((refreshed) =>
-          refreshed
-            ? undefined
-            : queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
-        ).catch(() => queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })),
+        })
+          .then((refreshed) =>
+            refreshed
+              ? undefined
+              : queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+          )
+          .catch(() => queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })),
         queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
       ])
 
@@ -977,13 +1012,7 @@ export function useInspectionInvoiceDrawerState({
     }
   }
 
-  const openEmailPreview = ({
-    messageText,
-    toUser,
-  }: {
-    messageText: string
-    toUser: string
-  }) => {
+  const openEmailPreview = ({ messageText, toUser }: { messageText: string; toUser: string }) => {
     setEmailTo(toUser)
     setEmailBody(messageText)
     setShowEmailPreview(true)
@@ -1089,15 +1118,58 @@ export function useInspectionInvoiceDrawerState({
           applicationId: resolvedApplicationId,
           queryClient,
           token,
-        }).then((refreshed) =>
-          refreshed
-            ? undefined
-            : queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
-        ).catch(() => queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })),
+        })
+          .then((refreshed) =>
+            refreshed
+              ? undefined
+              : queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+          )
+          .catch(() => queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })),
         queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
       ])
     } finally {
       setIsMarkingPaid(false)
+    }
+  }
+
+  const completeWithoutInspection = async () => {
+    const invoiceTaskId = String(taskInstanceId ?? '').trim()
+    if (!invoiceTaskId) {
+      throw new Error('Invoice task instance id not found')
+    }
+    if (!skipInvoiceWorkflow) {
+      throw new Error('Inspection and inspection fee must both be set to No')
+    }
+
+    setIsCompletingWithoutInspection(true)
+    try {
+      // Persist the setup choices before completing the task so they can be restored later.
+      await saveInvoiceTaskState({ nextStage: 'configured' })
+      await confirmTask({
+        taskId: invoiceTaskId,
+        applicationId: resolvedApplicationId,
+        result: 'Inspection not needed',
+        capacity: 'DESIGNATED',
+        includeCompletedBy: false,
+        includeCompletionNotes: false,
+        token,
+      })
+      await Promise.all([
+        refreshApplicationInListCaches({
+          applicationId: resolvedApplicationId,
+          queryClient,
+          token,
+        })
+          .then((refreshed) =>
+            refreshed
+              ? undefined
+              : queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() }),
+          )
+          .catch(() => queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })),
+        queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
+      ])
+    } finally {
+      setIsCompletingWithoutInspection(false)
     }
   }
 
@@ -1134,6 +1206,7 @@ export function useInspectionInvoiceDrawerState({
     isGeneratingInvoice,
     isApplicationDetailError,
     isApplicationDetailLoading,
+    isCompletingWithoutInspection,
     isMarkingPaid,
     isSendingEmail,
     isRfrListError,
@@ -1149,9 +1222,11 @@ export function useInspectionInvoiceDrawerState({
     selectedRecipient,
     sentAt,
     showEmailPreview,
+    skipInvoiceWorkflow,
     stage,
     subtotal,
     changeRfr,
+    completeWithoutInspection,
     generateInvoice,
     markPaid,
     markSent,

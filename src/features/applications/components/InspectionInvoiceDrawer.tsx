@@ -23,13 +23,7 @@ type Props = {
   onClose: () => void
 }
 
-function Section({
-  children,
-  title,
-}: {
-  children: React.ReactNode
-  title: React.ReactNode
-}) {
+function Section({ children, title }: { children: React.ReactNode; title: React.ReactNode }) {
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
       <div className="mb-3 text-sm font-semibold text-gray-900">{title}</div>
@@ -73,7 +67,7 @@ function YesNoGroup({
   )
 }
 
-function ProgressStrip({ stage }: { stage: string }) {
+function ProgressStrip({ stage, setupOnly = false }: { stage: string; setupOnly?: boolean }) {
   const steps = [
     { id: 'setup', label: 'Setup' },
     { id: 'generated', label: 'Generate' },
@@ -88,6 +82,17 @@ function ProgressStrip({ stage }: { stage: string }) {
         : stage === 'sent-captured'
           ? 2
           : 3
+
+  if (setupOnly) {
+    return (
+      <div className="flex items-center justify-center gap-2 border-b bg-white px-3 py-3 text-xs font-semibold text-blue-700">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[11px] text-white">
+          1
+        </span>
+        <span>Setup</span>
+      </div>
+    )
+  }
 
   return (
     <div className="grid grid-cols-4 border-b bg-white">
@@ -141,16 +146,19 @@ export function InspectionInvoiceDrawer({
 
   if (!open) return null
 
-  const primaryActionLabel =
-    state.isGeneratingInvoice
-      ? 'Generating...'
-      : state.stage === 'setup' || state.stage === 'configured'
-        ? 'Generate Invoice'
-      : state.stage === 'generated' || state.stage === 'outlook-opened'
-        ? 'Review Email'
-        : state.stage === 'sent-captured'
-          ? 'Mark Paid'
-          : 'Paid'
+  const primaryActionLabel = state.isCompletingWithoutInspection
+    ? 'Completing...'
+    : state.skipInvoiceWorkflow
+      ? 'Complete'
+      : state.isGeneratingInvoice
+        ? 'Generating...'
+        : state.stage === 'setup' || state.stage === 'configured'
+          ? 'Generate Invoice'
+          : state.stage === 'generated' || state.stage === 'outlook-opened'
+            ? 'Review Email'
+            : state.stage === 'sent-captured'
+              ? 'Mark Paid'
+              : 'Paid'
 
   const emailAttachment = state.invoicePdfUrl ?? `Invoice_${state.invoiceId ?? 'DRAFT'}.pdf`
   const recipientLabel =
@@ -172,6 +180,18 @@ Plant: ${applicant?.plant || '-'}
 Account Number: ${accountNumber || '-'}`
 
   const onPrimaryClick = async () => {
+    if (state.skipInvoiceWorkflow) {
+      try {
+        await state.completeWithoutInspection()
+        toast.success('Inspection invoice task completed')
+        onClose()
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unable to complete task'
+        toast.error(message)
+      }
+      return
+    }
+
     if (state.stage === 'setup' || state.stage === 'configured') {
       try {
         const invoiceId = await state.generateInvoice()
@@ -221,10 +241,18 @@ Account Number: ${accountNumber || '-'}`
                 <h3 className="text-lg font-semibold">Inspection Invoice</h3>
               </div>
               <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-300">
-                {taskName ? <span className="rounded-full bg-white/10 px-2.5 py-1">{taskName}</span> : null}
+                {taskName ? (
+                  <span className="rounded-full bg-white/10 px-2.5 py-1">{taskName}</span>
+                ) : null}
                 <span className="rounded-full bg-white/10 px-2.5 py-1">{resolvedName}</span>
-                {accountNumber ? <span className="rounded-full bg-white/10 px-2.5 py-1">App #{accountNumber}</span> : null}
-                {applicant?.plant ? <span className="rounded-full bg-white/10 px-2.5 py-1">Plant: {applicant.plant}</span> : null}
+                {accountNumber ? (
+                  <span className="rounded-full bg-white/10 px-2.5 py-1">App #{accountNumber}</span>
+                ) : null}
+                {applicant?.plant ? (
+                  <span className="rounded-full bg-white/10 px-2.5 py-1">
+                    Plant: {applicant.plant}
+                  </span>
+                ) : null}
               </div>
             </div>
             <button
@@ -238,17 +266,25 @@ Account Number: ${accountNumber || '-'}`
           </div>
         </div>
 
-        <ProgressStrip stage={state.stage} />
+        <ProgressStrip stage={state.stage} setupOnly={state.skipInvoiceWorkflow} />
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(420px,0.9fr)_minmax(520px,1.1fr)]">
+        <div
+          className={`grid min-h-0 flex-1 grid-cols-1 overflow-hidden ${state.skipInvoiceWorkflow ? '' : 'lg:grid-cols-[minmax(420px,0.9fr)_minmax(520px,1.1fr)]'}`}
+        >
           <div className="min-h-0 space-y-4 overflow-y-auto bg-gray-50 p-5">
             <Section title="1. Inspection">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-sm font-medium text-gray-900">Inspection needed?</div>
-                  <p className="mt-1 text-xs text-gray-500">If yes, pick the RFR who will inspect.</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    If yes, pick the RFR who will inspect.
+                  </p>
                 </div>
-                <YesNoGroup disabled={state.isLocked} value={state.inspectionNeeded} onChange={state.setInspection} />
+                <YesNoGroup
+                  disabled={state.isLocked}
+                  value={state.inspectionNeeded}
+                  onChange={state.setInspection}
+                />
               </div>
 
               {state.inspectionNeeded === true ? (
@@ -257,21 +293,37 @@ Account Number: ${accountNumber || '-'}`
                     <div className="rounded border border-blue-200 bg-blue-50 p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="font-semibold text-blue-950">{state.selectedRfr.name}</div>
+                          <div className="font-semibold text-blue-950">
+                            {state.selectedRfr.name}
+                          </div>
                           {state.selectedRfr.userName ? (
-                            <div className="mt-1 text-xs text-blue-800">{state.selectedRfr.userName}</div>
+                            <div className="mt-1 text-xs text-blue-800">
+                              {state.selectedRfr.userName}
+                            </div>
                           ) : null}
                           {state.selectedRfr.email ? (
-                            <div className="mt-1 text-xs text-blue-700">{state.selectedRfr.email}</div>
+                            <div className="mt-1 text-xs text-blue-700">
+                              {state.selectedRfr.email}
+                            </div>
                           ) : null}
                           {state.selectedRfr.state ? (
-                            <div className="mt-1 text-xs text-blue-700">State: {state.selectedRfr.state}</div>
-                          ) : null}
-                          {state.selectedRfr.pctOfTotalApps > 0 || state.selectedRfr.pctOfTotalAppsAtWork > 0 ? (
                             <div className="mt-1 text-xs text-blue-700">
-                              {state.selectedRfr.pctOfTotalApps > 0 ? `${state.selectedRfr.pctOfTotalApps}% total` : ''}
-                              {state.selectedRfr.pctOfTotalApps > 0 && state.selectedRfr.pctOfTotalAppsAtWork > 0 ? ' | ' : ''}
-                              {state.selectedRfr.pctOfTotalAppsAtWork > 0 ? `${state.selectedRfr.pctOfTotalAppsAtWork}% at work` : ''}
+                              State: {state.selectedRfr.state}
+                            </div>
+                          ) : null}
+                          {state.selectedRfr.pctOfTotalApps > 0 ||
+                          state.selectedRfr.pctOfTotalAppsAtWork > 0 ? (
+                            <div className="mt-1 text-xs text-blue-700">
+                              {state.selectedRfr.pctOfTotalApps > 0
+                                ? `${state.selectedRfr.pctOfTotalApps}% total`
+                                : ''}
+                              {state.selectedRfr.pctOfTotalApps > 0 &&
+                              state.selectedRfr.pctOfTotalAppsAtWork > 0
+                                ? ' | '
+                                : ''}
+                              {state.selectedRfr.pctOfTotalAppsAtWork > 0
+                                ? `${state.selectedRfr.pctOfTotalAppsAtWork}% at work`
+                                : ''}
                             </div>
                           ) : null}
                         </div>
@@ -324,7 +376,10 @@ Account Number: ${accountNumber || '-'}`
                                 try {
                                   await state.pickRfr(rfr)
                                 } catch (error) {
-                                  const message = error instanceof Error ? error.message : 'Unable to update invoice status'
+                                  const message =
+                                    error instanceof Error
+                                      ? error.message
+                                      : 'Unable to update invoice status'
                                   toast.error(message)
                                 }
                               }}
@@ -337,17 +392,25 @@ Account Number: ${accountNumber || '-'}`
                                     {[rfr.userName, rfr.email].filter(Boolean).join(' - ') || '-'}
                                   </div>
                                   {rfr.state ? (
-                                    <div className="mt-1 text-xs text-gray-500">State: {rfr.state}</div>
+                                    <div className="mt-1 text-xs text-gray-500">
+                                      State: {rfr.state}
+                                    </div>
                                   ) : null}
                                   {rfr.pctOfTotalApps > 0 || rfr.pctOfTotalAppsAtWork > 0 ? (
                                     <div className="mt-1 text-xs text-gray-500">
                                       {rfr.pctOfTotalApps > 0 ? `${rfr.pctOfTotalApps}% total` : ''}
-                                      {rfr.pctOfTotalApps > 0 && rfr.pctOfTotalAppsAtWork > 0 ? ' | ' : ''}
-                                      {rfr.pctOfTotalAppsAtWork > 0 ? `${rfr.pctOfTotalAppsAtWork}% at work` : ''}
+                                      {rfr.pctOfTotalApps > 0 && rfr.pctOfTotalAppsAtWork > 0
+                                        ? ' | '
+                                        : ''}
+                                      {rfr.pctOfTotalAppsAtWork > 0
+                                        ? `${rfr.pctOfTotalAppsAtWork}% at work`
+                                        : ''}
                                     </div>
                                   ) : null}
                                 </div>
-                                <span className={`rounded-full px-2 py-0.5 text-xs ${rfr.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-xs ${rfr.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                                >
                                   {rfr.status === 'available' ? 'Active' : 'Inactive'}
                                 </span>
                               </div>
@@ -390,15 +453,22 @@ Account Number: ${accountNumber || '-'}`
                 <div>
                   <div className="text-sm font-medium text-gray-900">Inspection fee needed?</div>
                   <p className="mt-1 text-xs text-gray-500">
-                    If no, the application fee defaults to $300. You can override the amount or set it to $0.
+                    If no, the application fee defaults to $300. You can override the amount or set
+                    it to $0.
                   </p>
                 </div>
-                <YesNoGroup disabled={state.isLocked} value={state.feeRequired} onChange={state.setFeeRequiredValue} />
+                <YesNoGroup
+                  disabled={state.isLocked}
+                  value={state.feeRequired}
+                  onChange={state.setFeeRequiredValue}
+                />
               </div>
 
               {state.feeRequired === false ? (
                 <div className="mt-4">
-                  <label className="text-xs font-semibold uppercase text-gray-500">Why no inspection fee?</label>
+                  <label className="text-xs font-semibold uppercase text-gray-500">
+                    Why no inspection fee?
+                  </label>
                   <select
                     value={state.noFeeReason}
                     disabled={state.isLocked}
@@ -419,206 +489,241 @@ Account Number: ${accountNumber || '-'}`
               <Section title="3. Notification">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="text-sm font-medium text-gray-900">Wait for payment before notifying RFR?</div>
-                    <p className="mt-1 text-xs text-gray-500">Default yes. Choose no only for rush or trusted cases.</p>
+                    <div className="text-sm font-medium text-gray-900">
+                      Wait for payment before notifying RFR?
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Default yes. Choose no only for rush or trusted cases.
+                    </p>
                   </div>
-                  <YesNoGroup disabled={state.isLocked} value={state.awaitPayment} onChange={state.setAwaitPayment} />
+                  <YesNoGroup
+                    disabled={state.isLocked}
+                    value={state.awaitPayment}
+                    onChange={state.setAwaitPayment}
+                  />
                 </div>
               </Section>
             ) : null}
 
-            <Section
-              title={
-                <div className="flex items-center justify-between gap-3">
-                  <span>4. Invoice Details</span>
+            {!state.skipInvoiceWorkflow ? (
+              <>
+                <Section
+                  title={
+                    <div className="flex items-center justify-between gap-3">
+                      <span>4. Invoice Details</span>
+                      {state.isLocked ? (
+                        <button
+                          type="button"
+                          onClick={state.unlockForEdit}
+                          className="rounded px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                        >
+                          Edit
+                        </button>
+                      ) : null}
+                    </div>
+                  }
+                >
                   {state.isLocked ? (
-                    <button
-                      type="button"
-                      onClick={state.unlockForEdit}
-                      className="rounded px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
-                    >
-                      Edit
-                    </button>
+                    <div className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                      Invoice generated. Editing will invalidate the current invoice ID.
+                    </div>
                   ) : null}
-                </div>
-              }
-            >
-              {state.isLocked ? (
-                <div className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  Invoice generated. Editing will invalidate the current invoice ID.
-                </div>
-              ) : null}
-              {state.isApplicationFeeOnly ? (
-                <div className="mb-3 rounded border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
-                  <div className="font-semibold">Application Fee only</div>
-                  <div className="mt-1">{APPLICATION_FEE_DESCRIPTION}</div>
-                </div>
-              ) : null}
+                  {state.isApplicationFeeOnly ? (
+                    <div className="mb-3 rounded border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                      <div className="font-semibold">Application Fee only</div>
+                      <div className="mt-1">{APPLICATION_FEE_DESCRIPTION}</div>
+                    </div>
+                  ) : null}
 
-              <label className="mb-3 block text-sm">
-                <span className="text-xs font-semibold uppercase text-gray-500">Letter Template</span>
-                <select
-                  value={state.letterTemplate}
-                  disabled={state.isLocked}
-                  onChange={(event) => state.setLetterTemplate(event.target.value)}
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-100"
-                >
-                  <option value={INSPECTION_LETTER_TEMPLATE}>Initial Inspection Fee</option>
-                  <option value={APPLICATION_FEE_LETTER_TEMPLATE}>Application Fee</option>
-                </select>
-                <span className="mt-1 block text-xs text-gray-500">
-                  Default is set by the Inspection Fee answer above. Override if a different letter is needed.
-                </span>
-              </label>
+                  <label className="mb-3 block text-sm">
+                    <span className="text-xs font-semibold uppercase text-gray-500">
+                      Letter Template
+                    </span>
+                    <select
+                      value={state.letterTemplate}
+                      disabled={state.isLocked}
+                      onChange={(event) => state.setLetterTemplate(event.target.value)}
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-100"
+                    >
+                      <option value={INSPECTION_LETTER_TEMPLATE}>Initial Inspection Fee</option>
+                      <option value={APPLICATION_FEE_LETTER_TEMPLATE}>Application Fee</option>
+                    </select>
+                    <span className="mt-1 block text-xs text-gray-500">
+                      Default is set by the Inspection Fee answer above. Override if a different
+                      letter is needed.
+                    </span>
+                  </label>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <label className="text-sm">
-                  <span className="text-xs font-semibold uppercase text-gray-500">Fee</span>
-                  <input
-                    value={state.feeAmount}
-                    disabled={state.isLocked}
-                    onChange={(event) => state.setFeeAmount(event.target.value)}
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-100"
-                  />
-                </label>
-                <label className="text-sm">
-                  <span className="text-xs font-semibold uppercase text-gray-500">Expenses</span>
-                  <input
-                    value={state.expenseAmount}
-                    disabled={state.isLocked}
-                    onChange={(event) => state.setExpenseAmount(event.target.value)}
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-100"
-                  />
-                </label>
-                <label className="text-sm">
-                  <span className="text-xs font-semibold uppercase text-gray-500">Invoice Date</span>
-                  <input
-                    type="date"
-                    value={state.invoiceDate}
-                    disabled={state.isLocked}
-                    onChange={(event) => state.setInvoiceDate(event.target.value)}
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-100"
-                  />
-                </label>
-                <label className="text-sm">
-                  <span className="text-xs font-semibold uppercase text-gray-500">Invoice ID</span>
-                  <input
-                    value={state.invoiceId ?? 'Auto-generated on save'}
-                    readOnly
-                    className="mt-1 w-full rounded border border-gray-300 bg-gray-100 px-3 py-2 text-gray-600"
-                  />
-                </label>
-              </div>
-              <label className="mt-3 block text-sm">
-                <span className="text-xs font-semibold uppercase text-gray-500">Internal notes</span>
-                <textarea
-                  value={state.internalNotes}
-                  disabled={state.isLocked}
-                  onChange={(event) => state.setInternalNotes(event.target.value)}
-                  rows={3}
-                  placeholder="Visible only to NCRC / admin. Not included in invoice PDF."
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-100"
-                />
-              </label>
-            </Section>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label className="text-sm">
+                      <span className="text-xs font-semibold uppercase text-gray-500">Fee</span>
+                      <input
+                        value={state.feeAmount}
+                        disabled={state.isLocked}
+                        onChange={(event) => state.setFeeAmount(event.target.value)}
+                        className="mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-100"
+                      />
+                    </label>
+                    <label className="text-sm">
+                      <span className="text-xs font-semibold uppercase text-gray-500">
+                        Expenses
+                      </span>
+                      <input
+                        value={state.expenseAmount}
+                        disabled={state.isLocked}
+                        onChange={(event) => state.setExpenseAmount(event.target.value)}
+                        className="mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-100"
+                      />
+                    </label>
+                    <label className="text-sm">
+                      <span className="text-xs font-semibold uppercase text-gray-500">
+                        Invoice Date
+                      </span>
+                      <input
+                        type="date"
+                        value={state.invoiceDate}
+                        disabled={state.isLocked}
+                        onChange={(event) => state.setInvoiceDate(event.target.value)}
+                        className="mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-100"
+                      />
+                    </label>
+                    <label className="text-sm">
+                      <span className="text-xs font-semibold uppercase text-gray-500">
+                        Invoice ID
+                      </span>
+                      <input
+                        value={state.invoiceId ?? 'Auto-generated on save'}
+                        readOnly
+                        className="mt-1 w-full rounded border border-gray-300 bg-gray-100 px-3 py-2 text-gray-600"
+                      />
+                    </label>
+                  </div>
+                  <label className="mt-3 block text-sm">
+                    <span className="text-xs font-semibold uppercase text-gray-500">
+                      Internal notes
+                    </span>
+                    <textarea
+                      value={state.internalNotes}
+                      disabled={state.isLocked}
+                      onChange={(event) => state.setInternalNotes(event.target.value)}
+                      rows={3}
+                      placeholder="Visible only to NCRC / admin. Not included in invoice PDF."
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-100"
+                    />
+                  </label>
+                </Section>
 
-            <Section title="5. Email Recipients">
-              <label className="block text-sm">
-                <span className="text-xs font-semibold uppercase text-gray-500">To (customer contact)</span>
-                <select
-                  value={state.recipient}
-                  onChange={(event) => state.setRecipient(event.target.value)}
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
-                >
-                  {state.isApplicationDetailLoading ? (
-                    <option value="">Loading contacts...</option>
-                  ) : state.recipientOptions.length > 0 ? (
-                    state.recipientOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))
+                <Section title="5. Email Recipients">
+                  <label className="block text-sm">
+                    <span className="text-xs font-semibold uppercase text-gray-500">
+                      To (customer contact)
+                    </span>
+                    <select
+                      value={state.recipient}
+                      onChange={(event) => state.setRecipient(event.target.value)}
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+                    >
+                      {state.isApplicationDetailLoading ? (
+                        <option value="">Loading contacts...</option>
+                      ) : state.recipientOptions.length > 0 ? (
+                        state.recipientOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="">Primary contact</option>
+                      )}
+                      <option value="ADD_NEW">+ Add another email...</option>
+                    </select>
+                  </label>
+                  {state.isApplicationDetailError ? (
+                    <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                      Unable to load application contacts. Add an email manually if needed.
+                    </div>
+                  ) : null}
+                  {state.recipient === 'ADD_NEW' ? (
+                    <label className="mt-2 block text-sm">
+                      <input
+                        type="email"
+                        value={state.extraRecipientEmail}
+                        onChange={(event) => state.setExtraRecipientEmail(event.target.value)}
+                        placeholder="name@example.com"
+                        className="w-full rounded border border-gray-300 px-3 py-2"
+                      />
+                      <span className="mt-1 block text-xs text-gray-500">
+                        Email is added for this invoice only and is not saved as a new contact.
+                      </span>
+                    </label>
+                  ) : null}
+                  <div className="mt-3 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs leading-6 text-gray-700">
+                    <div>
+                      <strong>RC:</strong> Assigned RC
+                    </div>
+                    <div>
+                      <strong>NCRC:</strong> Current user
+                    </div>
+                    <div>
+                      <strong>RC Coord:</strong> Assigned coordinator
+                    </div>
+                    <div className="text-gray-500">BCC: productAutomation@ou.org</div>
+                  </div>
+                  {state.sentAt ? (
+                    <div className="mt-3 rounded border border-green-200 bg-green-50 px-3 py-2 text-xs font-medium text-green-700">
+                      Invoice sent - {state.sentAt}
+                    </div>
+                  ) : null}
+                </Section>
+
+                <Section title="6. Payment Status">
+                  {state.paidAt ? (
+                    <div className="rounded border border-green-200 bg-green-50 p-3">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-green-800">
+                        <Check className="h-4 w-4" />
+                        Paid in full
+                      </div>
+                      <div className="mt-1 text-xs text-green-700">
+                        {formatCurrency(state.subtotal)} received. Posted {state.paidAt}.
+                      </div>
+                    </div>
                   ) : (
-                    <option value="">Primary contact</option>
+                    <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                      Awaiting payment. This would auto-update from Kashrus once connected.
+                    </div>
                   )}
-                  <option value="ADD_NEW">+ Add another email...</option>
-                </select>
-              </label>
-              {state.isApplicationDetailError ? (
-                <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  Unable to load application contacts. Add an email manually if needed.
-                </div>
-              ) : null}
-              {state.recipient === 'ADD_NEW' ? (
-                <label className="mt-2 block text-sm">
-                  <input
-                    type="email"
-                    value={state.extraRecipientEmail}
-                    onChange={(event) => state.setExtraRecipientEmail(event.target.value)}
-                    placeholder="name@example.com"
-                    className="w-full rounded border border-gray-300 px-3 py-2"
-                  />
-                  <span className="mt-1 block text-xs text-gray-500">
-                    Email is added for this invoice only and is not saved as a new contact.
-                  </span>
-                </label>
-              ) : null}
-              <div className="mt-3 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs leading-6 text-gray-700">
-                <div><strong>RC:</strong> Assigned RC</div>
-                <div><strong>NCRC:</strong> Current user</div>
-                <div><strong>RC Coord:</strong> Assigned coordinator</div>
-                <div className="text-gray-500">BCC: productAutomation@ou.org</div>
-              </div>
-              {state.sentAt ? (
-                <div className="mt-3 rounded border border-green-200 bg-green-50 px-3 py-2 text-xs font-medium text-green-700">
-                  Invoice sent - {state.sentAt}
-                </div>
-              ) : null}
-            </Section>
-
-            <Section title="6. Payment Status">
-              {state.paidAt ? (
-                <div className="rounded border border-green-200 bg-green-50 p-3">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-green-800">
-                    <Check className="h-4 w-4" />
-                    Paid in full
-                  </div>
-                  <div className="mt-1 text-xs text-green-700">
-                    {formatCurrency(state.subtotal)} received. Posted {state.paidAt}.
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                  Awaiting payment. This would auto-update from Kashrus once connected.
-                </div>
-              )}
-            </Section>
+                </Section>
+              </>
+            ) : null}
           </div>
 
-          <InspectionInvoicePreview
-            applicant={applicant}
-            customer={state.invoiceCustomer}
-            expenseAmount={state.expenses}
-            feeAmount={state.fee}
-            invoiceDate={state.invoiceDate}
-            invoiceDownloadLink={state.invoiceDownloadLink}
-            invoiceId={state.invoiceId}
-            isApplicationFeeOnly={state.isApplicationFeeOnly}
-            paid={state.stage === 'paid'}
-          />
+          {!state.skipInvoiceWorkflow ? (
+            <InspectionInvoicePreview
+              applicant={applicant}
+              customer={state.invoiceCustomer}
+              expenseAmount={state.expenses}
+              feeAmount={state.fee}
+              invoiceDate={state.invoiceDate}
+              invoiceDownloadLink={state.invoiceDownloadLink}
+              invoiceId={state.invoiceId}
+              isApplicationFeeOnly={state.isApplicationFeeOnly}
+              paid={state.stage === 'paid'}
+            />
+          ) : null}
         </div>
 
         <div className="flex items-center justify-between gap-4 border-t bg-white px-5 py-3">
           <div className="min-w-0 text-sm text-gray-600">
-            {state.stage === 'paid'
-              ? 'Invoice paid. Assignment can proceed when applicable.'
-              : state.canGenerate
-                ? state.invoiceId
-                  ? state.invoiceDownloadLink
-                    ? `Invoice ${state.invoiceId} generated. PDF is ready to download.`
-                    : `Invoice ${state.invoiceId} generated.`
-                  : 'Ready to generate. Invoice ID is assigned on generate.'
-                : 'Complete required selections to generate the invoice.'}
+            {state.skipInvoiceWorkflow
+              ? 'No inspection or inspection fee is needed. Complete the task to save these selections.'
+              : state.stage === 'paid'
+                ? 'Invoice paid. Assignment can proceed when applicable.'
+                : state.canGenerate
+                  ? state.invoiceId
+                    ? state.invoiceDownloadLink
+                      ? `Invoice ${state.invoiceId} generated. PDF is ready to download.`
+                      : `Invoice ${state.invoiceId} generated.`
+                    : 'Ready to generate. Invoice ID is assigned on generate.'
+                  : 'Complete required selections to generate the invoice.'}
           </div>
           <div className="flex shrink-0 gap-2">
             <button
@@ -634,12 +739,17 @@ Account Number: ${accountNumber || '-'}`
               disabled={
                 state.isGeneratingInvoice ||
                 state.isMarkingPaid ||
-                ((state.stage === 'setup' || state.stage === 'configured') && !state.canGenerate) ||
+                state.isCompletingWithoutInspection ||
+                (!state.skipInvoiceWorkflow &&
+                  (state.stage === 'setup' || state.stage === 'configured') &&
+                  !state.canGenerate) ||
                 state.stage === 'paid'
               }
               className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
             >
-              {state.stage === 'generated' || state.stage === 'outlook-opened' ? <Mail className="h-4 w-4" /> : null}
+              {state.stage === 'generated' || state.stage === 'outlook-opened' ? (
+                <Mail className="h-4 w-4" />
+              ) : null}
               {state.isMarkingPaid ? 'Marking paid...' : primaryActionLabel}
             </button>
           </div>
@@ -669,7 +779,10 @@ Account Number: ${accountNumber || '-'}`
               <div className="space-y-4 px-5 py-4">
                 <div className="rounded border border-gray-200">
                   <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
-                    <label htmlFor="inspection-invoice-email-to" className="pt-2 font-medium text-gray-500">
+                    <label
+                      htmlFor="inspection-invoice-email-to"
+                      className="pt-2 font-medium text-gray-500"
+                    >
                       To
                     </label>
                     <input
@@ -715,7 +828,9 @@ Account Number: ${accountNumber || '-'}`
                 </button>
                 <button
                   type="button"
-                  disabled={state.isSendingEmail || !state.emailTo.trim() || !state.emailBody.trim()}
+                  disabled={
+                    state.isSendingEmail || !state.emailTo.trim() || !state.emailBody.trim()
+                  }
                   onClick={async () => {
                     try {
                       await state.sendEmail({
@@ -726,7 +841,8 @@ Account Number: ${accountNumber || '-'}`
                       })
                       toast.success('Email sent')
                     } catch (error) {
-                      const message = error instanceof Error ? error.message : 'Unable to send email'
+                      const message =
+                        error instanceof Error ? error.message : 'Unable to send email'
                       toast.error(message)
                     }
                   }}
