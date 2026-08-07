@@ -1,8 +1,4 @@
-/**
- * AWS Cognito Configuration for Your App
- *
- * Replace these values with your actual Cognito settings.
- */
+/** AWS Cognito configuration loaded from the active Vite environment. */
 
 export interface CognitoOAuthConfig {
   scope: string[];
@@ -19,13 +15,12 @@ export interface CognitoConfig {
   oauth: CognitoOAuthConfig;
 }
 
-// Modify this configuration according to your AWS account setup
 export const cognitoConfig: CognitoConfig = {
-  region: "us-east-1",
-  userPoolId: "us-east-1_d38hiE2QM",
-  userPoolWebClientId: "44ntf452shmltsmdtravlo52i",
-  domain: "us-east-1d38hie2qm.auth.us-east-1.amazoncognito.com", // No https://
- 
+  region: import.meta.env.VITE_COGNITO_REGION,
+  userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
+  userPoolWebClientId: import.meta.env.VITE_COGNITO_CLIENT_ID,
+  domain: import.meta.env.VITE_COGNITO_DOMAIN,
+
   oauth: {
     scope: ["openid", "email", "phone"],
     redirectSignIn: window.location.origin, // Use current app URL
@@ -36,15 +31,19 @@ export const cognitoConfig: CognitoConfig = {
 
 // Helper function to validate configuration keys
 export function validateConfig(): boolean {
-  const missing: string[] = [];
+  const requiredConfig = {
+    VITE_COGNITO_REGION: cognitoConfig.region,
+    VITE_COGNITO_USER_POOL_ID: cognitoConfig.userPoolId,
+    VITE_COGNITO_CLIENT_ID: cognitoConfig.userPoolWebClientId,
+    VITE_COGNITO_DOMAIN: cognitoConfig.domain,
+  };
 
-  if (!cognitoConfig.userPoolId) missing.push("userPoolId");
-  if (!cognitoConfig.userPoolWebClientId) missing.push("userPoolWebClientId");
-  if (!cognitoConfig.domain) missing.push("domain");
+  const missing = Object.entries(requiredConfig)
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
 
   if (missing.length > 0) {
-    console.error("Missing Cognito configuration keys:", missing.join(", "));
-    console.error("Please update src/config/cognitoConfig.ts with your AWS Cognito settings.");
+    console.error("Missing Cognito environment variables:", missing.join(", "));
     return false;
   }
 
