@@ -1,209 +1,169 @@
 # AGENTS.md
 
-Guidance for Codex and other AI coding agents working in `ncrc-app`.
+Guidance for coding agents working in `ncrc-app`.
 
 ## Project Snapshot
 
-`ncrc-app` is a real React 19 + TypeScript workflow app for NCRC operations. It uses Vite,
-TanStack Router file routes, TanStack Query, Tailwind CSS 4, Radix UI primitives, Sonner,
-and AWS Cognito OAuth with a preserved local-dev login path for `http://localhost:3001`.
+`ncrc-app` is an internal React 19.2 + TypeScript workflow app built with Vite, TanStack
+Router file routes, TanStack Query, Tailwind CSS 4, Radix primitives, Sonner, and AWS
+Cognito OAuth/PKCE. It intentionally preserves a localhost development-login path for the
+mock server at `http://localhost:3001`.
 
-Main authenticated workflows:
+Primary authenticated routes:
 
+- Home: `/`
 - Application Dashboard: `/ou-workflow/ncrc-dashboard`
+- Application Intake: `/ou-workflow/prelim-dashboard`
 - Tasks & Notifications: `/ou-workflow/tasks-dashboard`
-- Application Intake Dashboard: `/ou-workflow/prelim-dashboard`
-- Profile settings: `/profile`
+- Profile: `/profile`
 
-Useful context files:
+Read `README.md`, `docs/api-contracts.md`, and `ARCHITECTURE_ACTION_PLAN.md` before broad
+changes.
 
-- `README.md`: broad architecture and runtime overview.
-- `docs/api-contracts.md`: current frontend/mock-server API contract.
-- `ARCHITECTURE_ACTION_PLAN.md`: current migration plan and next safe refactor steps.
+## Current Toolchain (audited 2026-07-29)
 
-## Commands
+- React / React DOM `19.2.8`
+- TypeScript `5.9.3`
+- Vite `7.3.6`, React plugin `5.2.0`
+- TanStack Router `1.170.18`, router plugin `1.168.23`
+- TanStack Query `5.101.4`
+- Tailwind CSS / Vite plugin `4.3.2`
+- Vitest `4.1.10`, Testing Library React `16.3.2`, jsdom `28.1.0`
+- ESLint `9.39.4`, typescript-eslint `8.62.0`
+
+Do not upgrade major versions incidentally. Current major upgrade lines include Vite 8,
+plugin-react 6, ESLint 10, TypeScript 7, jsdom 29, Lucide 1, and web-vitals 6. Treat each as
+a dedicated compatibility task.
+
+## Commands And Required Checks
 
 - Install: `npm install`
-- Dev server: `npm run dev` or `npm start` (Vite on port 3000)
-- Typecheck: `npm run typecheck` or `npx tsc --noEmit`
-- Test: `npm run test`
+- Development: `npm run dev`
+- Typecheck: `npm run typecheck`
+- Tests: `npm test`
+- Focused test: `npm test -- --run <test-file>`
 - Lint: `npm run lint`
+- Error-only lint: `npx eslint . --quiet`
 - Build: `npm run build`
 - Format check: `npm run format:check`
+- Dependency drift: `npm outdated`
+- Production audit: `npm audit --omit=dev`
 
-After TypeScript, route, API, query, or mapper changes, run `npm run typecheck` at minimum.
-Run focused Vitest files when changing tested hooks/components.
+Minimum verification:
 
-## Current Architecture
+- Type/API/mapper/query changes: typecheck plus focused tests.
+- Route/build/config changes: typecheck plus build.
+- Shared workflows: focused tests plus browser verification when practical.
+- Dependencies: typecheck, all tests, lint, build, and lockfile inspection.
 
-- `src/main.tsx` is the minimal render entry.
-- `src/app/providers/AppProviders.tsx` composes QueryClient, user context, preferences,
-  router, and toasts.
-- `src/app/router/createAppRouter.ts` creates the TanStack Router and registers route
-  context.
-- File routes live under `src/routes`.
-- Auth/session logic is mostly under `src/features/auth/model`, with legacy Cognito helpers
-  still in `src/auth`.
-- Shared transport and query infrastructure live under `src/shared/api`.
-- Feature APIs, hooks, model/query keys, screens, and components live under
-  `src/features/*`.
-- Generic UI primitives live under `src/components/ui`.
-- Shared feedback UI lives under `src/components/feedback`.
-- Authenticated app-shell navigation lives under `src/components/layout`.
-- The former `src/components/ou-workflow` compatibility surface has been removed. Do not
-  recreate it or add new imports through transitional paths.
+Known baseline:
 
-## Architecture Rules
+- Tests: 5 files / 44 tests, all passing.
+- Lint: 12 errors and 481 warnings; do not claim lint passes.
+- Security audit: 4 fixable transitive findings (2 high, 2 low).
 
-- Keep route files thin. They may own route declarations, `validateSearch`, loader wiring,
-  redirects, error components, and mounting a feature screen.
-- Put endpoint wrappers in `src/features/<feature>/api`.
-- Put query and mutation hooks in `src/features/<feature>/hooks`.
-- Put query keys in `src/features/<feature>/model/queryKeys.ts`.
-- Use `src/shared/api` helpers for transport, errors, query defaults, and query params.
-- Do not add new imports from `@/api`; `src/api.ts` is a compatibility layer only.
-- Prefer feature-owned UI under `src/features/*/components` and route-facing screens under
-  `src/features/*/screens`.
-- Use `src/hooks` only for truly cross-feature hooks. Feature-specific hooks stay with the
-  feature.
-- Avoid broad moves from `src/components/ou-workflow` unless the user asks for an
-  architecture slice. When you do move a surface, move one coherent area at a time.
-- Do not hand-edit `src/routeTree.gen.ts` unless there is no other option. Let TanStack
-  Router tooling regenerate it.
+## Ownership
 
-## Routing Notes
+- `src/main.tsx`: render entry only.
+- `src/app/providers`: providers.
+- `src/app/router`: router creation and route context.
+- `src/routes`: thin route declarations, search validation, loaders, redirects, error UI,
+  and feature screen mounting.
+- `src/features/<feature>/api`: endpoint wrappers and DTOs.
+- `src/features/<feature>/hooks`: queries, mutations, and workflow hooks.
+- `src/features/<feature>/model`: query keys and feature model types.
+- `src/features/<feature>/components`: feature UI.
+- `src/features/<feature>/screens`: route-facing composition.
+- `src/components/ui`: generic primitives.
+- `src/components/layout`: navigation and `PageShell`.
+- `src/components/feedback`: cross-feature feedback.
+- `src/shared/api`: transport, errors, query defaults, and query helpers.
+- `src/hooks`: truly cross-feature hooks only.
 
-- Root route: `src/routes/__root.tsx`
-- Public auth layout: `src/routes/_public.tsx`
-- Authenticated layout: `src/routes/_authed.tsx`
-- Authenticated navigation: `src/components/layout/Navigation.tsx`
-- Large dashboards are lazy-loaded through `index.lazy.tsx` route files.
-- Loader-backed routes should use `ensureQueryData` plus a consistent `errorComponent`.
-- Normalize search params in route `validateSearch`; feature code should receive normalized
-  values.
+Do not recreate `src/components/ou-workflow`. Do not add imports from compatibility barrel
+`@/api`; import from the owning feature.
 
-Important search contracts:
+## Route And Layout Rules
 
-- NCRC Dashboard:
-  - `q: string`
-  - `status: string`
-  - `priority: string`
-  - `page: number`
-  - `myOnly: boolean`
-  - `applicationId?: number`
-- Task Dashboard:
-  - `qs: string`
-  - `days: "pending" | 7 | 30`
-  - `page: number`
+- Keep route files declarative. Move substantial home/profile UI into feature screens when
+  touching those routes.
+- Never hand-edit `src/routeTree.gen.ts`.
+- Normalize URL values in `validateSearch`.
+- Preserve complete required search objects when linking between dashboards.
+- Authenticated menu pages use `src/components/layout/PageShell.tsx`.
+- Sticky headers use `top-0` with left navigation and `top-16` with top navigation.
 
-When linking to dashboards, provide the full required search object or a reducer that
-preserves existing values.
+## API, DTO, And Query Rules
 
-## API And Query Conventions
+- Use `fetchWithAuth`, `buildPaginationParams`, and preserve backend `meta`.
+- Do not introduce new `Promise<any>` endpoint wrappers.
+- Keep tolerant backend DTOs separate from canonical UI/domain models.
+- Normalize mixed backend casing once at mapper boundaries.
+- Preserve task-specific payloads when mapping heterogeneous tasks, then normalize common
+  task fields explicitly.
+- Prefer feature query keys and targeted invalidation.
+- Expose reusable `get...QueryOptions()` when loaders and hooks share a query.
+- TanStack Query owns server state; React state owns transient UI and explicit edit drafts.
+- Do not mirror query data into state solely for display.
 
-- Use `fetchWithAuth` from `src/shared/api/httpClient.ts`.
-- Use `buildPaginationParams(page, limit)` from `src/shared/api/queryParams.ts`.
-- Preserve backend `meta` when endpoints return it.
-- Use `meta.total_count`, `meta.limit`, and `meta.offset` for pagination.
-- Use `keepPreviousData` for paged React Query lists where page changes should not blank the
-  UI.
-- For infinite queries, compute the next offset from
-  `lastPage.meta.offset + lastPage.meta.limit`.
-- Prefer feature query keys and targeted invalidation over broad unrelated invalidation.
-- Prefer the `get...QueryOptions()` plus `use...()` pattern for new query hooks.
+Known quirks:
 
-Known paginated endpoints:
+- Mixed task casing (`TaskInstanceId`/`taskInstanceId`, `TaskCategory`/`taskCategory`).
+- The string `"NULL"` may represent empty backend values.
+- Resolution tasks carry nested company/plant application and match payloads.
+- `/assignRole` may return JSON encoded inside `result`.
 
-- Applications: `/get_applications_v1?page[limit]=...&page[offset]=...`
-- Tasks: `/get_application_tasks?page[limit]=...&page[offset]=...`
-- Preliminary applications use `/get_applications_v1?application_type=SUBMISSION` with the
-  same pagination helper pattern.
+## React And Performance Rules
 
-Known response quirks:
+- Fix correctness and ownership before memoizing.
+- Use memoization only for measured expensive work, stable memoized-child props, or stable
+  hook dependencies.
+- Avoid synchronous state synchronization in effects; prefer derived values, query `select`,
+  event-driven resets, or remount keys.
+- Never read or assign `ref.current` during render.
+- Lazy-load large drawers/editors/previews not required for initial content. Declare lazy
+  imports at module scope and provide Suspense fallbacks.
+- Do not add a state library or React Compiler incidentally.
 
-- `/createApplication?ownsId={id}` returns `{ application_id, status }`.
-- `/assignRole` returns `result` as a JSON-encoded string.
-- `get_application_tasks` returns `{ data, meta, status }`.
-- Some task records use mixed casing such as `TaskCategory`, `TaskInstanceId`,
-  `taskCategory`, and `taskInstanceId`; normalize in mappers or feature helpers.
-- Some backend fields may be the string `"NULL"`; UI helpers often treat that as empty.
-- Consult `docs/api-contracts.md` before changing endpoint wrappers.
+## Large-Module Policy
 
-## Preferences And Pagination
+When changing a file over roughly 700 lines:
 
-User display preferences live in `AppPreferencesContext` and profile storage:
+1. Do not rewrite it wholesale.
+2. Extract one cohesive slice: types/constants, pure adapters, API orchestration, hook state,
+   or a visual section.
+3. Preserve props and behavior.
+4. Add characterization tests before moving high-risk logic.
+5. Move pure shared helpers to `lib`/`model`; do not import helpers from another large UI
+   component.
 
-- `stageLayout`
-- `paginationMode: "paged" | "infinite"`
+Do not add responsibilities to `ContractStageDrawer.tsx`, `TaskNotesDrawer.tsx`, Schedule
+A/B drawers/hooks, or aggregate API `index.ts` files.
 
-Application Dashboard and Tasks & Notifications should respect `paginationMode`.
+## Type Safety And Testing
 
-- Paged mode should call the backend with `page[limit]` and `page[offset]`.
-- Infinite mode should fetch additional backend pages, not merely reveal a previously fetched
-  full list.
-- Reset dashboard `page` to `0` when search/filter values change.
+- Prefer `unknown` plus narrowing over `any`.
+- Centralize note/task aliases in adapters.
+- Put new domain types in feature models; do not grow `src/types/application.ts`.
+- Adding runtime-schema dependencies requires an explicit decision.
+- Prioritize mapper, pagination, task branching, mutation, resolution, notes, auth, and both
+  navigation-layout tests.
+- Use `src/test/renderWithProviders.tsx` when providers are required.
 
-## Domain Notes
+## Dependency Policy
 
-- `applicationId` is the workflow application id.
-- `companyId` is the account/company number in invoice contexts.
-- Inspection invoice email and preview account number should use `companyId`, not
-  `applicationId`.
-- Task action handling is centralized in `src/features/tasks/hooks/useTaskActions.ts`.
-- Task dashboard state is in `src/features/tasks/hooks/useTaskDashboardState.ts`.
-- Application dashboard state is in `src/features/applications/hooks/useNcrcDashboardState.ts`.
-- Prelim dashboard state is in `src/features/prelim/hooks/usePrelimDashboardState.ts`.
-- Task notes live under `src/features/tasks/notes`.
+- Group only low-risk patch/minor updates.
+- Handle majors separately with release-note review and full verification.
+- Keep build-only packages such as `@tailwindcss/vite` and
+  `@tanstack/router-plugin` in `devDependencies`.
+- `react-hook-form` currently has no source import: adopt it consistently or remove it after
+  confirming no planned use.
+- Never run blind `npm audit fix --force`.
 
-## Remaining Architecture Seams
+## Working Tree Safety
 
-These are known and should guide future cleanup:
-
-- Application Management detail sections now live under
-  `src/features/applications/components/application-management`.
-- `_authed.tsx` selects the top or collapsible left app-shell navigation using the
-  `navigationMenuType` preference.
-- Both authenticated navigation variants live in `src/components/layout/Navigation.tsx`.
-- Application, task, and prelim consumers import hooks directly from their owning features.
-- `src/components/ou-workflow` has been removed.
-- `src/api.ts` still exists as a compatibility layer, though active source imports should
-  avoid it.
-- Debug/error logging exists in API/auth/error paths. Remove noisy debug logs, but do not
-  hide useful user-facing errors.
-- Local-dev login tokens in `src/routes/_public/login.tsx` are intentionally preserved until
-  a replacement dev-auth strategy is implemented.
-
-## UI Guidelines
-
-- Use existing Tailwind patterns and local components before adding abstractions.
-- Use `lucide-react` icons when an icon is needed.
-- Keep operational dashboards dense, predictable, and work-focused.
-- Avoid landing-page patterns for internal tools.
-- Keep cards for repeated items, modals, and framed tools; do not nest UI cards inside
-  cards.
-- Preserve accessibility basics: non-submit buttons need `type="button"`, dialogs need
-  labels, disabled states should be clear.
-
-## Testing And Verification
-
-- Typecheck after most changes: `npm run typecheck`.
-- Run focused Vitest files when changing tested modules.
-- Existing test coverage is still light. Add narrow tests when changing shared hooks, query
-  behavior, mappers, task actions, notes, or high-risk workflow logic.
-- If a change affects frontend behavior, verify the route in the browser when practical.
-
-Current tests include:
-
-- `src/features/applications/hooks/useNcrcDashboardState.test.tsx`
-- `src/features/tasks/notes/useTaskNotesDrawerState.test.tsx`
-- `src/features/tasks/notes/TaskNotesDrawer.test.tsx`
-- `src/test/renderWithProviders.example.test.tsx`
-
-## Working Tree Notes
-
-- This repo may have unrelated local changes and generated files. Do not revert user
-  changes.
-- On Windows, Git may report dubious ownership. Prefer one-off commands like:
-  `git -c safe.directory=C:/Users/Jakit/Documents/shouki/NCRC/ncrc-project/ncrc-app status --short`
-- Do not make broad formatting-only changes.
-- Avoid editing generated `src/routeTree.gen.ts`; let router tooling regenerate it.
+- Preserve unrelated changes.
+- Avoid broad formatting-only edits during architecture work.
+- `dist` and `src/build-info.json` are generated and ignored.
+- Git may need a one-off `safe.directory` option on Windows.
+- Never use destructive Git commands to clean user work.
