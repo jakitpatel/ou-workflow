@@ -876,7 +876,12 @@ export function ApplicationDetailsContent({
             {activeTab === 'activity' && <ActivityLog recentActivity={recentActivity} comments={comments} />}
             {activeTab === 'task-events' && <TaskEventsPanel taskEvents={sortedTaskEvents} />}
             {activeTab === 'emails' && <EmailsPanel emails={application.emails} />}
-            {activeTab === 'files' && <FilesList application={application} />}
+            {activeTab === 'files' && (
+              <FilesList
+                application={application}
+                showProcessingStatus={dataSource !== 'prelim'}
+              />
+            )}
             {activeTab === 'notes' && resolvedApplicationId !== null && (
               <TaskNotesDrawer
                 open

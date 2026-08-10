@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ApplicationDetail } from "@/types/application";
-import { AlertCircle, Beaker, CheckCircle, Download, Eye, FileText, LoaderCircle, Package, X } from "lucide-react";
+import { AlertCircle, Beaker, CheckCircle, Download, FileText, LoaderCircle, Package, X } from "lucide-react";
 
 const getFileExtension = (fileName?: string, filePath?: string) => {
   const value = String(fileName || filePath || '').split(/[?#]/)[0];
@@ -22,7 +22,12 @@ table{border-collapse:collapse;width:100%;margin-bottom:32px}th,td{border:1px so
 th{background:#e2e8f0}.sheet{margin:0 0 12px;color:#1e3a8a}img{max-width:100%;height:auto}
 </style></head><body><main class="document">${content}</main></body></html>`;
 
-export default function FilesList({ application }: { application: ApplicationDetail }) {
+type Props = {
+  application: ApplicationDetail;
+  showProcessingStatus?: boolean;
+};
+
+export default function FilesList({ application, showProcessingStatus = true }: Props) {
   const uploadedFiles = application.files || [];
   const [previewHtml, setPreviewHtml] = useState('');
   const [previewName, setPreviewName] = useState('');
@@ -153,28 +158,18 @@ export default function FilesList({ application }: { application: ApplicationDet
                               </span>
                             )}
 
-                            {file.IsProcessed ? (
-                              <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-medium">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Processed
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-full text-xs font-medium">
-                                <AlertCircle className="h-3 w-3 mr-1" />
-                                Pending
-                              </span>
-                            )}
-
-                            {canPreviewOfficeFile && (
-                              <button
-                                type="button"
-                                onClick={() => void previewOfficeFile(previewFileUrl, file.FileName || 'Office document', extension)}
-                                className="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-indigo-700 underline-offset-2 transition-colors hover:text-indigo-900 hover:underline focus:outline-none"
-                                title="Preview this Office document in the browser"
-                              >
-                                <Eye className="h-4 w-4" />
-                                Preview
-                              </button>
+                            {showProcessingStatus && (
+                              file.IsProcessed ? (
+                                <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-medium">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Processed
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-full text-xs font-medium">
+                                  <AlertCircle className="h-3 w-3 mr-1" />
+                                  Pending
+                                </span>
+                              )
                             )}
 
                             <button
