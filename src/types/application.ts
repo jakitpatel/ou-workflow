@@ -558,6 +558,11 @@ export interface ApplicationGlobalData {
 
 export interface ApplicationDetail {
   applicationId: string;
+  createdDate?: string;
+  daysInProcess?: number;
+  daysOverdue?: number;
+  assignedNCRC?: string;
+  assignedRC?: string;
   companyId?: number | string;
   PlantId?: number | string;
   PlantID?: number | string;

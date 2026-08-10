@@ -1,5 +1,17 @@
 import type { ApplicationDetail } from "@/types/application";
 
+const formatCreatedDate = (value?: string) => {
+  const datePart = value?.trim().match(/^(\d{4})-(\d{2})-(\d{2})/)?.slice(1);
+  if (!datePart) return '-';
+
+  const [year, month, day] = datePart.map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
 function MatchMarker({ isNew }: { isNew?: boolean }) {
   if (isNew == null) return null;
 
@@ -44,6 +56,8 @@ export default function Overview({
   const applicationOwnsStatus = application.OwnsStatus ?? '-';
   const ownsId = intakePlant?.owns_id ?? intakeData?.owns_id ?? '-';
   const ownsStatus = intakePlant?.owns_status ?? intakeData?.owns_status ?? '-';
+  const daysInProcess = Number(application.daysInProcess ?? 0);
+  const daysOverdue = Number(application.daysOverdue ?? 0);
 
   // Calculate statistics
   const stats = {
@@ -51,13 +65,45 @@ export default function Overview({
     productCount: application.products?.length || 0,
     ingredientCount: application.ingredients?.length || 0,
     recentAdditions: application.ingredients?.filter(i => i.status === 'Recent').length || 0,
-    ncrcRecords: application.ingredients?.filter(i => i.ncrcId).length || 0,
     uploadedFiles: application.files?.length || 0
   };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h2 className="text-2xl font-semibold text-gray-900 mb-6">Application Overview</h2>
+
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Created Date</div>
+          <div className="mt-1 text-sm font-semibold text-gray-900">
+            {formatCreatedDate(application.createdDate)}
+          </div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Days in Process</div>
+          <div className="mt-1 text-sm font-semibold text-gray-900">{daysInProcess}</div>
+        </div>
+        <div
+          className={`rounded-lg border px-4 py-3 ${
+            daysOverdue > 0 ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-gray-50'
+          }`}
+        >
+          <div
+            className={`text-xs font-semibold uppercase tracking-wide ${
+              daysOverdue > 0 ? 'text-red-600' : 'text-gray-500'
+            }`}
+          >
+            Days Overdue
+          </div>
+          <div
+            className={`mt-1 text-sm font-semibold ${
+              daysOverdue > 0 ? 'text-red-700' : 'text-gray-900'
+            }`}
+          >
+            {daysOverdue}
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Application Status Section */}
@@ -214,9 +260,16 @@ export default function Overview({
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                  <span className="text-sm font-medium text-gray-600">NCRC DB Records</span>
-                  <span className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-sm font-bold">
-                    {stats.ncrcRecords}
+                  <span className="text-sm font-medium text-gray-600">Assigned NCRC</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {application.assignedNCRC || '-'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">Assigned RC</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {application.assignedRC || '-'}
                   </span>
                 </div>
               </>
