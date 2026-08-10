@@ -21,10 +21,15 @@ import {
 } from "@/features/auth/model/sessionManager";
 
 const config = (window as any).__APP_CONFIG__ || {};
-const availableServers = Object.keys(config)
+const configuredServers = Object.keys(config)
   .filter((k) => k.startsWith("API_CLIENT_URL"))
   .map((key) => config[key])
   .filter(Boolean);
+const availableServers = import.meta.env.MODE === "staging"
+  ? [import.meta.env.VITE_API_CLIENT_URL].filter(
+      (url): url is string => Boolean(url),
+    )
+  : configuredServers;
 
 const LOCAL_DEV_ACCESS_TOKEN =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc2MzkyNjg0NCwianRpIjoiOWI2OTQ4NTUtZTQxMi00OTNjLTgzYzktZjNkYTcwNzRmYTNhIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImM0NjgyNGU4LWQwMDEtNzAyOS0xM2Y4LTFiNjVkNmZhZDA2OSIsIm5iZiI6MTc2MzkyNjg5NCwiZXhwIjoxNzYzOTMwNDQ0LCJjb2duaXRvOmdyb3VwcyI6WyJ1cy1lYXN0LTFfZDM4aGlFMlFNX09rdGFPSURDIl0sImlzcyI6Imh0dHBzOi8vY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20vdXMtZWFzdC0xX2QzOGhpRTJRTSIsInZlcnNpb24iOjIsImNsaWVudF9pZCI6IjQ0bnRmNDUyc2htbHRzbWR0cmF2bG81MmkiLCJvcmlnaW5fanRpIjoiODFmMTEwOWUtZTQ3MS00MzQ1LWEwYTUtNmQyMmFmNThlNmE4IiwidG9rZW5fdXNlIjoiYWNjZXNzIiwic2NvcGUiOiJwaG9uZSBvcGVuaWQgcHJvZmlsZSBlbWFpbCIsImF1dGhfdGltZSI6MTc2MzkyNjg0NCwiYXBwX3VzZXJuYW1lIjoiU0hPVUtJLkJFTkpBTUlOIiwidXNlcm5hbWUiOiJva3Rhb2lkY18wMHUxYzZsbzVsd2NhbWsyaTB4OCJ9.Y56b1q9aXWi4Zjr-DfCj9J-XUJknu5tqi3VwQalC9d4";
@@ -48,12 +53,14 @@ function LoginPage() {
   const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
-    if (!apiBaseUrl && availableServers.length > 0) {
+    if (availableServers.length > 0 && !availableServers.includes(apiBaseUrl)) {
       setApiBaseUrl(availableServers[0]);
     }
   }, [apiBaseUrl, setApiBaseUrl]);
 
-  const currentApiBaseUrl = apiBaseUrl || availableServers[0] || "";
+  const currentApiBaseUrl = availableServers.includes(apiBaseUrl)
+    ? apiBaseUrl
+    : availableServers[0] || "";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
