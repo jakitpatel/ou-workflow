@@ -448,7 +448,7 @@ export function PrelimResolutionComparisonSection({
 
           <ComparisonCard
             title="Contact"
-            badge="MARKETING"
+            badge={(plantData.secondaryContactLabel || 'Marketing').toUpperCase()}
             badgeClass="bg-violet-100 text-violet-700"
             note="- Not currently in Kashrus"
             isLast

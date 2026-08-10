@@ -82,6 +82,7 @@ export type PlantData = {
   processDescription?: string
   primaryContact?: ResolutionContactData
   marketingContact?: ResolutionContactData
+  secondaryContactLabel?: string
 }
 
 export type Match = {

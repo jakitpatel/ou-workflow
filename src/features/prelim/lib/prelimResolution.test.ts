@@ -107,4 +107,30 @@ describe('resolution drawer adapters', () => {
       companyWebsite: 'example.com',
     })
   })
+
+  it('keeps the submitted non-primary plant contact group as its drawer label', () => {
+    const result = toPlantDrawerData({
+      plantName: 'Example Plant',
+      plantAddress: '',
+      plantCity: '',
+      plantCountry: '',
+      plantContacts: {
+        OtherContact: [
+          {
+            contactFirst: 'Kriszelle Shane',
+            contactLast: 'Apor',
+            jobTitle: 'Quality Assurance Head',
+          },
+        ],
+      },
+    })
+
+    expect(result).toMatchObject({
+      secondaryContactLabel: 'Other',
+      marketingContact: {
+        name: 'Kriszelle Shane Apor',
+        title: 'Quality Assurance Head',
+      },
+    })
+  })
 })

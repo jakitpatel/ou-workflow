@@ -106,7 +106,7 @@ function getResolveSavedState(value: unknown): ResolveSavedState | null {
 
 function getResolveMethodMarker(task: unknown): 'C' | 'M' | null {
   const record = task as Record<string, unknown> | undefined
-  if (!record || !isTaskCompleted(String(record.status ?? ''))) return null
+  if (!record) return null
 
   const savedState = getResolveSavedState(record.StatusDetails ?? record.statusDetails)
   if (savedState?.resolveMethod === 'Created') return 'C'

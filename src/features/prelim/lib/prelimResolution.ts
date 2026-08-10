@@ -121,10 +121,19 @@ export function toPlantDrawerData(data?: PlantFromApplication, companyWebsite?: 
     contactGroups?.PrimaryContact,
     contactGroups?.primaryContact,
   )
-  const secondaryRaw = firstSubmittedContact(
-    contactGroups?.OtherContact,
-    contactGroups?.otherContact,
+  const secondaryContactEntry = Object.entries(contactGroups ?? {}).find(
+    ([groupName, contacts]) =>
+      groupName.toLowerCase() !== 'primarycontact' &&
+      Array.isArray(contacts) &&
+      contacts.some(hasSubmittedContactValue),
   )
+  const secondaryRaw = firstSubmittedContact(
+    secondaryContactEntry?.[1] as SubmittedApplicationContact[] | undefined,
+  )
+  const secondaryContactLabel = secondaryContactEntry?.[0]
+    ?.replace(/contact$/i, '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .trim()
 
   return {
     plantName: data?.plantName ?? '',
@@ -138,6 +147,7 @@ export function toPlantDrawerData(data?: PlantFromApplication, companyWebsite?: 
     processDescription: data?.brieflySummarize ?? '',
     primaryContact: toSubmittedContact(primaryRaw),
     marketingContact: toSubmittedContact(secondaryRaw),
+    secondaryContactLabel,
   }
 }
 
