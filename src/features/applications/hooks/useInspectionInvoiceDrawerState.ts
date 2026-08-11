@@ -744,6 +744,7 @@ export function useInspectionInvoiceDrawerState({
   })
 
   const saveInvoiceTaskState = async ({
+    nextGuiDisplayResult,
     nextInvoiceDate = invoiceDate,
     nextInvoiceDownloadLink = invoiceDownloadLink,
     nextInvoiceId = invoiceId,
@@ -757,6 +758,7 @@ export function useInspectionInvoiceDrawerState({
     ...savedStateOptions
   }: {
     nextAttachments?: string
+    nextGuiDisplayResult?: string
     nextInvoiceDate?: string
     nextInvoiceDownloadLink?: string | null
     nextInvoiceId?: string | null
@@ -774,13 +776,15 @@ export function useInspectionInvoiceDrawerState({
     const invoiceTaskId = String(taskInstanceId ?? '').trim()
     if (!invoiceTaskId) return null
 
-    const guiDisplayResult = buildInvoiceGuiDisplayResult({
-      invoiceDate: nextInvoiceDate,
-      invoiceId: nextInvoiceId,
-      paid: nextPaid,
-      rfr: nextRfr,
-      subtotal: nextSubtotal,
-    })
+    const guiDisplayResult =
+      nextGuiDisplayResult ??
+      buildInvoiceGuiDisplayResult({
+        invoiceDate: nextInvoiceDate,
+        invoiceId: nextInvoiceId,
+        paid: nextPaid,
+        rfr: nextRfr,
+        subtotal: nextSubtotal,
+      })
     const statusDetails = buildInspectionInvoiceStatusDetails(
       buildSavedState({
         ...savedStateOptions,
@@ -1144,7 +1148,10 @@ export function useInspectionInvoiceDrawerState({
     setIsCompletingWithoutInspection(true)
     try {
       // Persist the setup choices before completing the task so they can be restored later.
-      await saveInvoiceTaskState({ nextStage: 'configured' })
+      await saveInvoiceTaskState({
+        nextGuiDisplayResult: '{Inspection:No, Fee:No}',
+        nextStage: 'configured',
+      })
       await confirmTask({
         taskId: invoiceTaskId,
         applicationId: resolvedApplicationId,
