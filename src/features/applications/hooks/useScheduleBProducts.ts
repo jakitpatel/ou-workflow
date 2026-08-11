@@ -866,7 +866,7 @@ export function useSendScheduleBCommunicationEmail() {
           tag: null,
           CCUser: null,
           BCCUser: 'productAutomation@ou.org',
-          replyTo: 'oucert@ou.org',
+          replyTo: import.meta.env.VITE_EMAIL_REPLY_TO,
           Attachments: null,
         },
       })
