@@ -545,6 +545,7 @@ export interface ApplicationGlobalData {
     plant_name?: string;
     owns_id?: number | string;
     owns_status?: string;
+    wf_status?: string;
     is_new_plant?: boolean;
     is_new_owns?: boolean;
     WFID?: number | string;
@@ -555,6 +556,7 @@ export interface ApplicationGlobalData {
   is_new_plant?: boolean;
   is_new_owns?: boolean;
   owns_status?: string;
+  wf_status?: string;
 }
 
 export interface ApplicationDetail {

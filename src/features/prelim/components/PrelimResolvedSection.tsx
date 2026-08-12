@@ -18,7 +18,12 @@ import {
   toCompanyDrawerData,
   toPlantDrawerData,
 } from '@/features/prelim/lib/prelimResolution'
-import { getOwnsResolutionMarker } from '@/features/prelim/lib/prelimGlobalData'
+import {
+  getCompanyStatus,
+  getOwnsResolutionMarker,
+  getOwnsStatus,
+  getWorkflowStatus,
+} from '@/features/prelim/lib/prelimGlobalData'
 
 type Props = {
   application?: Applicant
@@ -393,8 +398,17 @@ export function PrelimResolvedSection({
                         <div className="text-xs text-gray-500 space-y-0.5 min-w-0">
                           <div>
                             <span className="inline-flex items-center rounded-md bg-yellow-100 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
+                              <span
+                                className="inline-flex items-center"
+                                title={
+                                  getCompanyStatus(application?.globalData)
+                                    ? `Company status: ${getCompanyStatus(application?.globalData)}`
+                                    : undefined
+                                }
+                              >
                               <ResolveMethodMarker marker={companyResolveMethodMarker} />
                               CompanyID: {resolved.company.Id}
+                              </span>
                             </span>
                           </div>
                           <div className="text-gray-500 truncate">{resolved.company.Address}</div>
@@ -500,7 +514,18 @@ export function PrelimResolvedSection({
                                           p.plant?.plantID,
                                         )}
                                       />
-                                      <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap">
+                                      <span
+                                        className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap"
+                                        title={
+                                          getOwnsStatus(
+                                            application?.globalData,
+                                            p.ownsID,
+                                            p.plant?.plantID,
+                                          )
+                                            ? `OWNS status: ${getOwnsStatus(application?.globalData, p.ownsID, p.plant?.plantID)}`
+                                            : undefined
+                                        }
+                                      >
                                         OWNSID: {p.ownsID}
                                       </span>
                                     </span>
@@ -509,7 +534,15 @@ export function PrelimResolvedSection({
                                     <button
                                       type="button"
                                       onClick={() => handleWfidClick(p.WFID)}
-                                      title={`Open workflow details for WFID ${p.WFID}`}
+                                      title={
+                                        getWorkflowStatus(
+                                          application?.globalData,
+                                          p.WFID,
+                                          p.plant?.plantID,
+                                        )
+                                          ? `Workflow status: ${getWorkflowStatus(application?.globalData, p.WFID, p.plant?.plantID)}`
+                                          : `Open workflow details for WFID ${p.WFID}`
+                                      }
                                       className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs text-gray-600 border border-gray-200 whitespace-nowrap hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                                     >
                                       WFID: {p.WFID}

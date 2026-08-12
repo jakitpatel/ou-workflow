@@ -27,3 +27,38 @@ export function getOwnsResolutionMarker(
   if (!plant) return null
   return plant.is_new_owns === true ? 'C' : 'M'
 }
+
+const sameId = (left: unknown, right: unknown) => {
+  const normalizedLeft = String(left ?? '').trim()
+  return normalizedLeft !== '' && normalizedLeft === String(right ?? '').trim()
+}
+
+export function getCompanyStatus(
+  globalData: ApplicationGlobalData | undefined,
+) {
+  return globalData?.company_status
+}
+
+export function getOwnsStatus(
+  globalData: ApplicationGlobalData | undefined,
+  ownsId: string | number | null | undefined,
+  plantId?: string | number | null,
+) {
+  const plants = globalData?.plants ?? []
+  const plant = plants.find((candidate) => sameId(candidate.owns_id, ownsId))
+    ?? plants.find((candidate) => sameId(candidate.plant_id, plantId))
+    ?? (plants.length === 1 ? plants[0] : undefined)
+  return plant?.owns_status
+}
+
+export function getWorkflowStatus(
+  globalData: ApplicationGlobalData | undefined,
+  wfid: string | number | null | undefined,
+  plantId?: string | number | null,
+) {
+  const plants = globalData?.plants ?? []
+  const plant = plants.find((candidate) => sameId(candidate.WFID, wfid))
+    ?? plants.find((candidate) => sameId(candidate.plant_id, plantId))
+    ?? (plants.length === 1 ? plants[0] : undefined)
+  return plant?.wf_status ?? globalData?.wf_status
+}
