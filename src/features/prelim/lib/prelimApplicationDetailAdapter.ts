@@ -106,6 +106,9 @@ type PrelimApplicationDetail = {
   GlobalData?: string | null
   globalData?: Array<{ GlobalData?: string | null }>
   OUCertified?: boolean
+  createdDate?: string
+  daysInProcess?: number
+  daysOverdue?: number
   applicationinfo?: { taskEvents?: TaskEvent[] }
   appplicationinfo?: { taskEvents?: TaskEvent[] }
   companyAdresses?: PrelimCompanyAddress[]
@@ -343,6 +346,9 @@ export function mapPrelimApplicationDetailToApplicationDetail(
 
   return {
     applicationId: String(detail.externalReferenceId ?? ''),
+    createdDate: detail.createdDate,
+    daysInProcess: detail.daysInProcess,
+    daysOverdue: detail.daysOverdue,
     status: detail.status ?? 'New',
     validationStatus: detail.ValidationStatus ?? detail.validationStatus,
     validationErrorDesc: detail.intakeValidatiomErrorDesc,
