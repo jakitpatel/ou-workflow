@@ -450,7 +450,7 @@ export function PrelimResolutionComparisonSection({
             title="Contact"
             badge={(plantData.secondaryContactLabel || 'Marketing').toUpperCase()}
             badgeClass="bg-violet-100 text-violet-700"
-            note="- Not currently in Kashrus"
+            note=""
             isLast
             editable={drawerActionable}
             isEditing={editableSection === 'plant-marketing'}
