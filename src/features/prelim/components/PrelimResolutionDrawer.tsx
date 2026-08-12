@@ -178,10 +178,8 @@ export function PrelimResolutionDrawer({
   const plantDb: PlantDbRecord | undefined = getPlantDbRecord(plantDbResponse)
   const dbCompanyAddress = getPhysicalAddress(companyDb?.companyAddresses)
   const dbPlantAddress = getPhysicalAddress(plantDb?.plantAddresses)
-  const dbCompanyPrimaryContact = getPrimaryContact(companyDb?.companyContacts)
-  const dbCompanyBillingContact = getBillingContact(companyDb?.companyContacts, {
-    fallbackToSecondary: false,
-  })
+  const dbCompanyPrimaryContact = companyDb?.companyContacts?.primaryContact?.[0]
+  const dbCompanyBillingContact = companyDb?.companyContacts?.billingContact?.[0]
   const dbPlantPrimaryContact = getPrimaryContact(plantDb?.plantContacts)
   const dbPlantMarketingContact = getBillingContact(plantDb?.plantContacts)
 

@@ -35,10 +35,16 @@ export type RawKashrusContact = PlantFromApplicationContact & {
   }>
 }
 
-export type CompanyDbRecord = KashrusCompanyDetail & {
+export type RawKashrusCompanyContacts = {
+  primaryContact?: RawKashrusContact[]
+  billingContact?: RawKashrusContact[]
+}
+
+export type CompanyDbRecord = Omit<KashrusCompanyDetail, 'companyContacts'> & {
   companyAddresses?: RawKashrusAddress[]
-  companyContacts?: RawKashrusContact[]
+  companyContacts?: RawKashrusCompanyContacts
   companytdetails?: RawKashrusDetails[]
+  website?: string
 }
 
 export type PlantDbRecord = KashrusPlantDetail & {

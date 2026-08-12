@@ -262,8 +262,8 @@ export function PrelimResolutionComparisonSection({
             <ComparisonRow
               field="Website"
               appValue={companyData.companyWebsite || ''}
-              dbValue={companyDb?.companyWebsite || 'Not on file'}
-              status={getComparisonStatus(companyData.companyWebsite, companyDb?.companyWebsite)}
+              dbValue={companyDb?.website || 'Not on file'}
+              status={getComparisonStatus(companyData.companyWebsite, companyDb?.website)}
               editable={isEditMode || editableSection === 'company-info'}
               onAppValueChange={(value) =>
                 setEditableCompanyData((prev) => ({ ...prev, companyWebsite: value }))
