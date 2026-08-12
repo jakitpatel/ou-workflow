@@ -510,7 +510,7 @@ function ContactRows({
 }) {
   const title = pickFirstNonEmpty(dbContact?.companytitle, dbContact?.Title)
   const phone = pickFirstNonEmpty(dbContact?.Cell, dbContact?.Voice)
-  const email = pickFirstNonEmpty(dbContact?.EMail)
+  const email = pickFirstNonEmpty(dbContact?.Email, dbContact?.EMail)
 
   return (
     <>

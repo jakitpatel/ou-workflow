@@ -23,6 +23,7 @@ export type RawKashrusContact = PlantFromApplicationContact & {
   FirstName?: string
   LastName?: string
   EMail?: string
+  Email?: string
   Cell?: string
   Voice?: string
   Title?: string
@@ -40,6 +41,11 @@ export type RawKashrusCompanyContacts = {
   billingContact?: RawKashrusContact[]
 }
 
+export type RawKashrusPlantContacts = {
+  primaryContact?: RawKashrusContact[]
+  billingContact?: RawKashrusContact[]
+}
+
 export type CompanyDbRecord = Omit<KashrusCompanyDetail, 'companyContacts'> & {
   companyAddresses?: RawKashrusAddress[]
   companyContacts?: RawKashrusCompanyContacts
@@ -47,9 +53,9 @@ export type CompanyDbRecord = Omit<KashrusCompanyDetail, 'companyContacts'> & {
   website?: string
 }
 
-export type PlantDbRecord = KashrusPlantDetail & {
+export type PlantDbRecord = Omit<KashrusPlantDetail, 'plantContacts'> & {
   plantAddresses?: RawKashrusAddress[]
-  plantContacts?: RawKashrusContact[]
+  plantContacts?: RawKashrusPlantContacts
   plantdetails?: RawKashrusDetails[]
 }
 

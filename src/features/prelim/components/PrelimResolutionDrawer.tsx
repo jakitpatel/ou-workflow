@@ -27,11 +27,9 @@ import {
   countUpdatedPlantFields,
   createDefaultCompanyData,
   createDefaultPlantData,
-  getBillingContact,
   getCompanyDbRecord,
   getPhysicalAddress,
   getPlantDbRecord,
-  getPrimaryContact,
 } from '@/features/prelim/lib/prelimResolution'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import type {
@@ -180,8 +178,8 @@ export function PrelimResolutionDrawer({
   const dbPlantAddress = getPhysicalAddress(plantDb?.plantAddresses)
   const dbCompanyPrimaryContact = companyDb?.companyContacts?.primaryContact?.[0]
   const dbCompanyBillingContact = companyDb?.companyContacts?.billingContact?.[0]
-  const dbPlantPrimaryContact = getPrimaryContact(plantDb?.plantContacts)
-  const dbPlantMarketingContact = getBillingContact(plantDb?.plantContacts)
+  const dbPlantPrimaryContact = plantDb?.plantContacts?.primaryContact?.[0]
+  const dbPlantMarketingContact = plantDb?.plantContacts?.billingContact?.[0]
 
   const handleCreateCompanyContact = async (contactType: 'primary' | 'billing') => {
     if (!contactSectionActionable || isSubmitting || !isCompany || !selectedMatch?.Id) return

@@ -132,6 +132,7 @@ export type PlantFromApplicationContact = {
   BillingCT?: string;
   Cell?: string;
   EMail?: string;
+  Email?: string;
   Fax?: string;
   FirstName?: string;
   LastName?: string;
