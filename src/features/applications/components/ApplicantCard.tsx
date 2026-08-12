@@ -18,6 +18,18 @@ import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
 import type { Applicant, Task } from '@/types/application'
 
+const getAssignedNcrc = (applicant: Applicant) => {
+  const ncrcRoles = (applicant.assignedRoles ?? []).filter((assignedRole) =>
+    Object.keys(assignedRole).some((key) => key.toUpperCase() === 'NCRC'),
+  )
+  const assignedRole = ncrcRoles.find((role) => role.isPrimary === true) ?? ncrcRoles[0]
+  if (!assignedRole) return ''
+
+  const ncrcKey = Object.keys(assignedRole).find((key) => key.toUpperCase() === 'NCRC')
+  const assignedName = ncrcKey ? assignedRole[ncrcKey] : undefined
+  return typeof assignedName === 'string' ? assignedName.trim() : ''
+}
+
 type Props = {
   applicant: Applicant
   handleTaskAction: (e: React.MouseEvent, application: Applicant, action: Task) => void
@@ -49,6 +61,7 @@ export function ApplicantCard({
     select: (data: any[]) => data?.[0] ?? null,
     ...queryOptionDefaults.prelimDetail,
   })
+  const assignedNcrc = getAssignedNcrc(applicant)
 
   const {
     applicationNotes,
@@ -96,6 +109,12 @@ export function ApplicantCard({
             onViewApplicationDetails={handleViewApplicationDetails}
             priority={priority}
           />
+          {assignedNcrc && (
+            <div className="mt-1 text-xs text-gray-600">
+              <span className="font-medium text-gray-500">Assigned NCRC:</span>{' '}
+              <span className="font-semibold text-gray-800">{assignedNcrc}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex-[4] min-w-[420px]">
