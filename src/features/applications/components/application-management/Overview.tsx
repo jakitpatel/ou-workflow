@@ -64,7 +64,6 @@ export default function Overview({
     plantCount: application.preferences?.plantCount || 0,
     productCount: application.products?.length || 0,
     ingredientCount: application.ingredients?.length || 0,
-    recentAdditions: application.ingredients?.filter(i => i.status === 'Recent').length || 0,
     uploadedFiles: application.files?.length || 0
   };
 
@@ -114,14 +113,14 @@ export default function Overview({
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm font-medium text-gray-600">
-                {isPrelimApplicationDetail ? 'Application Status' : 'Kashrus DB Status'}
-              </span>
-              <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-semibold">
-                {application.kashrusStatus}
-              </span>
-            </div>
+            {isPrelimApplicationDetail ? (
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-600">Application Status</span>
+                <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 border border-green-200 rounded-full text-xs font-semibold">
+                  {application.kashrusStatus}
+                </span>
+              </div>
+            ) : null}
 
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">
@@ -191,39 +190,34 @@ export default function Overview({
               </div>
             ) : null}
 
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm font-medium text-gray-600">Primary Contact</span>
-              <span className="text-sm font-semibold text-purple-700">
-                {application.primaryContact}
-              </span>
-            </div>
+            {isPrelimApplicationDetail ? (
+              <>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">Primary Contact</span>
+                  <span className="text-sm font-semibold text-purple-700">
+                    {application.primaryContact}
+                  </span>
+                </div>
 
-            {!isPrelimApplicationDetail ? (
-              <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-sm font-medium text-gray-600">Quote Status</span>
-                <span className="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-full text-xs font-semibold">
-                  Pending Acceptance
-                </span>
-              </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">Currently OU Certified</span>
+                  <span className={`text-sm font-semibold ${
+                    company?.currentlyCertified === 'Yes' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {company?.currentlyCertified || 'No'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm font-medium text-gray-600">Previously Certified</span>
+                  <span className={`text-sm font-semibold ${
+                    company?.everCertified === 'Yes' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {company?.everCertified || 'No'}
+                  </span>
+                </div>
+              </>
             ) : null}
-
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm font-medium text-gray-600">Currently OU Certified</span>
-              <span className={`text-sm font-semibold ${
-                company?.currentlyCertified === 'Yes' ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {company?.currentlyCertified || 'No'}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between py-2">
-              <span className="text-sm font-medium text-gray-600">Previously Certified</span>
-              <span className={`text-sm font-semibold ${
-                company?.everCertified === 'Yes' ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {company?.everCertified || 'No'}
-              </span>
-            </div>
           </div>
         </div>
 
@@ -252,13 +246,6 @@ export default function Overview({
 
             {!isPrelimApplicationDetail ? (
               <>
-                <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                  <span className="text-sm font-medium text-gray-600">Recent Additions (24h)</span>
-                  <span className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 bg-green-100 text-green-700 border border-green-200 rounded-lg text-sm font-bold">
-                    {stats.recentAdditions}
-                  </span>
-                </div>
-
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-sm font-medium text-gray-600">Assigned NCRC</span>
                   <span className="text-sm font-semibold text-gray-900">
