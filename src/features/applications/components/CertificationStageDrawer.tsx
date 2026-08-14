@@ -270,21 +270,6 @@ export function CertificationStageDrawer({ open, applicant, task, onClose }: Pro
                 </button>
               </section>
               <section className="overflow-hidden rounded-xl border bg-white shadow-sm">
-                <div className="border-b bg-gray-50 px-5 py-4">
-                  <h3 className="font-semibold text-gray-900">
-                    Bichel / Certification Confirmation
-                  </h3>
-                  <div className="mt-3 grid grid-cols-[75px_1fr] gap-y-1 text-xs">
-                    <span className="text-gray-500">From</span>
-                    <span>Kashrus</span>
-                    <span className="text-gray-500">To</span>
-                    <span>productAutomation@ou.org</span>
-                    <span className="text-gray-500">Captured</span>
-                    <span>{state.bichelReceivedAt || 'Available in application detail'}</span>
-                    <span className="text-gray-500">App</span>
-                    <span>{state.applicationId}</span>
-                  </div>
-                </div>
                 {state.bichelFileUrl ? (
                   <div className="flex min-h-[560px] flex-col">
                     <div className="flex items-center justify-between gap-3 border-b px-5 py-3 text-sm text-gray-600">

@@ -153,7 +153,7 @@ export function useCertificationStageDrawerState({
   )
   const [body, setBody] = useState(savedState?.welcomeEmail?.body ?? defaultMessage.body)
   const [attachments, setAttachments] = useState<string[]>(
-    savedState?.welcomeEmail?.attachments ?? ['Letter of Certification.pdf'],
+    savedState?.welcomeEmail?.attachments ?? [],
   )
   const [sentAt, setSentAt] = useState(savedState?.welcomeEmail?.sentAt ?? '')
   const [isSaving, setIsSaving] = useState(false)
