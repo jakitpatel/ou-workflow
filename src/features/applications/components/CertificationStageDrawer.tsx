@@ -1,5 +1,6 @@
-import { Check, Clock3, FileText, Mail, Paperclip, X } from 'lucide-react'
+import { Check, Clock3, ExternalLink, FileText, Mail, Paperclip, X } from 'lucide-react'
 import { toast } from 'sonner'
+
 import { useCertificationStageDrawerState } from '@/features/applications/hooks/useCertificationStageDrawerState'
 import type { Applicant, Task } from '@/types/application'
 
@@ -147,7 +148,9 @@ export function CertificationStageDrawer({ open, applicant, task, onClose }: Pro
                 <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
                   <strong>Bichel Email Received</strong>
                   <div className="mt-1 text-xs">
-                    Received {state.bichelReceivedAt} via productAutomation@ou.org.
+                    {state.bichelReceivedAt
+                      ? `Received ${state.bichelReceivedAt} via productAutomation@ou.org.`
+                      : 'The Bichel file is available for this application.'}
                   </div>
                 </div>
                 <label className="mt-4 block text-sm">
@@ -277,16 +280,37 @@ export function CertificationStageDrawer({ open, applicant, task, onClose }: Pro
                     <span className="text-gray-500">To</span>
                     <span>productAutomation@ou.org</span>
                     <span className="text-gray-500">Captured</span>
-                    <span>{state.bichelReceivedAt}</span>
+                    <span>{state.bichelReceivedAt || 'Available in application detail'}</span>
                     <span className="text-gray-500">App</span>
                     <span>{state.applicationId}</span>
                   </div>
                 </div>
-                <div className="p-5 text-sm leading-7 text-gray-700">
-                  The Bichel for <strong>{applicant?.plant || 'this plant'}</strong> ({company}) has
-                  been completed in Kashrus. The welcome email can now be sent and the certification
-                  task completed.
-                </div>
+                {state.bichelFileUrl ? (
+                  <div className="flex min-h-[560px] flex-col">
+                    <div className="flex items-center justify-between gap-3 border-b px-5 py-3 text-sm text-gray-600">
+                      <span>Bichel document</span>
+                      <a
+                        href={state.bichelFileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 font-medium text-blue-700 hover:underline"
+                      >
+                        Open in new tab <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </div>
+                    <iframe
+                      title="Bichel document"
+                      src={state.bichelFileUrl}
+                      className="min-h-[520px] flex-1 border-0 bg-gray-100"
+                    />
+                  </div>
+                ) : (
+                  <div className="p-5 text-sm leading-7 text-gray-700">
+                    The Bichel for <strong>{applicant?.plant || 'this plant'}</strong> ({company})
+                    has been completed in Kashrus. The welcome email can now be sent and the
+                    certification task completed.
+                  </div>
+                )}
               </section>
             </div>
           ) : null}

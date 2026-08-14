@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
+
+import { useUser } from '@/context/UserContext'
 import { createApplicationMessage, fetchApplicationDetail } from '@/features/applications/api'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
-import { useUser } from '@/context/UserContext'
 import { confirmTask, patchTaskResult } from '@/features/tasks/api'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
+import { resolveApiBaseUrl } from '@/shared/api/httpClient'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import type { Applicant, CompanyContact, CompanyContactGroups, Task } from '@/types/application'
 
@@ -28,6 +30,31 @@ type CertificationSavedState = {
 }
 
 const normalizeText = (value: unknown) => String(value ?? '').trim()
+
+const getBichelFileUrl = (detail: unknown): string => {
+  if (!detail || typeof detail !== 'object') return ''
+
+  const detailRecord = detail as Record<string, unknown>
+  let globalData = detailRecord.globalData ?? detailRecord.GlobalData
+  if (typeof globalData === 'string') {
+    try {
+      globalData = JSON.parse(globalData)
+    } catch {
+      return ''
+    }
+  }
+  if (!globalData || typeof globalData !== 'object') return ''
+
+  const filePath = normalizeText(
+    (globalData as Record<string, unknown>).bichelfileUrl ??
+      (globalData as Record<string, unknown>).bichelFileUrl,
+  )
+  if (!filePath) return ''
+  if (/^https?:\/\//i.test(filePath)) return filePath
+
+  const apiRoot = resolveApiBaseUrl().replace(/\/api\/?$/i, '').replace(/\/$/, '')
+  return `${apiRoot}${filePath.startsWith('/') ? '' : '/'}${filePath}`
+}
 
 const normalizeContacts = (
   contacts?: CompanyContact[] | CompanyContactGroups,
@@ -99,6 +126,7 @@ export function useCertificationStageDrawerState({
     queryFn: () => fetchApplicationDetail({ applicationId, token }),
     enabled: enabled && Boolean(applicationId) && Boolean(token),
   })
+  const bichelFileUrl = useMemo(() => getBichelFileUrl(detailQuery.data), [detailQuery.data])
   const contacts = useMemo(
     () => normalizeContacts(detailQuery.data?.companyContacts),
     [detailQuery.data?.companyContacts],
@@ -129,6 +157,9 @@ export function useCertificationStageDrawerState({
   )
   const [sentAt, setSentAt] = useState(savedState?.welcomeEmail?.sentAt ?? '')
   const [isSaving, setIsSaving] = useState(false)
+
+  const visibleStage: CertificationStage =
+    stage === 'waiting' && bichelFileUrl ? 'welcome-email' : stage
 
   useEffect(() => {
     if (savedState?.welcomeEmail || !preferredContact) return
@@ -274,6 +305,7 @@ export function useCertificationStageDrawerState({
   return {
     applicationId,
     attachments,
+    bichelFileUrl,
     bichelReceivedAt,
     body,
     cc,
@@ -282,7 +314,7 @@ export function useCertificationStageDrawerState({
     detailLoading: detailQuery.isLoading,
     isSaving,
     sentAt,
-    stage,
+    stage: visibleStage,
     subject,
     template,
     to,
