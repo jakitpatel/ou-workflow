@@ -2,6 +2,7 @@ type TasksListParams = {
   applicationId?: string
   searchTerm?: string
   daysFilter?: string | number
+  role?: string
   page?: number
   limit?: number
 }

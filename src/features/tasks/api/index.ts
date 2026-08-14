@@ -284,6 +284,7 @@ export async function fetchApplicationTasks({
   applicationId,
   searchTerm,
   days,
+  role,
   page = 0,
   limit = 50,
 }: FetchApplicationTasksRequest = {}): Promise<ApplicationTasksResponse> {
@@ -296,6 +297,10 @@ export async function fetchApplicationTasks({
 
   if (days) {
     params.append('days', String(days))
+  }
+
+  if (role && role.toUpperCase() !== 'ALL') {
+    params.append('role', role)
   }
 
   const queryString = params.toString()
@@ -314,6 +319,7 @@ export type FetchApplicationTasksRequest = {
   applicationId?: string
   searchTerm?: string
   days?: string | number | undefined
+  role?: string | null
   page?: number
   limit?: number
 }

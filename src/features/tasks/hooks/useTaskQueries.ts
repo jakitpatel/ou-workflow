@@ -11,6 +11,7 @@ export const getTasksQueryOptions = ({
   applicationId,
   searchTerm,
   daysFilter = 'pending',
+  role,
   token,
   page = 0,
   limit = DEFAULT_TASKS_PAGE_LIMIT,
@@ -18,6 +19,7 @@ export const getTasksQueryOptions = ({
   applicationId?: string
   searchTerm?: string
   daysFilter?: string | number | undefined
+  role?: string
   token?: string | null
   page?: number
   limit?: number
@@ -26,6 +28,7 @@ export const getTasksQueryOptions = ({
     applicationId,
     searchTerm,
     daysFilter,
+    role,
     page,
     limit,
   }),
@@ -35,6 +38,7 @@ export const getTasksQueryOptions = ({
       applicationId,
       searchTerm,
       days: daysFilter === 'pending' ? undefined : daysFilter,
+      role,
       page,
       limit,
     }),
@@ -48,13 +52,15 @@ export function useTasks(
   limit = DEFAULT_TASKS_PAGE_LIMIT,
   enabled = true,
 ) {
-  const { token } = useUser()
+  const { token, role } = useUser()
+  const taskRole = role && role.toUpperCase() !== 'ALL' ? role : undefined
 
   return useQuery({
     ...getTasksQueryOptions({
       applicationId,
       searchTerm,
       daysFilter,
+      role: taskRole,
       token,
       page,
       limit,
@@ -79,13 +85,15 @@ export function useInfiniteTasks({
   limit?: number
   enabled?: boolean
 }) {
-  const { token } = useUser()
+  const { token, role } = useUser()
+  const taskRole = role && role.toUpperCase() !== 'ALL' ? role : undefined
 
   return useInfiniteQuery({
     queryKey: tasksQueryKeys.list({
       applicationId,
       searchTerm,
       daysFilter,
+      role: taskRole,
       limit,
     }),
     queryFn: ({ pageParam = 0 }) =>
@@ -94,6 +102,7 @@ export function useInfiniteTasks({
         applicationId,
         searchTerm,
         days: daysFilter === 'pending' ? undefined : daysFilter,
+        role: taskRole,
         page: pageParam,
         limit,
       }),
