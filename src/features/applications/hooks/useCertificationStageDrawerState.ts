@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useUser } from '@/context/UserContext'
 import { createApplicationMessage, fetchApplicationDetail } from '@/features/applications/api'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
-import { confirmTask, patchTaskResult } from '@/features/tasks/api'
+import { confirmTask, patchTaskGuiDisplayResult, patchTaskResult } from '@/features/tasks/api'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { resolveApiBaseUrl } from '@/shared/api/httpClient'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
@@ -157,9 +157,26 @@ export function useCertificationStageDrawerState({
   )
   const [sentAt, setSentAt] = useState(savedState?.welcomeEmail?.sentAt ?? '')
   const [isSaving, setIsSaving] = useState(false)
+  const bichelTransitionUpdates = useRef(new Set<string>())
 
   const visibleStage: CertificationStage =
     stage === 'waiting' && bichelFileUrl ? 'welcome-email' : stage
+
+  useEffect(() => {
+    if (!bichelFileUrl || stage !== 'waiting' || !taskId || bichelTransitionUpdates.current.has(taskId)) {
+      return
+    }
+
+    bichelTransitionUpdates.current.add(taskId)
+    void patchTaskGuiDisplayResult({
+      taskId,
+      result: '{Bichel received}',
+      token,
+    }).catch((error) => {
+      bichelTransitionUpdates.current.delete(taskId)
+      console.error('Unable to update the Bichel task display result', error)
+    })
+  }, [bichelFileUrl, stage, taskId, token])
 
   useEffect(() => {
     if (savedState?.welcomeEmail || !preferredContact) return
