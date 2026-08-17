@@ -55,6 +55,7 @@ export function PrelimApplicationCard({
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false)
+  const [resolutionTaskToOpen, setResolutionTaskToOpen] = useState<Task | null>(null)
   const assignedNcrc = getAssignedNcrc(company)
   const defaultProgressVisible = normalizeStatus(company.status) !== 'completed'
   const [isProgressVisible, setIsProgressVisible] = useState(defaultProgressVisible)
@@ -168,6 +169,28 @@ export function PrelimApplicationCard({
     } finally {
       setIsSubmittingCancel(false)
     }
+  }
+
+  const handleStageTaskAction = (
+    event: React.MouseEvent,
+    application: Applicant,
+    task: Task,
+  ) => {
+    const taskType = task.taskType?.trim().toLowerCase()
+    const taskCategory = task.taskCategory?.trim().toLowerCase()
+    const isResolutionTask =
+      taskType === 'action' &&
+      (taskCategory === 'resolvecompany' || taskCategory === 'resolveplant')
+
+    if (!isResolutionTask) {
+      handleTaskAction?.(event, application, task)
+      return
+    }
+
+    event.stopPropagation()
+    event.preventDefault()
+    setIsProgressVisible(true)
+    setResolutionTaskToOpen(task)
   }
 
   return (
@@ -366,7 +389,7 @@ export function PrelimApplicationCard({
               setExpanded(null)
             }}
             applicant={company}
-            handleTaskAction={handleTaskAction}
+            handleTaskAction={handleStageTaskAction}
           />
         </div>
       )}
@@ -375,6 +398,8 @@ export function PrelimApplicationCard({
         loading={false}
         defaultVisible={defaultProgressVisible}
         isProgressVisible={isProgressVisible}
+        resolutionTaskToOpen={resolutionTaskToOpen}
+        onResolutionTaskHandled={() => setResolutionTaskToOpen(null)}
       />
     </div>
   )

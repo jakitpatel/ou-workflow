@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, ChevronRight, Building2, Factory } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import type { Applicant } from '@/types/application'
+import type { Applicant, Task } from '@/types/application'
 import { useUser } from '@/context/UserContext'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
@@ -30,6 +30,8 @@ type Props = {
   loading?: boolean
   defaultVisible?: boolean
   isProgressVisible?: boolean
+  resolutionTaskToOpen?: Task | null
+  onResolutionTaskHandled?: () => void
 }
 
 type DrawerState = {
@@ -139,6 +141,8 @@ export function PrelimResolvedSection({
   loading,
   defaultVisible = true,
   isProgressVisible,
+  resolutionTaskToOpen,
+  onResolutionTaskHandled,
 }: Props) {
   const [open, setOpen] = useState(true)
   const navigate = useNavigate()
@@ -204,6 +208,32 @@ export function PrelimResolvedSection({
       (isTaskCompleted(plantTask?.status) || Boolean(plantAction && !plantAction.disabled))
     )
   }
+
+  useEffect(() => {
+    if (!resolutionTaskToOpen) return
+
+    const taskCategory = resolutionTaskToOpen.taskCategory?.trim().toLowerCase()
+    const taskInstanceId =
+      resolutionTaskToOpen.TaskInstanceId ?? (resolutionTaskToOpen as any).taskInstanceId
+
+    if (taskCategory === 'resolvecompany') {
+      setDrawerState({ isOpen: true, type: 'company' })
+      onResolutionTaskHandled?.()
+      return
+    }
+
+    if (taskCategory === 'resolveplant') {
+      const plantIndex = plantTasks.findIndex((task) => {
+        const candidateId = task.TaskInstanceId ?? (task as any).taskInstanceId
+        return String(candidateId ?? '') === String(taskInstanceId ?? '')
+      })
+
+      if (plantIndex >= 0) {
+        setDrawerState({ isOpen: true, type: 'plant', plantIndex })
+      }
+      onResolutionTaskHandled?.()
+    }
+  }, [onResolutionTaskHandled, plantTasks, resolutionTaskToOpen])
 
   if (!loading && !resolved) return null
 
