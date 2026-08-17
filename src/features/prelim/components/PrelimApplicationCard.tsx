@@ -30,6 +30,18 @@ function getStageColor(status?: string): string {
   return STATUS_COLORS[normalizeStatus(status)] ?? STATUS_COLORS.unknown
 }
 
+function getAssignedNcrc(applicant: Applicant): string {
+  const ncrcRoles = (applicant.assignedRoles ?? []).filter((assignedRole) =>
+    Object.keys(assignedRole).some((key) => key.toUpperCase() === 'NCRC'),
+  )
+  const assignedRole = ncrcRoles.find((role) => role.isPrimary === true) ?? ncrcRoles[0]
+  if (!assignedRole) return ''
+
+  const ncrcKey = Object.keys(assignedRole).find((key) => key.toUpperCase() === 'NCRC')
+  const assignedName = ncrcKey ? assignedRole[ncrcKey] : undefined
+  return typeof assignedName === 'string' ? assignedName.trim() : ''
+}
+
 export function PrelimApplicationCard({
   company,
   onViewApplication,
@@ -43,6 +55,7 @@ export function PrelimApplicationCard({
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false)
+  const assignedNcrc = getAssignedNcrc(company)
   const defaultProgressVisible = normalizeStatus(company.status) !== 'completed'
   const [isProgressVisible, setIsProgressVisible] = useState(defaultProgressVisible)
 
@@ -227,9 +240,17 @@ export function PrelimApplicationCard({
           </div>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center text-gray-600 bg-gray-100 px-2 py-1 rounded">
-            <Clock className="w-4 h-4 mr-1" aria-hidden="true" />
-            <span className="text-sm font-medium">{company.daysInProcess} days elapsed</span>
+          <div className="flex flex-col items-start gap-1">
+            <div className="flex items-center text-gray-600 bg-gray-100 px-2 py-1 rounded">
+              <Clock className="w-4 h-4 mr-1" aria-hidden="true" />
+              <span className="text-sm font-medium">{company.daysInProcess} days elapsed</span>
+            </div>
+            {assignedNcrc && (
+              <div className="px-2 text-xs text-gray-600">
+                <span className="font-medium text-gray-500">Assigned NCRC:</span>{' '}
+                <span className="font-semibold text-gray-800">{assignedNcrc}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
