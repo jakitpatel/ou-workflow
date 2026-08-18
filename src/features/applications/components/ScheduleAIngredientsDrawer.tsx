@@ -38,6 +38,7 @@ import {
   fetchScheduleAEirDocumentBlob,
   resolveScheduleADocumentUrl,
   useScheduleAEirDocument,
+  useScheduleAApplicationAppVars,
   useScheduleAIngredients,
   useScheduleAScratchpad,
   useSendScheduleACommunicationEmail,
@@ -487,19 +488,23 @@ export function ScheduleAIngredientsDrawer({
     onError: (message) => toast.error(message),
   })
   const { data: applicationDetail } = useApplicationDetail(isActive ? resolvedApplicationId : undefined)
+  const { data: globalAppVars } = useScheduleAApplicationAppVars(
+    isActive ? resolvedApplicationId : undefined,
+  )
   const scratchpadApi = useScheduleAScratchpad(resolvedApplicationId)
   const { scratchpad } = scratchpadApi
   const assignedRfr = useMemo(() => getAssignedRoleValue(assignedRoles, 'RFR'), [assignedRoles])
   const eirSubmitterLabel = assignedRfr === 'Not yet Assigned' ? 'the assigned RFR' : assignedRfr
-  const visitIdLabel = textValue(visitId ?? appVars?.visit_id)
-  const actualVisitDate = formatDisplayDate(appVars?.actual_visit_date)
-  const daysSinceVisit = getDaysSinceVisit(appVars?.actual_visit_date)
-  const eirWorkflowFileId = textValue(appVars?.wf_file_id)
-  const eirDisplayName = textValue(appVars?.filename) || getDocumentFilename(appVars?.rfr_file_url)
-  const eirDocumentPath = textValue(appVars?.rfr_file_url)
-  const eirDocumentUrl = resolveScheduleADocumentUrl(appVars?.rfr_file_url)
+  const effectiveAppVars = { ...globalAppVars, ...appVars }
+  const visitIdLabel = textValue(effectiveAppVars.visit_id ?? visitId)
+  const actualVisitDate = formatDisplayDate(effectiveAppVars.actual_visit_date)
+  const daysSinceVisit = getDaysSinceVisit(effectiveAppVars.actual_visit_date)
+  const eirWorkflowFileId = textValue(effectiveAppVars.wf_file_id)
+  const eirDisplayName = textValue(effectiveAppVars.filename) || getDocumentFilename(effectiveAppVars.rfr_file_url)
+  const eirDocumentPath = textValue(effectiveAppVars.rfr_file_url)
+  const eirDocumentUrl = resolveScheduleADocumentUrl(effectiveAppVars.rfr_file_url)
   const eirDocumentFilename = eirDisplayName
-  const canPreviewEirDocument = isPreviewableDocument(appVars?.rfr_file_url)
+  const canPreviewEirDocument = isPreviewableDocument(effectiveAppVars.rfr_file_url)
   const hasWorkflowEirDocument = Boolean(eirWorkflowFileId && eirDisplayName)
   const effectiveEirNotRequired = scratchpad.eirNotRequired && !hasWorkflowEirDocument
   const effectiveEirReceived = hasWorkflowEirDocument || scratchpad.eirReceived

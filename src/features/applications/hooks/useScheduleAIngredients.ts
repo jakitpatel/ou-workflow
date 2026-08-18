@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createApplicationMessage,
   createScheduleAIngredient,
+  fetchApplicants,
   fetchApplicationMessages,
   fetchScheduleAIngredients,
   updateApplicationMessage,
@@ -13,7 +14,7 @@ import { useUser } from '@/context/UserContext'
 import { executeRequest, parseErrorBody, resolveApiBaseUrl } from '@/shared/api/httpClient'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
-import type { ApplicationEmail, KashIngredient, ScheduleAIngredient } from '@/types/application'
+import type { ApplicantAppVars, ApplicationEmail, KashIngredient, ScheduleAIngredient } from '@/types/application'
 
 export type ScheduleAIngredientRow = {
   id: string
@@ -126,6 +127,29 @@ const todayLabel = () =>
   new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
 const valueText = (value: unknown) => String(value ?? '').trim()
+
+export function useScheduleAApplicationAppVars(applicationId?: string) {
+  const { token } = useUser()
+
+  return useQuery<ApplicantAppVars | null>({
+    queryKey: ['schedule-a-application-appvars', applicationId],
+    queryFn: async () => {
+      const response = await fetchApplicants({
+        applicationId: Number(applicationId),
+        limit: 10_000,
+        myOnly: false,
+        token: token ?? undefined,
+      })
+      const application = response.data.find(
+        (item) => String(item.applicationId ?? item.id) === applicationId,
+      )
+
+      return application?.appvars ?? null
+    },
+    enabled: Boolean(applicationId && token),
+    ...queryOptionDefaults.applicationsList,
+  })
+}
 
 export const getDaysSinceVisit = (value?: string | null, now = new Date()) => {
   const normalized = valueText(value)
