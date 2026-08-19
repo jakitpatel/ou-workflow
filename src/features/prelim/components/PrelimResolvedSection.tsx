@@ -530,12 +530,16 @@ export function PrelimResolvedSection({
                             <div className="mt-1 flex items-start justify-between gap-3">
                               <div className="text-xs text-gray-500 space-y-0.5 min-w-0">
                                 <div className="flex flex-wrap items-center gap-1.5">
-                                  <span className="inline-flex items-center">
-                                    <ResolveMethodMarker
-                                      marker={getResolveMethodMarker(plantTasks[idx])}
-                                    />
-                                    Plant ID: <span className="font-mono">{p.plant?.plantID}</span>
-                                  </span>
+                                  {isTaskCompleted(plantTasks[idx]?.status) &&
+                                    p.plant?.plantID && (
+                                      <span className="inline-flex items-center">
+                                        <ResolveMethodMarker
+                                          marker={getResolveMethodMarker(plantTasks[idx])}
+                                        />
+                                        Plant ID:{' '}
+                                        <span className="font-mono">{p.plant.plantID}</span>
+                                      </span>
+                                    )}
                                   {p.ownsID && (
                                     <span className="inline-flex items-center">
                                       <ResolveMethodMarker
