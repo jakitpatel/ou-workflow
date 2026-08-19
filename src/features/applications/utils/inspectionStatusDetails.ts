@@ -39,15 +39,24 @@ const formatInspectionInputParam = (inputParam: Record<string, unknown>): string
 }
 
 const parseJsonLikeObject = (text: string): unknown | null => {
-  try {
-    return JSON.parse(text)
-  } catch {
+  const candidates = [
+    text,
+    text
+      .replace(/\bNone\b/g, 'null')
+      .replace(/\bTrue\b/g, 'true')
+      .replace(/\bFalse\b/g, 'false')
+      .replace(/'/g, '"'),
+  ]
+
+  for (const candidate of candidates) {
     try {
-      return JSON.parse(text.replace(/'/g, '"'))
+      return JSON.parse(candidate)
     } catch {
-      return null
+      // Try the next supported backend serialization format.
     }
   }
+
+  return null
 }
 
 export const buildInspectionStatusDetails = (inputParam: string, savedState?: unknown) => {
@@ -111,11 +120,8 @@ export const getInspectionStatusSavedState = <T = unknown>(value: unknown): T | 
     const record = value as Record<string, unknown>
     const savedState = record.savedState ?? record.SavedState
     if (typeof savedState === 'string') {
-      try {
-        return JSON.parse(savedState) as T
-      } catch {
-        return null
-      }
+      const parsedSavedState = parseJsonLikeObject(savedState)
+      return parsedSavedState ? (parsedSavedState as T) : null
     }
 
     if (savedState && typeof savedState === 'object') return savedState as T
