@@ -461,7 +461,7 @@ export function useInspectionInvoiceDrawerState({
   taskInstanceId?: string | number
   taskName?: string
 } = {}) {
-  const { token, username } = useUser()
+  const { email: userEmail, token } = useUser()
   const queryClient = useQueryClient()
   const {
     data: rfrLookupList = [],
@@ -1045,7 +1045,7 @@ export function useInspectionInvoiceDrawerState({
         payload: {
           MessageID: null,
           ApplicationID: applicationId ?? applicant?.applicationId ?? null,
-          FromUser: username ?? null,
+          FromUser: userEmail ?? null,
           ToUser: toUser,
           Subject: subject,
           MessageText: email.html,

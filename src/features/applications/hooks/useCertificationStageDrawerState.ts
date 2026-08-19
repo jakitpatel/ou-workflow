@@ -116,7 +116,7 @@ export function useCertificationStageDrawerState({
   task?: Task
   enabled: boolean
 }) {
-  const { token, username } = useUser()
+  const { email: userEmail, token, username } = useUser()
   const queryClient = useQueryClient()
   const applicationId = String(applicant?.applicationId ?? '').trim()
   const taskId = String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '').trim()
@@ -266,7 +266,7 @@ export function useCertificationStageDrawerState({
         payload: {
           MessageID: null,
           ApplicationID: applicant?.applicationId ?? null,
-          FromUser: username ?? null,
+          FromUser: userEmail ?? null,
           ToUser: recipientList.join(', '),
           Subject: subject,
           MessageText: email.html,
