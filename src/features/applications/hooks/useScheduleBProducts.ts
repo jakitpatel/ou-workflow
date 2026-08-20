@@ -991,6 +991,35 @@ export function useScheduleBScratchpad(applicationId?: string | number) {
     [updateScratchpad],
   )
 
+  const setRowsResolved = useCallback(
+    (rowIds: string[], isResolved: boolean) => {
+      const uniqueRowIds = Array.from(new Set(rowIds.filter(Boolean)))
+      if (!uniqueRowIds.length) return
+
+      updateScratchpad((current) => {
+        const resolved = { ...current.resolved }
+        const flags = { ...current.flags }
+        const halacha = { ...current.halacha }
+        const resolvedAt = new Date().toISOString().slice(0, 10)
+
+        uniqueRowIds.forEach((rowId) => {
+          if (isResolved) {
+            resolved[rowId] = true
+            if (flags[rowId]) flags[rowId] = { ...flags[rowId], flagged: false }
+            if (halacha[rowId]?.open) {
+              halacha[rowId] = { ...halacha[rowId], open: false, resolvedAt }
+            }
+          } else {
+            delete resolved[rowId]
+          }
+        })
+
+        return { ...current, flags, halacha, resolved }
+      })
+    },
+    [updateScratchpad],
+  )
+
   const toggleHalacha = useCallback(
     (rowId: string) => {
       updateScratchpad((current) => {
@@ -1303,6 +1332,7 @@ export function useScheduleBScratchpad(applicationId?: string | number) {
     toggleFlag,
     updateFlagNote,
     toggleResolved,
+    setRowsResolved,
     toggleHalacha,
     updateHalachaNote,
     generateRound,

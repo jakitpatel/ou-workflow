@@ -712,6 +712,16 @@ export function ScheduleBProductsDrawer({
     return sortRows(filtered, sortKey, sortDirection)
   }, [activeRows, filter, ingView, scratchpad, sortDirection, sortKey])
 
+  const allVisibleRowsResolved =
+    visibleRows.length > 0 && visibleRows.every((row) => Boolean(scratchpad.resolved[row.id]))
+
+  const toggleAllVisibleRowsResolved = () => {
+    scratchpadApi.setRowsResolved(
+      visibleRows.map((row) => row.id),
+      !allVisibleRowsResolved,
+    )
+  }
+
   const currentColumns = ingView === 'application' ? APPLICATION_COLUMNS : KASHRUS_COLUMNS
   const noteColSpan = currentColumns.length + 2
 
@@ -1248,7 +1258,28 @@ export function ScheduleBProductsDrawer({
                                 </button>
                               </th>
                             ))}
-                            {ingView === 'application' && !readOnly ? <th className={`w-28 ${stickyTableHeaderClass}`} style={stickyTableHeaderStyle}>Actions</th> : null}
+                            {ingView === 'application' && !readOnly ? (
+                              <th className={`w-28 ${stickyTableHeaderClass}`} style={stickyTableHeaderStyle}>
+                                <div className="flex flex-col items-start gap-1">
+                                  <span>Actions</span>
+                                  <button
+                                    type="button"
+                                    disabled={!visibleRows.length}
+                                    aria-pressed={allVisibleRowsResolved}
+                                    title={allVisibleRowsResolved ? 'Reopen all displayed rows' : 'Mark all displayed rows resolved'}
+                                    onClick={toggleAllVisibleRowsResolved}
+                                    className={`inline-flex items-center gap-1 rounded px-1.5 py-1 text-[11px] font-medium disabled:cursor-not-allowed disabled:opacity-40 ${
+                                      allVisibleRowsResolved
+                                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                        : 'bg-white text-gray-600 ring-1 ring-inset ring-gray-300 hover:bg-green-50 hover:text-green-700'
+                                    }`}
+                                  >
+                                    <Check className="h-3.5 w-3.5" strokeWidth={allVisibleRowsResolved ? 2.5 : 2} />
+                                    Select all
+                                  </button>
+                                </div>
+                              </th>
+                            ) : null}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
