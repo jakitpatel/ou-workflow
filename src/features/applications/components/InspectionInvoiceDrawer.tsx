@@ -793,6 +793,27 @@ Account Number: ${accountNumber || '-'}`
                       className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
+                  <div className="border-b px-3 py-2 text-right">
+                    <button
+                      type="button"
+                      onClick={() => state.setShowEmailCopies(!state.showEmailCopies)}
+                      className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                    >
+                      {state.showEmailCopies ? 'Hide Cc/Bcc' : 'Show Cc/Bcc'}
+                    </button>
+                  </div>
+                  {state.showEmailCopies ? (
+                    <>
+                      <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
+                        <label htmlFor="inspection-invoice-email-cc" className="pt-2 font-medium text-gray-500">Cc</label>
+                        <input id="inspection-invoice-email-cc" type="text" value={state.emailCc} onChange={(event) => state.setEmailCc(event.target.value)} placeholder="Separate emails with commas" className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      </div>
+                      <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
+                        <label htmlFor="inspection-invoice-email-bcc" className="pt-2 font-medium text-gray-500">Bcc</label>
+                        <input id="inspection-invoice-email-bcc" type="text" value={state.emailBcc} onChange={(event) => state.setEmailBcc(event.target.value)} placeholder="Separate emails with commas" className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      </div>
+                    </>
+                  ) : null}
                   <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
                     <span className="font-medium text-gray-500">Subject</span>
                     <span>{emailSubject}</span>
@@ -835,6 +856,8 @@ Account Number: ${accountNumber || '-'}`
                     try {
                       await state.sendEmail({
                         attachments: emailAttachment,
+                        bccUser: state.emailBcc,
+                        ccUser: state.emailCc,
                         messageText: state.emailBody,
                         subject: emailSubject,
                         toUser: state.emailTo.trim(),

@@ -92,6 +92,7 @@ type GenerateContractPackageParams = {
 type SendContractPackageEmailParams = {
   applicationId?: string | number
   attachments?: string
+  bccUser?: string
   body: string
   ccUser?: string
   companyName: string
@@ -220,6 +221,7 @@ export function useSendContractCommunicationEmail() {
     mutationFn: async ({
       applicationId,
       attachments,
+      bccUser,
       body,
       ccUser,
       companyName,
@@ -263,7 +265,7 @@ export function useSendContractCommunicationEmail() {
           toReply: null,
           isRead: false,
           tag: null,
-          BCCUser: 'productAutomation@ou.org',
+          BCCUser: bccUser || null,
           replyTo: import.meta.env.VITE_EMAIL_REPLY_TO,
           Attachments: attachments || null,
         },

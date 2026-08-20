@@ -723,6 +723,7 @@ type ContractEmailDraft = {
   roundNumber: number
   to: string
   cc: string
+  bcc: string
   subject: string
   body: string
   attachments: string
@@ -1014,6 +1015,7 @@ export function ContractStageDrawer({
   const [emailSent, setEmailSent] = useState(false)
   const [coverLetterBody, setCoverLetterBody] = useState('')
   const [contractEmailDraft, setContractEmailDraft] = useState<ContractEmailDraft | null>(null)
+  const [showContractEmailCopies, setShowContractEmailCopies] = useState(false)
   const [contractEmailCopied, setContractEmailCopied] = useState(false)
   const [contractEmailSendError, setContractEmailSendError] = useState('')
   const [contractEmailSentMessage, setContractEmailSentMessage] = useState('')
@@ -1763,6 +1765,7 @@ ${packageUrl}`
       roundNumber,
       to: contact.email || '',
       cc: rcEmail,
+      bcc: 'productAutomation@ou.org',
       subject,
       body,
       attachments: contractEmailAttachments,
@@ -1774,7 +1777,7 @@ ${packageUrl}`
 
   const copyContractCommunicationEmail = async () => {
     if (!contractEmailDraft) return
-    const text = `To: ${contractEmailDraft.to}\nCc: ${contractEmailDraft.cc}\nSubject: ${contractEmailDraft.subject}\nAttachments: ${contractEmailAttachments}\n\n${contractEmailDraft.body}`
+    const text = `To: ${contractEmailDraft.to}\nCc: ${contractEmailDraft.cc}\nBcc: ${contractEmailDraft.bcc}\nSubject: ${contractEmailDraft.subject}\nAttachments: ${contractEmailAttachments}\n\n${contractEmailDraft.body}`
     await navigator.clipboard?.writeText(text)
     setContractEmailCopied(true)
     window.setTimeout(() => setContractEmailCopied(false), 1500)
@@ -1786,6 +1789,7 @@ ${packageUrl}`
         roundNumber: nextContractRoundNumber,
         to: contact.email || '',
         cc: rcEmail,
+        bcc: 'productAutomation@ou.org',
         subject: emailSubject,
         body: coverLetterBody,
         attachments: contractEmailAttachments,
@@ -1795,6 +1799,7 @@ ${packageUrl}`
       await sendContractCommunicationEmailMutation.mutateAsync({
         applicationId: resolvedApplicationId,
         attachments,
+        bccUser: draft.bcc,
         body: draft.body,
         ccUser: draft.cc,
         companyName,
@@ -2317,21 +2322,23 @@ ${packageUrl}`
                     readOnly={isWorkflowReadOnly}
                   />
                 </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="w-14 shrink-0 font-medium text-blue-500">Cc</span>
-                  <input
-                    type="email"
-                    aria-label="Contract email Cc"
-                    className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 font-mono text-blue-900 outline-none focus:ring-1 focus:ring-blue-400"
-                    value={contractEmailDraft.cc}
-                    onChange={(event) =>
-                      setContractEmailDraft((current) =>
-                        current ? { ...current, cc: event.target.value } : current,
-                      )
-                    }
-                    readOnly={isWorkflowReadOnly}
-                  />
+                <div className="text-right">
+                  <button type="button" onClick={() => setShowContractEmailCopies((current) => !current)} className="text-xs font-medium text-blue-600 hover:text-blue-800">
+                    {showContractEmailCopies ? 'Hide Cc/Bcc' : 'Show Cc/Bcc'}
+                  </button>
                 </div>
+                {showContractEmailCopies ? (
+                  <>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="w-14 shrink-0 font-medium text-blue-500">Cc</span>
+                      <input type="text" aria-label="Contract email Cc" className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 font-mono text-blue-900 outline-none focus:ring-1 focus:ring-blue-400" value={contractEmailDraft.cc} onChange={(event) => setContractEmailDraft((current) => current ? { ...current, cc: event.target.value } : current)} readOnly={isWorkflowReadOnly} />
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="w-14 shrink-0 font-medium text-blue-500">Bcc</span>
+                      <input type="text" aria-label="Contract email Bcc" className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 font-mono text-blue-900 outline-none focus:ring-1 focus:ring-blue-400" value={contractEmailDraft.bcc} onChange={(event) => setContractEmailDraft((current) => current ? { ...current, bcc: event.target.value } : current)} readOnly={isWorkflowReadOnly} />
+                    </div>
+                  </>
+                ) : null}
                 <div className="flex items-center gap-2 text-xs">
                   <span className="w-14 shrink-0 font-medium text-blue-500">Subject</span>
                   <span className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 text-blue-900">

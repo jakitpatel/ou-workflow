@@ -505,6 +505,9 @@ export function useInspectionInvoiceDrawerState({
   const [stage, setStage] = useState<InspectionInvoiceStage>('setup')
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [emailTo, setEmailTo] = useState('')
+  const [emailCc, setEmailCc] = useState('')
+  const [emailBcc, setEmailBcc] = useState('productAutomation@ou.org')
+  const [showEmailCopies, setShowEmailCopies] = useState(false)
   const [emailBody, setEmailBody] = useState('')
   const [sentAt, setSentAt] = useState<string | null>(null)
   const [paidAt, setPaidAt] = useState<string | null>(null)
@@ -1025,11 +1028,15 @@ export function useInspectionInvoiceDrawerState({
 
   const sendEmail = async ({
     attachments,
+    bccUser,
+    ccUser,
     messageText,
     subject,
     toUser,
   }: {
     attachments?: string
+    bccUser?: string
+    ccUser?: string
     messageText: string
     subject: string
     toUser: string
@@ -1062,8 +1069,8 @@ export function useInspectionInvoiceDrawerState({
           toReply: null,
           isRead: false,
           tag: null,
-          CCUser: null,
-          BCCUser: 'productAutomation@ou.org',
+          CCUser: ccUser?.trim() || null,
+          BCCUser: bccUser?.trim() || null,
           Attachments: attachments ?? null,
         },
         token,
@@ -1195,6 +1202,8 @@ export function useInspectionInvoiceDrawerState({
     expenseAmount,
     expenses,
     emailBody,
+    emailBcc,
+    emailCc,
     emailTo,
     extraRecipientEmail,
     fee,
@@ -1229,6 +1238,7 @@ export function useInspectionInvoiceDrawerState({
     selectedRecipient,
     sentAt,
     showEmailPreview,
+    showEmailCopies,
     skipInvoiceWorkflow,
     stage,
     subtotal,
@@ -1243,6 +1253,8 @@ export function useInspectionInvoiceDrawerState({
     setAwaitPayment,
     setExpenseAmount,
     setEmailBody,
+    setEmailBcc,
+    setEmailCc,
     setEmailTo,
     setExtraRecipientEmail,
     setFeeAmount,
@@ -1256,6 +1268,7 @@ export function useInspectionInvoiceDrawerState({
     setRecipient: setRecipientValue,
     setRfrSearch,
     setShowEmailPreview,
+    setShowEmailCopies,
     unlockForEdit,
   }
 }

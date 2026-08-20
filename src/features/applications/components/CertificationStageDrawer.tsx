@@ -181,17 +181,25 @@ export function CertificationStageDrawer({ open, applicant, task, onClose }: Pro
                     Contacts could not be loaded; enter a recipient manually.
                   </p>
                 ) : null}
-                <label className="mt-3 block text-sm">
-                  <span className="text-xs font-semibold uppercase text-gray-500">
-                    Additional recipients
-                  </span>
-                  <input
-                    value={state.cc}
-                    onChange={(event) => state.setCc(event.target.value)}
-                    placeholder="Separate emails with commas"
-                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
-                  />
-                </label>
+                <button
+                  type="button"
+                  onClick={() => state.setShowEmailCopies(!state.showEmailCopies)}
+                  className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-800"
+                >
+                  {state.showEmailCopies ? 'Hide Cc/Bcc' : 'Show Cc/Bcc'}
+                </button>
+                {state.showEmailCopies ? (
+                  <div className="mt-2 space-y-3">
+                    <label className="block text-sm">
+                      <span className="text-xs font-semibold uppercase text-gray-500">Cc</span>
+                      <input value={state.cc} onChange={(event) => state.setCc(event.target.value)} placeholder="Separate emails with commas" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" />
+                    </label>
+                    <label className="block text-sm">
+                      <span className="text-xs font-semibold uppercase text-gray-500">Bcc</span>
+                      <input value={state.bcc} onChange={(event) => state.setBcc(event.target.value)} placeholder="Separate emails with commas" className="mt-1 w-full rounded border border-gray-300 px-3 py-2" />
+                    </label>
+                  </div>
+                ) : null}
                 <label className="mt-3 block text-sm">
                   <span className="text-xs font-semibold uppercase text-gray-500">Subject</span>
                   <input

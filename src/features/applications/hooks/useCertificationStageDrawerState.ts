@@ -22,6 +22,7 @@ type CertificationSavedState = {
     template: CertificationTemplate
     to: string
     cc: string
+    bcc?: string
     subject: string
     body: string
     attachments: string[]
@@ -148,6 +149,8 @@ export function useCertificationStageDrawerState({
     savedState?.welcomeEmail?.to ?? normalizeText(preferredContact?.email),
   )
   const [cc, setCc] = useState(savedState?.welcomeEmail?.cc ?? '')
+  const [bcc, setBcc] = useState(savedState?.welcomeEmail?.bcc ?? 'productAutomation@ou.org')
+  const [showEmailCopies, setShowEmailCopies] = useState(false)
   const [subject, setSubject] = useState(
     savedState?.welcomeEmail?.subject ?? defaultMessage.subject,
   )
@@ -201,6 +204,7 @@ export function useCertificationStageDrawerState({
       template,
       to,
       cc,
+      bcc,
       subject,
       body,
       attachments,
@@ -255,19 +259,12 @@ export function useCertificationStageDrawerState({
         title: 'Welcome to OU Kosher',
         preheader: subject,
       })
-      const recipientList = [
-        to.trim(),
-        ...cc
-          .split(/[,;\n]/)
-          .map((item) => item.trim())
-          .filter(Boolean),
-      ]
       await createApplicationMessage({
         payload: {
           MessageID: null,
           ApplicationID: applicant?.applicationId ?? null,
           FromUser: userEmail ?? null,
-          ToUser: recipientList.join(', '),
+          ToUser: to.trim(),
           Subject: subject,
           MessageText: email.html,
           MessageTextPlain: email.text,
@@ -285,7 +282,7 @@ export function useCertificationStageDrawerState({
           isRead: false,
           tag: 'Welcome',
           CCUser: cc || null,
-          BCCUser: 'productAutomation@ou.org',
+          BCCUser: bcc || null,
           Attachments: attachments.join(', ') || null,
         },
         token,
@@ -293,7 +290,7 @@ export function useCertificationStageDrawerState({
       const nextSentAt = new Date().toLocaleString()
       const next = buildSavedState({
         stage: 'certified',
-        welcomeEmail: { template, to, cc, subject, body, attachments, sentAt: nextSentAt },
+        welcomeEmail: { template, to, cc, bcc, subject, body, attachments, sentAt: nextSentAt },
       })
       await persist(next)
       await confirmTask({
@@ -325,12 +322,14 @@ export function useCertificationStageDrawerState({
     bichelFileUrl,
     bichelReceivedAt,
     body,
+    bcc,
     cc,
     contactName,
     detailError: detailQuery.isError,
     detailLoading: detailQuery.isLoading,
     isSaving,
     sentAt,
+    showEmailCopies,
     stage: visibleStage,
     subject,
     template,
@@ -340,7 +339,9 @@ export function useCertificationStageDrawerState({
     sendWelcomeEmail,
     setAttachments,
     setBody,
+    setBcc,
     setCc,
+    setShowEmailCopies,
     setSubject,
     setTo,
   }
