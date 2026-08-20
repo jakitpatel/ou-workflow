@@ -30,7 +30,6 @@ import {
   type ScheduleAIngredientSortKey,
   type ScheduleAIngredientView,
   type ScheduleAIngredientDraft,
-  getAssignedRoleValue,
   getDaysSinceVisit,
   getScheduleACommunicationMessageBody,
   useCreateScheduleAIngredient,
@@ -448,9 +447,7 @@ export function ScheduleAIngredientsDrawer({
   open,
   applicationId,
   applicationName,
-  visitId,
   appVars,
-  assignedRoles,
   taskInstanceId,
   taskName,
   mode = 'drawer',
@@ -493,19 +490,20 @@ export function ScheduleAIngredientsDrawer({
   )
   const scratchpadApi = useScheduleAScratchpad(resolvedApplicationId)
   const { scratchpad } = scratchpadApi
-  const assignedRfr = useMemo(() => getAssignedRoleValue(assignedRoles, 'RFR'), [assignedRoles])
-  const eirSubmitterLabel = assignedRfr === 'Not yet Assigned' ? 'the assigned RFR' : assignedRfr
+  const assignedRfr = textValue(applicationDetail?.assignedRFR)
+  const eirSubmitterLabel = assignedRfr || 'the assigned RFR'
   const effectiveAppVars = { ...globalAppVars, ...appVars }
-  const visitIdLabel = textValue(effectiveAppVars.visit_id ?? visitId)
-  const actualVisitDate = formatDisplayDate(effectiveAppVars.actual_visit_date)
-  const daysSinceVisit = getDaysSinceVisit(effectiveAppVars.actual_visit_date)
+  const visitIdLabel = textValue(applicationDetail?.VisitId)
+  const inspectionDate = formatDisplayDate(applicationDetail?.InspectionDate)
+  const reportedInspectionDate = formatDisplayDate(applicationDetail?.ReportedInspectionDate)
+  const daysSinceVisit = getDaysSinceVisit(applicationDetail?.InspectionDate)
   const eirWorkflowFileId = textValue(effectiveAppVars.wf_file_id)
-  const eirDisplayName = textValue(effectiveAppVars.filename) || getDocumentFilename(effectiveAppVars.rfr_file_url)
-  const eirDocumentPath = textValue(effectiveAppVars.rfr_file_url)
-  const eirDocumentUrl = resolveScheduleADocumentUrl(effectiveAppVars.rfr_file_url)
+  const eirDocumentPath = textValue(applicationDetail?.RFRFileUrl)
+  const eirDisplayName = eirDocumentPath ? getDocumentFilename(eirDocumentPath) : ''
+  const eirDocumentUrl = resolveScheduleADocumentUrl(applicationDetail?.RFRFileUrl)
   const eirDocumentFilename = eirDisplayName
-  const canPreviewEirDocument = isPreviewableDocument(effectiveAppVars.rfr_file_url)
-  const hasWorkflowEirDocument = Boolean(eirWorkflowFileId && eirDisplayName)
+  const canPreviewEirDocument = isPreviewableDocument(applicationDetail?.RFRFileUrl)
+  const hasWorkflowEirDocument = Boolean(eirDisplayName && (eirWorkflowFileId || eirDocumentUrl))
   const effectiveEirNotRequired = scratchpad.eirNotRequired && !hasWorkflowEirDocument
   const effectiveEirReceived = hasWorkflowEirDocument || scratchpad.eirReceived
   const sendRoundEmailMutation = useSendScheduleACommunicationEmail()
@@ -1383,19 +1381,19 @@ export function ScheduleAIngredientsDrawer({
                         </div>
                         <div className="flex items-center justify-between border-b border-gray-100 py-2">
                           <span className="text-sm font-medium text-gray-600">RFR Assigned</span>
-                          <span className="text-sm font-semibold text-gray-900">{assignedRfr}</span>
+                          <span className="text-sm font-semibold text-gray-900">{assignedRfr || '-'}</span>
                         </div>
                         <div className="flex items-center justify-between border-b border-gray-100 py-2">
                           <span className="text-sm font-medium text-gray-600">Visit ID</span>
-                          <span className="font-mono text-sm font-semibold text-gray-900">{visitIdLabel}</span>
+                          <span className="font-mono text-sm font-semibold text-gray-900">{visitIdLabel || '-'}</span>
                         </div>
                         <div className="flex items-center justify-between border-b border-gray-100 py-2">
                           <span className="text-sm font-medium text-gray-600">Inspection Date</span>
-                          <span className="text-sm font-semibold text-gray-900">{actualVisitDate || '-'}</span>
+                          <span className="text-sm font-semibold text-gray-900">{inspectionDate || '-'}</span>
                         </div>
                         <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-2">
                           <span className="text-sm font-medium text-gray-600">Reported Actual Visit Date</span>
-                          <span className="text-right text-sm font-semibold text-gray-900">{actualVisitDate || '-'}</span>
+                          <span className="text-right text-sm font-semibold text-gray-900">{reportedInspectionDate || '-'}</span>
                         </div>
                         <div className="flex items-start justify-between gap-4 py-2">
                           <span className="text-sm font-medium text-gray-600">RFR File URL (Name)</span>

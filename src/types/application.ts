@@ -566,6 +566,11 @@ export interface ApplicationDetail {
   daysOverdue?: number;
   assignedNCRC?: string;
   assignedRC?: string;
+  assignedRFR?: string | null;
+  RFRFileUrl?: string | null;
+  ReportedInspectionDate?: string | null;
+  VisitId?: number | string | null;
+  InspectionDate?: string | null;
   companyId?: number | string;
   PlantId?: number | string;
   PlantID?: number | string;
