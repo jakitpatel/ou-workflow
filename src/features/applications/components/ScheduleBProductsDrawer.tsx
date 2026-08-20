@@ -1071,7 +1071,7 @@ export function ScheduleBProductsDrawer({
         result: 'YES',
       })
       scratchpadApi.markScheduleBReady(username ?? 'IAR')
-      toast.success('Schedule B marked ready')
+      toast.success('Schedule B marked ready', { position: 'top-center' })
     } catch {
       // useConfirmTaskMutation shows the API error through its onError handler.
     }
