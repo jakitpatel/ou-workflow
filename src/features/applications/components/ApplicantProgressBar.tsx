@@ -15,7 +15,6 @@ type Props = {
 // ==========================================
 
 const STAGE_ORDER = [
-  { key: 'initial', name: 'Initial' },
   { key: 'nda', name: 'NDA' },
   { key: 'inspection', name: 'Inspection' },
   { key: 'ingredients', name: 'Ingredients' },
@@ -28,7 +27,6 @@ const LAYOUT_CONFIG = {
   leftStages: ['nda', 'inspection'] as const,
   rightStages: ['ingredients', 'products'] as const,
   verticalStageKeys: ['nda', 'inspection', 'ingredients', 'products'] as const,
-  firstStageKey: 'initial' as const,
   lastStageKeys: ['contract', 'certification'] as const
 } as const
 
@@ -172,7 +170,6 @@ function MixedLayout({
   onStageClick,
   isWithdrawn = false,
 }: MixedLayoutProps) {
-  const firstStage = STAGE_ORDER.find((s) => s.key === LAYOUT_CONFIG.firstStageKey)
   const verticalStages = STAGE_ORDER.filter((s) =>
     (LAYOUT_CONFIG.verticalStageKeys as readonly string[]).includes(s.key)
   )
@@ -190,20 +187,6 @@ function MixedLayout({
 
   return (
     <div className="flex items-center gap-4 w-full">
-      {/* Initial Stage */}
-      {firstStage && (
-        <StageButton
-          stage={firstStage}
-          isExpanded={expandedStage === firstStage.key}
-          status={applicant.stages[firstStage.key]?.status}
-          onClick={() => onStageClick(firstStage.key)}
-          className="whitespace-nowrap"
-          disabled={isWithdrawn}
-        />
-      )}
-
-      <Arrow />
-
       {/* Parallel Stages Box */}
       <div
         className="border-2 border-gray-300 rounded-lg px-3 py-3 bg-gray-50 flex-shrink-0"
