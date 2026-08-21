@@ -18,6 +18,7 @@ import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
 import {
   isCertificateActionTask,
   isScheduleAAssigningActionTask,
+  isScheduleAStartActionTask,
   useTaskActions,
 } from '@/features/tasks/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
@@ -249,7 +250,8 @@ export function NcrcDashboardContent() {
 
     if (
       (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEA) ||
-      isScheduleAAssigningActionTask(action)
+      isScheduleAAssigningActionTask(action) ||
+      isScheduleAStartActionTask(action)
     ) {
       setScheduleADrawerState({
         open: true,

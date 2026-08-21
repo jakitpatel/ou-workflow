@@ -248,7 +248,8 @@ const getTaskActionPresentation = (application: TaskDashboardAction) => {
   if (
     actionType === TASK_TYPES.ACTION &&
     (actionCategory === TASK_CATEGORIES.SCHEDULEA ||
-      actionCategory === TASK_CATEGORIES.SCHEDULEA_ASSIGNING)
+      actionCategory === TASK_CATEGORIES.SCHEDULEA_ASSIGNING ||
+      actionCategory === TASK_CATEGORIES.SCHEDULEA_START)
   ) {
     return { type: 'schedule-a' as const }
   }

@@ -533,6 +533,8 @@ export function ScheduleAIngredientsDrawer({
   const assignedRfr = textValue(applicationDetail?.DesignatedRFR)
   const isAssigningTask =
     textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA_ASSIGNING
+  const isStartTask = textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA_START
+  const usesTaskHeader = isAssigningTask || isStartTask
   const eirSubmitterLabel = assignedRfr || 'the assigned RFR'
   const effectiveAppVars = { ...globalAppVars, ...appVars }
   const visitIdLabel = textValue(applicationDetail?.VisitId)
@@ -923,6 +925,31 @@ export function ScheduleAIngredientsDrawer({
     }
   }
 
+  const startProcessing = async () => {
+    if (readOnly) return
+    const resolvedTaskInstanceId = textValue(taskInstanceId)
+    if (!resolvedTaskInstanceId) {
+      toast.error('Task instance id not found')
+      return
+    }
+
+    try {
+      await completeScheduleATaskMutation.mutateAsync({
+        taskId: resolvedTaskInstanceId,
+        applicationId: resolvedApplicationId,
+        token: token ?? undefined,
+        username: username ?? undefined,
+        capacity: 'DESIGNATED',
+        completionNotes: 'Ingredient processing started successfully',
+        result: 'YES',
+      })
+      toast.success('Ingredient processing started', { position: 'top-center' })
+      onClose()
+    } catch {
+      // useConfirmTaskMutation shows the API error through its onError handler.
+    }
+  }
+
   const panelWidth = expanded ? 'lg:max-w-[96vw]' : 'lg:max-w-[72vw]'
   const stickyTableHeaderClass =
     'sticky z-10 bg-gray-50 px-3 py-2.5 text-xs font-semibold text-gray-600 shadow-[inset_0_-1px_0_#e5e7eb]'
@@ -933,6 +960,17 @@ export function ScheduleAIngredientsDrawer({
         <div className="flex h-full min-h-0 flex-col">
           <div className="shrink-0 border-b bg-white px-4 py-3">
             <div className="flex flex-wrap items-center justify-end gap-3">
+              {isStartTask && !readOnly ? (
+                <button
+                  type="button"
+                  onClick={startProcessing}
+                  disabled={completeScheduleATaskMutation.isPending}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  {completeScheduleATaskMutation.isPending ? 'Starting...' : 'Start Processing'}
+                </button>
+              ) : null}
               {isAssigningTask && !readOnly ? (
                 <button
                   type="button"
@@ -1926,14 +1964,15 @@ export function ScheduleAIngredientsDrawer({
             <div className="flex items-center justify-between border-b bg-gray-800 px-4 py-3 text-white">
               <div className="min-w-0">
                 <h3 className="truncate text-lg font-semibold leading-tight">
-                  {isAssigningTask
-                    ? taskName || 'Assign Ingredients'
+                  {usesTaskHeader
+                    ? taskName ||
+                      (isStartTask ? 'Start Ingredients Processing' : 'Assign Ingredients')
                     : applicationName || 'Schedule A Ingredients'}
                 </h3>
                 <p className="text-xs text-gray-300">
-                  {isAssigningTask && applicationName ? `${applicationName} - ` : ''}App #
+                  {usesTaskHeader && applicationName ? `${applicationName} - ` : ''}App #
                   {resolvedApplicationId ?? '-'}{' '}
-                  {!isAssigningTask && taskName ? `- ${taskName}` : ''}
+                  {!usesTaskHeader && taskName ? `- ${taskName}` : ''}
                 </p>
               </div>
               <div className="flex items-center gap-1">

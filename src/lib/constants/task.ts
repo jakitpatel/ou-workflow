@@ -23,6 +23,7 @@ export const TASK_CATEGORIES = {
   VISIT: 'visit',
   SCHEDULEA: 'schedulea',
   SCHEDULEA_ASSIGNING: 'scheduleaassigning',
+  SCHEDULEA_START: 'scheduleastart',
   SCHEDULEB: 'scheduleb',
   SCHEDULING: 'scheduling',
   PROGRESS_TASK: 'progress_task',
