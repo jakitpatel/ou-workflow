@@ -24,12 +24,20 @@ export type SelectedTaskAction = {
   action: Task
 }
 
-const normalizeTaskValue = (value: unknown) => String(value ?? '').trim().toLowerCase()
+const normalizeTaskValue = (value: unknown) =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase()
 
 export const isCertificateActionTask = (action: Task): boolean =>
   normalizeTaskValue(action.taskType ?? (action as any).TaskType) === TASK_TYPES.ACTION &&
   normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
     TASK_CATEGORIES.CERTIFICATE
+
+export const isScheduleAAssigningActionTask = (action: Task): boolean =>
+  normalizeTaskValue(action.taskType ?? (action as any).TaskType) === TASK_TYPES.ACTION &&
+  normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
+    TASK_CATEGORIES.SCHEDULEA_ASSIGNING
 
 const buildInspectionFeeResult = (value: InspectionFeeChoice): string =>
   `{inspectionNeeded:${value.inspectionNeeded}, feeNeeded:${value.feeNeeded}}`
@@ -120,8 +128,7 @@ export function useTaskActions({ applications, token, username, onError }: Param
             selectedAction?.application?.applicationId ??
             action.application?.applicationId ??
             action.applicationId
-          const appId =
-            rawAppId == null || Number.isNaN(Number(rawAppId)) ? null : Number(rawAppId)
+          const appId = rawAppId == null || Number.isNaN(Number(rawAppId)) ? null : Number(rawAppId)
 
           const preScript = action.PreScript ?? selectedAction?.action?.PreScript
           const role = detectRole(preScript)
@@ -176,7 +183,7 @@ export function useTaskActions({ applications, token, username, onError }: Param
         capacity: action.capacity ?? undefined,
         result: isCancelApplicationTask ? 'YES' : result,
         status,
-        completionNotes: isCancelApplicationTask ? completionNotes ?? result : completionNotes,
+        completionNotes: isCancelApplicationTask ? (completionNotes ?? result) : completionNotes,
       })
     },
     [confirmTaskMutation, token, username],

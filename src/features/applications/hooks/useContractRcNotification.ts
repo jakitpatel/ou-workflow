@@ -258,7 +258,7 @@ export function useSendContractCommunicationEmail() {
           MessageType: 'Email-Staging',
           Priority: 'NORMAL',
           SentDate: new Date().toISOString(),
-          TemplateName: 'contract-package',
+          TemplateName: 'ContractPackage',
           TaskInstanceId: taskInstanceId ?? null,
           isPrivate: false,
           parentMessageId: null,

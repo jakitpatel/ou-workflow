@@ -1,21 +1,21 @@
-import { ErrorDialog } from '@/components/ErrorDialog';
-import { ActionModal } from '@/features/tasks/modals/ActionModal';
-import { ConditionalModal } from '@/features/tasks/modals/ConditionalModal';
-import { UploadNdaModal } from '@/features/tasks/modals/UploadNdaModal';
-import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer';
-import { InspectionAssignmentDrawer } from '@/features/applications/components/InspectionAssignmentDrawer';
-import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer';
-import { InspectionVisitDateDrawer } from '@/features/applications/components/InspectionVisitDateDrawer';
-import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer';
-import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer';
-import { useTaskDashboardState } from '@/features/tasks/hooks/useTaskDashboardState';
-import { plantHistory } from '@/features/tasks/model/plantHistory';
+import { ErrorDialog } from '@/components/ErrorDialog'
+import { ActionModal } from '@/features/tasks/modals/ActionModal'
+import { ConditionalModal } from '@/features/tasks/modals/ConditionalModal'
+import { UploadNdaModal } from '@/features/tasks/modals/UploadNdaModal'
+import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer'
+import { InspectionAssignmentDrawer } from '@/features/applications/components/InspectionAssignmentDrawer'
+import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer'
+import { InspectionVisitDateDrawer } from '@/features/applications/components/InspectionVisitDateDrawer'
+import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer'
+import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer'
+import { useTaskDashboardState } from '@/features/tasks/hooks/useTaskDashboardState'
+import { plantHistory } from '@/features/tasks/model/plantHistory'
 
-import { PlantHistoryModal } from './PlantHistoryModal';
-import { TaskDashboardHeader } from './TaskDashboardHeader';
-import { TaskDashboardTable } from './TaskDashboardTable';
-import { TaskPrelimResolutionDrawer } from './TaskPrelimResolutionDrawer';
-import { PageShell } from '@/components/layout/PageShell';
+import { PlantHistoryModal } from './PlantHistoryModal'
+import { TaskDashboardHeader } from './TaskDashboardHeader'
+import { TaskDashboardTable } from './TaskDashboardTable'
+import { TaskPrelimResolutionDrawer } from './TaskPrelimResolutionDrawer'
+import { PageShell } from '@/components/layout/PageShell'
 
 export function TaskDashboardContent() {
   const {
@@ -70,7 +70,7 @@ export function TaskDashboardContent() {
     handleNext,
     handleLast,
     errorDialogRef,
-  } = useTaskDashboardState();
+  } = useTaskDashboardState()
 
   if (isLoading) {
     return (
@@ -82,7 +82,7 @@ export function TaskDashboardContent() {
           </div>
         </div>
       </PageShell>
-    );
+    )
   }
 
   if (isError) {
@@ -95,41 +95,41 @@ export function TaskDashboardContent() {
           </p>
         </div>
       </PageShell>
-    );
+    )
   }
 
   return (
     <>
       <PageShell>
-          <TaskDashboardHeader
-            daysFilter={daysFilter}
-            role={role}
-            searchTerm={searchTerm}
-            setDaysFilter={setDaysFilter}
-            setSearchTerm={setSearchTerm}
-            stats={taskStats}
-            username={username}
-            page={page}
-            totalCount={totalCount}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            paginationMode={paginationMode}
-            onFirstPage={handleFirst}
-            onPrevPage={handlePrev}
-            onNextPage={handleNext}
-            onLastPage={handleLast}
-          />
+        <TaskDashboardHeader
+          daysFilter={daysFilter}
+          role={role}
+          searchTerm={searchTerm}
+          setDaysFilter={setDaysFilter}
+          setSearchTerm={setSearchTerm}
+          stats={taskStats}
+          username={username}
+          page={page}
+          totalCount={totalCount}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          paginationMode={paginationMode}
+          onFirstPage={handleFirst}
+          onPrevPage={handlePrev}
+          onNextPage={handleNext}
+          onLastPage={handleLast}
+        />
 
-          <TaskDashboardTable
-            filteredTasks={filteredTasks}
-            paginationMode={paginationMode}
-            totalCount={totalCount}
-            hasNextPage={hasNextPage}
-            sentinelRef={sentinelRef}
-            isFetchingNextPage={isFetchingNextPage}
-            handleApplicationTaskAction={handleTaskAction}
-            handleShowPlantHistory={handleShowPlantHistory}
-          />
+        <TaskDashboardTable
+          filteredTasks={filteredTasks}
+          paginationMode={paginationMode}
+          totalCount={totalCount}
+          hasNextPage={hasNextPage}
+          sentinelRef={sentinelRef}
+          isFetchingNextPage={isFetchingNextPage}
+          handleApplicationTaskAction={handleTaskAction}
+          handleShowPlantHistory={handleShowPlantHistory}
+        />
       </PageShell>
 
       <ActionModal {...{ showActionModal, setShowActionModal, executeAction, selectedAction }} />
@@ -153,6 +153,7 @@ export function TaskDashboardContent() {
         applicationName={scheduleADrawerState.applicationName}
         taskInstanceId={scheduleADrawerState.taskInstanceId}
         taskName={scheduleADrawerState.taskName}
+        taskCategory={scheduleADrawerState.taskCategory}
         onClose={() => setScheduleADrawerState({ open: false })}
       />
       <ScheduleBProductsDrawer
@@ -198,5 +199,5 @@ export function TaskDashboardContent() {
         onClose={() => setPrelimResolutionDrawerState({ open: false })}
       />
     </>
-  );
+  )
 }

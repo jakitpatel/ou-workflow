@@ -45,6 +45,7 @@ type ScheduleADrawerState = {
   applicationName?: string
   taskInstanceId?: string | number
   taskName?: string
+  taskCategory?: string
 }
 
 type ScheduleBDrawerState = {
@@ -244,7 +245,11 @@ const getTaskActionPresentation = (application: TaskDashboardAction) => {
     return { type: 'inspection-visit' as const }
   }
 
-  if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEA) {
+  if (
+    actionType === TASK_TYPES.ACTION &&
+    (actionCategory === TASK_CATEGORIES.SCHEDULEA ||
+      actionCategory === TASK_CATEGORIES.SCHEDULEA_ASSIGNING)
+  ) {
     return { type: 'schedule-a' as const }
   }
 
@@ -669,6 +674,7 @@ export function useTaskDashboardState() {
           applicationName: action.companyName ?? action.plantName,
           taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
           taskName: action.taskName ?? action.name,
+          taskCategory: action.taskCategory ?? action.TaskCategory,
         })
         return
       }

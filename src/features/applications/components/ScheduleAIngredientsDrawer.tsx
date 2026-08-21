@@ -43,6 +43,7 @@ import {
   useSendScheduleACommunicationEmail,
 } from '@/features/applications/hooks/useScheduleAIngredients'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
+import { TASK_CATEGORIES } from '@/lib/constants/task'
 import type { ApplicantAppVars, ApplicationEmail, AssignedRole } from '@/types/application'
 
 type Props = {
@@ -54,6 +55,7 @@ type Props = {
   assignedRoles?: AssignedRole[]
   taskInstanceId?: string | number | null
   taskName?: string
+  taskCategory?: string
   mode?: 'drawer' | 'embedded'
   readOnly?: boolean
   onClose: () => void
@@ -93,9 +95,20 @@ const getDocumentFilename = (value?: string | null) => {
 
 const isPreviewableDocument = (value?: string | null) => {
   const filename = getDocumentFilename(value).toLowerCase()
-  return ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.txt', '.html', '.htm', '.doc', '.docx', '.rtf'].some((extension) =>
-    filename.endsWith(extension),
-  )
+  return [
+    '.pdf',
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.gif',
+    '.webp',
+    '.txt',
+    '.html',
+    '.htm',
+    '.doc',
+    '.docx',
+    '.rtf',
+  ].some((extension) => filename.endsWith(extension))
 }
 
 type ScheduleARoundMessageCard = {
@@ -109,12 +122,13 @@ const getEmailMessageId = (email: ApplicationEmail) => textValue(email.MessageID
 
 const getEmailParentMessageId = (email: ApplicationEmail) => textValue(email.parentMessageId)
 
-const getEmailPreviewText = (email: ApplicationEmail) =>
-  getScheduleACommunicationMessageBody(email)
+const getEmailPreviewText = (email: ApplicationEmail) => getScheduleACommunicationMessageBody(email)
 
-const getRoundNumberFromSubject = (subject: string) => Number(subject.match(/round\s+(\d+)/i)?.[1] ?? 0)
+const getRoundNumberFromSubject = (subject: string) =>
+  Number(subject.match(/round\s+(\d+)/i)?.[1] ?? 0)
 
-const getRefMessageIdFromSubject = (subject: string) => textValue(subject.match(/refMsgId:\s*#?(\d+)/i)?.[1])
+const getRefMessageIdFromSubject = (subject: string) =>
+  textValue(subject.match(/refMsgId:\s*#?(\d+)/i)?.[1])
 
 const formatMessageDate = (date?: string | null) => {
   if (!date) return ''
@@ -123,7 +137,9 @@ const formatMessageDate = (date?: string | null) => {
   return parsed.toLocaleDateString()
 }
 
-const buildScheduleARoundMessageCards = (emails: ApplicationEmail[]): ScheduleARoundMessageCard[] => {
+const buildScheduleARoundMessageCards = (
+  emails: ApplicationEmail[],
+): ScheduleARoundMessageCard[] => {
   const childrenByParentId = new Map<string, ApplicationEmail[]>()
 
   emails.forEach((email) => {
@@ -157,7 +173,9 @@ const buildScheduleARoundMessageCards = (emails: ApplicationEmail[]): ScheduleAR
 
       if (!isRootMessage || roundNumber <= 0 || !/ou schedule a/i.test(subject)) return null
 
-      const replyParentIds = Array.from(new Set([getEmailMessageId(email), getRefMessageIdFromSubject(subject)].filter(Boolean)))
+      const replyParentIds = Array.from(
+        new Set([getEmailMessageId(email), getRefMessageIdFromSubject(subject)].filter(Boolean)),
+      )
 
       return {
         email,
@@ -167,7 +185,11 @@ const buildScheduleARoundMessageCards = (emails: ApplicationEmail[]): ScheduleAR
       }
     })
     .filter((round): round is ScheduleARoundMessageCard => Boolean(round))
-    .sort((a, b) => b.roundNumber - a.roundNumber || Number(b.email.MessageID ?? 0) - Number(a.email.MessageID ?? 0))
+    .sort(
+      (a, b) =>
+        b.roundNumber - a.roundNumber ||
+        Number(b.email.MessageID ?? 0) - Number(a.email.MessageID ?? 0),
+    )
 }
 
 const downloadTextFile = (filename: string, text: string, type = 'text/plain;charset=utf-8;') => {
@@ -186,7 +208,7 @@ type ContactRecord = Record<string, unknown>
 
 const contactGroup = (contacts: ContactRecord, key: string): ContactRecord[] => {
   const value = contacts[key]
-  return Array.isArray(value) ? value as ContactRecord[] : []
+  return Array.isArray(value) ? (value as ContactRecord[]) : []
 }
 
 const normalizeContacts = (contacts?: unknown): ContactRecord[] => {
@@ -209,14 +231,20 @@ const normalizeContacts = (contacts?: unknown): ContactRecord[] => {
 const primaryContact = (contacts?: unknown) => {
   const normalizedContacts = normalizeContacts(contacts)
   const contact =
-    normalizedContacts.find((item) => textValue(item.type ?? item.Type).toLowerCase() === 'primary contact') ??
-    normalizedContacts.find((item) => textValue(item.IsPrimaryContact ?? item.isPrimaryContact).toLowerCase() === 'true') ??
+    normalizedContacts.find(
+      (item) => textValue(item.type ?? item.Type).toLowerCase() === 'primary contact',
+    ) ??
+    normalizedContacts.find(
+      (item) => textValue(item.IsPrimaryContact ?? item.isPrimaryContact).toLowerCase() === 'true',
+    ) ??
     normalizedContacts[0]
 
   const first = textValue(contact?.FirstName ?? contact?.firstName ?? contact?.contactFirst)
   const last = textValue(contact?.LastName ?? contact?.lastName ?? contact?.contactLast)
   const name = textValue(contact?.name ?? contact?.Name) || [first, last].filter(Boolean).join(' ')
-  const email = textValue(contact?.email ?? contact?.Email ?? contact?.EMail ?? contact?.contactEmail)
+  const email = textValue(
+    contact?.email ?? contact?.Email ?? contact?.EMail ?? contact?.contactEmail,
+  )
 
   return { name: name || 'Company Contact', email }
 }
@@ -238,13 +266,7 @@ const groupClass = (group: string) => {
   return 'bg-gray-100 text-gray-700'
 }
 
-function ResolveButton({
-  resolved,
-  onClick,
-}: {
-  resolved: boolean
-  onClick: () => void
-}) {
+function ResolveButton({ resolved, onClick }: { resolved: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -262,13 +284,7 @@ function ResolveButton({
   )
 }
 
-function FlagActionButton({
-  flagged,
-  onClick,
-}: {
-  flagged: boolean
-  onClick: () => void
-}) {
+function FlagActionButton({ flagged, onClick }: { flagged: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -286,13 +302,7 @@ function FlagActionButton({
   )
 }
 
-function HalachaActionButton({
-  open,
-  onClick,
-}: {
-  open: boolean
-  onClick: () => void
-}) {
+function HalachaActionButton({ open, onClick }: { open: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -310,7 +320,13 @@ function HalachaActionButton({
   )
 }
 
-function Pill({ children, tone = 'gray' }: { children: React.ReactNode; tone?: 'gray' | 'green' | 'amber' | 'red' | 'blue' | 'purple' }) {
+function Pill({
+  children,
+  tone = 'gray',
+}: {
+  children: React.ReactNode
+  tone?: 'gray' | 'green' | 'amber' | 'red' | 'blue' | 'purple'
+}) {
   const classes = {
     gray: 'bg-gray-100 text-gray-700',
     green: 'bg-green-100 text-green-700',
@@ -320,7 +336,13 @@ function Pill({ children, tone = 'gray' }: { children: React.ReactNode; tone?: '
     purple: 'bg-purple-100 text-purple-700',
   }
 
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${classes[tone]}`}>{children}</span>
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${classes[tone]}`}
+    >
+      {children}
+    </span>
+  )
 }
 
 function SaMonogram() {
@@ -331,13 +353,7 @@ function SaMonogram() {
   )
 }
 
-function SortIcon({
-  active,
-  direction,
-}: {
-  active: boolean
-  direction: 'asc' | 'desc'
-}) {
+function SortIcon({ active, direction }: { active: boolean; direction: 'asc' | 'desc' }) {
   const iconClass = 'h-3.5 w-3.5'
   if (!active) {
     return (
@@ -348,8 +364,16 @@ function SortIcon({
   }
 
   return (
-    <span title={direction === 'asc' ? 'Sorted ascending' : 'Sorted descending'} aria-label={direction === 'asc' ? 'Sorted ascending' : 'Sorted descending'} className="text-blue-700">
-      {direction === 'asc' ? <ArrowUp className={iconClass} aria-hidden="true" /> : <ArrowDown className={iconClass} aria-hidden="true" />}
+    <span
+      title={direction === 'asc' ? 'Sorted ascending' : 'Sorted descending'}
+      aria-label={direction === 'asc' ? 'Sorted ascending' : 'Sorted descending'}
+      className="text-blue-700"
+    >
+      {direction === 'asc' ? (
+        <ArrowUp className={iconClass} aria-hidden="true" />
+      ) : (
+        <ArrowDown className={iconClass} aria-hidden="true" />
+      )}
     </span>
   )
 }
@@ -421,18 +445,29 @@ function CannedNoteRow({
   )
 }
 
-function sortRows(rows: ScheduleAIngredientRow[], sortKey: ScheduleAIngredientSortKey, direction: 'asc' | 'desc') {
+function sortRows(
+  rows: ScheduleAIngredientRow[],
+  sortKey: ScheduleAIngredientSortKey,
+  direction: 'asc' | 'desc',
+) {
   const getter = (row: ScheduleAIngredientRow) => {
     if (sortKey === 'plantStatus') return row.status
     return row[sortKey] ?? ''
   }
   return [...rows].sort((a, b) => {
-    const result = String(getter(a)).localeCompare(String(getter(b)), undefined, { numeric: true, sensitivity: 'base' })
+    const result = String(getter(a)).localeCompare(String(getter(b)), undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    })
     return direction === 'asc' ? result : -result
   })
 }
 
-function buildScheduleAHtml(rows: ScheduleAIngredientRow[], applicationName?: string, applicationId?: string | number) {
+function buildScheduleAHtml(
+  rows: ScheduleAIngredientRow[],
+  applicationName?: string,
+  applicationId?: string | number,
+) {
   const tableRows = rows
     .map(
       (row, index) =>
@@ -450,6 +485,7 @@ export function ScheduleAIngredientsDrawer({
   appVars,
   taskInstanceId,
   taskName,
+  taskCategory,
   mode = 'drawer',
   readOnly = false,
   onClose,
@@ -477,20 +513,26 @@ export function ScheduleAIngredientsDrawer({
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const { token, username } = useUser()
-  const { data, isLoading, error } = useScheduleAIngredients(isActive ? resolvedApplicationId : undefined)
+  const { data, isLoading, error } = useScheduleAIngredients(
+    isActive ? resolvedApplicationId : undefined,
+  )
   const createIngredientMutation = useCreateScheduleAIngredient(resolvedApplicationId)
   const completeScheduleATaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
     includePrelimLists: true,
     onError: (message) => toast.error(message),
   })
-  const { data: applicationDetail } = useApplicationDetail(isActive ? resolvedApplicationId : undefined)
+  const { data: applicationDetail } = useApplicationDetail(
+    isActive ? resolvedApplicationId : undefined,
+  )
   const { data: globalAppVars } = useScheduleAApplicationAppVars(
     isActive ? resolvedApplicationId : undefined,
   )
   const scratchpadApi = useScheduleAScratchpad(resolvedApplicationId)
   const { scratchpad } = scratchpadApi
   const assignedRfr = textValue(applicationDetail?.DesignatedRFR)
+  const isAssigningTask =
+    textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA_ASSIGNING
   const eirSubmitterLabel = assignedRfr || 'the assigned RFR'
   const effectiveAppVars = { ...globalAppVars, ...appVars }
   const visitIdLabel = textValue(applicationDetail?.VisitId)
@@ -536,7 +578,10 @@ export function ScheduleAIngredientsDrawer({
     () => (data?.scheduleIngredients ?? []).map(mapApplicationIngredientRow),
     [data?.scheduleIngredients],
   )
-  const kashRows = useMemo(() => (data?.kashIngredients ?? []).map(mapKashIngredientRow), [data?.kashIngredients])
+  const kashRows = useMemo(
+    () => (data?.kashIngredients ?? []).map(mapKashIngredientRow),
+    [data?.kashIngredients],
+  )
   const activeRows = ingView === 'application' ? applicationRows : kashRows
   const allRows = useMemo(() => [...applicationRows, ...kashRows], [applicationRows, kashRows])
   const latestRound = scratchpad.rounds.at(-1)
@@ -547,7 +592,9 @@ export function ScheduleAIngredientsDrawer({
   const nextRoundNumber = roundMessageCards.length + scratchpad.rounds.length + 1
 
   const counts = useMemo(() => {
-    const resolvedIds = new Set(Object.keys(scratchpad.resolved).filter((id) => scratchpad.resolved[id]))
+    const resolvedIds = new Set(
+      Object.keys(scratchpad.resolved).filter((id) => scratchpad.resolved[id]),
+    )
     scratchpad.rounds.forEach((round) => {
       round.items.forEach((item) => {
         if (item.resolved) resolvedIds.add(item.ingId)
@@ -567,19 +614,24 @@ export function ScheduleAIngredientsDrawer({
   }, [activeRows, scratchpad])
 
   const visibleRows = useMemo(() => {
-    const resolvedIds = new Set(Object.keys(scratchpad.resolved).filter((id) => scratchpad.resolved[id]))
+    const resolvedIds = new Set(
+      Object.keys(scratchpad.resolved).filter((id) => scratchpad.resolved[id]),
+    )
     scratchpad.rounds.forEach((round) => {
       round.items.forEach((item) => {
         if (item.resolved) resolvedIds.add(item.ingId)
       })
     })
 
-    const filtered = ingView === 'kashrus' ? activeRows : activeRows.filter((row) => {
-      if (filter === 'flagged') return Boolean(scratchpad.flags[row.id]?.flagged)
-      if (filter === 'resolved') return resolvedIds.has(row.id)
-      if (filter === 'halacha') return Boolean(scratchpad.halacha[row.id]?.open)
-      return true
-    })
+    const filtered =
+      ingView === 'kashrus'
+        ? activeRows
+        : activeRows.filter((row) => {
+            if (filter === 'flagged') return Boolean(scratchpad.flags[row.id]?.flagged)
+            if (filter === 'resolved') return resolvedIds.has(row.id)
+            if (filter === 'halacha') return Boolean(scratchpad.halacha[row.id]?.open)
+            return true
+          })
 
     return sortRows(filtered, sortKey, sortDirection)
   }, [activeRows, filter, ingView, scratchpad, sortDirection, sortKey])
@@ -599,7 +651,10 @@ export function ScheduleAIngredientsDrawer({
 
     const syncStickyTableHeader = () => {
       const headerHeight = ingredientsHeaderRef.current?.offsetHeight ?? 76
-      ingredientsTableRef.current?.style.setProperty('--schedule-a-ing-header-height', `${headerHeight}px`)
+      ingredientsTableRef.current?.style.setProperty(
+        '--schedule-a-ing-header-height',
+        `${headerHeight}px`,
+      )
     }
 
     syncStickyTableHeader()
@@ -750,7 +805,11 @@ export function ScheduleAIngredientsDrawer({
           document.body.removeChild(link)
           window.setTimeout(() => URL.revokeObjectURL(href), 1000)
         } catch (downloadError) {
-          toast.error(downloadError instanceof Error ? downloadError.message : 'Failed to download EIR document.')
+          toast.error(
+            downloadError instanceof Error
+              ? downloadError.message
+              : 'Failed to download EIR document.',
+          )
         } finally {
           setIsEirDownloadPending(false)
         }
@@ -789,7 +848,9 @@ export function ScheduleAIngredientsDrawer({
       } else if (isEirViewerLoading) {
         toast.message('Loading EIR document...')
       } else if (eirViewerError) {
-        toast.error(eirViewerError instanceof Error ? eirViewerError.message : 'Failed to load EIR document.')
+        toast.error(
+          eirViewerError instanceof Error ? eirViewerError.message : 'Failed to load EIR document.',
+        )
       }
       return
     }
@@ -837,6 +898,31 @@ export function ScheduleAIngredientsDrawer({
     }
   }
 
+  const assignIngredients = async () => {
+    if (readOnly) return
+    const resolvedTaskInstanceId = textValue(taskInstanceId)
+    if (!resolvedTaskInstanceId) {
+      toast.error('Task instance id not found')
+      return
+    }
+
+    try {
+      await completeScheduleATaskMutation.mutateAsync({
+        taskId: resolvedTaskInstanceId,
+        applicationId: resolvedApplicationId,
+        token: token ?? undefined,
+        username: username ?? undefined,
+        capacity: 'DESIGNATED',
+        completionNotes: 'Ingredients assigned successfully',
+        result: 'YES',
+      })
+      toast.success('Ingredients assigned', { position: 'top-center' })
+      onClose()
+    } catch {
+      // useConfirmTaskMutation shows the API error through its onError handler.
+    }
+  }
+
   const panelWidth = expanded ? 'lg:max-w-[96vw]' : 'lg:max-w-[72vw]'
   const stickyTableHeaderClass =
     'sticky z-10 bg-gray-50 px-3 py-2.5 text-xs font-semibold text-gray-600 shadow-[inset_0_-1px_0_#e5e7eb]'
@@ -847,6 +933,17 @@ export function ScheduleAIngredientsDrawer({
         <div className="flex h-full min-h-0 flex-col">
           <div className="shrink-0 border-b bg-white px-4 py-3">
             <div className="flex flex-wrap items-center justify-end gap-3">
+              {isAssigningTask && !readOnly ? (
+                <button
+                  type="button"
+                  onClick={assignIngredients}
+                  disabled={completeScheduleATaskMutation.isPending}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  {completeScheduleATaskMutation.isPending ? 'Assigning...' : 'Assign Ingredients'}
+                </button>
+              ) : null}
               {!isEmbedded ? (
                 <button
                   type="button"
@@ -860,7 +957,10 @@ export function ScheduleAIngredientsDrawer({
               ) : null}
             </div>
 
-            <nav className="mt-3 -mb-1 flex gap-1 overflow-x-auto text-sm" aria-label="Drawer sections">
+            <nav
+              className="mt-3 -mb-1 flex gap-1 overflow-x-auto text-sm"
+              aria-label="Drawer sections"
+            >
               <div className="inline-flex shrink-0 items-stretch divide-x divide-gray-300 overflow-hidden rounded-md border border-gray-300 bg-white text-sm">
                 {(['application', 'kashrus'] as ScheduleAIngredientView[]).map((view) => {
                   const active = activeTab === 'ingredients' && ingView === view
@@ -893,7 +993,9 @@ export function ScheduleAIngredientsDrawer({
                   type="button"
                   onClick={() => setActiveTab(tab.id as DrawerTab)}
                   className={`shrink-0 rounded-md px-3 py-1.5 font-medium ${
-                    activeTab === tab.id ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+                    activeTab === tab.id
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
                   {tab.label}
@@ -905,35 +1007,54 @@ export function ScheduleAIngredientsDrawer({
           <div className="min-h-0 flex-1 overflow-auto p-4">
             {activeTab === 'ingredients' ? (
               <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-                <div ref={ingredientsHeaderRef} className="sticky left-0 right-0 top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-t-lg border-b bg-gray-50 px-6 py-4 shadow-sm">
+                <div
+                  ref={ingredientsHeaderRef}
+                  className="sticky left-0 right-0 top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-t-lg border-b bg-gray-50 px-6 py-4 shadow-sm"
+                >
                   <h2 className="text-2xl font-semibold text-gray-900">
                     {ingView === 'application' ? 'Application Ingredients' : 'Kashrus Ingredients'}
                   </h2>
                   <div className="flex flex-wrap items-center gap-2">
                     {ingView === 'application' && !readOnly ? (
                       !scratchpad.scheduleAReady ? (
-                        <button type="button" onClick={markScheduleAReady} disabled={completeScheduleATaskMutation.isPending} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300">
+                        <button
+                          type="button"
+                          onClick={markScheduleAReady}
+                          disabled={completeScheduleATaskMutation.isPending}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                        >
                           <Check className="h-3.5 w-3.5" />
-                          {completeScheduleATaskMutation.isPending ? 'Marking Ready...' : 'Mark Schedule A Ready'}
+                          {completeScheduleATaskMutation.isPending
+                            ? 'Marking Ready...'
+                            : 'Mark Schedule A Ready'}
                         </button>
                       ) : (
-                        <button type="button" onClick={scratchpadApi.reopenScheduleA} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                        <button
+                          type="button"
+                          onClick={scratchpadApi.reopenScheduleA}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                        >
                           <X className="h-3.5 w-3.5" />
                           Unmark
                         </button>
                       )
                     ) : null}
                     {ingView === 'application'
-                      ? (['all', 'flagged', 'resolved', 'halacha'] as ScheduleAIngredientFilter[]).map((item) => (
+                      ? (
+                          ['all', 'flagged', 'resolved', 'halacha'] as ScheduleAIngredientFilter[]
+                        ).map((item) => (
                           <button
                             key={item}
                             type="button"
                             onClick={() => setFilter(item)}
                             className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                              filter === item ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-600 ring-1 ring-gray-200'
+                              filter === item
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-white text-gray-600 ring-1 ring-gray-200'
                             }`}
                           >
-                            {item === 'all' ? 'All' : item[0].toUpperCase() + item.slice(1)} {counts[item]}
+                            {item === 'all' ? 'All' : item[0].toUpperCase() + item.slice(1)}{' '}
+                            {counts[item]}
                           </button>
                         ))
                       : null}
@@ -959,7 +1080,9 @@ export function ScheduleAIngredientsDrawer({
                   </div>
                 </div>
 
-                {isLoading ? <div className="p-6 text-sm text-gray-600">Loading ingredients...</div> : null}
+                {isLoading ? (
+                  <div className="p-6 text-sm text-gray-600">Loading ingredients...</div>
+                ) : null}
                 {error ? (
                   <div className="m-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                     Failed to load ingredients: {(error as Error).message}
@@ -972,10 +1095,18 @@ export function ScheduleAIngredientsDrawer({
                 ) : null}
 
                 <div className="overflow-visible">
-                  <table ref={ingredientsTableRef} className={`w-full min-w-[980px] text-left text-sm ${ingView === 'kashrus' ? 'view-kashrus' : 'view-application'}`}>
+                  <table
+                    ref={ingredientsTableRef}
+                    className={`w-full min-w-[980px] text-left text-sm ${ingView === 'kashrus' ? 'view-kashrus' : 'view-application'}`}
+                  >
                     <thead>
                       <tr className="border-b border-gray-200 bg-gray-50">
-                        <th className={`w-8 ${stickyTableHeaderClass}`} style={stickyTableHeaderStyle}>#</th>
+                        <th
+                          className={`w-8 ${stickyTableHeaderClass}`}
+                          style={stickyTableHeaderStyle}
+                        >
+                          #
+                        </th>
                         {(ingView === 'kashrus'
                           ? [
                               ['rmc', 'RMC'],
@@ -994,7 +1125,8 @@ export function ScheduleAIngredientsDrawer({
                               ['group', 'Group'],
                               ['certifier', 'Certifier'],
                               ['plantStatus', 'Plant-Status'],
-                            ]).map(([key, label]) => (
+                            ]
+                        ).map(([key, label]) => (
                           <th
                             key={key}
                             className={`${stickyTableHeaderClass} ${
@@ -1002,21 +1134,32 @@ export function ScheduleAIngredientsDrawer({
                             }`}
                             style={stickyTableHeaderStyle}
                           >
-                            <button type="button" onClick={() => setSort(key as ScheduleAIngredientSortKey)} className="inline-flex items-center gap-1 hover:text-blue-700">
+                            <button
+                              type="button"
+                              onClick={() => setSort(key as ScheduleAIngredientSortKey)}
+                              className="inline-flex items-center gap-1 hover:text-blue-700"
+                            >
                               {label}
                               <SortIcon active={sortKey === key} direction={sortDirection} />
                             </button>
                           </th>
                         ))}
                         {ingView === 'application' && !readOnly ? (
-                          <th className={`w-28 ${stickyTableHeaderClass}`} style={stickyTableHeaderStyle}>
+                          <th
+                            className={`w-28 ${stickyTableHeaderClass}`}
+                            style={stickyTableHeaderStyle}
+                          >
                             <div className="flex flex-col items-start gap-1">
                               <span>Actions</span>
                               <button
                                 type="button"
                                 disabled={!visibleRows.length}
                                 aria-pressed={allVisibleRowsResolved}
-                                title={allVisibleRowsResolved ? 'Reopen all displayed rows' : 'Mark all displayed rows resolved'}
+                                title={
+                                  allVisibleRowsResolved
+                                    ? 'Reopen all displayed rows'
+                                    : 'Mark all displayed rows resolved'
+                                }
                                 onClick={toggleAllVisibleRowsResolved}
                                 className={`inline-flex items-center gap-1 rounded px-1.5 py-1 text-[11px] font-medium disabled:cursor-not-allowed disabled:opacity-40 ${
                                   allVisibleRowsResolved
@@ -1024,7 +1167,10 @@ export function ScheduleAIngredientsDrawer({
                                     : 'bg-white text-gray-600 ring-1 ring-inset ring-gray-300 hover:bg-green-50 hover:text-green-700'
                                 }`}
                               >
-                                <Check className="h-3.5 w-3.5" strokeWidth={allVisibleRowsResolved ? 2.5 : 2} />
+                                <Check
+                                  className="h-3.5 w-3.5"
+                                  strokeWidth={allVisibleRowsResolved ? 2.5 : 2}
+                                />
                                 Select all
                               </button>
                             </div>
@@ -1054,23 +1200,59 @@ export function ScheduleAIngredientsDrawer({
                             />
                           </td>
                           <td className="px-3 py-2">
-                            <input className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" value={addRowDraft.source} placeholder="Source" onChange={(event) => updateAddRowDraft('source', event.target.value)} />
+                            <input
+                              className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              value={addRowDraft.source}
+                              placeholder="Source"
+                              onChange={(event) => updateAddRowDraft('source', event.target.value)}
+                            />
                           </td>
                           <td className="px-3 py-2">
-                            <input className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" value={addRowDraft.brand} placeholder="Brand" onChange={(event) => updateAddRowDraft('brand', event.target.value)} />
+                            <input
+                              className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              value={addRowDraft.brand}
+                              placeholder="Brand"
+                              onChange={(event) => updateAddRowDraft('brand', event.target.value)}
+                            />
                           </td>
                           <td className="px-3 py-2">
-                            <input className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" value={addRowDraft.group} placeholder="Group" onChange={(event) => updateAddRowDraft('group', event.target.value)} />
+                            <input
+                              className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              value={addRowDraft.group}
+                              placeholder="Group"
+                              onChange={(event) => updateAddRowDraft('group', event.target.value)}
+                            />
                           </td>
                           <td className="px-3 py-2">
-                            <input className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" value={addRowDraft.certifier} placeholder="Certifier" onChange={(event) => updateAddRowDraft('certifier', event.target.value)} />
+                            <input
+                              className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                              value={addRowDraft.certifier}
+                              placeholder="Certifier"
+                              onChange={(event) =>
+                                updateAddRowDraft('certifier', event.target.value)
+                              }
+                            />
                           </td>
                           <td className="px-3 py-2">
                             <div className="flex items-center gap-1">
-                              <button type="button" title="Save row" aria-label="Save row" onClick={saveAddRow} disabled={createIngredientMutation.isPending} className="inline-flex h-7 w-7 items-center justify-center rounded bg-green-600 text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300">
+                              <button
+                                type="button"
+                                title="Save row"
+                                aria-label="Save row"
+                                onClick={saveAddRow}
+                                disabled={createIngredientMutation.isPending}
+                                className="inline-flex h-7 w-7 items-center justify-center rounded bg-green-600 text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                              >
                                 <Check className="h-4 w-4" />
                               </button>
-                              <button type="button" title="Cancel" aria-label="Cancel" onClick={cancelAddRow} disabled={createIngredientMutation.isPending} className="inline-flex h-7 w-7 items-center justify-center rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50">
+                              <button
+                                type="button"
+                                title="Cancel"
+                                aria-label="Cancel"
+                                onClick={cancelAddRow}
+                                disabled={createIngredientMutation.isPending}
+                                className="inline-flex h-7 w-7 items-center justify-center rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
                                 <X className="h-4 w-4" />
                               </button>
                             </div>
@@ -1095,12 +1277,21 @@ export function ScheduleAIngredientsDrawer({
                               }
                             >
                               <td className="px-3 py-3 text-xs text-gray-500">{index + 1}</td>
-                              <td className="px-3 py-3 font-mono text-xs text-gray-700">{row.rmc || '-'}</td>
+                              <td className="px-3 py-3 font-mono text-xs text-gray-700">
+                                {row.rmc || '-'}
+                              </td>
                               <td className="px-3 py-3">
                                 <div className="flex items-center gap-1.5 font-medium text-gray-900">
-                                  <span className={halacha?.open && !resolved ? 'text-red-700' : ''}>{row.name || '-'}</span>
+                                  <span
+                                    className={halacha?.open && !resolved ? 'text-red-700' : ''}
+                                  >
+                                    {row.name || '-'}
+                                  </span>
                                   {resolved ? (
-                                    <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-green-100 text-green-700" title="Resolved">
+                                    <span
+                                      className="inline-flex h-5 w-5 items-center justify-center rounded bg-green-100 text-green-700"
+                                      title="Resolved"
+                                    >
                                       <Check className="h-3 w-3" strokeWidth={2.5} />
                                     </span>
                                   ) : null}
@@ -1113,18 +1304,30 @@ export function ScheduleAIngredientsDrawer({
                                 ) : null}
                               </td>
                               {ingView === 'kashrus' ? (
-                                <td className="px-3 py-3 text-gray-700">{row.companyName || '-'}</td>
+                                <td className="px-3 py-3 text-gray-700">
+                                  {row.companyName || '-'}
+                                </td>
                               ) : (
                                 <td className="px-3 py-3 text-gray-700">{row.source || '-'}</td>
                               )}
                               <td className="px-3 py-3 text-gray-700">{row.brand || '-'}</td>
                               <td className="px-3 py-3">
-                                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${groupClass(row.group)}`}>{row.group || '-'}</span>
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${groupClass(row.group)}`}
+                                >
+                                  {row.group || '-'}
+                                </span>
                               </td>
-                              <td className="px-3 py-3 text-gray-700">{row.certifier || row.ukd || '-'}</td>
+                              <td className="px-3 py-3 text-gray-700">
+                                {row.certifier || row.ukd || '-'}
+                              </td>
                               {ingView === 'kashrus' ? (
                                 <td className="px-3 py-3">
-                                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(row.status)}`}>{row.status || '-'}</span>
+                                  <span
+                                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(row.status)}`}
+                                  >
+                                    {row.status || '-'}
+                                  </span>
                                 </td>
                               ) : null}
                               {ingView === 'application' && !readOnly ? (
@@ -1132,14 +1335,30 @@ export function ScheduleAIngredientsDrawer({
                                   <div className="flex flex-nowrap items-center gap-1">
                                     {resolved ? null : (
                                       <>
-                                        <FlagActionButton flagged={flagged} onClick={() => scratchpadApi.toggleFlag(row.id)} />
-                                        <HalachaActionButton open={Boolean(halacha?.open)} onClick={() => scratchpadApi.toggleHalacha(row.id)} />
+                                        <FlagActionButton
+                                          flagged={flagged}
+                                          onClick={() => scratchpadApi.toggleFlag(row.id)}
+                                        />
+                                        <HalachaActionButton
+                                          open={Boolean(halacha?.open)}
+                                          onClick={() => scratchpadApi.toggleHalacha(row.id)}
+                                        />
                                       </>
                                     )}
-                                    <ResolveButton resolved={resolved} onClick={() => scratchpadApi.toggleResolved(row.id)} />
+                                    <ResolveButton
+                                      resolved={resolved}
+                                      onClick={() => scratchpadApi.toggleResolved(row.id)}
+                                    />
                                   </div>
                                   {halacha?.open && !resolved ? (
-                                    <input className="mt-2 h-8 w-full rounded border border-red-200 bg-white px-2 text-xs text-gray-700 outline-none focus:ring-1 focus:ring-red-400" value={halacha.note ?? ''} placeholder="Halachic note (question, sources, conclusion)..." onChange={(event) => scratchpadApi.updateHalachaNote(row.id, event.target.value)} />
+                                    <input
+                                      className="mt-2 h-8 w-full rounded border border-red-200 bg-white px-2 text-xs text-gray-700 outline-none focus:ring-1 focus:ring-red-400"
+                                      value={halacha.note ?? ''}
+                                      placeholder="Halachic note (question, sources, conclusion)..."
+                                      onChange={(event) =>
+                                        scratchpadApi.updateHalachaNote(row.id, event.target.value)
+                                      }
+                                    />
                                   ) : null}
                                 </td>
                               ) : null}
@@ -1161,349 +1380,521 @@ export function ScheduleAIngredientsDrawer({
                   </table>
                 </div>
                 <div className="border-t bg-gray-50 px-6 py-2 text-xs text-gray-400">
-                  UKD IDs sourced from label data. Group 2 items require a certified source or LOC before Schedule A can be completed.
+                  UKD IDs sourced from label data. Group 2 items require a certified source or LOC
+                  before Schedule A can be completed.
                 </div>
               </div>
             ) : null}
 
             {activeTab === 'comm' ? (
               <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-                    <div className="border-b bg-gray-50 px-6 py-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <h2 className="text-2xl font-semibold text-gray-900">Company Communication</h2>
-                          <p className="mt-0.5 text-sm text-gray-600">Resolve ingredient info by requesting clarification, LOCs, or source details from the company.</p>
-                        </div>
-                        <button type="button" onClick={() => setActiveTab('ingredients')} className="text-xs text-blue-600 hover:underline">
-                          Back to Schedule A
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2.5 border-b border-indigo-100 bg-indigo-50 px-6 py-2.5">
-                      <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-indigo-400" />
-                      <p className="text-xs text-indigo-700">
-                        <span className="font-semibold">Flag ingredients first.</span> Mark items that need follow-up in Schedule A. They will be bundled into the next round email.
+                <div className="border-b bg-gray-50 px-6 py-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-2xl font-semibold text-gray-900">
+                        Company Communication
+                      </h2>
+                      <p className="mt-0.5 text-sm text-gray-600">
+                        Resolve ingredient info by requesting clarification, LOCs, or source details
+                        from the company.
                       </p>
                     </div>
-                    <div className="flex items-center justify-between px-6 py-3">
-                      <div className="flex items-center gap-2">
-                        <MessageSquare className="h-4 w-4 text-blue-500" />
-                        <h3 className="text-sm font-semibold text-gray-900">Company Communication</h3>
-                        <Pill tone={scratchpad.rounds.length ? 'blue' : 'gray'}>
-                          {roundMessageCards.length ? `${roundMessageCards.length} round${roundMessageCards.length === 1 ? '' : 's'}` : 'No rounds yet'}
-                        </Pill>
-                      </div>
-                      {!readOnly ? (
-                        <button
-                          type="button"
-                          onClick={generateRound}
-                          disabled={!counts.flagged || Boolean(latestRound)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-                        >
-                          <MessageSquare className="h-3.5 w-3.5" />
-                          Generate Round {nextRoundNumber} Email
-                        </button>
-                      ) : null}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('ingredients')}
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      Back to Schedule A
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5 border-b border-indigo-100 bg-indigo-50 px-6 py-2.5">
+                  <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-indigo-400" />
+                  <p className="text-xs text-indigo-700">
+                    <span className="font-semibold">Flag ingredients first.</span> Mark items that
+                    need follow-up in Schedule A. They will be bundled into the next round email.
+                  </p>
+                </div>
+                <div className="flex items-center justify-between px-6 py-3">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-blue-500" />
+                    <h3 className="text-sm font-semibold text-gray-900">Company Communication</h3>
+                    <Pill tone={scratchpad.rounds.length ? 'blue' : 'gray'}>
+                      {roundMessageCards.length
+                        ? `${roundMessageCards.length} round${roundMessageCards.length === 1 ? '' : 's'}`
+                        : 'No rounds yet'}
+                    </Pill>
+                  </div>
+                  {!readOnly ? (
+                    <button
+                      type="button"
+                      onClick={generateRound}
+                      disabled={!counts.flagged || Boolean(latestRound)}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      Generate Round {nextRoundNumber} Email
+                    </button>
+                  ) : null}
+                </div>
 
-                    {latestRound ? (
-                      <div className="px-6 pb-4">
-                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                          <div className="mb-2 flex items-center justify-between">
-                            <p className="text-xs font-semibold text-blue-800">Round {latestRound.roundNumber} email drafted</p>
-                            <span className="text-xs text-blue-600">{latestRound.items.length} item{latestRound.items.length === 1 ? '' : 's'}</span>
-                          </div>
-                          <div className="mb-2 space-y-1.5">
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="w-12 shrink-0 font-medium text-blue-500">To</span>
-                              <input
-                                type="email"
-                                aria-label="Email To"
-                                className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 font-mono text-blue-900 outline-none focus:ring-1 focus:ring-blue-400"
-                                value={latestRound.email.to}
-                                placeholder="No contact email found"
-                                onChange={(event) => scratchpadApi.updateRoundEmailTo(latestRound.id, event.target.value)}
-                                readOnly={readOnly}
-                              />
-                            </div>
-                            <div className="flex items-center gap-2 text-xs">
-                              <span className="w-12 shrink-0 font-medium text-blue-500">Subject</span>
-                              <span className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 text-blue-900">{latestRound.email.subject}</span>
-                            </div>
-                          </div>
-                          <textarea
-                            rows={8}
-                            aria-label="Email draft body"
-                            className="w-full resize-y rounded border border-blue-200 bg-white px-2 py-1.5 font-mono text-xs text-blue-900 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                            value={latestRound.email.body}
-                            onChange={(event) => scratchpadApi.updateRoundEmailBody(latestRound.id, event.target.value)}
+                {latestRound ? (
+                  <div className="px-6 pb-4">
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-xs font-semibold text-blue-800">
+                          Round {latestRound.roundNumber} email drafted
+                        </p>
+                        <span className="text-xs text-blue-600">
+                          {latestRound.items.length} item{latestRound.items.length === 1 ? '' : 's'}
+                        </span>
+                      </div>
+                      <div className="mb-2 space-y-1.5">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="w-12 shrink-0 font-medium text-blue-500">To</span>
+                          <input
+                            type="email"
+                            aria-label="Email To"
+                            className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 font-mono text-blue-900 outline-none focus:ring-1 focus:ring-blue-400"
+                            value={latestRound.email.to}
+                            placeholder="No contact email found"
+                            onChange={(event) =>
+                              scratchpadApi.updateRoundEmailTo(latestRound.id, event.target.value)
+                            }
                             readOnly={readOnly}
                           />
-                          {sendError ? <div className="mt-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">{sendError}</div> : null}
-                          {sentMessage ? <div className="mt-2 rounded border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700">{sentMessage}</div> : null}
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <button type="button" onClick={copyRoundEmail} className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50">
-                              <Copy className="h-3.5 w-3.5" />
-                              {copied ? 'Copied' : 'Copy'}
-                            </button>
-                            {!readOnly ? (
-                              <button type="button" onClick={() => void sendRoundEmail()} disabled={sendRoundEmailMutation.isPending} className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60">
-                                <Send className="h-3.5 w-3.5" />
-                                {sendRoundEmailMutation.isPending ? 'Sending...' : 'Send Email'}
-                              </button>
-                            ) : null}
-                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="w-12 shrink-0 font-medium text-blue-500">Subject</span>
+                          <span className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 text-blue-900">
+                            {latestRound.email.subject}
+                          </span>
                         </div>
                       </div>
-                    ) : null}
-
-                    <div className="border-t px-6 py-4">
-                      <h3 className="mb-3 text-sm font-semibold text-gray-900">Round History</h3>
-                      {isRoundHistoryLoading ? (
-                        <p className="rounded-lg border border-dashed border-gray-300 px-4 py-6 text-center text-sm text-gray-500">
-                          Loading rounds...
-                        </p>
-                      ) : null}
-                      {roundHistoryError ? (
-                        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                          Failed to load rounds: {roundHistoryError instanceof Error ? roundHistoryError.message : 'Unknown error'}
-                        </p>
-                      ) : null}
-                      {!isRoundHistoryLoading && !roundHistoryError && !roundMessageCards.length ? (
-                        <p className="py-2 text-xs text-gray-400">No round messages found yet. Flag ingredients with follow-up notes, generate an email, and send it to capture round history.</p>
-                      ) : null}
-                      {roundMessageCards.length ? (
-                        <div className="space-y-3">
-                          {roundMessageCards.map((round) => {
-                            const messageText = getEmailPreviewText(round.email)
-                            const sentDate = formatMessageDate(round.email.SentDate)
-                            const hasResponses = round.replies.length > 0
-
-                            return (
-                              <div key={round.email.MessageID ?? round.subject} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-                                <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
-                                  <div className="flex items-center gap-2">
-                                    <p className="text-sm font-semibold text-gray-900">Round {round.roundNumber}</p>
-                                    <Pill tone={hasResponses ? 'green' : 'amber'}>{hasResponses ? 'Responded' : 'Awaiting Response'}</Pill>
-                                  </div>
-                                  <span className="text-xs text-gray-400">{sentDate ? `Sent ${sentDate}` : 'Sent date unavailable'}</span>
-                                </div>
-                                <div className="space-y-3 px-4 py-3">
-                                  <div className="grid gap-1 text-xs text-gray-600 md:grid-cols-[70px_1fr]">
-                                    <span className="font-medium text-gray-500">To</span>
-                                    <span>{round.email.ToUser || '-'}</span>
-                                    <span className="font-medium text-gray-500">Subject</span>
-                                    <span className="break-words text-gray-900">{round.subject}</span>
-                                  </div>
-                                  {messageText ? (
-                                    <div className="whitespace-pre-wrap break-words rounded-md bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-600">
-                                      {messageText}
-                                    </div>
-                                  ) : null}
-                                  {round.replies.length ? (
-                                    <div className="space-y-2 border-t border-gray-100 pt-3">
-                                      {round.replies.map((reply) => {
-                                        const replyText = getEmailPreviewText(reply)
-                                        const replyDate = formatMessageDate(reply.SentDate)
-
-                                        return (
-                                          <div key={reply.MessageID ?? `${round.email.MessageID}-${reply.SentDate}`} className="rounded-md border border-green-100 bg-green-50/60 px-3 py-2">
-                                            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                                              <div className="flex flex-wrap items-center gap-2">
-                                                <Pill tone="green">Response</Pill>
-                                                <span className="text-xs font-medium text-gray-700">From {reply.FromUser || '-'}</span>
-                                              </div>
-                                              <span className="text-xs text-gray-400">{replyDate ? `Received ${replyDate}` : 'Received date unavailable'}</span>
-                                            </div>
-                                            <div className="mb-1 grid gap-1 text-xs text-gray-600 md:grid-cols-[70px_1fr]">
-                                              <span className="font-medium text-gray-500">To</span>
-                                              <span>{reply.ToUser || '-'}</span>
-                                              {reply.Subject ? (
-                                                <>
-                                                  <span className="font-medium text-gray-500">Subject</span>
-                                                  <span className="break-words text-gray-900">{reply.Subject}</span>
-                                                </>
-                                              ) : null}
-                                            </div>
-                                            {replyText ? (
-                                              <div className="whitespace-pre-wrap break-words rounded-md bg-white/80 px-3 py-2 text-xs leading-5 text-gray-600">
-                                                {replyText}
-                                              </div>
-                                            ) : null}
-                                          </div>
-                                        )
-                                      })}
-                                    </div>
-                                  ) : null}
-                                </div>
-                              </div>
-                            )
-                          })}
+                      <textarea
+                        rows={8}
+                        aria-label="Email draft body"
+                        className="w-full resize-y rounded border border-blue-200 bg-white px-2 py-1.5 font-mono text-xs text-blue-900 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        value={latestRound.email.body}
+                        onChange={(event) =>
+                          scratchpadApi.updateRoundEmailBody(latestRound.id, event.target.value)
+                        }
+                        readOnly={readOnly}
+                      />
+                      {sendError ? (
+                        <div className="mt-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">
+                          {sendError}
                         </div>
                       ) : null}
+                      {sentMessage ? (
+                        <div className="mt-2 rounded border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700">
+                          {sentMessage}
+                        </div>
+                      ) : null}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={copyRoundEmail}
+                          className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                          {copied ? 'Copied' : 'Copy'}
+                        </button>
+                        {!readOnly ? (
+                          <button
+                            type="button"
+                            onClick={() => void sendRoundEmail()}
+                            disabled={sendRoundEmailMutation.isPending}
+                            className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <Send className="h-3.5 w-3.5" />
+                            {sendRoundEmailMutation.isPending ? 'Sending...' : 'Send Email'}
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
+                  </div>
+                ) : null}
+
+                <div className="border-t px-6 py-4">
+                  <h3 className="mb-3 text-sm font-semibold text-gray-900">Round History</h3>
+                  {isRoundHistoryLoading ? (
+                    <p className="rounded-lg border border-dashed border-gray-300 px-4 py-6 text-center text-sm text-gray-500">
+                      Loading rounds...
+                    </p>
+                  ) : null}
+                  {roundHistoryError ? (
+                    <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      Failed to load rounds:{' '}
+                      {roundHistoryError instanceof Error
+                        ? roundHistoryError.message
+                        : 'Unknown error'}
+                    </p>
+                  ) : null}
+                  {!isRoundHistoryLoading && !roundHistoryError && !roundMessageCards.length ? (
+                    <p className="py-2 text-xs text-gray-400">
+                      No round messages found yet. Flag ingredients with follow-up notes, generate
+                      an email, and send it to capture round history.
+                    </p>
+                  ) : null}
+                  {roundMessageCards.length ? (
+                    <div className="space-y-3">
+                      {roundMessageCards.map((round) => {
+                        const messageText = getEmailPreviewText(round.email)
+                        const sentDate = formatMessageDate(round.email.SentDate)
+                        const hasResponses = round.replies.length > 0
+
+                        return (
+                          <div
+                            key={round.email.MessageID ?? round.subject}
+                            className="overflow-hidden rounded-lg border border-gray-200 bg-white"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold text-gray-900">
+                                  Round {round.roundNumber}
+                                </p>
+                                <Pill tone={hasResponses ? 'green' : 'amber'}>
+                                  {hasResponses ? 'Responded' : 'Awaiting Response'}
+                                </Pill>
+                              </div>
+                              <span className="text-xs text-gray-400">
+                                {sentDate ? `Sent ${sentDate}` : 'Sent date unavailable'}
+                              </span>
+                            </div>
+                            <div className="space-y-3 px-4 py-3">
+                              <div className="grid gap-1 text-xs text-gray-600 md:grid-cols-[70px_1fr]">
+                                <span className="font-medium text-gray-500">To</span>
+                                <span>{round.email.ToUser || '-'}</span>
+                                <span className="font-medium text-gray-500">Subject</span>
+                                <span className="break-words text-gray-900">{round.subject}</span>
+                              </div>
+                              {messageText ? (
+                                <div className="whitespace-pre-wrap break-words rounded-md bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-600">
+                                  {messageText}
+                                </div>
+                              ) : null}
+                              {round.replies.length ? (
+                                <div className="space-y-2 border-t border-gray-100 pt-3">
+                                  {round.replies.map((reply) => {
+                                    const replyText = getEmailPreviewText(reply)
+                                    const replyDate = formatMessageDate(reply.SentDate)
+
+                                    return (
+                                      <div
+                                        key={
+                                          reply.MessageID ??
+                                          `${round.email.MessageID}-${reply.SentDate}`
+                                        }
+                                        className="rounded-md border border-green-100 bg-green-50/60 px-3 py-2"
+                                      >
+                                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <Pill tone="green">Response</Pill>
+                                            <span className="text-xs font-medium text-gray-700">
+                                              From {reply.FromUser || '-'}
+                                            </span>
+                                          </div>
+                                          <span className="text-xs text-gray-400">
+                                            {replyDate
+                                              ? `Received ${replyDate}`
+                                              : 'Received date unavailable'}
+                                          </span>
+                                        </div>
+                                        <div className="mb-1 grid gap-1 text-xs text-gray-600 md:grid-cols-[70px_1fr]">
+                                          <span className="font-medium text-gray-500">To</span>
+                                          <span>{reply.ToUser || '-'}</span>
+                                          {reply.Subject ? (
+                                            <>
+                                              <span className="font-medium text-gray-500">
+                                                Subject
+                                              </span>
+                                              <span className="break-words text-gray-900">
+                                                {reply.Subject}
+                                              </span>
+                                            </>
+                                          ) : null}
+                                        </div>
+                                        {replyText ? (
+                                          <div className="whitespace-pre-wrap break-words rounded-md bg-white/80 px-3 py-2 text-xs leading-5 text-gray-600">
+                                            {replyText}
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             ) : null}
 
             {activeTab === 'eir' ? (
               <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                    <h2 className="mb-4 text-2xl font-semibold text-gray-900">Inspection Report (EIR)</h2>
+                <h2 className="mb-4 text-2xl font-semibold text-gray-900">
+                  Inspection Report (EIR)
+                </h2>
 
-                    {!effectiveEirReceived && !effectiveEirNotRequired ? (
-                      <div className="mb-6 flex items-center gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3">
-                        <AlertCircle className="h-5 w-5 shrink-0 text-red-500" />
-                        <p className="text-sm font-semibold text-red-800">Awaiting EIR Submission - NCRC will be notified on receipt to review and forward to the IA Manager</p>
+                {!effectiveEirReceived && !effectiveEirNotRequired ? (
+                  <div className="mb-6 flex items-center gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3">
+                    <AlertCircle className="h-5 w-5 shrink-0 text-red-500" />
+                    <p className="text-sm font-semibold text-red-800">
+                      Awaiting EIR Submission - NCRC will be notified on receipt to review and
+                      forward to the IA Manager
+                    </p>
+                  </div>
+                ) : null}
+
+                {effectiveEirNotRequired ? (
+                  <div className="mb-6 flex items-center gap-3 rounded-lg border border-gray-300 bg-gray-50 px-4 py-3">
+                    <FileText className="h-5 w-5 shrink-0 text-gray-500" />
+                    <p className="text-sm font-semibold text-gray-800">
+                      EIR marked not required for this application.
+                    </p>
+                  </div>
+                ) : null}
+
+                <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between border-b border-gray-100 py-2">
+                      <span className="text-sm font-medium text-gray-600">Inspection Status</span>
+                      <span
+                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
+                          effectiveEirNotRequired
+                            ? 'border-gray-200 bg-gray-100 text-gray-700'
+                            : scratchpad.eirReviewComplete
+                              ? 'border-green-200 bg-green-100 text-green-800'
+                              : effectiveEirReceived
+                                ? 'border-blue-200 bg-blue-100 text-blue-800'
+                                : 'border-yellow-200 bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
+                        {effectiveEirNotRequired
+                          ? 'Not Required'
+                          : scratchpad.eirReviewComplete
+                            ? 'Review Complete'
+                            : effectiveEirReceived
+                              ? 'Report Received'
+                              : 'Awaiting Report'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-gray-100 py-2">
+                      <span className="text-sm font-medium text-gray-600">RFR Assigned</span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        {assignedRfr || '-'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-gray-100 py-2">
+                      <span className="text-sm font-medium text-gray-600">Visit ID</span>
+                      <span className="font-mono text-sm font-semibold text-gray-900">
+                        {visitIdLabel || '-'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between border-b border-gray-100 py-2">
+                      <span className="text-sm font-medium text-gray-600">Inspection Date</span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        {inspectionDate || '-'}
+                      </span>
+                    </div>
+                    <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-2">
+                      <span className="text-sm font-medium text-gray-600">
+                        Reported Actual Visit Date
+                      </span>
+                      <span className="text-right text-sm font-semibold text-gray-900">
+                        {reportedInspectionDate || '-'}
+                      </span>
+                    </div>
+                    <div className="flex items-start justify-between gap-4 py-2">
+                      <span className="text-sm font-medium text-gray-600">RFR File URL (Name)</span>
+                      <span className="max-w-[26rem] break-all text-right text-xs font-medium text-gray-700">
+                        {eirDisplayName || '-'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-gray-100 py-2">
+                      <span className="text-sm font-medium text-gray-600">Days Since Visit</span>
+                      <span
+                        className={
+                          effectiveEirReceived || effectiveEirNotRequired
+                            ? 'text-sm font-semibold text-gray-900'
+                            : 'text-sm font-semibold text-red-600'
+                        }
+                      >
+                        {daysSinceVisit === null
+                          ? '-'
+                          : `${daysSinceVisit} day${daysSinceVisit === 1 ? '' : 's'}`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {effectiveEirReceived ? (
+                  <div>
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-t-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                      <div className="flex items-start gap-3">
+                        <FileText
+                          className="mt-0.5 h-8 w-8 shrink-0 text-red-400"
+                          strokeWidth={1.5}
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{eirDocumentFilename}</p>
+                          <p className="mt-0.5 text-xs text-gray-500">Submitted via OU Direct</p>
+                          {eirDocumentPath ? (
+                            <p className="mt-1 break-all text-[11px] text-gray-500">
+                              {eirDocumentPath}
+                            </p>
+                          ) : null}
+                        </div>
                       </div>
-                    ) : null}
-
-                    {effectiveEirNotRequired ? (
-                      <div className="mb-6 flex items-center gap-3 rounded-lg border border-gray-300 bg-gray-50 px-4 py-3">
-                        <FileText className="h-5 w-5 shrink-0 text-gray-500" />
-                        <p className="text-sm font-semibold text-gray-800">EIR marked not required for this application.</p>
-                      </div>
-                    ) : null}
-
-                    <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between border-b border-gray-100 py-2">
-                          <span className="text-sm font-medium text-gray-600">Inspection Status</span>
-                          <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
-                            effectiveEirNotRequired
-                              ? 'border-gray-200 bg-gray-100 text-gray-700'
-                              : scratchpad.eirReviewComplete
-                                ? 'border-green-200 bg-green-100 text-green-800'
-                                : effectiveEirReceived
-                                  ? 'border-blue-200 bg-blue-100 text-blue-800'
-                                  : 'border-yellow-200 bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {effectiveEirNotRequired ? 'Not Required' : scratchpad.eirReviewComplete ? 'Review Complete' : effectiveEirReceived ? 'Report Received' : 'Awaiting Report'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between border-b border-gray-100 py-2">
-                          <span className="text-sm font-medium text-gray-600">RFR Assigned</span>
-                          <span className="text-sm font-semibold text-gray-900">{assignedRfr || '-'}</span>
-                        </div>
-                        <div className="flex items-center justify-between border-b border-gray-100 py-2">
-                          <span className="text-sm font-medium text-gray-600">Visit ID</span>
-                          <span className="font-mono text-sm font-semibold text-gray-900">{visitIdLabel || '-'}</span>
-                        </div>
-                        <div className="flex items-center justify-between border-b border-gray-100 py-2">
-                          <span className="text-sm font-medium text-gray-600">Inspection Date</span>
-                          <span className="text-sm font-semibold text-gray-900">{inspectionDate || '-'}</span>
-                        </div>
-                        <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-2">
-                          <span className="text-sm font-medium text-gray-600">Reported Actual Visit Date</span>
-                          <span className="text-right text-sm font-semibold text-gray-900">{reportedInspectionDate || '-'}</span>
-                        </div>
-                        <div className="flex items-start justify-between gap-4 py-2">
-                          <span className="text-sm font-medium text-gray-600">RFR File URL (Name)</span>
-                          <span className="max-w-[26rem] break-all text-right text-xs font-medium text-gray-700">
-                            {eirDisplayName || '-'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between border-t border-gray-100 py-2">
-                          <span className="text-sm font-medium text-gray-600">Days Since Visit</span>
-                          <span className={effectiveEirReceived || effectiveEirNotRequired ? 'text-sm font-semibold text-gray-900' : 'text-sm font-semibold text-red-600'}>
-                            {daysSinceVisit === null ? '-' : `${daysSinceVisit} day${daysSinceVisit === 1 ? '' : 's'}`}
-                          </span>
-                        </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={openEirDocument}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Open in new tab
+                        </button>
+                        <button
+                          type="button"
+                          onClick={downloadEirDocument}
+                          disabled={isEirDownloadPending}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          {isEirDownloadPending ? 'Downloading...' : 'Download'}
+                        </button>
                       </div>
                     </div>
-
-                    {effectiveEirReceived ? (
-                      <div>
-                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-t-lg border border-gray-200 bg-gray-50 px-4 py-3">
-                          <div className="flex items-start gap-3">
-                            <FileText className="mt-0.5 h-8 w-8 shrink-0 text-red-400" strokeWidth={1.5} />
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">{eirDocumentFilename}</p>
-                              <p className="mt-0.5 text-xs text-gray-500">
-                                Submitted via OU Direct
-                              </p>
-                              {eirDocumentPath ? (
-                                <p className="mt-1 break-all text-[11px] text-gray-500">{eirDocumentPath}</p>
-                              ) : null}
-                            </div>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <button type="button" onClick={openEirDocument} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              Open in new tab
-                            </button>
-                            <button type="button" onClick={downloadEirDocument} disabled={isEirDownloadPending} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300">
-                              <Download className="h-3.5 w-3.5" />
-                              {isEirDownloadPending ? 'Downloading...' : 'Download'}
-                            </button>
-                          </div>
+                    {hasWorkflowEirDocument ? (
+                      isEirViewerLoading ? (
+                        <div className="rounded-b-lg border-x border-b border-gray-200 bg-gray-50 p-8 text-center">
+                          <FileText
+                            className="mx-auto mb-3 h-12 w-12 text-gray-300"
+                            strokeWidth={1.5}
+                          />
+                          <p className="text-sm text-gray-600">Loading EIR document...</p>
                         </div>
-                        {hasWorkflowEirDocument ? (
-                          isEirViewerLoading ? (
-                            <div className="rounded-b-lg border-x border-b border-gray-200 bg-gray-50 p-8 text-center">
-                              <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
-                              <p className="text-sm text-gray-600">Loading EIR document...</p>
-                            </div>
-                          ) : eirViewerError ? (
-                            <div className="rounded-b-lg border-x border-b border-gray-200 bg-red-50 p-8 text-center">
-                              <AlertCircle className="mx-auto mb-3 h-12 w-12 text-red-300" strokeWidth={1.5} />
-                              <p className="text-sm text-red-700">
-                                {eirViewerError instanceof Error ? eirViewerError.message : 'Failed to load EIR document.'}
-                              </p>
-                            </div>
-                          ) : eirPreviewHtml ? (
-                            <iframe title="EIR document preview" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-white" srcDoc={eirPreviewHtml} />
-                          ) : eirViewerUrl ? (
-                            <iframe title="EIR document" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100" src={eirViewerUrl} />
-                          ) : (
-                            <div className="rounded-b-lg border-x border-b border-gray-200 bg-gray-50 p-8 text-center">
-                              <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
-                              <p className="text-sm text-gray-600">EIR document is not ready to preview yet.</p>
-                            </div>
-                          )
-                        ) : eirDocumentUrl && canPreviewEirDocument ? (
-                          <iframe title="EIR document" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100" src={eirDocumentUrl} />
-                        ) : eirDocumentUrl ? (
-                          <div className="rounded-b-lg border-x border-b border-gray-200 bg-gray-50 p-8 text-center">
-                            <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
-                            <p className="text-sm text-gray-600">This file type could not be rendered directly in the viewer. Use the document actions above to open or download it.</p>
-                          </div>
-                        ) : (
-                          <iframe title="EIR preview" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100" srcDoc={EIR_PREVIEW_HTML} />
-                        )}
+                      ) : eirViewerError ? (
+                        <div className="rounded-b-lg border-x border-b border-gray-200 bg-red-50 p-8 text-center">
+                          <AlertCircle
+                            className="mx-auto mb-3 h-12 w-12 text-red-300"
+                            strokeWidth={1.5}
+                          />
+                          <p className="text-sm text-red-700">
+                            {eirViewerError instanceof Error
+                              ? eirViewerError.message
+                              : 'Failed to load EIR document.'}
+                          </p>
+                        </div>
+                      ) : eirPreviewHtml ? (
+                        <iframe
+                          title="EIR document preview"
+                          className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-white"
+                          srcDoc={eirPreviewHtml}
+                        />
+                      ) : eirViewerUrl ? (
+                        <iframe
+                          title="EIR document"
+                          className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100"
+                          src={eirViewerUrl}
+                        />
+                      ) : (
+                        <div className="rounded-b-lg border-x border-b border-gray-200 bg-gray-50 p-8 text-center">
+                          <FileText
+                            className="mx-auto mb-3 h-12 w-12 text-gray-300"
+                            strokeWidth={1.5}
+                          />
+                          <p className="text-sm text-gray-600">
+                            EIR document is not ready to preview yet.
+                          </p>
+                        </div>
+                      )
+                    ) : eirDocumentUrl && canPreviewEirDocument ? (
+                      <iframe
+                        title="EIR document"
+                        className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100"
+                        src={eirDocumentUrl}
+                      />
+                    ) : eirDocumentUrl ? (
+                      <div className="rounded-b-lg border-x border-b border-gray-200 bg-gray-50 p-8 text-center">
+                        <FileText
+                          className="mx-auto mb-3 h-12 w-12 text-gray-300"
+                          strokeWidth={1.5}
+                        />
+                        <p className="text-sm text-gray-600">
+                          This file type could not be rendered directly in the viewer. Use the
+                          document actions above to open or download it.
+                        </p>
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-                        <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
-                        <p className="text-sm text-gray-500">EIR document will appear here once {eirSubmitterLabel} submits via OU Direct</p>
-                      </div>
+                      <iframe
+                        title="EIR preview"
+                        className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100"
+                        srcDoc={EIR_PREVIEW_HTML}
+                      />
                     )}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
+                    <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
+                    <p className="text-sm text-gray-500">
+                      EIR document will appear here once {eirSubmitterLabel} submits via OU Direct
+                    </p>
+                  </div>
+                )}
 
-                    {effectiveEirReceived && !scratchpad.eirReviewComplete && !readOnly ? (
-                      <div className="mt-5 rounded-lg border border-purple-200 bg-purple-50 p-4">
-                        <div className="mb-2 flex items-center gap-2">
-                          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-purple-300 text-[10px] font-semibold text-purple-600">IA</span>
-                          <p className="text-sm font-semibold text-purple-900">IA Manager - EIR Review</p>
-                        </div>
-                        <p className="mb-3 text-xs text-purple-800">The IA Manager reads the EIR and directs the IAR to update Schedule A. IAR executes on direction.</p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button type="button" onClick={scratchpadApi.requestEirIngredientEntry} className="inline-flex items-center gap-1.5 rounded-lg border border-purple-300 bg-white px-2.5 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-50">
-                            <Plus className="h-3.5 w-3.5" />
-                            Request IAR add ingredient
-                          </button>
-                          <button type="button" onClick={scratchpadApi.markEirReviewComplete} className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-purple-700">
-                            <Check className="h-3.5 w-3.5" />
-                            Mark EIR review complete
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
-                      {effectiveEirNotRequired && !readOnly ? (
-                        <button type="button" onClick={scratchpadApi.clearEirNotRequired} className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                          Clear not required
-                        </button>
-                      ) : null}
+                {effectiveEirReceived && !scratchpad.eirReviewComplete && !readOnly ? (
+                  <div className="mt-5 rounded-lg border border-purple-200 bg-purple-50 p-4">
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-purple-300 text-[10px] font-semibold text-purple-600">
+                        IA
+                      </span>
+                      <p className="text-sm font-semibold text-purple-900">
+                        IA Manager - EIR Review
+                      </p>
                     </div>
+                    <p className="mb-3 text-xs text-purple-800">
+                      The IA Manager reads the EIR and directs the IAR to update Schedule A. IAR
+                      executes on direction.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={scratchpadApi.requestEirIngredientEntry}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-purple-300 bg-white px-2.5 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-50"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Request IAR add ingredient
+                      </button>
+                      <button
+                        type="button"
+                        onClick={scratchpadApi.markEirReviewComplete}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-purple-700"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        Mark EIR review complete
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
+                  {effectiveEirNotRequired && !readOnly ? (
+                    <button
+                      type="button"
+                      onClick={scratchpadApi.clearEirNotRequired}
+                      className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Clear not required
+                    </button>
+                  ) : null}
+                </div>
               </div>
             ) : null}
           </div>
@@ -1518,7 +1909,9 @@ export function ScheduleAIngredientsDrawer({
         <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <div className="shrink-0 border-b bg-gray-800 px-4 py-3 text-white">
             <div className="min-w-0">
-              <h3 className="truncate text-lg font-semibold leading-tight">{applicationName || 'Schedule A'}</h3>
+              <h3 className="truncate text-lg font-semibold leading-tight">
+                {applicationName || 'Schedule A'}
+              </h3>
               <p className="text-xs text-gray-300">App #{resolvedApplicationId ?? '-'}</p>
             </div>
           </div>
@@ -1532,9 +1925,15 @@ export function ScheduleAIngredientsDrawer({
           >
             <div className="flex items-center justify-between border-b bg-gray-800 px-4 py-3 text-white">
               <div className="min-w-0">
-                <h3 className="truncate text-lg font-semibold leading-tight">{applicationName || 'Schedule A Ingredients'}</h3>
+                <h3 className="truncate text-lg font-semibold leading-tight">
+                  {isAssigningTask
+                    ? taskName || 'Assign Ingredients'
+                    : applicationName || 'Schedule A Ingredients'}
+                </h3>
                 <p className="text-xs text-gray-300">
-                  App #{resolvedApplicationId ?? '-'} {taskName ? `- ${taskName}` : ''}
+                  {isAssigningTask && applicationName ? `${applicationName} - ` : ''}App #
+                  {resolvedApplicationId ?? '-'}{' '}
+                  {!isAssigningTask && taskName ? `- ${taskName}` : ''}
                 </p>
               </div>
               <div className="flex items-center gap-1">

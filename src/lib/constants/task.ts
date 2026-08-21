@@ -6,7 +6,7 @@ export const TASK_TYPES = {
   PROGRESS: 'progress',
   COMPLEX: 'complex',
   UPLOAD: 'upload',
-} as const;
+} as const
 
 export const TASK_CATEGORIES = {
   CONFIRMATION: 'confirmation',
@@ -22,8 +22,9 @@ export const TASK_CATEGORIES = {
   INVOICE: 'invoice',
   VISIT: 'visit',
   SCHEDULEA: 'schedulea',
+  SCHEDULEA_ASSIGNING: 'scheduleaassigning',
   SCHEDULEB: 'scheduleb',
   SCHEDULING: 'scheduling',
   PROGRESS_TASK: 'progress_task',
-  UPLOAD: 'upload'
-} as const;
+  UPLOAD: 'upload',
+} as const

@@ -15,7 +15,11 @@ import { ScheduleAIngredientsDrawer } from '@/features/applications/components/S
 import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer'
 import { useNcrcDashboardState } from '@/features/applications/hooks/useNcrcDashboardState'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
-import { isCertificateActionTask, useTaskActions } from '@/features/tasks/hooks/useTaskActions'
+import {
+  isCertificateActionTask,
+  isScheduleAAssigningActionTask,
+  useTaskActions,
+} from '@/features/tasks/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { Route } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
@@ -30,7 +34,10 @@ const normalizeApplicationId = (value: unknown): number | undefined => {
   return Number.isFinite(parsed) ? parsed : undefined
 }
 
-const normalizeTaskText = (value: unknown) => String(value ?? '').trim().toLowerCase()
+const normalizeTaskText = (value: unknown) =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase()
 
 export function NcrcDashboardContent() {
   const search = Route.useSearch()
@@ -54,6 +61,7 @@ export function NcrcDashboardContent() {
     assignedRoles?: AssignedRole[]
     taskInstanceId?: string | number
     taskName?: string
+    taskCategory?: string
   }>({
     open: false,
   })
@@ -239,16 +247,21 @@ export function NcrcDashboardContent() {
       return
     }
 
-    if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEA) {
+    if (
+      (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEA) ||
+      isScheduleAAssigningActionTask(action)
+    ) {
       setScheduleADrawerState({
         open: true,
         applicationId: application.applicationId,
         applicationName: application.company,
-        visitId: application.visit_id ?? application.visitId ?? application.appvars?.visit_id ?? null,
+        visitId:
+          application.visit_id ?? application.visitId ?? application.appvars?.visit_id ?? null,
         appVars: application.appvars ?? null,
         assignedRoles: application.assignedRoles,
         taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
         taskName: action.name,
+        taskCategory: actionCategory,
       })
       return
     }
@@ -258,7 +271,8 @@ export function NcrcDashboardContent() {
         open: true,
         applicationId: application.applicationId,
         applicationName: application.company,
-        visitId: application.visit_id ?? application.visitId ?? application.appvars?.visit_id ?? null,
+        visitId:
+          application.visit_id ?? application.visitId ?? application.appvars?.visit_id ?? null,
         appVars: application.appvars ?? null,
         assignedRoles: application.assignedRoles,
         taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
@@ -297,7 +311,12 @@ export function NcrcDashboardContent() {
       return
     }
 
-    if ((actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.CONTRACT) || (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION && action.name.toLowerCase().includes('contract'))) {
+    if (
+      (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.CONTRACT) ||
+      (actionType === TASK_TYPES.CONFIRM &&
+        actionCategory === TASK_CATEGORIES.CONFIRMATION &&
+        action.name.toLowerCase().includes('contract'))
+    ) {
       setContractDrawerState({
         open: true,
         applicant: application,
@@ -392,44 +411,44 @@ export function NcrcDashboardContent() {
   return (
     <>
       <PageShell>
-          <NcrcDashboardControls
-            q={q}
-            status={status}
-            priority={priority}
-            page={page}
-            myOnly={myOnly}
-            totalCount={totalCount}
-            totalPages={totalPages}
-            paginationMode={paginationMode}
-            isLoading={isLoading}
-            isError={isError}
-            error={error}
-            username={username}
-            showApplicantStats={SHOW_APPLICANT_STATS_CARDS}
-            applicantStats={applicantStats}
-            onOpenMyNotes={handleOpenMyMessages}
-            onUpdateSearch={updateSearch}
-            onFirstPage={handleFirst}
-            onPrevPage={handlePrev}
-            onNextPage={handleNext}
-            onLastPage={handleLast}
-          />
+        <NcrcDashboardControls
+          q={q}
+          status={status}
+          priority={priority}
+          page={page}
+          myOnly={myOnly}
+          totalCount={totalCount}
+          totalPages={totalPages}
+          paginationMode={paginationMode}
+          isLoading={isLoading}
+          isError={isError}
+          error={error}
+          username={username}
+          showApplicantStats={SHOW_APPLICANT_STATS_CARDS}
+          applicantStats={applicantStats}
+          onOpenMyNotes={handleOpenMyMessages}
+          onUpdateSearch={updateSearch}
+          onFirstPage={handleFirst}
+          onPrevPage={handlePrev}
+          onNextPage={handleNext}
+          onLastPage={handleLast}
+        />
 
-          <NcrcDashboardListSection
-            applicants={applicants}
-            paginationMode={paginationMode}
-            isLoading={isLoading}
-            isError={isError}
-            isInfiniteInitialLoading={
-              paginationMode === 'infinite' && infiniteQuery.isLoading && !infiniteQuery.data
-            }
-            hasNextPage={Boolean(infiniteQuery.hasNextPage)}
-            isFetchingNextPage={infiniteQuery.isFetchingNextPage}
-            sentinelRef={sentinelRef}
-            onTaskAction={handleTaskAction}
-            onCancelTask={handleCancelTask}
-            onIntakeIdClick={handleIntakeIdClick}
-          />
+        <NcrcDashboardListSection
+          applicants={applicants}
+          paginationMode={paginationMode}
+          isLoading={isLoading}
+          isError={isError}
+          isInfiniteInitialLoading={
+            paginationMode === 'infinite' && infiniteQuery.isLoading && !infiniteQuery.data
+          }
+          hasNextPage={Boolean(infiniteQuery.hasNextPage)}
+          isFetchingNextPage={infiniteQuery.isFetchingNextPage}
+          sentinelRef={sentinelRef}
+          onTaskAction={handleTaskAction}
+          onCancelTask={handleCancelTask}
+          onIntakeIdClick={handleIntakeIdClick}
+        />
       </PageShell>
 
       <ActionModal
@@ -509,6 +528,7 @@ export function NcrcDashboardContent() {
         assignedRoles={scheduleADrawerState.assignedRoles}
         taskInstanceId={scheduleADrawerState.taskInstanceId}
         taskName={scheduleADrawerState.taskName}
+        taskCategory={scheduleADrawerState.taskCategory}
         onClose={() => setScheduleADrawerState({ open: false })}
       />
       <ScheduleBProductsDrawer
