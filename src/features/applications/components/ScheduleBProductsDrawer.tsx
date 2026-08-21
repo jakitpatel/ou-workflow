@@ -617,7 +617,7 @@ export function ScheduleBProductsDrawer({
   const { data: applicationDetail } = useApplicationDetail(isActive ? resolvedApplicationId : undefined)
   const scratchpadApi = useScheduleBScratchpad(resolvedApplicationId)
   const { scratchpad, buildScheduleBExportRows } = scratchpadApi
-  const assignedRfr = textValue(applicationDetail?.assignedRFR)
+  const assignedRfr = textValue(applicationDetail?.DesignatedRFR)
   const eirSubmitterLabel = assignedRfr || 'the assigned RFR'
   const visitIdLabel = textValue(applicationDetail?.VisitId)
   const inspectionDate = formatDisplayDate(applicationDetail?.InspectionDate)

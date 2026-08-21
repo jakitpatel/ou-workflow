@@ -490,7 +490,7 @@ export function ScheduleAIngredientsDrawer({
   )
   const scratchpadApi = useScheduleAScratchpad(resolvedApplicationId)
   const { scratchpad } = scratchpadApi
-  const assignedRfr = textValue(applicationDetail?.assignedRFR)
+  const assignedRfr = textValue(applicationDetail?.DesignatedRFR)
   const eirSubmitterLabel = assignedRfr || 'the assigned RFR'
   const effectiveAppVars = { ...globalAppVars, ...appVars }
   const visitIdLabel = textValue(applicationDetail?.VisitId)

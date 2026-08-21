@@ -567,6 +567,7 @@ export interface ApplicationDetail {
   assignedNCRC?: string;
   assignedRC?: string;
   assignedRFR?: string | null;
+  DesignatedRFR?: string | null;
   RFRFileUrl?: string | null;
   ReportedInspectionDate?: string | null;
   VisitId?: number | string | null;
