@@ -58,9 +58,62 @@ export type InspectionInvoiceCustomer = {
   addressLines: string[]
   billingContactName: string
   billingContactEmail: string
+  cityStatePostalCountry: string
   coordinatorName: string
   coordinatorPhone: string
+  streetAddress: string
 }
+
+export type PendingCompanyIntroLetterValues = {
+  accountNumber: string
+  cityStatePostalCountry: string
+  companyName: string
+  contactName: string
+  plantLocation: string
+  streetAddress: string
+}
+
+export const buildPendingCompanyIntroEmailBody = ({
+  accountNumber,
+  cityStatePostalCountry,
+  companyName,
+  contactName,
+  plantLocation,
+  streetAddress,
+}: PendingCompanyIntroLetterValues) => `Company Name: ${companyName || '-'}
+Account Number: ${accountNumber || '-'}
+
+${companyName || '-'} – ${plantLocation || '-'}
+${streetAddress || '-'}
+${cityStatePostalCountry || '-'}
+
+Dear ${contactName || 'Customer'},
+
+Thank you for applying for OU Kosher certification. We're glad to begin this partnership with you, and look forward to working together to help bring your products to more customers around the world.
+
+What Happens Next
+
+1. Set Up Your OU Direct Account. You’ll be receiving an email with the subject line “Welcome to OU Direct” with instructions on how to set up your account with a temporary password.
+
+OU Direct is your online account with OU Kosher, and you can start using it to pay your invoice and search our millions of ingredient listings. Once you're certified, OU Direct is where you'll manage your kosher program. To receive your login, please reply to this letter or email your Account Manager below.
+
+2. Pay your initial evaluation invoice. Your invoice for the initial evaluation is enclosed. The easiest and safest way to pay is online at oudirect.org (U.S. bank accounts only). You can also pay by wire transfer or ACH; our bank details are on the invoice. Please don't send a check by mail.
+
+3. Schedule your inspection. Once we receive your payment, we'll contact you to arrange a date. An OU representative will visit your facility to carry out an Initial Inspection. If your company has more than one facility, each one needs its own visit.
+
+4. We review your ingredients. Our Ingredients Department has already started reviewing your raw materials. Please make sure you have sent a Kosher Letter of Certification (LOC), or other required documents, for every ingredient. If anything is missing, we'll contact you and tell you exactly what we need.
+
+Set Up Your OU Direct Account
+
+We're Here to Help
+
+The people below are your partners throughout this process. Please contact them at any time. No question is too small.
+
+Rabbi Donneal Epstein — Rabbinic Coordinator / Account Manager
+epsteind@ou.org | 212-613-8293
+
+Batsheva Haut — Administrative Assistant
+hautb@ou.org`
 
 type InspectionInvoiceSavedState = {
   version?: number
@@ -575,6 +628,9 @@ export function useInspectionInvoiceDrawerState({
       ].filter((line): line is string => Boolean(line?.trim())),
       billingContactName: billingContact?.name ?? '',
       billingContactEmail: billingContact?.email ?? '',
+      cityStatePostalCountry: [address?.city, address?.state, address?.zip, address?.country]
+        .filter(Boolean)
+        .join(', '),
       coordinatorName:
         coordinator?.displayName ??
         coordinator?.fullName ??
@@ -582,6 +638,7 @@ export function useInspectionInvoiceDrawerState({
         coordinator?.name ??
         '',
       coordinatorPhone: coordinator?.phone ?? coordinator?.Phone ?? '',
+      streetAddress: [address?.street, address?.line2].filter(Boolean).join(', '),
     }
   }, [applicationDetail])
 

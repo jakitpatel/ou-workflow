@@ -6,6 +6,7 @@ import { InspectionInvoicePreview } from '@/features/applications/components/Ins
 import {
   APPLICATION_FEE_DESCRIPTION,
   APPLICATION_FEE_LETTER_TEMPLATE,
+  buildPendingCompanyIntroEmailBody,
   formatCurrency,
   getApplicantAccountNumber,
   INSPECTION_LETTER_TEMPLATE,
@@ -169,15 +170,14 @@ export function InspectionInvoiceDrawer({
     state.recipient === 'ADD_NEW'
       ? state.extraRecipientEmail
       : state.selectedRecipient?.email || recipientLabel
-  const emailMessageText = `To Customer,
-
-Thank you for your interest in OU Kosher. Please find the ${
-    state.isApplicationFeeOnly ? 'application fee' : 'initial inspection'
-  } invoice enclosed for your review. Payment can be made online through OUDirect by ACH or credit card.
-
-Company: ${resolvedName}
-Plant: ${applicant?.plant || '-'}
-Account Number: ${accountNumber || '-'}`
+  const emailMessageText = buildPendingCompanyIntroEmailBody({
+    accountNumber,
+    cityStatePostalCountry: state.invoiceCustomer.cityStatePostalCountry,
+    companyName: resolvedName,
+    contactName: state.selectedRecipient?.name || state.invoiceCustomer.billingContactName,
+    plantLocation: applicant?.plant || applicant?.region || '',
+    streetAddress: state.invoiceCustomer.streetAddress,
+  })
 
   const onPrimaryClick = async () => {
     if (state.skipInvoiceWorkflow) {
@@ -805,12 +805,36 @@ Account Number: ${accountNumber || '-'}`
                   {state.showEmailCopies ? (
                     <>
                       <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
-                        <label htmlFor="inspection-invoice-email-cc" className="pt-2 font-medium text-gray-500">Cc</label>
-                        <input id="inspection-invoice-email-cc" type="text" value={state.emailCc} onChange={(event) => state.setEmailCc(event.target.value)} placeholder="Separate emails with commas" className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <label
+                          htmlFor="inspection-invoice-email-cc"
+                          className="pt-2 font-medium text-gray-500"
+                        >
+                          Cc
+                        </label>
+                        <input
+                          id="inspection-invoice-email-cc"
+                          type="text"
+                          value={state.emailCc}
+                          onChange={(event) => state.setEmailCc(event.target.value)}
+                          placeholder="Separate emails with commas"
+                          className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
                       </div>
                       <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
-                        <label htmlFor="inspection-invoice-email-bcc" className="pt-2 font-medium text-gray-500">Bcc</label>
-                        <input id="inspection-invoice-email-bcc" type="text" value={state.emailBcc} onChange={(event) => state.setEmailBcc(event.target.value)} placeholder="Separate emails with commas" className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <label
+                          htmlFor="inspection-invoice-email-bcc"
+                          className="pt-2 font-medium text-gray-500"
+                        >
+                          Bcc
+                        </label>
+                        <input
+                          id="inspection-invoice-email-bcc"
+                          type="text"
+                          value={state.emailBcc}
+                          onChange={(event) => state.setEmailBcc(event.target.value)}
+                          placeholder="Separate emails with commas"
+                          className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
                       </div>
                     </>
                   ) : null}
