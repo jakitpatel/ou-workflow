@@ -1,5 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { assignTask, confirmTask, createTaskNote, undoTask } from '@/features/tasks/api'
+import {
+  assignTask,
+  confirmTask,
+  createTaskNote,
+  patchTaskStatus,
+  undoTask,
+} from '@/features/tasks/api'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
@@ -30,6 +36,14 @@ type AssignTaskInput = {
 type UndoTaskInput = {
   taskId: string
   applicationId?: string | number | null
+  token?: string | null
+}
+
+type PatchTaskStatusInput = {
+  taskId: string
+  applicationId?: string | number | null
+  status: string
+  override?: string | number
   token?: string | null
 }
 
@@ -177,6 +191,29 @@ export const useAssignTaskMutation = (options: TaskMutationOptions = {}) => {
     },
     onError: (error: unknown) => {
       options.onError?.(resolveMutationErrorMessage(error, 'Task assignment failed'))
+    },
+  })
+}
+
+export const usePatchTaskStatusMutation = (options: TaskMutationOptions = {}) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ applicationId: _applicationId, ...input }: PatchTaskStatusInput) =>
+      patchTaskStatus(input),
+    onSuccess: async (_response, variables) => {
+      const payload = variables as PatchTaskStatusInput
+      patchTaskCaches(queryClient, payload.taskId, (task) => ({
+        ...task,
+        status: payload.status,
+      }))
+      await invalidateRelatedLists(queryClient, options, {
+        applicationId: payload.applicationId,
+        token: payload.token,
+      })
+    },
+    onError: (error: unknown) => {
+      options.onError?.(resolveMutationErrorMessage(error, 'Task status update failed'))
     },
   })
 }

@@ -214,6 +214,34 @@ export async function patchTaskResult({
   })
 }
 
+export async function patchTaskStatus({
+  taskId,
+  status,
+  override,
+  token,
+}: {
+  taskId: string
+  status: string
+  override?: string | number
+  token?: string | null
+}): Promise<any> {
+  return await fetchWithAuth({
+    path: `/api/TaskInstance/${encodeURIComponent(taskId)}`,
+    method: 'PATCH',
+    body: {
+      data: {
+        id: taskId,
+        type: 'TaskInstance',
+        attributes: {
+          Status: status,
+          ...(override !== undefined ? { override } : {}),
+        },
+      },
+    },
+    token,
+  })
+}
+
 export async function patchTaskGuiDisplayResult({
   taskId,
   result,
