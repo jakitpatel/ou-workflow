@@ -21,6 +21,8 @@ type Props = {
   applicationName?: string
   taskInstanceId?: string | number
   taskName?: string
+  mode?: 'drawer' | 'embedded'
+  readOnly?: boolean
   onClose: () => void
 }
 
@@ -128,6 +130,8 @@ export function InspectionInvoiceDrawer({
   applicationName,
   taskInstanceId,
   taskName,
+  mode = 'drawer',
+  readOnly = false,
   onClose,
 }: Props) {
   const state = useInspectionInvoiceDrawerState({
@@ -139,6 +143,7 @@ export function InspectionInvoiceDrawer({
     taskName,
   })
   const accountNumber = getApplicantAccountNumber(applicant)
+  const isEmbedded = mode === 'embedded'
   const resolvedName = applicationName || applicant?.company || 'Application'
   const emailSubject = useMemo(() => {
     const feeType = state.isApplicationFeeOnly ? 'Application Fee' : 'Initial Inspection'
@@ -228,9 +233,16 @@ export function InspectionInvoiceDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
+    <div
+      className={isEmbedded ? 'h-full min-h-0' : 'fixed inset-0 z-50 bg-black/40'}
+      onClick={isEmbedded ? undefined : onClose}
+    >
       <div
-        className="fixed right-0 top-0 flex h-full w-full max-w-[98vw] flex-col overflow-hidden bg-white shadow-2xl xl:max-w-[82vw]"
+        className={
+          isEmbedded
+            ? 'flex h-full min-h-0 w-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'
+            : 'fixed right-0 top-0 flex h-full w-full max-w-[98vw] flex-col overflow-hidden bg-white shadow-2xl xl:max-w-[82vw]'
+        }
         onClick={(event) => event.stopPropagation()}
       >
         <div className="border-b bg-gray-900 px-5 py-4 text-white">
@@ -255,20 +267,23 @@ export function InspectionInvoiceDrawer({
                 ) : null}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded p-1 text-gray-300 hover:bg-white/10 hover:text-white"
-              aria-label="Close inspection invoice drawer"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            {!isEmbedded ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded p-1 text-gray-300 hover:bg-white/10 hover:text-white"
+                aria-label="Close inspection invoice drawer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
           </div>
         </div>
 
         <ProgressStrip stage={state.stage} setupOnly={state.skipInvoiceWorkflow} />
 
-        <div
+        <fieldset
+          disabled={readOnly}
           className={`grid min-h-0 flex-1 grid-cols-1 overflow-hidden ${state.skipInvoiceWorkflow ? '' : 'lg:grid-cols-[minmax(420px,0.9fr)_minmax(520px,1.1fr)]'}`}
         >
           <div className="min-h-0 space-y-4 overflow-y-auto bg-gray-50 p-5">
@@ -709,8 +724,9 @@ export function InspectionInvoiceDrawer({
               paid={state.stage === 'paid'}
             />
           ) : null}
-        </div>
+        </fieldset>
 
+        {!readOnly ? (
         <div className="flex items-center justify-between gap-4 border-t bg-white px-5 py-3">
           <div className="min-w-0 text-sm text-gray-600">
             {state.skipInvoiceWorkflow
@@ -754,6 +770,7 @@ export function InspectionInvoiceDrawer({
             </button>
           </div>
         </div>
+        ) : null}
 
         {state.showEmailPreview ? (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">

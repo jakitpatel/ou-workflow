@@ -35,6 +35,7 @@ import TaskEventsPanel from '@/features/applications/components/application-mana
 import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer'
 import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer'
 import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer'
+import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer'
 import type { ApplicationDetail, ApplicationEmail } from '@/types/application'
 
 type CompletionStatus = 'incomplete' | 'complete' | 'dispatched'
@@ -113,6 +114,11 @@ const TABS = [
 ] as const
 
 const SCHEDULE_A_TAB = { id: 'schedule-a', label: 'Schedule A', icon: ClipboardList } as const
+const INSPECTION_INVOICE_TAB = {
+  id: 'inspection-invoice',
+  label: 'Inspection Invoice',
+  icon: FileText,
+} as const
 const SCHEDULE_B_TAB = { id: 'schedule-b', label: 'Schedule B', icon: Package } as const
 const CONTRACT_TAB = { id: 'contract', label: 'Contract', icon: FileText } as const
 
@@ -558,6 +564,7 @@ export function ApplicationDetailsContent({
 
       return [
         ...applicationTabs.slice(0, 4),
+        INSPECTION_INVOICE_TAB,
         SCHEDULE_A_TAB,
         SCHEDULE_B_TAB,
         CONTRACT_TAB,
@@ -816,6 +823,22 @@ export function ApplicationDetailsContent({
                 showRecentOnly={showRecentOnly}
                 setShowRecentOnly={setShowRecentOnly}
               />
+            )}
+            {dataSource === 'application' && activeTab === 'inspection-invoice' && resolvedApplicationId !== null && (
+              <InspectionInvoiceDrawer
+                open
+                mode="embedded"
+                readOnly
+                applicationId={resolvedApplicationId}
+                applicationName={applicationDisplayName}
+                taskName="Inspection Invoice"
+                onClose={() => {}}
+              />
+            )}
+            {dataSource === 'application' && activeTab === 'inspection-invoice' && resolvedApplicationId === null && (
+              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
+                Inspection Invoice is unavailable because this application does not have a valid application ID.
+              </div>
             )}
             {dataSource === 'application' && activeTab === 'schedule-a' && resolvedApplicationId !== null && (
               <ScheduleAIngredientsDrawer
