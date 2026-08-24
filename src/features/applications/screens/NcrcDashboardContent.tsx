@@ -19,6 +19,8 @@ import {
   isCertificateActionTask,
   isScheduleAAssigningActionTask,
   isScheduleAStartActionTask,
+  isScheduleBAssignProductsActionTask,
+  isScheduleBStartActionTask,
   useTaskActions,
 } from '@/features/tasks/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
@@ -75,6 +77,7 @@ export function NcrcDashboardContent() {
     assignedRoles?: AssignedRole[]
     taskInstanceId?: string | number
     taskName?: string
+    taskCategory?: string
   }>({
     open: false,
   })
@@ -268,7 +271,11 @@ export function NcrcDashboardContent() {
       return
     }
 
-    if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEB) {
+    if (
+      (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEB) ||
+      isScheduleBAssignProductsActionTask(action) ||
+      isScheduleBStartActionTask(action)
+    ) {
       setScheduleBDrawerState({
         open: true,
         applicationId: application.applicationId,
@@ -279,6 +286,7 @@ export function NcrcDashboardContent() {
         assignedRoles: application.assignedRoles,
         taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
         taskName: action.name,
+        taskCategory: actionCategory,
       })
       return
     }
@@ -542,6 +550,7 @@ export function NcrcDashboardContent() {
         assignedRoles={scheduleBDrawerState.assignedRoles}
         taskInstanceId={scheduleBDrawerState.taskInstanceId}
         taskName={scheduleBDrawerState.taskName}
+        taskCategory={scheduleBDrawerState.taskCategory}
         onClose={() => setScheduleBDrawerState({ open: false })}
       />
       <InspectionInvoiceDrawer

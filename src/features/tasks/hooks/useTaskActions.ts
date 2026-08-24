@@ -44,6 +44,16 @@ export const isScheduleAStartActionTask = (action: Task): boolean =>
   normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
     TASK_CATEGORIES.SCHEDULEA_START
 
+export const isScheduleBAssignProductsActionTask = (action: Task): boolean =>
+  normalizeTaskValue(action.taskType ?? (action as any).TaskType) === TASK_TYPES.ACTION &&
+  normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
+    TASK_CATEGORIES.SCHEDULEB_ASSIGN_PRODUCTS
+
+export const isScheduleBStartActionTask = (action: Task): boolean =>
+  normalizeTaskValue(action.taskType ?? (action as any).TaskType) === TASK_TYPES.ACTION &&
+  normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
+    TASK_CATEGORIES.SCHEDULEB_START
+
 const buildInspectionFeeResult = (value: InspectionFeeChoice): string =>
   `{inspectionNeeded:${value.inspectionNeeded}, feeNeeded:${value.feeNeeded}}`
 

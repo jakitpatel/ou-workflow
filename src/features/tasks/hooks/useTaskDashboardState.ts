@@ -54,6 +54,7 @@ type ScheduleBDrawerState = {
   applicationName?: string
   taskInstanceId?: string | number
   taskName?: string
+  taskCategory?: string
 }
 
 type InspectionInvoiceDrawerState = {
@@ -254,7 +255,14 @@ const getTaskActionPresentation = (application: TaskDashboardAction) => {
     return { type: 'schedule-a' as const }
   }
 
-  if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEB) {
+  if (
+    actionType === TASK_TYPES.ACTION &&
+    [
+      TASK_CATEGORIES.SCHEDULEB,
+      TASK_CATEGORIES.SCHEDULEB_ASSIGN_PRODUCTS,
+      TASK_CATEGORIES.SCHEDULEB_START,
+    ].includes(actionCategory as any)
+  ) {
     return { type: 'schedule-b' as const }
   }
 
@@ -687,6 +695,7 @@ export function useTaskDashboardState() {
           applicationName: action.companyName ?? action.plantName,
           taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
           taskName: action.taskName ?? action.name,
+          taskCategory: action.taskCategory ?? action.TaskCategory,
         })
         return
       }

@@ -25,6 +25,8 @@ export const TASK_CATEGORIES = {
   SCHEDULEA_ASSIGNING: 'scheduleaassigning',
   SCHEDULEA_START: 'scheduleastart',
   SCHEDULEB: 'scheduleb',
+  SCHEDULEB_ASSIGN_PRODUCTS: 'schedulebassignprod',
+  SCHEDULEB_START: 'schedulebstart',
   SCHEDULING: 'scheduling',
   PROGRESS_TASK: 'progress_task',
   UPLOAD: 'upload',

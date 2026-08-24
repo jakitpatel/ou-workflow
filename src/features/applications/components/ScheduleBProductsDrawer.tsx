@@ -43,6 +43,7 @@ import {
   useSendScheduleBCommunicationEmail,
 } from '@/features/applications/hooks/useScheduleBProducts'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
+import { TASK_CATEGORIES } from '@/lib/constants/task'
 import type { ApplicantAppVars, ApplicationEmail, AssignedRole } from '@/types/application'
 
 type Props = {
@@ -54,6 +55,7 @@ type Props = {
   assignedRoles?: AssignedRole[]
   taskInstanceId?: string | number | null
   taskName?: string
+  taskCategory?: string
   mode?: 'drawer' | 'embedded'
   readOnly?: boolean
   onClose: () => void
@@ -575,6 +577,7 @@ export function ScheduleBProductsDrawer({
   appVars,
   taskInstanceId,
   taskName,
+  taskCategory,
   mode = 'drawer',
   readOnly = false,
   onClose,
@@ -603,6 +606,11 @@ export function ScheduleBProductsDrawer({
   const productsTableRef = useRef<HTMLTableElement | null>(null)
   const isEmbedded = mode === 'embedded'
   const isActive = isEmbedded || open
+  const isAssignProductsTask =
+    textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEB_ASSIGN_PRODUCTS
+  const isStartProductsTask =
+    textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEB_START
+  const usesTaskHeader = isAssignProductsTask || isStartProductsTask
 
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
@@ -1075,6 +1083,56 @@ export function ScheduleBProductsDrawer({
     }
   }
 
+  const assignProducts = async () => {
+    if (readOnly) return
+    const resolvedTaskInstanceId = textValue(taskInstanceId)
+    if (!resolvedTaskInstanceId) {
+      toast.error('Task instance id not found')
+      return
+    }
+
+    try {
+      await completeScheduleBTaskMutation.mutateAsync({
+        taskId: resolvedTaskInstanceId,
+        applicationId: resolvedApplicationId,
+        token: token ?? undefined,
+        username: username ?? undefined,
+        capacity: 'DESIGNATED',
+        completionNotes: 'Products assigned successfully',
+        result: 'YES',
+      })
+      toast.success('Products assigned', { position: 'top-center' })
+      onClose()
+    } catch {
+      // useConfirmTaskMutation shows the API error through its onError handler.
+    }
+  }
+
+  const startProcessing = async () => {
+    if (readOnly) return
+    const resolvedTaskInstanceId = textValue(taskInstanceId)
+    if (!resolvedTaskInstanceId) {
+      toast.error('Task instance id not found')
+      return
+    }
+
+    try {
+      await completeScheduleBTaskMutation.mutateAsync({
+        taskId: resolvedTaskInstanceId,
+        applicationId: resolvedApplicationId,
+        token: token ?? undefined,
+        username: username ?? undefined,
+        capacity: 'DESIGNATED',
+        completionNotes: 'Products processing started successfully',
+        result: 'YES',
+      })
+      toast.success('Products processing started', { position: 'top-center' })
+      onClose()
+    } catch {
+      // useConfirmTaskMutation shows the API error through its onError handler.
+    }
+  }
+
   const panelWidth = expanded ? 'lg:max-w-[96vw]' : 'lg:max-w-[72vw]'
   const stickyTableHeaderClass =
     'sticky z-10 bg-gray-50 px-3 py-2.5 text-xs font-semibold text-gray-600 shadow-[inset_0_-1px_0_#e5e7eb]'
@@ -1084,6 +1142,32 @@ export function ScheduleBProductsDrawer({
             <div className="flex h-full min-h-0 flex-col">
               <div className="shrink-0 border-b bg-white px-4 py-3">
                 <div className="flex flex-wrap items-center justify-end gap-3">
+                  {isStartProductsTask && !readOnly ? (
+                    <button
+                      type="button"
+                      onClick={startProcessing}
+                      disabled={completeScheduleBTaskMutation.isPending}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      {completeScheduleBTaskMutation.isPending
+                        ? 'Starting...'
+                        : 'Start Processing'}
+                    </button>
+                  ) : null}
+                  {isAssignProductsTask && !readOnly ? (
+                    <button
+                      type="button"
+                      onClick={assignProducts}
+                      disabled={completeScheduleBTaskMutation.isPending}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      {completeScheduleBTaskMutation.isPending
+                        ? 'Assigning...'
+                        : 'Assign to Products'}
+                    </button>
+                  ) : null}
                   {!isEmbedded ? (
                     <button
                       type="button"
@@ -1864,9 +1948,15 @@ export function ScheduleBProductsDrawer({
           >
             <div className="flex items-center justify-between border-b bg-gray-800 px-4 py-3 text-white">
               <div className="min-w-0">
-                <h3 className="truncate text-lg font-semibold leading-tight">{applicationName || 'Schedule B Products'}</h3>
+                <h3 className="truncate text-lg font-semibold leading-tight">
+                  {usesTaskHeader
+                    ? taskName ||
+                      (isStartProductsTask ? 'Start Products Processing' : 'Assign to Products')
+                    : applicationName || 'Schedule B Products'}
+                </h3>
                 <p className="text-xs text-gray-300">
-                  App #{resolvedApplicationId ?? '-'} {taskName ? `- ${taskName}` : ''}
+                  {usesTaskHeader && applicationName ? `${applicationName} - ` : ''}App #{resolvedApplicationId ?? '-'}{' '}
+                  {!usesTaskHeader && taskName ? `- ${taskName}` : ''}
                 </p>
               </div>
               <div className="flex items-center gap-1">

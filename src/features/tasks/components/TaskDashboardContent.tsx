@@ -162,6 +162,7 @@ export function TaskDashboardContent() {
         applicationName={scheduleBDrawerState.applicationName}
         taskInstanceId={scheduleBDrawerState.taskInstanceId}
         taskName={scheduleBDrawerState.taskName}
+        taskCategory={scheduleBDrawerState.taskCategory}
         onClose={() => setScheduleBDrawerState({ open: false })}
       />
       <InspectionInvoiceDrawer
