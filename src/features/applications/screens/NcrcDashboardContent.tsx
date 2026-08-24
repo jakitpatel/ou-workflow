@@ -347,7 +347,11 @@ export function NcrcDashboardContent() {
 
     if (
       (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) &&
-      [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1].includes(actionCategory as any)
+      [
+        TASK_CATEGORIES.APPROVAL,
+        TASK_CATEGORIES.APPROVAL_SIGNOFF,
+        TASK_CATEGORIES.APPROVAL1,
+      ].includes(actionCategory as any)
     ) {
       setShowConditionModal(action)
       return

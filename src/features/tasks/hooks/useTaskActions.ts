@@ -164,7 +164,7 @@ export function useTaskActions({ applications, token, username, onError }: Param
         }
 
         const shouldReopenStageTask =
-          taskCategory === TASK_CATEGORIES.APPROVAL &&
+          taskCategory === TASK_CATEGORIES.APPROVAL_SIGNOFF &&
           normalizeTaskValue(result) === 'no' &&
           selectedAction?.application
 
