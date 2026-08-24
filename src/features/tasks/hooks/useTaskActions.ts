@@ -184,7 +184,7 @@ export function useTaskActions({ applications, token, username, onError }: Param
           await patchTaskStatusMutation.mutateAsync({
             taskId: reopenTaskId,
             applicationId,
-            status: 'Pending',
+            status: 'PENDING',
             override: 1,
             token: token ?? undefined,
           })
