@@ -607,7 +607,7 @@ export function ScheduleBProductsDrawer({
   const isEmbedded = mode === 'embedded'
   const isActive = isEmbedded || open
   const isAssignProductsTask =
-    textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEB_ASSIGN_PRODUCTS
+    textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEB_ASSIGNING
   const isStartProductsTask =
     textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEB_START
   const usesTaskHeader = isAssignProductsTask || isStartProductsTask

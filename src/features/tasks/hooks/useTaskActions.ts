@@ -47,7 +47,7 @@ export const isScheduleAStartActionTask = (action: Task): boolean =>
 export const isScheduleBAssignProductsActionTask = (action: Task): boolean =>
   normalizeTaskValue(action.taskType ?? (action as any).TaskType) === TASK_TYPES.ACTION &&
   normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
-    TASK_CATEGORIES.SCHEDULEB_ASSIGN_PRODUCTS
+    TASK_CATEGORIES.SCHEDULEB_ASSIGNING
 
 export const isScheduleBStartActionTask = (action: Task): boolean =>
   normalizeTaskValue(action.taskType ?? (action as any).TaskType) === TASK_TYPES.ACTION &&

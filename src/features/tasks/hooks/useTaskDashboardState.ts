@@ -259,7 +259,7 @@ const getTaskActionPresentation = (application: TaskDashboardAction) => {
     actionType === TASK_TYPES.ACTION &&
     [
       TASK_CATEGORIES.SCHEDULEB,
-      TASK_CATEGORIES.SCHEDULEB_ASSIGN_PRODUCTS,
+      TASK_CATEGORIES.SCHEDULEB_ASSIGNING,
       TASK_CATEGORIES.SCHEDULEB_START,
     ].includes(actionCategory as any)
   ) {
