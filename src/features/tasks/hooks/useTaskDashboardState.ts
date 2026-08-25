@@ -46,6 +46,7 @@ type ScheduleADrawerState = {
   taskInstanceId?: string | number
   taskName?: string
   taskCategory?: string
+  scheduleATaskInstanceId?: string | number
 }
 
 type ScheduleBDrawerState = {
@@ -55,6 +56,7 @@ type ScheduleBDrawerState = {
   taskInstanceId?: string | number
   taskName?: string
   taskCategory?: string
+  scheduleBTaskInstanceId?: string | number
 }
 
 type InspectionInvoiceDrawerState = {
@@ -224,10 +226,24 @@ const getTaskActionPresentation = (application: TaskDashboardAction) => {
   }
 
   if (
+    (actionType === TASK_TYPES.CONDITION || actionType === TASK_TYPES.CONDITIONAL) &&
+    actionCategory === TASK_CATEGORIES.APPROVAL_SIGNOFF_A
+  ) {
+    return { type: 'schedule-a' as const }
+  }
+
+  if (
     (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) &&
     [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1].includes(actionCategory as any)
   ) {
     return { type: 'condition' as const }
+  }
+
+  if (
+    (actionType === TASK_TYPES.CONDITION || actionType === TASK_TYPES.CONDITIONAL) &&
+    actionCategory === TASK_CATEGORIES.APPROVAL_SIGNOFF_B
+  ) {
+    return { type: 'schedule-b' as const }
   }
 
   if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.ASSIGNMENT) {
@@ -677,6 +693,16 @@ export function useTaskDashboardState() {
       }
 
       if (actionPresentation.type === 'schedule-a') {
+        const scheduleATask = tasks.find(
+          (candidate) =>
+            String(candidate.applicationId) === String(action.applicationId) &&
+            String(candidate.taskName ?? (candidate as any).name ?? '').trim().toLowerCase() ===
+              TASK_CATEGORIES.SCHEDULEA &&
+            String(candidate.taskCategory ?? candidate.TaskCategory ?? '').trim().toLowerCase() ===
+              TASK_CATEGORIES.SCHEDULEA &&
+            String(candidate.taskType ?? candidate.TaskType ?? '').trim().toLowerCase() ===
+              TASK_TYPES.ACTION,
+        )
         setScheduleADrawerState({
           open: true,
           applicationId: action.applicationId,
@@ -684,11 +710,23 @@ export function useTaskDashboardState() {
           taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
           taskName: action.taskName ?? action.name,
           taskCategory: action.taskCategory ?? action.TaskCategory,
+          scheduleATaskInstanceId:
+            scheduleATask?.taskInstanceId ?? (scheduleATask as any)?.TaskInstanceId,
         })
         return
       }
 
       if (actionPresentation.type === 'schedule-b') {
+        const scheduleBTask = tasks.find(
+          (candidate) =>
+            String(candidate.applicationId) === String(action.applicationId) &&
+            String(candidate.taskName ?? (candidate as any).name ?? '').trim().toLowerCase() ===
+              TASK_CATEGORIES.SCHEDULEB &&
+            String(candidate.taskCategory ?? candidate.TaskCategory ?? '').trim().toLowerCase() ===
+              TASK_CATEGORIES.SCHEDULEB &&
+            String(candidate.taskType ?? candidate.TaskType ?? '').trim().toLowerCase() ===
+              TASK_TYPES.ACTION,
+        )
         setScheduleBDrawerState({
           open: true,
           applicationId: action.applicationId,
@@ -696,6 +734,8 @@ export function useTaskDashboardState() {
           taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
           taskName: action.taskName ?? action.name,
           taskCategory: action.taskCategory ?? action.TaskCategory,
+          scheduleBTaskInstanceId:
+            scheduleBTask?.taskInstanceId ?? (scheduleBTask as any)?.TaskInstanceId,
         })
         return
       }

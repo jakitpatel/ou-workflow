@@ -154,6 +154,7 @@ export function TaskDashboardContent() {
         taskInstanceId={scheduleADrawerState.taskInstanceId}
         taskName={scheduleADrawerState.taskName}
         taskCategory={scheduleADrawerState.taskCategory}
+        scheduleATaskInstanceId={scheduleADrawerState.scheduleATaskInstanceId}
         onClose={() => setScheduleADrawerState({ open: false })}
       />
       <ScheduleBProductsDrawer
@@ -163,6 +164,7 @@ export function TaskDashboardContent() {
         taskInstanceId={scheduleBDrawerState.taskInstanceId}
         taskName={scheduleBDrawerState.taskName}
         taskCategory={scheduleBDrawerState.taskCategory}
+        scheduleBTaskInstanceId={scheduleBDrawerState.scheduleBTaskInstanceId}
         onClose={() => setScheduleBDrawerState({ open: false })}
       />
       <InspectionInvoiceDrawer

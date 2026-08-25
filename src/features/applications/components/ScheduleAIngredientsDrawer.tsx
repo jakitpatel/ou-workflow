@@ -42,7 +42,10 @@ import {
   useScheduleAScratchpad,
   useSendScheduleACommunicationEmail,
 } from '@/features/applications/hooks/useScheduleAIngredients'
-import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
+import {
+  useConfirmTaskMutation,
+  usePatchTaskStatusMutation,
+} from '@/features/tasks/hooks/useTaskMutations'
 import { TASK_CATEGORIES } from '@/lib/constants/task'
 import type { ApplicantAppVars, ApplicationEmail, AssignedRole } from '@/types/application'
 
@@ -56,6 +59,7 @@ type Props = {
   taskInstanceId?: string | number | null
   taskName?: string
   taskCategory?: string
+  scheduleATaskInstanceId?: string | number | null
   mode?: 'drawer' | 'embedded'
   readOnly?: boolean
   onClose: () => void
@@ -486,6 +490,7 @@ export function ScheduleAIngredientsDrawer({
   taskInstanceId,
   taskName,
   taskCategory,
+  scheduleATaskInstanceId,
   mode = 'drawer',
   readOnly = false,
   onClose,
@@ -522,6 +527,11 @@ export function ScheduleAIngredientsDrawer({
     includePrelimLists: true,
     onError: (message) => toast.error(message),
   })
+  const patchTaskStatusMutation = usePatchTaskStatusMutation({
+    includeApplicationLists: true,
+    includePrelimLists: true,
+    onError: (message) => toast.error(message),
+  })
   const { data: applicationDetail } = useApplicationDetail(
     isActive ? resolvedApplicationId : undefined,
   )
@@ -534,7 +544,9 @@ export function ScheduleAIngredientsDrawer({
   const isAssigningTask =
     textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA_ASSIGNING
   const isStartTask = textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA_START
-  const usesTaskHeader = isAssigningTask || isStartTask
+  const isSignoffTask =
+    textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.APPROVAL_SIGNOFF_A
+  const usesTaskHeader = isAssigningTask || isStartTask || isSignoffTask
   const eirSubmitterLabel = assignedRfr || 'the assigned RFR'
   const effectiveAppVars = { ...globalAppVars, ...appVars }
   const visitIdLabel = textValue(applicationDetail?.VisitId)
@@ -950,6 +962,54 @@ export function ScheduleAIngredientsDrawer({
     }
   }
 
+  const signOffIngredients = async () => {
+    if (readOnly) return
+    const resolvedTaskInstanceId = textValue(taskInstanceId)
+    if (!resolvedTaskInstanceId) {
+      toast.error('Task instance id not found')
+      return
+    }
+
+    try {
+      await completeScheduleATaskMutation.mutateAsync({
+        taskId: resolvedTaskInstanceId,
+        applicationId: resolvedApplicationId,
+        token: token ?? undefined,
+        username: username ?? undefined,
+        capacity: 'DESIGNATED',
+        completionNotes: 'Ingredients signed off successfully',
+        result: 'YES',
+      })
+      toast.success('Ingredients signed off', { position: 'top-center' })
+      onClose()
+    } catch {
+      // useConfirmTaskMutation shows the API error through its onError handler.
+    }
+  }
+
+  const rejectIngredients = async () => {
+    if (readOnly) return
+    const resolvedScheduleATaskInstanceId = textValue(scheduleATaskInstanceId)
+    if (!resolvedScheduleATaskInstanceId) {
+      toast.error('ScheduleA task instance id not found')
+      return
+    }
+
+    try {
+      await patchTaskStatusMutation.mutateAsync({
+        taskId: resolvedScheduleATaskInstanceId,
+        applicationId: resolvedApplicationId,
+        status: 'PENDING',
+        override: 1,
+        token: token ?? undefined,
+      })
+      toast.success('Ingredients returned for processing', { position: 'top-center' })
+      onClose()
+    } catch {
+      // usePatchTaskStatusMutation shows the API error through its onError handler.
+    }
+  }
+
   const panelWidth = expanded ? 'lg:max-w-[96vw]' : 'lg:max-w-[72vw]'
   const stickyTableHeaderClass =
     'sticky z-10 bg-gray-50 px-3 py-2.5 text-xs font-semibold text-gray-600 shadow-[inset_0_-1px_0_#e5e7eb]'
@@ -960,6 +1020,28 @@ export function ScheduleAIngredientsDrawer({
         <div className="flex h-full min-h-0 flex-col">
           <div className="shrink-0 border-b bg-white px-4 py-3">
             <div className="flex flex-wrap items-center justify-end gap-3">
+              {isSignoffTask && !readOnly ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={signOffIngredients}
+                    disabled={completeScheduleATaskMutation.isPending || patchTaskStatusMutation.isPending}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    {completeScheduleATaskMutation.isPending ? 'Signing Off...' : 'Sign Off'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={rejectIngredients}
+                    disabled={completeScheduleATaskMutation.isPending || patchTaskStatusMutation.isPending}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    {patchTaskStatusMutation.isPending ? 'Rejecting...' : 'Reject'}
+                  </button>
+                </>
+              ) : null}
               {isStartTask && !readOnly ? (
                 <button
                   type="button"
@@ -1966,7 +2048,11 @@ export function ScheduleAIngredientsDrawer({
                 <h3 className="truncate text-lg font-semibold leading-tight">
                   {usesTaskHeader
                     ? taskName ||
-                      (isStartTask ? 'Start Ingredients Processing' : 'Assign Ingredients')
+                      (isStartTask
+                        ? 'Start Ingredients Processing'
+                        : isSignoffTask
+                          ? 'Sign off by IAR'
+                          : 'Assign Ingredients')
                     : applicationName || 'Schedule A Ingredients'}
                 </h3>
                 <p className="text-xs text-gray-300">

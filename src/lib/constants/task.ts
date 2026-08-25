@@ -11,7 +11,8 @@ export const TASK_TYPES = {
 export const TASK_CATEGORIES = {
   CONFIRMATION: 'confirmation',
   APPROVAL: 'approval',
-  APPROVAL_SIGNOFF: 'approvalsignoff',
+  APPROVAL_SIGNOFF_A: 'approvalsignoffa',
+  APPROVAL_SIGNOFF_B: 'approvalsignoffb',
   APPROVAL1: 'approval1',
   ASSIGNMENT: 'assignment',
   ASSIGNMENT1: 'assignment1',

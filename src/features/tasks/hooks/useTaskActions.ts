@@ -2,7 +2,6 @@ import { useCallback } from 'react'
 import {
   useAssignTaskMutation,
   useConfirmTaskMutation,
-  usePatchTaskStatusMutation,
 } from '@/features/tasks/hooks/useTaskMutations'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { detectRole, getAllTasks, getProgressStatus } from '@/lib/utils/taskHelpers'
@@ -55,29 +54,22 @@ export const isScheduleBStartActionTask = (action: Task): boolean =>
   normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
     TASK_CATEGORIES.SCHEDULEB_START
 
+export const isScheduleBSignoffConditionTask = (action: Task): boolean =>
+  [TASK_TYPES.CONDITION, TASK_TYPES.CONDITIONAL].includes(
+    normalizeTaskValue(action.taskType ?? (action as any).TaskType) as any,
+  ) &&
+  normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
+    TASK_CATEGORIES.APPROVAL_SIGNOFF_B
+
+export const isScheduleASignoffConditionTask = (action: Task): boolean =>
+  [TASK_TYPES.CONDITION, TASK_TYPES.CONDITIONAL].includes(
+    normalizeTaskValue(action.taskType ?? (action as any).TaskType) as any,
+  ) &&
+  normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
+    TASK_CATEGORIES.APPROVAL_SIGNOFF_A
+
 const buildInspectionFeeResult = (value: InspectionFeeChoice): string =>
   `{inspectionNeeded:${value.inspectionNeeded}, feeNeeded:${value.feeNeeded}}`
-
-const findSignOffReopenTask = (application: Applicant, action: Task): Task | null => {
-  const signOffName = normalizeTaskValue(action.name)
-  const targetCategory =
-    signOffName === 'sign off products'
-      ? TASK_CATEGORIES.SCHEDULEB
-      : signOffName === 'sign off by iar'
-        ? TASK_CATEGORIES.SCHEDULEA
-        : null
-
-  if (!targetCategory) return null
-
-  return (
-    getAllTasks(application).find(
-      (task) =>
-        normalizeTaskValue(task.name) === targetCategory &&
-        normalizeTaskValue(task.taskCategory ?? (task as any).TaskCategory) === targetCategory &&
-        normalizeTaskValue(task.taskType ?? (task as any).TaskType) === TASK_TYPES.ACTION,
-    ) ?? null
-  )
-}
 
 export function findSelectedTaskAction(
   applications: Applicant[],
@@ -103,12 +95,6 @@ export function useTaskActions({ applications, token, username, onError }: Param
   })
 
   const assignTaskMutation = useAssignTaskMutation({
-    includeApplicationLists: true,
-    includePrelimLists: true,
-    onError: (message) => onError?.(message),
-  })
-
-  const patchTaskStatusMutation = usePatchTaskStatusMutation({
     includeApplicationLists: true,
     includePrelimLists: true,
     onError: (message) => onError?.(message),
@@ -163,34 +149,6 @@ export function useTaskActions({ applications, token, username, onError }: Param
           result: typeof result === 'string' ? result : undefined,
         }
 
-        const shouldReopenStageTask =
-          taskCategory === TASK_CATEGORIES.APPROVAL_SIGNOFF &&
-          normalizeTaskValue(result) === 'no' &&
-          selectedAction?.application
-
-        if (shouldReopenStageTask) {
-          const taskToReopen = findSignOffReopenTask(selectedAction.application, action)
-          if (!taskToReopen) {
-            throw new Error(
-              `Unable to find the ${normalizeTaskValue(action.name) === 'sign off products' ? 'ScheduleB' : 'ScheduleA'} task to reopen.`,
-            )
-          }
-          const reopenTaskId = String(
-            taskToReopen.TaskInstanceId ?? (taskToReopen as any).taskInstanceId ?? '',
-          )
-          if (!reopenTaskId) {
-            throw new Error('Task instance id not found for the stage task to reopen.')
-          }
-          await patchTaskStatusMutation.mutateAsync({
-            taskId: reopenTaskId,
-            applicationId,
-            status: 'PENDING',
-            override: 1,
-            token: token ?? undefined,
-          })
-          return
-        }
-
         confirmTaskMutation.mutate(confirmParams)
         return
       }
@@ -231,7 +189,7 @@ export function useTaskActions({ applications, token, username, onError }: Param
         })
       }
     },
-    [assignTaskMutation, confirmTaskMutation, patchTaskStatusMutation, token, username],
+    [assignTaskMutation, confirmTaskMutation, token, username],
   )
 
   const completeTaskWithResult = useCallback(

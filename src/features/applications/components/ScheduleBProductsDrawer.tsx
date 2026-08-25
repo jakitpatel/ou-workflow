@@ -42,7 +42,10 @@ import {
   useScheduleBScratchpad,
   useSendScheduleBCommunicationEmail,
 } from '@/features/applications/hooks/useScheduleBProducts'
-import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
+import {
+  useConfirmTaskMutation,
+  usePatchTaskStatusMutation,
+} from '@/features/tasks/hooks/useTaskMutations'
 import { TASK_CATEGORIES } from '@/lib/constants/task'
 import type { ApplicantAppVars, ApplicationEmail, AssignedRole } from '@/types/application'
 
@@ -56,6 +59,7 @@ type Props = {
   taskInstanceId?: string | number | null
   taskName?: string
   taskCategory?: string
+  scheduleBTaskInstanceId?: string | number | null
   mode?: 'drawer' | 'embedded'
   readOnly?: boolean
   onClose: () => void
@@ -578,6 +582,7 @@ export function ScheduleBProductsDrawer({
   taskInstanceId,
   taskName,
   taskCategory,
+  scheduleBTaskInstanceId,
   mode = 'drawer',
   readOnly = false,
   onClose,
@@ -610,7 +615,9 @@ export function ScheduleBProductsDrawer({
     textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEB_ASSIGNING
   const isStartProductsTask =
     textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEB_START
-  const usesTaskHeader = isAssignProductsTask || isStartProductsTask
+  const isSignoffProductsTask =
+    textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.APPROVAL_SIGNOFF_B
+  const usesTaskHeader = isAssignProductsTask || isStartProductsTask || isSignoffProductsTask
 
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
@@ -618,6 +625,11 @@ export function ScheduleBProductsDrawer({
   const { data, isLoading, error } = useScheduleBProducts(isActive ? resolvedApplicationId : undefined)
   const createProductMutation = useCreateScheduleBProduct(resolvedApplicationId)
   const completeScheduleBTaskMutation = useConfirmTaskMutation({
+    includeApplicationLists: true,
+    includePrelimLists: true,
+    onError: (message) => toast.error(message),
+  })
+  const patchTaskStatusMutation = usePatchTaskStatusMutation({
     includeApplicationLists: true,
     includePrelimLists: true,
     onError: (message) => toast.error(message),
@@ -1133,6 +1145,54 @@ export function ScheduleBProductsDrawer({
     }
   }
 
+  const signOffProducts = async () => {
+    if (readOnly) return
+    const resolvedTaskInstanceId = textValue(taskInstanceId)
+    if (!resolvedTaskInstanceId) {
+      toast.error('Task instance id not found')
+      return
+    }
+
+    try {
+      await completeScheduleBTaskMutation.mutateAsync({
+        taskId: resolvedTaskInstanceId,
+        applicationId: resolvedApplicationId,
+        token: token ?? undefined,
+        username: username ?? undefined,
+        capacity: 'DESIGNATED',
+        completionNotes: 'Products signed off successfully',
+        result: 'YES',
+      })
+      toast.success('Products signed off', { position: 'top-center' })
+      onClose()
+    } catch {
+      // useConfirmTaskMutation shows the API error through its onError handler.
+    }
+  }
+
+  const rejectProducts = async () => {
+    if (readOnly) return
+    const resolvedScheduleBTaskInstanceId = textValue(scheduleBTaskInstanceId)
+    if (!resolvedScheduleBTaskInstanceId) {
+      toast.error('ScheduleB task instance id not found')
+      return
+    }
+
+    try {
+      await patchTaskStatusMutation.mutateAsync({
+        taskId: resolvedScheduleBTaskInstanceId,
+        applicationId: resolvedApplicationId,
+        status: 'PENDING',
+        override: 1,
+        token: token ?? undefined,
+      })
+      toast.success('Products returned for processing', { position: 'top-center' })
+      onClose()
+    } catch {
+      // usePatchTaskStatusMutation shows the API error through its onError handler.
+    }
+  }
+
   const panelWidth = expanded ? 'lg:max-w-[96vw]' : 'lg:max-w-[72vw]'
   const stickyTableHeaderClass =
     'sticky z-10 bg-gray-50 px-3 py-2.5 text-xs font-semibold text-gray-600 shadow-[inset_0_-1px_0_#e5e7eb]'
@@ -1142,6 +1202,28 @@ export function ScheduleBProductsDrawer({
             <div className="flex h-full min-h-0 flex-col">
               <div className="shrink-0 border-b bg-white px-4 py-3">
                 <div className="flex flex-wrap items-center justify-end gap-3">
+                  {isSignoffProductsTask && !readOnly ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={signOffProducts}
+                        disabled={completeScheduleBTaskMutation.isPending || patchTaskStatusMutation.isPending}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        {completeScheduleBTaskMutation.isPending ? 'Signing Off...' : 'Sign Off'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={rejectProducts}
+                        disabled={completeScheduleBTaskMutation.isPending || patchTaskStatusMutation.isPending}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        {patchTaskStatusMutation.isPending ? 'Rejecting...' : 'Reject'}
+                      </button>
+                    </>
+                  ) : null}
                   {isStartProductsTask && !readOnly ? (
                     <button
                       type="button"
@@ -1951,7 +2033,11 @@ export function ScheduleBProductsDrawer({
                 <h3 className="truncate text-lg font-semibold leading-tight">
                   {usesTaskHeader
                     ? taskName ||
-                      (isStartProductsTask ? 'Start Products Processing' : 'Assign to Products')
+                      (isStartProductsTask
+                        ? 'Start Products Processing'
+                        : isSignoffProductsTask
+                          ? 'Sign off Products'
+                          : 'Assign to Products')
                     : applicationName || 'Schedule B Products'}
                 </h3>
                 <p className="text-xs text-gray-300">

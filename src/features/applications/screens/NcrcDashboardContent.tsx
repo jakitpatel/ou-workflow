@@ -19,8 +19,10 @@ import {
   isCertificateActionTask,
   isScheduleAAssigningActionTask,
   isScheduleAStartActionTask,
+  isScheduleASignoffConditionTask,
   isScheduleBAssignProductsActionTask,
   isScheduleBStartActionTask,
+  isScheduleBSignoffConditionTask,
   useTaskActions,
 } from '@/features/tasks/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
@@ -30,6 +32,7 @@ import { Route as PrelimDashboardRoute } from '@/routes/_authed/ou-workflow/prel
 import type { Applicant, ApplicantAppVars, AssignedRole, Task } from '@/types/application'
 import type { NoteTab, TaskNotesDrawerTabConfig } from '@/features/tasks/notes/TaskNotesDrawer'
 import { PageShell } from '@/components/layout/PageShell'
+import { getAllTasks } from '@/lib/utils/taskHelpers'
 
 const SHOW_APPLICANT_STATS_CARDS = false
 const normalizeApplicationId = (value: unknown): number | undefined => {
@@ -65,6 +68,7 @@ export function NcrcDashboardContent() {
     taskInstanceId?: string | number
     taskName?: string
     taskCategory?: string
+    scheduleATaskInstanceId?: string | number
   }>({
     open: false,
   })
@@ -78,6 +82,7 @@ export function NcrcDashboardContent() {
     taskInstanceId?: string | number
     taskName?: string
     taskCategory?: string
+    scheduleBTaskInstanceId?: string | number
   }>({
     open: false,
   })
@@ -254,8 +259,16 @@ export function NcrcDashboardContent() {
     if (
       (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEA) ||
       isScheduleAAssigningActionTask(action) ||
-      isScheduleAStartActionTask(action)
+      isScheduleAStartActionTask(action) ||
+      isScheduleASignoffConditionTask(action)
     ) {
+      const scheduleATask = getAllTasks(application).find(
+        (task) =>
+          normalizeTaskText(task.name) === TASK_CATEGORIES.SCHEDULEA &&
+          normalizeTaskText(task.taskCategory ?? (task as any).TaskCategory) ===
+            TASK_CATEGORIES.SCHEDULEA &&
+          normalizeTaskText(task.taskType ?? (task as any).TaskType) === TASK_TYPES.ACTION,
+      )
       setScheduleADrawerState({
         open: true,
         applicationId: application.applicationId,
@@ -267,6 +280,8 @@ export function NcrcDashboardContent() {
         taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
         taskName: action.name,
         taskCategory: actionCategory,
+        scheduleATaskInstanceId:
+          scheduleATask?.TaskInstanceId ?? (scheduleATask as any)?.taskInstanceId,
       })
       return
     }
@@ -274,8 +289,16 @@ export function NcrcDashboardContent() {
     if (
       (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEB) ||
       isScheduleBAssignProductsActionTask(action) ||
-      isScheduleBStartActionTask(action)
+      isScheduleBStartActionTask(action) ||
+      isScheduleBSignoffConditionTask(action)
     ) {
+      const scheduleBTask = getAllTasks(application).find(
+        (task) =>
+          normalizeTaskText(task.name) === TASK_CATEGORIES.SCHEDULEB &&
+          normalizeTaskText(task.taskCategory ?? (task as any).TaskCategory) ===
+            TASK_CATEGORIES.SCHEDULEB &&
+          normalizeTaskText(task.taskType ?? (task as any).TaskType) === TASK_TYPES.ACTION,
+      )
       setScheduleBDrawerState({
         open: true,
         applicationId: application.applicationId,
@@ -287,6 +310,8 @@ export function NcrcDashboardContent() {
         taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
         taskName: action.name,
         taskCategory: actionCategory,
+        scheduleBTaskInstanceId:
+          scheduleBTask?.TaskInstanceId ?? (scheduleBTask as any)?.taskInstanceId,
       })
       return
     }
@@ -349,7 +374,6 @@ export function NcrcDashboardContent() {
       (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) &&
       [
         TASK_CATEGORIES.APPROVAL,
-        TASK_CATEGORIES.APPROVAL_SIGNOFF,
         TASK_CATEGORIES.APPROVAL1,
       ].includes(actionCategory as any)
     ) {
@@ -543,6 +567,7 @@ export function NcrcDashboardContent() {
         taskInstanceId={scheduleADrawerState.taskInstanceId}
         taskName={scheduleADrawerState.taskName}
         taskCategory={scheduleADrawerState.taskCategory}
+        scheduleATaskInstanceId={scheduleADrawerState.scheduleATaskInstanceId}
         onClose={() => setScheduleADrawerState({ open: false })}
       />
       <ScheduleBProductsDrawer
@@ -555,6 +580,7 @@ export function NcrcDashboardContent() {
         taskInstanceId={scheduleBDrawerState.taskInstanceId}
         taskName={scheduleBDrawerState.taskName}
         taskCategory={scheduleBDrawerState.taskCategory}
+        scheduleBTaskInstanceId={scheduleBDrawerState.scheduleBTaskInstanceId}
         onClose={() => setScheduleBDrawerState({ open: false })}
       />
       <InspectionInvoiceDrawer
