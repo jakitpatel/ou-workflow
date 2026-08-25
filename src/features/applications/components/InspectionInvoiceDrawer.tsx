@@ -21,6 +21,7 @@ type Props = {
   applicationName?: string
   taskInstanceId?: string | number
   taskName?: string
+  taskStatusDetails?: unknown
   mode?: 'drawer' | 'embedded'
   readOnly?: boolean
   onClose: () => void
@@ -130,6 +131,7 @@ export function InspectionInvoiceDrawer({
   applicationName,
   taskInstanceId,
   taskName,
+  taskStatusDetails,
   mode = 'drawer',
   readOnly = false,
   onClose,
@@ -141,6 +143,7 @@ export function InspectionInvoiceDrawer({
     enabled: open,
     taskInstanceId,
     taskName,
+    taskStatusDetails,
   })
   const accountNumber = getApplicantAccountNumber(applicant)
   const isEmbedded = mode === 'embedded'

@@ -36,7 +36,8 @@ import { ScheduleAIngredientsDrawer } from '@/features/applications/components/S
 import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer'
 import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer'
 import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer'
-import type { ApplicationDetail, ApplicationEmail } from '@/types/application'
+import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
+import type { Applicant, ApplicationDetail, ApplicationEmail } from '@/types/application'
 
 type CompletionStatus = 'incomplete' | 'complete' | 'dispatched'
 type ActivityType = 'completion' | 'ingredient' | 'plant' | 'bulk' | 'company' | 'dispatch' | 'undo'
@@ -71,6 +72,7 @@ type Props = {
   applicationId?: string | number
   showInterfaceLabel?: boolean
   dataSource?: 'application' | 'prelim'
+  sourceApplicant?: Applicant
 }
 
 const resolveApplicationId = (
@@ -531,6 +533,7 @@ export function ApplicationDetailsContent({
   applicationId,
   showInterfaceLabel = true,
   dataSource = 'application',
+  sourceApplicant,
 }: Props) {
   const [activeTab, setActiveTab] = useState('overview')
   const [editMode] = useState(false)
@@ -547,6 +550,28 @@ export function ApplicationDetailsContent({
     () => resolveApplicationId(application, applicationId),
     [application, applicationId],
   )
+  const inspectionInvoiceTask = useMemo(() => {
+    const tasks = Object.values(sourceApplicant?.stages ?? {})
+      .flatMap((stage) => stage.tasks ?? [])
+      .sort((left, right) => {
+      const leftId = Number((left as any).taskInstanceId ?? left.TaskInstanceId ?? 0)
+      const rightId = Number((right as any).taskInstanceId ?? right.TaskInstanceId ?? 0)
+      return rightId - leftId
+    })
+    return (
+      tasks.find((task) => {
+        const category = String(task.taskCategory ?? (task as any).TaskCategory ?? '').trim().toLowerCase()
+        const type = String(task.taskType ?? (task as any).TaskType ?? '').trim().toLowerCase()
+        const statusDetails = task.StatusDetails ?? (task as any).statusDetails
+        return category === TASK_CATEGORIES.INVOICE && type === TASK_TYPES.ACTION && statusDetails
+      }) ??
+      tasks.find((task) => {
+        const category = String(task.taskCategory ?? (task as any).TaskCategory ?? '').trim().toLowerCase()
+        const type = String(task.taskType ?? (task as any).TaskType ?? '').trim().toLowerCase()
+        return category === TASK_CATEGORIES.INVOICE && type === TASK_TYPES.ACTION
+      })
+    )
+  }, [sourceApplicant])
   const applicationNotesContextKey = `application-details:${String(applicationId ?? application.applicationId ?? 'unknown')}`
   const applicationDisplayName =
     application.company?.[0]?.name?.trim() || `Application ${application.applicationId}`
@@ -831,7 +856,14 @@ export function ApplicationDetailsContent({
                 readOnly
                 applicationId={resolvedApplicationId}
                 applicationName={applicationDisplayName}
+                taskInstanceId={
+                  (inspectionInvoiceTask as any)?.taskInstanceId ??
+                  (inspectionInvoiceTask as any)?.TaskInstanceId
+                }
                 taskName="Inspection Invoice"
+                taskStatusDetails={
+                  inspectionInvoiceTask?.StatusDetails ?? (inspectionInvoiceTask as any)?.statusDetails
+                }
                 onClose={() => {}}
               />
             )}

@@ -1,14 +1,16 @@
 import { X } from 'lucide-react'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import { ApplicationDetailsContent } from '@/features/applications/components/ApplicationDetailsContent'
+import type { Applicant } from '@/types/application'
 
 type Props = {
   open: boolean
   applicationId?: string | number
+  applicant?: Applicant
   onClose: () => void
 }
 
-export function ApplicationDetailsDrawer({ open, applicationId, onClose }: Props) {
+export function ApplicationDetailsDrawer({ open, applicationId, applicant, onClose }: Props) {
   const resolvedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const activeApplicationId = open ? resolvedApplicationId : undefined
@@ -49,6 +51,7 @@ export function ApplicationDetailsDrawer({ open, applicationId, onClose }: Props
               application={data}
               mode="drawer"
               applicationId={resolvedApplicationId}
+              sourceApplicant={applicant}
               dataSource="application"
             />
           ) : null}

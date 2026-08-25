@@ -506,6 +506,7 @@ export function useInspectionInvoiceDrawerState({
   enabled = true,
   taskInstanceId,
   taskName,
+  taskStatusDetails,
 }: {
   applicant?: Applicant
   applicationId?: string | number
@@ -513,6 +514,7 @@ export function useInspectionInvoiceDrawerState({
   enabled?: boolean
   taskInstanceId?: string | number
   taskName?: string
+  taskStatusDetails?: unknown
 } = {}) {
   const { email: userEmail, token } = useUser()
   const queryClient = useQueryClient()
@@ -644,18 +646,26 @@ export function useInspectionInvoiceDrawerState({
 
   useEffect(() => {
     const invoiceTaskId = String(taskInstanceId ?? '').trim()
-    const restoreKey = `${invoiceTaskId}:${enabled ? 'open' : 'closed'}`
-    if (!enabled || !invoiceTaskId || restoredTaskKeyRef.current === restoreKey) return
+    const explicitStatusDetailsKey =
+      typeof taskStatusDetails === 'string'
+        ? taskStatusDetails
+        : taskStatusDetails
+          ? JSON.stringify(taskStatusDetails)
+          : ''
+    const restoreIdentity = invoiceTaskId || resolvedApplicationId
+    const restoreKey = `${restoreIdentity}:${explicitStatusDetailsKey}:${enabled ? 'open' : 'closed'}`
+    if (!enabled || !restoreIdentity || restoredTaskKeyRef.current === restoreKey) return
 
     const currentTask = findTaskById(applicant, invoiceTaskId)
     const savedState = getInspectionStatusSavedState<InspectionInvoiceSavedState>(
-      (currentTask as any)?.StatusDetails ??
+      taskStatusDetails ??
+        (currentTask as any)?.StatusDetails ??
         (currentTask as any)?.statusDetails ??
         (currentTask as any)?.Result ??
         (currentTask as any)?.result,
     )
-    restoredTaskKeyRef.current = restoreKey
     if (!savedState) return
+    restoredTaskKeyRef.current = restoreKey
 
     const setup = savedState.setup ?? {}
     const generate = savedState.generate ?? {}
@@ -696,7 +706,7 @@ export function useInspectionInvoiceDrawerState({
             ? 'generated'
             : 'configured'
     setStage(restoredStage)
-  }, [applicant, enabled, taskInstanceId])
+  }, [applicant, enabled, resolvedApplicationId, taskInstanceId, taskStatusDetails])
 
   useEffect(() => {
     if (recipient || recipientOptions.length === 0) return

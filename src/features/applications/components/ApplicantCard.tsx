@@ -235,6 +235,7 @@ export function ApplicantCard({
       <ApplicationDetailsDrawer
         open={showDetailsDrawer}
         applicationId={applicant.applicationId}
+        applicant={applicant}
         onClose={() => setShowDetailsDrawer(false)}
       />
       <PrelimApplicationDetailsDrawer

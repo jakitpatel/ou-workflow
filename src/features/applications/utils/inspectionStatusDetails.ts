@@ -45,6 +45,7 @@ const parseJsonLikeObject = (text: string): unknown | null => {
       .replace(/\bNone\b/g, 'null')
       .replace(/\bTrue\b/g, 'true')
       .replace(/\bFalse\b/g, 'false')
+      .replace(/\\(?!["\\/bfnrtu])/g, '')
       .replace(/'/g, '"'),
   ]
 
