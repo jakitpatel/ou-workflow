@@ -43,7 +43,7 @@ type PatchTaskStatusInput = {
   taskId: string
   applicationId?: string | number | null
   status: string
-  override?: string | number
+  override?: string | number | boolean
   token?: string | null
 }
 

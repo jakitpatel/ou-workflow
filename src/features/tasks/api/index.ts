@@ -222,7 +222,7 @@ export async function patchTaskStatus({
 }: {
   taskId: string
   status: string
-  override?: string | number
+  override?: string | number | boolean
   token?: string | null
 }): Promise<any> {
   return await fetchWithAuth({

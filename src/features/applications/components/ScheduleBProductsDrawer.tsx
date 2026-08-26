@@ -1173,19 +1173,33 @@ export function ScheduleBProductsDrawer({
   const rejectProducts = async () => {
     if (readOnly) return
     const resolvedScheduleBTaskInstanceId = textValue(scheduleBTaskInstanceId)
+    const resolvedSignoffTaskInstanceId = textValue(taskInstanceId)
     if (!resolvedScheduleBTaskInstanceId) {
       toast.error('ScheduleB task instance id not found')
       return
     }
+    if (!resolvedSignoffTaskInstanceId) {
+      toast.error('Sign off task instance id not found')
+      return
+    }
 
     try {
-      await patchTaskStatusMutation.mutateAsync({
-        taskId: resolvedScheduleBTaskInstanceId,
-        applicationId: resolvedApplicationId,
-        status: 'PENDING',
-        override: 1,
-        token: token ?? undefined,
-      })
+      await Promise.all([
+        patchTaskStatusMutation.mutateAsync({
+          taskId: resolvedScheduleBTaskInstanceId,
+          applicationId: resolvedApplicationId,
+          status: 'PENDING',
+          override: 1,
+          token: token ?? undefined,
+        }),
+        patchTaskStatusMutation.mutateAsync({
+          taskId: resolvedSignoffTaskInstanceId,
+          applicationId: resolvedApplicationId,
+          status: 'NEW',
+          override: true,
+          token: token ?? undefined,
+        }),
+      ])
       toast.success('Products returned for processing', { position: 'top-center' })
       onClose()
     } catch {

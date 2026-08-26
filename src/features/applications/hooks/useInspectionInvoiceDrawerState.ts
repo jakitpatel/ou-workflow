@@ -56,6 +56,8 @@ export type InspectionInvoiceRecipientOption = {
 
 export type InspectionInvoiceCustomer = {
   addressLines: string[]
+  billingAddress: string
+  billingCityStateZip: string
   billingContactName: string
   billingContactEmail: string
   cityStatePostalCountry: string
@@ -612,6 +614,17 @@ export function useInspectionInvoiceDrawerState({
     const address =
       applicationDetail?.companyAddresses?.find((item) => /billing/i.test(item.type)) ??
       applicationDetail?.companyAddresses?.[0]
+    const normalizeAddressPart = (value: unknown) =>
+      normalizeContactText(value).replace(/,\s*$/, '')
+    const street1 = normalizeAddressPart(address?.street)
+    const street2 = normalizeAddressPart(address?.line2)
+    const street3 = normalizeAddressPart((address as any)?.line3)
+    const remainingStreetLines = [street2, street3].filter(Boolean).join(' ')
+    const billingAddress = [street1, remainingStreetLines].filter(Boolean).join(', ')
+    const billingCityStateZip = [address?.city, address?.state, address?.zip]
+      .map(normalizeAddressPart)
+      .filter(Boolean)
+      .join(', ')
     const coordinator = applicationDetail?.assignedRoles?.find((role) =>
       /rabbinic coordinator|coordinator|\brc\b/i.test(
         String((role as any).role ?? (role as any).Role ?? (role as any).name ?? ''),
@@ -620,14 +633,12 @@ export function useInspectionInvoiceDrawerState({
 
     return {
       addressLines: [
-        address?.street,
-        address?.line2,
-        [address?.city, address?.state, address?.zip]
-          .filter(Boolean)
-          .join(', ')
-          .replace(/, ([^,]+)$/, ' $1'),
+        billingAddress,
+        billingCityStateZip,
         address?.country,
       ].filter((line): line is string => Boolean(line?.trim())),
+      billingAddress,
+      billingCityStateZip,
       billingContactName: billingContact?.name ?? '',
       billingContactEmail: billingContact?.email ?? '',
       cityStatePostalCountry: [address?.city, address?.state, address?.zip, address?.country]
@@ -1021,6 +1032,11 @@ export function useInspectionInvoiceDrawerState({
           recipient:
             selectedRecipient?.email ?? (recipient === 'ADD_NEW' ? extraRecipientEmail : recipient),
           letterTemplate,
+          billing_address: invoiceCustomer.billingAddress,
+          billing_city_state_zip: invoiceCustomer.billingCityStateZip,
+          primary_contact: invoiceCustomer.billingContactName
+            ? `Attn ${invoiceCustomer.billingContactName}`
+            : '',
         },
       })
       setInvoiceId(result.invoiceId)

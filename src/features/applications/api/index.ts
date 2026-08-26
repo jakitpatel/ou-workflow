@@ -483,6 +483,9 @@ export type GenerateInspectionInvoicePayload = {
   noFeeReason?: string
   recipient?: string
   letterTemplate?: string
+  billing_address?: string
+  billing_city_state_zip?: string
+  primary_contact?: string
 }
 
 export type GenerateInspectionInvoiceResponse = {

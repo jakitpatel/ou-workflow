@@ -82,7 +82,7 @@ export function InspectionInvoicePreview(props: Props) {
           </header>
           <table className="meta"><thead><tr><th>Invoice Number</th><th>Invoice Date</th><th>Amount</th><th>Account Number</th></tr></thead><tbody><tr><td>{invoiceId ?? 'DRAFT'}</td><td>{date}</td><td>{formatCurrency(total)}</td><td>{accountNumber || '—'}</td></tr></tbody></table>
           <div className="info-row">
-            <div className="bill"><strong>{applicant?.company || 'Customer'}</strong><br />{customer.addressLines.length ? customer.addressLines.map((line) => <span key={line}>{line}<br /></span>) : <>{applicant?.plant || 'Plant'}<br />{applicant?.region || ''}<br /></>}<br />Att: {customer.billingContactName || 'Accounts Payable'}</div>
+            <div className="bill"><strong>{applicant?.company || 'Customer'}</strong><br />{customer.addressLines.length ? customer.addressLines.map((line) => <span key={line}>{line}<br /></span>) : <>{applicant?.plant || 'Plant'}<br />{applicant?.region || ''}<br /></>}<br />Attn {customer.billingContactName || 'Accounts Payable'}</div>
             <div className="right-info"><div className="pay-note">The Orthodox Union strongly urges all customers to pay by ACH, wire, or credit card to avoid check fraud. It&apos;s safer and quicker.</div><div className="pay-box"><h4>Online Payments: oudirect.org</h4><div><strong>Wire/ACH Bank Info:</strong><br />Bank: JPMorgan Chase Bank<br />Account: Orthodox Union<br />Account #: 1353211<br />ABA #: 021000021<br />Swift #: CHASUS33</div></div></div>
           </div>
           <div className="reference">For wire transfers, please reference your account and invoice numbers on all transactions.</div>

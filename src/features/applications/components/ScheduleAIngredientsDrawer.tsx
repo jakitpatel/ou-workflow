@@ -990,19 +990,33 @@ export function ScheduleAIngredientsDrawer({
   const rejectIngredients = async () => {
     if (readOnly) return
     const resolvedScheduleATaskInstanceId = textValue(scheduleATaskInstanceId)
+    const resolvedSignoffTaskInstanceId = textValue(taskInstanceId)
     if (!resolvedScheduleATaskInstanceId) {
       toast.error('ScheduleA task instance id not found')
       return
     }
+    if (!resolvedSignoffTaskInstanceId) {
+      toast.error('Sign off task instance id not found')
+      return
+    }
 
     try {
-      await patchTaskStatusMutation.mutateAsync({
-        taskId: resolvedScheduleATaskInstanceId,
-        applicationId: resolvedApplicationId,
-        status: 'PENDING',
-        override: 1,
-        token: token ?? undefined,
-      })
+      await Promise.all([
+        patchTaskStatusMutation.mutateAsync({
+          taskId: resolvedScheduleATaskInstanceId,
+          applicationId: resolvedApplicationId,
+          status: 'PENDING',
+          override: 1,
+          token: token ?? undefined,
+        }),
+        patchTaskStatusMutation.mutateAsync({
+          taskId: resolvedSignoffTaskInstanceId,
+          applicationId: resolvedApplicationId,
+          status: 'NEW',
+          override: true,
+          token: token ?? undefined,
+        }),
+      ])
       toast.success('Ingredients returned for processing', { position: 'top-center' })
       onClose()
     } catch {
