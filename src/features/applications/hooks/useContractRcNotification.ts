@@ -83,6 +83,9 @@ type GenerateContractInvoiceParams = {
   invoiceDate: string
   internalNotes?: string
   recipient?: string
+  billingAddress?: string
+  billingCityStateZip?: string
+  primaryContact?: string
 }
 
 type GenerateContractPackageParams = {
@@ -440,6 +443,9 @@ ${username ?? ''}`
     invoiceDate,
     internalNotes,
     recipient,
+    billingAddress,
+    billingCityStateZip,
+    primaryContact,
   }: GenerateContractInvoiceParams): Promise<GenerateInspectionInvoiceResponse> => {
     if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
       throw new Error('Application id is required before generating the invoice.')
@@ -473,6 +479,9 @@ ${username ?? ''}`
           internalNotes,
           recipient,
           letterTemplate: 'contract-invoice',
+          billing_address: billingAddress ?? '',
+          billing_city_state_zip: billingCityStateZip ?? '',
+          primary_contact: primaryContact ?? '',
         },
         token: token ?? undefined,
       })

@@ -520,6 +520,39 @@ const getPrimaryContact = (
   return { name, email, title }
 }
 
+const getBillingContact = (
+  contacts?: unknown,
+): { name: string; email: string; title: string } => {
+  if (contacts && !Array.isArray(contacts) && typeof contacts === 'object') {
+    const groups = contacts as ContactRecord
+    const billingContacts = [
+      ...contactGroup(groups, 'billingContact'),
+      ...contactGroup(groups, 'BillingContact'),
+    ]
+    if (billingContacts.length > 0) {
+      const billing = billingContacts[0]
+      const first = textValue(billing.FirstName ?? billing.firstName ?? billing.contactFirst)
+      const last = textValue(billing.LastName ?? billing.lastName ?? billing.contactLast)
+      return {
+        name:
+          textValue(billing.name ?? billing.Name) ||
+          [first, last].filter(Boolean).join(' ') ||
+          'Billing Contact',
+        email: textValue(
+          billing.email ?? billing.Email ?? billing.EMail ?? billing.contactEmail,
+        ),
+        title: textValue(billing.role ?? billing.Role ?? billing.Title ?? billing.jobTitle1),
+      }
+    }
+  }
+
+  const normalizedContacts = normalizeContacts(contacts)
+  const explicitlyBilling = normalizedContacts.find((item) =>
+    /billing|accounts payable/i.test(`${String(item.type ?? item.Type ?? '')} ${String(item.role ?? item.Role ?? '')}`),
+  )
+  return explicitlyBilling ? getPrimaryContact([explicitlyBilling]) : getPrimaryContact(contacts)
+}
+
 const getRawTaskInstanceId = (task: unknown): string => {
   const taskRecord = task && typeof task === 'object' ? (task as Record<string, unknown>) : {}
   return String(taskRecord.TaskInstanceId ?? taskRecord.taskInstanceId ?? taskRecord.id ?? '').trim()
@@ -1203,6 +1236,28 @@ export function ContractStageDrawer({
     () => getPrimaryContact(applicationDetail?.companyContacts),
     [applicationDetail?.companyContacts],
   )
+  const billingContact = useMemo(
+    () => getBillingContact(applicationDetail?.companyContacts),
+    [applicationDetail?.companyContacts],
+  )
+  const invoiceBillingAddress = useMemo(() => {
+    const address =
+      applicationDetail?.companyAddresses?.find((item) => /billing/i.test(item.type)) ??
+      applicationDetail?.companyAddresses?.[0]
+    const normalizeAddressPart = (value: unknown) => textValue(value).replace(/,\s*$/, '')
+    const street1 = normalizeAddressPart(address?.street)
+    const street2 = normalizeAddressPart(address?.line2)
+    const street3 = normalizeAddressPart((address as any)?.line3)
+    const remainingStreetLines = [street2, street3].filter(Boolean).join(' ')
+
+    return {
+      billingAddress: [street1, remainingStreetLines].filter(Boolean).join(', '),
+      billingCityStateZip: [address?.city, address?.state, address?.zip]
+        .map(normalizeAddressPart)
+        .filter(Boolean)
+        .join(', '),
+    }
+  }, [applicationDetail?.companyAddresses])
   const senderEmail = textValue(email) || textValue(username)
   const contractIngredients = useMemo(
     () =>
@@ -1379,17 +1434,11 @@ export function ContractStageDrawer({
       current: firstIncompleteIndex === index,
     }
   })
-  const billingLines =
-    (companyAddress || plantAddress || '')
-      .split(',')
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .length > 1
-      ? (companyAddress || plantAddress)
-          .split(',')
-          .map((part) => part.trim())
-          .filter(Boolean)
-      : [companyAddress || plantAddress || 'Address on file']
+  const billingLines = [
+    invoiceBillingAddress.billingAddress,
+    invoiceBillingAddress.billingCityStateZip,
+  ].filter(Boolean)
+  if (billingLines.length === 0) billingLines.push(companyAddress || plantAddress || 'Address on file')
   const invoiceTermStart = (() => {
     if (!isNewCompanyContract) return formatFullDate(effectiveDate)
     const parsed = new Date(`${effectiveDate}T00:00:00`)
@@ -1633,6 +1682,9 @@ ${packageUrl}`
             ? certificationInvoiceComment.trim()
             : undefined,
         recipient: contact.email || contact.name || undefined,
+        billingAddress: invoiceBillingAddress.billingAddress,
+        billingCityStateZip: invoiceBillingAddress.billingCityStateZip,
+        primaryContact: billingContact.name ? `Attn ${billingContact.name}` : '',
       })
 
       setContractInvoiceId(result.invoiceId)
@@ -3413,7 +3465,7 @@ ${packageUrl}`
                     <br />
                   </span>
                 ))}
-                <div className="mt-1.5">Att: {contact.name || 'Company Contact'}</div>
+                <div className="mt-1.5">Attn {billingContact.name || 'Billing Contact'}</div>
               </div>
               <div className="pt-1 text-center text-[10px] font-semibold italic leading-normal text-[#185087]">
                 The Orthodox Union strongly urges all customers to pay by ACH, wire, or credit card
