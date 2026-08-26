@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createApplicationMessage,
@@ -9,10 +9,13 @@ import {
   type CreateScheduleBProductPayload,
 } from '@/features/applications/api'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
+import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { useUser } from '@/context/UserContext'
 import { executeRequest, parseErrorBody, resolveApiBaseUrl } from '@/shared/api/httpClient'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
+import { fetchTaskInstance, patchTaskStatusDetails } from '@/features/tasks/api'
+import { getInspectionStatusSavedState } from '@/features/applications/utils/inspectionStatusDetails'
 import type { ApplicationEmail, KashProduct, ScheduleBProduct } from '@/types/application'
 
 export type ScheduleBProductRow = {
@@ -905,25 +908,132 @@ export function useSendScheduleBCommunicationEmail() {
   })
 }
 
-export function useScheduleBScratchpad(applicationId?: string | number) {
+const getTaskStatusDetails = (value: unknown): unknown => {
+  if (!value || typeof value !== 'object') return undefined
+  const record = value as Record<string, any>
+  if (record.StatusDetails !== undefined) return record.StatusDetails
+  if (record.statusDetails !== undefined) return record.statusDetails
+  if (record.attributes) return getTaskStatusDetails(record.attributes)
+  if (record.data) return getTaskStatusDetails(record.data)
+  return undefined
+}
+
+export function useScheduleBScratchpad(
+  applicationId?: string | number,
+  taskInstanceId?: string | number | null,
+  initialStatusDetails?: unknown,
+) {
+  const { token } = useUser()
+  const queryClient = useQueryClient()
   const normalizedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
+  const normalizedTaskInstanceId =
+    taskInstanceId === undefined || taskInstanceId === null ? '' : String(taskInstanceId).trim()
   const storageKey = useMemo(() => makeScratchpadKey(normalizedApplicationId), [normalizedApplicationId])
   const [scratchpad, setScratchpad] = useState<ScheduleBScratchpad>(EMPTY_SCRATCHPAD)
+  const [hydratedKey, setHydratedKey] = useState('')
+  const [saveError, setSaveError] = useState('')
+  const lastPersistedScratchpadRef = useRef('')
+  const hydrationKey = `${normalizedApplicationId ?? ''}:${normalizedTaskInstanceId}`
+  const taskInstanceQuery = useQuery({
+    queryKey: ['schedule-b-task-instance', normalizedTaskInstanceId],
+    queryFn: () =>
+      fetchTaskInstance({
+        taskId: normalizedTaskInstanceId,
+        token: token ?? undefined,
+      }),
+    enabled: Boolean(token && normalizedTaskInstanceId && initialStatusDetails === undefined),
+    staleTime: 0,
+    refetchOnMount: 'always',
+  })
+  const saveScratchpadMutation = useMutation({
+    mutationFn: (nextScratchpad: ScheduleBScratchpad) =>
+      patchTaskStatusDetails({
+        taskId: normalizedTaskInstanceId,
+        statusDetails: { savedState: nextScratchpad },
+        token: token ?? undefined,
+      }),
+    onError: (error: unknown) => {
+      setSaveError(error instanceof Error ? error.message : 'Unable to save Schedule B changes')
+    },
+    onSuccess: async () => {
+      setSaveError('')
+      await refreshApplicationInListCaches({
+        applicationId: normalizedApplicationId,
+        queryClient,
+        token: token ?? undefined,
+      })
+    },
+  })
 
   useEffect(() => {
     if (!normalizedApplicationId) {
       setScratchpad(EMPTY_SCRATCHPAD)
+      setHydratedKey('')
       return
     }
 
+    if (normalizedTaskInstanceId && taskInstanceQuery.isLoading) return
+
     try {
-      const saved = window.localStorage.getItem(storageKey)
-      setScratchpad(saved ? normalizeScratchpad(JSON.parse(saved) as Partial<ScheduleBScratchpad>) : EMPTY_SCRATCHPAD)
+      const remoteSavedState = getInspectionStatusSavedState<ScheduleBScratchpad>(
+        initialStatusDetails ?? getTaskStatusDetails(taskInstanceQuery.data),
+      )
+      const localSaved = window.localStorage.getItem(storageKey)
+      const nextScratchpad = remoteSavedState
+        ? normalizeScratchpad(remoteSavedState)
+        : localSaved
+          ? normalizeScratchpad(JSON.parse(localSaved) as Partial<ScheduleBScratchpad>)
+          : EMPTY_SCRATCHPAD
+      const serialized = JSON.stringify(nextScratchpad)
+      setScratchpad(nextScratchpad)
+      window.localStorage.setItem(storageKey, serialized)
+      lastPersistedScratchpadRef.current = remoteSavedState ? serialized : ''
+      setHydratedKey(hydrationKey)
     } catch {
       setScratchpad(EMPTY_SCRATCHPAD)
+      lastPersistedScratchpadRef.current = ''
+      setHydratedKey(hydrationKey)
     }
-  }, [normalizedApplicationId, storageKey])
+  }, [
+    hydrationKey,
+    initialStatusDetails,
+    normalizedApplicationId,
+    normalizedTaskInstanceId,
+    storageKey,
+    taskInstanceQuery.data,
+    taskInstanceQuery.isLoading,
+  ])
+
+  useEffect(() => {
+    if (
+      !normalizedTaskInstanceId ||
+      hydratedKey !== hydrationKey ||
+      taskInstanceQuery.isLoading
+    ) {
+      return
+    }
+
+    const serialized = JSON.stringify(scratchpad)
+    if (serialized === lastPersistedScratchpadRef.current) return
+
+    const timeoutId = window.setTimeout(() => {
+      saveScratchpadMutation.mutate(scratchpad, {
+        onSuccess: () => {
+          lastPersistedScratchpadRef.current = serialized
+        },
+      })
+    }, 600)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [
+    hydratedKey,
+    hydrationKey,
+    normalizedTaskInstanceId,
+    scratchpad,
+    saveScratchpadMutation,
+    taskInstanceQuery.isLoading,
+  ])
 
   const updateScratchpad = useCallback(
     (updater: (current: ScheduleBScratchpad) => ScheduleBScratchpad) => {
@@ -1329,6 +1439,9 @@ export function useScheduleBScratchpad(applicationId?: string | number) {
 
   return {
     scratchpad,
+    isLoadingSavedState: Boolean(normalizedTaskInstanceId && taskInstanceQuery.isLoading),
+    isSaving: saveScratchpadMutation.isPending,
+    saveError,
     toggleFlag,
     updateFlagNote,
     toggleResolved,

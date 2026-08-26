@@ -572,6 +572,36 @@ export function ApplicationDetailsContent({
       })
     )
   }, [sourceApplicant])
+  const scheduleATask = useMemo(
+    () =>
+      Object.values(sourceApplicant?.stages ?? {})
+        .flatMap((stage) => stage.tasks ?? [])
+        .find(
+          (task) =>
+            String(task.taskCategory ?? (task as any).TaskCategory ?? '')
+              .trim()
+              .toLowerCase() === TASK_CATEGORIES.SCHEDULEA &&
+            String(task.taskType ?? (task as any).TaskType ?? '')
+              .trim()
+              .toLowerCase() === TASK_TYPES.ACTION,
+        ),
+    [sourceApplicant],
+  )
+  const scheduleBTask = useMemo(
+    () =>
+      Object.values(sourceApplicant?.stages ?? {})
+        .flatMap((stage) => stage.tasks ?? [])
+        .find(
+          (task) =>
+            String(task.taskCategory ?? (task as any).TaskCategory ?? '')
+              .trim()
+              .toLowerCase() === TASK_CATEGORIES.SCHEDULEB &&
+            String(task.taskType ?? (task as any).TaskType ?? '')
+              .trim()
+              .toLowerCase() === TASK_TYPES.ACTION,
+        ),
+    [sourceApplicant],
+  )
   const applicationNotesContextKey = `application-details:${String(applicationId ?? application.applicationId ?? 'unknown')}`
   const applicationDisplayName =
     application.company?.[0]?.name?.trim() || `Application ${application.applicationId}`
@@ -879,6 +909,12 @@ export function ApplicationDetailsContent({
                 readOnly
                 applicationId={resolvedApplicationId}
                 applicationName={applicationDisplayName}
+                scheduleATaskInstanceId={
+                  scheduleATask?.TaskInstanceId ?? (scheduleATask as any)?.taskInstanceId
+                }
+                scheduleATaskStatusDetails={
+                  scheduleATask?.StatusDetails ?? (scheduleATask as any)?.statusDetails
+                }
                 visitId={application.visit_id ?? null}
                 appVars={application.appvars ?? null}
                 assignedRoles={application.assignedRoles}
@@ -897,6 +933,12 @@ export function ApplicationDetailsContent({
                 readOnly
                 applicationId={resolvedApplicationId}
                 applicationName={applicationDisplayName}
+                scheduleBTaskInstanceId={
+                  scheduleBTask?.TaskInstanceId ?? (scheduleBTask as any)?.taskInstanceId
+                }
+                scheduleBTaskStatusDetails={
+                  scheduleBTask?.StatusDetails ?? (scheduleBTask as any)?.statusDetails
+                }
                 visitId={application.visit_id ?? null}
                 appVars={application.appvars ?? null}
                 assignedRoles={application.assignedRoles}

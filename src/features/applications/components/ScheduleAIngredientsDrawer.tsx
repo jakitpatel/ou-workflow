@@ -60,6 +60,7 @@ type Props = {
   taskName?: string
   taskCategory?: string
   scheduleATaskInstanceId?: string | number | null
+  scheduleATaskStatusDetails?: unknown
   mode?: 'drawer' | 'embedded'
   readOnly?: boolean
   onClose: () => void
@@ -491,6 +492,7 @@ export function ScheduleAIngredientsDrawer({
   taskName,
   taskCategory,
   scheduleATaskInstanceId,
+  scheduleATaskStatusDetails,
   mode = 'drawer',
   readOnly = false,
   onClose,
@@ -538,8 +540,6 @@ export function ScheduleAIngredientsDrawer({
   const { data: globalAppVars } = useScheduleAApplicationAppVars(
     isActive ? resolvedApplicationId : undefined,
   )
-  const scratchpadApi = useScheduleAScratchpad(resolvedApplicationId)
-  const { scratchpad } = scratchpadApi
   const assignedRfr = textValue(applicationDetail?.DesignatedRFR)
   const isAssigningTask =
     textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA_ASSIGNING
@@ -547,6 +547,22 @@ export function ScheduleAIngredientsDrawer({
   const isSignoffTask =
     textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.APPROVAL_SIGNOFF_A
   const usesTaskHeader = isAssigningTask || isStartTask || isSignoffTask
+  const canonicalScheduleATaskInstanceId =
+    scheduleATaskInstanceId ??
+    (textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA
+      ? taskInstanceId
+      : null)
+  const scratchpadApi = useScheduleAScratchpad(
+    resolvedApplicationId,
+    canonicalScheduleATaskInstanceId,
+    scheduleATaskStatusDetails,
+  )
+  const { scratchpad } = scratchpadApi
+  useEffect(() => {
+    if (scratchpadApi.saveError) {
+      toast.error(scratchpadApi.saveError)
+    }
+  }, [scratchpadApi.saveError])
   const eirSubmitterLabel = assignedRfr || 'the assigned RFR'
   const effectiveAppVars = { ...globalAppVars, ...appVars }
   const visitIdLabel = textValue(applicationDetail?.VisitId)

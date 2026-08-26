@@ -47,6 +47,7 @@ type ScheduleADrawerState = {
   taskName?: string
   taskCategory?: string
   scheduleATaskInstanceId?: string | number
+  scheduleATaskStatusDetails?: unknown
 }
 
 type ScheduleBDrawerState = {
@@ -57,6 +58,7 @@ type ScheduleBDrawerState = {
   taskName?: string
   taskCategory?: string
   scheduleBTaskInstanceId?: string | number
+  scheduleBTaskStatusDetails?: unknown
 }
 
 type InspectionInvoiceDrawerState = {
@@ -712,6 +714,8 @@ export function useTaskDashboardState() {
           taskCategory: action.taskCategory ?? action.TaskCategory,
           scheduleATaskInstanceId:
             scheduleATask?.taskInstanceId ?? (scheduleATask as any)?.TaskInstanceId,
+          scheduleATaskStatusDetails:
+            scheduleATask?.StatusDetails ?? scheduleATask?.statusDetails,
         })
         return
       }
@@ -736,6 +740,8 @@ export function useTaskDashboardState() {
           taskCategory: action.taskCategory ?? action.TaskCategory,
           scheduleBTaskInstanceId:
             scheduleBTask?.taskInstanceId ?? (scheduleBTask as any)?.TaskInstanceId,
+          scheduleBTaskStatusDetails:
+            scheduleBTask?.StatusDetails ?? scheduleBTask?.statusDetails,
         })
         return
       }

@@ -69,6 +69,7 @@ export function NcrcDashboardContent() {
     taskName?: string
     taskCategory?: string
     scheduleATaskInstanceId?: string | number
+    scheduleATaskStatusDetails?: unknown
   }>({
     open: false,
   })
@@ -83,6 +84,7 @@ export function NcrcDashboardContent() {
     taskName?: string
     taskCategory?: string
     scheduleBTaskInstanceId?: string | number
+    scheduleBTaskStatusDetails?: unknown
   }>({
     open: false,
   })
@@ -282,6 +284,8 @@ export function NcrcDashboardContent() {
         taskCategory: actionCategory,
         scheduleATaskInstanceId:
           scheduleATask?.TaskInstanceId ?? (scheduleATask as any)?.taskInstanceId,
+        scheduleATaskStatusDetails:
+          scheduleATask?.StatusDetails ?? (scheduleATask as any)?.statusDetails,
       })
       return
     }
@@ -312,6 +316,8 @@ export function NcrcDashboardContent() {
         taskCategory: actionCategory,
         scheduleBTaskInstanceId:
           scheduleBTask?.TaskInstanceId ?? (scheduleBTask as any)?.taskInstanceId,
+        scheduleBTaskStatusDetails:
+          scheduleBTask?.StatusDetails ?? (scheduleBTask as any)?.statusDetails,
       })
       return
     }
@@ -568,6 +574,7 @@ export function NcrcDashboardContent() {
         taskName={scheduleADrawerState.taskName}
         taskCategory={scheduleADrawerState.taskCategory}
         scheduleATaskInstanceId={scheduleADrawerState.scheduleATaskInstanceId}
+        scheduleATaskStatusDetails={scheduleADrawerState.scheduleATaskStatusDetails}
         onClose={() => setScheduleADrawerState({ open: false })}
       />
       <ScheduleBProductsDrawer
@@ -581,6 +588,7 @@ export function NcrcDashboardContent() {
         taskName={scheduleBDrawerState.taskName}
         taskCategory={scheduleBDrawerState.taskCategory}
         scheduleBTaskInstanceId={scheduleBDrawerState.scheduleBTaskInstanceId}
+        scheduleBTaskStatusDetails={scheduleBDrawerState.scheduleBTaskStatusDetails}
         onClose={() => setScheduleBDrawerState({ open: false })}
       />
       <InspectionInvoiceDrawer

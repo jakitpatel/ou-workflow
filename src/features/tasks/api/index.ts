@@ -242,6 +242,44 @@ export async function patchTaskStatus({
   })
 }
 
+export async function fetchTaskInstance({
+  taskId,
+  token,
+}: {
+  taskId: string
+  token?: string | null
+}): Promise<any> {
+  return await fetchWithAuth({
+    path: `/api/TaskInstance/${encodeURIComponent(taskId)}`,
+    token,
+  })
+}
+
+export async function patchTaskStatusDetails({
+  taskId,
+  statusDetails,
+  token,
+}: {
+  taskId: string
+  statusDetails: unknown
+  token?: string | null
+}): Promise<any> {
+  return await fetchWithAuth({
+    path: `/api/TaskInstance/${encodeURIComponent(taskId)}`,
+    method: 'PATCH',
+    body: {
+      data: {
+        id: taskId,
+        type: 'TaskInstance',
+        attributes: {
+          StatusDetails: statusDetails,
+        },
+      },
+    },
+    token,
+  })
+}
+
 export async function patchTaskGuiDisplayResult({
   taskId,
   result,

@@ -60,6 +60,7 @@ type Props = {
   taskName?: string
   taskCategory?: string
   scheduleBTaskInstanceId?: string | number | null
+  scheduleBTaskStatusDetails?: unknown
   mode?: 'drawer' | 'embedded'
   readOnly?: boolean
   onClose: () => void
@@ -583,6 +584,7 @@ export function ScheduleBProductsDrawer({
   taskName,
   taskCategory,
   scheduleBTaskInstanceId,
+  scheduleBTaskStatusDetails,
   mode = 'drawer',
   readOnly = false,
   onClose,
@@ -635,8 +637,22 @@ export function ScheduleBProductsDrawer({
     onError: (message) => toast.error(message),
   })
   const { data: applicationDetail } = useApplicationDetail(isActive ? resolvedApplicationId : undefined)
-  const scratchpadApi = useScheduleBScratchpad(resolvedApplicationId)
+  const canonicalScheduleBTaskInstanceId =
+    scheduleBTaskInstanceId ??
+    (textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEB
+      ? taskInstanceId
+      : null)
+  const scratchpadApi = useScheduleBScratchpad(
+    resolvedApplicationId,
+    canonicalScheduleBTaskInstanceId,
+    scheduleBTaskStatusDetails,
+  )
   const { scratchpad, buildScheduleBExportRows } = scratchpadApi
+  useEffect(() => {
+    if (scratchpadApi.saveError) {
+      toast.error(scratchpadApi.saveError)
+    }
+  }, [scratchpadApi.saveError])
   const assignedRfr = textValue(applicationDetail?.DesignatedRFR)
   const eirSubmitterLabel = assignedRfr || 'the assigned RFR'
   const visitIdLabel = textValue(applicationDetail?.VisitId)
