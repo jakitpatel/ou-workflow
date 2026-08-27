@@ -17,7 +17,7 @@ import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import type { Task } from '@/types/application'
 
 const PAGE_LIMIT = 20
-const DEBOUNCE_DELAY = 300
+const DEBOUNCE_DELAY = 1000
 
 export function usePrelimDashboardState() {
   const search = Route.useSearch()
