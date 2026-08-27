@@ -85,6 +85,10 @@ export function PrelimResolutionDrawer({
   const [isCreatingNew, setIsCreatingNew] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
+  const [isManualCompanyIdEntry, setIsManualCompanyIdEntry] = useState(false)
+  const [manualCompanyId, setManualCompanyId] = useState('')
+  const [isManualPlantIdEntry, setIsManualPlantIdEntry] = useState(false)
+  const [manualPlantId, setManualPlantId] = useState('')
   const [createdMatch, setCreatedMatch] = useState<Match | null>(null)
   const [confirmedCompanyMatch, setConfirmedCompanyMatch] = useState<Match | null>(null)
   const [confirmedPlantMatch, setConfirmedPlantMatch] = useState<Match | null>(null)
@@ -128,6 +132,10 @@ export function PrelimResolutionDrawer({
     } else {
       setEditablePlantData(clonePlantData(data as PlantData))
     }
+    setIsManualCompanyIdEntry(false)
+    setManualCompanyId('')
+    setIsManualPlantIdEntry(false)
+    setManualPlantId('')
     setIsEditMode(false)
   }, [data, isOpen, type])
 
@@ -143,7 +151,12 @@ export function PrelimResolutionDrawer({
   const isCompany = type === 'company'
   const selectedMatchId = selectedMatch?.Id
 
-  const { data: companyDbResponse, refetch: refetchCompanyDetails } = useQuery({
+  const {
+    data: companyDbResponse,
+    isFetching: isFetchingCompanyDetails,
+    isError: isCompanyDetailsError,
+    refetch: refetchCompanyDetails,
+  } = useQuery({
     queryKey: prelimQueryKeys.kashrusCompanyDetails(selectedMatchId),
     queryFn: () =>
       getCompanyDetailsFromKASH({
@@ -154,7 +167,12 @@ export function PrelimResolutionDrawer({
     ...queryOptionDefaults.prelimKashrusDetails,
   })
 
-  const { data: plantDbResponse, refetch: refetchPlantDetails } = useQuery({
+  const {
+    data: plantDbResponse,
+    isFetching: isFetchingPlantDetails,
+    isError: isPlantDetailsError,
+    refetch: refetchPlantDetails,
+  } = useQuery({
     queryKey: prelimQueryKeys.kashrusPlantDetails(selectedMatchId),
     queryFn: () =>
       getPlantDetailsFromKASH({
@@ -180,6 +198,13 @@ export function PrelimResolutionDrawer({
   const dbCompanyBillingContact = companyDb?.companyContacts?.billingContact?.[0]
   const dbPlantPrimaryContact = plantDb?.plantContacts?.primaryContact?.[0]
   const dbPlantMarketingContact = plantDb?.plantContacts?.billingContact?.[0]
+  const isManualCompanyReady =
+    !isManualCompanyIdEntry ||
+    (selectedMatch != null && companyDb != null && !isFetchingCompanyDetails)
+  const isManualPlantReady =
+    !isManualPlantIdEntry ||
+    (selectedMatch != null && plantDb != null && !isFetchingPlantDetails)
+  const isManualSelectionReady = isManualCompanyReady && isManualPlantReady
 
   const handleCreateCompanyContact = async (contactType: 'primary' | 'billing') => {
     if (!contactSectionActionable || isSubmitting || !isCompany || !selectedMatch?.Id) return
@@ -283,6 +308,26 @@ export function PrelimResolutionDrawer({
 
   const handleMatchChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const matchId = event.target.value
+    if (matchId === 'manual-company-id') {
+      setCreatedMatch(null)
+      setConfirmedCompanyMatch(null)
+      setCreatedCompanyContacts({ primary: false, billing: false })
+      setSelectedMatch(null)
+      setManualCompanyId('')
+      setIsManualCompanyIdEntry(true)
+      return
+    }
+
+    if (matchId === 'manual-plant-id') {
+      setCreatedMatch(null)
+      setConfirmedPlantMatch(null)
+      setCreatedPlantContacts({ primary: false, marketing: false })
+      setSelectedMatch(null)
+      setManualPlantId('')
+      setIsManualPlantIdEntry(true)
+      return
+    }
+
     if (matchId === 'create-new') {
       setCreatedMatch(null)
       setConfirmedCompanyMatch(null)
@@ -290,6 +335,8 @@ export function PrelimResolutionDrawer({
       setCreatedCompanyContacts({ primary: false, billing: false })
       setCreatedPlantContacts({ primary: false, marketing: false })
       setSelectedMatch(null)
+      setIsManualCompanyIdEntry(false)
+      setIsManualPlantIdEntry(false)
       return
     }
 
@@ -300,6 +347,42 @@ export function PrelimResolutionDrawer({
     setCreatedCompanyContacts({ primary: false, billing: false })
     setCreatedPlantContacts({ primary: false, marketing: false })
     setSelectedMatch(match || null)
+    setIsManualCompanyIdEntry(false)
+    setIsManualPlantIdEntry(false)
+  }
+
+  const handleLoadManualCompanyId = () => {
+    const companyIdValue = manualCompanyId.trim()
+    if (!companyIdValue) {
+      toast.error('Enter a company ID')
+      return
+    }
+
+    if (String(selectedMatch?.Id ?? '') === companyIdValue) {
+      void refetchCompanyDetails()
+      return
+    }
+
+    setConfirmedCompanyMatch(null)
+    setCreatedCompanyContacts({ primary: false, billing: false })
+    setSelectedMatch({ Id: companyIdValue, Address: '' })
+  }
+
+  const handleLoadManualPlantId = () => {
+    const plantIdValue = manualPlantId.trim()
+    if (!plantIdValue) {
+      toast.error('Enter a plant ID')
+      return
+    }
+
+    if (String(selectedMatch?.Id ?? '') === plantIdValue) {
+      void refetchPlantDetails()
+      return
+    }
+
+    setConfirmedPlantMatch(null)
+    setCreatedPlantContacts({ primary: false, marketing: false })
+    setSelectedMatch({ Id: plantIdValue, PlantID: plantIdValue, Address: '' })
   }
 
   const saveMatchSelection = async () => {
@@ -397,6 +480,10 @@ export function PrelimResolutionDrawer({
 
   const handleCompleteTask = async () => {
     if (!drawerActionable || isSubmitting || isCreatingNew) return
+    if (!isManualSelectionReady) {
+      toast.error(`Load a valid Kashrus ${isCompany ? 'company' : 'plant'} before completing the task`)
+      return
+    }
 
     if (applicationId == null || taskInstanceId == null) {
       toast.error('Application id or task instance id is missing')
@@ -555,6 +642,26 @@ export function PrelimResolutionDrawer({
           dbPlantMarketingContact={dbPlantMarketingContact}
           matches={matches}
           selectedMatch={selectedMatch}
+          isManualCompanyIdEntry={isManualCompanyIdEntry}
+          manualCompanyId={manualCompanyId}
+          onManualCompanyIdChange={setManualCompanyId}
+          onLoadManualCompanyId={handleLoadManualCompanyId}
+          isFetchingManualCompany={isManualCompanyIdEntry && isFetchingCompanyDetails}
+          isManualCompanyError={
+            isManualCompanyIdEntry &&
+            (isCompanyDetailsError ||
+              (!isFetchingCompanyDetails && companyDbResponse != null && companyDb == null))
+          }
+          isManualPlantIdEntry={isManualPlantIdEntry}
+          manualPlantId={manualPlantId}
+          onManualPlantIdChange={setManualPlantId}
+          onLoadManualPlantId={handleLoadManualPlantId}
+          isFetchingManualPlant={isManualPlantIdEntry && isFetchingPlantDetails}
+          isManualPlantError={
+            isManualPlantIdEntry &&
+            (isPlantDetailsError ||
+              (!isFetchingPlantDetails && plantDbResponse != null && plantDb == null))
+          }
           setEditableCompanyData={setEditableCompanyData}
           setEditablePlantData={setEditablePlantData}
           onMatchChange={handleMatchChange}
@@ -586,10 +693,18 @@ export function PrelimResolutionDrawer({
             <button
               onClick={handleCompleteTask}
               disabled={
-                isTaskCompleted || !drawerActionable || isSubmitting || isCreatingNew
+                isTaskCompleted ||
+                !drawerActionable ||
+                isSubmitting ||
+                isCreatingNew ||
+                !isManualSelectionReady
               }
               className={`rounded-[7px] border px-4 py-2 text-[14px] font-medium ${
-                !isTaskCompleted && drawerActionable && !isSubmitting && !isCreatingNew
+                !isTaskCompleted &&
+                drawerActionable &&
+                !isSubmitting &&
+                !isCreatingNew &&
+                isManualSelectionReady
                   ? 'border-green-600 bg-green-600 text-white hover:bg-green-700'
                   : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
               }`}

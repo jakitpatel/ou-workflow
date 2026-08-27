@@ -43,6 +43,18 @@ type Props = {
   dbPlantMarketingContact?: PlantFromApplicationContact
   matches: Match[]
   selectedMatch: Match | null
+  isManualCompanyIdEntry: boolean
+  manualCompanyId: string
+  onManualCompanyIdChange: (value: string) => void
+  onLoadManualCompanyId: () => void
+  isFetchingManualCompany: boolean
+  isManualCompanyError: boolean
+  isManualPlantIdEntry: boolean
+  manualPlantId: string
+  onManualPlantIdChange: (value: string) => void
+  onLoadManualPlantId: () => void
+  isFetchingManualPlant: boolean
+  isManualPlantError: boolean
   setEditableCompanyData: Dispatch<SetStateAction<CompanyData>>
   setEditablePlantData: Dispatch<SetStateAction<PlantData>>
   onMatchChange: (event: ChangeEvent<HTMLSelectElement>) => void
@@ -83,6 +95,18 @@ export function PrelimResolutionComparisonSection({
   dbPlantMarketingContact,
   matches,
   selectedMatch,
+  isManualCompanyIdEntry,
+  manualCompanyId,
+  onManualCompanyIdChange,
+  onLoadManualCompanyId,
+  isFetchingManualCompany,
+  isManualCompanyError,
+  isManualPlantIdEntry,
+  manualPlantId,
+  onManualPlantIdChange,
+  onLoadManualPlantId,
+  isFetchingManualPlant,
+  isManualPlantError,
   setEditableCompanyData,
   setEditablePlantData,
   onMatchChange,
@@ -160,7 +184,15 @@ export function PrelimResolutionComparisonSection({
       <div className="sticky top-0 z-10 -mt-3 mb-4 flex flex-col gap-3 border-b border-gray-100 bg-white py-3 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-base font-semibold text-[#1e1e2e]">Field Comparison</h3>
         <select
-          value={selectedMatch ? String(selectedMatch.Id) : 'create-new'}
+          value={
+            isManualCompanyIdEntry || isManualPlantIdEntry
+              ? isCompany
+                ? 'manual-company-id'
+                : 'manual-plant-id'
+              : selectedMatch
+                ? String(selectedMatch.Id)
+                : 'create-new'
+          }
           onChange={onMatchChange}
           className="w-full min-w-[220px] rounded-[7px] border border-gray-200 bg-white px-[14px] py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-auto"
         >
@@ -171,17 +203,96 @@ export function PrelimResolutionComparisonSection({
               {match.status ? ` - ${match.status}` : ''}
             </option>
           ))}
-          {selectedMatch && !selectedMatchIsListed && (
+          {selectedMatch &&
+            !selectedMatchIsListed &&
+            !isManualCompanyIdEntry &&
+            !isManualPlantIdEntry && (
             <option value={String(selectedMatch.Id)}>
               Created: {isCompany ? selectedMatch.companyName : selectedMatch.plantName} - #
               {selectedMatch.Id}
             </option>
+          )}
+          {isCompany && (
+            <option value="manual-company-id">+ Add a Company ID to the intake</option>
+          )}
+          {!isCompany && (
+            <option value="manual-plant-id">+ Add a Plant ID to the intake</option>
           )}
           <option value="create-new">
             + No Match - Create New {isCompany ? 'Company' : 'Plant'}
           </option>
         </select>
       </div>
+
+      {isCompany && isManualCompanyIdEntry && (
+        <div className="mb-4 rounded-lg border border-indigo-100 bg-indigo-50 p-4">
+          <label className="mb-1.5 block text-sm font-semibold text-gray-800" htmlFor="manual-company-id">
+            Kashrus Company ID
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="manual-company-id"
+              type="text"
+              inputMode="numeric"
+              value={manualCompanyId}
+              onChange={(event) => onManualCompanyIdChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') onLoadManualCompanyId()
+              }}
+              placeholder="Enter company ID"
+              className="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+            <button
+              type="button"
+              onClick={onLoadManualCompanyId}
+              disabled={!manualCompanyId.trim() || isFetchingManualCompany}
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+            >
+              {isFetchingManualCompany ? 'Loading...' : 'Load Company'}
+            </button>
+          </div>
+          {isManualCompanyError && (
+            <p className="mt-2 text-sm text-red-600">
+              Unable to load that company ID. Check the ID and try again.
+            </p>
+          )}
+        </div>
+      )}
+
+      {!isCompany && isManualPlantIdEntry && (
+        <div className="mb-4 rounded-lg border border-indigo-100 bg-indigo-50 p-4">
+          <label className="mb-1.5 block text-sm font-semibold text-gray-800" htmlFor="manual-plant-id">
+            Kashrus Plant ID
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="manual-plant-id"
+              type="text"
+              inputMode="numeric"
+              value={manualPlantId}
+              onChange={(event) => onManualPlantIdChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') onLoadManualPlantId()
+              }}
+              placeholder="Enter plant ID"
+              className="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+            <button
+              type="button"
+              onClick={onLoadManualPlantId}
+              disabled={!manualPlantId.trim() || isFetchingManualPlant}
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+            >
+              {isFetchingManualPlant ? 'Loading...' : 'Load Plant'}
+            </button>
+          </div>
+          {isManualPlantError && (
+            <p className="mt-2 text-sm text-red-600">
+              Unable to load that plant ID. Check the ID and try again.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-12 gap-4 mb-2 border-b border-gray-200 bg-gray-50 px-4 py-[14px] text-xs font-semibold uppercase tracking-wide text-gray-500">
         <div className="col-span-3">Field</div>
