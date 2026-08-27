@@ -1684,7 +1684,7 @@ ${packageUrl}`
         recipient: contact.email || contact.name || undefined,
         billingAddress: invoiceBillingAddress.billingAddress,
         billingCityStateZip: invoiceBillingAddress.billingCityStateZip,
-        primaryContact: billingContact.name ? `Attn ${billingContact.name}` : '',
+        primaryContact: billingContact.name || '',
       })
 
       setContractInvoiceId(result.invoiceId)

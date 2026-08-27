@@ -1034,9 +1034,7 @@ export function useInspectionInvoiceDrawerState({
           letterTemplate,
           billing_address: invoiceCustomer.billingAddress,
           billing_city_state_zip: invoiceCustomer.billingCityStateZip,
-          primary_contact: invoiceCustomer.billingContactName
-            ? `Attn ${invoiceCustomer.billingContactName}`
-            : '',
+          primary_contact: invoiceCustomer.billingContactName || '',
         },
       })
       setInvoiceId(result.invoiceId)
