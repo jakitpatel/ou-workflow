@@ -12,6 +12,24 @@ const formatCreatedDate = (value?: string) => {
   });
 };
 
+const formatAssignedNcrc = (value: unknown) => {
+  if (typeof value === 'string') return value.trim() || '-';
+  if (!value || typeof value !== 'object') return '-';
+
+  const coordinator = value as Record<string, unknown>;
+  const name = [
+    coordinator.PREFIX ?? coordinator.prefix,
+    coordinator.First ?? coordinator.first,
+    coordinator.Middle ?? coordinator.middle,
+    coordinator.LAST ?? coordinator.last,
+  ]
+    .map((part) => String(part ?? '').trim())
+    .filter(Boolean)
+    .join(' ');
+
+  return name || String(coordinator.id ?? '').trim() || '-';
+};
+
 function MatchMarker({ isNew }: { isNew?: boolean }) {
   if (isNew == null) return null;
 
@@ -249,7 +267,7 @@ export default function Overview({
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-sm font-medium text-gray-600">Assigned NCRC</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {application.assignedNCRC || '-'}
+                    {formatAssignedNcrc(application.assignedNCRC)}
                   </span>
                 </div>
 

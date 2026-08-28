@@ -62,6 +62,7 @@ export type InspectionInvoiceCustomer = {
   billingContactEmail: string
   cityStatePostalCountry: string
   coordinatorName: string
+  coordinatorEmail: string
   coordinatorPhone: string
   streetAddress: string
 }
@@ -630,6 +631,23 @@ export function useInspectionInvoiceDrawerState({
         String((role as any).role ?? (role as any).Role ?? (role as any).name ?? ''),
       ),
     ) as any
+    const assignedNcrcValue = (applicationDetail as { assignedNCRC?: unknown } | undefined)
+      ?.assignedNCRC
+    const assignedNcrc =
+      assignedNcrcValue && typeof assignedNcrcValue === 'object'
+        ? (assignedNcrcValue as Record<string, unknown>)
+        : null
+    const assignedNcrcName = assignedNcrc
+      ? [
+          assignedNcrc.PREFIX ?? assignedNcrc.prefix,
+          assignedNcrc.First ?? assignedNcrc.first,
+          assignedNcrc.Middle ?? assignedNcrc.middle,
+          assignedNcrc.LAST ?? assignedNcrc.last,
+        ]
+          .map(normalizeContactText)
+          .filter(Boolean)
+          .join(' ')
+      : ''
 
     return {
       addressLines: [
@@ -645,12 +663,18 @@ export function useInspectionInvoiceDrawerState({
         .filter(Boolean)
         .join(', '),
       coordinatorName:
-        coordinator?.displayName ??
-        coordinator?.fullName ??
-        coordinator?.userName ??
-        coordinator?.name ??
-        '',
-      coordinatorPhone: coordinator?.phone ?? coordinator?.Phone ?? '',
+        assignedNcrcName ||
+        (coordinator?.displayName ??
+          coordinator?.fullName ??
+          coordinator?.userName ??
+          coordinator?.name ??
+          ''),
+      coordinatorEmail:
+        normalizeContactText(assignedNcrc?.EMAIL ?? assignedNcrc?.email) ||
+        (coordinator?.email ?? coordinator?.Email ?? ''),
+      coordinatorPhone:
+        normalizeContactText(assignedNcrc?.PHONE ?? assignedNcrc?.phone) ||
+        (coordinator?.phone ?? coordinator?.Phone ?? ''),
       streetAddress: [address?.street, address?.line2].filter(Boolean).join(', '),
     }
   }, [applicationDetail])
