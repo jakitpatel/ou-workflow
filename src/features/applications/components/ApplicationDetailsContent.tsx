@@ -976,6 +976,7 @@ export function ApplicationDetailsContent({
             {activeTab === 'files' && (
               <FilesList
                 application={application}
+                applicationId={resolvedApplicationId}
                 showProcessingStatus={dataSource !== 'prelim'}
               />
             )}

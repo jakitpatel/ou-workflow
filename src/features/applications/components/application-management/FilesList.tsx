@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ApplicationDetail } from "@/types/application";
-import { AlertCircle, Beaker, CheckCircle, Download, FileText, LoaderCircle, Package, X } from "lucide-react";
+import { AlertCircle, Beaker, CheckCircle, Download, FileText, LoaderCircle, Package, Upload, X } from "lucide-react";
+import { toast } from 'sonner';
+import { useUploadApplicationFileMutation } from '@/features/applications/hooks/useUploadApplicationFileMutation';
 
 const getFileExtension = (fileName?: string, filePath?: string) => {
   const value = String(fileName || filePath || '').split(/[?#]/)[0];
@@ -24,15 +26,78 @@ th{background:#e2e8f0}.sheet{margin:0 0 12px;color:#1e3a8a}img{max-width:100%;he
 
 type Props = {
   application: ApplicationDetail;
+  applicationId?: string | number | null;
   showProcessingStatus?: boolean;
 };
 
-export default function FilesList({ application, showProcessingStatus = true }: Props) {
+export default function FilesList({ application, applicationId, showProcessingStatus = true }: Props) {
   const uploadedFiles = application.files || [];
+  const resolvedApplicationId = applicationId ?? application.applicationId;
+  const canUploadAttachments =
+    resolvedApplicationId !== null &&
+    resolvedApplicationId !== undefined &&
+    String(resolvedApplicationId).trim() !== '';
   const [previewHtml, setPreviewHtml] = useState('');
   const [previewName, setPreviewName] = useState('');
   const [previewError, setPreviewError] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
+  const [attachmentTag, setAttachmentTag] = useState('');
+  const [attachmentError, setAttachmentError] = useState('');
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const uploadFileMutation = useUploadApplicationFileMutation();
+
+  const resetAttachmentDialog = () => {
+    setAttachmentFiles([]);
+    setAttachmentTag('');
+    setAttachmentError('');
+    if (attachmentInputRef.current) attachmentInputRef.current.value = '';
+  };
+
+  const handleAttachmentSelection = (files: FileList | null) => {
+    const selectedFiles = Array.from(files ?? []).filter(file => file.size > 0);
+    if (selectedFiles.length === 0) {
+      resetAttachmentDialog();
+      return;
+    }
+    setAttachmentFiles(selectedFiles);
+    setAttachmentTag('');
+    setAttachmentError('');
+  };
+
+  const uploadAttachments = async () => {
+    const tag = attachmentTag.trim();
+    if (!tag) {
+      setAttachmentError('Enter a tag before uploading the attachment.');
+      return;
+    }
+
+    if (!canUploadAttachments) {
+      setAttachmentError('Application id is required before uploading an attachment.');
+      return;
+    }
+
+    setAttachmentError('');
+    try {
+      await Promise.all(
+        attachmentFiles.map(file =>
+          uploadFileMutation.mutateAsync({
+            applicationId: resolvedApplicationId,
+            description: tag,
+            file,
+          }),
+        ),
+      );
+      toast.success(
+        attachmentFiles.length === 1
+          ? `${attachmentFiles[0].name} uploaded as an attachment`
+          : `${attachmentFiles.length} attachments uploaded`,
+      );
+      resetAttachmentDialog();
+    } catch (error) {
+      setAttachmentError(error instanceof Error ? error.message : 'Unable to upload the attachment.');
+    }
+  };
 
   const openFile = (filePath: string) => {
     if (!filePath) {
@@ -97,6 +162,24 @@ export default function FilesList({ application, showProcessingStatus = true }: 
     <div className="w-full min-w-0 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <h2 className="text-2xl font-semibold text-gray-900">File Management</h2>
+        <div>
+          <input
+            ref={attachmentInputRef}
+            type="file"
+            multiple
+            className="sr-only"
+            onChange={event => handleAttachmentSelection(event.target.files)}
+          />
+          <button
+            type="button"
+            onClick={() => attachmentInputRef.current?.click()}
+            disabled={!canUploadAttachments || uploadFileMutation.isPending}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Upload className="h-4 w-4" />
+            Add attachment
+          </button>
+        </div>
       </div>
 
       <div className="w-full border border-gray-200 rounded-lg overflow-hidden mb-6">
@@ -252,6 +335,59 @@ export default function FilesList({ application, showProcessingStatus = true }: 
               {previewHtml && !previewLoading && (
                 <iframe title={`Preview of ${previewName}`} srcDoc={previewHtml} sandbox="" className="h-full w-full border-0" />
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {attachmentFiles.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-labelledby="attachment-dialog-title">
+          <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+              <div>
+                <h3 id="attachment-dialog-title" className="font-semibold text-gray-900">Add attachment tag</h3>
+                <p className="mt-1 text-sm text-gray-500">The tag will be saved with every selected file.</p>
+              </div>
+              <button
+                type="button"
+                onClick={resetAttachmentDialog}
+                disabled={uploadFileMutation.isPending}
+                className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800 disabled:opacity-50"
+                aria-label="Cancel attachment upload"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4 px-5 py-5">
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                {attachmentFiles.map(file => <div key={`${file.name}-${file.size}`} className="truncate">{file.name}</div>)}
+              </div>
+              <div>
+                <label htmlFor="attachment-tag" className="mb-1.5 block text-sm font-medium text-gray-800">Tag</label>
+                <input
+                  id="attachment-tag"
+                  value={attachmentTag}
+                  onChange={event => {
+                    setAttachmentTag(event.target.value);
+                    if (attachmentError) setAttachmentError('');
+                  }}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter') void uploadAttachments();
+                  }}
+                  placeholder="Enter attachment tag"
+                  autoFocus
+                  disabled={uploadFileMutation.isPending}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-100"
+                />
+                {attachmentError && <p className="mt-2 text-sm text-red-600" role="alert">{attachmentError}</p>}
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-gray-200 px-5 py-4">
+              <button type="button" onClick={resetAttachmentDialog} disabled={uploadFileMutation.isPending} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
+              <button type="button" onClick={() => void uploadAttachments()} disabled={uploadFileMutation.isPending} className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50">
+                {uploadFileMutation.isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {uploadFileMutation.isPending ? 'Uploading...' : 'Upload attachment'}
+              </button>
             </div>
           </div>
         </div>
