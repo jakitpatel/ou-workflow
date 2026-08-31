@@ -49,8 +49,7 @@ const formatDisplayDate = (ymd?: string) => {
   })
 }
 
-const getAccountNumber = (applicant?: Applicant) =>
-  String(applicant?.externalReferenceId ?? applicant?.applicationId ?? '').trim()
+const getAccountNumber = (applicant?: Applicant) => String(applicant?.companyId ?? '').trim()
 
 const normalizeText = (value: unknown) =>
   (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
