@@ -12,6 +12,7 @@ import {
   INSPECTION_LETTER_TEMPLATE,
   useInspectionInvoiceDrawerState,
 } from '@/features/applications/hooks/useInspectionInvoiceDrawerState'
+import { getInvalidEmailAddresses, isValidEmailAddressList } from '@/shared/email/addressValidation'
 import type { Applicant } from '@/types/application'
 
 type Props = {
@@ -186,6 +187,13 @@ export function InspectionInvoiceDrawer({
     plantLocation: applicant?.plant || applicant?.region || '',
     streetAddress: state.invoiceCustomer.streetAddress,
   })
+  const invalidToAddresses = getInvalidEmailAddresses(state.emailTo)
+  const invalidCcAddresses = getInvalidEmailAddresses(state.emailCc)
+  const invalidBccAddresses = getInvalidEmailAddresses(state.emailBcc)
+  const areEmailRecipientsValid =
+    isValidEmailAddressList(state.emailTo, true) &&
+    isValidEmailAddressList(state.emailCc) &&
+    isValidEmailAddressList(state.emailBcc)
 
   const onPrimaryClick = async () => {
     if (state.skipInvoiceWorkflow) {
@@ -730,49 +738,49 @@ export function InspectionInvoiceDrawer({
         </fieldset>
 
         {!readOnly ? (
-        <div className="flex items-center justify-between gap-4 border-t bg-white px-5 py-3">
-          <div className="min-w-0 text-sm text-gray-600">
-            {state.skipInvoiceWorkflow
-              ? 'No inspection or inspection fee is needed. Complete the task to save these selections.'
-              : state.stage === 'paid'
-                ? 'Invoice paid. Assignment can proceed when applicable.'
-                : state.canGenerate
-                  ? state.invoiceId
-                    ? state.invoiceDownloadLink
-                      ? `Invoice ${state.invoiceId} generated. PDF is ready to download.`
-                      : `Invoice ${state.invoiceId} generated.`
-                    : 'Ready to generate. Invoice ID is assigned on generate.'
-                  : 'Complete required selections to generate the invoice.'}
+          <div className="flex items-center justify-between gap-4 border-t bg-white px-5 py-3">
+            <div className="min-w-0 text-sm text-gray-600">
+              {state.skipInvoiceWorkflow
+                ? 'No inspection or inspection fee is needed. Complete the task to save these selections.'
+                : state.stage === 'paid'
+                  ? 'Invoice paid. Assignment can proceed when applicable.'
+                  : state.canGenerate
+                    ? state.invoiceId
+                      ? state.invoiceDownloadLink
+                        ? `Invoice ${state.invoiceId} generated. PDF is ready to download.`
+                        : `Invoice ${state.invoiceId} generated.`
+                      : 'Ready to generate. Invoice ID is assigned on generate.'
+                    : 'Complete required selections to generate the invoice.'}
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={onPrimaryClick}
+                disabled={
+                  state.isGeneratingInvoice ||
+                  state.isMarkingPaid ||
+                  state.isCompletingWithoutInspection ||
+                  (!state.skipInvoiceWorkflow &&
+                    (state.stage === 'setup' || state.stage === 'configured') &&
+                    !state.canGenerate) ||
+                  state.stage === 'paid'
+                }
+                className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+              >
+                {state.stage === 'generated' || state.stage === 'outlook-opened' ? (
+                  <Mail className="h-4 w-4" />
+                ) : null}
+                {state.isMarkingPaid ? 'Marking paid...' : primaryActionLabel}
+              </button>
+            </div>
           </div>
-          <div className="flex shrink-0 gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Close
-            </button>
-            <button
-              type="button"
-              onClick={onPrimaryClick}
-              disabled={
-                state.isGeneratingInvoice ||
-                state.isMarkingPaid ||
-                state.isCompletingWithoutInspection ||
-                (!state.skipInvoiceWorkflow &&
-                  (state.stage === 'setup' || state.stage === 'configured') &&
-                  !state.canGenerate) ||
-                state.stage === 'paid'
-              }
-              className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-            >
-              {state.stage === 'generated' || state.stage === 'outlook-opened' ? (
-                <Mail className="h-4 w-4" />
-              ) : null}
-              {state.isMarkingPaid ? 'Marking paid...' : primaryActionLabel}
-            </button>
-          </div>
-        </div>
         ) : null}
 
         {state.showEmailPreview ? (
@@ -812,6 +820,11 @@ export function InspectionInvoiceDrawer({
                       onChange={(event) => state.setEmailTo(event.target.value)}
                       className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
+                    {state.emailTo.trim() && invalidToAddresses.length > 0 ? (
+                      <span className="col-start-2 mt-1 text-xs text-red-600">
+                        Invalid email: {invalidToAddresses.join(', ')}
+                      </span>
+                    ) : null}
                   </div>
                   <div className="border-b px-3 py-2 text-right">
                     <button
@@ -839,6 +852,11 @@ export function InspectionInvoiceDrawer({
                           placeholder="Separate emails with commas"
                           className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
+                        {invalidCcAddresses.length > 0 ? (
+                          <span className="col-start-2 mt-1 text-xs text-red-600">
+                            Invalid email: {invalidCcAddresses.join(', ')}
+                          </span>
+                        ) : null}
                       </div>
                       <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
                         <label
@@ -855,6 +873,11 @@ export function InspectionInvoiceDrawer({
                           placeholder="Separate emails with commas"
                           className="rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
+                        {invalidBccAddresses.length > 0 ? (
+                          <span className="col-start-2 mt-1 text-xs text-red-600">
+                            Invalid email: {invalidBccAddresses.join(', ')}
+                          </span>
+                        ) : null}
                       </div>
                     </>
                   ) : null}
@@ -894,7 +917,7 @@ export function InspectionInvoiceDrawer({
                 <button
                   type="button"
                   disabled={
-                    state.isSendingEmail || !state.emailTo.trim() || !state.emailBody.trim()
+                    state.isSendingEmail || !areEmailRecipientsValid || !state.emailBody.trim()
                   }
                   onClick={async () => {
                     try {

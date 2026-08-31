@@ -21,9 +21,16 @@ import {
   useSendContractCommunicationEmail,
 } from '@/features/applications/hooks/useContractRcNotification'
 import { getInspectionStatusSavedState } from '@/features/applications/utils/inspectionStatusDetails'
+import { getInvalidEmailAddresses, isValidEmailAddressList } from '@/shared/email/addressValidation'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
-import type { Applicant, ApplicantAppVars, ApplicationEmail, AssignedRole, Task } from '@/types/application'
+import type {
+  Applicant,
+  ApplicantAppVars,
+  ApplicationEmail,
+  AssignedRole,
+  Task,
+} from '@/types/application'
 
 type Props = {
   open: boolean
@@ -264,7 +271,7 @@ const STANDARD_AGREEMENT_BODY = [
       '(g) In the absence of obtaining the prior written consent of the OU, the OU Symbol may not be used on a label of a container that can be re-used for other products.',
       '(h) The Company shall maintain an organized, current and accurate record of all labels used in a Plant.',
       '(4) Production Procedures. With respect to each Product, the Company shall comply with each of the production procedures listed on Schedule D attached hereto and incorporated herein by reference (each, a "Production Procedure"). The Company shall immediately notify the OU in writing (a) if the Company ceases to produce or manufacture any Product, (b) if any material error occurs with respect to the packaging materials, labeling, product name, brand or label name, ingredient statement, or the OU Symbol, (c) in advance, if the Company becomes aware that it will not be able to comply with any Production Procedure for any reason, and/or (d) if the Company fails to comply with any Production Procedure for any reason. [Note: Schedule D should include issues regarding the certification of bulk shipments.]',
-      '(5) Unused Labels. The Company shall not remove unused labels and/or packaging materials bearing the OU Symbol from a Plant without first obtaining the prior written consent of the OU; provided, however, that upon termination of this Agreement in accordance with Section VI, all unused labels and packaging materials bearing the OU Symbol shall be, at the OU\'s option, immediately (a) transferred to a new plant which has been certified by the OU, (b) destroyed, or the OU Symbol immediately excised therefrom, in each instance, in the presence of OU Representatives (as defined in Section IV below), or (c) remitted to the OU. The Company hereby agrees to pay the reasonable fees and expenses of the OU for the supervision of the Company\'s compliance with this Section I(B)(5) by OU Representatives.',
+      "(5) Unused Labels. The Company shall not remove unused labels and/or packaging materials bearing the OU Symbol from a Plant without first obtaining the prior written consent of the OU; provided, however, that upon termination of this Agreement in accordance with Section VI, all unused labels and packaging materials bearing the OU Symbol shall be, at the OU's option, immediately (a) transferred to a new plant which has been certified by the OU, (b) destroyed, or the OU Symbol immediately excised therefrom, in each instance, in the presence of OU Representatives (as defined in Section IV below), or (c) remitted to the OU. The Company hereby agrees to pay the reasonable fees and expenses of the OU for the supervision of the Company's compliance with this Section I(B)(5) by OU Representatives.",
       '(6) Annual Certification Fee. The Company shall pay to the OU the Annual Certification Fee (as defined in Section II) in accordance with Section II.',
       '(7) Actions. The Company, at its own expense, shall take any and all actions reasonably required by the OU in connection with obtaining and/or maintaining a Certification.',
     ],
@@ -273,7 +280,7 @@ const STANDARD_AGREEMENT_BODY = [
     title: 'II. Fees and Expenses.',
     paragraphs: [
       '(A) Annual Certification Fee. The Company agrees to timely and fully pay to the OU an annual certification fee (the "Annual Certification Fee") for each year during the Term. The first Annual Certification Fee shall be payable by the Company to the OU on the Effective Date for the period beginning on the Effective Date and ending on the first anniversary of the Effective Date. Thereafter, for each subsequent year during the Term, the Annual Certification Fee shall be paid by the Company to the OU, in full and in advance, at least fifteen (15) days prior to the beginning of each such subsequent year during the Term. The Annual Certification Fee for the initial year during the Term shall be specified in the Schedule C, and shall be paid to the OU in United States Dollars (USD). [FOR FOREIGN COMPANIES] To the extent that Company shall be required to withhold taxes from any fee or expenses payable to the OU, the amount of such fee or expense shall be increased so that the amount actually remitted to the OU shall equal the amount stated on such invoice from the OU. The amount of the Annual Certification Fee for subsequent years during the Term shall be subject to adjustments by the OU, in its sole discretion. The OU shall attempt to notify the Company of the amount of the Annual Certification Fee for each subsequent year during the Term at least thirty (30) days prior to the beginning of each such subsequent year.',
-      '(B) Other Fees and Expenses. The Company may be subject to additional fees in addition to the Annual Certification Fee, such as special production fees, Passover certification fees, and other fees and expenses referenced herein or contemplated hereby. The Company also shall pay the reasonable travel expenses of the OU Representative(s) in the event that an administrative visit or review by the OU is required or appropriate or as otherwise contemplated hereby. All fees and expenses payable by the Company to the OU hereunder, other than the Annual Certification Fee, shall be paid by the Company to the OU within twenty (20) calendar days following the Company\'s receipt of an invoice from the OU with respect to such fees and expenses.',
+      "(B) Other Fees and Expenses. The Company may be subject to additional fees in addition to the Annual Certification Fee, such as special production fees, Passover certification fees, and other fees and expenses referenced herein or contemplated hereby. The Company also shall pay the reasonable travel expenses of the OU Representative(s) in the event that an administrative visit or review by the OU is required or appropriate or as otherwise contemplated hereby. All fees and expenses payable by the Company to the OU hereunder, other than the Annual Certification Fee, shall be paid by the Company to the OU within twenty (20) calendar days following the Company's receipt of an invoice from the OU with respect to such fees and expenses.",
     ],
   },
   {
@@ -291,7 +298,7 @@ const STANDARD_AGREEMENT_BODY = [
   {
     title: 'V. Indemnification and Limitation of Liability.',
     paragraphs: [
-      'The Company agrees to indemnify and hold the OU harmless from and against demands, claims, losses, costs, damages, liabilities, penalties, fines and expenses arising out of or relating to the OU\'s Certification of any Product of the Company as Kosher, the Company\'s breach of this Agreement, unauthorized actions, or the safety of any Product.',
+      "The Company agrees to indemnify and hold the OU harmless from and against demands, claims, losses, costs, damages, liabilities, penalties, fines and expenses arising out of or relating to the OU's Certification of any Product of the Company as Kosher, the Company's breach of this Agreement, unauthorized actions, or the safety of any Product.",
       'In no event shall the OU be liable to the Company for direct, special, incidental, indirect, punitive or consequential damages, loss of use of capital, lost profits, lost revenues, commissions, or compensation of any kind arising out of or related to this Agreement.',
     ],
   },
@@ -301,34 +308,34 @@ const STANDARD_AGREEMENT_BODY = [
       '(A) Subject to this Section VI, the term (the "Term") of this Agreement shall commence on the Effective Date and shall terminate on the anniversary of the Effective Date (the "Initial Termination Date"); provided, however, that this Agreement shall be renewed and extended automatically for periods of one (1) additional year following an anniversary the Initial Termination Date, unless a Party terminates this Agreement upon at least thirty (30) calendar days written notice to the other Party prior to the Initial Termination Date.',
       '(B) Notwithstanding Section VI(A) above, the OU, in its sole discretion, may terminate this Agreement immediately upon written notice to the Company in the event:',
       '(1) The Company ceases to produce or manufacture a Product or closes a Plant;',
-      '(2) The Company fails to perform or observe any of its covenants, obligations, conditions, or requirements under this Agreement, and, to the extent that, in the OU\'s sole discretion, any such failure can be cured, such failure continues for more than five (5) calendar days after the OU notifies the Company of such failure;',
+      "(2) The Company fails to perform or observe any of its covenants, obligations, conditions, or requirements under this Agreement, and, to the extent that, in the OU's sole discretion, any such failure can be cured, such failure continues for more than five (5) calendar days after the OU notifies the Company of such failure;",
       '(3) Notwithstanding Section VI(B)(2) above, with respect to any Product, Plant (including, without limitation, any of the equipment contained in any such Plant) or Ingredient, the Company violates or breaches, or fails to observe, any kosher dietary laws, restrictions and regulations, as determined by the OU in its sole discretion;',
       '(4) Any representation or warranty made or furnished by the Company in connection with this Agreement shall be false, incorrect, incomplete, or misleading when made or furnished;',
       '(5) The Company commits any act of fraud or dishonesty or other misrepresentation with respect to its business or in connection with its performance under this Agreement (as determined by the OU in its sole discretion), or the OU determines, in its sole discretion, that termination of this Agreement is in the best interests of the OU; or',
       '(6) The Company (and/or any of its directors or officers) (a) is accused of, or enters a plea of guilty or nolo contendere to, any felony, or to any misdemeanor involving dishonesty or moral turpitude, (b) violates any law, rule or regulation under federal, state or local law (including, without limitation, with respect to health, sanitation and manufacturing), (c) violates the policies and/or procedures of the OU, or (d) takes any action, or omits to take any action, that results in the OU determining, in its sole discretion, that termination of this Agreement is in the best interests of the OU.',
       '(C) The Company may not use the OU Symbol on any Product, advertisement, or otherwise, after the termination of this Agreement.',
       '(D) (1) Termination or expiration of this Agreement for any reason shall be without prejudice to any rights that shall have accrued to the benefit of any Party prior to such termination or expiration. Such termination or expiration shall not relieve any Party from obligations which survive termination of this Agreement.',
-      '(2) If this Agreement is terminated for any reason, all of the Parties\' rights and obligations under, and/or the provisions contained in, Sections I(B)(5), II, III, V, VI(D), VII, VIII, IX and X shall survive the termination or expiration of this Agreement.',
+      "(2) If this Agreement is terminated for any reason, all of the Parties' rights and obligations under, and/or the provisions contained in, Sections I(B)(5), II, III, V, VI(D), VII, VIII, IX and X shall survive the termination or expiration of this Agreement.",
     ],
   },
   {
     title: 'VII. Violations.',
     paragraphs: [
-      '(A) Upon the Company\'s breach or violation of any of the terms or conditions of this Agreement, as determined by the OU in its sole discretion, the OU shall have the right to demand, and the Company agrees to implement and/or take, without limitation, one or more of the following remedies and/or actions, among others (as directed by the OU):',
+      "(A) Upon the Company's breach or violation of any of the terms or conditions of this Agreement, as determined by the OU in its sole discretion, the OU shall have the right to demand, and the Company agrees to implement and/or take, without limitation, one or more of the following remedies and/or actions, among others (as directed by the OU):",
       '(1) Kosherization of affected equipment in a Plant, to be performed under the supervision of OU Representatives;',
       '(2) Increased supervision by the OU for a probationary period deemed proper by the OU;',
       '(3) Immediate removal of unapproved ingredients from a Plant;',
       '(4) Immediate recall of a product from the market;',
-      '(5) Notices to be drafted by the OU to be published, at the Company\'s expense, in newspapers, magazines and other media and/or distributed by the OU notifying the public of the non-approved status of a Product, with a maximum cost to the Company of $5,000.00; and/or',
+      "(5) Notices to be drafted by the OU to be published, at the Company's expense, in newspapers, magazines and other media and/or distributed by the OU notifying the public of the non-approved status of a Product, with a maximum cost to the Company of $5,000.00; and/or",
       '(6) Termination of this Agreement, and destruction of all packaging material in accordance with Section I(B)(5).',
-      '(B) Upon the Company\'s breach or violation of any of the terms or conditions of this Agreement, as determined solely by the OU in its sole discretion, the Company, at its own expense, shall fully cooperate with the OU and take any and all actions reasonably required by the OU to cure or remedy such breach or violation.',
+      "(B) Upon the Company's breach or violation of any of the terms or conditions of this Agreement, as determined solely by the OU in its sole discretion, the Company, at its own expense, shall fully cooperate with the OU and take any and all actions reasonably required by the OU to cure or remedy such breach or violation.",
       '(C) The Company agrees and acknowledges that the remedies and/or actions required to be implemented and/or taken by the Company pursuant to this Section VII are reasonable and necessary, and are without prejudice to other actions the OU is permitted to take in the event of a breach of this Agreement or a breach of OU rules or regulations pursuant to this Agreement.',
     ],
   },
   {
     title: 'VIII. Unauthorized Use of the OU Symbol; Liquidated Damages.',
     paragraphs: [
-      'If, at any time, the Company (A) uses or displays the OU Symbol in an unauthorized manner or on any label of a product of the Company that is not permitted by the terms and provisions of this Agreement, and/or (B) is not in strict compliance with Section I(B)(5) of this Agreement, the Company hereby agrees to pay to the OU, as liquidated damages, $[750].00 for each day that the Company uses or displays the OU Symbol in such unauthorized manner or fails to strictly comply with Section I(B)(5). The Company hereby agrees that the $[750].00 per day payment amount is (1) a reasonable estimate of the damages that the OU will likely sustain as a result of the Company\'s unauthorized use or failure of strict compliance, and (2) not intended to constitute a penalty for any purpose. In accordance with Section X(E), the OU\'s exercise and/or enforcement of any of its rights set forth in this Section VIII shall not preclude and/or prejudice any other rights and/or remedies (in law and/or in equity) that the OU may have in the event that any provision of this Agreement was not performed in accordance with its specific terms or was otherwise breached by the Company.',
+      "If, at any time, the Company (A) uses or displays the OU Symbol in an unauthorized manner or on any label of a product of the Company that is not permitted by the terms and provisions of this Agreement, and/or (B) is not in strict compliance with Section I(B)(5) of this Agreement, the Company hereby agrees to pay to the OU, as liquidated damages, $[750].00 for each day that the Company uses or displays the OU Symbol in such unauthorized manner or fails to strictly comply with Section I(B)(5). The Company hereby agrees that the $[750].00 per day payment amount is (1) a reasonable estimate of the damages that the OU will likely sustain as a result of the Company's unauthorized use or failure of strict compliance, and (2) not intended to constitute a penalty for any purpose. In accordance with Section X(E), the OU's exercise and/or enforcement of any of its rights set forth in this Section VIII shall not preclude and/or prejudice any other rights and/or remedies (in law and/or in equity) that the OU may have in the event that any provision of this Agreement was not performed in accordance with its specific terms or was otherwise breached by the Company.",
     ],
   },
   {
@@ -351,17 +358,17 @@ const STANDARD_AGREEMENT_BODY = [
     title: 'X. Miscellaneous.',
     paragraphs: [
       '(A) Representations and Warranties. The Company hereby represents and warrants to the OU that, as of the Effective Date as follows:',
-      '(1) The Company has all requisite power and authority to execute this Agreement and perform the Company\'s obligations hereunder.',
+      "(1) The Company has all requisite power and authority to execute this Agreement and perform the Company's obligations hereunder.",
       '(2) This Agreement constitutes a valid and binding obligation of the Company, enforceable against the Company in accordance with its terms.',
       '(B) Governing Law; Venue.',
-      '(1) Governing Law. This Agreement is deemed to be executed and delivered in the State of New York and shall be construed and enforced in accordance with the laws and decisions of the State of New York applicable to contracts made and performed entirely within the State of New York, without regard to the State of New York\'s conflicts of law provisions.',
+      "(1) Governing Law. This Agreement is deemed to be executed and delivered in the State of New York and shall be construed and enforced in accordance with the laws and decisions of the State of New York applicable to contracts made and performed entirely within the State of New York, without regard to the State of New York's conflicts of law provisions.",
       '(2) Venue. Each Party unconditionally and irrevocably submits to and accepts the exclusive jurisdiction of any state or federal court of competent jurisdiction located in the County, State of New York or the City of New York for the purposes of any suit, action or other proceeding between the Parties, whether arising out of, related to, or resulting from this Agreement or otherwise. Each Party further unconditionally and irrevocably waives any objections, including improper venue or based on the grounds of forum non conveniens, which it may have to the bringing of any action, suit or proceeding between the Parties, whether arising out of, related to, or resulting from this Agreement or otherwise, in any state or federal courts located in the County, State of New York or the City of New York, and hereby further and unconditionally and irrevocably waives and agrees not to plead or claim in any such court that any such action, suit or proceeding brought in any such court has been brought in an inconvenient or inappropriate forum.',
       '(C) Waiver; Amendment. The failure of any Party to insist upon strict performance of any of the terms or provisions of this Agreement shall not be construed as a waiver or relinquishment for the future of any such terms or provisions. Rather such terms or provisions shall continue and remain in full force and effect. No waiver shall be deemed to have been made unless the waiver is made in writing and is signed by the Party making the waiver. Except as otherwise provided in this Agreement (including, without limitation, pursuant to Section IX), this Agreement (including the Schedules and Exhibits attached hereto and incorporated herein by reference) may only be amended or modified by a written instrument signed by each of the OU and the Company.',
       '(D) Severability. If any portion of this Agreement shall be declared invalid by any order, decree or judgment of a court having jurisdiction over the Parties and/or the subject matter of this Agreement, this Agreement shall be construed as if such portion had not been inserted herein except when construction under those circumstances would operate as an undue hardship on any Party or constitute a substantial deviation from the general intent and purpose of the Parties as reflected in this Agreement.',
       '(E) Injunctions. The Company agrees and acknowledges that irreparable damage will occur to the OU in the event that any of the provisions of this Agreement are not performed in accordance with the specific terms of this Agreement or in the event any material terms of this Agreement are breached by the Company. In the event of any such deficiency in the performance of the provisions of this Agreement or any such breach by the Company, the Company agrees that the OU shall be entitled to an injunction to prevent such deficiencies in performance or such breaches and to enforce the terms and provisions of this Agreement in any court of competent jurisdiction, such remedy being in addition to any other remedy to which the OU may be entitled at law or in equity.',
-      '(F) Attorneys Fees. Notwithstanding any other provision contained herein or in any other document to the contrary, the Company shall pay all costs, fees and expenses, including attorneys\' fees, incurred by the OU (1) in enforcing or implementing its rights and/or remedies under this Agreement, and/or (2) in connection with any litigation or dispute between the Parties arising out of, related to, or resulting from this Agreement.',
+      "(F) Attorneys Fees. Notwithstanding any other provision contained herein or in any other document to the contrary, the Company shall pay all costs, fees and expenses, including attorneys' fees, incurred by the OU (1) in enforcing or implementing its rights and/or remedies under this Agreement, and/or (2) in connection with any litigation or dispute between the Parties arising out of, related to, or resulting from this Agreement.",
       '(G) Headings. The headings of Sections are inserted only as a matter of convenience and in no way define, limit, construe, or describe the scope or intent of the Sections nor in any way affect this Agreement.',
-      '(H) Assignment. The Company\'s rights and obligations hereunder may not be assigned by the Company without the prior written consent of the OU, which consent shall not be unreasonably conditioned, withheld, or delayed.',
+      "(H) Assignment. The Company's rights and obligations hereunder may not be assigned by the Company without the prior written consent of the OU, which consent shall not be unreasonably conditioned, withheld, or delayed.",
       '(I) Relationship of Parties. No Party is, and no Party shall hold itself out as, an agent, legal representative, partner, subsidiary, joint venturer or employee, of another Party. No Party shall bind or obligate, or attempt to bind or obligate, another Party in any way or manner, nor shall any Party represent that it has any right to do so.',
       '(J) Symbols; Press Releases.',
       '(1) Except as otherwise provided for in this Agreement (including Section X(J)(2) below), without the prior written consent of the OU, the Company may not (a) use the names, logos, emblems, symbols, trademarks, service marks and copyright rights of the OU, and/or (b) engage in any advertising; press release or other public communications; web site or internet marketing; electronic mail solicitation or marketing; or direct mail or facsimile transmission or telemarketing campaigns (collectively, "Advertisement"), which refer to or mention the OU, the OU Certification, or the OU Symbol.',
@@ -481,7 +488,7 @@ type ContactRecord = Record<string, unknown>
 
 const contactGroup = (contacts: ContactRecord, key: string): ContactRecord[] => {
   const value = contacts[key]
-  return Array.isArray(value) ? value as ContactRecord[] : []
+  return Array.isArray(value) ? (value as ContactRecord[]) : []
 }
 
 const normalizeContacts = (contacts?: unknown): ContactRecord[] => {
@@ -501,28 +508,33 @@ const normalizeContacts = (contacts?: unknown): ContactRecord[] => {
   ]
 }
 
-const getPrimaryContact = (
-  contacts?: unknown,
-): { name: string; email: string; title: string } => {
+const getPrimaryContact = (contacts?: unknown): { name: string; email: string; title: string } => {
   const normalizedContacts = normalizeContacts(contacts)
   const contact =
-    normalizedContacts.find((item) => String(item.type ?? item.Type ?? '').toLowerCase() === 'primary contact') ??
-    normalizedContacts.find((item) => String(item.IsPrimaryContact ?? item.isPrimaryContact ?? '').toLowerCase() === 'true') ??
+    normalizedContacts.find(
+      (item) => String(item.type ?? item.Type ?? '').toLowerCase() === 'primary contact',
+    ) ??
+    normalizedContacts.find(
+      (item) =>
+        String(item.IsPrimaryContact ?? item.isPrimaryContact ?? '').toLowerCase() === 'true',
+    ) ??
     normalizedContacts[0]
 
   const first = textValue(contact?.FirstName ?? contact?.firstName ?? contact?.contactFirst)
   const last = textValue(contact?.LastName ?? contact?.lastName ?? contact?.contactLast)
   const name =
-    textValue(contact?.name ?? contact?.Name) || [first, last].filter(Boolean).join(' ') || 'Company Contact'
-  const email = textValue(contact?.email ?? contact?.Email ?? contact?.EMail ?? contact?.contactEmail)
+    textValue(contact?.name ?? contact?.Name) ||
+    [first, last].filter(Boolean).join(' ') ||
+    'Company Contact'
+  const email = textValue(
+    contact?.email ?? contact?.Email ?? contact?.EMail ?? contact?.contactEmail,
+  )
   const title = textValue(contact?.role ?? contact?.Role ?? contact?.Title ?? contact?.jobTitle1)
 
   return { name, email, title }
 }
 
-const getBillingContact = (
-  contacts?: unknown,
-): { name: string; email: string; title: string } => {
+const getBillingContact = (contacts?: unknown): { name: string; email: string; title: string } => {
   if (contacts && !Array.isArray(contacts) && typeof contacts === 'object') {
     const groups = contacts as ContactRecord
     const billingContacts = [
@@ -538,9 +550,7 @@ const getBillingContact = (
           textValue(billing.name ?? billing.Name) ||
           [first, last].filter(Boolean).join(' ') ||
           'Billing Contact',
-        email: textValue(
-          billing.email ?? billing.Email ?? billing.EMail ?? billing.contactEmail,
-        ),
+        email: textValue(billing.email ?? billing.Email ?? billing.EMail ?? billing.contactEmail),
         title: textValue(billing.role ?? billing.Role ?? billing.Title ?? billing.jobTitle1),
       }
     }
@@ -548,14 +558,18 @@ const getBillingContact = (
 
   const normalizedContacts = normalizeContacts(contacts)
   const explicitlyBilling = normalizedContacts.find((item) =>
-    /billing|accounts payable/i.test(`${String(item.type ?? item.Type ?? '')} ${String(item.role ?? item.Role ?? '')}`),
+    /billing|accounts payable/i.test(
+      `${String(item.type ?? item.Type ?? '')} ${String(item.role ?? item.Role ?? '')}`,
+    ),
   )
   return explicitlyBilling ? getPrimaryContact([explicitlyBilling]) : getPrimaryContact(contacts)
 }
 
 const getRawTaskInstanceId = (task: unknown): string => {
   const taskRecord = task && typeof task === 'object' ? (task as Record<string, unknown>) : {}
-  return String(taskRecord.TaskInstanceId ?? taskRecord.taskInstanceId ?? taskRecord.id ?? '').trim()
+  return String(
+    taskRecord.TaskInstanceId ?? taskRecord.taskInstanceId ?? taskRecord.id ?? '',
+  ).trim()
 }
 
 const findTaskById = (applicant: Applicant | undefined, taskId: string): Task | null => {
@@ -766,9 +780,13 @@ const getEmailMessageId = (email: ApplicationEmail) => textValue(email.MessageID
 
 const getEmailParentMessageId = (email: ApplicationEmail) => textValue(email.parentMessageId)
 
-const getRoundNumberFromSubject = (subject: string) => Number(subject.match(/round\s+(\d+)/i)?.[1] ?? 0)
+const getRoundNumberFromSubject = (subject: string) =>
+  Number(subject.match(/round\s+(\d+)/i)?.[1] ?? 0)
 
-const getRefMessageIdFromSubject = (subject: string) => textValue(subject.match(/refMessageId:\s*#?(\d+)/i)?.[1] ?? subject.match(/refMsgId:\s*#?(\d+)/i)?.[1])
+const getRefMessageIdFromSubject = (subject: string) =>
+  textValue(
+    subject.match(/refMessageId:\s*#?(\d+)/i)?.[1] ?? subject.match(/refMsgId:\s*#?(\d+)/i)?.[1],
+  )
 
 const normalizeEmailBodyText = (value: unknown) =>
   String(value ?? '')
@@ -854,9 +872,12 @@ const buildContractRoundMessageCards = (emails: ApplicationEmail[]): ContractRou
       const parentMessageId = getEmailParentMessageId(email)
       const isRootMessage = !parentMessageId || parentMessageId === '0'
 
-      if (!isRootMessage || roundNumber <= 0 || !/ou kosher.*contract package/i.test(subject)) return null
+      if (!isRootMessage || roundNumber <= 0 || !/ou kosher.*contract package/i.test(subject))
+        return null
 
-      const replyParentIds = Array.from(new Set([getEmailMessageId(email), getRefMessageIdFromSubject(subject)].filter(Boolean)))
+      const replyParentIds = Array.from(
+        new Set([getEmailMessageId(email), getRefMessageIdFromSubject(subject)].filter(Boolean)),
+      )
 
       return {
         email,
@@ -866,7 +887,11 @@ const buildContractRoundMessageCards = (emails: ApplicationEmail[]): ContractRou
       }
     })
     .filter((round): round is ContractRoundMessageCard => Boolean(round))
-    .sort((a, b) => b.roundNumber - a.roundNumber || Number(b.email.MessageID ?? 0) - Number(a.email.MessageID ?? 0))
+    .sort(
+      (a, b) =>
+        b.roundNumber - a.roundNumber ||
+        Number(b.email.MessageID ?? 0) - Number(a.email.MessageID ?? 0),
+    )
 }
 
 function Section({
@@ -1008,7 +1033,9 @@ export function ContractStageDrawer({
     data: rcLookupList = [],
     isError: isRcLookupError,
     isLoading: isRcLookupLoading,
-  } = useUserListByRole('api/vSelectRC', { enabled: open && isNewCompanyContract && !isWorkflowReadOnly })
+  } = useUserListByRole('api/vSelectRC', {
+    enabled: open && isNewCompanyContract && !isWorkflowReadOnly,
+  })
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
     includePrelimLists: true,
@@ -1040,7 +1067,9 @@ export function ContractStageDrawer({
   const [invoicePaid, setInvoicePaid] = useState(false)
   const [contractInvoiceId, setContractInvoiceId] = useState<string | null>(null)
   const [contractInvoiceDisplayUrl, setContractInvoiceDisplayUrl] = useState<string | null>(null)
-  const [contractInvoiceDownloadLink, setContractInvoiceDownloadLink] = useState<string | null>(null)
+  const [contractInvoiceDownloadLink, setContractInvoiceDownloadLink] = useState<string | null>(
+    null,
+  )
   const [contractInvoicePdfUrl, setContractInvoicePdfUrl] = useState<string | null>(null)
   const [contractPackageDownloadUrl, setContractPackageDownloadUrl] = useState<string | null>(null)
   const [contractPackagePdfUrl, setContractPackagePdfUrl] = useState<string | null>(null)
@@ -1060,6 +1089,16 @@ export function ContractStageDrawer({
   const [isAttachmentDragOver, setIsAttachmentDragOver] = useState(false)
   const restoredTaskKeyRef = useRef('')
   const emailAttachmentInputRef = useRef<HTMLInputElement | null>(null)
+
+  const invalidContractEmailTo = getInvalidEmailAddresses(contractEmailDraft?.to ?? '')
+  const invalidContractEmailCc = getInvalidEmailAddresses(contractEmailDraft?.cc ?? '')
+  const invalidContractEmailBcc = getInvalidEmailAddresses(contractEmailDraft?.bcc ?? '')
+  const areContractEmailRecipientsValid = Boolean(
+    contractEmailDraft &&
+    isValidEmailAddressList(contractEmailDraft.to, true) &&
+    isValidEmailAddressList(contractEmailDraft.cc) &&
+    isValidEmailAddressList(contractEmailDraft.bcc),
+  )
 
   useEffect(() => {
     if (!open) {
@@ -1150,7 +1189,9 @@ export function ContractStageDrawer({
     setContractSigned(Boolean(completion.contractSigned))
     setInvoicePaid(Boolean(completion.paid))
     setCoverLetterBody(setup.coverLetterBody || '')
-    setExtraEmailAttachments(Array.isArray(emailState.customAttachments) ? emailState.customAttachments : [])
+    setExtraEmailAttachments(
+      Array.isArray(emailState.customAttachments) ? emailState.customAttachments : [],
+    )
 
     if (contractPackage.generated || emailState.sent || nextStage === 'NotifyRC') {
       setPreviewTab('cover')
@@ -1171,7 +1212,9 @@ export function ContractStageDrawer({
       rcLookupList
         .map((item) => ({
           lookupKey: textValue(item.lookupKey || item.id || item.userName || item.name),
-          assigneeValue: textValue(item.assigneeValue || item.userName || item.id || item.lookupKey),
+          assigneeValue: textValue(
+            item.assigneeValue || item.userName || item.id || item.lookupKey,
+          ),
           name: textValue(item.fullName || item.name || item.userName || item.id),
           userName: textValue(item.userName || item.id),
           email: textValue(item.email),
@@ -1193,16 +1236,28 @@ export function ContractStageDrawer({
       ),
     )
   }, [rcOptions, rcSearch])
-  const rcName = isNewCompanyContract ? selectedRc?.name || (isWorkflowReadOnly ? existingRcName : 'Select RC') : existingRcName
-  const rcEmail = isNewCompanyContract ? selectedRc?.email || (isWorkflowReadOnly ? existingRcEmail : '') : existingRcEmail
+  const rcName = isNewCompanyContract
+    ? selectedRc?.name || (isWorkflowReadOnly ? existingRcName : 'Select RC')
+    : existingRcName
+  const rcEmail = isNewCompanyContract
+    ? selectedRc?.email || (isWorkflowReadOnly ? existingRcEmail : '')
+    : existingRcEmail
   const ncrcName = textValue(username) || 'Current User'
   const detailCompany = applicationDetail?.company?.[0]
   const detailCompanyRecord = detailCompany as Record<string, unknown> | undefined
-  const companyName = textValue(applicationName || applicant?.company || detailCompany?.name) || 'Application'
+  const companyName =
+    textValue(applicationName || applicant?.company || detailCompany?.name) || 'Application'
   const companyAddress = useMemo(() => {
     const address = applicationDetail?.companyAddresses?.[0]
     if (!address) return textValue(applicant?.plant)
-    return [address.street, address.line2, address.city, address.state, address.zip, address.country]
+    return [
+      address.street,
+      address.line2,
+      address.city,
+      address.state,
+      address.zip,
+      address.country,
+    ]
       .filter(Boolean)
       .join(', ')
   }, [applicant?.plant, applicationDetail?.companyAddresses])
@@ -1267,7 +1322,10 @@ export function ContractStageDrawer({
     [applicationDetail?.ingredients],
   )
   const contractProducts = useMemo(
-    () => ((applicationDetail?.products as ContractPreviewProductRow[] | undefined) ?? []).filter(Boolean),
+    () =>
+      ((applicationDetail?.products as ContractPreviewProductRow[] | undefined) ?? []).filter(
+        Boolean,
+      ),
     [applicationDetail?.products],
   )
   const contractTypeLabel = isNewCompanyContract
@@ -1438,18 +1496,23 @@ export function ContractStageDrawer({
     invoiceBillingAddress.billingAddress,
     invoiceBillingAddress.billingCityStateZip,
   ].filter(Boolean)
-  if (billingLines.length === 0) billingLines.push(companyAddress || plantAddress || 'Address on file')
+  if (billingLines.length === 0)
+    billingLines.push(companyAddress || plantAddress || 'Address on file')
   const invoiceTermStart = (() => {
     if (!isNewCompanyContract) return formatFullDate(effectiveDate)
     const parsed = new Date(`${effectiveDate}T00:00:00`)
     if (Number.isNaN(parsed.getTime())) return formatFullDate(effectiveDate)
-    return formatFullDate(new Date(parsed.getFullYear(), parsed.getMonth(), 1).toISOString().slice(0, 10))
+    return formatFullDate(
+      new Date(parsed.getFullYear(), parsed.getMonth(), 1).toISOString().slice(0, 10),
+    )
   })()
   const invoiceTermEnd = (() => {
     if (!isNewCompanyContract) return formatFullDate(companyPaymentCycleEnd)
     const parsed = new Date(`${effectiveDate}T00:00:00`)
     if (Number.isNaN(parsed.getTime())) return formatFullDate(effectiveDate)
-    return formatFullDate(new Date(parsed.getFullYear() + 1, parsed.getMonth() + 1, 0).toISOString().slice(0, 10))
+    return formatFullDate(
+      new Date(parsed.getFullYear() + 1, parsed.getMonth() + 1, 0).toISOString().slice(0, 10),
+    )
   })()
 
   const emailSubject = `OU Kosher - Contract Package for ${companyName} [App ${resolvedApplicationId ?? '-'}]`
@@ -1585,9 +1648,11 @@ ${packageUrl}`
       },
       completion: {
         contractSigned: nextContractSigned,
-        contractSignedAt: nextContractSigned ? nextContractSignedAt ?? new Date().toLocaleString() : null,
+        contractSignedAt: nextContractSigned
+          ? (nextContractSignedAt ?? new Date().toLocaleString())
+          : null,
         paid: nextInvoicePaid,
-        paidAt: nextInvoicePaid ? nextPaidAt ?? new Date().toLocaleString() : null,
+        paidAt: nextInvoicePaid ? (nextPaidAt ?? new Date().toLocaleString()) : null,
         completedAt: nextCompletedAt,
       },
     }
@@ -1644,7 +1709,11 @@ ${packageUrl}`
       await assignContractRcToCompany({
         applicationId: resolvedApplicationId,
         taskInstanceId,
-        assignee: selectedRc.assigneeValue || selectedRc.userName || selectedRc.lookupKey || selectedRc.name,
+        assignee:
+          selectedRc.assigneeValue ||
+          selectedRc.userName ||
+          selectedRc.lookupKey ||
+          selectedRc.name,
       })
       setSavedRcLookupKey(selectedRc.lookupKey)
       await saveCurrentContractStageState({ nextStage: 'setup' })
@@ -1998,8 +2067,12 @@ ${packageUrl}`
                 `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
                 contractPackageDocumentUrl,
               ),
-              ...nextAttachments.map((item) => formatAttachmentReference(item.fileName, item.fileUrl)),
-              ...coverSeparateAttachments.map((item) => formatAttachmentReference(item.file, item.fileUrl)),
+              ...nextAttachments.map((item) =>
+                formatAttachmentReference(item.fileName, item.fileUrl),
+              ),
+              ...coverSeparateAttachments.map((item) =>
+                formatAttachmentReference(item.file, item.fileUrl),
+              ),
             ].join(', '),
           }
         : current,
@@ -2023,10 +2096,16 @@ ${packageUrl}`
         rcUserName: isNewCompanyContract ? selectedRc?.userName : rcName,
         taskInstanceId,
       })
-      setCoverLetterBody(contractPackageDocumentUrl ? emailBodyWithPackageUrl(contractPackageDocumentUrl) : emailBody)
+      setCoverLetterBody(
+        contractPackageDocumentUrl
+          ? emailBodyWithPackageUrl(contractPackageDocumentUrl)
+          : emailBody,
+      )
       setPreviewTab('cover')
       await saveCurrentContractStageState({
-        nextCoverLetterBody: contractPackageDocumentUrl ? emailBodyWithPackageUrl(contractPackageDocumentUrl) : emailBody,
+        nextCoverLetterBody: contractPackageDocumentUrl
+          ? emailBodyWithPackageUrl(contractPackageDocumentUrl)
+          : emailBody,
         nextPackageGenerated: packageGenerated,
         nextStage: 'NotifyRC',
       })
@@ -2109,7 +2188,12 @@ ${packageUrl}`
               {contractIngredients.length > 0 ? (
                 contractIngredients.map((ingredient, index) => {
                   const ingredientRecord = ingredient as Record<string, unknown>
-                  const rmc = readRecordText(ingredientRecord, ['RMC', 'rawMaterialCode', 'RawMaterialCode', 'rmc'])
+                  const rmc = readRecordText(ingredientRecord, [
+                    'RMC',
+                    'rawMaterialCode',
+                    'RawMaterialCode',
+                    'rmc',
+                  ])
                   const cta = readRecordText(ingredientRecord, ['CTA', 'PlantCTA'])
                   const ingredientName = readRecordText(ingredientRecord, [
                     'IngredientName',
@@ -2160,12 +2244,8 @@ ${packageUrl}`
                       <td className="px-4 py-3 align-top text-gray-700">
                         {displayText(brandName)}
                       </td>
-                      <td className="px-4 py-3 align-top text-gray-700">
-                        {displayText(group)}
-                      </td>
-                      <td className="px-4 py-3 align-top text-gray-700">
-                        {displayText(symbol)}
-                      </td>
+                      <td className="px-4 py-3 align-top text-gray-700">{displayText(group)}</td>
+                      <td className="px-4 py-3 align-top text-gray-700">{displayText(symbol)}</td>
                       <td className="px-4 py-3 align-top text-gray-700">
                         {displayText(plantStatus)}
                       </td>
@@ -2263,7 +2343,11 @@ ${packageUrl}`
                     'LabelType',
                     'LABEL_TYPE',
                   ])
-                  const symbol = readRecordText(productRecord, ['SYMBOL', 'symbol', 'certification'])
+                  const symbol = readRecordText(productRecord, [
+                    'SYMBOL',
+                    'symbol',
+                    'certification',
+                  ])
                   const ukid = readRecordText(productRecord, ['UKID', 'UKDID'])
                   const status = readRecordText(productRecord, ['STATUS', 'status'])
                   const producedIn1Status = readRecordText(productRecord, [
@@ -2288,15 +2372,9 @@ ${packageUrl}`
                       <td className="px-4 py-3 align-top text-gray-700">
                         {displayText(lableType)}
                       </td>
-                      <td className="px-4 py-3 align-top text-gray-700">
-                        {displayText(symbol)}
-                      </td>
-                      <td className="px-4 py-3 align-top text-gray-700">
-                        {displayText(ukid)}
-                      </td>
-                      <td className="px-4 py-3 align-top text-gray-700">
-                        {displayText(status)}
-                      </td>
+                      <td className="px-4 py-3 align-top text-gray-700">{displayText(symbol)}</td>
+                      <td className="px-4 py-3 align-top text-gray-700">{displayText(ukid)}</td>
+                      <td className="px-4 py-3 align-top text-gray-700">{displayText(status)}</td>
                       <td className="px-4 py-3 align-top text-gray-700">
                         {displayText(producedIn1Status)}
                       </td>
@@ -2308,7 +2386,9 @@ ${packageUrl}`
                   <td colSpan={8} className="px-4 py-12 text-center">
                     <div className="text-gray-400">
                       <p className="text-sm font-medium">No products found</p>
-                      <p className="mt-1 text-xs">No application-detail products are available for this contract preview.</p>
+                      <p className="mt-1 text-xs">
+                        No application-detail products are available for this contract preview.
+                      </p>
                     </div>
                   </td>
                 </tr>
@@ -2355,7 +2435,9 @@ ${packageUrl}`
                 <p className="text-xs font-semibold text-blue-800">
                   Round {contractEmailDraft.roundNumber} email drafted
                 </p>
-                <span className="text-xs text-blue-600">{coverAttachmentCount} attachment{coverAttachmentCount === 1 ? '' : 's'}</span>
+                <span className="text-xs text-blue-600">
+                  {coverAttachmentCount} attachment{coverAttachmentCount === 1 ? '' : 's'}
+                </span>
               </div>
               <div className="mb-2 space-y-1.5">
                 <div className="flex items-center gap-2 text-xs">
@@ -2374,8 +2456,17 @@ ${packageUrl}`
                     readOnly={isWorkflowReadOnly}
                   />
                 </div>
+                {contractEmailDraft.to.trim() && invalidContractEmailTo.length > 0 ? (
+                  <p className="ml-16 text-xs text-red-600">
+                    Invalid email: {invalidContractEmailTo.join(', ')}
+                  </p>
+                ) : null}
                 <div className="text-right">
-                  <button type="button" onClick={() => setShowContractEmailCopies((current) => !current)} className="text-xs font-medium text-blue-600 hover:text-blue-800">
+                  <button
+                    type="button"
+                    onClick={() => setShowContractEmailCopies((current) => !current)}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                  >
                     {showContractEmailCopies ? 'Hide Cc/Bcc' : 'Show Cc/Bcc'}
                   </button>
                 </div>
@@ -2383,12 +2474,44 @@ ${packageUrl}`
                   <>
                     <div className="flex items-center gap-2 text-xs">
                       <span className="w-14 shrink-0 font-medium text-blue-500">Cc</span>
-                      <input type="text" aria-label="Contract email Cc" className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 font-mono text-blue-900 outline-none focus:ring-1 focus:ring-blue-400" value={contractEmailDraft.cc} onChange={(event) => setContractEmailDraft((current) => current ? { ...current, cc: event.target.value } : current)} readOnly={isWorkflowReadOnly} />
+                      <input
+                        type="text"
+                        aria-label="Contract email Cc"
+                        className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 font-mono text-blue-900 outline-none focus:ring-1 focus:ring-blue-400"
+                        value={contractEmailDraft.cc}
+                        onChange={(event) =>
+                          setContractEmailDraft((current) =>
+                            current ? { ...current, cc: event.target.value } : current,
+                          )
+                        }
+                        readOnly={isWorkflowReadOnly}
+                      />
                     </div>
+                    {invalidContractEmailCc.length > 0 ? (
+                      <p className="ml-16 text-xs text-red-600">
+                        Invalid email: {invalidContractEmailCc.join(', ')}
+                      </p>
+                    ) : null}
                     <div className="flex items-center gap-2 text-xs">
                       <span className="w-14 shrink-0 font-medium text-blue-500">Bcc</span>
-                      <input type="text" aria-label="Contract email Bcc" className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 font-mono text-blue-900 outline-none focus:ring-1 focus:ring-blue-400" value={contractEmailDraft.bcc} onChange={(event) => setContractEmailDraft((current) => current ? { ...current, bcc: event.target.value } : current)} readOnly={isWorkflowReadOnly} />
+                      <input
+                        type="text"
+                        aria-label="Contract email Bcc"
+                        className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 font-mono text-blue-900 outline-none focus:ring-1 focus:ring-blue-400"
+                        value={contractEmailDraft.bcc}
+                        onChange={(event) =>
+                          setContractEmailDraft((current) =>
+                            current ? { ...current, bcc: event.target.value } : current,
+                          )
+                        }
+                        readOnly={isWorkflowReadOnly}
+                      />
                     </div>
+                    {invalidContractEmailBcc.length > 0 ? (
+                      <p className="ml-16 text-xs text-red-600">
+                        Invalid email: {invalidContractEmailBcc.join(', ')}
+                      </p>
+                    ) : null}
                   </>
                 ) : null}
                 <div className="flex items-center gap-2 text-xs">
@@ -2412,7 +2535,8 @@ ${packageUrl}`
               />
               <div className="mt-2 rounded border border-blue-100 bg-white px-2 py-1.5 text-xs text-blue-900">
                 <span className="font-semibold">Attachments:</span>{' '}
-                {contractEmailAttachments || 'Generated package, agreement, invoice, and uploaded files'}
+                {contractEmailAttachments ||
+                  'Generated package, agreement, invoice, and uploaded files'}
               </div>
               {contractEmailSendError ? (
                 <div className="mt-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">
@@ -2437,7 +2561,10 @@ ${packageUrl}`
                   <button
                     type="button"
                     onClick={() => void handleSendEmail()}
-                    disabled={sendContractCommunicationEmailMutation.isPending}
+                    disabled={
+                      sendContractCommunicationEmailMutation.isPending ||
+                      !areContractEmailRecipientsValid
+                    }
                     className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Send className="h-3.5 w-3.5" />
@@ -2458,12 +2585,18 @@ ${packageUrl}`
           ) : null}
           {contractRoundHistoryError ? (
             <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              Failed to load messages: {contractRoundHistoryError instanceof Error ? contractRoundHistoryError.message : 'Unknown error'}
+              Failed to load messages:{' '}
+              {contractRoundHistoryError instanceof Error
+                ? contractRoundHistoryError.message
+                : 'Unknown error'}
             </p>
           ) : null}
-          {!isContractRoundHistoryLoading && !contractRoundHistoryError && !contractRoundMessageCards.length ? (
+          {!isContractRoundHistoryLoading &&
+          !contractRoundHistoryError &&
+          !contractRoundMessageCards.length ? (
             <p className="py-2 text-xs text-gray-400">
-              No contract round messages found yet. Generate and send a round email to capture message and reply history.
+              No contract round messages found yet. Generate and send a round email to capture
+              message and reply history.
             </p>
           ) : null}
           {contractRoundMessageCards.length ? (
@@ -2474,15 +2607,24 @@ ${packageUrl}`
                 const hasResponses = round.replies.length > 0
 
                 return (
-                  <div key={round.email.MessageID ?? round.subject} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                  <div
+                    key={round.email.MessageID ?? round.subject}
+                    className="overflow-hidden rounded-lg border border-gray-200 bg-white"
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-gray-900">Round {round.roundNumber}</p>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${hasResponses ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'}`}>
+                        <p className="text-sm font-semibold text-gray-900">
+                          Round {round.roundNumber}
+                        </p>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${hasResponses ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'}`}
+                        >
                           {hasResponses ? 'Responded' : 'Awaiting Response'}
                         </span>
                       </div>
-                      <span className="text-xs text-gray-400">{sentDate ? `Sent ${sentDate}` : 'Sent date unavailable'}</span>
+                      <span className="text-xs text-gray-400">
+                        {sentDate ? `Sent ${sentDate}` : 'Sent date unavailable'}
+                      </span>
                     </div>
                     <div className="space-y-3 px-4 py-3">
                       <div className="grid gap-1 text-xs text-gray-600 md:grid-cols-[82px_1fr]">
@@ -2509,13 +2651,26 @@ ${packageUrl}`
                             const replyDate = formatMessageDate(reply.SentDate)
 
                             return (
-                              <div key={reply.MessageID ?? `${round.email.MessageID}-${reply.SentDate}`} className="rounded-md border border-green-100 bg-green-50/60 px-3 py-2">
+                              <div
+                                key={
+                                  reply.MessageID ?? `${round.email.MessageID}-${reply.SentDate}`
+                                }
+                                className="rounded-md border border-green-100 bg-green-50/60 px-3 py-2"
+                              >
                                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Reply</span>
-                                    <span className="text-xs font-medium text-gray-700">From {reply.FromUser || '-'}</span>
+                                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                                      Reply
+                                    </span>
+                                    <span className="text-xs font-medium text-gray-700">
+                                      From {reply.FromUser || '-'}
+                                    </span>
                                   </div>
-                                  <span className="text-xs text-gray-400">{replyDate ? `Received ${replyDate}` : 'Received date unavailable'}</span>
+                                  <span className="text-xs text-gray-400">
+                                    {replyDate
+                                      ? `Received ${replyDate}`
+                                      : 'Received date unavailable'}
+                                  </span>
                                 </div>
                                 <div className="mb-1 grid gap-1 text-xs text-gray-600 md:grid-cols-[82px_1fr]">
                                   <span className="font-medium text-gray-500">To</span>
@@ -2523,7 +2678,9 @@ ${packageUrl}`
                                   {reply.Subject ? (
                                     <>
                                       <span className="font-medium text-gray-500">Subject</span>
-                                      <span className="break-words text-gray-900">{reply.Subject}</span>
+                                      <span className="break-words text-gray-900">
+                                        {reply.Subject}
+                                      </span>
                                     </>
                                   ) : null}
                                 </div>
@@ -2579,8 +2736,8 @@ ${packageUrl}`
 
             {emailSent ? (
               <div className="mb-3 rounded-lg border border-green-200 bg-green-50 px-3.5 py-2.5 text-[12.5px] font-bold text-green-700">
-                Email sent to {contact.email || contact.name || 'company contact'} - package
-                logged to the application communications.
+                Email sent to {contact.email || contact.name || 'company contact'} - package logged
+                to the application communications.
               </div>
             ) : null}
 
@@ -2604,7 +2761,9 @@ ${packageUrl}`
                 <span className="w-[58px] shrink-0 pt-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">
                   Cc
                 </span>
-                <span>{rcName} &lt;{rcEmail}&gt;</span>
+                <span>
+                  {rcName} &lt;{rcEmail}&gt;
+                </span>
               </div>
               <div className="flex gap-3 border-b border-gray-100 px-3.5 py-2 text-[12.5px]">
                 <span className="w-[58px] shrink-0 pt-0.5 text-[10.5px] font-bold uppercase tracking-wide text-gray-400">
@@ -2868,14 +3027,15 @@ ${packageUrl}`
             <p className="mb-3 text-[12.5px] leading-6 text-gray-600">
               The contract schedules are combined into <strong>one PDF</strong>. The certification
               invoice goes out as a <strong>separate attachment</strong>.
-              {isWorkflowReadOnly
-                ? ' Package generation is available from the workflow task.'
-                : (
-                    <>
-                      {' '}Click <strong>Generate Contract Package</strong> to build them, then review and edit the cover
-                      letter before sending.
-                    </>
-                  )}
+              {isWorkflowReadOnly ? (
+                ' Package generation is available from the workflow task.'
+              ) : (
+                <>
+                  {' '}
+                  Click <strong>Generate Contract Package</strong> to build them, then review and
+                  edit the cover letter before sending.
+                </>
+              )}
             </p>
 
             <div className="mb-2 mt-4 flex items-baseline justify-between text-[10px] font-bold uppercase tracking-wide text-gray-400">
@@ -2917,7 +3077,9 @@ ${packageUrl}`
                     <FileText className="h-3.5 w-3.5" />
                   </div>
                   <div>
-                    <div className="text-[12.5px] font-semibold text-[#1e1e2e]">{attachment.fileName}</div>
+                    <div className="text-[12.5px] font-semibold text-[#1e1e2e]">
+                      {attachment.fileName}
+                    </div>
                     <div className="mt-0.5 text-[11px] text-gray-500">Uploaded attachment</div>
                   </div>
                   {attachment.fileUrl ? (
@@ -3063,7 +3225,10 @@ ${packageUrl}`
         </div>
         <div className="space-y-3">
           {packageItems.map((item, index) => (
-            <div key={item} className="flex items-start gap-3 rounded-lg border border-gray-200 px-4 py-3">
+            <div
+              key={item}
+              className="flex items-start gap-3 rounded-lg border border-gray-200 px-4 py-3"
+            >
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold text-white">
                 {index + 1}
               </div>
@@ -3084,7 +3249,10 @@ ${packageUrl}`
         <h4 className="mb-4 text-center text-[15px] font-bold tracking-wide">AGREEMENT</h4>
         <p className="mb-3">
           <b>THIS AGREEMENT</b> (this "Agreement") is entered into as of{' '}
-          <MergeField token="effective_date" value={`the first day of ${formatMonthDay(effectiveDate)}`} />{' '}
+          <MergeField
+            token="effective_date"
+            value={`the first day of ${formatMonthDay(effectiveDate)}`}
+          />{' '}
           ("Effective Date"), by and between the{' '}
           <b>Union of Orthodox Jewish Congregations of America, Kashruth Division</b> (the "OU"),
           and <MergeField token="company_name" value={companyName} /> (the "Company").
@@ -3112,7 +3280,8 @@ ${packageUrl}`
               <div className="space-y-1">
                 {visibleAgreementClauses.map((clause) => {
                   const originalText =
-                    originalAgreementClauses.find((original) => original.id === clause.id)?.text ?? ''
+                    originalAgreementClauses.find((original) => original.id === clause.id)?.text ??
+                    ''
                   const changed = clause.text !== originalText
                   const editing = editingClauseId === clause.id
 
@@ -3213,10 +3382,7 @@ ${packageUrl}`
                     .slice()
                     .reverse()
                     .map((version) => (
-                      <div
-                        key={version.n}
-                        className="flex gap-2 py-1 text-[11.5px] text-slate-600"
-                      >
+                      <div key={version.n} className="flex gap-2 py-1 text-[11.5px] text-slate-600">
                         <b className="text-slate-900">{version.label}</b>
                         <span>{version.name}</span>
                         <span className="ml-auto text-slate-400">
@@ -3294,7 +3460,10 @@ ${packageUrl}`
             </p>
             <p>
               Title:{' '}
-              <MergeField token="company_signer_title" value={contact.title || 'Authorized Signer'} />
+              <MergeField
+                token="company_signer_title"
+                value={contact.title || 'Authorized Signer'}
+              />
             </p>
             <p>
               Address:{' '}
@@ -3306,8 +3475,8 @@ ${packageUrl}`
           </div>
         </div>
         <div className="mt-5 border-t border-slate-200 pt-3 font-sans text-[12px] text-slate-500">
-          Attached: Schedule A (Ingredients) - B (Products) - C (Plants & Fee) - D
-          (Production Procedures) - E (Labeling Requirements)
+          Attached: Schedule A (Ingredients) - B (Products) - C (Plants & Fee) - D (Production
+          Procedures) - E (Labeling Requirements)
         </div>
       </div>
     ) : previewTab === '__old_agreement' ? (
@@ -3326,13 +3495,15 @@ ${packageUrl}`
           <div>
             <div className="font-semibold text-gray-900">1. Certification Scope</div>
             <p>
-              Certification applies to the approved products and ingredients reflected in Schedules A
-              and B and to the plant information reflected in Schedule C.
+              Certification applies to the approved products and ingredients reflected in Schedules
+              A and B and to the plant information reflected in Schedule C.
             </p>
           </div>
           <div>
             <div className="font-semibold text-gray-900">2. Production Procedures</div>
-            <p>{noProductionProcedures ? 'No special procedures supplied.' : productionProcedures}</p>
+            <p>
+              {noProductionProcedures ? 'No special procedures supplied.' : productionProcedures}
+            </p>
           </div>
           <div>
             <div className="font-semibold text-gray-900">3. Fee & Term</div>
@@ -3359,7 +3530,10 @@ ${packageUrl}`
           <MergeField token="plant_name" value={plantLabel} />
         </p>
         <p className="mb-3">
-          <MergeField token="plant_address" value={plantAddress || companyAddress || 'Address on file'} />
+          <MergeField
+            token="plant_address"
+            value={plantAddress || companyAddress || 'Address on file'}
+          />
         </p>
         <p>
           Company shall pay an annual certification fee of{' '}
@@ -3443,14 +3617,16 @@ ${packageUrl}`
               </thead>
               <tbody>
                 <tr>
-                  {[invoiceNumber, invoiceDate, invoiceAmount, invoiceAccountNumber].map((value) => (
-                    <td
-                      key={value}
-                      className="border-r border-t border-gray-300 px-2 py-1 text-center text-[11px] font-bold last:border-r-0"
-                    >
-                      {value}
-                    </td>
-                  ))}
+                  {[invoiceNumber, invoiceDate, invoiceAmount, invoiceAccountNumber].map(
+                    (value) => (
+                      <td
+                        key={value}
+                        className="border-r border-t border-gray-300 px-2 py-1 text-center text-[11px] font-bold last:border-r-0"
+                      >
+                        {value}
+                      </td>
+                    ),
+                  )}
                 </tr>
               </tbody>
             </table>
@@ -3518,14 +3694,16 @@ ${packageUrl}`
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      {['Invoice #', 'Invoice Date', 'Amount', 'Due Date', 'Account #'].map((label) => (
-                        <th
-                          key={label}
-                          className="border-r border-t border-gray-300 px-1 py-1 text-center text-[8.5px] font-bold last:border-r-0"
-                        >
-                          {label}
-                        </th>
-                      ))}
+                      {['Invoice #', 'Invoice Date', 'Amount', 'Due Date', 'Account #'].map(
+                        (label) => (
+                          <th
+                            key={label}
+                            className="border-r border-t border-gray-300 px-1 py-1 text-center text-[8.5px] font-bold last:border-r-0"
+                          >
+                            {label}
+                          </th>
+                        ),
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -3637,14 +3815,16 @@ ${packageUrl}`
             </span>
             <div className="w-full rounded-lg border border-green-200 bg-green-50 p-3 text-green-700">
               <b>{invoiceAmount} received via ACH</b>
-              <span className="mt-0.5 block text-[11.5px]">Source: Kashrus - Posted by Accounting.</span>
+              <span className="mt-0.5 block text-[11.5px]">
+                Source: Kashrus - Posted by Accounting.
+              </span>
             </div>
           </div>
         ) : null}
 
         <p className="mt-2 font-sans text-[11px] text-slate-500">
-          Created in KCM/Kashrus - invoice ID Kashrus-generated - payment auto-detected. Comment
-          is entered under the certification fee.
+          Created in KCM/Kashrus - invoice ID Kashrus-generated - payment auto-detected. Comment is
+          entered under the certification fee.
         </p>
       </div>
     )
@@ -3678,8 +3858,12 @@ ${packageUrl}`
                 </div>
                 <h3 className="mt-2 truncate text-2xl font-semibold">{companyName}</h3>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-300">
-                  {taskName ? <span className="rounded-full bg-white/10 px-2.5 py-1">{taskName}</span> : null}
-                  <span className="rounded-full bg-white/10 px-2.5 py-1">App #{resolvedApplicationId ?? '-'}</span>
+                  {taskName ? (
+                    <span className="rounded-full bg-white/10 px-2.5 py-1">{taskName}</span>
+                  ) : null}
+                  <span className="rounded-full bg-white/10 px-2.5 py-1">
+                    App #{resolvedApplicationId ?? '-'}
+                  </span>
                   <span className="rounded-full bg-white/10 px-2.5 py-1">Plant: {plantLabel}</span>
                   <span className="rounded-full bg-white/10 px-2.5 py-1">RC: {rcName}</span>
                   <span className="rounded-full bg-white/10 px-2.5 py-1">NCRC: {ncrcName}</span>
@@ -3735,8 +3919,12 @@ ${packageUrl}`
               <Section title="Contract Type">
                 <div className="flex items-start justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
                   <div className="min-w-0">
-                    <div className="text-[11.5px] font-medium text-gray-500">Determined by the system</div>
-                    <div className="mt-1 text-[13.5px] font-semibold leading-5 text-gray-900">{contractTypeLabel}</div>
+                    <div className="text-[11.5px] font-medium text-gray-500">
+                      Determined by the system
+                    </div>
+                    <div className="mt-1 text-[13.5px] font-semibold leading-5 text-gray-900">
+                      {contractTypeLabel}
+                    </div>
                   </div>
                   <span className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-bold text-green-700">
                     Set
@@ -3773,7 +3961,8 @@ ${packageUrl}`
                         Company payment cycle
                       </span>
                       <div className="mt-1 w-full rounded-[7px] border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600">
-                        {formatShortDate(companyPaymentCycleStart)} - {formatShortDate(companyPaymentCycleEnd)}
+                        {formatShortDate(companyPaymentCycleStart)} -{' '}
+                        {formatShortDate(companyPaymentCycleEnd)}
                       </div>
                       <span className="mt-1 block text-[11.5px] leading-5 text-gray-500">
                         Pulled from the company record - the new plant&apos;s invoice is prorated to
@@ -3947,7 +4136,9 @@ ${packageUrl}`
                             <div>
                               <div className="font-semibold text-blue-950">{selectedRc.name}</div>
                               {selectedRc.userName ? (
-                                <div className="mt-1 text-xs text-blue-800">{selectedRc.userName}</div>
+                                <div className="mt-1 text-xs text-blue-800">
+                                  {selectedRc.userName}
+                                </div>
                               ) : null}
                               {selectedRc.email ? (
                                 <div className="mt-1 text-xs text-blue-700">{selectedRc.email}</div>
@@ -3972,7 +4163,9 @@ ${packageUrl}`
                               selectedRcSaved ? 'text-green-700' : 'text-amber-700'
                             }`}
                           >
-                            {selectedRcSaved ? 'RC saved.' : 'Click the check button to save this RC.'}
+                            {selectedRcSaved
+                              ? 'RC saved.'
+                              : 'Click the check button to save this RC.'}
                           </div>
                         </div>
                       ) : (
@@ -4014,7 +4207,8 @@ ${packageUrl}`
                                 >
                                   <div className="font-medium text-gray-900">{option.name}</div>
                                   <div className="mt-1 text-xs text-gray-500">
-                                    {[option.userName, option.email].filter(Boolean).join(' - ') || '-'}
+                                    {[option.userName, option.email].filter(Boolean).join(' - ') ||
+                                      '-'}
                                   </div>
                                 </button>
                               ))
@@ -4042,7 +4236,8 @@ ${packageUrl}`
                 <div className="mt-3 border-t border-gray-100 pt-3">
                   {isWorkflowReadOnly ? (
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] font-semibold text-slate-600">
-                      Read-only contract preview. Workflow actions are available from the task dashboard.
+                      Read-only contract preview. Workflow actions are available from the task
+                      dashboard.
                     </div>
                   ) : packageGenerated ? (
                     <div className="space-y-2">
@@ -4078,7 +4273,11 @@ ${packageUrl}`
                       <p className="mb-2 text-[12.5px] font-semibold text-violet-700">
                         Finish Legal sign-off before notifying the RC.
                       </p>
-                      <button type="button" disabled className="w-full rounded-lg bg-gray-300 px-4 py-2.5 text-sm font-bold text-white">
+                      <button
+                        type="button"
+                        disabled
+                        className="w-full rounded-lg bg-gray-300 px-4 py-2.5 text-sm font-bold text-white"
+                      >
                         Notify RC for approval
                       </button>
                     </>
@@ -4089,7 +4288,11 @@ ${packageUrl}`
                           ? 'Select the RC assigned to the company to continue.'
                           : 'Enter the annual certification fee to continue.'}
                       </p>
-                      <button type="button" disabled className="w-full rounded-lg bg-gray-300 px-4 py-2.5 text-sm font-bold text-white">
+                      <button
+                        type="button"
+                        disabled
+                        className="w-full rounded-lg bg-gray-300 px-4 py-2.5 text-sm font-bold text-white"
+                      >
                         Notify RC for approval
                       </button>
                     </>
@@ -4183,12 +4386,13 @@ ${packageUrl}`
                       className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-gray-300"
                     >
                       <ChevronRight className="h-4 w-4" />
-                      {confirmTaskMutation.isPending ? 'Completing...' : 'Move to Certification Stage'}
+                      {confirmTaskMutation.isPending
+                        ? 'Completing...'
+                        : 'Move to Certification Stage'}
                     </button>
                   </div>
                 </Section>
               ) : null}
-
             </div>
             <div className="flex min-h-0 flex-col overflow-hidden rounded-[10px] border border-gray-200 bg-white shadow-sm xl:sticky xl:top-5">
               <div className="shrink-0 border-b-2 border-slate-200 bg-white px-4 py-3.5">
@@ -4209,7 +4413,9 @@ ${packageUrl}`
                       {!isWorkflowReadOnly ? (
                         <button
                           type="button"
-                          disabled={isGeneratingContractInvoice || !annualFee || hasGeneratedContractInvoice}
+                          disabled={
+                            isGeneratingContractInvoice || !annualFee || hasGeneratedContractInvoice
+                          }
                           onClick={handleGenerateContractInvoice}
                           className="inline-flex items-center gap-1.5 rounded-md bg-[#185087] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#133f6b] disabled:cursor-not-allowed disabled:bg-gray-300"
                         >
@@ -4263,36 +4469,36 @@ ${packageUrl}`
                   </label>
                 </div>
                 <div className="flex flex-wrap gap-1 rounded-[9px] bg-[#eef1f5] p-1">
-                    {[
-                      ['cover', 'Cover'],
-                      ['communication', 'Communication'],
-                      ['agreement', 'Agreement'],
-                      ['a', 'A · Ingredients'],
-                      ['b', 'B · Products'],
-                      ['c', 'C · Plants'],
-                      ['d', 'D · Procedures'],
-                      ['e', 'E · Labeling'],
-                      ['invoice', 'Invoice'],
-                    ].map(([value]) => {
-                      const tab = value as PreviewTab
+                  {[
+                    ['cover', 'Cover'],
+                    ['communication', 'Communication'],
+                    ['agreement', 'Agreement'],
+                    ['a', 'A · Ingredients'],
+                    ['b', 'B · Products'],
+                    ['c', 'C · Plants'],
+                    ['d', 'D · Procedures'],
+                    ['e', 'E · Labeling'],
+                    ['invoice', 'Invoice'],
+                  ].map(([value]) => {
+                    const tab = value as PreviewTab
 
-                      return (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => setPreviewTab(tab)}
-                          style={{ order: getPreviewTabOrder(tab) }}
-                          className={`rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
-                            previewTab === value
-                              ? 'border-[#185087] bg-[#185087] text-white shadow-sm'
-                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900'
-                          }`}
-                        >
-                          {getPreviewTabLabel(tab)}
-                        </button>
-                      )
-                    })}
-                  </div>
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setPreviewTab(tab)}
+                        style={{ order: getPreviewTabOrder(tab) }}
+                        className={`rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                          previewTab === value
+                            ? 'border-[#185087] bg-[#185087] text-white shadow-sm'
+                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                      >
+                        {getPreviewTabLabel(tab)}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#f7f8fb] p-5 font-serif text-[13.5px] leading-relaxed">
                 {previewContent}

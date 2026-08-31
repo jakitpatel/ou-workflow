@@ -18,11 +18,15 @@ import { useUser } from '@/context/UserContext'
 import { resolveApiBaseUrl } from '@/shared/api/httpClient'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
+import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
 import type { Applicant } from '@/types/application'
 
 const RC_NOTIFICATION_SUBJECT = 'OU Kosher - You have been selected to be the RC'
 
-const getWorkflowBaseUrl = () => resolveApiBaseUrl().replace(/\/api\/?$/i, '').replace(/\/$/, '')
+const getWorkflowBaseUrl = () =>
+  resolveApiBaseUrl()
+    .replace(/\/api\/?$/i, '')
+    .replace(/\/$/, '')
 
 const getAppBasePath = () => {
   const basePath = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
@@ -144,7 +148,9 @@ const normalizeUploadedContractAttachment = (
       ? (response as Record<string, unknown>)
       : {}
   const data =
-    responseRecord.data && typeof responseRecord.data === 'object' && !Array.isArray(responseRecord.data)
+    responseRecord.data &&
+    typeof responseRecord.data === 'object' &&
+    !Array.isArray(responseRecord.data)
       ? (responseRecord.data as Record<string, unknown>)
       : responseRecord
   const attributes =
@@ -171,19 +177,24 @@ const normalizeUploadedContractAttachment = (
 }
 
 const getCreatedMessageId = (response: unknown) => {
-  const data = response && typeof response === 'object' && 'data' in response
-    ? (response as { data?: unknown }).data
-    : undefined
-  const attributes = data && typeof data === 'object' && 'attributes' in data
-    ? (data as { attributes?: Record<string, unknown> }).attributes
-    : undefined
-  const dataId = data && typeof data === 'object' && 'id' in data ? (data as { id?: unknown }).id : undefined
+  const data =
+    response && typeof response === 'object' && 'data' in response
+      ? (response as { data?: unknown }).data
+      : undefined
+  const attributes =
+    data && typeof data === 'object' && 'attributes' in data
+      ? (data as { attributes?: Record<string, unknown> }).attributes
+      : undefined
+  const dataId =
+    data && typeof data === 'object' && 'id' in data ? (data as { id?: unknown }).id : undefined
 
   return String(attributes?.MessageID ?? dataId ?? '').trim()
 }
 
 const addRefMessageIdToSubject = (subject: string, messageId: string) => {
-  const cleanSubject = subject.replace(/,\s*refMessageId:\s*#?\d+/i, '').replace(/,\s*refMsgId:\s*#?\d+/i, '')
+  const cleanSubject = subject
+    .replace(/,\s*refMessageId:\s*#?\d+/i, '')
+    .replace(/,\s*refMsgId:\s*#?\d+/i, '')
   const roundMatch = cleanSubject.match(/,\s*Round\s+\d+\)?/i)
   if (roundMatch?.index === undefined) return `${cleanSubject} (refMessageId: #${messageId})`
 
@@ -204,7 +215,10 @@ export function useContractCommunicationMessages({
     taskInstanceId === undefined || taskInstanceId === null ? undefined : String(taskInstanceId)
 
   return useQuery({
-    queryKey: applicationsQueryKeys.contractMessages(normalizedApplicationId, normalizedTaskInstanceId),
+    queryKey: applicationsQueryKeys.contractMessages(
+      normalizedApplicationId,
+      normalizedTaskInstanceId,
+    ),
     queryFn: () =>
       fetchApplicationMessages({
         applicationId: normalizedApplicationId,
@@ -233,13 +247,23 @@ export function useSendContractCommunicationEmail() {
       taskInstanceId,
       toUser,
     }: SendContractCommunicationEmailInput) => {
-      if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
+      if (
+        applicationId === undefined ||
+        applicationId === null ||
+        String(applicationId).trim() === ''
+      ) {
         throw new Error('Application id is required before sending the contract email.')
       }
 
       if (!body.trim()) {
         throw new Error('Cover letter body is required before sending the contract email.')
       }
+
+      assertValidEmailRecipients({
+        to: toUser ?? '',
+        cc: ccUser,
+        bcc: bccUser,
+      })
 
       const email = buildHtmlEmailFromPlainText(body, {
         title: subject,
@@ -301,7 +325,10 @@ export function useSendContractCommunicationEmail() {
           : String(variables.taskInstanceId).trim()
 
       await queryClient.invalidateQueries({
-        queryKey: applicationsQueryKeys.contractMessages(normalizedApplicationId, normalizedTaskInstanceId),
+        queryKey: applicationsQueryKeys.contractMessages(
+          normalizedApplicationId,
+          normalizedTaskInstanceId,
+        ),
       })
     },
   })
@@ -326,7 +353,11 @@ export function useContractRcNotification({
     savedState,
     taskInstanceId,
   }: SaveContractStageStateParams) => {
-    if (taskInstanceId === undefined || taskInstanceId === null || String(taskInstanceId).trim() === '') {
+    if (
+      taskInstanceId === undefined ||
+      taskInstanceId === null ||
+      String(taskInstanceId).trim() === ''
+    ) {
       return
     }
 
@@ -343,7 +374,11 @@ export function useContractRcNotification({
     assignee,
     taskInstanceId,
   }: AssignContractRcParams) => {
-    if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
+    if (
+      applicationId === undefined ||
+      applicationId === null ||
+      String(applicationId).trim() === ''
+    ) {
       throw new Error('Application id is required before assigning the RC.')
     }
 
@@ -352,7 +387,11 @@ export function useContractRcNotification({
       throw new Error('A numeric application id is required before assigning the RC.')
     }
 
-    if (taskInstanceId === undefined || taskInstanceId === null || String(taskInstanceId).trim() === '') {
+    if (
+      taskInstanceId === undefined ||
+      taskInstanceId === null ||
+      String(taskInstanceId).trim() === ''
+    ) {
       throw new Error('Task instance id is required before assigning the RC.')
     }
 
@@ -381,7 +420,11 @@ export function useContractRcNotification({
     rcUserName,
     taskInstanceId,
   }: NotifyRcForApprovalParams) => {
-    if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
+    if (
+      applicationId === undefined ||
+      applicationId === null ||
+      String(applicationId).trim() === ''
+    ) {
       throw new Error('Application id is required before notifying the RC.')
     }
 
@@ -447,7 +490,11 @@ ${username ?? ''}`
     billingCityStateZip,
     primaryContact,
   }: GenerateContractInvoiceParams): Promise<GenerateInspectionInvoiceResponse> => {
-    if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
+    if (
+      applicationId === undefined ||
+      applicationId === null ||
+      String(applicationId).trim() === ''
+    ) {
       throw new Error('Application id is required before generating the invoice.')
     }
 
@@ -493,7 +540,11 @@ ${username ?? ''}`
   const generateContractPackage = async ({
     payload,
   }: GenerateContractPackageParams): Promise<GenerateContractPackageResponse> => {
-    if (payload.applicationId === undefined || payload.applicationId === null || String(payload.applicationId).trim() === '') {
+    if (
+      payload.applicationId === undefined ||
+      payload.applicationId === null ||
+      String(payload.applicationId).trim() === ''
+    ) {
       throw new Error('Application id is required before generating the contract package.')
     }
 
@@ -519,7 +570,11 @@ ${username ?? ''}`
     taskInstanceId,
     toUser,
   }: SendContractPackageEmailParams) => {
-    if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
+    if (
+      applicationId === undefined ||
+      applicationId === null ||
+      String(applicationId).trim() === ''
+    ) {
       throw new Error('Application id is required before sending the contract email.')
     }
 
@@ -574,7 +629,11 @@ ${username ?? ''}`
     file,
     taskInstanceId,
   }: UploadContractEmailAttachmentParams): Promise<UploadedContractEmailAttachment> => {
-    if (applicationId === undefined || applicationId === null || String(applicationId).trim() === '') {
+    if (
+      applicationId === undefined ||
+      applicationId === null ||
+      String(applicationId).trim() === ''
+    ) {
       throw new Error('Application id is required before uploading an attachment.')
     }
 

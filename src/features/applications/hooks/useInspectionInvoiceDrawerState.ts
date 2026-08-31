@@ -18,6 +18,7 @@ import {
 } from '@/features/applications/utils/inspectionStatusDetails'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
+import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
 
 export type InspectionInvoiceStage =
   'setup' | 'configured' | 'generated' | 'outlook-opened' | 'sent-captured' | 'paid'
@@ -650,11 +651,9 @@ export function useInspectionInvoiceDrawerState({
       : ''
 
     return {
-      addressLines: [
-        billingAddress,
-        billingCityStateZip,
-        address?.country,
-      ].filter((line): line is string => Boolean(line?.trim())),
+      addressLines: [billingAddress, billingCityStateZip, address?.country].filter(
+        (line): line is string => Boolean(line?.trim()),
+      ),
       billingAddress,
       billingCityStateZip,
       billingContactName: billingContact?.name ?? '',
@@ -1146,6 +1145,8 @@ export function useInspectionInvoiceDrawerState({
     subject: string
     toUser: string
   }) => {
+    assertValidEmailRecipients({ to: toUser, cc: ccUser, bcc: bccUser })
+
     setIsSendingEmail(true)
     try {
       const email = buildHtmlEmailFromPlainText(messageText, {
