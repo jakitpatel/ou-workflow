@@ -19,6 +19,7 @@ import {
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
+import { assertEmailAttachmentSize } from '@/shared/email/attachmentSizeValidation'
 
 export type InspectionInvoiceStage =
   'setup' | 'configured' | 'generated' | 'outlook-opened' | 'sent-captured' | 'paid'
@@ -1146,9 +1147,10 @@ export function useInspectionInvoiceDrawerState({
     toUser: string
   }) => {
     assertValidEmailRecipients({ to: toUser, cc: ccUser, bcc: bccUser })
-
     setIsSendingEmail(true)
     try {
+      await assertEmailAttachmentSize(attachments)
+
       const email = buildHtmlEmailFromPlainText(messageText, {
         preheader: subject,
         title: 'OU Kosher Invoice',

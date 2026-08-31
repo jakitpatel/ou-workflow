@@ -13,6 +13,7 @@ import {
   useInspectionInvoiceDrawerState,
 } from '@/features/applications/hooks/useInspectionInvoiceDrawerState'
 import { getInvalidEmailAddresses, isValidEmailAddressList } from '@/shared/email/addressValidation'
+import { MAX_EMAIL_ATTACHMENT_SIZE_MB } from '@/shared/email/attachmentSizeValidation'
 import type { Applicant } from '@/types/application'
 
 type Props = {
@@ -887,7 +888,12 @@ export function InspectionInvoiceDrawer({
                   </div>
                   <div className="grid grid-cols-[80px_1fr] px-3 py-2 text-sm">
                     <span className="font-medium text-gray-500">Attach</span>
-                    <span>{emailAttachment}</span>
+                    <span>
+                      {emailAttachment}
+                      <span className="ml-1 text-gray-500">
+                        (maximum {MAX_EMAIL_ATTACHMENT_SIZE_MB} MB total)
+                      </span>
+                    </span>
                   </div>
                 </div>
                 <div>

@@ -19,6 +19,7 @@ import { resolveApiBaseUrl } from '@/shared/api/httpClient'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
+import { assertEmailAttachmentSize } from '@/shared/email/attachmentSizeValidation'
 import type { Applicant } from '@/types/application'
 
 const RC_NOTIFICATION_SUBJECT = 'OU Kosher - You have been selected to be the RC'
@@ -264,6 +265,7 @@ export function useSendContractCommunicationEmail() {
         cc: ccUser,
         bcc: bccUser,
       })
+      await assertEmailAttachmentSize(attachments)
 
       const email = buildHtmlEmailFromPlainText(body, {
         title: subject,

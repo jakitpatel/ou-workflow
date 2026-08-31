@@ -22,6 +22,10 @@ import {
 } from '@/features/applications/hooks/useContractRcNotification'
 import { getInspectionStatusSavedState } from '@/features/applications/utils/inspectionStatusDetails'
 import { getInvalidEmailAddresses, isValidEmailAddressList } from '@/shared/email/addressValidation'
+import {
+  assertKnownEmailAttachmentSize,
+  MAX_EMAIL_ATTACHMENT_SIZE_MB,
+} from '@/shared/email/attachmentSizeValidation'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import type {
@@ -153,6 +157,7 @@ type ContractRcOption = {
 type ContractEmailAttachment = {
   fileName: string
   fileUrl?: string
+  sizeBytes?: number
   uploadedAt?: string
 }
 
@@ -1953,6 +1958,18 @@ ${packageUrl}`
     const selectedFiles = Array.from(files).filter((file) => file.size > 0)
     if (selectedFiles.length === 0) return
 
+    try {
+      const existingSize = extraEmailAttachments.reduce(
+        (total, attachment) => total + (attachment.sizeBytes ?? 0),
+        0,
+      )
+      const selectedSize = selectedFiles.reduce((total, file) => total + file.size, 0)
+      assertKnownEmailAttachmentSize(existingSize + selectedSize)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Attachments exceed the size limit')
+      return
+    }
+
     if (!resolvedApplicationId) {
       toast.error('Application id is required before uploading an attachment.')
       return
@@ -1970,6 +1987,7 @@ ${packageUrl}`
           return {
             fileName: uploaded.fileName || file.name,
             fileUrl: uploaded.fileUrl || undefined,
+            sizeBytes: file.size,
             uploadedAt: new Date().toISOString(),
           }
         }),
@@ -2537,6 +2555,9 @@ ${packageUrl}`
                 <span className="font-semibold">Attachments:</span>{' '}
                 {contractEmailAttachments ||
                   'Generated package, agreement, invoice, and uploaded files'}
+                <span className="ml-1 text-blue-600">
+                  (maximum {MAX_EMAIL_ATTACHMENT_SIZE_MB} MB total)
+                </span>
               </div>
               {contractEmailSendError ? (
                 <div className="mt-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700">
