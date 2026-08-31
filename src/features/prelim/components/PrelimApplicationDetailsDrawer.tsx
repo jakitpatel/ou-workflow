@@ -2,11 +2,13 @@ import { useMemo } from 'react'
 import { X } from 'lucide-react'
 import { ApplicationDetailsContent } from '@/features/applications/components/ApplicationDetailsContent'
 import { mapPrelimApplicationDetailToApplicationDetail } from '@/features/prelim/lib/prelimApplicationDetailAdapter'
+import type { Applicant } from '@/types/application'
 
 type Props = {
   open: boolean
   externalReferenceId?: string | number | null
   data: any
+  applicant?: Applicant
   isLoading: boolean
   error: unknown
   onClose: () => void
@@ -16,6 +18,7 @@ export function PrelimApplicationDetailsDrawer({
   open,
   externalReferenceId,
   data,
+  applicant,
   isLoading,
   error,
   onClose,
@@ -62,7 +65,9 @@ export function PrelimApplicationDetailsDrawer({
               Failed to load application intake: {(error as Error).message}
             </div>
           ) : null}
-          {!isLoading && !error && !application ? <div className="p-8">Application intake not found</div> : null}
+          {!isLoading && !error && !application ? (
+            <div className="p-8">Application intake not found</div>
+          ) : null}
           {application ? (
             <ApplicationDetailsContent
               application={application}
@@ -70,6 +75,7 @@ export function PrelimApplicationDetailsDrawer({
               applicationId={resolvedExternalReferenceId}
               showInterfaceLabel={false}
               dataSource="prelim"
+              sourceApplicant={applicant}
             />
           ) : null}
         </div>

@@ -60,6 +60,13 @@ export function PrelimDashboardContent() {
     includeApplicationLists: true,
     includePrelimLists: true,
   })
+  const selectedApplicant = useMemo(
+    () =>
+      applications.find(
+        (application) => String(application.externalReferenceId ?? '') === String(selectedId ?? ''),
+      ),
+    [applications, selectedId],
+  )
   const myMessagesTabs = useMemo<TaskNotesDrawerTabConfig[]>(
     () => [
       {
@@ -229,6 +236,7 @@ export function PrelimDashboardContent() {
         <PrelimApplicationDetailsDrawer
           open={selectedId !== null}
           externalReferenceId={selectedId}
+          applicant={selectedApplicant}
           data={applicationDetails}
           isLoading={isDetailsLoading}
           error={applicationDetailsError}

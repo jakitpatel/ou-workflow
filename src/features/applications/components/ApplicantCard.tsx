@@ -55,8 +55,7 @@ export function ApplicantCard({
       : null
   const intakeDetailsQuery = useQuery({
     queryKey: prelimQueryKeys.detail(externalReferenceId),
-    queryFn: () =>
-      fetchPrelimApplicationDetails(externalReferenceId as number, token ?? undefined),
+    queryFn: () => fetchPrelimApplicationDetails(externalReferenceId as number, token ?? undefined),
     enabled: showIntakeDetailsDrawer && externalReferenceId !== null,
     select: (data: any[]) => data?.[0] ?? null,
     ...queryOptionDefaults.prelimDetail,
@@ -241,6 +240,7 @@ export function ApplicantCard({
       <PrelimApplicationDetailsDrawer
         open={showIntakeDetailsDrawer}
         externalReferenceId={externalReferenceId}
+        applicant={applicant}
         data={intakeDetailsQuery.data}
         isLoading={intakeDetailsQuery.isLoading}
         error={intakeDetailsQuery.error}

@@ -136,7 +136,10 @@ const STATUS_BADGES: Record<string, string> = {
 const INITIAL_VALIDATION_CHECKS: Record<string, ValidationCheck> = {
   company: { valid: true, message: 'Company KC-2025-4829 verified in Kashrus DB' },
   plant: { valid: true, message: 'Plant PLT-KC-2025-4829-001 created and linked' },
-  contacts: { valid: true, message: 'Primary contact John Mitchell designated for initial communication' },
+  contacts: {
+    valid: true,
+    message: 'Primary contact John Mitchell designated for initial communication',
+  },
   products: { valid: true, message: '4 products identified and categorized' },
   ingredients: { valid: true, message: '10 ingredients processed and validated' },
   quote: { valid: false, message: 'Quote not found - needs verification' },
@@ -148,14 +151,16 @@ const INITIAL_COMMENTS: Comment[] = [
     id: 1,
     author: 'J. Mitchell',
     date: '2025-07-18 14:45',
-    comment: 'Verified all ingredient certifications with suppliers. Coconut oil documentation updated.',
+    comment:
+      'Verified all ingredient certifications with suppliers. Coconut oil documentation updated.',
     type: 'internal',
   },
   {
     id: 2,
     author: 'G. Magder',
     date: '2025-07-18 13:20',
-    comment: 'Plant contact information confirmed. John Mitchell will be primary for all communications.',
+    comment:
+      'Plant contact information confirmed. John Mitchell will be primary for all communications.',
     type: 'internal',
   },
 ]
@@ -238,8 +243,10 @@ const getEmailStatusClasses = (status?: string | null) => {
   const normalizedStatus = String(status ?? '').toLowerCase()
 
   if (!normalizedStatus) return 'bg-gray-100 text-gray-700'
-  if (normalizedStatus.includes('fail') || normalizedStatus.includes('error')) return 'bg-red-100 text-red-700'
-  if (normalizedStatus.includes('sent') || normalizedStatus.includes('success')) return 'bg-green-100 text-green-700'
+  if (normalizedStatus.includes('fail') || normalizedStatus.includes('error'))
+    return 'bg-red-100 text-red-700'
+  if (normalizedStatus.includes('sent') || normalizedStatus.includes('success'))
+    return 'bg-green-100 text-green-700'
   return 'bg-amber-100 text-amber-700'
 }
 
@@ -288,7 +295,10 @@ function EmailPreviewModal({
   const attachmentText = email.Attachments?.trim()
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
       <div
         className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
@@ -297,12 +307,18 @@ function EmailPreviewModal({
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getEmailStatusClasses(email.EmailStatus)}`}>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getEmailStatusClasses(email.EmailStatus)}`}
+                >
                   {email.EmailStatus || 'Status unknown'}
                 </span>
-                <span className="text-xs font-medium text-gray-500">{formatEmailDate(email.SentDate)}</span>
+                <span className="text-xs font-medium text-gray-500">
+                  {formatEmailDate(email.SentDate)}
+                </span>
               </div>
-              <h3 className="break-words text-lg font-semibold text-gray-900">{email.Subject || '(No subject)'}</h3>
+              <h3 className="break-words text-lg font-semibold text-gray-900">
+                {email.Subject || '(No subject)'}
+              </h3>
               <div className="mt-1 text-xs text-gray-500">
                 {email.MessageID ? `Message #${email.MessageID}` : 'Email message'}
                 {email.TaskInstanceId ? ` - Task #${email.TaskInstanceId}` : ''}
@@ -369,7 +385,9 @@ function EmailsPanel({ emails }: { emails?: ApplicationEmail[] }) {
       <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Emails</h2>
-          <p className="text-sm text-gray-500">Sent and attempted email history for this application</p>
+          <p className="text-sm text-gray-500">
+            Sent and attempted email history for this application
+          </p>
         </div>
         <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
           {sortedEmails.length} total
@@ -408,18 +426,31 @@ function EmailsPanel({ emails }: { emails?: ApplicationEmail[] }) {
                 </div>
 
                 <div className="min-w-0">
-                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 md:hidden">Recipient</div>
-                  <div className="truncate text-sm font-semibold text-gray-900" title={email.ToUser ?? undefined}>
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 md:hidden">
+                    Recipient
+                  </div>
+                  <div
+                    className="truncate text-sm font-semibold text-gray-900"
+                    title={email.ToUser ?? undefined}
+                  >
                     {email.ToUser || '-'}
                   </div>
-                  <div className="mt-1 truncate text-xs text-gray-500" title={email.FromUser ?? undefined}>
+                  <div
+                    className="mt-1 truncate text-xs text-gray-500"
+                    title={email.FromUser ?? undefined}
+                  >
                     From: {email.FromUser || '-'}
                   </div>
                 </div>
 
                 <div className="col-span-2 min-w-0 md:col-span-1">
-                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 md:hidden">Subject</div>
-                  <div className="truncate text-sm font-medium text-gray-900" title={email.Subject ?? undefined}>
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 md:hidden">
+                    Subject
+                  </div>
+                  <div
+                    className="truncate text-sm font-medium text-gray-900"
+                    title={email.Subject ?? undefined}
+                  >
                     {email.Subject || '(No subject)'}
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
@@ -435,14 +466,20 @@ function EmailsPanel({ emails }: { emails?: ApplicationEmail[] }) {
                 </div>
 
                 <div className="col-span-2 self-start md:col-span-1">
-                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 md:hidden">Status</div>
-                  <span className={`inline-flex max-w-full rounded-full px-2.5 py-1 text-xs font-semibold ${getEmailStatusClasses(email.EmailStatus)}`}>
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 md:hidden">
+                    Status
+                  </div>
+                  <span
+                    className={`inline-flex max-w-full rounded-full px-2.5 py-1 text-xs font-semibold ${getEmailStatusClasses(email.EmailStatus)}`}
+                  >
                     <span className="truncate">{email.EmailStatus || 'Unknown'}</span>
                   </span>
                 </div>
 
                 <div className="col-span-2 text-sm text-gray-600 md:col-span-1">
-                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 md:hidden">Sent</div>
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 md:hidden">
+                    Sent
+                  </div>
                   {formatEmailDate(email.SentDate)}
                 </div>
               </div>
@@ -483,7 +520,7 @@ const Modal = ({
         <h3 className="mb-4 text-lg font-semibold">{title}</h3>
         <textarea
           value={value}
-          onChange={e => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           className="h-32 w-full resize-none rounded-lg border p-3"
         />
@@ -519,11 +556,19 @@ const ValidationCheckItem = ({ checkKey, check }: { checkKey: string; check: Val
         <AlertTriangle className="h-5 w-5 text-red-600" />
       )}
       <div>
-        <div className="font-medium capitalize text-gray-900">{checkKey.replace(/([A-Z])/g, ' $1')}</div>
-        <div className={`text-sm ${check.valid ? 'text-green-700' : 'text-red-700'}`}>{check.message}</div>
+        <div className="font-medium capitalize text-gray-900">
+          {checkKey.replace(/([A-Z])/g, ' $1')}
+        </div>
+        <div className={`text-sm ${check.valid ? 'text-green-700' : 'text-red-700'}`}>
+          {check.message}
+        </div>
       </div>
     </div>
-    {check.valid ? <Check className="h-5 w-5 text-green-600" /> : <X className="h-5 w-5 text-red-600" />}
+    {check.valid ? (
+      <Check className="h-5 w-5 text-green-600" />
+    ) : (
+      <X className="h-5 w-5 text-red-600" />
+    )}
   </div>
 )
 
@@ -554,20 +599,28 @@ export function ApplicationDetailsContent({
     const tasks = Object.values(sourceApplicant?.stages ?? {})
       .flatMap((stage) => stage.tasks ?? [])
       .sort((left, right) => {
-      const leftId = Number((left as any).taskInstanceId ?? left.TaskInstanceId ?? 0)
-      const rightId = Number((right as any).taskInstanceId ?? right.TaskInstanceId ?? 0)
-      return rightId - leftId
-    })
+        const leftId = Number((left as any).taskInstanceId ?? left.TaskInstanceId ?? 0)
+        const rightId = Number((right as any).taskInstanceId ?? right.TaskInstanceId ?? 0)
+        return rightId - leftId
+      })
     return (
       tasks.find((task) => {
-        const category = String(task.taskCategory ?? (task as any).TaskCategory ?? '').trim().toLowerCase()
-        const type = String(task.taskType ?? (task as any).TaskType ?? '').trim().toLowerCase()
+        const category = String(task.taskCategory ?? (task as any).TaskCategory ?? '')
+          .trim()
+          .toLowerCase()
+        const type = String(task.taskType ?? (task as any).TaskType ?? '')
+          .trim()
+          .toLowerCase()
         const statusDetails = task.StatusDetails ?? (task as any).statusDetails
         return category === TASK_CATEGORIES.INVOICE && type === TASK_TYPES.ACTION && statusDetails
       }) ??
       tasks.find((task) => {
-        const category = String(task.taskCategory ?? (task as any).TaskCategory ?? '').trim().toLowerCase()
-        const type = String(task.taskType ?? (task as any).TaskType ?? '').trim().toLowerCase()
+        const category = String(task.taskCategory ?? (task as any).TaskCategory ?? '')
+          .trim()
+          .toLowerCase()
+        const type = String(task.taskType ?? (task as any).TaskType ?? '')
+          .trim()
+          .toLowerCase()
         return category === TASK_CATEGORIES.INVOICE && type === TASK_TYPES.ACTION
       })
     )
@@ -609,31 +662,26 @@ export function ApplicationDetailsContent({
     dataSource === 'prelim'
       ? 'Intake Application Review & Management'
       : 'Application Review & Management'
-  const tabs = useMemo(
-    () => {
-      if (dataSource !== 'application') return TABS
+  const tabs = useMemo(() => {
+    if (dataSource !== 'application') return TABS
 
-      const applicationTabs = TABS.filter(
-        tab => tab.id !== 'products' && tab.id !== 'ingredients',
-      )
+    const applicationTabs = TABS.filter((tab) => tab.id !== 'products' && tab.id !== 'ingredients')
 
-      return [
-        ...applicationTabs.slice(0, 4),
-        INSPECTION_INVOICE_TAB,
-        SCHEDULE_A_TAB,
-        SCHEDULE_B_TAB,
-        CONTRACT_TAB,
-        ...applicationTabs.slice(4),
-      ]
-    },
-    [dataSource],
-  )
+    return [
+      ...applicationTabs.slice(0, 4),
+      INSPECTION_INVOICE_TAB,
+      SCHEDULE_A_TAB,
+      SCHEDULE_B_TAB,
+      CONTRACT_TAB,
+      ...applicationTabs.slice(4),
+    ]
+  }, [dataSource])
   const applicationNotes = useTaskNotesDrawerState({
     applicationId: resolvedApplicationId,
   })
 
   const allValidationsPassed = useMemo(
-    () => Object.values(validationChecks).every(check => check.valid),
+    () => Object.values(validationChecks).every((check) => check.valid),
     [validationChecks],
   )
 
@@ -646,12 +694,16 @@ export function ApplicationDetailsContent({
       type,
       status: 'approved',
     }
-    setRecentActivity(prev => [newActivity, ...prev])
+    setRecentActivity((prev) => [newActivity, ...prev])
   }, [])
 
   const handleCompleteApplication = useCallback(() => {
     setCompletionStatus('complete')
-    addActivity('Application Marked Complete', 'Application verified and marked ready for dispatcher', 'completion')
+    addActivity(
+      'Application Marked Complete',
+      'Application verified and marked ready for dispatcher',
+      'completion',
+    )
   }, [addActivity])
 
   const handleDispatchApplication = useCallback(() => {
@@ -674,7 +726,7 @@ export function ApplicationDetailsContent({
       comment: newComment,
       type: 'internal',
     }
-    setComments(prev => [...prev, comment])
+    setComments((prev) => [...prev, comment])
     setNewComment('')
     setShowCommentsModal(false)
   }, [newComment, comments.length])
@@ -723,11 +775,33 @@ export function ApplicationDetailsContent({
   ])
 
   return (
-    <div className={mode === 'page' ? 'min-h-screen bg-gray-50' : 'flex h-full min-h-0 flex-col bg-gray-50'}>
-      <div className={mode === 'page' ? 'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8' : 'shrink-0 border-b bg-white px-4 py-3'}>
-        <div className={mode === 'page' ? 'flex items-center justify-between py-4' : 'flex items-center justify-between'}>
+    <div
+      className={
+        mode === 'page' ? 'min-h-screen bg-gray-50' : 'flex h-full min-h-0 flex-col bg-gray-50'
+      }
+    >
+      <div
+        className={
+          mode === 'page'
+            ? 'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'
+            : 'shrink-0 border-b bg-white px-4 py-3'
+        }
+      >
+        <div
+          className={
+            mode === 'page'
+              ? 'flex items-center justify-between py-4'
+              : 'flex items-center justify-between'
+          }
+        >
           <div>
-            <h1 className={mode === 'page' ? 'text-2xl font-bold text-gray-900' : 'text-xl font-bold text-gray-900'}>
+            <h1
+              className={
+                mode === 'page'
+                  ? 'text-2xl font-bold text-gray-900'
+                  : 'text-xl font-bold text-gray-900'
+              }
+            >
               {pageTitle}
             </h1>
             {showInterfaceLabel ? (
@@ -735,16 +809,22 @@ export function ApplicationDetailsContent({
             ) : null}
           </div>
           <div className="flex items-center space-x-4">
-            <span className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusBadge(application.status)}`}>
+            <span
+              className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusBadge(application.status)}`}
+            >
               {application.status}
             </span>
           </div>
         </div>
       </div>
 
-      {(userRole === 'admin' && showAdminView) && (
+      {userRole === 'admin' && showAdminView && (
         <div className="border-b bg-blue-50">
-          <div className={mode === 'page' ? 'mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8' : 'px-4 py-4'}>
+          <div
+            className={
+              mode === 'page' ? 'mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8' : 'px-4 py-4'
+            }
+          >
             <div className="rounded-lg bg-white p-6 shadow-sm">
               <div className="mb-4 flex items-start justify-between">
                 <div>
@@ -752,7 +832,9 @@ export function ApplicationDetailsContent({
                     <Shield className="mr-2 h-5 w-5 text-blue-600" />
                     Admin Completion Workflow
                   </h3>
-                  <p className="text-sm text-gray-600">Verify all required data before dispatching to review queue</p>
+                  <p className="text-sm text-gray-600">
+                    Verify all required data before dispatching to review queue
+                  </p>
                 </div>
                 <button
                   onClick={() => setShowCommentsModal(true)}
@@ -771,7 +853,9 @@ export function ApplicationDetailsContent({
 
               <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4">
                 <div className="flex items-center space-x-4">
-                  <div className={`rounded-full p-2 ${allValidationsPassed ? 'bg-green-100' : 'bg-gray-100'}`}>
+                  <div
+                    className={`rounded-full p-2 ${allValidationsPassed ? 'bg-green-100' : 'bg-gray-100'}`}
+                  >
                     {allValidationsPassed ? (
                       <CheckCircle className="h-6 w-6 text-green-600" />
                     ) : (
@@ -832,10 +916,20 @@ export function ApplicationDetailsContent({
         </div>
       )}
 
-      <div className={mode === 'page' ? 'mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8' : 'min-h-0 flex-1 p-3'}>
+      <div
+        className={
+          mode === 'page' ? 'mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8' : 'min-h-0 flex-1 p-3'
+        }
+      >
         <div className={mode === 'page' ? 'flex' : 'flex h-full min-h-0'}>
-          <nav className={mode === 'page' ? 'mr-8 w-64 space-y-1' : 'mr-3 w-48 shrink-0 space-y-1 overflow-y-auto pr-1'}>
-            {tabs.map(tab => {
+          <nav
+            className={
+              mode === 'page'
+                ? 'mr-8 w-64 space-y-1'
+                : 'mr-3 w-48 shrink-0 space-y-1 overflow-y-auto pr-1'
+            }
+          >
+            {tabs.map((tab) => {
               const Icon = tab.icon
               return (
                 <button
@@ -856,21 +950,32 @@ export function ApplicationDetailsContent({
 
           <div className={mode === 'page' ? 'min-w-0 flex-1' : 'min-w-0 flex-1 overflow-y-auto'}>
             {activeTab === 'overview' && (
-              <Overview
+              <Overview application={application} dataSource={dataSource} />
+            )}
+            {activeTab === 'company' && (
+              <CompanySection
                 application={application}
+                editMode={editMode}
                 dataSource={dataSource}
               />
             )}
-            {activeTab === 'company' && (
-              <CompanySection application={application} editMode={editMode} dataSource={dataSource} />
-            )}
             {activeTab === 'contacts' && (
-              <ContactsSection application={application} editMode={editMode} dataSource={dataSource} />
+              <ContactsSection
+                application={application}
+                editMode={editMode}
+                dataSource={dataSource}
+              />
             )}
             {activeTab === 'plants' && (
-              <PlantsSection application={application} editMode={editMode} dataSource={dataSource} />
+              <PlantsSection
+                application={application}
+                editMode={editMode}
+                dataSource={dataSource}
+              />
             )}
-            {activeTab === 'products' && <ProductsTable application={application} dataSource={dataSource} />}
+            {activeTab === 'products' && (
+              <ProductsTable application={application} dataSource={dataSource} />
+            )}
             {activeTab === 'ingredients' && (
               <IngredientMgmt
                 application={application}
@@ -879,104 +984,129 @@ export function ApplicationDetailsContent({
                 setShowRecentOnly={setShowRecentOnly}
               />
             )}
-            {dataSource === 'application' && activeTab === 'inspection-invoice' && resolvedApplicationId !== null && (
-              <InspectionInvoiceDrawer
-                open
-                mode="embedded"
-                readOnly
-                applicationId={resolvedApplicationId}
-                applicationName={applicationDisplayName}
-                taskInstanceId={
-                  (inspectionInvoiceTask as any)?.taskInstanceId ??
-                  (inspectionInvoiceTask as any)?.TaskInstanceId
-                }
-                taskName="Inspection Invoice"
-                taskStatusDetails={
-                  inspectionInvoiceTask?.StatusDetails ?? (inspectionInvoiceTask as any)?.statusDetails
-                }
-                onClose={() => {}}
-              />
+            {dataSource === 'application' &&
+              activeTab === 'inspection-invoice' &&
+              resolvedApplicationId !== null && (
+                <InspectionInvoiceDrawer
+                  open
+                  mode="embedded"
+                  readOnly
+                  applicationId={resolvedApplicationId}
+                  applicationName={applicationDisplayName}
+                  taskInstanceId={
+                    (inspectionInvoiceTask as any)?.taskInstanceId ??
+                    (inspectionInvoiceTask as any)?.TaskInstanceId
+                  }
+                  taskName="Inspection Invoice"
+                  taskStatusDetails={
+                    inspectionInvoiceTask?.StatusDetails ??
+                    (inspectionInvoiceTask as any)?.statusDetails
+                  }
+                  onClose={() => {}}
+                />
+              )}
+            {dataSource === 'application' &&
+              activeTab === 'inspection-invoice' &&
+              resolvedApplicationId === null && (
+                <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
+                  Inspection Invoice is unavailable because this application does not have a valid
+                  application ID.
+                </div>
+              )}
+            {dataSource === 'application' &&
+              activeTab === 'schedule-a' &&
+              resolvedApplicationId !== null && (
+                <ScheduleAIngredientsDrawer
+                  open
+                  mode="embedded"
+                  readOnly
+                  applicationId={resolvedApplicationId}
+                  applicationName={applicationDisplayName}
+                  scheduleATaskInstanceId={
+                    scheduleATask?.TaskInstanceId ?? (scheduleATask as any)?.taskInstanceId
+                  }
+                  scheduleATaskStatusDetails={
+                    scheduleATask?.StatusDetails ?? (scheduleATask as any)?.statusDetails
+                  }
+                  visitId={application.visit_id ?? null}
+                  appVars={application.appvars ?? null}
+                  assignedRoles={application.assignedRoles}
+                  onClose={() => {}}
+                />
+              )}
+            {dataSource === 'application' &&
+              activeTab === 'schedule-a' &&
+              resolvedApplicationId === null && (
+                <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
+                  Schedule A is unavailable because this application does not have a valid
+                  application ID.
+                </div>
+              )}
+            {dataSource === 'application' &&
+              activeTab === 'schedule-b' &&
+              resolvedApplicationId !== null && (
+                <ScheduleBProductsDrawer
+                  open
+                  mode="embedded"
+                  readOnly
+                  applicationId={resolvedApplicationId}
+                  applicationName={applicationDisplayName}
+                  scheduleBTaskInstanceId={
+                    scheduleBTask?.TaskInstanceId ?? (scheduleBTask as any)?.taskInstanceId
+                  }
+                  scheduleBTaskStatusDetails={
+                    scheduleBTask?.StatusDetails ?? (scheduleBTask as any)?.statusDetails
+                  }
+                  visitId={application.visit_id ?? null}
+                  appVars={application.appvars ?? null}
+                  assignedRoles={application.assignedRoles}
+                  onClose={() => {}}
+                />
+              )}
+            {dataSource === 'application' &&
+              activeTab === 'schedule-b' &&
+              resolvedApplicationId === null && (
+                <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
+                  Schedule B is unavailable because this application does not have a valid
+                  application ID.
+                </div>
+              )}
+            {dataSource === 'application' &&
+              activeTab === 'contract' &&
+              resolvedApplicationId !== null && (
+                <ContractStageDrawer
+                  open
+                  mode="embedded"
+                  readOnly
+                  applicationId={resolvedApplicationId}
+                  applicationName={applicationDisplayName}
+                  appVars={application.appvars ?? null}
+                  assignedRoles={application.assignedRoles}
+                  taskName="Contract"
+                  onClose={() => {}}
+                />
+              )}
+            {dataSource === 'application' &&
+              activeTab === 'contract' &&
+              resolvedApplicationId === null && (
+                <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
+                  Contract is unavailable because this application does not have a valid application
+                  ID.
+                </div>
+              )}
+            {activeTab === 'raw-application' && (
+              <RawApplicationPanel entries={application.raw_data} />
             )}
-            {dataSource === 'application' && activeTab === 'inspection-invoice' && resolvedApplicationId === null && (
-              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
-                Inspection Invoice is unavailable because this application does not have a valid application ID.
-              </div>
-            )}
-            {dataSource === 'application' && activeTab === 'schedule-a' && resolvedApplicationId !== null && (
-              <ScheduleAIngredientsDrawer
-                open
-                mode="embedded"
-                readOnly
-                applicationId={resolvedApplicationId}
-                applicationName={applicationDisplayName}
-                scheduleATaskInstanceId={
-                  scheduleATask?.TaskInstanceId ?? (scheduleATask as any)?.taskInstanceId
-                }
-                scheduleATaskStatusDetails={
-                  scheduleATask?.StatusDetails ?? (scheduleATask as any)?.statusDetails
-                }
-                visitId={application.visit_id ?? null}
-                appVars={application.appvars ?? null}
-                assignedRoles={application.assignedRoles}
-                onClose={() => {}}
-              />
-            )}
-            {dataSource === 'application' && activeTab === 'schedule-a' && resolvedApplicationId === null && (
-              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
-                Schedule A is unavailable because this application does not have a valid application ID.
-              </div>
-            )}
-            {dataSource === 'application' && activeTab === 'schedule-b' && resolvedApplicationId !== null && (
-              <ScheduleBProductsDrawer
-                open
-                mode="embedded"
-                readOnly
-                applicationId={resolvedApplicationId}
-                applicationName={applicationDisplayName}
-                scheduleBTaskInstanceId={
-                  scheduleBTask?.TaskInstanceId ?? (scheduleBTask as any)?.taskInstanceId
-                }
-                scheduleBTaskStatusDetails={
-                  scheduleBTask?.StatusDetails ?? (scheduleBTask as any)?.statusDetails
-                }
-                visitId={application.visit_id ?? null}
-                appVars={application.appvars ?? null}
-                assignedRoles={application.assignedRoles}
-                onClose={() => {}}
-              />
-            )}
-            {dataSource === 'application' && activeTab === 'schedule-b' && resolvedApplicationId === null && (
-              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
-                Schedule B is unavailable because this application does not have a valid application ID.
-              </div>
-            )}
-            {dataSource === 'application' && activeTab === 'contract' && resolvedApplicationId !== null && (
-              <ContractStageDrawer
-                open
-                mode="embedded"
-                readOnly
-                applicationId={resolvedApplicationId}
-                applicationName={applicationDisplayName}
-                appVars={application.appvars ?? null}
-                assignedRoles={application.assignedRoles}
-                taskName="Contract"
-                onClose={() => {}}
-              />
-            )}
-            {dataSource === 'application' && activeTab === 'contract' && resolvedApplicationId === null && (
-              <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
-                Contract is unavailable because this application does not have a valid application ID.
-              </div>
-            )}
-            {activeTab === 'raw-application' && <RawApplicationPanel entries={application.raw_data} />}
             {activeTab === 'quote' && <QuoteInfo application={application} />}
-            {activeTab === 'activity' && <ActivityLog recentActivity={recentActivity} comments={comments} />}
+            {activeTab === 'activity' && (
+              <ActivityLog recentActivity={recentActivity} comments={comments} />
+            )}
             {activeTab === 'task-events' && <TaskEventsPanel taskEvents={sortedTaskEvents} />}
             {activeTab === 'emails' && <EmailsPanel emails={application.emails} />}
             {activeTab === 'files' && (
               <FilesList
                 application={application}
-                applicationId={resolvedApplicationId}
+                applicationId={sourceApplicant?.applicationId ?? resolvedApplicationId}
                 showProcessingStatus={dataSource !== 'prelim'}
               />
             )}
