@@ -272,7 +272,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
 
   const assignmentStartDate = todayYmd()
   const assignmentEndDate = addDaysToYmd(assignmentStartDate, 90)
-  const [plannedVisitDate, setPlannedVisitDate] = useState(addDaysToYmd(assignmentStartDate, 14))
+  const [plannedVisitDate, setPlannedVisitDate] = useState('')
   const [rfrNote, setRfrNote] = useState('')
   const [confirmed, setConfirmed] = useState(false)
   const [isSchedulingVisit, setIsSchedulingVisit] = useState(false)
@@ -332,7 +332,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
   if (!open) return null
 
   const accountNumber = getAccountNumber(applicant)
-  const reportDueDate = addDaysToYmd(plannedVisitDate, 7)
+  const reportDueDate = plannedVisitDate ? addDaysToYmd(plannedVisitDate, 7) : ''
   const assignmentResult = parseAssignmentResult(
     (task as any)?.StatusDetails ??
       (task as any)?.statusDetails ??
@@ -552,7 +552,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
                     <button
                       type="button"
                       onClick={confirmVisitDate}
-                      disabled={isConfirmingVisitDate}
+                      disabled={isConfirmingVisitDate || !plannedVisitDate}
                       className="inline-flex items-center gap-2 rounded bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                     >
                       <CalendarDays className="h-4 w-4" />
