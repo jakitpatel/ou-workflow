@@ -1128,7 +1128,6 @@ export function useInspectionInvoiceDrawerState({
     setEmailTo(toUser)
     setEmailBody(messageText)
     setShowEmailPreview(true)
-    setStage('outlook-opened')
   }
 
   const sendEmail = async ({
@@ -1184,14 +1183,15 @@ export function useInspectionInvoiceDrawerState({
         token,
       })
       const nextSentAt = new Date().toLocaleString()
+      const nextStage: InspectionInvoiceStage = paidAt ? 'paid' : 'sent-captured'
       setSentAt(nextSentAt)
-      setStage('sent-captured')
+      setStage(nextStage)
       setShowEmailPreview(false)
       await saveInvoiceTaskState({
         nextAttachments: attachments,
         nextRecipientEmail: toUser,
         nextSentAt,
-        nextStage: 'sent-captured',
+        nextStage,
         nextSubject: subject,
         nextToUser: toUser,
       })

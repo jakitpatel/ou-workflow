@@ -195,6 +195,14 @@ export function InspectionInvoiceDrawer({
     isValidEmailAddressList(state.emailTo, true) &&
     isValidEmailAddressList(state.emailCc) &&
     isValidEmailAddressList(state.emailBcc)
+  const canResendInvoiceEmail = Boolean(state.invoiceId && state.sentAt)
+
+  const openInvoiceEmailPreview = () => {
+    state.openEmailPreview({
+      messageText: emailMessageText,
+      toUser: recipientSendValue,
+    })
+  }
 
   const onPrimaryClick = async () => {
     if (state.skipInvoiceWorkflow) {
@@ -225,10 +233,7 @@ export function InspectionInvoiceDrawer({
     }
 
     if (state.stage === 'generated' || state.stage === 'outlook-opened') {
-      state.openEmailPreview({
-        messageText: emailMessageText,
-        toUser: recipientSendValue,
-      })
+      openInvoiceEmailPreview()
       return
     }
 
@@ -738,7 +743,7 @@ export function InspectionInvoiceDrawer({
           ) : null}
         </fieldset>
 
-        {!readOnly ? (
+        {!readOnly || canResendInvoiceEmail ? (
           <div className="flex items-center justify-between gap-4 border-t bg-white px-5 py-3">
             <div className="min-w-0 text-sm text-gray-600">
               {state.skipInvoiceWorkflow
@@ -761,25 +766,38 @@ export function InspectionInvoiceDrawer({
               >
                 Close
               </button>
-              <button
-                type="button"
-                onClick={onPrimaryClick}
-                disabled={
-                  state.isGeneratingInvoice ||
-                  state.isMarkingPaid ||
-                  state.isCompletingWithoutInspection ||
-                  (!state.skipInvoiceWorkflow &&
-                    (state.stage === 'setup' || state.stage === 'configured') &&
-                    !state.canGenerate) ||
-                  state.stage === 'paid'
-                }
-                className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-              >
-                {state.stage === 'generated' || state.stage === 'outlook-opened' ? (
+              {canResendInvoiceEmail ? (
+                <button
+                  type="button"
+                  onClick={openInvoiceEmailPreview}
+                  disabled={state.isSendingEmail}
+                  className="inline-flex items-center gap-2 rounded border border-blue-600 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
                   <Mail className="h-4 w-4" />
-                ) : null}
-                {state.isMarkingPaid ? 'Marking paid...' : primaryActionLabel}
-              </button>
+                  Send Email Again
+                </button>
+              ) : null}
+              {!readOnly ? (
+                <button
+                  type="button"
+                  onClick={onPrimaryClick}
+                  disabled={
+                    state.isGeneratingInvoice ||
+                    state.isMarkingPaid ||
+                    state.isCompletingWithoutInspection ||
+                    (!state.skipInvoiceWorkflow &&
+                      (state.stage === 'setup' || state.stage === 'configured') &&
+                      !state.canGenerate) ||
+                    state.stage === 'paid'
+                  }
+                  className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                >
+                  {state.stage === 'generated' || state.stage === 'outlook-opened' ? (
+                    <Mail className="h-4 w-4" />
+                  ) : null}
+                  {state.isMarkingPaid ? 'Marking paid...' : primaryActionLabel}
+                </button>
+              ) : null}
             </div>
           </div>
         ) : null}
