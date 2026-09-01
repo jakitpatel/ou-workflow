@@ -1350,7 +1350,19 @@ export function ScheduleBProductsDrawer({
                       <div className="flex flex-wrap items-center gap-2">
                         {ingView === 'application' && !readOnly ? (
                           !scratchpad.scheduleBReady ? (
-                            <button type="button" onClick={markScheduleBReady} disabled={completeScheduleBTaskMutation.isPending} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300">
+                            <button
+                              type="button"
+                              onClick={markScheduleBReady}
+                              disabled={
+                                isAssignProductsTask || completeScheduleBTaskMutation.isPending
+                              }
+                              title={
+                                isAssignProductsTask
+                                  ? 'Schedule B cannot be marked ready from the Assign to Products task.'
+                                  : undefined
+                              }
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                            >
                               <Check className="h-3.5 w-3.5" />
                               {completeScheduleBTaskMutation.isPending ? 'Marking Ready...' : 'Mark Schedule B Ready'}
                             </button>

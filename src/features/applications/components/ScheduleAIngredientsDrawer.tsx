@@ -1333,7 +1333,14 @@ export function ScheduleAIngredientsDrawer({
                         <button
                           type="button"
                           onClick={markScheduleAReady}
-                          disabled={completeScheduleATaskMutation.isPending}
+                          disabled={
+                            isAssigningTask || completeScheduleATaskMutation.isPending
+                          }
+                          title={
+                            isAssigningTask
+                              ? 'Schedule A cannot be marked ready from the Assign Ingredients task.'
+                              : undefined
+                          }
                           className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                         >
                           <Check className="h-3.5 w-3.5" />
