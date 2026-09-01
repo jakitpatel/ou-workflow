@@ -1168,6 +1168,7 @@ export function useInspectionInvoiceDrawerState({
             token,
           })
           const fileUrl = getUploadString(response, [
+            'file_path',
             'FilePath',
             'filePath',
             'file_url',
