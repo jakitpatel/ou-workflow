@@ -186,13 +186,6 @@ type InspectionInvoiceSavedState = {
   }
 }
 
-const RFR_FEE_RULES: Record<string, { fee: number; expenses: number }> = {
-  'NY/NJ': { fee: 600, expenses: 333 },
-  'NJ/PA': { fee: 600, expenses: 450 },
-  Mexico: { fee: 1200, expenses: 1850 },
-  CA: { fee: 800, expenses: 920 },
-}
-
 const todayYmd = () => new Date().toISOString().slice(0, 10)
 
 export const formatCurrency = (value: number) =>
@@ -577,8 +570,8 @@ export function useInspectionInvoiceDrawerState({
   const [selectedRfrId, setSelectedRfrId] = useState<string | null>(null)
   const [restoredRfr, setRestoredRfr] = useState<InspectionInvoiceRfr | null>(null)
   const [rfrSearch, setRfrSearch] = useState('')
-  const [feeAmount, setFeeAmount] = useState('600.00')
-  const [expenseAmount, setExpenseAmount] = useState('333.00')
+  const [feeAmount, setFeeAmount] = useState('')
+  const [expenseAmount, setExpenseAmount] = useState('')
   const [invoiceDate, setInvoiceDate] = useState(todayYmd())
   const [invoiceId, setInvoiceId] = useState<string | null>(null)
   const [invoiceDownloadLink, setInvoiceDownloadLink] = useState<string | null>(null)
@@ -745,8 +738,8 @@ export function useInspectionInvoiceDrawerState({
     setAwaitPayment(setup.awaitPayment ?? true)
     setSelectedRfrId(nextSelectedRfrId || null)
     setRestoredRfr(nextRestoredRfr)
-    setFeeAmount(setup.feeAmount ?? '600.00')
-    setExpenseAmount(setup.expenseAmount ?? '333.00')
+    setFeeAmount(setup.feeAmount ?? '')
+    setExpenseAmount(setup.expenseAmount ?? '')
     setInvoiceDate(setup.invoiceDate ?? todayYmd())
     setInternalNotes(setup.internalNotes ?? '')
     setNoInspectionReason(setup.noInspectionReason ?? '')
@@ -790,7 +783,7 @@ export function useInspectionInvoiceDrawerState({
     inspectionNeeded !== null &&
     (inspectionNeeded === false || Boolean(selectedRfrId)) &&
     feeRequired !== null &&
-    (feeRequired === true ? fee > 0 : fee >= 0) &&
+    fee > 0 &&
     Boolean(invoiceDate) &&
     (inspectionNeeded !== false || Boolean(noInspectionReason)) &&
     (feeRequired !== false || Boolean(noFeeReason))
@@ -980,11 +973,13 @@ export function useInspectionInvoiceDrawerState({
     setInspectionNeeded(value)
     if (!value) {
       setSelectedRfrId(null)
-      setFeeAmount('300.00')
-      setExpenseAmount('0.00')
+      setFeeAmount('')
+      setExpenseAmount('')
       setLetterTemplate(APPLICATION_FEE_LETTER_TEMPLATE)
       setAwaitPayment(false)
     } else {
+      setFeeAmount('')
+      setExpenseAmount('')
       setLetterTemplate(INSPECTION_LETTER_TEMPLATE)
     }
     updateSetupStage()
@@ -993,14 +988,13 @@ export function useInspectionInvoiceDrawerState({
   const setFeeRequiredValue = (value: boolean) => {
     setFeeRequired(value)
     if (!value) {
-      setFeeAmount('300.00')
-      setExpenseAmount('0.00')
+      setFeeAmount('')
+      setExpenseAmount('')
       setLetterTemplate(APPLICATION_FEE_LETTER_TEMPLATE)
       setAwaitPayment(false)
     } else {
-      const rule = selectedRfr ? RFR_FEE_RULES[selectedRfr.region] : null
-      setFeeAmount((rule?.fee ?? 600).toFixed(2))
-      setExpenseAmount((rule?.expenses ?? 333).toFixed(2))
+      setFeeAmount('')
+      setExpenseAmount('')
       setLetterTemplate(INSPECTION_LETTER_TEMPLATE)
     }
     updateSetupStage()
@@ -1008,22 +1002,12 @@ export function useInspectionInvoiceDrawerState({
 
   const pickRfr = async (rfr: InspectionInvoiceRfr) => {
     setSelectedRfrId(rfr.lookupKey)
-    const rule = RFR_FEE_RULES[rfr.region]
-    let nextFee = fee
-    let nextExpenses = expenses
-
-    if (rule && letterTemplate !== APPLICATION_FEE_LETTER_TEMPLATE) {
-      setFeeAmount(rule.fee.toFixed(2))
-      setExpenseAmount(rule.expenses.toFixed(2))
-      nextFee = rule.fee
-      nextExpenses = rule.expenses
-    }
     updateSetupStage(true)
 
     await patchInvoiceTaskGuiDisplayResult({
       nextInvoiceId: null,
       nextRfr: rfr,
-      nextSubtotal: nextFee + nextExpenses,
+      nextSubtotal: subtotal,
     })
   }
 
@@ -1041,6 +1025,9 @@ export function useInspectionInvoiceDrawerState({
   }
 
   const generateInvoice = async () => {
+    if (fee <= 0) {
+      throw new Error('Enter a fee greater than $0 before generating the invoice.')
+    }
     if (!canGenerate) return null
     setIsGeneratingInvoice(true)
     try {

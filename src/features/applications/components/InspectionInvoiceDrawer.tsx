@@ -494,8 +494,7 @@ export function InspectionInvoiceDrawer({
                 <div>
                   <div className="text-sm font-medium text-gray-900">Inspection fee needed?</div>
                   <p className="mt-1 text-xs text-gray-500">
-                    If no, the application fee defaults to $300. You can override the amount or set
-                    it to $0.
+                    Select the applicable fee type, then enter the fee amount in Invoice Details.
                   </p>
                 </div>
                 <YesNoGroup
@@ -590,29 +589,45 @@ export function InspectionInvoiceDrawer({
                       <option value={APPLICATION_FEE_LETTER_TEMPLATE}>Application Fee</option>
                     </select>
                     <span className="mt-1 block text-xs text-gray-500">
-                      Default is set by the Inspection Fee answer above. Override if a different
-                      letter is needed.
+                      The Inspection Fee answer selects the template. No price is added
+                      automatically.
                     </span>
                   </label>
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <label className="text-sm">
-                      <span className="text-xs font-semibold uppercase text-gray-500">Fee</span>
+                      <span className="text-xs font-semibold uppercase text-gray-500">
+                        Fee <span className="text-red-600">*</span>
+                      </span>
                       <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
                         value={state.feeAmount}
                         disabled={state.isLocked}
                         onChange={(event) => state.setFeeAmount(event.target.value)}
+                        placeholder="Enter fee amount"
+                        required
                         className="mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-100"
                       />
+                      {!state.isLocked && state.fee <= 0 ? (
+                        <span className="mt-1 block text-xs text-amber-700">
+                          Enter a fee greater than $0 to generate the invoice.
+                        </span>
+                      ) : null}
                     </label>
                     <label className="text-sm">
                       <span className="text-xs font-semibold uppercase text-gray-500">
                         Expenses
                       </span>
                       <input
+                        type="number"
+                        min="0"
+                        step="0.01"
                         value={state.expenseAmount}
                         disabled={state.isLocked}
                         onChange={(event) => state.setExpenseAmount(event.target.value)}
+                        placeholder="Optional"
                         className="mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-100"
                       />
                     </label>
