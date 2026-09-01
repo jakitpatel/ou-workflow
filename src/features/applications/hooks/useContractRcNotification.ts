@@ -13,69 +13,18 @@ import {
   type GenerateInspectionInvoiceResponse,
 } from '@/features/applications/api'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
-import { assignTask, patchTaskResult } from '@/features/tasks/api'
+import { patchTaskResult } from '@/features/tasks/api'
 import { useUser } from '@/context/UserContext'
-import { resolveApiBaseUrl } from '@/shared/api/httpClient'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
 import { assertEmailAttachmentSize } from '@/shared/email/attachmentSizeValidation'
 import type { Applicant } from '@/types/application'
 
-const RC_NOTIFICATION_SUBJECT = 'OU Kosher - You have been selected to be the RC'
-
-const getWorkflowBaseUrl = () =>
-  resolveApiBaseUrl()
-    .replace(/\/api\/?$/i, '')
-    .replace(/\/$/, '')
-
-const getAppBasePath = () => {
-  const basePath = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
-  return basePath && basePath !== '/' ? basePath : ''
-}
-
 const normalizeApplicationId = (applicationId: string | number) => {
   const value = String(applicationId).trim()
   const numericValue = Number(value)
   return Number.isFinite(numericValue) && value !== '' ? numericValue : value
-}
-
-const normalizeNumericApplicationId = (applicationId: string | number) => {
-  const value = String(applicationId).trim()
-  const numericValue = Number(value)
-  return Number.isFinite(numericValue) && value !== '' ? numericValue : null
-}
-
-const buildApplicationReviewUrl = (applicationId: string | number) => {
-  const params = new URLSearchParams({
-    q: '',
-    status: 'all',
-    priority: 'all',
-    page: '0',
-    myOnly: 'true',
-    applicationId: String(applicationId),
-  })
-
-  const appPath = `${getAppBasePath()}/ou-workflow/ncrc-dashboard?${params.toString()}`
-
-  if (typeof window !== 'undefined') {
-    return new URL(appPath, window.location.origin).toString()
-  }
-
-  return `${getWorkflowBaseUrl()}${appPath}`
-}
-
-type NotifyRcForApprovalParams = {
-  applicationId?: string | number
-  companyName: string
-  rcUserName?: string
-  taskInstanceId?: string | number
-}
-
-type AssignContractRcParams = {
-  applicationId?: string | number
-  assignee?: string
-  taskInstanceId?: string | number
 }
 
 type GenerateContractInvoiceParams = {
@@ -343,8 +292,6 @@ export function useContractRcNotification({
   token?: string | null
   username?: string | null
 }) {
-  const [isSendingRcNotification, setIsSendingRcNotification] = useState(false)
-  const [isAssigningContractRc, setIsAssigningContractRc] = useState(false)
   const [isGeneratingContractInvoice, setIsGeneratingContractInvoice] = useState(false)
   const [isGeneratingContractPackage, setIsGeneratingContractPackage] = useState(false)
   const [isSendingContractEmail, setIsSendingContractEmail] = useState(false)
@@ -369,113 +316,6 @@ export function useContractRcNotification({
       guiDisplayResult,
       token: token ?? undefined,
     })
-  }
-
-  const assignContractRcToCompany = async ({
-    applicationId,
-    assignee,
-    taskInstanceId,
-  }: AssignContractRcParams) => {
-    if (
-      applicationId === undefined ||
-      applicationId === null ||
-      String(applicationId).trim() === ''
-    ) {
-      throw new Error('Application id is required before assigning the RC.')
-    }
-
-    const appId = normalizeNumericApplicationId(applicationId)
-    if (appId === null) {
-      throw new Error('A numeric application id is required before assigning the RC.')
-    }
-
-    if (
-      taskInstanceId === undefined ||
-      taskInstanceId === null ||
-      String(taskInstanceId).trim() === ''
-    ) {
-      throw new Error('Task instance id is required before assigning the RC.')
-    }
-
-    if (!assignee?.trim()) {
-      throw new Error('Select an RC before assigning the role.')
-    }
-
-    setIsAssigningContractRc(true)
-    try {
-      await assignTask({
-        appId,
-        taskId: String(taskInstanceId).trim(),
-        role: 'RC',
-        assignee: assignee.trim(),
-        capacity: 'DESIGNATED',
-        token: token ?? undefined,
-      })
-    } finally {
-      setIsAssigningContractRc(false)
-    }
-  }
-
-  const notifyRcForApproval = async ({
-    applicationId,
-    companyName,
-    rcUserName,
-    taskInstanceId,
-  }: NotifyRcForApprovalParams) => {
-    if (
-      applicationId === undefined ||
-      applicationId === null ||
-      String(applicationId).trim() === ''
-    ) {
-      throw new Error('Application id is required before notifying the RC.')
-    }
-
-    if (!rcUserName?.trim()) {
-      throw new Error('Select an RC with a username before notifying for approval.')
-    }
-
-    const reviewUrl = buildApplicationReviewUrl(applicationId)
-    const messageTextPlain = `Dear RC,
-You have been selected to be the RC for ${companyName}
-
-please review the following application
-
-${reviewUrl}
-
-
-thank you
-
-NCRC
-${username ?? ''}`
-    const htmlEmail = buildHtmlEmailFromPlainText(messageTextPlain, {
-      title: RC_NOTIFICATION_SUBJECT,
-      preheader: `RC assignment for ${companyName}`,
-    })
-    const payload: ApplicationMessagePayload = {
-      ApplicationID: normalizeApplicationId(applicationId),
-      FromUser: username ?? '',
-      ToUser: rcUserName.trim(),
-      Subject: RC_NOTIFICATION_SUBJECT,
-      MessageText: htmlEmail.text,
-      MessageTextPlain: htmlEmail.text,
-      MessageType: 'Text',
-      Priority: 'NORMAL',
-      SentDate: new Date().toISOString(),
-      TemplateName: 'initial-inspection',
-      TaskInstanceId: taskInstanceId ?? null,
-      isPrivate: true,
-      BCCUser: 'productAutomation@ou.org',
-    }
-
-    setIsSendingRcNotification(true)
-    try {
-      await createApplicationMessage({
-        payload,
-        token: token ?? undefined,
-      })
-    } finally {
-      setIsSendingRcNotification(false)
-    }
   }
 
   const generateContractInvoice = async ({
@@ -655,16 +495,12 @@ ${username ?? ''}`
   }
 
   return {
-    assignContractRcToCompany,
     generateContractPackage,
     generateContractInvoice,
-    isAssigningContractRc,
     isGeneratingContractPackage,
     isGeneratingContractInvoice,
     isSendingContractEmail,
-    isSendingRcNotification,
     isUploadingContractAttachment,
-    notifyRcForApproval,
     saveContractStageState,
     sendContractPackageEmail,
     uploadContractEmailAttachment,

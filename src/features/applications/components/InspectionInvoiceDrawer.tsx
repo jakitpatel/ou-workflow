@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { Check, FileText, Mail, Paperclip, Search, UserRoundCheck, X } from 'lucide-react'
 import type React from 'react'
-import { Check, FileText, Mail, Search, UserRoundCheck, X } from 'lucide-react'
+import { useMemo, useRef } from 'react'
 import { toast } from 'sonner'
+
 import { InspectionInvoicePreview } from '@/features/applications/components/InspectionInvoicePreview'
 import {
   APPLICATION_FEE_DESCRIPTION,
@@ -147,6 +148,7 @@ export function InspectionInvoiceDrawer({
     taskName,
     taskStatusDetails,
   })
+  const emailAttachmentInputRef = useRef<HTMLInputElement | null>(null)
   const accountNumber = getApplicantAccountNumber(applicant)
   const isEmbedded = mode === 'embedded'
   const resolvedName = applicationName || applicant?.company || 'Application'
@@ -171,7 +173,14 @@ export function InspectionInvoiceDrawer({
               ? 'Mark Paid'
               : 'Paid'
 
-  const emailAttachment = state.invoicePdfUrl ?? `Invoice_${state.invoiceId ?? 'DRAFT'}.pdf`
+  const invoiceAttachmentName = `Invoice_${state.invoiceId ?? 'DRAFT'}.pdf`
+  const invoiceAttachment = state.invoicePdfUrl
+    ? `${invoiceAttachmentName}<${state.invoicePdfUrl}>`
+    : invoiceAttachmentName
+  const emailAttachment = [
+    invoiceAttachment,
+    ...state.emailAttachments.map((attachment) => `${attachment.fileName}<${attachment.fileUrl}>`),
+  ].join(', ')
   const recipientLabel =
     state.recipient === 'ADD_NEW'
       ? state.extraRecipientEmail || 'Additional email'
@@ -906,12 +915,61 @@ export function InspectionInvoiceDrawer({
                   </div>
                   <div className="grid grid-cols-[80px_1fr] px-3 py-2 text-sm">
                     <span className="font-medium text-gray-500">Attach</span>
-                    <span>
-                      {emailAttachment}
-                      <span className="ml-1 text-gray-500">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-gray-400" />
+                        <span>{invoiceAttachmentName}</span>
+                      </div>
+                      {state.emailAttachments.map((attachment, index) => (
+                        <div
+                          key={`${attachment.fileUrl}-${index}`}
+                          className="flex items-center gap-2"
+                        >
+                          <Paperclip className="h-4 w-4 text-gray-400" />
+                          <span className="min-w-0 flex-1 truncate">{attachment.fileName}</span>
+                          <button
+                            type="button"
+                            onClick={() => state.removeEmailAttachment(index)}
+                            className="rounded p-1 text-red-600 hover:bg-red-50"
+                            aria-label={`Remove ${attachment.fileName}`}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      <input
+                        ref={emailAttachmentInputRef}
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={async (event) => {
+                          if (!event.target.files) return
+                          try {
+                            await state.uploadEmailAttachments(event.target.files)
+                            event.target.value = ''
+                            toast.success('Attachment added')
+                          } catch (error) {
+                            toast.error(
+                              error instanceof Error
+                                ? error.message
+                                : 'Unable to upload attachment',
+                            )
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        disabled={state.isUploadingEmailAttachment}
+                        onClick={() => emailAttachmentInputRef.current?.click()}
+                        className="inline-flex items-center gap-1.5 rounded border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-60"
+                      >
+                        <Paperclip className="h-3.5 w-3.5" />
+                        {state.isUploadingEmailAttachment ? 'Uploading...' : 'Add files'}
+                      </button>
+                      <span className="block text-gray-500">
                         (maximum {MAX_EMAIL_ATTACHMENT_SIZE_MB} MB total)
                       </span>
-                    </span>
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -941,7 +999,10 @@ export function InspectionInvoiceDrawer({
                 <button
                   type="button"
                   disabled={
-                    state.isSendingEmail || !areEmailRecipientsValid || !state.emailBody.trim()
+                    state.isSendingEmail ||
+                    state.isUploadingEmailAttachment ||
+                    !areEmailRecipientsValid ||
+                    !state.emailBody.trim()
                   }
                   onClick={async () => {
                     try {

@@ -1,25 +1,30 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useMemo, useRef, useState } from 'react'
+
+import { useUser } from '@/context/UserContext'
 import {
-  generateInspectionInvoice,
   createApplicationMessage,
   fetchApplicationDetail,
+  generateInspectionInvoice,
+  uploadApplicationFile,
 } from '@/features/applications/api'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
-import { useUser } from '@/context/UserContext'
-import type { Applicant, CompanyContact, CompanyContactGroups } from '@/types/application'
-import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
-import { confirmTask, patchTaskGuiDisplayResult, patchTaskResult } from '@/features/tasks/api'
-import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import {
   buildInspectionStatusDetails,
   getInspectionStatusSavedState,
 } from '@/features/applications/utils/inspectionStatusDetails'
+import { confirmTask, patchTaskGuiDisplayResult, patchTaskResult } from '@/features/tasks/api'
+import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
-import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
+import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
-import { assertEmailAttachmentSize } from '@/shared/email/attachmentSizeValidation'
+import {
+  assertEmailAttachmentSize,
+  assertKnownEmailAttachmentSize,
+} from '@/shared/email/attachmentSizeValidation'
+import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
+import type { Applicant, CompanyContact, CompanyContactGroups } from '@/types/application'
 
 export type InspectionInvoiceStage =
   'setup' | 'configured' | 'generated' | 'outlook-opened' | 'sent-captured' | 'paid'
@@ -30,6 +35,28 @@ export const APPLICATION_FEE_DESCRIPTION =
   'Non-refundable fee to initiate OU Kosher certification review'
 export const INITIAL_INSPECTION_FEE_DESCRIPTION =
   'Professional services - kosher certification initial inspection'
+
+export type InspectionInvoiceEmailAttachment = {
+  fileName: string
+  fileUrl: string
+  sizeBytes: number
+}
+
+const getUploadString = (response: unknown, keys: string[]) => {
+  const root = response && typeof response === 'object' ? (response as Record<string, unknown>) : {}
+  const data =
+    root.data && typeof root.data === 'object' ? (root.data as Record<string, unknown>) : root
+  const attributes =
+    data.attributes && typeof data.attributes === 'object'
+      ? (data.attributes as Record<string, unknown>)
+      : {}
+  const source = { ...data, ...attributes }
+  for (const key of keys) {
+    const value = source[key]
+    if (value != null && String(value).trim()) return String(value).trim()
+  }
+  return ''
+}
 
 export type InspectionInvoiceRfr = {
   id: string
@@ -569,10 +596,12 @@ export function useInspectionInvoiceDrawerState({
   const [emailBcc, setEmailBcc] = useState('productAutomation@ou.org')
   const [showEmailCopies, setShowEmailCopies] = useState(false)
   const [emailBody, setEmailBody] = useState('')
+  const [emailAttachments, setEmailAttachments] = useState<InspectionInvoiceEmailAttachment[]>([])
   const [sentAt, setSentAt] = useState<string | null>(null)
   const [paidAt, setPaidAt] = useState<string | null>(null)
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false)
   const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [isUploadingEmailAttachment, setIsUploadingEmailAttachment] = useState(false)
   const [isMarkingPaid, setIsMarkingPaid] = useState(false)
   const [isCompletingWithoutInspection, setIsCompletingWithoutInspection] = useState(false)
   const restoredTaskKeyRef = useRef('')
@@ -1130,6 +1159,56 @@ export function useInspectionInvoiceDrawerState({
     setShowEmailPreview(true)
   }
 
+  const uploadEmailAttachments = async (files: FileList | File[]) => {
+    const selectedFiles = Array.from(files).filter((file) => file.size > 0)
+    if (!selectedFiles.length) return
+    if (!resolvedApplicationId)
+      throw new Error('Application id is required before uploading an attachment.')
+
+    const existingSize = emailAttachments.reduce((total, file) => total + file.sizeBytes, 0)
+    const selectedSize = selectedFiles.reduce((total, file) => total + file.size, 0)
+    assertKnownEmailAttachmentSize(existingSize + selectedSize)
+
+    setIsUploadingEmailAttachment(true)
+    try {
+      const uploaded = await Promise.all(
+        selectedFiles.map(async (file) => {
+          const response = await uploadApplicationFile({
+            applicationId: resolvedApplicationId,
+            description: 'Inspection invoice email attachment',
+            file,
+            taskInstanceID: taskInstanceId ?? null,
+            token,
+          })
+          const fileUrl = getUploadString(response, [
+            'FilePath',
+            'filePath',
+            'file_url',
+            'fileUrl',
+            'url',
+            'downloadUrl',
+            'Location',
+          ])
+          if (!fileUrl)
+            throw new Error(`Upload completed but no file URL was returned for ${file.name}.`)
+          return {
+            fileName:
+              getUploadString(response, ['FileName', 'fileName', 'filename', 'name']) || file.name,
+            fileUrl,
+            sizeBytes: file.size,
+          }
+        }),
+      )
+      setEmailAttachments((current) => [...current, ...uploaded])
+    } finally {
+      setIsUploadingEmailAttachment(false)
+    }
+  }
+
+  const removeEmailAttachment = (index: number) => {
+    setEmailAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index))
+  }
+
   const sendEmail = async ({
     attachments,
     bccUser,
@@ -1310,6 +1389,7 @@ export function useInspectionInvoiceDrawerState({
     expenseAmount,
     expenses,
     emailBody,
+    emailAttachments,
     emailBcc,
     emailCc,
     emailTo,
@@ -1333,6 +1413,7 @@ export function useInspectionInvoiceDrawerState({
     isCompletingWithoutInspection,
     isMarkingPaid,
     isSendingEmail,
+    isUploadingEmailAttachment,
     isRfrListError,
     isRfrListLoading,
     letterTemplate,
@@ -1356,6 +1437,8 @@ export function useInspectionInvoiceDrawerState({
     markPaid,
     markSent,
     sendEmail,
+    uploadEmailAttachments,
+    removeEmailAttachment,
     openEmailPreview,
     pickRfr,
     setAwaitPayment,

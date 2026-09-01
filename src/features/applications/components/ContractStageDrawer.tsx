@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Check,
   ChevronRight,
   ClipboardList,
   Copy,
   Download,
   FileText,
   MessageSquare,
-  Search,
   Send,
   Upload,
   X,
@@ -26,7 +24,6 @@ import {
   assertKnownEmailAttachmentSize,
   MAX_EMAIL_ATTACHMENT_SIZE_MB,
 } from '@/shared/email/attachmentSizeValidation'
-import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import type {
   Applicant,
@@ -146,14 +143,6 @@ type ContractStageSavedStage =
   | 'Paid'
   | 'Completed'
 
-type ContractRcOption = {
-  lookupKey: string
-  assigneeValue: string
-  name: string
-  userName: string
-  email: string
-}
-
 type ContractEmailAttachment = {
   fileName: string
   fileUrl?: string
@@ -173,9 +162,6 @@ type ContractStageSavedState = {
     noProductionProcedures?: boolean
     legalReviewNeeded?: boolean
     legalApproved?: boolean
-    selectedRcLookupKey?: string
-    savedRcLookupKey?: string
-    rc?: Partial<ContractRcOption> | null
     coverLetterBody?: string
   }
   invoice?: {
@@ -594,24 +580,6 @@ const isContractStageSavedStage = (value: unknown): value is ContractStageSavedS
   value === 'Paid' ||
   value === 'Completed'
 
-const restoreContractRcOption = (
-  rc: Partial<ContractRcOption> | null | undefined,
-): ContractRcOption | null => {
-  if (!rc) return null
-
-  const lookupKey = textValue(rc.lookupKey || rc.userName || rc.assigneeValue || rc.name)
-  const name = textValue(rc.name || rc.userName || lookupKey)
-  if (!lookupKey && !name) return null
-
-  return {
-    lookupKey: lookupKey || name,
-    assigneeValue: textValue(rc.assigneeValue || rc.userName || lookupKey || name),
-    name: name || lookupKey,
-    userName: textValue(rc.userName || rc.assigneeValue || lookupKey),
-    email: textValue(rc.email),
-  }
-}
-
 const normalizePythonJsonLikeObject = (text: string) => {
   let normalized = ''
   let inSingleQuotedText = false
@@ -1007,15 +975,11 @@ export function ContractStageDrawer({
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const { email, token, username } = useUser()
   const {
-    assignContractRcToCompany,
     generateContractPackage,
     generateContractInvoice,
-    isAssigningContractRc,
     isGeneratingContractPackage,
     isGeneratingContractInvoice,
-    isSendingRcNotification,
     isUploadingContractAttachment,
-    notifyRcForApproval,
     saveContractStageState,
     uploadContractEmailAttachment,
   } = useContractRcNotification({
@@ -1034,13 +998,6 @@ export function ContractStageDrawer({
   })
   const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
   const isNewCompanyContract = applicant?.isNewCompany !== false
-  const {
-    data: rcLookupList = [],
-    isError: isRcLookupError,
-    isLoading: isRcLookupLoading,
-  } = useUserListByRole('api/vSelectRC', {
-    enabled: open && isNewCompanyContract && !isWorkflowReadOnly,
-  })
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
     includePrelimLists: true,
@@ -1086,10 +1043,6 @@ export function ContractStageDrawer({
   const [contractEmailCopied, setContractEmailCopied] = useState(false)
   const [contractEmailSendError, setContractEmailSendError] = useState('')
   const [contractEmailSentMessage, setContractEmailSentMessage] = useState('')
-  const [selectedRcLookupKey, setSelectedRcLookupKey] = useState('')
-  const [savedRcLookupKey, setSavedRcLookupKey] = useState('')
-  const [restoredRc, setRestoredRc] = useState<ContractRcOption | null>(null)
-  const [rcSearch, setRcSearch] = useState('')
   const [extraEmailAttachments, setExtraEmailAttachments] = useState<ContractEmailAttachment[]>([])
   const [isAttachmentDragOver, setIsAttachmentDragOver] = useState(false)
   const restoredTaskKeyRef = useRef('')
@@ -1141,10 +1094,6 @@ export function ContractStageDrawer({
     setShowClauseChanges(false)
     setEditingClauseId(null)
     setEditingClauseText('')
-    setSelectedRcLookupKey('')
-    setSavedRcLookupKey('')
-    setRestoredRc(null)
-    setRcSearch('')
     setExtraEmailAttachments([])
     setIsAttachmentDragOver(false)
   }, [open, taskInstanceId])
@@ -1169,7 +1118,6 @@ export function ContractStageDrawer({
     const contractPackage = savedState.package ?? {}
     const emailState = savedState.email ?? {}
     const completion = savedState.completion ?? {}
-    const nextRestoredRc = restoreContractRcOption(setup.rc)
     const nextStage = isContractStageSavedStage(savedState.stage) ? savedState.stage : 'setup'
 
     setEffectiveDate(setup.effectiveDate || getDefaultEffectiveDate())
@@ -1180,9 +1128,6 @@ export function ContractStageDrawer({
     setNoProductionProcedures(setup.noProductionProcedures ?? true)
     setLegalReviewNeeded(Boolean(setup.legalReviewNeeded))
     setLegalApproved(Boolean(setup.legalApproved))
-    setSelectedRcLookupKey(setup.selectedRcLookupKey || nextRestoredRc?.lookupKey || '')
-    setSavedRcLookupKey(setup.savedRcLookupKey || nextRestoredRc?.lookupKey || '')
-    setRestoredRc(nextRestoredRc)
     setContractInvoiceId(invoice.invoiceId ?? null)
     setContractInvoiceDisplayUrl(invoice.displayUrl ?? null)
     setContractInvoiceDownloadLink(invoice.downloadLink ?? null)
@@ -1212,41 +1157,8 @@ export function ContractStageDrawer({
     textValue(username) ||
     'Assigned RC'
   const existingRcEmail = email || (username && username.includes('@') ? username : 'rc@ou.org')
-  const rcOptions = useMemo(
-    () =>
-      rcLookupList
-        .map((item) => ({
-          lookupKey: textValue(item.lookupKey || item.id || item.userName || item.name),
-          assigneeValue: textValue(
-            item.assigneeValue || item.userName || item.id || item.lookupKey,
-          ),
-          name: textValue(item.fullName || item.name || item.userName || item.id),
-          userName: textValue(item.userName || item.id),
-          email: textValue(item.email),
-        }))
-        .filter((item) => item.lookupKey && item.name),
-    [rcLookupList],
-  )
-  const selectedRc =
-    rcOptions.find((option) => option.lookupKey === selectedRcLookupKey) ??
-    (restoredRc?.lookupKey === selectedRcLookupKey ? restoredRc : null)
-  const selectedRcSaved = Boolean(selectedRc && selectedRc.lookupKey === savedRcLookupKey)
-  const filteredRcOptions = useMemo(() => {
-    const query = rcSearch.trim().toLowerCase()
-    if (!query) return rcOptions
-
-    return rcOptions.filter((option) =>
-      [option.name, option.userName, option.email].some((value) =>
-        value.toLowerCase().includes(query),
-      ),
-    )
-  }, [rcOptions, rcSearch])
-  const rcName = isNewCompanyContract
-    ? selectedRc?.name || (isWorkflowReadOnly ? existingRcName : 'Select RC')
-    : existingRcName
-  const rcEmail = isNewCompanyContract
-    ? selectedRc?.email || (isWorkflowReadOnly ? existingRcEmail : '')
-    : existingRcEmail
+  const rcName = existingRcName
+  const rcEmail = existingRcEmail
   const ncrcName = textValue(username) || 'Current User'
   const detailCompany = applicationDetail?.company?.[0]
   const detailCompanyRecord = detailCompany as Record<string, unknown> | undefined
@@ -1478,12 +1390,6 @@ export function ContractStageDrawer({
   ].join(', ')
   const coverAttachmentCount = coverSeparateAttachments.length + extraEmailAttachments.length + 1
 
-  const readyToGenerate =
-    Boolean(effectiveDate) &&
-    Boolean(annualFee) &&
-    (!isNewCompanyContract || Boolean(selectedRc)) &&
-    (noProductionProcedures || Boolean(productionProcedures.trim())) &&
-    (!legalReviewNeeded || legalApproved)
   const readyToAdvance = packageGenerated && contractSigned && invoicePaid
   const contractProgressSteps = [
     { label: 'Generate Inv.', complete: packageGenerated },
@@ -1609,17 +1515,6 @@ ${packageUrl}`
         noProductionProcedures,
         legalReviewNeeded,
         legalApproved,
-        selectedRcLookupKey,
-        savedRcLookupKey,
-        rc: selectedRc
-          ? {
-              lookupKey: selectedRc.lookupKey,
-              assigneeValue: selectedRc.assigneeValue,
-              name: selectedRc.name,
-              userName: selectedRc.userName,
-              email: selectedRc.email,
-            }
-          : null,
         coverLetterBody: nextCoverLetterBody,
       },
       invoice: {
@@ -1669,16 +1564,14 @@ ${packageUrl}`
     nextEmailSent = emailSent,
     nextInvoicePaid = invoicePaid,
     nextPackageGenerated = packageGenerated,
-    nextRc = selectedRc,
   }: {
     nextContractInvoiceId?: string | null
     nextContractSigned?: boolean
     nextEmailSent?: boolean
     nextInvoicePaid?: boolean
     nextPackageGenerated?: boolean
-    nextRc?: ContractRcOption | null
   } = {}) =>
-    `{RC:${nextRc ? `${nextRc.name}${nextRc.userName ? ` (${nextRc.userName})` : ''}` : rcName || '-'}, Invoice:${nextContractInvoiceId || 'Not generated'}, Package:${
+    `{RC:${rcName || '-'}, Invoice:${nextContractInvoiceId || 'Not generated'}, Package:${
       nextPackageGenerated ? 'Generated' : 'Pending'
     }, Email:${nextEmailSent ? 'Sent' : 'Pending'}, Signed:${
       nextContractSigned ? 'Yes' : 'No'
@@ -1701,32 +1594,6 @@ ${packageUrl}`
   }
 
   if (!open) return null
-
-  const handleSelectRc = (option: (typeof rcOptions)[number]) => {
-    setSelectedRcLookupKey(option.lookupKey)
-    setRcSearch('')
-  }
-
-  const handleSaveSelectedRc = async () => {
-    if (!selectedRc || !isNewCompanyContract) return
-
-    try {
-      await assignContractRcToCompany({
-        applicationId: resolvedApplicationId,
-        taskInstanceId,
-        assignee:
-          selectedRc.assigneeValue ||
-          selectedRc.userName ||
-          selectedRc.lookupKey ||
-          selectedRc.name,
-      })
-      setSavedRcLookupKey(selectedRc.lookupKey)
-      await saveCurrentContractStageState({ nextStage: 'setup' })
-      toast.success('RC assigned to company')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to assign RC to company')
-    }
-  }
 
   const handleGenerateContractInvoice = async () => {
     const fee = Number(annualFee)
@@ -2104,33 +1971,6 @@ ${packageUrl}`
           : 'GenerateInvoice',
     })
     toast.success(`${attachment?.fileName || 'Attachment'} removed`)
-  }
-
-  const handleNotifyRcForApproval = async () => {
-    try {
-      await notifyRcForApproval({
-        applicationId: resolvedApplicationId,
-        companyName,
-        rcUserName: isNewCompanyContract ? selectedRc?.userName : rcName,
-        taskInstanceId,
-      })
-      setCoverLetterBody(
-        contractPackageDocumentUrl
-          ? emailBodyWithPackageUrl(contractPackageDocumentUrl)
-          : emailBody,
-      )
-      setPreviewTab('cover')
-      await saveCurrentContractStageState({
-        nextCoverLetterBody: contractPackageDocumentUrl
-          ? emailBodyWithPackageUrl(contractPackageDocumentUrl)
-          : emailBody,
-        nextPackageGenerated: packageGenerated,
-        nextStage: 'NotifyRC',
-      })
-      toast.success('RC notified for approval')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to notify RC for approval')
-    }
   }
 
   const handleCompleteTask = async () => {
@@ -4130,205 +3970,6 @@ ${packageUrl}`
                     Mark Legal Approved
                   </button>
                 ) : null}
-              </Section>
-
-              <Section title="RC Assigned to Company" count="rabbinic coordinator">
-                {isNewCompanyContract && !isWorkflowReadOnly ? (
-                  <>
-                    <div className="text-sm">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[12.5px] font-semibold text-gray-700">
-                          Select RC <span className="text-red-600">*</span>
-                        </span>
-                        <button
-                          type="button"
-                          title="Save selected RC"
-                          aria-label="Save selected RC"
-                          disabled={!selectedRc || selectedRcSaved || isAssigningContractRc}
-                          onClick={handleSaveSelectedRc}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-green-200 bg-green-50 text-green-700 hover:border-green-300 hover:bg-green-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400"
-                        >
-                          <Check className="h-4 w-4" />
-                        </button>
-                      </div>
-                      {selectedRc ? (
-                        <div className="mt-1 rounded-[7px] border border-blue-200 bg-blue-50 px-3 py-2">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="font-semibold text-blue-950">{selectedRc.name}</div>
-                              {selectedRc.userName ? (
-                                <div className="mt-1 text-xs text-blue-800">
-                                  {selectedRc.userName}
-                                </div>
-                              ) : null}
-                              {selectedRc.email ? (
-                                <div className="mt-1 text-xs text-blue-700">{selectedRc.email}</div>
-                              ) : null}
-                            </div>
-                            {!packageGenerated ? (
-                              <button
-                                type="button"
-                                disabled={isAssigningContractRc}
-                                onClick={() => {
-                                  setSelectedRcLookupKey('')
-                                  setSavedRcLookupKey('')
-                                }}
-                                className="rounded px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:text-blue-300"
-                              >
-                                Change
-                              </button>
-                            ) : null}
-                          </div>
-                          <div
-                            className={`mt-2 text-xs font-semibold ${
-                              selectedRcSaved ? 'text-green-700' : 'text-amber-700'
-                            }`}
-                          >
-                            {selectedRcSaved
-                              ? 'RC saved.'
-                              : 'Click the check button to save this RC.'}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mt-1">
-                          <div className="relative">
-                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                            <input
-                              value={rcSearch}
-                              onChange={(event) => setRcSearch(event.target.value)}
-                              placeholder="Search by name, username, or email..."
-                              className="w-full rounded-[7px] border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-[#1e1e2e] focus:border-[#185087] focus:outline-none focus:ring-4 focus:ring-blue-900/10"
-                            />
-                          </div>
-                          <div className="mt-2 max-h-60 space-y-2 overflow-y-auto">
-                            {isRcLookupLoading ? (
-                              <div className="rounded border border-gray-200 bg-white px-3 py-6 text-center text-sm text-gray-500">
-                                Loading RC list...
-                              </div>
-                            ) : isAssigningContractRc ? (
-                              <div className="rounded border border-blue-200 bg-blue-50 px-3 py-6 text-center text-sm text-blue-700">
-                                Assigning RC...
-                              </div>
-                            ) : isRcLookupError ? (
-                              <div className="rounded border border-red-200 bg-red-50 px-3 py-6 text-center text-sm text-red-700">
-                                Unable to load RC list.
-                              </div>
-                            ) : filteredRcOptions.length === 0 ? (
-                              <div className="rounded border border-gray-200 bg-white px-3 py-6 text-center text-sm text-gray-500">
-                                No RC matches found.
-                              </div>
-                            ) : (
-                              filteredRcOptions.map((option) => (
-                                <button
-                                  key={option.lookupKey}
-                                  type="button"
-                                  disabled={isAssigningContractRc}
-                                  onClick={() => handleSelectRc(option)}
-                                  className="w-full rounded border border-gray-200 bg-white p-3 text-left hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                  <div className="font-medium text-gray-900">{option.name}</div>
-                                  <div className="mt-1 text-xs text-gray-500">
-                                    {[option.userName, option.email].filter(Boolean).join(' - ') ||
-                                      '-'}
-                                  </div>
-                                </button>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="rounded-[7px] border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600">
-                      {rcName}
-                    </div>
-                    <div className="mt-2 rounded-[7px] border border-slate-300 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-600">
-                      {rcEmail}
-                    </div>
-                  </>
-                )}
-                <p className="mt-1 text-[11.5px] leading-5 text-gray-500">
-                  {isNewCompanyContract
-                    ? 'New company - select the RC from Kashrus. Prints on the agreement, invoice, and email.'
-                    : 'Existing company - RC derived from Kashrus. Prints on the agreement, invoice, and email.'}
-                </p>
-                <div className="mt-3 border-t border-gray-100 pt-3">
-                  {isWorkflowReadOnly ? (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12.5px] font-semibold text-slate-600">
-                      Read-only contract preview. Workflow actions are available from the task
-                      dashboard.
-                    </div>
-                  ) : packageGenerated ? (
-                    <div className="space-y-2">
-                      <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-[12.5px] font-semibold text-green-700">
-                        RC notified for approval - sent as a live link to review.
-                      </div>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setPackageGenerated(false)
-                          setContractSigned(false)
-                          setInvoicePaid(false)
-                          setEmailSent(false)
-                          setContractPackageDownloadUrl(null)
-                          setContractPackagePdfUrl(null)
-                          await saveCurrentContractStageState({
-                            nextContractPackageDownloadUrl: null,
-                            nextContractPackagePdfUrl: null,
-                            nextContractSigned: false,
-                            nextEmailSent: false,
-                            nextInvoicePaid: false,
-                            nextPackageGenerated: false,
-                            nextStage: 'GenerateInvoice',
-                          })
-                        }}
-                        className="w-full rounded-[7px] border border-gray-300 bg-white px-3 py-2 text-center text-sm font-semibold text-gray-600 hover:bg-gray-50"
-                      >
-                        Re-open for edits
-                      </button>
-                    </div>
-                  ) : legalReviewNeeded && !legalApproved ? (
-                    <>
-                      <p className="mb-2 text-[12.5px] font-semibold text-violet-700">
-                        Finish Legal sign-off before notifying the RC.
-                      </p>
-                      <button
-                        type="button"
-                        disabled
-                        className="w-full rounded-lg bg-gray-300 px-4 py-2.5 text-sm font-bold text-white"
-                      >
-                        Notify RC for approval
-                      </button>
-                    </>
-                  ) : !readyToGenerate ? (
-                    <>
-                      <p className="mb-2 text-[12.5px] font-semibold text-amber-700">
-                        {isNewCompanyContract && !selectedRc
-                          ? 'Select the RC assigned to the company to continue.'
-                          : 'Enter the annual certification fee to continue.'}
-                      </p>
-                      <button
-                        type="button"
-                        disabled
-                        className="w-full rounded-lg bg-gray-300 px-4 py-2.5 text-sm font-bold text-white"
-                      >
-                        Notify RC for approval
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={isSendingRcNotification}
-                      onClick={handleNotifyRcForApproval}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#58942F] px-4 py-2.5 text-sm font-bold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-                    >
-                      <FileText className="h-4 w-4" />
-                      {isSendingRcNotification ? 'Notifying...' : 'Notify RC for approval'}
-                    </button>
-                  )}
-                </div>
               </Section>
 
               {packageGenerated && !isWorkflowReadOnly ? (
