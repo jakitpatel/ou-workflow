@@ -824,12 +824,12 @@ export async function createScheduleBProduct({
   token?: string | null
 }): Promise<unknown> {
   return await fetchWithAuth({
-    path: '/api/ScheduleProducts',
+    path: '/api/ScheduleProduct',
     method: 'POST',
     body: {
       data: {
         attributes: payload,
-        type: 'ScheduleProducts',
+        type: 'ScheduleProduct',
       },
     },
     token,
