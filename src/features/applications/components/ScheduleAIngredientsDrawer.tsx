@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import {
@@ -17,6 +17,7 @@ import {
   Minimize2,
   Plus,
   Send,
+  Upload,
   X,
 } from 'lucide-react'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
@@ -468,6 +469,93 @@ function sortRows(
   })
 }
 
+const IMPORT_HEADER_TO_FIELD: Record<string, keyof ScheduleAIngredientDraft> = {
+  brand: 'brand',
+  brandname: 'brand',
+  certifier: 'certifier',
+  certifyingagency: 'certifier',
+  group: 'group',
+  ingredient: 'name',
+  ingredientname: 'name',
+  ingredientlabelname: 'name',
+  manufacturer: 'source',
+  plantstatus: 'plantStatus',
+  rawmaterialcode: 'rmc',
+  rmc: 'rmc',
+  source: 'source',
+  symbol: 'certifier',
+}
+
+const normalizeImportHeader = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+const parseDelimitedText = (text: string) => {
+  const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
+  if (!normalized) return [] as string[][]
+
+  const delimiter = normalized.includes('\t') ? '\t' : ','
+  const rows: string[][] = []
+  let currentValue = ''
+  let currentRow: string[] = []
+  let insideQuotes = false
+
+  for (let index = 0; index < normalized.length; index += 1) {
+    const character = normalized[index]
+    const nextCharacter = normalized[index + 1]
+
+    if (character === '"') {
+      if (insideQuotes && nextCharacter === '"') {
+        currentValue += '"'
+        index += 1
+      } else {
+        insideQuotes = !insideQuotes
+      }
+      continue
+    }
+
+    if (!insideQuotes && character === delimiter) {
+      currentRow.push(currentValue.trim())
+      currentValue = ''
+      continue
+    }
+
+    if (!insideQuotes && character === '\n') {
+      currentRow.push(currentValue.trim())
+      rows.push(currentRow)
+      currentRow = []
+      currentValue = ''
+      continue
+    }
+
+    currentValue += character
+  }
+
+  currentRow.push(currentValue.trim())
+  rows.push(currentRow)
+
+  return rows.filter((row) => row.some((cell) => cell.trim() !== ''))
+}
+
+const getImportDraftsFromText = (text: string): ScheduleAIngredientDraft[] => {
+  const rows = parseDelimitedText(text)
+  if (rows.length < 2) return []
+
+  const header = rows[0].map(
+    (value) => IMPORT_HEADER_TO_FIELD[normalizeImportHeader(value)] ?? null,
+  )
+
+  return rows
+    .slice(1)
+    .map((row) => {
+      const draft: ScheduleAIngredientDraft = { ...EMPTY_ADD_ROW_DRAFT }
+      row.forEach((value, index) => {
+        const field = header[index]
+        if (field) draft[field] = value
+      })
+      return draft
+    })
+    .filter((draft) => Object.values(draft).some((value) => value.trim() !== ''))
+}
+
 function buildScheduleAHtml(
   rows: ScheduleAIngredientRow[],
   applicationName?: string,
@@ -512,6 +600,11 @@ export function ScheduleAIngredientsDrawer({
   const [sendError, setSendError] = useState('')
   const [sentMessage, setSentMessage] = useState('')
   const [isEirDownloadPending, setIsEirDownloadPending] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importFilename, setImportFilename] = useState('')
+  const [importError, setImportError] = useState('')
+  const [isImporting, setIsImporting] = useState(false)
   const ingredientsHeaderRef = useRef<HTMLDivElement | null>(null)
   const ingredientsTableRef = useRef<HTMLTableElement | null>(null)
   const isEmbedded = mode === 'embedded'
@@ -544,14 +637,11 @@ export function ScheduleAIngredientsDrawer({
   const isAssigningTask =
     textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA_ASSIGNING
   const isStartTask = textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA_START
-  const isSignoffTask =
-    textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.APPROVAL_SIGNOFF_A
+  const isSignoffTask = textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.APPROVAL_SIGNOFF_A
   const usesTaskHeader = isAssigningTask || isStartTask || isSignoffTask
   const canonicalScheduleATaskInstanceId =
     scheduleATaskInstanceId ??
-    (textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA
-      ? taskInstanceId
-      : null)
+    (textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA ? taskInstanceId : null)
   const scratchpadApi = useScheduleAScratchpad(
     resolvedApplicationId,
     canonicalScheduleATaskInstanceId,
@@ -816,6 +906,75 @@ export function ScheduleAIngredientsDrawer({
     downloadTextFile(filename, html, 'text/html;charset=utf-8;')
   }
 
+  const openImportModal = () => {
+    setIngView('application')
+    setFilter('all')
+    setImportError('')
+    setImportOpen(true)
+  }
+
+  const closeImportModal = () => {
+    if (isImporting) return
+    setImportOpen(false)
+    setImportError('')
+  }
+
+  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      const text = await file.text()
+      setImportText(text)
+      setImportFilename(file.name)
+      setImportError('')
+    } catch {
+      setImportError('Failed to read the selected file.')
+    } finally {
+      event.target.value = ''
+    }
+  }
+
+  const importPreviewRows = (() => {
+    try {
+      return getImportDraftsFromText(importText)
+    } catch {
+      return []
+    }
+  })()
+
+  const importIngredients = async () => {
+    const drafts = getImportDraftsFromText(importText).filter((draft) => draft.name.trim())
+    if (!drafts.length) {
+      setImportError(
+        'Provide a CSV or tab-delimited file with at least one row containing an Ingredient Name.',
+      )
+      return
+    }
+
+    setImportError('')
+    setIsImporting(true)
+    try {
+      for (const draft of drafts) {
+        await createIngredientMutation.mutateAsync(draft)
+      }
+      setImportOpen(false)
+      setImportText('')
+      setImportFilename('')
+      toast.success(
+        `Imported ${drafts.length} Schedule A ingredient${drafts.length === 1 ? '' : 's'}.`,
+      )
+    } catch (mutationError) {
+      const message =
+        mutationError && typeof mutationError === 'object' && 'message' in mutationError
+          ? String((mutationError as { message?: unknown }).message)
+          : 'Failed to import Schedule A ingredients.'
+      setImportError(message)
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
   const downloadEirDocument = () => {
     if (hasWorkflowEirDocument) {
       setIsEirDownloadPending(true)
@@ -1055,7 +1214,9 @@ export function ScheduleAIngredientsDrawer({
                   <button
                     type="button"
                     onClick={signOffIngredients}
-                    disabled={completeScheduleATaskMutation.isPending || patchTaskStatusMutation.isPending}
+                    disabled={
+                      completeScheduleATaskMutation.isPending || patchTaskStatusMutation.isPending
+                    }
                     className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                   >
                     <Check className="h-3.5 w-3.5" />
@@ -1064,7 +1225,9 @@ export function ScheduleAIngredientsDrawer({
                   <button
                     type="button"
                     onClick={rejectIngredients}
-                    disabled={completeScheduleATaskMutation.isPending || patchTaskStatusMutation.isPending}
+                    disabled={
+                      completeScheduleATaskMutation.isPending || patchTaskStatusMutation.isPending
+                    }
                     className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -1217,15 +1380,27 @@ export function ScheduleAIngredientsDrawer({
                       Download
                     </button>
                     {ingView === 'application' && !readOnly ? (
-                      <button
-                        type="button"
-                        onClick={startAddRow}
-                        disabled={isAddingRow || createIngredientMutation.isPending}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        Add Row
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={openImportModal}
+                          disabled={createIngredientMutation.isPending || isImporting}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                          title="Import rows from CSV or tab-delimited text"
+                        >
+                          <Upload className="h-3.5 w-3.5" />
+                          Import
+                        </button>
+                        <button
+                          type="button"
+                          onClick={startAddRow}
+                          disabled={isAddingRow || createIngredientMutation.isPending}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Add Row
+                        </button>
+                      </>
                     ) : null}
                   </div>
                 </div>
@@ -2114,6 +2289,111 @@ export function ScheduleAIngredientsDrawer({
           </div>
         </div>
       )}
+      {!isEmbedded && importOpen ? (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+          onClick={closeImportModal}
+        >
+          <div
+            className="w-full max-w-3xl rounded-xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b px-5 py-4">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Import ingredients</h3>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Upload CSV or tab-delimited rows using the Schedule A Application columns.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeImportModal}
+                disabled={isImporting}
+                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Close import modal"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 px-5 py-4">
+              <div className="rounded-lg border border-dashed border-violet-300 bg-violet-50/60 p-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-700">
+                    <Upload className="h-4 w-4" />
+                    Choose File
+                    <input
+                      type="file"
+                      accept=".csv,.txt,.tsv"
+                      className="hidden"
+                      onChange={handleImportFile}
+                    />
+                  </label>
+                  <span className="text-xs text-violet-800">
+                    {importFilename || 'Accepted formats: .csv, .tsv, .txt'}
+                  </span>
+                </div>
+                <p className="mt-3 text-xs text-violet-800">
+                  Supported headers: RMC, Ingredient Name, Source, Brand Name, Group, Certifier,
+                  Plant Status.
+                </p>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                  Paste Rows
+                </label>
+                <textarea
+                  value={importText}
+                  onChange={(event) => {
+                    setImportText(event.target.value)
+                    setImportError('')
+                  }}
+                  placeholder="Paste CSV or tab-delimited rows here..."
+                  className="h-56 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2">
+                <p className="text-xs text-gray-600">
+                  Preview:{' '}
+                  <span className="font-semibold text-gray-900">{importPreviewRows.length}</span>{' '}
+                  {importPreviewRows.length === 1 ? 'row' : 'rows'} ready to import
+                </p>
+                <p className="text-xs text-gray-500">
+                  Rows without an Ingredient Name will be skipped.
+                </p>
+              </div>
+
+              {importError ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+                  {importError}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t px-5 py-4">
+              <button
+                type="button"
+                onClick={closeImportModal}
+                disabled={isImporting}
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={importIngredients}
+                disabled={isImporting || !importPreviewRows.length}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Upload className="h-4 w-4" />
+                {isImporting ? 'Importing...' : `Import ${importPreviewRows.length || ''}`.trim()}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {!isEmbedded ? (
         <ApplicationDetailsDrawer
           open={selectedApplicationId !== null}
