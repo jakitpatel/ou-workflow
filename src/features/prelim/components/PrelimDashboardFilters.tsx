@@ -32,7 +32,9 @@ export function PrelimDashboardFilters({ q, status, applicationId, onChange }: P
           <option value="all">All Statuses</option>
           <option value="COMPL">Completed</option>
           <option value="INP">In Progress</option>
+          <option value="LEGACY">Legacy</option>
           <option value="NEW">New</option>
+          <option value="REVIEW">Review</option>
           <option value="WTH">Withdrawn</option>
         </select>
 
