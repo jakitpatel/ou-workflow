@@ -86,6 +86,7 @@ export type InspectionInvoiceRecipientOption = {
 export type InspectionInvoiceCustomer = {
   administrativeAssistantEmail: string
   administrativeAssistantName: string
+  administrativeAssistantPhone: string
   addressLines: string[]
   billingAddress: string
   billingCityStateZip: string
@@ -102,6 +103,7 @@ export type PendingCompanyIntroLetterValues = {
   accountNumber: string
   administrativeAssistantEmail: string
   administrativeAssistantName: string
+  administrativeAssistantPhone: string
   cityStatePostalCountry: string
   companyName: string
   contactName: string
@@ -116,6 +118,7 @@ export const buildPendingCompanyIntroEmailBody = ({
   accountNumber,
   administrativeAssistantEmail,
   administrativeAssistantName,
+  administrativeAssistantPhone,
   cityStatePostalCountry,
   companyName,
   contactName,
@@ -157,7 +160,7 @@ ${coordinatorName || 'Rabbinic Coordinator'} — Rabbinic Coordinator / Account 
 ${[coordinatorEmail, coordinatorPhone].filter(Boolean).join(' | ') || '-'}
 
 ${administrativeAssistantName || 'Administrative Assistant'} — Administrative Assistant
-${administrativeAssistantEmail || '-'}`
+${[administrativeAssistantEmail, administrativeAssistantPhone].filter(Boolean).join(' | ') || '-'}`
 
 type InspectionInvoiceSavedState = {
   version?: number
@@ -673,6 +676,7 @@ export function useInspectionInvoiceDrawerState({
     return {
       administrativeAssistantEmail: normalizeContactText(designatedAdminNcrc?.BusinessEmail),
       administrativeAssistantName: formatDesignatedName(designatedAdminNcrc),
+      administrativeAssistantPhone: normalizeContactText(designatedAdminNcrc?.BusinessPhone),
       addressLines: [billingAddress, billingCityStateZip, address?.country].filter(
         (line): line is string => Boolean(line?.trim()),
       ),
@@ -1024,7 +1028,7 @@ export function useInspectionInvoiceDrawerState({
         payload: {
           applicationId,
           applicationName,
-          NCRC: applicationDetail?.DesignatedNCRC ?? null,
+          ncrc: applicationDetail?.DesignatedNCRC ?? null,
           TaskInstanceId: taskInstanceId ?? null,
           taskName,
           applicant: applicant

@@ -150,6 +150,7 @@ export function InspectionInvoiceDrawer({
   })
   const emailAttachmentInputRef = useRef<HTMLInputElement | null>(null)
   const accountNumber = getApplicantAccountNumber(applicant)
+  const resolvedApplicationId = String(applicationId ?? applicant?.applicationId ?? '').trim()
   const isEmbedded = mode === 'embedded'
   const resolvedName = applicationName || applicant?.company || 'Application'
   const emailSubject = useMemo(() => {
@@ -193,6 +194,7 @@ export function InspectionInvoiceDrawer({
     accountNumber,
     administrativeAssistantEmail: state.invoiceCustomer.administrativeAssistantEmail,
     administrativeAssistantName: state.invoiceCustomer.administrativeAssistantName,
+    administrativeAssistantPhone: state.invoiceCustomer.administrativeAssistantPhone,
     cityStatePostalCountry: state.invoiceCustomer.cityStatePostalCountry,
     companyName: resolvedName,
     contactName: state.selectedRecipient?.name || state.invoiceCustomer.billingContactName,
@@ -288,8 +290,10 @@ export function InspectionInvoiceDrawer({
                   <span className="rounded-full bg-white/10 px-2.5 py-1">{taskName}</span>
                 ) : null}
                 <span className="rounded-full bg-white/10 px-2.5 py-1">{resolvedName}</span>
-                {accountNumber ? (
-                  <span className="rounded-full bg-white/10 px-2.5 py-1">App #{accountNumber}</span>
+                {resolvedApplicationId ? (
+                  <span className="rounded-full bg-white/10 px-2.5 py-1">
+                    App #{resolvedApplicationId}
+                  </span>
                 ) : null}
                 {applicant?.plant ? (
                   <span className="rounded-full bg-white/10 px-2.5 py-1">
