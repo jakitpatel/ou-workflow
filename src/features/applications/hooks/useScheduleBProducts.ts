@@ -134,6 +134,7 @@ export type SendScheduleBCommunicationEmailInput = {
 }
 
 export type ScheduleBScratchpad = {
+  username?: string
   flags: Record<string, { flagged: boolean; note: string }>
   rounds: ScheduleBCommunicationRound[]
   halacha: Record<string, { open: boolean; note: string; resolvedAt?: string }>
@@ -573,6 +574,7 @@ const scheduleBMessagesQueryKey = (applicationId?: string, taskInstanceId?: stri
 const normalizeScratchpad = (value: Partial<ScheduleBScratchpad> | null | undefined): ScheduleBScratchpad => ({
   ...EMPTY_SCRATCHPAD,
   ...value,
+  username: valueText(value?.username) || undefined,
   flags: value?.flags ?? {},
   rounds: value?.rounds ?? [],
   halacha: value?.halacha ?? {},
@@ -923,7 +925,7 @@ export function useScheduleBScratchpad(
   taskInstanceId?: string | number | null,
   initialStatusDetails?: unknown,
 ) {
-  const { token } = useUser()
+  const { token, username } = useUser()
   const queryClient = useQueryClient()
   const normalizedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
@@ -1038,14 +1040,17 @@ export function useScheduleBScratchpad(
   const updateScratchpad = useCallback(
     (updater: (current: ScheduleBScratchpad) => ScheduleBScratchpad) => {
       setScratchpad((current) => {
-        const next = normalizeScratchpad(updater(normalizeScratchpad(current)))
+        const next = normalizeScratchpad({
+          ...updater(normalizeScratchpad(current)),
+          username: valueText(username) || undefined,
+        })
         if (normalizedApplicationId) {
           window.localStorage.setItem(storageKey, JSON.stringify(next))
         }
         return next
       })
     },
-    [normalizedApplicationId, storageKey],
+    [normalizedApplicationId, storageKey, username],
   )
 
   const toggleFlag = useCallback(
