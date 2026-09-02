@@ -84,6 +84,8 @@ export type InspectionInvoiceRecipientOption = {
 }
 
 export type InspectionInvoiceCustomer = {
+  administrativeAssistantEmail: string
+  administrativeAssistantName: string
   addressLines: string[]
   billingAddress: string
   billingCityStateZip: string
@@ -98,18 +100,28 @@ export type InspectionInvoiceCustomer = {
 
 export type PendingCompanyIntroLetterValues = {
   accountNumber: string
+  administrativeAssistantEmail: string
+  administrativeAssistantName: string
   cityStatePostalCountry: string
   companyName: string
   contactName: string
+  coordinatorEmail: string
+  coordinatorName: string
+  coordinatorPhone: string
   plantLocation: string
   streetAddress: string
 }
 
 export const buildPendingCompanyIntroEmailBody = ({
   accountNumber,
+  administrativeAssistantEmail,
+  administrativeAssistantName,
   cityStatePostalCountry,
   companyName,
   contactName,
+  coordinatorEmail,
+  coordinatorName,
+  coordinatorPhone,
   plantLocation,
   streetAddress,
 }: PendingCompanyIntroLetterValues) => `Company Name: ${companyName || '-'}
@@ -141,11 +153,11 @@ We're Here to Help
 
 The people below are your partners throughout this process. Please contact them at any time. No question is too small.
 
-Rabbi Donneal Epstein — Rabbinic Coordinator / Account Manager
-epsteind@ou.org | 212-613-8293
+${coordinatorName || 'Rabbinic Coordinator'} — Rabbinic Coordinator / Account Manager
+${[coordinatorEmail, coordinatorPhone].filter(Boolean).join(' | ') || '-'}
 
-Batsheva Haut — Administrative Assistant
-hautb@ou.org`
+${administrativeAssistantName || 'Administrative Assistant'} — Administrative Assistant
+${administrativeAssistantEmail || '-'}`
 
 type InspectionInvoiceSavedState = {
   version?: number
@@ -650,30 +662,17 @@ export function useInspectionInvoiceDrawerState({
       .map(normalizeAddressPart)
       .filter(Boolean)
       .join(', ')
-    const coordinator = applicationDetail?.assignedRoles?.find((role) =>
-      /rabbinic coordinator|coordinator|\brc\b/i.test(
-        String((role as any).role ?? (role as any).Role ?? (role as any).name ?? ''),
-      ),
-    ) as any
-    const assignedNcrcValue = (applicationDetail as { assignedNCRC?: unknown } | undefined)
-      ?.assignedNCRC
-    const assignedNcrc =
-      assignedNcrcValue && typeof assignedNcrcValue === 'object'
-        ? (assignedNcrcValue as Record<string, unknown>)
-        : null
-    const assignedNcrcName = assignedNcrc
-      ? [
-          assignedNcrc.PREFIX ?? assignedNcrc.prefix,
-          assignedNcrc.First ?? assignedNcrc.first,
-          assignedNcrc.Middle ?? assignedNcrc.middle,
-          assignedNcrc.LAST ?? assignedNcrc.last,
-        ]
-          .map(normalizeContactText)
-          .filter(Boolean)
-          .join(' ')
-      : ''
+    const designatedNcrc = applicationDetail?.DesignatedNCRC
+    const designatedAdminNcrc = applicationDetail?.DesignatedAdminNCRC
+    const formatDesignatedName = (contact: typeof designatedNcrc) =>
+      [contact?.PREFIX, contact?.FIRST, contact?.MIDDLE, contact?.LAST]
+        .map(normalizeContactText)
+        .filter(Boolean)
+        .join(' ')
 
     return {
+      administrativeAssistantEmail: normalizeContactText(designatedAdminNcrc?.BusinessEmail),
+      administrativeAssistantName: formatDesignatedName(designatedAdminNcrc),
       addressLines: [billingAddress, billingCityStateZip, address?.country].filter(
         (line): line is string => Boolean(line?.trim()),
       ),
@@ -684,19 +683,9 @@ export function useInspectionInvoiceDrawerState({
       cityStatePostalCountry: [address?.city, address?.state, address?.zip, address?.country]
         .filter(Boolean)
         .join(', '),
-      coordinatorName:
-        assignedNcrcName ||
-        (coordinator?.displayName ??
-          coordinator?.fullName ??
-          coordinator?.userName ??
-          coordinator?.name ??
-          ''),
-      coordinatorEmail:
-        normalizeContactText(assignedNcrc?.EMAIL ?? assignedNcrc?.email) ||
-        (coordinator?.email ?? coordinator?.Email ?? ''),
-      coordinatorPhone:
-        normalizeContactText(assignedNcrc?.PHONE ?? assignedNcrc?.phone) ||
-        (coordinator?.phone ?? coordinator?.Phone ?? ''),
+      coordinatorName: formatDesignatedName(designatedNcrc),
+      coordinatorEmail: normalizeContactText(designatedNcrc?.BusinessEmail),
+      coordinatorPhone: normalizeContactText(designatedNcrc?.BusinessPhone),
       streetAddress: [address?.street, address?.line2].filter(Boolean).join(', '),
     }
   }, [applicationDetail])

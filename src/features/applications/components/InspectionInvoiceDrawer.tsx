@@ -191,9 +191,14 @@ export function InspectionInvoiceDrawer({
       : state.selectedRecipient?.email || recipientLabel
   const emailMessageText = buildPendingCompanyIntroEmailBody({
     accountNumber,
+    administrativeAssistantEmail: state.invoiceCustomer.administrativeAssistantEmail,
+    administrativeAssistantName: state.invoiceCustomer.administrativeAssistantName,
     cityStatePostalCountry: state.invoiceCustomer.cityStatePostalCountry,
     companyName: resolvedName,
     contactName: state.selectedRecipient?.name || state.invoiceCustomer.billingContactName,
+    coordinatorEmail: state.invoiceCustomer.coordinatorEmail,
+    coordinatorName: state.invoiceCustomer.coordinatorName,
+    coordinatorPhone: state.invoiceCustomer.coordinatorPhone,
     plantLocation: applicant?.plant || applicant?.region || '',
     streetAddress: state.invoiceCustomer.streetAddress,
   })

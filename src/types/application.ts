@@ -1,336 +1,336 @@
 // Application-related types
-export type ActionResult = "yes" | "no" | "pending" | "completed" | "in_progress";
+export type ActionResult = 'yes' | 'no' | 'pending' | 'completed' | 'in_progress'
 
-export type PaginationMode = 'paged' | 'infinite';
+export type PaginationMode = 'paged' | 'infinite'
 
-export type StageLayout = 'horizontal' | 'mixed';
+export type StageLayout = 'horizontal' | 'mixed'
 
-export type NavigationMenuType = 'top' | 'left';
+export type NavigationMenuType = 'top' | 'left'
 
 export type UserRole = {
-  name: string;
+  name: string
 }
 
 export type ApplicantFile = {
-  id: number;
-  fileName: string;
-  filePath: string;
-  fileSize: string; // e.g. "245 KB"
-  fileType: "APP" | "ING" | "PROD" | "PDF" | "JPEG"; // restrict to known types
-};
+  id: number
+  fileName: string
+  filePath: string
+  fileSize: string // e.g. "245 KB"
+  fileType: 'APP' | 'ING' | 'PROD' | 'PDF' | 'JPEG' // restrict to known types
+}
 // Single application message
 export type WFApplicationMessage = {
-  id: number;
-  fromUser: string;
-  toUser: string;
-  text: string;
-  messageType: "USER" | "SYSTEM";
-  priority: "URGENT" | "HIGH" | "NORMAL" | "LOW" | "MEDIUM";
-  sentDate: string;
-  isSystemMessage: boolean;
-};
+  id: number
+  fromUser: string
+  toUser: string
+  text: string
+  messageType: 'USER' | 'SYSTEM'
+  priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM'
+  sentDate: string
+  isSystemMessage: boolean
+}
 export type CompanyFromApplication = {
-  companyName: string;
-  companyAddress: string;
-  companyAddress2?: string;
-  companyCity: string;
-  companyState?: string;
-  companyCountry: string;
-  companyPhone?: string;
-  companyWebsite?: string;
-  ZipPostalCode?: string;
-  City?: string;
-  Country?: string;
-  State?: string;
-  Street1?: string;
-  Street2?: string;
-  Zip?: string;
-  numberOfPlants?: number;
-  whichCategory?: string;
-  companyContacts?: ApplicationContactGroups;
-};
+  companyName: string
+  companyAddress: string
+  companyAddress2?: string
+  companyCity: string
+  companyState?: string
+  companyCountry: string
+  companyPhone?: string
+  companyWebsite?: string
+  ZipPostalCode?: string
+  City?: string
+  Country?: string
+  State?: string
+  Street1?: string
+  Street2?: string
+  Zip?: string
+  numberOfPlants?: number
+  whichCategory?: string
+  companyContacts?: ApplicationContactGroups
+}
 
 export type CompanyMatch = {
-  Id: string | number;
-  companyName: string;
-  Address: string;
-  City?: string;
-  Country?: string;
-  matchRating?: number;
-  matchReason?: string;
-};
+  Id: string | number
+  companyName: string
+  Address: string
+  City?: string
+  Country?: string
+  matchRating?: number
+  matchReason?: string
+}
 
 export type KashrusAddress = {
-  city?: string;
-  country?: string;
-  line2?: string;
-  state?: string;
-  street?: string;
-  type?: string;
-  zip?: string;
-};
+  city?: string
+  country?: string
+  line2?: string
+  state?: string
+  street?: string
+  type?: string
+  zip?: string
+}
 
 export type KashrusCompanyDetail = {
-  companyName?: string;
-  companyPhone?: string;
-  companyState?: string;
-  companyWebsite?: string;
-  numberOfPlants?: number;
-  whichCategory?: string;
-  companyAddresses?: KashrusAddress[];
-  companyContacts?: PlantFromApplicationContact[];
-};
+  companyName?: string
+  companyPhone?: string
+  companyState?: string
+  companyWebsite?: string
+  numberOfPlants?: number
+  whichCategory?: string
+  companyAddresses?: KashrusAddress[]
+  companyContacts?: PlantFromApplicationContact[]
+}
 
 export type KashrusPlantDetail = {
-  Address?: string;
-  brieflySummarize?: string;
-  plantID?: string | number;
-  plantName?: string;
-  plantNumber?: number;
-  plantAddresses?: KashrusAddress[];
-  plantContacts?: ApplicationContactGroups;
-};
+  Address?: string
+  brieflySummarize?: string
+  plantID?: string | number
+  plantName?: string
+  plantNumber?: number
+  plantAddresses?: KashrusAddress[]
+  plantContacts?: ApplicationContactGroups
+}
 
 export type KashrusCompanyDetailsResponse = {
-  data: KashrusCompanyDetail[];
-};
+  data: KashrusCompanyDetail[]
+}
 
 export type KashrusPlantDetailsResponse = {
-  data: KashrusPlantDetail[];
-};
+  data: KashrusPlantDetail[]
+}
 
 export type CompanySelected = {
-  ID: string;
-  companyName: string;
-  Address: string;
-  City?: string;
-  Country?: string;
-};
+  ID: string
+  companyName: string
+  Address: string
+  City?: string
+  Country?: string
+}
 
 export type PlantFromApplication = {
-  plantName: string;
-  plantAddress: string;
-  plantCity: string;
-  plantState?: string;
-  plantCountry: string;
-  plantZip?: string;
-  City?: string;
-  Country?: string;
-  State?: string;
-  Street1?: string;
-  Street2?: string;
-  Zip?: string;
-  plantNumber?: number;
-  plantPhone?: string;
-  Address?: string;
-  plantID?: string | number;
-  brieflySummarize?: string;
-  plantContacts?: ApplicationContactGroups;
-};
+  plantName: string
+  plantAddress: string
+  plantCity: string
+  plantState?: string
+  plantCountry: string
+  plantZip?: string
+  City?: string
+  Country?: string
+  State?: string
+  Street1?: string
+  Street2?: string
+  Zip?: string
+  plantNumber?: number
+  plantPhone?: string
+  Address?: string
+  plantID?: string | number
+  brieflySummarize?: string
+  plantContacts?: ApplicationContactGroups
+}
 
 export type PlantFromApplicationContact = {
-  BillingCT?: string;
-  Cell?: string;
-  EMail?: string;
-  Email?: string;
-  Fax?: string;
-  FirstName?: string;
-  LastName?: string;
-  PrimaryCT?: string;
-  Title?: string;
-  Voice?: string;
-  WebCT?: string;
-  companytitle?: string;
-  owns_ID?: number;
-  pcID?: number;
-};
+  BillingCT?: string
+  Cell?: string
+  EMail?: string
+  Email?: string
+  Fax?: string
+  FirstName?: string
+  LastName?: string
+  PrimaryCT?: string
+  Title?: string
+  Voice?: string
+  WebCT?: string
+  companytitle?: string
+  owns_ID?: number
+  pcID?: number
+}
 
 export type SubmittedApplicationContact = {
-  IsPrimaryContact?: boolean;
-  contactEmail?: string;
-  contactFirst?: string;
-  contactLast?: string;
-  contactPhone?: string;
-  jobTitle?: string;
-  jobTitle1?: string;
-  note?: string;
-};
+  IsPrimaryContact?: boolean
+  contactEmail?: string
+  contactFirst?: string
+  contactLast?: string
+  contactPhone?: string
+  jobTitle?: string
+  jobTitle1?: string
+  note?: string
+}
 
 export type ApplicationContactGroups = {
-  primaryContact?: SubmittedApplicationContact[];
-  billingContact?: SubmittedApplicationContact[];
-  otherContact?: SubmittedApplicationContact[];
-  PrimaryContact?: SubmittedApplicationContact[];
-  BillingContact?: SubmittedApplicationContact[];
-  OtherContact?: SubmittedApplicationContact[];
-};
+  primaryContact?: SubmittedApplicationContact[]
+  billingContact?: SubmittedApplicationContact[]
+  otherContact?: SubmittedApplicationContact[]
+  PrimaryContact?: SubmittedApplicationContact[]
+  BillingContact?: SubmittedApplicationContact[]
+  OtherContact?: SubmittedApplicationContact[]
+}
 
 export type PlantMatch = {
-  PlantID: string | number;
-  Id: string | number;
-  plantName: string;
-  Address: string;
-  City?: string;
-  Country?: string;
-  OWNSID?: string;
-  WFID?: string;
-  matchRating?: number;
-  matchReason?: string;
-};
+  PlantID: string | number
+  Id: string | number
+  plantName: string
+  Address: string
+  City?: string
+  Country?: string
+  OWNSID?: string
+  WFID?: string
+  matchRating?: number
+  matchReason?: string
+}
 
 export type PlantSelected = {
-  PlantID: string;
-  plantName: string;
-  Address: string;
-  City?: string;
-  Country?: string;
-  OWNSID?: string;
-  WFID?: string;
-};
+  PlantID: string
+  plantName: string
+  Address: string
+  City?: string
+  Country?: string
+  OWNSID?: string
+  WFID?: string
+}
 
 export type Task = {
-  TaskInstanceId: number;
-  name: string;
-  PreScript: string;
-  status: 'completed' | 'in_progress' | 'overdue' | 'blocked' | 'pending';
-  assignee: string;
-  daysActive: number;
-  required: boolean;
-  overdue: boolean;
-  overdueDays?: number;
-  CompletedDate?: string;
-  activeStartDate?: string;
-  daysPending?: number;
-  daysOverdue?: number;
-  description: string;
-  executedBy?: string;
-  taskType?: string;
-  capacity?: string;
-  completedBy?: string;
-  taskCategory?: string;
-  taskRoles?: { taskRole: string }[],
-  StatusDetails?: string;
-  Result?: string;
-  ResultData?: string;
-  GUIDisplayResult?: string;
-  IsGlobalNotes?: number;
-  isGlobalNotes?: number;
-  IsPrivateNotes?: number;
-  isPrivateNotes?: number;
-  receivedNotes?: TaskNote[];
-  sentNotes?: TaskNote[];
+  TaskInstanceId: number
+  name: string
+  PreScript: string
+  status: 'completed' | 'in_progress' | 'overdue' | 'blocked' | 'pending'
+  assignee: string
+  daysActive: number
+  required: boolean
+  overdue: boolean
+  overdueDays?: number
+  CompletedDate?: string
+  activeStartDate?: string
+  daysPending?: number
+  daysOverdue?: number
+  description: string
+  executedBy?: string
+  taskType?: string
+  capacity?: string
+  completedBy?: string
+  taskCategory?: string
+  taskRoles?: { taskRole: string }[]
+  StatusDetails?: string
+  Result?: string
+  ResultData?: string
+  GUIDisplayResult?: string
+  IsGlobalNotes?: number
+  isGlobalNotes?: number
+  IsPrivateNotes?: number
+  isPrivateNotes?: number
+  receivedNotes?: TaskNote[]
+  sentNotes?: TaskNote[]
   // Company-related fields (for ResolveCompany task)
-  companyFromApplication?: CompanyFromApplication;
-  companyMatchList?: CompanyMatch[];
-  companySelected?: CompanySelected;
-  
+  companyFromApplication?: CompanyFromApplication
+  companyMatchList?: CompanyMatch[]
+  companySelected?: CompanySelected
+
   // Plant-related fields (for ResolvePlant task)
-  plantFromApplication?: PlantFromApplication;
-  plantMatchList?: PlantMatch[];
-  plantSelected?: PlantSelected;
-};
+  plantFromApplication?: PlantFromApplication
+  plantMatchList?: PlantMatch[]
+  plantSelected?: PlantSelected
+}
 
 export type TaskNote = {
-  note?: string;
-  text?: string;
-  details?: string;
-  ApplicationID?: number;
-  MessageID?: number;
-  MessageText?: string;
-  MessageType?: string;
-  Priority?: string;
-  SentDate?: string;
-  TaskInstanceId?: number | string;
-  isPrivate?: boolean;
-  isRead?: boolean | number | string;
-  FromUser?: string;
-  ToUser?: string;
-  fromTask?: string;
-  from_task?: string;
-  toTask?: string;
-  to_task?: string;
-  fromUser?: string;
-  from_user?: string;
-  fromUserRole?: string;
-  from_user_role?: string;
-  toUser?: string;
-  to_user?: string;
-  tag?: string | TaskNoteReaction[];
-  Tag?: string | TaskNoteReaction[];
-  toRole?: string;
-  to_role?: string;
-  createdDate?: string;
-  created_date?: string;
-  [key: string]: unknown;
-};
+  note?: string
+  text?: string
+  details?: string
+  ApplicationID?: number
+  MessageID?: number
+  MessageText?: string
+  MessageType?: string
+  Priority?: string
+  SentDate?: string
+  TaskInstanceId?: number | string
+  isPrivate?: boolean
+  isRead?: boolean | number | string
+  FromUser?: string
+  ToUser?: string
+  fromTask?: string
+  from_task?: string
+  toTask?: string
+  to_task?: string
+  fromUser?: string
+  from_user?: string
+  fromUserRole?: string
+  from_user_role?: string
+  toUser?: string
+  to_user?: string
+  tag?: string | TaskNoteReaction[]
+  Tag?: string | TaskNoteReaction[]
+  toRole?: string
+  to_role?: string
+  createdDate?: string
+  created_date?: string
+  [key: string]: unknown
+}
 
 export type TaskNoteReaction = {
-  id: string;
-  username: string;
-  reaction: string;
-  datetime: string;
-  active: boolean;
-};
+  id: string
+  username: string
+  reaction: string
+  datetime: string
+  active: boolean
+}
 
 export type WFApplicationMessageAttributes = {
-  ApplicationID?: number;
-  Attachments?: string | null;
-  BCCUser?: string | null;
-  CCUser?: string | null;
-  EmailStatus?: string | null;
-  FromUser?: string;
-  isRead?: boolean | number | string;
-  MessageID?: number;
-  MessageText?: string;
-  MessageTextPlain?: string | null;
-  MessageType?: string;
-  PlainText?: string | null;
-  Priority?: 'CRITICAL' | 'HIGH' | 'LOW' | 'NORMAL' | string;
-  SentDate?: string;
-  Subject?: string | null;
-  Tag?: string | TaskNoteReaction[];
-  tag?: string | TaskNoteReaction[];
-  TaskInstanceId?: number;
-  Text?: string | null;
-  ToUser?: string;
-  isPrivate?: boolean;
-  parentMessageId?: number | string | null;
-};
+  ApplicationID?: number
+  Attachments?: string | null
+  BCCUser?: string | null
+  CCUser?: string | null
+  EmailStatus?: string | null
+  FromUser?: string
+  isRead?: boolean | number | string
+  MessageID?: number
+  MessageText?: string
+  MessageTextPlain?: string | null
+  MessageType?: string
+  PlainText?: string | null
+  Priority?: 'CRITICAL' | 'HIGH' | 'LOW' | 'NORMAL' | string
+  SentDate?: string
+  Subject?: string | null
+  Tag?: string | TaskNoteReaction[]
+  tag?: string | TaskNoteReaction[]
+  TaskInstanceId?: number
+  Text?: string | null
+  ToUser?: string
+  isPrivate?: boolean
+  parentMessageId?: number | string | null
+}
 
 export type WFApplicationMessageRecord = {
-  attributes?: WFApplicationMessageAttributes;
-  id?: string;
-  links?: { self?: string };
-  relationships?: Record<string, unknown>;
-  type?: string;
-};
+  attributes?: WFApplicationMessageAttributes
+  id?: string
+  links?: { self?: string }
+  relationships?: Record<string, unknown>
+  type?: string
+}
 
 export type Stage = {
-  status: string;
-  progress: number;
-  tasks: Task[];
-};
-export type AssignedRole = Record<string, string | boolean | null | undefined>;
+  status: string
+  progress: number
+  tasks: Task[]
+}
+export type AssignedRole = Record<string, string | boolean | null | undefined>
 
 export type ApplicantAppVars = {
-  visit_id?: number | string | null;
-  rfr_file_url?: string | null;
-  actual_visit_date?: string | null;
-  wf_file_id?: number | string | null;
-  filename?: string | null;
-  cycleStart?: string | null;
-  cycleEnd?: string | null;
-  paymentCycleStart?: string | null;
-  paymentCycleEnd?: string | null;
-  companyPaymentCycleStart?: string | null;
-  companyPaymentCycleEnd?: string | null;
-};
+  visit_id?: number | string | null
+  rfr_file_url?: string | null
+  actual_visit_date?: string | null
+  wf_file_id?: number | string | null
+  filename?: string | null
+  cycleStart?: string | null
+  cycleEnd?: string | null
+  paymentCycleStart?: string | null
+  paymentCycleEnd?: string | null
+  companyPaymentCycleStart?: string | null
+  companyPaymentCycleEnd?: string | null
+}
 
 type ResolvedCompany = {
   companyName?: string
   Id?: string
-  Address?: string,
-  processBy?: string,
+  Address?: string
+  processBy?: string
   ProcessDate?: string
 }
 
@@ -340,8 +340,8 @@ type ResolvedPlant = {
   plant?: {
     plantName?: string
     plantID?: string
-    plantAddress?: string,
-    processBy?: string,
+    plantAddress?: string
+    processBy?: string
     ProcessDate?: string
   }
 }
@@ -352,119 +352,138 @@ export type ResolvedData = {
 }
 
 export type Applicant = {
-  id: number;
-  applicationId: number;
-  IntakeID?: number | string | null;
-  intakeId?: number | string | null;
-  visit_id?: number | string | null;
-  visitId?: number | string | null;
-  appvars?: ApplicantAppVars | null;
-  globalData?: ApplicationGlobalData;
-  isNewCompany?: boolean;
-  companyId?: number;
-  company: string;
-  plantId?: number;
-  plant: string;
-  region: string;
-  priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM';
-  status: string; // e.g. 'contract_sent'
-  assignedRC: string;
-  assignedRoles?: AssignedRole[]; // 👈 Added this line
-  daysInProcess: number;
-  overdue: boolean;
-  daysOverdue: number;
-  lastUpdate: string;
-  nextAction: string;
-  documents: number;
-  notes: number;
-  stages: Record<string, Stage>;
+  id: number
+  applicationId: number
+  IntakeID?: number | string | null
+  intakeId?: number | string | null
+  visit_id?: number | string | null
+  visitId?: number | string | null
+  appvars?: ApplicantAppVars | null
+  globalData?: ApplicationGlobalData
+  isNewCompany?: boolean
+  companyId?: number
+  company: string
+  plantId?: number
+  plant: string
+  region: string
+  priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM'
+  status: string // e.g. 'contract_sent'
+  assignedRC: string
+  assignedRoles?: AssignedRole[] // 👈 Added this line
+  daysInProcess: number
+  overdue: boolean
+  daysOverdue: number
+  lastUpdate: string
+  nextAction: string
+  documents: number
+  notes: number
+  stages: Record<string, Stage>
   /** 👇 Matches API response */
-  application_messages?: WFApplicationMessage[];
+  application_messages?: WFApplicationMessage[]
   /** If API sends extra stuff (like aiSuggestions), allow it */
-  aiSuggestions?: Record<string, any>;
-   /** 👇 New property for applicant files */
-  files?: ApplicantFile[];
-  createdDate?: string;
-  resolved?: ResolvedData;
-  externalReferenceId?: number; // for linking to detailed view, if needed
-};
-
-export interface Company {
-  name: string;
-  companyId?: number | string;
-  status?: string;
-  companyID?: number | string;
-  Status?: string;
-  category?: string;
-  currentlyCertified?: string;
-  everCertified?: string;
-  website?: string;
+  aiSuggestions?: Record<string, any>
+  /** 👇 New property for applicant files */
+  files?: ApplicantFile[]
+  createdDate?: string
+  resolved?: ResolvedData
+  externalReferenceId?: number // for linking to detailed view, if needed
 }
 
-export interface Contact { type:string; name:string; phone?:string; email?:string; title?:string; designated?:boolean }
+export interface Company {
+  name: string
+  companyId?: number | string
+  status?: string
+  companyID?: number | string
+  Status?: string
+  category?: string
+  currentlyCertified?: string
+  everCertified?: string
+  website?: string
+}
 
-export interface Plant { id:number; plantId:string; plantID?: number | string; name:string; address:any; contact:any; manufacturing:any; otherProducts?:boolean; otherProductsList?:string, otherPlantsProducing?:boolean, otherPlantsLocation?:string }
+export interface Contact {
+  type: string
+  name: string
+  phone?: string
+  email?: string
+  title?: string
+  designated?: boolean
+}
 
-export interface UploadedFile { 
-  fileId?:number; 
-  FileID?: number;
-  FileType:string; 
-  FilePath:string; 
-  DownloadUrl?: string;
-  fileURL?: string;
-  UploadedDate:string; 
-  tag?:string; 
-  Tag?: string;
-  IsProcessed?:boolean; 
-  RecordCount?:number; 
-  description?:string;
-  FileName?:string | undefined;
-  FileSize?:string | undefined;
-  CreatedBy?: string;
-  createdBy?: string;
+export interface Plant {
+  id: number
+  plantId: string
+  plantID?: number | string
+  name: string
+  address: any
+  contact: any
+  manufacturing: any
+  otherProducts?: boolean
+  otherProductsList?: string
+  otherPlantsProducing?: boolean
+  otherPlantsLocation?: string
+}
+
+export interface UploadedFile {
+  fileId?: number
+  FileID?: number
+  FileType: string
+  FilePath: string
+  DownloadUrl?: string
+  fileURL?: string
+  UploadedDate: string
+  tag?: string
+  Tag?: string
+  IsProcessed?: boolean
+  RecordCount?: number
+  description?: string
+  FileName?: string | undefined
+  FileSize?: string | undefined
+  CreatedBy?: string
+  createdBy?: string
 }
 
 export interface QuoteItem {
-  Description: string;
-  Amount: string;
-  itemId?: number;
+  Description: string
+  Amount: string
+  itemId?: number
 }
 
 export interface QuoteData {
-  QuoteNumber: string;
-  TotalAmount: string;
-  validUntil: string;
-  Status: 'pending_acceptance' | 'accepted' | 'rejected' | 'expired' | string;
-  items: QuoteItem[];
-  quoteId?: number;
+  QuoteNumber: string
+  TotalAmount: string
+  validUntil: string
+  Status: 'pending_acceptance' | 'accepted' | 'rejected' | 'expired' | string
+  items: QuoteItem[]
+  quoteId?: number
 }
 
 export interface CompanyAddress {
-  city: string;
-  country: string;
-  line2: string;
-  state: string;
-  street: string;
-  type: string; // or "Billing" | "Physical"
-  zip: string;
+  city: string
+  country: string
+  line2: string
+  state: string
+  street: string
+  type: string // or "Billing" | "Physical"
+  zip: string
 }
 
 export interface CompanyContact {
-  email: string;
-  name: string;
-  phone: string;
-  role?: string; // optional because some don't have it
-  type: string;  // or "Primary Contact" | "Not Primary Contact"
+  email: string
+  name: string
+  phone: string
+  role?: string // optional because some don't have it
+  type: string // or "Primary Contact" | "Not Primary Contact"
 }
 
 export type CompanyContactGroups = {
-  primaryContact?: CompanyContact[];
-  billingContact?: CompanyContact[];
-  otherContact?: CompanyContact[];
-  PrimaryContact?: CompanyContact[];
-  BillingContact?: CompanyContact[];
-  OtherContact?: CompanyContact[];
-};
+  primaryContact?: CompanyContact[]
+  billingContact?: CompanyContact[]
+  otherContact?: CompanyContact[]
+  PrimaryContact?: CompanyContact[]
+  BillingContact?: CompanyContact[]
+  OtherContact?: CompanyContact[]
+}
 
 export interface PlantAddress {
   street: string
@@ -485,532 +504,544 @@ export interface PlantContact {
 }
 
 export type PlantContactGroups = {
-  primaryContact?: PlantContact[];
-  billingContact?: PlantContact[];
-  otherContact?: PlantContact[];
-  PrimaryContact?: PlantContact[];
-  BillingContact?: PlantContact[];
-  OtherContact?: PlantContact[];
-};
+  primaryContact?: PlantContact[]
+  billingContact?: PlantContact[]
+  otherContact?: PlantContact[]
+  PrimaryContact?: PlantContact[]
+  BillingContact?: PlantContact[]
+  OtherContact?: PlantContact[]
+}
 
 export interface TaskEvent {
-  Action: string;
-  ActionBy?: string;
-  ActionDate?: string;
-  ActionReason?: string;
-  ApplicationId?: number;
-  Details?: string;
-  NewStatus?: string;
-  PreviousStatus?: string;
-  TaskEventId?: number;
-  TaskInstanceId?: number;
+  Action: string
+  ActionBy?: string
+  ActionDate?: string
+  ActionReason?: string
+  ApplicationId?: number
+  Details?: string
+  NewStatus?: string
+  PreviousStatus?: string
+  TaskEventId?: number
+  TaskInstanceId?: number
 }
 
 export interface ApplicationEmail {
-  ApplicationID?: number | string;
-  Attachments?: string | null;
-  BCCUser?: string | null;
-  CCUser?: string | null;
-  EmailStatus?: string | null;
-  FromUser?: string | null;
-  MessageID?: number | string;
-  MessageText?: string | null;
-  MessageTextPlain?: string | null;
-  MessageType?: string | null;
-  PlainText?: string | null;
-  Priority?: string | null;
-  SentDate?: string | null;
-  Subject?: string | null;
-  TaskInstanceId?: number | string | null;
-  Text?: string | null;
-  ToUser?: string | null;
-  isPrivate?: boolean;
-  parentMessageId?: number | string | null;
-  tag?: string | null;
+  ApplicationID?: number | string
+  Attachments?: string | null
+  BCCUser?: string | null
+  CCUser?: string | null
+  EmailStatus?: string | null
+  FromUser?: string | null
+  MessageID?: number | string
+  MessageText?: string | null
+  MessageTextPlain?: string | null
+  MessageType?: string | null
+  PlainText?: string | null
+  Priority?: string | null
+  SentDate?: string | null
+  Subject?: string | null
+  TaskInstanceId?: number | string | null
+  Text?: string | null
+  ToUser?: string | null
+  isPrivate?: boolean
+  parentMessageId?: number | string | null
+  tag?: string | null
 }
 
 export interface RawApplicationEntry {
-  prompt?: string;
-  answer?: string;
+  prompt?: string
+  answer?: string
 }
 
 export interface ApplicationGlobalData {
-  company_id?: number | string;
-  company_name?: string;
-  company_status?: string;
-  is_new_company?: boolean;
+  company_id?: number | string
+  company_name?: string
+  company_status?: string
+  is_new_company?: boolean
   plants?: Array<{
-    company_id?: number | string;
-    plant_id?: number | string;
-    plant_name?: string;
-    owns_id?: number | string;
-    owns_status?: string;
-    wf_status?: string;
-    is_new_plant?: boolean;
-    is_new_owns?: boolean;
-    WFID?: number | string;
-  }>;
-  plant_id?: number | string;
-  owns_id?: number | string;
-  plant_name?: string;
-  is_new_plant?: boolean;
-  is_new_owns?: boolean;
-  owns_status?: string;
-  wf_status?: string;
+    company_id?: number | string
+    plant_id?: number | string
+    plant_name?: string
+    owns_id?: number | string
+    owns_status?: string
+    wf_status?: string
+    is_new_plant?: boolean
+    is_new_owns?: boolean
+    WFID?: number | string
+  }>
+  plant_id?: number | string
+  owns_id?: number | string
+  plant_name?: string
+  is_new_plant?: boolean
+  is_new_owns?: boolean
+  owns_status?: string
+  wf_status?: string
+}
+
+export interface DesignatedNcrcContact {
+  BusinessEmail?: string | null
+  BusinessPhone?: string | null
+  FIRST?: string | null
+  ID?: string | null
+  LAST?: string | null
+  MIDDLE?: string | null
+  PREFIX?: string | null
 }
 
 export interface ApplicationDetail {
-  applicationId: string;
-  createdDate?: string;
-  daysInProcess?: number;
-  daysOverdue?: number;
-  assignedNCRC?: string;
-  assignedRC?: string;
-  assignedRFR?: string | null;
-  DesignatedRFR?: string | null;
-  RFRFileUrl?: string | null;
-  ReportedInspectionDate?: string | null;
-  VisitId?: number | string | null;
-  InspectionDate?: string | null;
-  companyId?: number | string;
-  PlantId?: number | string;
-  PlantID?: number | string;
-  OwnsID?: number | string;
-  OwnsStatus?: string;
-  CompanyStatus?: string;
-  status: string;
-  validationStatus?: string;
-  validationErrorDesc?: string;
-  ownsid?: number | string;
-  globalData?: ApplicationGlobalData;
-  visit_id?: number | string | null;
-  appvars?: ApplicantAppVars | null;
-  assignedRoles?: AssignedRole[];
-  submissionDate?: string;
-  kashrusCompanyId?: string;
-  kashrusStatus?: string;
-  primaryContact?: string;
-  company: Company[];
-  companyAddresses?: CompanyAddress[];   // <--- typed
-  companyContacts?: CompanyContact[] | CompanyContactGroups;    // <--- typed
-  contacts: Contact[];
-  plants: Plant[];
-  plantAddresses?: PlantAddress[];
-  plantContacts?: PlantContact[] | PlantContactGroups;
-  products: any[];
-  preferences?: any;
-  files?: UploadedFile[];
-  ingredients?: any[];
-  quotes?: QuoteData[]; // <-- added here
-  messages?: WFApplicationMessage[];
-  taskEvents?: TaskEvent[];
-  emails?: ApplicationEmail[];
-  raw_data?: RawApplicationEntry[];
+  applicationId: string
+  createdDate?: string
+  daysInProcess?: number
+  daysOverdue?: number
+  assignedNCRC?: string
+  DesignatedNCRC?: DesignatedNcrcContact | null
+  DesignatedAdminNCRC?: DesignatedNcrcContact | null
+  assignedRC?: string
+  assignedRFR?: string | null
+  DesignatedRFR?: string | null
+  RFRFileUrl?: string | null
+  ReportedInspectionDate?: string | null
+  VisitId?: number | string | null
+  InspectionDate?: string | null
+  companyId?: number | string
+  PlantId?: number | string
+  PlantID?: number | string
+  OwnsID?: number | string
+  OwnsStatus?: string
+  CompanyStatus?: string
+  status: string
+  validationStatus?: string
+  validationErrorDesc?: string
+  ownsid?: number | string
+  globalData?: ApplicationGlobalData
+  visit_id?: number | string | null
+  appvars?: ApplicantAppVars | null
+  assignedRoles?: AssignedRole[]
+  submissionDate?: string
+  kashrusCompanyId?: string
+  kashrusStatus?: string
+  primaryContact?: string
+  company: Company[]
+  companyAddresses?: CompanyAddress[] // <--- typed
+  companyContacts?: CompanyContact[] | CompanyContactGroups // <--- typed
+  contacts: Contact[]
+  plants: Plant[]
+  plantAddresses?: PlantAddress[]
+  plantContacts?: PlantContact[] | PlantContactGroups
+  products: any[]
+  preferences?: any
+  files?: UploadedFile[]
+  ingredients?: any[]
+  quotes?: QuoteData[] // <-- added here
+  messages?: WFApplicationMessage[]
+  taskEvents?: TaskEvent[]
+  emails?: ApplicationEmail[]
+  raw_data?: RawApplicationEntry[]
 }
 
 export type ScheduleAIngredient = {
-  ApplicationID: number;
-  IngredientId: number;
-  UKDID?: string;
-  brandName?: string;
-  certifyingAgency?: string;
-  group?: number | string;
-  ingredientLabelName?: string;
-  manufacturer?: string;
-  packagedOrBulk?: string;
-  passover?: string;
-  plantStatus?: string;
-  rawMaterialCode?: string;
+  ApplicationID: number
+  IngredientId: number
+  UKDID?: string
+  brandName?: string
+  certifyingAgency?: string
+  group?: number | string
+  ingredientLabelName?: string
+  manufacturer?: string
+  packagedOrBulk?: string
+  passover?: string
+  plantStatus?: string
+  rawMaterialCode?: string
 }
 
 export type KashIngredient = {
-  ACTIVE?: number | string;
-  ALTERNATE_NAME?: string;
-  AS_STIPULATED?: string;
-  BLK?: string;
-  BRAND_NAME?: string;
-  CNTA?: string;
-  COMPANY_ID?: number | string;
-  CTA?: string;
-  CompanyName?: string;
-  DPM?: string;
-  DateAdded?: string;
-  GRP?: number | string;
-  INGREDIENT_NAME?: string;
-  IngredientInPlantStatus?: string;
-  JobID?: number | string;
-  LABEL_COMPANY?: string;
-  LABEL_ID?: number | string;
-  LABEL_SEQ_NUM?: number | string;
-  LOC?: string;
-  LabelID?: number | string;
-  LabelStatus?: string;
-  MERCHANDISE_ID?: number | string;
-  OWNS_ID?: number | string;
-  PESACH?: string;
-  PLANT_ID?: number | string;
-  PlantCTA?: string;
-  PlantName?: string;
-  PlantStatus?: string;
-  SEAL_SIGN?: string;
-  SRC_CITY?: string;
-  SRC_COUNTRY?: string;
-  SRC_MAR_ID?: number | string;
-  SRC_STATE?: string;
-  SRC_STREET?: string;
-  SRC_ZIP?: string;
-  SYMBOL?: string;
-  UKDID?: string;
-  USED_IN1_ID?: number | string;
+  ACTIVE?: number | string
+  ALTERNATE_NAME?: string
+  AS_STIPULATED?: string
+  BLK?: string
+  BRAND_NAME?: string
+  CNTA?: string
+  COMPANY_ID?: number | string
+  CTA?: string
+  CompanyName?: string
+  DPM?: string
+  DateAdded?: string
+  GRP?: number | string
+  INGREDIENT_NAME?: string
+  IngredientInPlantStatus?: string
+  JobID?: number | string
+  LABEL_COMPANY?: string
+  LABEL_ID?: number | string
+  LABEL_SEQ_NUM?: number | string
+  LOC?: string
+  LabelID?: number | string
+  LabelStatus?: string
+  MERCHANDISE_ID?: number | string
+  OWNS_ID?: number | string
+  PESACH?: string
+  PLANT_ID?: number | string
+  PlantCTA?: string
+  PlantName?: string
+  PlantStatus?: string
+  SEAL_SIGN?: string
+  SRC_CITY?: string
+  SRC_COUNTRY?: string
+  SRC_MAR_ID?: number | string
+  SRC_STATE?: string
+  SRC_STREET?: string
+  SRC_ZIP?: string
+  SYMBOL?: string
+  UKDID?: string
+  USED_IN1_ID?: number | string
 }
 
 export interface ScheduleAIngredientsResult {
-  scheduleIngredients: ScheduleAIngredient[];
-  kashIngredients: KashIngredient[];
+  scheduleIngredients: ScheduleAIngredient[]
+  kashIngredients: KashIngredient[]
 }
 
 export interface ScheduleAIngredientsResponse {
   ingredients?: {
-    schedule_ingredients?: ScheduleAIngredient[];
-    ou_kash_ingredients?: KashIngredient[];
-  };
-  status?: string;
+    schedule_ingredients?: ScheduleAIngredient[]
+    ou_kash_ingredients?: KashIngredient[]
+  }
+  status?: string
 }
 
 export type ScheduleBProduct = {
-  ApplicationID?: number | string;
-  BrandName?: string;
-  Industrial?: boolean | string;
-  UKDID?: string;
-  Retail?: boolean | string;
-  ScheduleProductId?: number | string;
-  UPC?: string;
-  bulkShipped?: string;
-  group?: number | string;
-  inHouse?: boolean | string;
-  internal_use_only?: string;
-  list?: string;
-  notes?: string;
-  passover?: string;
-  privateLabel?: boolean | string;
-  privateLabelCo?: string;
-  productName?: string;
-  status?: string;
-  symbol?: string;
-};
+  ApplicationID?: number | string
+  BrandName?: string
+  Industrial?: boolean | string
+  UKDID?: string
+  Retail?: boolean | string
+  ScheduleProductId?: number | string
+  UPC?: string
+  bulkShipped?: string
+  group?: number | string
+  inHouse?: boolean | string
+  internal_use_only?: string
+  list?: string
+  notes?: string
+  passover?: string
+  privateLabel?: boolean | string
+  privateLabelCo?: string
+  productName?: string
+  status?: string
+  symbol?: string
+}
 
 export type KashProduct = {
-  ACTIVE?: number | string;
-  AS_STIPULATED?: string;
-  BLK?: string;
-  BRAND_NAME?: string;
-  CAS?: string;
-  CATEGORY_NAME?: string;
-  COMPANY_ID?: number | string;
-  COMPANY_NAME?: string;
-  CONFIDENTIAL?: string;
-  CONFIDENTIAL_TEXT?: string;
-  Consumer?: string;
-  DPM?: string;
-  GRP?: number | string;
-  INDUSTRIAL?: string;
-  IN_USE?: string;
-  IsDairyEquipment?: string;
-  KITNIYOT?: boolean | string;
-  LABEL_COMPANY?: string;
-  LABEL_ID?: number | string;
-  LABEL_SEQ_NUM?: number | string;
-  LABEL_TYPE?: string;
-  LOChold?: string;
-  MERCHANDISE_ID?: number | string;
-  MODIFIED_DATE?: string;
-  MerchProductName?: string;
-  MerchProductNumber?: string;
-  OUP_REQUIRED?: string;
-  OWNS_ID?: number | string;
-  PESACH?: string;
-  PLANT_ID?: number | string;
-  PLANT_NAME?: string;
-  PLANT_STATUS?: string;
-  PRODUCED_IN1_ID?: number | string;
-  PRODUCT_NAME?: string;
-  Plant_Country?: string;
-  RC?: string;
-  Repack?: string;
-  SEAL_SIGN?: string;
-  STATUS?: string;
-  SYMBOL?: string;
-  TOP_LEVEL_PRODUCT_NAME?: string;
-  passoverspecialproduction?: string;
-};
+  ACTIVE?: number | string
+  AS_STIPULATED?: string
+  BLK?: string
+  BRAND_NAME?: string
+  CAS?: string
+  CATEGORY_NAME?: string
+  COMPANY_ID?: number | string
+  COMPANY_NAME?: string
+  CONFIDENTIAL?: string
+  CONFIDENTIAL_TEXT?: string
+  Consumer?: string
+  DPM?: string
+  GRP?: number | string
+  INDUSTRIAL?: string
+  IN_USE?: string
+  IsDairyEquipment?: string
+  KITNIYOT?: boolean | string
+  LABEL_COMPANY?: string
+  LABEL_ID?: number | string
+  LABEL_SEQ_NUM?: number | string
+  LABEL_TYPE?: string
+  LOChold?: string
+  MERCHANDISE_ID?: number | string
+  MODIFIED_DATE?: string
+  MerchProductName?: string
+  MerchProductNumber?: string
+  OUP_REQUIRED?: string
+  OWNS_ID?: number | string
+  PESACH?: string
+  PLANT_ID?: number | string
+  PLANT_NAME?: string
+  PLANT_STATUS?: string
+  PRODUCED_IN1_ID?: number | string
+  PRODUCT_NAME?: string
+  Plant_Country?: string
+  RC?: string
+  Repack?: string
+  SEAL_SIGN?: string
+  STATUS?: string
+  SYMBOL?: string
+  TOP_LEVEL_PRODUCT_NAME?: string
+  passoverspecialproduction?: string
+}
 
 export interface ScheduleBProductsResult {
-  scheduleProducts: ScheduleBProduct[];
-  kashProducts: KashProduct[];
+  scheduleProducts: ScheduleBProduct[]
+  kashProducts: KashProduct[]
 }
 
 export interface ScheduleBProductsResponse {
   products?: {
-    schedule_products?: ScheduleBProduct[];
-    ou_kash_products?: KashProduct[];
-  };
-  status?: string;
+    schedule_products?: ScheduleBProduct[]
+    ou_kash_products?: KashProduct[]
+  }
+  status?: string
 }
 
 export interface ApplicationTask {
-  TaskCategory: string;          // e.g., "CONFIRMATION"
-  taskCategory?: string;
-  applicationId: number;
-  id: number;
-  assignee: string;              // e.g., "admin"
-  assigneeRole: string;          // e.g., "LEGAL", "RFR", "PROD"
-  companyId: number;
-  companyName: string;
-  completedDate: string | null;
-  laneName: string;              // e.g., "NDA", "Inspection"
-  plantId: number;
-  plantName: string;
-  processInstanceId: number;
-  stageInstanceId: number;
-  startedDate: string | null;
-  status: "PENDING" | "COMPLETED" | string; // can extend as needed
-  taskInstanceId: number;
-  taskName: string;              // e.g., "Send NDA"
-  isNewCompany?: boolean;
-  taskDescription: string;       // e.g., "Send the NDA to the client"
-  taskType: string;              // e.g., "CONFIRM"
-  TaskType?: string;
-  PreScript?: string;
-  Result?: string;
-  result?: string;
-  ResultData?: string;
-  resultData?: string;
-  StatusDetails?: string;
-  statusDetails?: string;
-  GUIDisplayResult?: string;
-  daysActive: number;
-  priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM';
-  stageName: string;              // e.g., "Send NDA"
-  daysPending: number;
-  daysOverdue: number;
-  completedCapacity?: string | null;
-  completedBy?: string | null;
-  capacity?: string;
-  companyFromApplication?: CompanyFromApplication;
-  companyMatchList?: CompanyMatch[];
-  companySelected?: CompanySelected;
-  plantFromApplication?: PlantFromApplication;
-  plantMatchList?: PlantMatch[];
-  plantSelected?: PlantSelected;
+  TaskCategory: string // e.g., "CONFIRMATION"
+  taskCategory?: string
+  applicationId: number
+  id: number
+  assignee: string // e.g., "admin"
+  assigneeRole: string // e.g., "LEGAL", "RFR", "PROD"
+  companyId: number
+  companyName: string
+  completedDate: string | null
+  laneName: string // e.g., "NDA", "Inspection"
+  plantId: number
+  plantName: string
+  processInstanceId: number
+  stageInstanceId: number
+  startedDate: string | null
+  status: 'PENDING' | 'COMPLETED' | string // can extend as needed
+  taskInstanceId: number
+  taskName: string // e.g., "Send NDA"
+  isNewCompany?: boolean
+  taskDescription: string // e.g., "Send the NDA to the client"
+  taskType: string // e.g., "CONFIRM"
+  TaskType?: string
+  PreScript?: string
+  Result?: string
+  result?: string
+  ResultData?: string
+  resultData?: string
+  StatusDetails?: string
+  statusDetails?: string
+  GUIDisplayResult?: string
+  daysActive: number
+  priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM'
+  stageName: string // e.g., "Send NDA"
+  daysPending: number
+  daysOverdue: number
+  completedCapacity?: string | null
+  completedBy?: string | null
+  capacity?: string
+  companyFromApplication?: CompanyFromApplication
+  companyMatchList?: CompanyMatch[]
+  companySelected?: CompanySelected
+  plantFromApplication?: PlantFromApplication
+  plantMatchList?: PlantMatch[]
+  plantSelected?: PlantSelected
 }
 
 export interface ApplicationTasksResponse {
-  data: ApplicationTask[];
+  data: ApplicationTask[]
   meta?: {
-    async_enabled?: boolean;
-    count: number;
-    limit: number;
-    offset: number;
-    processing_time?: number;
-    total_count: number;
-  };
-  status: string; // e.g., "ok"
+    async_enabled?: boolean
+    count: number
+    limit: number
+    offset: number
+    processing_time?: number
+    total_count: number
+  }
+  status: string // e.g., "ok"
 }
 
 export interface ApplicationDetailResponse {
-  applicationInfo: ApplicationDetail;
-  appplicationinfo: ApplicationDetail;
+  applicationInfo: ApplicationDetail
+  appplicationinfo: ApplicationDetail
 }
 
 export interface WFUserAttributes {
-  CreatedDate: string;
-  Email: string;
-  FullName: string;
-  IsActive: boolean;
-  LastLoginDate: string | null;
-  UserRole: string | null;
-  UserName: string;
+  CreatedDate: string
+  Email: string
+  FullName: string
+  IsActive: boolean
+  LastLoginDate: string | null
+  UserRole: string | null
+  UserName: string
 }
 
 export interface WFUserRelationships {
   RoleAssigmentList: {
-    data: any[];
+    data: any[]
     links: {
-      self: string;
-    };
-  };
+      self: string
+    }
+  }
   WF_Role: {
-    data: any | null;
+    data: any | null
     links: {
-      self: string;
-    };
-  };
+      self: string
+    }
+  }
 }
 
 export interface WFUser {
-  id: string;
-  type: string;
-  attributes: WFUserAttributes;
-  relationships: WFUserRelationships;
+  id: string
+  type: string
+  attributes: WFUserAttributes
+  relationships: WFUserRelationships
   links: {
-    self: string;
-  };
+    self: string
+  }
 }
 
 export interface UserRoleResponse {
-  data: WFUser[];
+  data: WFUser[]
 }
 
 export interface UserRoleTokenResponse {
-  access_token: string;
-  message: string;
-  token_type: string;
-  valid: boolean;
+  access_token: string
+  message: string
+  token_type: string
+  valid: boolean
 
   user_info: {
-    cognito_sub: string;
-    email: Record<string, never>; // because you showed: "email": {}
-    user_id: string;
+    cognito_sub: string
+    email: Record<string, never> // because you showed: "email": {}
+    user_id: string
 
     roles: {
-      role_name: string;
-    }[];
-  };
+      role_name: string
+    }[]
+  }
 }
 
 export interface ApplicantsResponse {
-  data: Applicant[];
+  data: Applicant[]
   meta: {
-    async_enabled: boolean;
-    count: number;
-    limit: number;
-    offset: number;
-    processing_time: number;
-    total_count: number;
-  };
-  status: 'ok' | 'error';
+    async_enabled: boolean
+    count: number
+    limit: number
+    offset: number
+    processing_time: number
+    total_count: number
+  }
+  status: 'ok' | 'error'
 }
 
 export type PrelimApplicantType = {
   // Top-level application fields
-  submission_id: string;
-  submission_date: string;
-  JotFormId: number;
-  formName: string;
-  kashrusLink: string;
-  status: string;
-  language: string;
-  
+  submission_id: string
+  submission_date: string
+  JotFormId: number
+  formName: string
+  kashrusLink: string
+  status: string
+  language: string
+
   // Company information
-  companyName: string;
-  companyAddress: string;
-  companyAddress2?: string;
-  companyCity: string;
-  companyState: string;
-  companyCountry: string;
-  ZipPostalCode: string;
-  companyPhone: string;
-  companyWebsite?: string;
-  
+  companyName: string
+  companyAddress: string
+  companyAddress2?: string
+  companyCity: string
+  companyState: string
+  companyCountry: string
+  ZipPostalCode: string
+  companyPhone: string
+  companyWebsite?: string
+
   // Primary contact
-  IsPrimaryContact: boolean;
-  contactFirst: string;
-  contactLast: string;
-  contactEmail: string;
-  contactPhone: string;
-  
+  IsPrimaryContact: boolean
+  contactFirst: string
+  contactLast: string
+  contactEmail: string
+  contactPhone: string
+
   // Billing contact
-  billingContact: string;
-  billingContactFirst?: string;
-  billingContactLast?: string;
-  billingContactEmail?: string;
-  billingContactPhone?: string;
-  
+  billingContact: string
+  billingContactFirst?: string
+  billingContactLast?: string
+  billingContactEmail?: string
+  billingContactPhone?: string
+
   // Certification info
-  OUcertified: boolean;
-  everCertified: boolean;
-  veganCert: boolean;
-  whichCategory: string;
-  whereDidHear: string;
-  
+  OUcertified: boolean
+  everCertified: boolean
+  veganCert: boolean
+  whichCategory: string
+  whereDidHear: string
+
   // Co-packing
-  copack: string;
-  listInCopack: boolean;
-  areThere: boolean;
-  
+  copack: string
+  listInCopack: boolean
+  areThere: boolean
+
   // Plants
-  numberOfPlants: number;
-  plants: PlantPrelim[];
-  
+  numberOfPlants: number
+  plants: PlantPrelim[]
+
   // File links
-  filelinks?: FileLink[];
-};
+  filelinks?: FileLink[]
+}
 
 export type PlantPrelim = {
-  JotFormId: number;
-  PlantId: number;
-  plantNumber: number;
-  plantName: string;
-  plantAddress: string;
-  plantCity: string;
-  plantState: string;
-  plantCountry: string;
-  plantZip: string;
-  majorCity?: string;
-  
+  JotFormId: number
+  PlantId: number
+  plantNumber: number
+  plantName: string
+  plantAddress: string
+  plantCity: string
+  plantState: string
+  plantCountry: string
+  plantZip: string
+  majorCity?: string
+
   // Plant contact
-  contactFirst: string;
-  contactLast: string;
-  contactEmail: string;
-  contactPhone: string;
-  jobTitle: string;
-  
+  contactFirst: string
+  contactLast: string
+  contactEmail: string
+  contactPhone: string
+  jobTitle: string
+
   // Products & ingredients
-  productDesc?: string;
-  brieflySummarize: string;
-  areAny: boolean;
-  otherProducts: boolean;
-  otherProductCompany?: string;
-  
-  products: Product[];
-  ingredients: Ingredient[];
-};
+  productDesc?: string
+  brieflySummarize: string
+  areAny: boolean
+  otherProducts: boolean
+  otherProductCompany?: string
+
+  products: Product[]
+  ingredients: Ingredient[]
+}
 
 export type Product = {
-  JotFormProductId: number;
-  JotPlantId: number;
-  productName: string;
-  inHouse: boolean;
-  privateLabel: boolean;
-  privateLabelCo: string;
-  Industrial: boolean;
-  Retail: boolean;
-};
+  JotFormProductId: number
+  JotPlantId: number
+  productName: string
+  inHouse: boolean
+  privateLabel: boolean
+  privateLabelCo: string
+  Industrial: boolean
+  Retail: boolean
+}
 
 export type Ingredient = {
-  JotFormIngredientId: number;
-  JotPlantId: number;
-  ingredientLabelName: string;
-  brandName: string;
-  manufacturer: string;
-  certifyingAgency: string;
-  rawMaterialCode: string;
-};
+  JotFormIngredientId: number
+  JotPlantId: number
+  ingredientLabelName: string
+  brandName: string
+  manufacturer: string
+  certifyingAgency: string
+  rawMaterialCode: string
+}
 
 export type FileLink = {
-  JotFormFileId: number;
-  JotFormId: number;
-};
+  JotFormFileId: number
+  JotFormId: number
+}
 
 export interface PrelimApplicantsResponse {
-  data: PrelimApplicantType[];
+  data: PrelimApplicantType[]
   meta: {
-    async_enabled: boolean;
-    count: number;
-    limit: number;
-    offset: number;
-    processing_time: number;
-    total_count: number;
-  };
-  status: 'ok' | 'error';
+    async_enabled: boolean
+    count: number
+    limit: number
+    offset: number
+    processing_time: number
+    total_count: number
+  }
+  status: 'ok' | 'error'
 }

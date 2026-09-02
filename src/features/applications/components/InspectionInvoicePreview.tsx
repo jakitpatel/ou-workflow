@@ -216,9 +216,9 @@ export function InspectionInvoicePreview(props: Props) {
           <div className="contact-box">
             <h4>For questions or comments, contact your Rabbinic Coordinator.</h4>
             <div className="contact-grid">
-              <span>{customer.coordinatorName || 'Rabbinic Coordinator'}</span>
-              <span>{customer.coordinatorPhone || '(212) 613-8000'}</span>
-              <span>{customer.coordinatorEmail || 'billing@ou.org'}</span>
+              <span>{customer.coordinatorName || '—'}</span>
+              <span>{customer.coordinatorPhone || '—'}</span>
+              <span>{customer.coordinatorEmail || '—'}</span>
             </div>
           </div>
           <table className="due">
