@@ -1024,6 +1024,7 @@ export function useInspectionInvoiceDrawerState({
         payload: {
           applicationId,
           applicationName,
+          NCRC: applicationDetail?.DesignatedNCRC ?? null,
           TaskInstanceId: taskInstanceId ?? null,
           taskName,
           applicant: applicant

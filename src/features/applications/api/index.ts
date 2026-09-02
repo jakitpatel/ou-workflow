@@ -460,6 +460,7 @@ export async function fetchApplicationMessages({
 export type GenerateInspectionInvoicePayload = {
   applicationId?: string | number
   applicationName?: string
+  NCRC?: ApplicationDetail['DesignatedNCRC']
   TaskInstanceId?: string | number | null
   taskName?: string
   applicant?: Partial<Applicant>
