@@ -439,7 +439,10 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   if (!open) return null
 
   const accountNumber = getAccountNumber(applicant)
-  const accountApplicationUrl = accountNumber ? buildFilteredApplicationUrl(accountNumber) : ''
+  const resolvedApplicationId = String(applicant?.applicationId ?? '').trim()
+  const accountApplicationUrl = resolvedApplicationId
+    ? buildFilteredApplicationUrl(resolvedApplicationId)
+    : ''
   const assignmentStartDate = todayYmd()
   const assignmentEndDate = addDaysToYmd(assignmentStartDate, 90)
   const isAssigned = Boolean(assignmentCreatedAt)
@@ -654,7 +657,11 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
               </div>
               <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-300">
                 <span className="rounded-full bg-white/10 px-2.5 py-1">{applicant?.company || 'Application'}</span>
-                {accountNumber ? <span className="rounded-full bg-white/10 px-2.5 py-1">App #{accountNumber}</span> : null}
+                {resolvedApplicationId ? (
+                  <span className="rounded-full bg-white/10 px-2.5 py-1">
+                    App #{resolvedApplicationId}
+                  </span>
+                ) : null}
                 {applicant?.plant ? <span className="rounded-full bg-white/10 px-2.5 py-1">Plant: {applicant.plant}</span> : null}
                 {task?.name ? <span className="rounded-full bg-white/10 px-2.5 py-1">{task.name}</span> : null}
               </div>
