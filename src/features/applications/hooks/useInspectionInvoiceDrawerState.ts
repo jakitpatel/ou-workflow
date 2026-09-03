@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { useUser } from '@/context/UserContext'
 import {
@@ -694,7 +694,7 @@ export function useInspectionInvoiceDrawerState({
     }
   }, [applicationDetail])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const invoiceTaskId = String(taskInstanceId ?? '').trim()
     const explicitStatusDetailsKey =
       typeof taskStatusDetails === 'string'
@@ -704,7 +704,46 @@ export function useInspectionInvoiceDrawerState({
           : ''
     const restoreIdentity = invoiceTaskId || resolvedApplicationId
     const restoreKey = `${restoreIdentity}:${explicitStatusDetailsKey}:${enabled ? 'open' : 'closed'}`
-    if (!enabled || !restoreIdentity || restoredTaskKeyRef.current === restoreKey) return
+    if (!enabled) {
+      // A later open (including for the same task) must re-read its persisted state.
+      restoredTaskKeyRef.current = ''
+      return
+    }
+    if (!restoreIdentity || restoredTaskKeyRef.current === restoreKey) return
+
+    restoredTaskKeyRef.current = restoreKey
+
+    // The drawer component is reused between applications. Start every task from a
+    // complete set of defaults before applying that task's saved state so values
+    // from the previously viewed application cannot leak into this one.
+    setInspectionNeeded(true)
+    setFeeRequired(true)
+    setAwaitPayment(true)
+    setSelectedRfrId(null)
+    setRestoredRfr(null)
+    setRfrSearch('')
+    setFeeAmount('')
+    setExpenseAmount('')
+    setInvoiceDate(todayYmd())
+    setInvoiceId(null)
+    setInvoiceDownloadLink(null)
+    setInvoicePdfUrl(null)
+    setInternalNotes('')
+    setNoInspectionReason('')
+    setNoFeeReason('')
+    setRecipient('')
+    setExtraRecipientEmail('')
+    setLetterTemplate(INSPECTION_LETTER_TEMPLATE)
+    setStage('setup')
+    setShowEmailPreview(false)
+    setEmailTo('')
+    setEmailCc('')
+    setEmailBcc('productAutomation@ou.org')
+    setShowEmailCopies(false)
+    setEmailBody('')
+    setEmailAttachments([])
+    setSentAt(null)
+    setPaidAt(null)
 
     const currentTask = findTaskById(applicant, invoiceTaskId)
     const savedState = getInspectionStatusSavedState<InspectionInvoiceSavedState>(
@@ -715,7 +754,6 @@ export function useInspectionInvoiceDrawerState({
         (currentTask as any)?.result,
     )
     if (!savedState) return
-    restoredTaskKeyRef.current = restoreKey
 
     const setup = savedState.setup ?? {}
     const generate = savedState.generate ?? {}
