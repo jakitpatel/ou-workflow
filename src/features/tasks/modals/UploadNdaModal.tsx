@@ -4,6 +4,7 @@ import { useUser } from "@/context/UserContext";
 import { useApplicationDetail } from "@/features/applications/hooks/useApplicationDetail";
 import { useUploadApplicationFileMutation } from "@/features/applications/hooks/useUploadApplicationFileMutation";
 import { TASK_CATEGORIES, TASK_TYPES } from "@/lib/constants/task";
+import { sendTaskEmail } from "@/features/tasks/hooks/useTaskActions";
 import type { Applicant, ApplicationTask, CompanyContact, CompanyContactGroups, Task } from "@/types/application";
 
 type SelectedAction = {
@@ -43,7 +44,7 @@ export const UploadNdaModal: React.FC<Props> = ({
   setShowUploadModal,
   completeTaskWithResult,
 }) => {
-  const { token } = useUser();
+  const { token, username } = useUser();
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -53,6 +54,11 @@ export const UploadNdaModal: React.FC<Props> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
   const [selectedContactEmail, setSelectedContactEmail] = useState("");
+  const [emailCc, setEmailCc] = useState("");
+  const [emailBcc, setEmailBcc] = useState("");
+  const [showEmailCopies, setShowEmailCopies] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
   const uploadMutation = useUploadApplicationFileMutation({
     onError: (message) => setError(message),
   });
@@ -142,8 +148,17 @@ export const UploadNdaModal: React.FC<Props> = ({
       setError("");
       setIsDragging(false);
       setSelectedContactEmail("");
+      setEmailCc("");
+      setEmailBcc("");
+      setShowEmailCopies(false);
     }
   }, [showUploadModal]);
+
+  useEffect(() => {
+    if (!showUploadModal || !isEmailActionTask) return;
+    setEmailSubject(`Complete NDA - ${companyName}`);
+    setEmailBody(`Please review this request for ${companyName}.`);
+  }, [showUploadModal, isEmailActionTask, companyName]);
 
   useEffect(() => {
     if (!showUploadModal || (!isReviewUploadTask && !isEmailActionTask)) {
@@ -339,6 +354,18 @@ export const UploadNdaModal: React.FC<Props> = ({
           applicationId
         );
       } else if (isEmailActionTask) {
+        if (applicationId == null) throw new Error("Application context is missing.");
+        setSaving(true);
+        await sendTaskEmail({
+          applicationId,
+          taskInstanceId,
+          to: selectedContactEmail,
+          cc: emailCc,
+          bcc: emailBcc,
+          subject: emailSubject,
+          body: emailBody,
+          file,
+        }, token ?? undefined, username ?? undefined);
         completeTaskWithResult(
           selectedAction.action,
           "yes",
@@ -348,9 +375,12 @@ export const UploadNdaModal: React.FC<Props> = ({
         );
       }
 
-      await openMailSender();
+      if (!isEmailActionTask) await openMailSender();
       setShowUploadModal(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to send email.");
     } finally {
+      setSaving(false);
       setProcessingAction(null);
     }
   }, [
@@ -365,6 +395,7 @@ export const UploadNdaModal: React.FC<Props> = ({
     completeTaskWithResult,
     openMailSender,
     setShowUploadModal,
+    emailCc, emailBcc, emailSubject, emailBody, file, taskInstanceId, token, username,
   ]);
 
   const handleNegotiate = useCallback(async () => {
@@ -496,7 +527,7 @@ export const UploadNdaModal: React.FC<Props> = ({
           <div className="mt-3 space-y-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
-                Contact
+                {isEmailActionTask ? "To" : "Contact"}
               </label>
               <select
                 value={selectedContactEmail}
@@ -521,6 +552,40 @@ export const UploadNdaModal: React.FC<Props> = ({
                 <p className="mt-1 text-xs text-gray-500">Loading contacts...</p>
               )}
             </div>
+            {isEmailActionTask && (
+              <>
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailCopies((current) => !current)}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                  >
+                    {showEmailCopies ? "Hide Cc/Bcc" : "Show Cc/Bcc"}
+                  </button>
+                </div>
+                {showEmailCopies && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="text-xs font-medium text-gray-700">Cc
+                      <input type="text" value={emailCc} onChange={(e) => setEmailCc(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="Optional" />
+                    </label>
+                    <label className="text-xs font-medium text-gray-700">Bcc
+                      <input type="text" value={emailBcc} onChange={(e) => setEmailBcc(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="Optional" />
+                    </label>
+                  </div>
+                )}
+                <label className="block text-xs font-medium text-gray-700">Subject
+                  <input type="text" value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                </label>
+                <label className="block text-xs font-medium text-gray-700">Body
+                  <textarea value={emailBody} onChange={(e) => setEmailBody(e.target.value)} className="mt-1 min-h-24 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                </label>
+                <input ref={inputRef} type="file" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0])} />
+                <button type="button" onClick={() => inputRef.current?.click()} disabled={saving} className="flex w-full items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 p-3 text-left text-sm hover:border-blue-400">
+                  <Upload className="h-4 w-4 text-blue-600" />
+                  {file ? file.name : "Attach file (optional)"}
+                </button>
+              </>
+            )}
             <div className="flex justify-end gap-3">
               {!isEmailActionTask && (
                 <button
@@ -542,7 +607,7 @@ export const UploadNdaModal: React.FC<Props> = ({
                 {processingAction === "complete" && (
                   <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 )}
-                Complete
+                {isEmailActionTask ? "Send Email & Complete" : "Complete"}
               </button>
             </div>
           </div>

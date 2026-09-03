@@ -1,4 +1,7 @@
 import { useCallback } from 'react'
+import { createApplicationMessage, uploadApplicationFile } from '@/features/applications/api'
+import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
+import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import {
   useAssignTaskMutation,
   useConfirmTaskMutation,
@@ -22,6 +25,76 @@ type InspectionFeeChoice = {
 export type SelectedTaskAction = {
   application: Applicant
   action: Task
+}
+
+export type SendTaskEmailInput = {
+  applicationId: string | number
+  taskInstanceId?: string | number | null
+  to: string
+  cc?: string
+  bcc?: string
+  subject: string
+  body: string
+  file?: File | null
+}
+
+const findUploadedFileUrl = (value: unknown): string => {
+  if (!value || typeof value !== 'object') return ''
+  const record = value as Record<string, unknown>
+  for (const key of ['fileUrl', 'fileURL', 'FilePath', 'DownloadUrl', 'downloadUrl', 'url', 'path']) {
+    const candidate = String(record[key] ?? '').trim()
+    if (candidate) return candidate
+  }
+  for (const nested of Object.values(record)) {
+    const candidate = findUploadedFileUrl(nested)
+    if (candidate) return candidate
+  }
+  return ''
+}
+
+export async function sendTaskEmail(input: SendTaskEmailInput, token?: string, username?: string) {
+  assertValidEmailRecipients({ to: input.to, cc: input.cc, bcc: input.bcc })
+  if (!input.subject.trim()) throw new Error('Email subject is required.')
+  if (!input.body.trim()) throw new Error('Email body is required.')
+
+  let attachments: string | null = null
+  if (input.file) {
+    const uploaded = await uploadApplicationFile({
+      file: input.file,
+      applicationId: input.applicationId,
+      taskInstanceID: input.taskInstanceId,
+      description: 'Complete NDA email attachment',
+      token,
+    })
+    const fileUrl = findUploadedFileUrl(uploaded)
+    if (!fileUrl) throw new Error('The file was uploaded, but no attachment URL was returned.')
+    attachments = `${input.file.name}<${fileUrl}>`
+  }
+
+  const email = buildHtmlEmailFromPlainText(input.body, { title: input.subject })
+  return createApplicationMessage({
+    payload: {
+      MessageID: null,
+      ApplicationID: input.applicationId,
+      FromUser: username || null,
+      ToUser: input.to.trim(),
+      CCUser: input.cc?.trim() || null,
+      BCCUser: input.bcc?.trim() || null,
+      Subject: input.subject.trim(),
+      MessageText: email.html,
+      MessageTextPlain: email.text,
+      PlainText: email.text,
+      Text: email.text,
+      MessageType: 'Email',
+      Priority: 'NORMAL',
+      SentDate: new Date().toISOString(),
+      TemplateName: 'complete-nda',
+      TaskInstanceId: input.taskInstanceId ?? null,
+      isPrivate: false,
+      Attachments: attachments,
+    },
+    token,
+  })
 }
 
 const normalizeTaskValue = (value: unknown) =>
