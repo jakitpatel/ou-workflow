@@ -1787,7 +1787,7 @@ ${packageUrl}`
         body: coverLetterBody,
         attachments: contractEmailAttachments,
       }
-      const attachments = contractEmailAttachments
+      const attachments = draft.attachments
 
       await sendContractCommunicationEmailMutation.mutateAsync({
         applicationId: resolvedApplicationId,

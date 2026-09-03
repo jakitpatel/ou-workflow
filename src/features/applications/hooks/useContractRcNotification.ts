@@ -59,6 +59,25 @@ type SendContractPackageEmailParams = {
   toUser?: string
 }
 
+const getClientVerifiableAttachments = (attachments?: string) => {
+  if (!attachments?.trim()) return undefined
+
+  const references = attachments.split(', ').map((reference) => reference.trim())
+  const clientVerifiableReferences = references.filter((reference) => {
+    const fileReference = reference.match(/<([^>]+)>/)?.[1]?.trim() || reference
+
+    // Invoice and contract-package generation returns server-managed references such as
+    // /file/2190 and s3://bucket/key.pdf. The application-message service resolves these when
+    // attaching the files, but the browser cannot verify them with an unauthenticated HEAD request.
+    return (
+      !/^\/?file\/\d+(?:[/?#].*)?$/i.test(fileReference) &&
+      !/^s3:\/\/\S+$/i.test(fileReference)
+    )
+  })
+
+  return clientVerifiableReferences.join(', ') || undefined
+}
+
 export type SendContractCommunicationEmailInput = SendContractPackageEmailParams
 
 type UploadContractEmailAttachmentParams = {
@@ -214,7 +233,7 @@ export function useSendContractCommunicationEmail() {
         cc: ccUser,
         bcc: bccUser,
       })
-      await assertEmailAttachmentSize(attachments)
+      await assertEmailAttachmentSize(getClientVerifiableAttachments(attachments))
 
       const email = buildHtmlEmailFromPlainText(body, {
         title: subject,
