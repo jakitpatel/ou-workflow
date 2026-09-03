@@ -70,8 +70,9 @@ export default function Overview({
   const plantId = isPrelimApplicationDetail
     ? intakePlant?.plant_id ?? intakeData?.plant_id ?? '-'
     : application.PlantID ?? application.PlantId ?? plant?.plantID ?? plant?.plantId ?? '-';
-  const applicationOwnsId = application.OwnsID ?? application.ownsid ?? '-';
-  const applicationOwnsStatus = application.OwnsStatus ?? '-';
+  const plantOwnership = plant?.o?.[0];
+  const applicationOwnsId = application.OwnsID ?? application.ownsid ?? plantOwnership?.ownsId ?? '-';
+  const applicationOwnsStatus = application.OwnsStatus ?? plantOwnership?.status ?? '-';
   const ownsId = intakePlant?.owns_id ?? intakeData?.owns_id ?? '-';
   const ownsStatus = intakePlant?.owns_status ?? intakeData?.owns_status ?? '-';
   const daysInProcess = Number(application.daysInProcess ?? 0);

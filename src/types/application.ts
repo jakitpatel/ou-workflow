@@ -415,6 +415,10 @@ export interface Plant {
   plantId: string
   plantID?: number | string
   name: string
+  o?: Array<{
+    ownsId?: number | string
+    status?: string
+  }>
   address: any
   contact: any
   manufacturing: any
