@@ -90,6 +90,11 @@ export type ScheduleACommunicationRound = {
   responseDate?: string
 }
 
+export type ScheduleAExportRowsResult = {
+  header: string[]
+  data: string[][]
+}
+
 export type SendScheduleACommunicationEmailInput = {
   applicationId?: string | number | null
   taskInstanceId?: string | number | null
@@ -1285,6 +1290,40 @@ export function useScheduleAScratchpad(
     [scratchpad],
   )
 
+  const buildScheduleAExportRows = useCallback(
+    (rows: ScheduleAIngredientRow[]): ScheduleAExportRowsResult => ({
+      header: [
+        'RMC',
+        'Ingredient Name',
+        'Company Name',
+        'Source',
+        'Brand Name',
+        'UKD',
+        'FN',
+        'Group',
+        'Symbol',
+        'Attachment',
+        'Plant Status',
+        'Note',
+      ],
+      data: rows.map((row) => [
+        row.rmc,
+        row.name,
+        row.companyName,
+        row.source,
+        row.brand,
+        row.ukd,
+        row.fn,
+        row.group,
+        row.certifier,
+        row.attachment,
+        row.status,
+        scratchpad.flags[row.id]?.note ?? '',
+      ]),
+    }),
+    [scratchpad],
+  )
+
   return {
     scratchpad,
     isLoadingSavedState: Boolean(normalizedTaskInstanceId && taskInstanceQuery.isLoading),
@@ -1311,5 +1350,6 @@ export function useScheduleAScratchpad(
     markScheduleAReady,
     reopenScheduleA,
     buildScratchpadCsv,
+    buildScheduleAExportRows,
   }
 }

@@ -488,6 +488,9 @@ const IMPORT_HEADER_TO_FIELD: Record<string, keyof ScheduleAIngredientDraft> = {
 
 const normalizeImportHeader = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
 
+const sanitizeFilenamePart = (value: string) =>
+  value.replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'application'
+
 const parseDelimitedText = (text: string) => {
   const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
   if (!normalized) return [] as string[][]
@@ -647,7 +650,7 @@ export function ScheduleAIngredientsDrawer({
     canonicalScheduleATaskInstanceId,
     scheduleATaskStatusDetails,
   )
-  const { scratchpad } = scratchpadApi
+  const { scratchpad, buildScheduleAExportRows } = scratchpadApi
   useEffect(() => {
     if (scratchpadApi.saveError) {
       toast.error(scratchpadApi.saveError)
@@ -904,6 +907,24 @@ export function ScheduleAIngredientsDrawer({
     const html = buildScheduleAHtml(kashRows, applicationName, resolvedApplicationId)
     const filename = `ScheduleA_${resolvedApplicationId ?? 'application'}.html`
     downloadTextFile(filename, html, 'text/html;charset=utf-8;')
+  }
+
+  const exportRows = buildScheduleAExportRows(visibleRows)
+
+  const scheduleAFilenameBase = (() => {
+    const namePart = sanitizeFilenamePart(applicationName ?? '')
+    const applicationPart = sanitizeFilenamePart(String(resolvedApplicationId ?? 'application'))
+    return `ScheduleA_${namePart}_${applicationPart}`
+  })()
+
+  const exportScheduleAExcel = () => {
+    const html = `<!doctype html><html><head><meta charset="utf-8"></head><body><table border="1"><tr>${exportRows.header
+      .map((header) => `<th>${header}</th>`)
+      .join('')}</tr>${exportRows.data
+      .map((row) => `<tr>${row.map((cell) => `<td>${String(cell ?? '')}</td>`).join('')}</tr>`)
+      .join('')}</table></body></html>`
+
+    downloadTextFile(`${scheduleAFilenameBase}.xls`, html, 'application/vnd.ms-excel;charset=utf-8;')
   }
 
   const openImportModal = () => {
@@ -1385,6 +1406,15 @@ export function ScheduleAIngredientsDrawer({
                     >
                       <Download className="h-3.5 w-3.5" />
                       Download
+                    </button>
+                    <button
+                      type="button"
+                      onClick={exportScheduleAExcel}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                      title="Export all fields to Excel for the Kashrus bulk import"
+                    >
+                      <FileText className="h-3.5 w-3.5 text-green-600" />
+                      Export to Excel
                     </button>
                     {ingView === 'application' && !readOnly ? (
                       <>
