@@ -1,5 +1,5 @@
 import type { ApplicationDetail, PlantContact } from "@/types/application";
-import { MapPin, User, Factory, CheckCircle } from "lucide-react";
+import { MapPin, User, Factory } from "lucide-react";
 
 const normalizePlantContacts = (plantContacts: ApplicationDetail['plantContacts']): PlantContact[] => {
   if (!plantContacts) return [];
@@ -342,41 +342,6 @@ export default function PlantsSection({
           </div>
         </div>
 
-        {/* Operational Status */}
-        <div className="border border-green-200 rounded-lg overflow-hidden bg-gradient-to-br from-green-50 to-green-100">
-          <div className="bg-green-100 px-4 py-3 border-b border-green-200">
-            <h4 className="font-semibold text-green-900 flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Operational Status
-            </h4>
-          </div>
-          <div className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex flex-col gap-1">
-                <span className="text-sm text-green-700">Plant Status</span>
-                <span className="inline-flex items-center px-2.5 py-1 bg-green-200 text-green-900 border border-green-300 rounded-full text-xs font-medium w-fit">
-                  {/*
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Active
-                  */}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-sm text-green-700">Last Inspection</span>
-                <span className="font-medium text-green-900"></span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-sm text-green-700">Compliance Status</span>
-                <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-full text-xs font-medium w-fit">
-                  {/*
-                  <AlertCircle className="h-3 w-3 mr-1" />
-                  Under Review
-                  */}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
             </div>
           );
