@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { Check, Edit } from 'lucide-react'
 import type { ChangeEvent, Dispatch, ReactNode, SetStateAction } from 'react'
-import { Edit } from 'lucide-react'
+import { useState } from 'react'
+
 import { PrelimResolutionActions } from '@/features/prelim/components/PrelimResolutionActions'
 import {
   formatAddressCityStateZip,
@@ -735,37 +736,6 @@ function ComparisonRow({
   editable?: boolean
   onAppValueChange?: (value: string) => void
 }) {
-  const getStatusStyles = () => {
-    if (status === 'match') {
-      return {
-        textClass: 'text-green-700',
-        badgeClass: 'bg-green-100 text-green-600',
-        icon: 'v',
-      }
-    }
-    if (status === 'mismatch') {
-      return {
-        textClass: 'text-red-700',
-        badgeClass: 'bg-red-100 text-red-500',
-        icon: 'x',
-      }
-    }
-    if (status === 'not-on-file') {
-      return {
-        textClass: 'text-blue-700',
-        badgeClass: 'bg-blue-100 text-blue-500',
-        icon: '+',
-      }
-    }
-    return {
-      textClass: 'text-gray-500',
-      badgeClass: 'bg-gray-100 text-gray-400',
-      icon: '.',
-    }
-  }
-
-  const statusStyles = getStatusStyles()
-
   return (
     <div className="grid grid-cols-12 gap-4 border-b border-gray-100 px-4 py-[14px] transition-colors hover:bg-gray-50">
       <div className="col-span-3 bg-[#fafbfc] text-sm font-medium text-gray-700">
@@ -789,12 +759,10 @@ function ComparisonRow({
           dbValue || <span className="text-gray-400 italic">Empty</span>
         )}
       </div>
-      <div className={`col-span-1 flex items-center justify-center ${statusStyles.textClass}`}>
-        <span
-          className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold ${statusStyles.badgeClass}`}
-        >
-          {statusStyles.icon}
-        </span>
+      <div className="col-span-1 flex items-center justify-center">
+        {status === 'match' && (
+          <Check className="h-5 w-5 text-green-600" aria-label="Values match" />
+        )}
       </div>
     </div>
   )
