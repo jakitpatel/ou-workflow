@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
-import type React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Check, Mail, Pencil, Search, UserRound, X } from 'lucide-react'
+import type React from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+
 import { useUser } from '@/context/UserContext'
 import { createApplicationMessage } from '@/features/applications/api'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
+import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import {
   buildInspectionStatusDetails,
@@ -18,6 +20,7 @@ import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { detectRole } from '@/lib/utils/taskHelpers'
+import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import type { Applicant, Task } from '@/types/application'
 
@@ -107,6 +110,49 @@ const nowLabel = () =>
     minute: '2-digit',
   })
 
+const joinEmailAddresses = (...values: Array<string | null | undefined>) =>
+  [...new Set(values.map((value) => normalizeText(value)).filter(Boolean))].join(', ')
+
+const buildNotificationBody = ({
+  rfrName,
+  senderName,
+  plant,
+  company,
+  accountNumber,
+  applicationLinkLabel,
+  accountApplicationUrl,
+  assignmentStartDate,
+  assignmentEndDate,
+  visitId,
+}: {
+  rfrName: string
+  senderName: string
+  plant: string
+  company: string
+  accountNumber: string
+  applicationLinkLabel: string
+  accountApplicationUrl: string
+  assignmentStartDate: string
+  assignmentEndDate: string
+  visitId: string
+}) =>
+  [
+    `To ${rfrName || 'RFR'},`,
+    '',
+    `You've been assigned an initial inspection by ${senderName || 'NCRC'}. Please review the plant and set your planned visit date.`,
+    '',
+    `Plant: ${plant || '-'}`,
+    '',
+    `Company: ${company || '-'}`,
+    '',
+    `Account #: ${accountNumber || '-'}`,
+    ...(accountApplicationUrl ? ['', `Application link: ${applicationLinkLabel}`] : []),
+    '',
+    `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`,
+    '',
+    `Visit ID: ${visitId || '-'}`,
+  ].join('\n')
+
 const getAccountNumber = (applicant?: Applicant) =>
   String(applicant?.companyId ?? applicant?.externalReferenceId ?? applicant?.applicationId ?? '').trim()
 
@@ -138,17 +184,15 @@ const escapeHtml = (value: string) =>
 const replaceApplicationLinkLabel = ({
   html,
   href,
-  label,
 }: {
   html: string
   href: string
-  label: string
 }) => {
-  const escapedLabel = escapeHtml(label)
-  const escapedText = `Application link: ${escapedLabel}`
-  const linkedText = `Application link: <a href="${escapeHtml(href)}" style="color:#1d4ed8;text-decoration:underline;">${escapedLabel}</a>`
-
-  return html.replace(escapedText, linkedText)
+  return html.replace(
+    /Application link:\s*([^<]*?)(?=<br>|$)/,
+    (_match, label: string) =>
+      `Application link: <a href="${escapeHtml(href)}" style="color:#1d4ed8;text-decoration:underline;">${label.trim()}</a>`,
+  )
 }
 
 const getTaskInstanceId = (task?: Task): string =>
@@ -386,9 +430,36 @@ function Section({ title, children }: { title: React.ReactNode; children: React.
   )
 }
 
+function EmailBodyPreview({ body, applicationUrl }: { body: string; applicationUrl: string }) {
+  return body.split('\n').map((line, index) => {
+    const applicationLinkLabel = line.match(/^Application link:\s*(.*)$/)?.[1]
+
+    return (
+      <span key={`${index}-${line}`}>
+        {applicationLinkLabel !== undefined && applicationUrl ? (
+          <>
+            Application link:{' '}
+            <a
+              href={applicationUrl}
+              className="font-semibold text-blue-700 underline hover:text-blue-800"
+            >
+              {applicationLinkLabel || applicationUrl}
+            </a>
+          </>
+        ) : (
+          line
+        )}
+        {index < body.split('\n').length - 1 ? '\n' : null}
+      </span>
+    )
+  })
+}
+
 export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: Props) {
-  const { token, username } = useUser()
+  const { email, token, username } = useUser()
   const queryClient = useQueryClient()
+  const resolvedApplicationId = String(applicant?.applicationId ?? '').trim()
+  const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
   const { data: rfrLookupList = [], isError, isLoading } = useUserListByRole('api/vSelectRFR', {
     enabled: open,
   })
@@ -405,12 +476,61 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   const [assignmentCreatedAt, setAssignmentCreatedAt] = useState<string | null>(null)
   const [visitId, setVisitId] = useState<string | null>(null)
   const [showEmailPreview, setShowEmailPreview] = useState(false)
+  const [showEmailCopies, setShowEmailCopies] = useState(false)
+  const [emailCc, setEmailCc] = useState('')
+  const [emailBcc, setEmailBcc] = useState('productAutomation@ou.org')
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailMessageBody, setEmailMessageBody] = useState('')
   const [isSendingAssignmentMessage, setIsSendingAssignmentMessage] = useState(false)
 
   const selectedRfr = useMemo(
     () => rfrs.find((rfr) => rfr.lookupKey === selectedRfrId || rfr.id === selectedRfrId) ?? null,
     [rfrs, selectedRfrId],
   )
+
+  const accountNumber = getAccountNumber(applicant)
+  const accountApplicationUrl = resolvedApplicationId
+    ? buildFilteredApplicationUrl(resolvedApplicationId)
+    : ''
+  const assignmentStartDate = todayYmd()
+  const assignmentEndDate = addDaysToYmd(assignmentStartDate, 90)
+  const applicationLinkLabel = applicant?.company || 'Application'
+  const defaultEmailSubject = `OU Kosher - Inspection Assignment for ${applicant?.plant || 'Plant'} [${accountNumber || 'Application'}]`
+  const defaultEmailBody = buildNotificationBody({
+    rfrName: selectedRfr?.name || '',
+    senderName: username || 'NCRC',
+    plant: applicant?.plant || '',
+    company: applicant?.company || '',
+    accountNumber,
+    applicationLinkLabel,
+    accountApplicationUrl,
+    assignmentStartDate,
+    assignmentEndDate,
+    visitId: visitId || '',
+  })
+
+  useEffect(() => {
+    if (!open) return
+    setEmailCc(
+      joinEmailAddresses(
+        applicationDetail?.DesignatedNCRC?.BusinessEmail,
+        applicationDetail?.DesignatedAdminNCRC?.BusinessEmail,
+      ),
+    )
+    setEmailBcc('productAutomation@ou.org')
+    setShowEmailCopies(false)
+  }, [
+    applicationDetail?.DesignatedAdminNCRC?.BusinessEmail,
+    applicationDetail?.DesignatedNCRC?.BusinessEmail,
+    open,
+    resolvedApplicationId,
+  ])
+
+  useEffect(() => {
+    if (!open) return
+    setEmailSubject(defaultEmailSubject)
+    setEmailMessageBody(defaultEmailBody)
+  }, [defaultEmailBody, defaultEmailSubject, open, resolvedApplicationId, selectedRfrId])
 
   useEffect(() => {
     if (!open) return
@@ -438,13 +558,6 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
 
   if (!open) return null
 
-  const accountNumber = getAccountNumber(applicant)
-  const resolvedApplicationId = String(applicant?.applicationId ?? '').trim()
-  const accountApplicationUrl = resolvedApplicationId
-    ? buildFilteredApplicationUrl(resolvedApplicationId)
-    : ''
-  const assignmentStartDate = todayYmd()
-  const assignmentEndDate = addDaysToYmd(assignmentStartDate, 90)
   const isAssigned = Boolean(assignmentCreatedAt)
   const selectedRfrLabel = selectedRfr?.name || selectedRfrId || '-'
   const selectedRfrMeta =
@@ -458,22 +571,6 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
     : selectedRfr
       ? 'Notification email - preview (not yet sent)'
       : 'Notification email - preview'
-  const emailSubject = `OU Kosher - Inspection Assignment for ${applicant?.plant || 'Plant'} [${accountNumber || 'Application'}]`
-  const applicationLinkLabel = applicant?.company || 'Application'
-  const emailBody: Array<{ text: string; href?: string; linkText?: string }> = [
-    { text: `To ${selectedRfr?.name || 'RFR'},` },
-    {
-      text: `You've been assigned an initial inspection by ${username || 'NCRC'}. Please review the plant and set your planned visit date.`,
-    },
-    { text: `Plant: ${applicant?.plant || '-'}` },
-    { text: `Company: ${applicant?.company || '-'}` },
-    { text: `Account #: ${accountNumber || '-'}` },
-    ...(accountApplicationUrl
-      ? [{ text: 'Application link: ', href: accountApplicationUrl, linkText: applicationLinkLabel }]
-      : []),
-    { text: `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}` },
-    { text: `Visit ID: ${visitId || '-'}` },
-  ]
 
   const updateCachedAssignmentTaskResult = (
     taskId: string,
@@ -497,6 +594,24 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   const createAssignment = async () => {
     if (!selectedRfr || !task) {
       toast.error('Select an RFR before creating the assignment')
+      return
+    }
+    if (!email) {
+      toast.error('Your login email is unavailable. Sign in again before sending the notification.')
+      return
+    }
+    if (!emailSubject.trim() || !emailMessageBody.trim()) {
+      toast.error('Enter an email subject and body before creating the assignment.')
+      return
+    }
+    try {
+      assertValidEmailRecipients({
+        to: selectedRfr.email,
+        cc: emailCc,
+        bcc: emailBcc,
+      })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Enter valid notification email addresses.')
       return
     }
 
@@ -527,22 +642,10 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         throw new Error('Assignment response did not include visitId')
       }
 
-      const notificationMessageText = [
-        `To ${selectedRfr.name},`,
-        '',
-        `You've been assigned an initial inspection by ${username || 'NCRC'}. Please review the plant and set your planned visit date.`,
-        '',
-        `Plant: ${applicant?.plant || '-'}`,
-        '',
-        `Company: ${applicant?.company || '-'}`,
-        '',
-        `Account #: ${accountNumber || '-'}`,
-        ...(accountApplicationUrl ? ['', `Application link: ${applicationLinkLabel}`] : []),
-        '',
-        `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`,
-        '',
+      const notificationMessageText = emailMessageBody.replace(
+        /^Visit ID:\s*-\s*$/m,
         `Visit ID: ${nextVisitId}`,
-      ].join('\n')
+      )
       const notificationEmail = buildHtmlEmailFromPlainText(notificationMessageText, {
         preheader: `Inspection assignment for ${applicant?.plant || 'Plant'}`,
         title: 'Inspection Assignment',
@@ -551,7 +654,6 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         notificationEmail.html = replaceApplicationLinkLabel({
           html: notificationEmail.html,
           href: accountApplicationUrl,
-          label: applicationLinkLabel,
         })
       }
 
@@ -559,7 +661,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         payload: {
           MessageID: null,
           ApplicationID: applicant?.applicationId ?? null,
-          FromUser: 'projectflow@ou.org',
+          FromUser: email,
           ToUser: selectedRfr.email || selectedRfr.name,
           Subject: emailSubject,
           MessageText: notificationEmail.html,
@@ -576,8 +678,8 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
           toReply: null,
           isRead: false,
           tag: null,
-          CCUser: null,
-          BCCUser: 'productAutomation@ou.org',
+          CCUser: emailCc.trim() || null,
+          BCCUser: emailBcc.trim() || null,
           Attachments: null,
         },
         token,
@@ -839,32 +941,76 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
                   View full -&gt;
                 </button>
               </div>
-              <div className="divide-y divide-gray-100 px-4 text-sm">
-                <InfoRow
-                  label="To"
-                  value={selectedRfr ? `${selectedRfr.name}${selectedRfr.email ? ` <${selectedRfr.email}>` : ''}` : <span className="italic text-gray-400">Select an RFR to preview the email</span>}
-                />
-                <InfoRow label="Subject" value={selectedRfr ? emailSubject : <span className="text-gray-400">-</span>} />
+              <div className="space-y-3 border-b border-gray-100 px-4 py-4 text-sm">
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">From</span>
+                  <input
+                    type="email"
+                    value={email || ''}
+                    readOnly
+                    className="mt-1 w-full rounded border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">To</span>
+                  <input
+                    type="text"
+                    value={selectedRfr ? selectedRfr.email || selectedRfr.name : ''}
+                    readOnly
+                    placeholder="Select an RFR to preview the email"
+                    className="mt-1 w-full rounded border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailCopies((current) => !current)}
+                  className="text-xs font-semibold text-blue-700 hover:text-blue-800"
+                >
+                  {showEmailCopies ? 'Hide Cc/Bcc' : 'Show Cc/Bcc'}
+                </button>
+                {showEmailCopies ? (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Cc</span>
+                      <input
+                        type="text"
+                        value={emailCc}
+                        onChange={(event) => setEmailCc(event.target.value)}
+                        placeholder="Optional"
+                        className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Bcc</span>
+                      <input
+                        type="text"
+                        value={emailBcc}
+                        onChange={(event) => setEmailBcc(event.target.value)}
+                        placeholder="Optional"
+                        className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      />
+                    </label>
+                  </div>
+                ) : null}
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Subject</span>
+                  <input
+                    type="text"
+                    value={emailSubject}
+                    onChange={(event) => setEmailSubject(event.target.value)}
+                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  />
+                </label>
               </div>
-              <div className="space-y-3 px-5 py-5 text-sm leading-6 text-gray-700">
-                {selectedRfr ? (
-                  emailBody.map((line) => (
-                    <p key={line.text}>
-                      {line.href ? (
-                        <>
-                          {line.text}
-                          <a className="font-semibold text-blue-700 underline hover:text-blue-800" href={line.href}>
-                            {line.linkText ?? line.text}
-                          </a>
-                        </>
-                      ) : (
-                        line.text
-                      )}
-                    </p>
-                  ))
-                ) : (
-                  <p className="italic text-gray-400">The email preview will appear here once you select an RFR and create the assignment.</p>
-                )}
+              <div className="px-4 py-4">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">Body</label>
+                <textarea
+                  value={emailMessageBody}
+                  onChange={(event) => setEmailMessageBody(event.target.value)}
+                  rows={16}
+                  disabled={!selectedRfr}
+                  className="mt-1 w-full resize-y rounded border border-gray-300 px-3 py-2 text-sm leading-6 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-400"
+                />
               </div>
             </div>
           </div>
@@ -922,28 +1068,20 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
               </div>
               <div className="space-y-4 px-5 py-4">
                 <div className="rounded border border-gray-200 px-3">
-                  <InfoRow label="From" value="Project Flow <projectflow@ou.org>" />
+                  <InfoRow label="From" value={email || '-'} />
                   <InfoRow
                     label="To"
                     value={selectedRfr ? `${selectedRfr.name}${selectedRfr.email ? ` <${selectedRfr.email}>` : ''}` : '-'}
                   />
+                  {emailCc ? <InfoRow label="Cc" value={emailCc} /> : null}
+                  {emailBcc ? <InfoRow label="Bcc" value={emailBcc} /> : null}
                   <InfoRow label="Subject" value={emailSubject} />
                 </div>
-                <div className="rounded border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">
-                  {emailBody.map((line) => (
-                    <p key={line.text} className="mb-3 last:mb-0">
-                      {line.href ? (
-                        <>
-                          {line.text}
-                          <a className="font-semibold text-blue-700 underline hover:text-blue-800" href={line.href}>
-                            {line.linkText ?? line.text}
-                          </a>
-                        </>
-                      ) : (
-                        line.text
-                      )}
-                    </p>
-                  ))}
+                <div className="whitespace-pre-wrap rounded border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">
+                  <EmailBodyPreview
+                    body={emailMessageBody}
+                    applicationUrl={accountApplicationUrl}
+                  />
                 </div>
               </div>
               <div className="flex items-center justify-end gap-2 border-t px-5 py-3">
