@@ -16,21 +16,17 @@ type Props = {
 
 export function PrelimApplicationDetailsDrawer({
   open,
-  externalReferenceId,
   data,
   applicant,
   isLoading,
   error,
   onClose,
 }: Props) {
-  const resolvedExternalReferenceId =
-    externalReferenceId === undefined || externalReferenceId === null
-      ? undefined
-      : String(externalReferenceId)
-
+  const applicationId = applicant?.applicationId ?? data?.applicationId
   const application = useMemo(
-    () => (data ? mapPrelimApplicationDetailToApplicationDetail(data) : null),
-    [data],
+    () =>
+      data ? mapPrelimApplicationDetailToApplicationDetail({ ...data, applicationId }) : null,
+    [data, applicationId],
   )
 
   if (!open) return null
@@ -44,8 +40,8 @@ export function PrelimApplicationDetailsDrawer({
         <div className="flex items-center justify-between border-b bg-gray-800 px-4 py-3 text-white">
           <div>
             <h3 className="text-lg font-semibold">Application Intake Detail</h3>
-            {resolvedExternalReferenceId ? (
-              <p className="text-xs text-gray-200">External Ref: {resolvedExternalReferenceId}</p>
+            {applicationId ? (
+              <p className="text-xs text-gray-200">AppId: {applicationId}</p>
             ) : null}
           </div>
           <button
@@ -72,7 +68,7 @@ export function PrelimApplicationDetailsDrawer({
             <ApplicationDetailsContent
               application={application}
               mode="drawer"
-              applicationId={resolvedExternalReferenceId}
+              applicationId={application.applicationId}
               showInterfaceLabel={false}
               dataSource="prelim"
               sourceApplicant={applicant}

@@ -103,6 +103,7 @@ type PrelimIngredient = {
 }
 
 type PrelimApplicationDetail = {
+  applicationId?: number
   GlobalData?: string | null
   globalData?: Array<{ GlobalData?: string | null }>
   OUCertified?: boolean
@@ -345,7 +346,7 @@ export function mapPrelimApplicationDetailToApplicationDetail(
   const companyContacts = mapCompanyContacts(detail.companyContacts)
 
   return {
-    applicationId: String(detail.externalReferenceId ?? ''),
+    applicationId: String(detail.applicationId ?? ''),
     createdDate: detail.createdDate,
     daysInProcess: detail.daysInProcess,
     daysOverdue: detail.daysOverdue,
