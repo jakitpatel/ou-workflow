@@ -151,6 +151,8 @@ const buildNotificationBody = ({
     `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`,
     '',
     `Visit ID: ${visitId || '-'}`,
+    '',
+    'Please submit EIR for Initial Inspection on OUDirect',
   ].join('\n')
 
 const getAccountNumber = (applicant?: Applicant) =>
