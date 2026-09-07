@@ -164,7 +164,6 @@ The old workflow hook layer has been retired for the active `useDebounce` and `u
 ```text
 ncrc-app/
 |- public/
-|  |- data/config.js
 |  |- web.config
 |- scripts/
 |  |- write-build-info.js
@@ -221,15 +220,14 @@ ncrc-app/
 
 ### API Base URL Resolution
 
-The app resolves its API base URL in this order:
-
-1. user-selected value stored in app preferences
-2. runtime config from `window.__APP_CONFIG__`
-3. utility fallback
+The app uses `VITE_API_CLIENT_URL` from the active Vite mode's environment file:
+`.env.development`, `.env.staging`, or `.env.production`. The login dropdown
+displays this build-specific URL, and saved preferences cannot override it with
+a different server. Restart the dev server or rebuild after changing the value.
 
 Key files:
 
-- [public/data/config.js](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/public/data/config.js)
+- [src/lib/utils.ts](src/lib/utils.ts)
 - [src/context/AppPreferencesContext.tsx](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/context/AppPreferencesContext.tsx)
 - [src/shared/api/httpClient.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/shared/api/httpClient.ts)
 
