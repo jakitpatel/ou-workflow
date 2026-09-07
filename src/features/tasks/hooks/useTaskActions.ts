@@ -41,7 +41,15 @@ export type SendTaskEmailInput = {
 const findUploadedFileUrl = (value: unknown): string => {
   if (!value || typeof value !== 'object') return ''
   const record = value as Record<string, unknown>
-  for (const key of ['fileUrl', 'fileURL', 'FilePath', 'DownloadUrl', 'downloadUrl', 'url', 'path']) {
+  for (const key of [
+    'fileUrl',
+    'fileURL',
+    'FilePath',
+    'DownloadUrl',
+    'downloadUrl',
+    'url',
+    'path',
+  ]) {
     const candidate = String(record[key] ?? '').trim()
     if (candidate) return candidate
   }
@@ -236,14 +244,65 @@ export function useTaskActions({ applications, token, username, onError }: Param
 
           const preScript = action.PreScript ?? selectedAction?.action?.PreScript
           const role = detectRole(preScript)
-          assignTaskMutation.mutate({
+          const assignmentParams = {
             appId,
             taskId,
             role,
             assignee,
             token,
             capacity: action.capacity ?? undefined,
-          })
+          }
+          if (normalizeTaskValue(action.name) !== 'assignncrc') {
+            assignTaskMutation.mutate(assignmentParams)
+            return
+          }
+
+          try {
+            await assignTaskMutation.mutateAsync(assignmentParams)
+          } catch {
+            // The assignment mutation reports its own error.
+            return
+          }
+
+          try {
+            const application =
+              selectedAction?.application ??
+              action.application ??
+              applications.find((item) => String(item.applicationId) === String(rawAppId))
+            const company = String(application?.company ?? '').trim()
+            const params = new URLSearchParams({
+              q: '',
+              status: 'all',
+              priority: 'all',
+              page: '0',
+              myOnly: 'true',
+              applicationId: String(appId),
+            })
+            const basePath = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+            const path = `${basePath}/ou-workflow/ncrc-dashboard?${params.toString()}`
+            const applicationUrl =
+              typeof window === 'undefined'
+                ? path
+                : new URL(path, window.location.origin).toString()
+            await createApplicationMessage({
+              payload: {
+                ApplicationID: appId,
+                Subject: 'NCRC assigment',
+                MessageText: `You have been assigned to be the NCRC for a new application. Please process the application. Company: ${company}. Application link: ${applicationUrl}`,
+                isPrivate: true,
+                isRead: false,
+                FromUser: username || null,
+                MessageType: 'Text',
+                SentDate: new Date().toISOString(),
+                Priority: 'HIGH',
+                ToUser: assignee,
+              },
+              token,
+            })
+          } catch (error) {
+            const detail = error instanceof Error ? error.message : 'Unable to send notification.'
+            onError?.(`NCRC assignment saved, but the notification failed: ${detail}`)
+          }
           return
         }
 
@@ -262,7 +321,7 @@ export function useTaskActions({ applications, token, username, onError }: Param
         })
       }
     },
-    [assignTaskMutation, confirmTaskMutation, token, username],
+    [applications, assignTaskMutation, confirmTaskMutation, onError, token, username],
   )
 
   const completeTaskWithResult = useCallback(
