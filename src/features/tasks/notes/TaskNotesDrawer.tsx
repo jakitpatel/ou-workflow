@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { MyMessageApplicationActions } from './MyMessageApplicationActions'
 import {
   ArrowUpRight,
   AtSign,
@@ -1429,7 +1430,11 @@ export function TaskNotesDrawer({
                 {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
               </span>
               <span className="text-[11px] text-slate-500">{createdAt}</span>
-              {showPerNoteApplicationId && noteApplicationId !== null ? renderApplicationActions(noteApplicationId, true) : null}
+                {showPerNoteApplicationId && noteApplicationId !== null ? (
+                  showMyNotesThreadType ? (
+                    <MyMessageApplicationActions applicationId={noteApplicationId} applicationType={note.applicationType} onNavigate={onClose} />
+                  ) : renderApplicationActions(noteApplicationId, true)
+                ) : null}
             </div>
 
             {showNoteTaskName ? (
