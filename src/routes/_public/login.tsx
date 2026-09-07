@@ -79,7 +79,8 @@ function LoginPage() {
           { name: "INSP" },
           { name: "LEGAL" },
           { name: "IAR" },
-          { name: "PROD" }
+          { name: "PROD" },
+          { name: "MIS" }
         ];
         const delegated = [{ name: "S.Benjamin" }, { name: "Jakit" }];
 

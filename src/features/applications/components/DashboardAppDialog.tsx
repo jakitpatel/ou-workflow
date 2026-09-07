@@ -9,6 +9,7 @@ import {
 import { fetchWithAuth } from "@/shared/api/httpClient"
 import { X, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
+import { canManageDashboard } from '@/features/applications/model/dashboardManagementAccess'
 
 type Props = {
   mode: "create" | "delete" | "create-intake" | "delete-intake"
@@ -21,13 +22,15 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [touched, setTouched] = useState(false)
 
-  const { token } = useUser()
+  const { token, role, roles } = useUser()
+  const canManage = canManageDashboard(role, roles)
   const navigate = useNavigate()
   const dialogRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const mutation = useMutation({
     mutationFn: async () => {
+      if (!canManage) throw new Error('MIS role is required to manage dashboard applications')
       const trimmedValue = value.trim()
 
       if (!trimmedValue) {
@@ -168,7 +171,7 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
     }
   }
 
-  if (!isOpen) return null
+  if (!isOpen || !canManage) return null
 
   const isDeleteMode = mode === "delete" || mode === "delete-intake"
   const fieldLabel = mode === "create" ? "Owner ID" : "Application ID"
