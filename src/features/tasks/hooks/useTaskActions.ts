@@ -273,13 +273,11 @@ export function useTaskActions({ applications, token, username, onError }: Param
             const params = new URLSearchParams({
               q: '',
               status: 'all',
-              priority: 'all',
               page: '0',
-              myOnly: 'true',
               applicationId: String(appId),
             })
             const basePath = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
-            const path = `${basePath}/ou-workflow/ncrc-dashboard?${params.toString()}`
+            const path = `${basePath}/ou-workflow/prelim-dashboard?${params.toString()}`
             const applicationUrl =
               typeof window === 'undefined'
                 ? path

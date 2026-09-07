@@ -70,13 +70,11 @@ describe('AssignNCRC notification', () => {
     const message = mocks.message.mock.calls[0][0].payload.MessageText
     const url = new URL(message.split('Application link: ')[1])
     expect(url.origin).toBe(window.location.origin)
-    expect(url.pathname).toBe('/ou-workflow/ncrc-dashboard')
+    expect(url.pathname).toBe('/ou-workflow/prelim-dashboard')
     expect(Object.fromEntries(url.searchParams)).toEqual({
       q: '',
       status: 'all',
-      priority: 'all',
       page: '0',
-      myOnly: 'true',
       applicationId: '421',
     })
   })

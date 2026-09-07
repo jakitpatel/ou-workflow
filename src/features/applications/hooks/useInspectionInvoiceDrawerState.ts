@@ -150,8 +150,6 @@ OU Direct is your online account with OU Kosher, and you can start using it to p
 
 4. We review your ingredients. Our Ingredients Department has already started reviewing your raw materials. Please make sure you have sent a Kosher Letter of Certification (LOC), or other required documents, for every ingredient. If anything is missing, we'll contact you and tell you exactly what we need.
 
-Set Up Your OU Direct Account
-
 We're Here to Help
 
 The people below are your partners throughout this process. Please contact them at any time. No question is too small.
