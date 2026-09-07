@@ -5,8 +5,6 @@ import type { FetchOptions, UserContext } from './types'
 
 const DEFAULT_TIMEOUT_MS = 30000
 
-type AppConfig = Record<string, string>
-
 function withTimeout(options: RequestInit, timeoutMs: number): RequestInit {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
@@ -36,21 +34,9 @@ export function resolveApiBaseUrl(): string {
   try {
     const userContext = (window as Window & { __USER_CONTEXT__?: UserContext }).__USER_CONTEXT__
 
-    if (userContext?.apiBaseUrl) {
+    if (userContext?.apiBaseUrl && userContext.apiBaseUrl === getApiBaseUrl()) {
       console.debug('[API] Using context URL:', userContext.apiBaseUrl)
       return userContext.apiBaseUrl
-    }
-
-    const config = (window as Window & { __APP_CONFIG__?: AppConfig }).__APP_CONFIG__
-    if (config) {
-      const servers = Object.keys(config)
-        .filter((key) => key.startsWith('API_CLIENT_URL'))
-        .map((key) => config[key])
-
-      if (servers.length > 0) {
-        console.debug('[API] Using config URL:', servers[0])
-        return servers[0]
-      }
     }
 
     const fallback = getApiBaseUrl()
