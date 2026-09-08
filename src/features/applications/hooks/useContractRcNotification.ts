@@ -13,6 +13,7 @@ import {
   type GenerateInspectionInvoiceResponse,
 } from '@/features/applications/api'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
+import { isValidContractFee } from '@/features/applications/model/contractFee'
 import { patchTaskResult } from '@/features/tasks/api'
 import { useUser } from '@/context/UserContext'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
@@ -359,7 +360,7 @@ export function useContractRcNotification({
       throw new Error('Application id is required before generating the invoice.')
     }
 
-    if (!Number.isFinite(fee) || fee <= 0) {
+    if (!isValidContractFee(fee)) {
       throw new Error('Enter the annual certification fee before generating the invoice.')
     }
 

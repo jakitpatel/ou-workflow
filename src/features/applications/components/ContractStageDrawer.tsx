@@ -13,6 +13,7 @@ import {
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
+import { isValidContractFee } from '@/features/applications/model/contractFee'
 import {
   useContractCommunicationMessages,
   useContractRcNotification,
@@ -60,7 +61,6 @@ type PreviewTab =
   | '__old_cover'
   | '__old_agreement'
 
-const DEFAULT_ANNUAL_FEE = '2500'
 const LABELING_RULES = [
   'Packaging of certified product must include Product name, brand name, and Company name so a recipient can match it to the Letter of Certification.',
   'The OU may only be placed on products authorized and certified on your Schedule B. The OU-D must be used on Dairy products.',
@@ -1007,7 +1007,7 @@ export function ContractStageDrawer({
   const [previewTab, setPreviewTab] = useState<PreviewTab>('invoice')
   const [showMergeFieldsHint, setShowMergeFieldsHint] = useState(false)
   const [effectiveDate, setEffectiveDate] = useState(getDefaultEffectiveDate)
-  const [annualFee, setAnnualFee] = useState(DEFAULT_ANNUAL_FEE)
+  const [annualFee, setAnnualFee] = useState('')
   const [certificationInvoiceComment, setCertificationInvoiceComment] = useState('')
   const [includeInvoiceComment, setIncludeInvoiceComment] = useState(false)
   const [productionProcedures, setProductionProcedures] = useState('')
@@ -1083,7 +1083,7 @@ export function ContractStageDrawer({
     setContractEmailSendError('')
     setContractEmailSentMessage('')
     setEffectiveDate(getDefaultEffectiveDate())
-    setAnnualFee(DEFAULT_ANNUAL_FEE)
+    setAnnualFee('')
     setCertificationInvoiceComment('')
     setIncludeInvoiceComment(false)
     setProductionProcedures('')
@@ -1121,7 +1121,7 @@ export function ContractStageDrawer({
     const nextStage = isContractStageSavedStage(savedState.stage) ? savedState.stage : 'setup'
 
     setEffectiveDate(setup.effectiveDate || getDefaultEffectiveDate())
-    setAnnualFee(setup.annualFee || DEFAULT_ANNUAL_FEE)
+    setAnnualFee(setup.annualFee ?? '')
     setCertificationInvoiceComment(setup.certificationInvoiceComment || '')
     setIncludeInvoiceComment(Boolean(setup.includeInvoiceComment))
     setProductionProcedures(setup.productionProcedures || '')
@@ -3843,7 +3843,9 @@ ${packageUrl}`
                       <input
                         type="number"
                         step="0.01"
-                        placeholder="4,860.00"
+                        min="0.01"
+                        required
+                        placeholder="Enter annual certification fee"
                         value={annualFee}
                         disabled={isWorkflowReadOnly}
                         onChange={(event) => setAnnualFee(event.target.value)}
@@ -3963,7 +3965,7 @@ ${packageUrl}`
                 {legalReviewNeeded && !legalApproved && !isWorkflowReadOnly ? (
                   <button
                     type="button"
-                    disabled={!Boolean(annualFee)}
+                    disabled={!isValidContractFee(annualFee)}
                     onClick={() => setLegalApproved(true)}
                     className="mt-3 w-full rounded-lg bg-violet-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-gray-300"
                   >
@@ -4076,7 +4078,7 @@ ${packageUrl}`
                         <button
                           type="button"
                           disabled={
-                            isGeneratingContractInvoice || !annualFee || hasGeneratedContractInvoice
+                            isGeneratingContractInvoice || !isValidContractFee(annualFee) || hasGeneratedContractInvoice
                           }
                           onClick={handleGenerateContractInvoice}
                           className="inline-flex items-center gap-1.5 rounded-md bg-[#185087] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#133f6b] disabled:cursor-not-allowed disabled:bg-gray-300"
