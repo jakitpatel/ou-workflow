@@ -6,12 +6,8 @@ import { ArrowUpRight, Hash } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
 import { fetchPrelimApplicationDetails } from '@/features/prelim/api'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
+import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
 
-const ApplicationDetailsDrawer = lazy(() =>
-  import('@/features/applications/components/ApplicationDetailsDrawer').then((module) => ({
-    default: module.ApplicationDetailsDrawer,
-  })),
-)
 const PrelimApplicationDetailsDrawer = lazy(() =>
   import('@/features/prelim/components/PrelimApplicationDetailsDrawer').then((module) => ({
     default: module.PrelimApplicationDetailsDrawer,
