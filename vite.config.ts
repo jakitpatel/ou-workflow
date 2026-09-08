@@ -10,6 +10,10 @@ const __dirname = dirname(__filename)
 
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/dashboard/' : '/',
+  build: {
+    // Preserve the browser support baseline used before the Vite 8 upgrade.
+    target: ['chrome107', 'edge107', 'firefox104', 'safari16'],
+  },
   plugins: [
     tailwindcss(),
     TanStackRouterVite({ autoCodeSplitting: true }),
