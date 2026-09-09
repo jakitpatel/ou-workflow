@@ -315,7 +315,7 @@ function buildResolveCompanyPayload({
   const primaryContact = buildResolveContactPayload(companyData.primaryContact, {
     PrimaryCT: createNewCompany ? 1 : 0,
     BillingCT: 0,
-    WebCT: 0,
+    WebCT: companyData.createPrimaryWebContact ? 1 : 0,
     OtherCT: createNewCompany ? 0 : 1,
   })
   const billingContact = buildResolveContactPayload(companyData.billingContact, {

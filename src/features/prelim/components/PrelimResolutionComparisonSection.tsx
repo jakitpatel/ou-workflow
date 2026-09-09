@@ -1,4 +1,5 @@
 import { ComparisonCard } from './PrelimResolutionComparisonCard'
+import { PrelimCompanyWebContactRow } from './PrelimCompanyWebContactRow'
 import type { IgnoredResolutionContacts } from '@/features/prelim/model/resolution'
 import { Check } from 'lucide-react'
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react'
@@ -416,6 +417,14 @@ export function PrelimResolutionComparisonSection({
                   ...prev,
                   primaryContact: { ...prev.primaryContact, [key]: value },
                 }))
+              }
+            />
+            <PrelimCompanyWebContactRow
+              checked={!!companyData.createPrimaryWebContact}
+              databaseWebContact={dbCompanyPrimaryContact?.WebCT}
+              disabled={!drawerActionable || isSubmitting || isCreatingNew || !!ignoredContacts.primaryContact}
+              onChange={(checked) =>
+                setEditableCompanyData((prev) => ({ ...prev, createPrimaryWebContact: checked }))
               }
             />
             {sectionActions(

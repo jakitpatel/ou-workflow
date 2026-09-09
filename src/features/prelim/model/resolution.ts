@@ -67,6 +67,7 @@ export type ResolutionContactData = {
 }
 
 export type CompanyData = {
+  createPrimaryWebContact?: boolean
   companyName: string
   companyAddress: string
   companyAddress2?: string

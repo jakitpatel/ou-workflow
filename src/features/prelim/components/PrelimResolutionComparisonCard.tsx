@@ -53,7 +53,7 @@ export function ComparisonCard({
               title="Ignore this contact when completing the task"
               className={`inline-flex h-7 items-center gap-1 rounded border px-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${ignored ? 'border-amber-400 bg-amber-100 text-amber-800' : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'}`}
             >
-              <Check className="h-3.5 w-3.5" aria-hidden="true" />
+              {ignored && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
               Ignore
             </button>
           )}
