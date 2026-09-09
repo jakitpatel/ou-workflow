@@ -1,4 +1,4 @@
-import { Check, FileText, Mail, Paperclip, Search, UserRoundCheck, X } from 'lucide-react'
+import { Check, FileText, Mail, Paperclip, Search, TriangleAlert, UserRoundCheck, X } from 'lucide-react'
 import type React from 'react'
 import { useMemo, useRef } from 'react'
 import { toast } from 'sonner'
@@ -677,6 +677,18 @@ export function InspectionInvoiceDrawer({
                     />
                   </label>
                 </Section>
+
+                <section className="rounded-lg border border-red-200 bg-red-50 p-4 shadow-sm">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-red-900">
+                    <TriangleAlert className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                    <span>Before sending &mdash; OU Direct access</span>
+                  </div>
+                  <p className="text-sm leading-5 text-red-800">
+                    If web contact and OU Direct access were not set during setup, grant OU Direct
+                    access on <strong>Company Detail</strong> in Kashrus now &mdash; required for the
+                    customer to pay the initial inspection online.
+                  </p>
+                </section>
 
                 <Section title="5. Email Recipients">
                   <label className="block text-sm">
