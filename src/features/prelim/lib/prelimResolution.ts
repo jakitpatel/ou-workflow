@@ -1,3 +1,4 @@
+import type { IgnoredResolutionContacts } from '@/features/prelim/model/resolution'
 import type {
   CompanyFromApplication,
   KashrusAddress,
@@ -401,4 +402,36 @@ export const getBillingContact = (
   if (billingContact || options.fallbackToSecondary === false) return billingContact
 
   return contacts.find((contact) => !hasContactRole(contact, 'PrimaryCT')) ?? contacts[0]
+}
+
+export function omitIgnoredResolutionContacts<T extends CompanyData | PlantData>(
+  data: T,
+  ignored: IgnoredResolutionContacts,
+): T {
+  const result = { ...data }
+  for (const key of ['primaryContact', 'billingContact', 'marketingContact'] as const) {
+    if (ignored[key]) Reflect.deleteProperty(result, key)
+  }
+  return result
+}
+
+export const extractResolveResponseValue = (
+  response: any,
+  key: 'company_id' | 'plant_id'
+): string | number | undefined => {
+  const directValue =
+    response?.[key] ??
+    response?.data?.[key] ??
+    response?.data?.attributes?.[key] ??
+    response?.data?.id
+
+  if (directValue != null && String(directValue).trim() !== '') {
+    return directValue
+  }
+
+  const dataText = typeof response?.data === 'string' ? response.data : ''
+  if (!dataText) return undefined
+
+  const match = dataText.match(new RegExp(`"${key}"\\s*:\\s*"?([^",\\s]+)"?`))
+  return match?.[1]
 }

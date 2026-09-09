@@ -21,6 +21,8 @@ import { PrelimResolutionComparisonSection } from '@/features/prelim/components/
 import { PrelimResolutionDrawerHeader } from '@/features/prelim/components/PrelimResolutionDrawerHeader'
 import { confirmTask } from '@/features/tasks/api'
 import {
+  extractResolveResponseValue,
+  omitIgnoredResolutionContacts,
   cloneCompanyData,
   clonePlantData,
   countUpdatedCompanyFields,
@@ -33,6 +35,7 @@ import {
 } from '@/features/prelim/lib/prelimResolution'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import type {
+  IgnoredResolutionContacts,
   CompanyData,
   CompanyDbRecord,
   Match,
@@ -41,27 +44,6 @@ import type {
   PrelimResolutionDrawerProps,
 } from '@/features/prelim/model/resolution'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
-
-const extractResolveResponseValue = (
-  response: any,
-  key: 'company_id' | 'plant_id'
-): string | number | undefined => {
-  const directValue =
-    response?.[key] ??
-    response?.data?.[key] ??
-    response?.data?.attributes?.[key] ??
-    response?.data?.id
-
-  if (directValue != null && String(directValue).trim() !== '') {
-    return directValue
-  }
-
-  const dataText = typeof response?.data === 'string' ? response.data : ''
-  if (!dataText) return undefined
-
-  const match = dataText.match(new RegExp(`"${key}"\\s*:\\s*"?([^",\\s]+)"?`))
-  return match?.[1]
-}
 
 export function PrelimResolutionDrawer({
   isOpen,
@@ -82,6 +64,11 @@ export function PrelimResolutionDrawer({
   readOnly = false,
 }: PrelimResolutionDrawerProps) {
   const { token, username } = useUser()
+  const [ignoredContacts, setIgnoredContacts] = useState<IgnoredResolutionContacts>({})
+  useEffect(() => {
+    setIgnoredContacts({})
+  }, [isOpen, type, taskInstanceId])
+
   const [isCreatingNew, setIsCreatingNew] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
@@ -498,7 +485,7 @@ export function PrelimResolutionDrawer({
         const result = await resolveCompanyFromApplication({
           applicationId,
           taskInstanceId,
-          companyData,
+          companyData: omitIgnoredResolutionContacts(companyData, ignoredContacts),
           companyId: selectedMatch?.Id,
           createNewCompany: selectedMatch == null,
           token: token ?? undefined,
@@ -530,7 +517,7 @@ export function PrelimResolutionDrawer({
           taskInstanceId,
           companyId: resolvedCompanyId,
           plantId: selectedMatch?.Id,
-          plantData,
+          plantData: omitIgnoredResolutionContacts(plantData, ignoredContacts),
           createNewPlant: selectedMatch == null,
           token: token ?? undefined,
         })
@@ -629,6 +616,11 @@ export function PrelimResolutionDrawer({
         />
 
         <PrelimResolutionComparisonSection
+          ignoredContacts={ignoredContacts}
+          onToggleIgnoreContact={(contact) => {
+            if (!drawerActionable || isSubmitting || isCreatingNew) return
+            setIgnoredContacts((current) => ({ ...current, [contact]: !current[contact] }))
+          }}
           isCompany={isCompany}
           companyData={companyData}
           plantData={plantData}

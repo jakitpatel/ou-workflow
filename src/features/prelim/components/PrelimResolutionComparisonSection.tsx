@@ -1,5 +1,7 @@
-import { Check, Edit } from 'lucide-react'
-import type { ChangeEvent, Dispatch, ReactNode, SetStateAction } from 'react'
+import { ComparisonCard } from './PrelimResolutionComparisonCard'
+import type { IgnoredResolutionContacts } from '@/features/prelim/model/resolution'
+import { Check } from 'lucide-react'
+import type { ChangeEvent, Dispatch, SetStateAction } from 'react'
 import { useState } from 'react'
 
 import { PrelimResolutionActions } from '@/features/prelim/components/PrelimResolutionActions'
@@ -31,6 +33,8 @@ type EditableSection =
   | 'plant-marketing'
 
 type Props = {
+  ignoredContacts: IgnoredResolutionContacts
+  onToggleIgnoreContact: (contact: keyof IgnoredResolutionContacts) => void
   isCompany: boolean
   companyData: CompanyData
   plantData: PlantData
@@ -83,6 +87,8 @@ type Props = {
 }
 
 export function PrelimResolutionComparisonSection({
+  ignoredContacts,
+  onToggleIgnoreContact,
   isCompany,
   companyData,
   plantData,
@@ -397,6 +403,9 @@ export function PrelimResolutionComparisonSection({
             editable={drawerActionable}
             isEditing={editableSection === 'company-primary'}
             onToggleEdit={() => toggleEditableSection('company-primary')}
+            ignored={!!ignoredContacts.primaryContact}
+            onToggleIgnore={() => onToggleIgnoreContact('primaryContact')}
+            ignoreDisabled={!drawerActionable || isSubmitting || isCreatingNew}
           >
             <ContactRows
               contact={companyData.primaryContact}
@@ -426,6 +435,9 @@ export function PrelimResolutionComparisonSection({
             editable={drawerActionable}
             isEditing={editableSection === 'company-billing'}
             onToggleEdit={() => toggleEditableSection('company-billing')}
+            ignored={!!ignoredContacts.billingContact}
+            onToggleIgnore={() => onToggleIgnoreContact('billingContact')}
+            ignoreDisabled={!drawerActionable || isSubmitting || isCreatingNew}
           >
             <ContactRows
               contact={companyData.billingContact}
@@ -536,6 +548,9 @@ export function PrelimResolutionComparisonSection({
             editable={drawerActionable}
             isEditing={editableSection === 'plant-primary'}
             onToggleEdit={() => toggleEditableSection('plant-primary')}
+            ignored={!!ignoredContacts.primaryContact}
+            onToggleIgnore={() => onToggleIgnoreContact('primaryContact')}
+            ignoreDisabled={!drawerActionable || isSubmitting || isCreatingNew}
           >
             <ContactRows
               contact={plantData.primaryContact}
@@ -567,6 +582,9 @@ export function PrelimResolutionComparisonSection({
             editable={drawerActionable}
             isEditing={editableSection === 'plant-marketing'}
             onToggleEdit={() => toggleEditableSection('plant-marketing')}
+            ignored={!!ignoredContacts.marketingContact}
+            onToggleIgnore={() => onToggleIgnoreContact('marketingContact')}
+            ignoreDisabled={!drawerActionable || isSubmitting || isCreatingNew}
           >
             <ContactRows
               contact={plantData.marketingContact}
@@ -659,65 +677,6 @@ function ContactRows({
         onAppValueChange={(value) => onChange('email', value)}
       />
     </>
-  )
-}
-
-function ComparisonCard({
-  title,
-  badge,
-  badgeClass,
-  note,
-  isLast = false,
-  editable = false,
-  isEditing = false,
-  onToggleEdit,
-  children,
-}: {
-  title: string
-  badge?: string
-  badgeClass?: string
-  note?: string
-  isLast?: boolean
-  editable?: boolean
-  isEditing?: boolean
-  onToggleEdit?: () => void
-  children: ReactNode
-}) {
-  return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${isLast ? '' : 'mb-4'}`}>
-      <div className="border-y border-slate-200 bg-slate-100 px-4 py-2 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          {badge && (
-            <span
-              className={`inline-flex items-center rounded px-2 py-0.5 text-[11.5px] font-bold uppercase tracking-wide ${badgeClass}`}
-            >
-              {badge}
-            </span>
-          )}
-          <h4 className="text-[13.5px] font-semibold tracking-wide text-slate-600">{title}</h4>
-          {note && <span className="text-xs italic text-gray-500">{note}</span>}
-        </div>
-        {onToggleEdit && (
-          <button
-            type="button"
-            onClick={onToggleEdit}
-            disabled={!editable}
-            title={isEditing ? 'Stop editing submitted values' : 'Edit submitted values'}
-            aria-label={isEditing ? 'Stop editing submitted values' : 'Edit submitted values'}
-            className={`inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded border transition-colors ${
-              editable
-                ? isEditing
-                  ? 'border-amber-300 bg-amber-100 text-amber-700 hover:bg-amber-200'
-                  : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
-                : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300'
-            }`}
-          >
-            <Edit className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-      {children}
-    </div>
   )
 }
 

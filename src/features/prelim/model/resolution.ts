@@ -132,3 +132,8 @@ export type PrelimResolutionDrawerProps = {
   taskStatus?: string
   readOnly?: boolean
 }
+
+export type IgnoredResolutionContacts = Partial<Record<
+  'primaryContact' | 'billingContact' | 'marketingContact',
+  boolean
+>>
