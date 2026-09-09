@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { withImpliedBcc } from '@/shared/email/impliedBcc'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createApplicationMessage,
@@ -263,7 +264,7 @@ export function useSendContractCommunicationEmail() {
           toReply: null,
           isRead: false,
           tag: null,
-          BCCUser: bccUser || null,
+          BCCUser: withImpliedBcc(bccUser),
           replyTo: import.meta.env.VITE_EMAIL_REPLY_TO,
           Attachments: attachments || null,
         },
@@ -424,6 +425,7 @@ export function useContractRcNotification({
   const sendContractPackageEmail = async ({
     applicationId,
     attachments,
+    bccUser,
     body,
     ccUser,
     companyName,
@@ -470,7 +472,7 @@ export function useContractRcNotification({
       toReply: null,
       isRead: false,
       tag: null,
-      BCCUser: 'productAutomation@ou.org',
+      BCCUser: withImpliedBcc(bccUser),
       replyTo: import.meta.env.VITE_EMAIL_REPLY_TO,
       Attachments: attachments || null,
     }

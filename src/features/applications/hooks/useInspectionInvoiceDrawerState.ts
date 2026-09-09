@@ -19,6 +19,7 @@ import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
+import { withImpliedBcc } from '@/shared/email/impliedBcc'
 import {
   assertEmailAttachmentSize,
   assertKnownEmailAttachmentSize,
@@ -599,7 +600,7 @@ export function useInspectionInvoiceDrawerState({
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [emailTo, setEmailTo] = useState('')
   const [emailCc, setEmailCc] = useState('')
-  const [emailBcc, setEmailBcc] = useState('productAutomation@ou.org')
+  const [emailBcc, setEmailBcc] = useState('')
   const [showEmailCopies, setShowEmailCopies] = useState(false)
   const [emailBody, setEmailBody] = useState('')
   const [emailAttachments, setEmailAttachments] = useState<InspectionInvoiceEmailAttachment[]>([])
@@ -736,7 +737,7 @@ export function useInspectionInvoiceDrawerState({
     setShowEmailPreview(false)
     setEmailTo('')
     setEmailCc('')
-    setEmailBcc('productAutomation@ou.org')
+    setEmailBcc('')
     setShowEmailCopies(false)
     setEmailBody('')
     setEmailAttachments([])
@@ -1274,7 +1275,7 @@ export function useInspectionInvoiceDrawerState({
           isRead: false,
           tag: null,
           CCUser: ccUser?.trim() || null,
-          BCCUser: bccUser?.trim() || null,
+          BCCUser: withImpliedBcc(bccUser),
           Attachments: attachments ?? null,
         },
         token,

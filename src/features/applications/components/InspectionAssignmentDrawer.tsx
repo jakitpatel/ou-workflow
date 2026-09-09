@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import { withImpliedBcc } from '@/shared/email/impliedBcc'
 import { Check, Mail, Pencil, Search, UserRound, X } from 'lucide-react'
 import type React from 'react'
 import { useEffect, useMemo, useState } from 'react'
@@ -480,7 +481,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [showEmailCopies, setShowEmailCopies] = useState(false)
   const [emailCc, setEmailCc] = useState('')
-  const [emailBcc, setEmailBcc] = useState('productAutomation@ou.org')
+  const [emailBcc, setEmailBcc] = useState('')
   const [emailSubject, setEmailSubject] = useState('')
   const [emailMessageBody, setEmailMessageBody] = useState('')
   const [isSendingAssignmentMessage, setIsSendingAssignmentMessage] = useState(false)
@@ -519,7 +520,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         applicationDetail?.DesignatedAdminNCRC?.BusinessEmail,
       ),
     )
-    setEmailBcc('productAutomation@ou.org')
+    setEmailBcc('')
     setShowEmailCopies(false)
   }, [
     applicationDetail?.DesignatedAdminNCRC?.BusinessEmail,
@@ -681,7 +682,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
           isRead: false,
           tag: null,
           CCUser: emailCc.trim() || null,
-          BCCUser: emailBcc.trim() || null,
+          BCCUser: withImpliedBcc(emailBcc),
           Attachments: null,
         },
         token,
