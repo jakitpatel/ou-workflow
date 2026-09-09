@@ -2,7 +2,7 @@
  * Authentication Service for PKCE-based AWS Cognito OAuth
  */
 
-import { cognitoConfig } from "@/auth/cognitoConfig";
+import { cognitoConfig, validateConfig } from "@/auth/cognitoConfig";
 import { getCognitoCallbackUrl, getCognitoLogoutUrl } from "@/features/auth/model/cognitoOAuth";
 import {
   clearTokens,
@@ -60,9 +60,8 @@ async function generateCodeChallenge(codeVerifier: string): Promise<string> {
 }
 
 async function authlogin(): Promise<void> {
-  if (!cognitoConfig) {
-    alert("Cognito config is not found. Check config file.");
-    return;
+  if (!validateConfig()) {
+    throw new Error("Cognito configuration is incomplete.");
   }
 
   const codeVerifier = generateRandomString(128);
@@ -81,6 +80,9 @@ async function authlogin(): Promise<void> {
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
   });
+
+  const identityProvider = import.meta.env.VITE_COGNITO_IDP?.trim();
+  if (identityProvider) params.set("identity_provider", identityProvider);
 
   const authUrl = `https://${cognitoConfig.domain}/oauth2/authorize?${params.toString()}`;
   window.location.href = authUrl;

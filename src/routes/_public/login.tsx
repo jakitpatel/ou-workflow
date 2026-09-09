@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { getApiBaseUrl } from "@/lib/utils";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useLocation } from "@tanstack/react-router";
 import { useAppPreferences } from "@/context/AppPreferencesContext";
-import { saveStoredAppPreferences } from "@/context/appPreferencesStorage";
+import { useLoginSso } from "@/features/auth/hooks/useLoginSso";
 import { useUser } from "@/context/UserContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LogIn, Server } from "lucide-react";
-import { authlogin, isAuthenticated } from "@/auth/authService";
+import { isAuthenticated } from "@/auth/authService";
 import {
   consumeAuthRedirect,
   consumeAuthRedirectUrl,
@@ -53,6 +53,11 @@ function LoginPage() {
   const currentApiBaseUrl = apiBaseUrl && availableServers.includes(apiBaseUrl)
     ? apiBaseUrl
     : availableServers[0] || "";
+
+  const search = useLocation({ select: (location) => location.searchStr });
+  const sso = useLoginSso({
+    apiBaseUrl: currentApiBaseUrl, stageLayout, paginationMode, navigationMenuType,
+  }, search);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,18 +110,7 @@ function LoginPage() {
       return;
     }
 
-    try {
-      saveStoredAppPreferences({
-        apiBaseUrl: currentApiBaseUrl,
-        stageLayout,
-        paginationMode,
-        navigationMenuType,
-      });
-    } catch (err) {
-      console.warn("[handleCognito] Failed to persist apiBaseUrl:", err);
-    }
-
-    authlogin();
+    await sso.startLogin();
   };
 
   return (
@@ -151,12 +145,13 @@ function LoginPage() {
 
           <Button
             type="submit"
+            disabled={sso.isStartingLogin}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-transform hover:scale-[1.02]"
           >
-            Login
+            {sso.isStartingLogin ? "Redirecting to sign-in..." : "Login"}
           </Button>
 
-          {error && <p className="text-red-600 text-sm text-center">{error}</p>}
+          {(error || sso.error) && <p role="alert" className="text-red-600 text-sm text-center">{error || sso.error}</p>}
         </form>
       </Card>
     </div>

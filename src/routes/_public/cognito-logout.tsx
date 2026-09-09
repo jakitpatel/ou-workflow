@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_public/cognito-logout")({
     // 2) Redirect to login
     throw redirect({
       to: "/login",
+      search: { signedOut: "1" },
     })
   },
 
