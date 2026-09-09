@@ -721,18 +721,6 @@ export function InspectionInvoiceDrawer({
                       </span>
                     </label>
                   ) : null}
-                  <div className="mt-3 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs leading-6 text-gray-700">
-                    <div>
-                      <strong>RC:</strong> Assigned RC
-                    </div>
-                    <div>
-                      <strong>NCRC:</strong> Current user
-                    </div>
-                    <div>
-                      <strong>RC Coord:</strong> Assigned coordinator
-                    </div>
-                    <div className="text-gray-500">BCC: productAutomation@ou.org</div>
-                  </div>
                   {state.sentAt ? (
                     <div className="mt-3 rounded border border-green-200 bg-green-50 px-3 py-2 text-xs font-medium text-green-700">
                       Invoice sent - {state.sentAt}
