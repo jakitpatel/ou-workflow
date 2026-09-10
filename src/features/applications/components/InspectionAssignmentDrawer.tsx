@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useUser } from '@/context/UserContext'
+import { useAppPreferences } from '@/context/AppPreferencesContext'
+import { buildNotificationBody, formatDate } from '@/features/applications/utils/inspectionNotification'
 import { createApplicationMessage } from '@/features/applications/api'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
@@ -78,15 +80,6 @@ const addDaysToYmd = (ymd: string, days: number) => {
   return date.toISOString().slice(0, 10)
 }
 
-const formatDate = (ymd: string) => {
-  const [year, month, day] = ymd.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-
 const formatDisplayDate = (ymd: string) => {
   const [year, month, day] = ymd.split('-').map(Number)
   return new Date(year, month - 1, day).toLocaleDateString('en-US', {
@@ -113,48 +106,6 @@ const nowLabel = () =>
 
 const joinEmailAddresses = (...values: Array<string | null | undefined>) =>
   [...new Set(values.map((value) => normalizeText(value)).filter(Boolean))].join(', ')
-
-const buildNotificationBody = ({
-  rfrName,
-  senderName,
-  plant,
-  company,
-  accountNumber,
-  applicationLinkLabel,
-  accountApplicationUrl,
-  assignmentStartDate,
-  assignmentEndDate,
-  visitId,
-}: {
-  rfrName: string
-  senderName: string
-  plant: string
-  company: string
-  accountNumber: string
-  applicationLinkLabel: string
-  accountApplicationUrl: string
-  assignmentStartDate: string
-  assignmentEndDate: string
-  visitId: string
-}) =>
-  [
-    `To ${rfrName || 'RFR'},`,
-    '',
-    `You've been assigned an initial inspection by ${senderName || 'NCRC'}. Please review the plant and set your planned visit date.`,
-    '',
-    `Plant: ${plant || '-'}`,
-    '',
-    `Company: ${company || '-'}`,
-    '',
-    `Account #: ${accountNumber || '-'}`,
-    ...(accountApplicationUrl ? ['', `Application link: ${applicationLinkLabel}`] : []),
-    '',
-    `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`,
-    '',
-    `Visit ID: ${visitId || '-'}`,
-    '',
-    'Please submit EIR for Initial Inspection on OUDirect',
-  ].join('\n')
 
 const getAccountNumber = (applicant?: Applicant) =>
   String(applicant?.companyId ?? applicant?.externalReferenceId ?? applicant?.applicationId ?? '').trim()
@@ -460,6 +411,11 @@ function EmailBodyPreview({ body, applicationUrl }: { body: string; applicationU
 
 export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: Props) {
   const { email, token, username } = useUser()
+  const { userPerson } = useAppPreferences()
+  const senderName =
+    [userPerson?.FIRST, userPerson?.LAST].map(normalizeText).filter(Boolean).join(' ') ||
+    username ||
+    'NCRC'
   const queryClient = useQueryClient()
   const resolvedApplicationId = String(applicant?.applicationId ?? '').trim()
   const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
@@ -501,7 +457,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   const defaultEmailSubject = `OU Kosher - Inspection Assignment for ${applicant?.plant || 'Plant'} [${accountNumber || 'Application'}]`
   const defaultEmailBody = buildNotificationBody({
     rfrName: selectedRfr?.name || '',
-    senderName: username || 'NCRC',
+    senderName,
     plant: applicant?.plant || '',
     company: applicant?.company || '',
     accountNumber,

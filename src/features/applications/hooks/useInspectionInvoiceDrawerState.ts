@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { useUser } from '@/context/UserContext'
+import { useInspectionInvoiceCc } from './useInspectionInvoiceCc'
 import {
   createApplicationMessage,
   fetchApplicationDetail,
@@ -599,7 +600,10 @@ export function useInspectionInvoiceDrawerState({
   const [stage, setStage] = useState<InspectionInvoiceStage>('setup')
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [emailTo, setEmailTo] = useState('')
-  const [emailCc, setEmailCc] = useState('')
+  const { emailCc, setEmailCc } = useInspectionInvoiceCc(
+    applicationDetail?.DesignatedNCRC?.BusinessEmail,
+    applicationDetail?.DesignatedAdminNCRC?.BusinessEmail,
+  )
   const [emailBcc, setEmailBcc] = useState('')
   const [showEmailCopies, setShowEmailCopies] = useState(false)
   const [emailBody, setEmailBody] = useState('')
@@ -736,7 +740,7 @@ export function useInspectionInvoiceDrawerState({
     setStage('setup')
     setShowEmailPreview(false)
     setEmailTo('')
-    setEmailCc('')
+    setEmailCc(undefined)
     setEmailBcc('')
     setShowEmailCopies(false)
     setEmailBody('')
