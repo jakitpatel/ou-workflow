@@ -11,5 +11,5 @@ export function withImpliedBcc(visibleBcc?: string | null): string | null {
     seen.add(key)
     return true
   })
-  return unique.join('; ') || null
+  return unique.join(', ') || null
 }

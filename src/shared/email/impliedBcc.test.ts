@@ -11,14 +11,14 @@ describe('implied BCC', () => {
       const draft = { bcc: '' }
       expect(withImpliedBcc(draft.bcc)).toBe(address)
       expect(draft.bcc).toBe('')
-      expect(withImpliedBcc('other@ou.org')).toBe(`other@ou.org; ${address}`)
+      expect(withImpliedBcc('other@ou.org')).toBe(`other@ou.org, ${address}`)
     },
   )
 
   it('normalizes separators and avoids duplicate recipients regardless of casing', () => {
     vi.stubEnv('VITE_EMAIL_IMPLIED_BCC', ' KashrusITTestBox@ou.org ')
     expect(withImpliedBcc('other@ou.org, KASHRUSITTESTBOX@ou.org; other@ou.org')).toBe(
-      'other@ou.org; KASHRUSITTESTBOX@ou.org',
+      'other@ou.org, KASHRUSITTESTBOX@ou.org',
     )
   })
 
