@@ -5,6 +5,7 @@ import {
   createDefaultCompanyData,
   createDefaultPlantData,
   omitIgnoredResolutionContacts,
+  toPlantDrawerData,
 } from './prelimResolution'
 
 vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: vi.fn() }))
@@ -12,6 +13,37 @@ vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: vi.fn() }))
 beforeEach(() => vi.clearAllMocks())
 
 describe.each([true, false])('ignored resolution contacts (create new: %s)', (createNew) => {
+  it.each([false, true])('posts submitted Other Contact under other_contact (ignored: %s)', async (ignored) => {
+    const data = toPlantDrawerData({
+      plantName: 'Example Plant',
+      plantAddress: '',
+      plantCity: '',
+      plantCountry: '',
+      plantContacts: {
+        PrimaryContact: [{ contactFirst: 'Primary', contactLast: 'Person' }],
+        OtherContact: [{ contactFirst: 'Other', contactLast: 'Person', contactEmail: 'other@example.com' }],
+      },
+    })
+    await resolvePlantFromApplication({
+      applicationId: 1,
+      taskInstanceId: 2,
+      companyId: 3,
+      plantId: 4,
+      createNewPlant: createNew,
+      plantData: omitIgnoredResolutionContacts(data, { marketingContact: ignored }),
+    })
+    const body = vi.mocked(fetchWithAuth).mock.calls[0][0].body
+    expect(body).toHaveProperty('primary_contact.FirstName', 'Primary')
+    expect(body).not.toHaveProperty('billing_contact')
+    if (ignored) {
+      expect(body).not.toHaveProperty('other_contact')
+    } else {
+      expect(body).toHaveProperty('other_contact.FirstName', 'Other')
+      expect(body).toHaveProperty('other_contact.Email', 'other@example.com')
+      expect(body).toHaveProperty('other_contact.OtherCT', 1)
+    }
+  })
+
   it.each(['primaryContact', 'billingContact'] as const)(
     'omits company %s and preserves the other contact',
     async (key) => {
