@@ -33,7 +33,10 @@ type Props = {
 export default function FilesList({ application, applicationId, showProcessingStatus = true }: Props) {
   const uploadedFiles = application.files || [];
   const resolvedApplicationId = applicationId ?? application.applicationId;
+  const status = application.status.trim().toLowerCase();
+  const isApplicationClosed = status === 'completed' || status === 'withdrawn';
   const canUploadAttachments =
+    !isApplicationClosed &&
     resolvedApplicationId !== null &&
     resolvedApplicationId !== undefined &&
     String(resolvedApplicationId).trim() !== '';
@@ -66,6 +69,10 @@ export default function FilesList({ application, applicationId, showProcessingSt
   };
 
   const uploadAttachments = async () => {
+    if (isApplicationClosed) {
+      setAttachmentError('Attachments cannot be added to completed or withdrawn applications.');
+      return;
+    }
     const tag = attachmentTag.trim();
     if (!tag) {
       setAttachmentError('Enter a tag before uploading the attachment.');
@@ -167,6 +174,7 @@ export default function FilesList({ application, applicationId, showProcessingSt
             ref={attachmentInputRef}
             type="file"
             multiple
+            disabled={!canUploadAttachments || uploadFileMutation.isPending}
             className="sr-only"
             onChange={event => handleAttachmentSelection(event.target.files)}
           />
@@ -384,7 +392,7 @@ export default function FilesList({ application, applicationId, showProcessingSt
             </div>
             <div className="flex justify-end gap-3 border-t border-gray-200 px-5 py-4">
               <button type="button" onClick={resetAttachmentDialog} disabled={uploadFileMutation.isPending} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
-              <button type="button" onClick={() => void uploadAttachments()} disabled={uploadFileMutation.isPending} className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="button" onClick={() => void uploadAttachments()} disabled={!canUploadAttachments || uploadFileMutation.isPending} className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50">
                 {uploadFileMutation.isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                 {uploadFileMutation.isPending ? 'Uploading...' : 'Upload attachment'}
               </button>
