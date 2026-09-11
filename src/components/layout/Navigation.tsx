@@ -3,14 +3,13 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Bell, User, BarChart3, ClipboardList, LogOut, Settings, Inbox, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
-import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 
 // Navigation route constants
 const ROUTES = {
   HOME: '/',
-  LOGIN: '/login',
   PROFILE: '/profile',
   NCRC_DASHBOARD: '/ou-workflow/ncrc-dashboard',
   TASKS_DASHBOARD: '/ou-workflow/tasks-dashboard',
@@ -33,7 +32,6 @@ export function Navigation({ showMenu = true }: NavigationProps) {
   const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-  const navigate = useNavigate()
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -63,9 +61,9 @@ export function Navigation({ showMenu = true }: NavigationProps) {
 
   const handleLogout = useCallback(() => {
     setMenuOpen(false)
+    // Cognito owns navigation until its callback returns to /login?signedOut=1.
     logout()
-    navigate({ to: ROUTES.LOGIN })
-  }, [logout, navigate])
+  }, [logout])
 
   const toggleMenu = useCallback(() => {
     setMenuOpen((prev) => !prev)
@@ -234,12 +232,11 @@ export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationP
   const location = useRouterState({ select: (s) => s.location.pathname })
   const { username, role, logout } = useUser()
   const queryClient = useQueryClient()
-  const navigate = useNavigate()
 
   const handleLogout = useCallback(() => {
+    // Mounting /login here would restart automatic SSO before logout completes.
     logout()
-    navigate({ to: ROUTES.LOGIN })
-  }, [logout, navigate])
+  }, [logout])
 
   const refreshApplicationsDashboardData = useCallback(() => {
     void queryClient.invalidateQueries({
