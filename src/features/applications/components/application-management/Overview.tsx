@@ -1,4 +1,4 @@
-import type { ApplicationDetail } from "@/types/application";
+import { normalizeCreationFlag, type ApplicationOverviewDetail } from "@/features/applications/model/applicationOverview";
 
 const formatCreatedDate = (value?: string) => {
   const datePart = value?.trim().match(/^(\d{4})-(\d{2})-(\d{2})/)?.slice(1);
@@ -30,11 +30,11 @@ const formatAssignedNcrc = (value: unknown) => {
   return name || String(coordinator.id ?? '').trim() || '-';
 };
 
-function MatchMarker({ isNew }: { isNew?: boolean }) {
+function MatchMarker({ isNew, modifiedLabel = 'Matched' }: { isNew?: boolean; modifiedLabel?: string }) {
   if (isNew == null) return null;
 
   const marker = isNew ? 'C' : 'M';
-  const title = isNew ? 'Created' : 'Matched';
+  const title = isNew ? 'Created' : modifiedLabel;
 
   return (
     <span
@@ -54,7 +54,7 @@ export default function Overview({
   application,
   dataSource = 'application',
 }: {
-  application: ApplicationDetail,
+  application: ApplicationOverviewDetail,
   dataSource?: 'application' | 'prelim'
 }) {
   const company = application?.company?.[0];
@@ -71,8 +71,15 @@ export default function Overview({
     ? intakePlant?.plant_id ?? intakeData?.plant_id ?? '-'
     : application.PlantID ?? application.PlantId ?? plant?.plantID ?? plant?.plantId ?? '-';
   const plantOwnership = plant?.o?.[0];
-  const applicationOwnsId = application.OwnsID ?? application.ownsid ?? plantOwnership?.ownsId ?? '-';
-  const applicationOwnsStatus = application.OwnsStatus ?? plantOwnership?.status ?? '-';
+  const applicationOwnsId = plant?.ownsId ?? application.OwnsID ?? application.ownsid ?? plantOwnership?.ownsId ?? '-';
+  const applicationOwnsStatus = plant?.status ?? application.OwnsStatus ?? plantOwnership?.status ?? '-';
+  const companyIsNew = isPrelimApplicationDetail
+    ? intakeData?.is_new_company
+    : normalizeCreationFlag(company?.is_new);
+  const plantIsNew = isPrelimApplicationDetail
+    ? intakePlant?.is_new_plant ?? intakeData?.is_new_plant
+    : normalizeCreationFlag(plant?.is_new_plant);
+  const modifiedLabel = isPrelimApplicationDetail ? 'Matched' : 'Modified';
   const ownsId = intakePlant?.owns_id ?? intakeData?.owns_id ?? '-';
   const ownsStatus = intakePlant?.owns_status ?? intakeData?.owns_status ?? '-';
   const daysInProcess = Number(application.daysInProcess ?? 0);
@@ -143,7 +150,7 @@ export default function Overview({
 
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">
-                <MatchMarker isNew={intakeData?.is_new_company} />
+                <MatchMarker isNew={companyIsNew} modifiedLabel={modifiedLabel} />
                 Company ID
               </span>
               <span className="text-sm font-semibold text-green-700">
@@ -162,7 +169,7 @@ export default function Overview({
 
             <div className="flex items-center justify-between py-2 border-b border-gray-100">
               <span className="text-sm font-medium text-gray-600">
-                <MatchMarker isNew={intakePlant?.is_new_plant ?? intakeData?.is_new_plant} />
+                <MatchMarker isNew={plantIsNew} modifiedLabel={modifiedLabel} />
                 Plant ID
               </span>
               <span className="text-sm font-semibold text-green-700">
@@ -172,7 +179,10 @@ export default function Overview({
 
             {!isPrelimApplicationDetail ? (
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-sm font-medium text-gray-600">Owns ID</span>
+                <span className="text-sm font-medium text-gray-600">
+                  <MatchMarker isNew={normalizeCreationFlag(plant?.is_new_owns)} modifiedLabel="Modified" />
+                  Owns ID
+                </span>
                 <span className="text-sm font-semibold text-green-700">
                 {applicationOwnsId}
               </span>
