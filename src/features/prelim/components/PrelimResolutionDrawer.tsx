@@ -44,6 +44,7 @@ import type {
   PrelimResolutionDrawerProps,
 } from '@/features/prelim/model/resolution'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
+import { getResolutionDbContacts } from '@/features/prelim/lib/prelimResolutionDbContacts'
 
 export function PrelimResolutionDrawer({
   isOpen,
@@ -181,10 +182,12 @@ export function PrelimResolutionDrawer({
   const plantDb: PlantDbRecord | undefined = getPlantDbRecord(plantDbResponse)
   const dbCompanyAddress = getPhysicalAddress(companyDb?.companyAddresses)
   const dbPlantAddress = getPhysicalAddress(plantDb?.plantAddresses)
-  const dbCompanyPrimaryContact = companyDb?.companyContacts?.primaryContact?.[0]
-  const dbCompanyBillingContact = companyDb?.companyContacts?.billingContact?.[0]
-  const dbPlantPrimaryContact = plantDb?.plantContacts?.primaryContact?.[0]
-  const dbPlantMarketingContact = plantDb?.plantContacts?.billingContact?.[0]
+  const {
+    dbCompanyPrimaryContact,
+    dbCompanyBillingContact,
+    dbPlantPrimaryContact,
+    dbPlantMarketingContact,
+  } = getResolutionDbContacts(companyDb, plantDb, plantData.secondaryContactLabel)
   const isManualCompanyReady =
     !isManualCompanyIdEntry ||
     (selectedMatch != null && companyDb != null && !isFetchingCompanyDetails)

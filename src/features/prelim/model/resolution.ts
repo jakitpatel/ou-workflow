@@ -44,6 +44,8 @@ export type RawKashrusCompanyContacts = {
 export type RawKashrusPlantContacts = {
   primaryContact?: RawKashrusContact[]
   billingContact?: RawKashrusContact[]
+  otherContact?: RawKashrusContact[]
+  marketingContact?: RawKashrusContact[]
 }
 
 export type CompanyDbRecord = Omit<KashrusCompanyDetail, 'companyContacts'> & {
