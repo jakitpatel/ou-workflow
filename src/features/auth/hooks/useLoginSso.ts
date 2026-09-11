@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { defaultParseSearch } from '@tanstack/react-router'
 import { authlogin, isAuthenticated } from '@/auth/authService'
 import { saveStoredAppPreferences, type StoredAppPreferences } from '@/context/appPreferencesStorage'
 
@@ -10,7 +11,11 @@ export function useLoginSso(preferences: StoredAppPreferences, search: string) {
   const [startupError, setStartupError] = useState('')
   const query = new URLSearchParams(search)
   const hasOAuthError = query.has('error')
-  const signedOut = query.get('signedOut') === '1'
+  // Router search strings JSON-encode string values such as "1". Decode with
+  // the matching parser, accepting both router-generated and plain login URLs.
+  const parsedSearch = defaultParseSearch(search) as Record<string, unknown>
+  const signedOutValue = parsedSearch.signedOut
+  const signedOut = signedOutValue === '1' || signedOutValue === 1
 
   const startLogin = useCallback(async () => {
     if (inFlight.current || isAuthenticated() || !apiBaseUrl || apiBaseUrl === 'http://localhost:3001') return

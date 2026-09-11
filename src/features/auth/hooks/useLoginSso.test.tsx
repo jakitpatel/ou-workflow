@@ -1,5 +1,6 @@
 import { StrictMode, type ReactNode } from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
+import { defaultStringifySearch } from '@tanstack/react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { authlogin, isAuthenticated } from '@/auth/authService'
 import { saveStoredAppPreferences } from '@/context/appPreferencesStorage'
@@ -31,7 +32,12 @@ describe('automatic SSO', () => {
     expect(result.current.isStartingLogin).toBe(true)
   })
 
-  it.each(['?error=access_denied', '?error=', '?signedOut=1'])(
+  it.each([
+    '?error=access_denied', '?error=', '?signedOut=1',
+    '?signedOut=%221%22',
+    defaultStringifySearch({ signedOut: '1' }),
+    defaultStringifySearch({ signedOut: 1 }),
+  ])(
     'waits for manual login after %s, including a remount', async (search) => {
       const first = renderHook(() => useLoginSso(preferences, search))
       first.unmount()
@@ -41,6 +47,19 @@ describe('automatic SSO', () => {
       expect(authlogin).toHaveBeenCalledTimes(1)
     },
   )
+
+  it('keeps the router logout URL guarded when the remote server resolves later', async () => {
+    const search = defaultStringifySearch({ signedOut: '1' })
+    const { result, rerender } = renderHook(({ apiBaseUrl }) => useLoginSso({ ...preferences, apiBaseUrl }, search), {
+      initialProps: { apiBaseUrl: '' },
+      wrapper: ({ children }) => <StrictMode>{children}</StrictMode>,
+    })
+    rerender({ apiBaseUrl: preferences.apiBaseUrl })
+    expect(authlogin).not.toHaveBeenCalled()
+    expect(result.current.isStartingLogin).toBe(false)
+    await act(() => result.current.startLogin())
+    expect(authlogin).toHaveBeenCalledTimes(1)
+  })
 
   it('preserves localhost mock login and waits for a resolved server', async () => {
     const { rerender } = renderHook(({ apiBaseUrl }) => useLoginSso({ ...preferences, apiBaseUrl }, ''), {

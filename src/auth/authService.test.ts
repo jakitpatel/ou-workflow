@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { authlogin } from './authService'
+import { authlogin, cognitoLogout } from './authService'
 import { validateConfig } from './cognitoConfig'
-import { storePendingOAuthState } from '@/features/auth/model/sessionManager'
+import { clearTokens, storePendingOAuthState } from '@/features/auth/model/sessionManager'
 
 vi.mock('./cognitoConfig', () => ({
   validateConfig: vi.fn(() => true),
@@ -29,6 +29,16 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs() })
 
 describe('Cognito authorization request', () => {
+  it('clears the app session and sends logout back through the logout callback', () => {
+    cognitoLogout()
+    const url = new URL(window.location.href)
+    expect(clearTokens).toHaveBeenCalledTimes(1)
+    expect(url.pathname).toBe('/logout')
+    expect(url.searchParams.get('client_id')).toBe('dashboard-client')
+    expect(url.searchParams.get('logout_uri')).toBe('https://dashboard.example.com/cognito-logout')
+    expect(storePendingOAuthState).not.toHaveBeenCalled()
+  })
+
   it.each(['', 'OktaOIDC'])('preserves PKCE and callback with provider %s', async (provider) => {
     vi.stubEnv('VITE_COGNITO_IDP', provider)
     await authlogin()
