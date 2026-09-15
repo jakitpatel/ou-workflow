@@ -319,6 +319,7 @@ export function useNcrcDashboardState({
 
   useSSE(handleMyNotesSSEMessage, {
     endpoint: sseEndpoint,
+    token,
     enabled: Boolean(token) && myNotesOpen && Boolean(username?.trim()),
   })
 

@@ -386,6 +386,7 @@ export function useTaskNotesDrawerState({
 
   useSSE(handleSSEMessage, {
     endpoint: sseEndpoint,
+    token,
     enabled: Boolean(token) && isMessageDrawerOpen,
   })
 

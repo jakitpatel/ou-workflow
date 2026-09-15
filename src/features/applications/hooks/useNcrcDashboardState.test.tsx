@@ -110,19 +110,20 @@ describe('useNcrcDashboardState', () => {
       close: ReturnType<typeof vi.fn>
     }> = []
 
-    class MockEventSource {
-      url: string
-      onmessage: ((event: MessageEvent) => void) | null = null
-      onerror: ((event: Event) => void) | null = null
-      close = vi.fn()
-
-      constructor(url: string) {
-        this.url = url
-        eventSources.push(this)
-      }
-    }
-
-    vi.stubGlobal('EventSource', MockEventSource)
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (!url.endsWith('/events')) return Response.json({})
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          eventSources.push({
+            url,
+            onmessage: (event) => controller.enqueue(new TextEncoder().encode(`data: ${event.data}\n\n`)),
+            onerror: null,
+            close: vi.fn(),
+          })
+        },
+      })
+      return new Response(body, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
 
     try {
       renderWithProviders(<DashboardStateHarness />)
