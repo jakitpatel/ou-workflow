@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { getDesignatedRfrName } from './designatedRfrName'
 
 describe('designated RFR display name', () => {
-  it('displays FIRST LAST from the contact object', () => {
-    expect(getDesignatedRfrName({ FIRST: 'Shouki', LAST: 'Benjamin', ID: 'SHOUKI.BENJAMIN', PREFIX: '', MIDDLE: '' })).toBe('Shouki Benjamin')
+  it('displays LAST, FIRST from the contact object', () => {
+    expect(getDesignatedRfrName({ FIRST: 'Shouki', LAST: 'Benjamin', ID: 'SHOUKI.BENJAMIN', PREFIX: '', MIDDLE: '' })).toBe('Benjamin, Shouki')
   })
   it('handles partial names, whitespace, and legacy strings', () => {
     expect(getDesignatedRfrName({ FIRST: ' Shouki ', LAST: '' })).toBe('Shouki')
