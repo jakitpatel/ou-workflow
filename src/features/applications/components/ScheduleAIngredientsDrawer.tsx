@@ -1,3 +1,4 @@
+import { ScheduleRoundEmailCopies } from './ScheduleRoundEmailCopies'
 import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
@@ -868,7 +869,7 @@ export function ScheduleAIngredientsDrawer({
 
   const copyRoundEmail = async () => {
     if (!latestRound) return
-    const text = `To: ${latestRound.email.to}\nSubject: ${latestRound.email.subject}\n\n${latestRound.email.body}`
+    const text = `To: ${latestRound.email.to}${latestRound.email.cc ? `\nCc: ${latestRound.email.cc}` : ''}${latestRound.email.bcc ? `\nBcc: ${latestRound.email.bcc}` : ''}\nSubject: ${latestRound.email.subject}\n\n${latestRound.email.body}`
     await navigator.clipboard?.writeText(text)
     setCopied(true)
     window.setTimeout(() => setCopied(false), 1500)
@@ -892,6 +893,8 @@ export function ScheduleAIngredientsDrawer({
         applicationId: resolvedApplicationId,
         taskInstanceId,
         recipientEmail,
+        ccUser: latestRound.email.cc,
+        bccUser: latestRound.email.bcc,
         subject: latestRound.email.subject,
         body: latestRound.email.body,
       })
@@ -1826,6 +1829,15 @@ export function ScheduleAIngredientsDrawer({
                             readOnly={readOnly}
                           />
                         </div>
+                        <ScheduleRoundEmailCopies
+                          key={latestRound.id}
+                          cc={latestRound.email.cc}
+                          bcc={latestRound.email.bcc}
+                          readOnly={readOnly}
+                          onChange={(field, value) =>
+                            scratchpadApi.updateRoundEmailCopies(latestRound.id, field, value)
+                          }
+                        />
                         <div className="flex items-center gap-2 text-xs">
                           <span className="w-12 shrink-0 font-medium text-blue-500">Subject</span>
                           <span className="flex-1 rounded border border-blue-200 bg-white px-2 py-1 text-blue-900">

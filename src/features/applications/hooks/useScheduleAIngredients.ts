@@ -1,3 +1,5 @@
+import { withImpliedBcc } from '@/shared/email/impliedBcc'
+import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -84,6 +86,8 @@ export type ScheduleACommunicationRound = {
   status: 'generated' | 'awaiting' | 'responded' | 'reviewed'
   email: {
     to: string
+    cc?: string
+    bcc?: string
     subject: string
     body: string
   }
@@ -99,6 +103,8 @@ export type SendScheduleACommunicationEmailInput = {
   applicationId?: string | number | null
   taskInstanceId?: string | number | null
   recipientEmail: string
+  ccUser?: string
+  bccUser?: string
   subject: string
   body: string
 }
@@ -714,6 +720,8 @@ export function useSendScheduleACommunicationEmail() {
       applicationId,
       taskInstanceId,
       recipientEmail,
+      ccUser,
+      bccUser,
       subject,
       body,
     }: SendScheduleACommunicationEmailInput) => {
@@ -728,6 +736,8 @@ export function useSendScheduleACommunicationEmail() {
       if (!normalizedRecipientEmail) {
         throw new Error('Recipient email is required before sending email.')
       }
+
+      assertValidEmailRecipients({ to: normalizedRecipientEmail, cc: ccUser, bcc: bccUser })
 
       const htmlEmail = buildHtmlEmailFromPlainText(body, {
         title: 'OU Kosher Schedule A',
@@ -755,8 +765,8 @@ export function useSendScheduleACommunicationEmail() {
           toReply: null,
           isRead: false,
           tag: null,
-          CCUser: null,
-          BCCUser: 'productAutomation@ou.org',
+          CCUser: ccUser?.trim() || null,
+          BCCUser: withImpliedBcc(bccUser),
           replyTo: import.meta.env.VITE_EMAIL_REPLY_TO,
           Attachments: null,
         },
@@ -1154,6 +1164,18 @@ export function useScheduleAScratchpad(
     [updateScratchpad],
   )
 
+  const updateRoundEmailCopies = useCallback(
+    (roundId: string, field: 'cc' | 'bcc', value: string) => {
+      updateScratchpad((current) => ({
+        ...current,
+        rounds: current.rounds.map((round) =>
+          round.id === roundId ? { ...round, email: { ...round.email, [field]: value } } : round,
+        ),
+      }))
+    },
+    [updateScratchpad],
+  )
+
   const removeRound = useCallback(
     (roundId: string) => {
       updateScratchpad((current) => ({
@@ -1339,6 +1361,7 @@ export function useScheduleAScratchpad(
     updateRoundStatus,
     updateRoundEmailBody,
     updateRoundEmailTo,
+    updateRoundEmailCopies,
     removeRound,
     simulateRoundResponse,
     resolveRoundItem,
