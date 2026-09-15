@@ -602,7 +602,7 @@ export interface ApplicationDetail {
   DesignatedAdminNCRC?: DesignatedNcrcContact | null
   assignedRC?: string
   assignedRFR?: string | null
-  DesignatedRFR?: string | null
+  DesignatedRFR?: DesignatedNcrcContact | string | null
   RFRFileUrl?: string | null
   ReportedInspectionDate?: string | null
   VisitId?: number | string | null

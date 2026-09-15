@@ -1,4 +1,5 @@
 import { ScheduleRoundEmailCopies } from './ScheduleRoundEmailCopies'
+import { getDesignatedRfrName } from '@/features/applications/utils/designatedRfrName'
 import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
@@ -637,7 +638,7 @@ export function ScheduleAIngredientsDrawer({
   const { data: globalAppVars } = useScheduleAApplicationAppVars(
     isActive ? resolvedApplicationId : undefined,
   )
-  const assignedRfr = textValue(applicationDetail?.DesignatedRFR)
+  const assignedRfr = getDesignatedRfrName(applicationDetail?.DesignatedRFR)
   const isAssigningTask =
     textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA_ASSIGNING
   const isStartTask = textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA_START

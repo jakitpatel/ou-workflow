@@ -1,4 +1,5 @@
 import { ScheduleRoundEmailCopies } from './ScheduleRoundEmailCopies'
+import { getDesignatedRfrName } from '@/features/applications/utils/designatedRfrName'
 import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
@@ -654,7 +655,7 @@ export function ScheduleBProductsDrawer({
       toast.error(scratchpadApi.saveError)
     }
   }, [scratchpadApi.saveError])
-  const assignedRfr = textValue(applicationDetail?.DesignatedRFR)
+  const assignedRfr = getDesignatedRfrName(applicationDetail?.DesignatedRFR)
   const eirSubmitterLabel = assignedRfr || 'the assigned RFR'
   const visitIdLabel = textValue(applicationDetail?.VisitId)
   const inspectionDate = formatDisplayDate(applicationDetail?.InspectionDate)
