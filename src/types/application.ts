@@ -599,6 +599,7 @@ export interface ApplicationDetail {
   daysOverdue?: number
   assignedNCRC?: string
   DesignatedNCRC?: DesignatedNcrcContact | null
+  DesignatedRC?: DesignatedNcrcContact | null
   DesignatedAdminNCRC?: DesignatedNcrcContact | null
   assignedRC?: string
   assignedRFR?: string | null

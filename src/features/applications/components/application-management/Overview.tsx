@@ -12,22 +12,20 @@ const formatCreatedDate = (value?: string) => {
   });
 };
 
-const formatAssignedNcrc = (value: unknown) => {
+const formatDesignatedContact = (value: unknown) => {
   if (typeof value === 'string') return value.trim() || '-';
   if (!value || typeof value !== 'object') return '-';
 
   const coordinator = value as Record<string, unknown>;
   const name = [
-    coordinator.PREFIX ?? coordinator.prefix,
-    coordinator.First ?? coordinator.first,
-    coordinator.Middle ?? coordinator.middle,
     coordinator.LAST ?? coordinator.last,
+    coordinator.FIRST ?? coordinator.First ?? coordinator.first,
   ]
     .map((part) => String(part ?? '').trim())
     .filter(Boolean)
-    .join(' ');
+    .join(', ');
 
-  return name || String(coordinator.id ?? '').trim() || '-';
+  return name || '-';
 };
 
 function MatchMarker({ isNew, modifiedLabel = 'Matched' }: { isNew?: boolean; modifiedLabel?: string }) {
@@ -278,14 +276,14 @@ export default function Overview({
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-sm font-medium text-gray-600">Assigned NCRC</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {formatAssignedNcrc(application.assignedNCRC)}
+                    {formatDesignatedContact(application.DesignatedNCRC)}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-sm font-medium text-gray-600">Assigned RC</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {application.assignedRC || '-'}
+                    {formatDesignatedContact(application.DesignatedRC)}
                   </span>
                 </div>
               </>

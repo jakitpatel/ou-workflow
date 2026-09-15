@@ -21,6 +21,28 @@ function row(label: string) {
 }
 
 describe('Application Detail Overview', () => {
+  it('uses designated contacts in LAST, FIRST order instead of legacy assigned values', () => {
+    const application = detail()
+    application.assignedNCRC = 'Old NCRC'
+    application.assignedRC = 'Old RC'
+    application.DesignatedNCRC = { FIRST: 'TYLER', LAST: 'BAND', ID: 'TYLER.BAND' }
+    application.DesignatedRC = { FIRST: 'Shouki', LAST: 'Benjamin', ID: 'SHOUKI.BENJAMIN' }
+    render(<Overview application={application} />)
+    expect(row('Assigned NCRC').getByText('BAND, TYLER')).toBeTruthy()
+    expect(row('Assigned RC').getByText('Benjamin, Shouki')).toBeTruthy()
+    expect(screen.queryByText('Old NCRC')).toBeNull()
+    expect(screen.queryByText('Old RC')).toBeNull()
+  })
+
+  it('handles partial and missing designated names without extra punctuation', () => {
+    const application = detail()
+    application.DesignatedNCRC = { FIRST: ' TYLER ', LAST: '' }
+    application.DesignatedRC = null
+    render(<Overview application={application} />)
+    expect(row('Assigned NCRC').getByText('TYLER')).toBeTruthy()
+    expect(row('Assigned RC').getByText('-')).toBeTruthy()
+  })
+
   it('uses the revised plant ownership fields and marks the sample company/plant/owns', () => {
     render(<Overview application={detail()} />)
     expect(row('Owns ID').getByText('14095521')).toBeTruthy()
