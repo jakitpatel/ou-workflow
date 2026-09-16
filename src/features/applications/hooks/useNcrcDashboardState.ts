@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { refreshWorkflowApplicationFromEvent } from '@/features/applications/cache/workflowApplicationEvents'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { useInfiniteApplications } from '@/features/applications/hooks/useInfiniteApplications'
@@ -92,6 +93,7 @@ export function useNcrcDashboardState({
 }: UseNcrcDashboardStateParams) {
   const { q, status, priority, page, applicationId, myOnly } = search
   const { token, username } = useUser()
+  const queryClient = useQueryClient()
   const { apiBaseUrl, paginationMode } = useAppPreferences()
 
   const [myNotesOpen, setMyNotesOpen] = useState(false)
@@ -307,20 +309,23 @@ export function useNcrcDashboardState({
     return normalizedBaseUrl ? `${normalizedBaseUrl}/events` : '/events'
   }, [apiBaseUrl])
 
-  const handleMyNotesSSEMessage = useCallback(
+  const handleDashboardSSEMessage = useCallback(
     (message: SSEMessage) => {
+      void refreshWorkflowApplicationFromEvent(message, queryClient, token).catch((error: unknown) => {
+        console.error('Failed to refresh workflow application', error)
+      })
       if (!myNotesOpen) return
       if (!isRefreshMessagesEvent(message)) return
 
       void myNotesQuery.refetch()
     },
-    [myNotesOpen, myNotesQuery],
+    [myNotesOpen, myNotesQuery, queryClient, token],
   )
 
-  useSSE(handleMyNotesSSEMessage, {
+  useSSE(handleDashboardSSEMessage, {
     endpoint: sseEndpoint,
     token,
-    enabled: Boolean(token) && myNotesOpen && Boolean(username?.trim()),
+    enabled: Boolean(token),
   })
 
   useEffect(() => {

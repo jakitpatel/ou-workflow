@@ -1,9 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ErrorDialogRef } from '@/components/ErrorDialog'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { fetchPrelimApplicationDetails } from '@/features/prelim/api'
+import { refreshSubmissionApplicationFromEvent } from '@/features/prelim/cache/submissionApplicationEvents'
+import { useSSE, type SSEMessage } from '@/hooks/useSSE'
 import {
   useInfinitePrelimApplications,
   usePrelimApplications,
@@ -23,7 +25,19 @@ export function usePrelimDashboardState() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
   const { token, username } = useUser()
-  const { paginationMode } = useAppPreferences()
+  const { paginationMode, apiBaseUrl } = useAppPreferences()
+  const queryClient = useQueryClient()
+  const handleSSEMessage = useCallback((message: SSEMessage) => {
+    void refreshSubmissionApplicationFromEvent(message, queryClient, token).catch((error: unknown) => {
+      console.error('Failed to refresh submission application', error)
+    })
+  }, [queryClient, token])
+  const baseUrl = apiBaseUrl?.trim().replace(/\/+$/, '')
+  useSSE(handleSSEMessage, {
+    endpoint: baseUrl ? `${baseUrl}/events` : '/events',
+    token,
+    enabled: Boolean(token),
+  })
 
   const [expandedTaskPanel, setExpandedTaskPanel] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<number | null>(null)

@@ -2,6 +2,12 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNcrcDashboardState } from '@/features/applications/hooks/useNcrcDashboardState'
 import { renderWithProviders } from '@/test/renderWithProviders'
+import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
+
+const fetchApplicantsMock = vi.fn()
+vi.mock('@/features/applications/api', () => ({
+  fetchApplicants: (...args: unknown[]) => fetchApplicantsMock(...args),
+}))
 
 const fetchMyMessagesMock = vi.fn()
 const markTaskNoteAsReadMock = vi.fn()
@@ -93,6 +99,7 @@ describe('useNcrcDashboardState', () => {
     mutateAsyncMock.mockReset()
     fetchNextPageMock.mockReset()
     navigateMock.mockReset()
+    fetchApplicantsMock.mockReset()
 
     fetchMyMessagesMock.mockResolvedValue({
       incoming: [{ MessageID: '101', MessageText: 'Direct note', ToUser: 'S.Benjamin' }],
@@ -126,9 +133,31 @@ describe('useNcrcDashboardState', () => {
     }))
 
     try {
-      renderWithProviders(<DashboardStateHarness />)
+      const { queryClient } = renderWithProviders(<DashboardStateHarness />)
+      const key = applicationsQueryKeys.paged({ page: 0 })
+      queryClient.setQueryData(key, { data: [{ applicationId: 1332, status: 'new' }] })
+      fetchApplicantsMock.mockResolvedValue({ data: [{ applicationId: 1332, status: 'completed' }] })
 
-      expect(eventSources).toHaveLength(0)
+      await waitFor(() => expect(eventSources).toHaveLength(1))
+      expect(fetchMyMessagesMock).not.toHaveBeenCalled()
+
+      act(() => {
+        eventSources[0]?.onmessage?.({
+          data: JSON.stringify({
+            type: 'reload_workflow_application',
+            data: { ApplicationType: 'WORKFLOW', application_id: 1332, task_instance_id: 18580 },
+          }),
+        } as MessageEvent)
+      })
+      await waitFor(() => {
+        expect(queryClient.getQueryData(key)).toEqual({
+          data: [{ applicationId: 1332, status: 'completed' }],
+        })
+      })
+      expect(fetchApplicantsMock).toHaveBeenCalledExactlyOnceWith({
+        applicationId: 1332, limit: 1, myOnly: false, page: 0, token: 'test-access-token',
+      })
+      expect(fetchMyMessagesMock).not.toHaveBeenCalled()
 
       fireEvent.click(screen.getByRole('button', { name: 'open-my-messages' }))
 
