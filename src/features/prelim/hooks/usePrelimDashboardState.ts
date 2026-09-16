@@ -34,7 +34,7 @@ export function usePrelimDashboardState() {
   }, [queryClient, token])
   const baseUrl = apiBaseUrl?.trim().replace(/\/+$/, '')
   useSSE(handleSSEMessage, {
-    endpoint: baseUrl ? `${baseUrl}/events` : '/events',
+    endpoint: baseUrl ? `${baseUrl}/events/` : '/events/',
     token,
     enabled: Boolean(token),
   })

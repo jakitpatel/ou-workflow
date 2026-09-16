@@ -41,7 +41,7 @@ describe('useSSE', () => {
     vi.stubGlobal('fetch', fetch)
     const onMessage = vi.fn()
     const { unmount } = renderHook(() =>
-      useSSE(onMessage, { token: 'access', endpoint: '/events' }),
+      useSSE(onMessage, { token: 'access', endpoint: '/events/' }),
     )
     await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
     expect(new Headers(fetch.mock.calls[0][1].headers).get('Authorization')).toBe('Bearer access')

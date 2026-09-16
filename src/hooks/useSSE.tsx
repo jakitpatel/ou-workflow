@@ -36,7 +36,7 @@ type UseSSEOptions = {
 
 export function useSSE(
   onMessage: (message: SSEMessage) => void,
-  { endpoint = '/events', token, enabled = true, onError }: UseSSEOptions = {},
+  { endpoint = '/events/', token, enabled = true, onError }: UseSSEOptions = {},
 ) {
   const onMessageRef = useRef(onMessage)
   const onErrorRef = useRef(onError)
@@ -138,7 +138,7 @@ export function useSSE(
   }, [enabled, endpoint, token])
 }
 
-export function SSEMessageTester({ endpoint = '/events' }: { endpoint?: string }) {
+export function SSEMessageTester({ endpoint = '/events/' }: { endpoint?: string }) {
   const [messages, setMessages] = useState<SSEMessage[]>([])
 
   useSSE(

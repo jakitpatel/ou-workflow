@@ -306,7 +306,7 @@ export function useNcrcDashboardState({
 
   const sseEndpoint = useMemo(() => {
     const normalizedBaseUrl = apiBaseUrl?.trim().replace(/\/+$/, '')
-    return normalizedBaseUrl ? `${normalizedBaseUrl}/events` : '/events'
+    return normalizedBaseUrl ? `${normalizedBaseUrl}/events/` : '/events/'
   }, [apiBaseUrl])
 
   const handleDashboardSSEMessage = useCallback(

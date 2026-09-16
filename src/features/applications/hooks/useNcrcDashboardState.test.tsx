@@ -118,7 +118,7 @@ describe('useNcrcDashboardState', () => {
     }> = []
 
     vi.stubGlobal('fetch', vi.fn(async (url: string) => {
-      if (!url.endsWith('/events')) return Response.json({})
+      if (!url.endsWith('/events/')) return Response.json({})
       const body = new ReadableStream<Uint8Array>({
         start(controller) {
           eventSources.push({
@@ -168,7 +168,7 @@ describe('useNcrcDashboardState', () => {
         expect(eventSources).toHaveLength(1)
       })
 
-      expect(eventSources[0]?.url).toBe('/events')
+      expect(eventSources[0]?.url).toBe('/events/')
 
       act(() => {
         eventSources[0]?.onmessage?.({

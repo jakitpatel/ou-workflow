@@ -355,7 +355,7 @@ export function useTaskNotesDrawerState({
 
   const sseEndpoint = useMemo(() => {
     const normalizedBaseUrl = apiBaseUrl?.trim().replace(/\/+$/, '')
-    return normalizedBaseUrl ? `${normalizedBaseUrl}/events` : '/events'
+    return normalizedBaseUrl ? `${normalizedBaseUrl}/events/` : '/events/'
   }, [apiBaseUrl])
 
   const visibleRootMessageIds = useMemo(() => {
