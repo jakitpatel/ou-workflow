@@ -10,7 +10,7 @@ import {
   toCompanyDrawerData,
   toPlantDrawerData,
 } from '@/features/prelim/lib/prelimResolution'
-import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
+import { refreshPrelimApplicationOrInvalidateLists } from '@/features/prelim/cache/submissionApplicationEvents'
 import { confirmTask } from '@/features/tasks/api'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import type { ApplicationTask } from '@/types/application'
@@ -47,7 +47,11 @@ export function TaskPrelimResolutionDrawer({ open, task, onClose }: Props) {
   const refresh = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.details() }),
-      queryClient.invalidateQueries({ queryKey: prelimQueryKeys.lists() }),
+      refreshPrelimApplicationOrInvalidateLists({
+        applicationId: numericApplicationId,
+        queryClient,
+        token,
+      }),
       queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
     ])
   }

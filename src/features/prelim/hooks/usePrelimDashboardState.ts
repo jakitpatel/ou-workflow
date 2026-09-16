@@ -145,6 +145,7 @@ export function usePrelimDashboardState() {
   }, [page, paginationMode, updateSearch])
 
   const { executeAction, completeTaskWithResult, resolveSelectedAction } = useTaskActions({
+    applicationType: 'SUBMISSION',
     applications,
     token: token ?? undefined,
     username: username ?? undefined,
@@ -169,7 +170,7 @@ export function usePrelimDashboardState() {
     const actionCategory = action.taskCategory?.toLowerCase()
 
     if (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION) {
-      executeAction('Confirmed', action, 'yes', selectedAction)
+      executeAction('Confirmed', action, 'yes', { application, action })
       return
     }
 
@@ -197,7 +198,7 @@ export function usePrelimDashboardState() {
 
   const handleCancelTask = async (application: any, action: Task, reason: string) => {
     selectAction(application.applicationId, action.TaskInstanceId)
-    completeTaskWithResult(action, reason)
+    completeTaskWithResult(action, reason, undefined, undefined, application.applicationId)
   }
 
   return {

@@ -4,9 +4,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { Applicant, Task } from '@/types/application'
 import { useUser } from '@/context/UserContext'
-import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
+import { refreshPrelimApplicationOrInvalidateLists } from '@/features/prelim/cache/submissionApplicationEvents'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
-import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import { PrelimResolutionDrawer } from '@/features/prelim/components/PrelimResolutionDrawer'
 import { confirmTask } from '@/features/tasks/api'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
@@ -238,23 +237,14 @@ export function PrelimResolvedSection({
   if (!loading && !resolved) return null
 
   const refreshApplication = async () => {
-    try {
-      const refreshed = await refreshApplicationInListCaches({
-        applicationId: application?.applicationId,
-        queryClient,
-        token: token ?? undefined,
-      })
-
-      if (!refreshed) {
-        await queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })
-      }
-    } catch {
-      await queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.lists() })
-    }
+    await refreshPrelimApplicationOrInvalidateLists({
+      applicationId: application?.applicationId,
+      queryClient,
+      token,
+    })
 
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.details() }),
-      queryClient.invalidateQueries({ queryKey: prelimQueryKeys.lists() }),
       queryClient.invalidateQueries({ queryKey: tasksQueryKeys.lists() }),
     ])
   }

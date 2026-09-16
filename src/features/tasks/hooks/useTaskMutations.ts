@@ -8,7 +8,7 @@ import {
 } from '@/features/tasks/api'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
-import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
+import { refreshPrelimApplicationOrInvalidateLists } from '@/features/prelim/cache/submissionApplicationEvents'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 
 type ConfirmTaskInput = {
@@ -145,7 +145,11 @@ const invalidateRelatedLists = async (
     }
   }
   if (options.includePrelimLists) {
-    await queryClient.invalidateQueries({ queryKey: prelimQueryKeys.lists() })
+    await refreshPrelimApplicationOrInvalidateLists({
+      applicationId: applicationRefresh?.applicationId,
+      queryClient,
+      token: applicationRefresh?.token,
+    })
   }
 }
 

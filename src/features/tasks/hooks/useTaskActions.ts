@@ -11,6 +11,7 @@ import { detectRole, getAllTasks, getProgressStatus } from '@/lib/utils/taskHelp
 import type { Applicant, Task } from '@/types/application'
 
 type Params = {
+  applicationType?: 'WORKFLOW' | 'SUBMISSION'
   applications: Applicant[]
   token?: string
   username?: string
@@ -168,15 +169,15 @@ export function findSelectedTaskAction(
   return { application, action }
 }
 
-export function useTaskActions({ applications, token, username, onError }: Params) {
+export function useTaskActions({ applications, token, username, onError, applicationType }: Params) {
   const confirmTaskMutation = useConfirmTaskMutation({
-    includeApplicationLists: true,
+    includeApplicationLists: applicationType !== 'SUBMISSION',
     includePrelimLists: true,
     onError: (message) => onError?.(message),
   })
 
   const assignTaskMutation = useAssignTaskMutation({
-    includeApplicationLists: true,
+    includeApplicationLists: applicationType !== 'SUBMISSION',
     includePrelimLists: true,
     onError: (message) => onError?.(message),
   })

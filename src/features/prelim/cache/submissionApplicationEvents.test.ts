@@ -1,9 +1,10 @@
 import { QueryClient } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchPrelimApplications } from '@/features/prelim/api'
+import { mapPrelimApplicantsResponse } from '@/features/prelim/api/mappers'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import type { SSEMessage } from '@/hooks/useSSE'
-import { refreshSubmissionApplicationFromEvent } from './submissionApplicationEvents'
+import { refreshSubmissionApplicationFromEvent, refreshPrelimApplicationOrInvalidateLists } from './submissionApplicationEvents'
 
 vi.mock('@/features/prelim/api', () => ({ fetchPrelimApplications: vi.fn() }))
 
@@ -13,7 +14,20 @@ const event: SSEMessage = {
 }
 
 describe('submission application events', () => {
-  beforeEach(() => vi.mocked(fetchPrelimApplications).mockReset())
+  beforeEach(() => { vi.mocked(fetchPrelimApplications).mockReset() })
+
+  it.each(['missing-id', 'empty', 'error'])('retains full-list recovery for %s', async (scenario) => {
+    const client = new QueryClient()
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
+    if (scenario === 'error') vi.mocked(fetchPrelimApplications).mockRejectedValue(new Error('offline'))
+    else vi.mocked(fetchPrelimApplications).mockResolvedValue(mapPrelimApplicantsResponse({ data: [] }))
+    await refreshPrelimApplicationOrInvalidateLists({
+      applicationId: scenario === 'missing-id' ? undefined : 1367,
+      queryClient: client,
+    })
+    expect(invalidate).toHaveBeenCalledExactlyOnceWith({ queryKey: prelimQueryKeys.lists() })
+    client.clear()
+  })
 
   it('fetches only the matching ID and patches paged and infinite caches without invalidating lists', async () => {
     const client = new QueryClient()

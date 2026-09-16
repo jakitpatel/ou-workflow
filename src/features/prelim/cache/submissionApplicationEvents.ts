@@ -31,9 +31,23 @@ export async function refreshSubmissionApplicationFromEvent(
     cache && pagesOf(cache).some((page) => page.data.some((app) => matchesId(app, applicationId))),
   )) return
 
+  await refreshPrelimApplicationInListCaches({ applicationId, queryClient, token })
+}
+
+export async function refreshPrelimApplicationInListCaches({
+  applicationId: rawId,
+  queryClient,
+  token,
+}: {
+  applicationId?: string | number | null
+  queryClient: QueryClient
+  token?: string | null
+}): Promise<boolean> {
+  const applicationId = Number(rawId)
+  if (!Number.isSafeInteger(applicationId) || applicationId <= 0) return false
   const response = await fetchPrelimApplications({ applicationId, page: 0, limit: 1, token })
   const updated = response.data.find((app) => matchesId(app, applicationId))
-  if (!updated) return
+  if (!updated) return false
 
   const patchPage = (page: ApplicantsResponse): ApplicantsResponse => {
     if (!page.data.some((app) => matchesId(app, applicationId))) return page
@@ -46,4 +60,16 @@ export async function refreshSubmissionApplicationFromEvent(
     const pages = cache.pages.map(patchPage)
     return pages.every((page, index) => page === cache.pages[index]) ? cache : { ...cache, pages }
   })
+  return true
+}
+
+export async function refreshPrelimApplicationOrInvalidateLists(
+  params: Parameters<typeof refreshPrelimApplicationInListCaches>[0],
+): Promise<void> {
+  try {
+    if (await refreshPrelimApplicationInListCaches(params)) return
+  } catch {
+    // Recover from a failed targeted fetch without leaving the dashboard stale.
+  }
+  await params.queryClient.invalidateQueries({ queryKey: prelimQueryKeys.lists() })
 }
