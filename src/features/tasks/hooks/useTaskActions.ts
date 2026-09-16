@@ -172,13 +172,13 @@ export function findSelectedTaskAction(
 export function useTaskActions({ applications, token, username, onError, applicationType }: Params) {
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: applicationType !== 'SUBMISSION',
-    includePrelimLists: true,
+    includePrelimLists: applicationType === 'SUBMISSION',
     onError: (message) => onError?.(message),
   })
 
   const assignTaskMutation = useAssignTaskMutation({
     includeApplicationLists: applicationType !== 'SUBMISSION',
-    includePrelimLists: true,
+    includePrelimLists: applicationType === 'SUBMISSION',
     onError: (message) => onError?.(message),
   })
 

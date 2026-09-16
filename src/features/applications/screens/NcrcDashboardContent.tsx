@@ -173,6 +173,7 @@ export function NcrcDashboardContent() {
   })
 
   const { executeAction, completeTaskWithResult } = useTaskActions({
+    applicationType: 'WORKFLOW',
     applications: applicants,
     token: token ?? undefined,
     username: username ?? undefined,

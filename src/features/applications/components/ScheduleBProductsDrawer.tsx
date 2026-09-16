@@ -630,12 +630,12 @@ export function ScheduleBProductsDrawer({
   const createProductMutation = useCreateScheduleBProduct(resolvedApplicationId)
   const completeScheduleBTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
-    includePrelimLists: true,
+    includePrelimLists: false,
     onError: (message) => toast.error(message),
   })
   const patchTaskStatusMutation = usePatchTaskStatusMutation({
     includeApplicationLists: true,
-    includePrelimLists: true,
+    includePrelimLists: false,
     onError: (message) => toast.error(message),
   })
   const { data: applicationDetail } = useApplicationDetail(isActive ? resolvedApplicationId : undefined)

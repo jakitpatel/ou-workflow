@@ -624,12 +624,12 @@ export function ScheduleAIngredientsDrawer({
   const createIngredientMutation = useCreateScheduleAIngredient(resolvedApplicationId)
   const completeScheduleATaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
-    includePrelimLists: true,
+    includePrelimLists: false,
     onError: (message) => toast.error(message),
   })
   const patchTaskStatusMutation = usePatchTaskStatusMutation({
     includeApplicationLists: true,
-    includePrelimLists: true,
+    includePrelimLists: false,
     onError: (message) => toast.error(message),
   })
   const { data: applicationDetail } = useApplicationDetail(

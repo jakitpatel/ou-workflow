@@ -1000,7 +1000,7 @@ export function ContractStageDrawer({
   const isNewCompanyContract = applicant?.isNewCompany !== false
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
-    includePrelimLists: true,
+    includePrelimLists: false,
     onError: (message) => toast.error(message),
   })
 

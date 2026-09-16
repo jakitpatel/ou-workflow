@@ -94,7 +94,7 @@ export function ApplicationExpandedStage({
   const { data: taskRolesAll = [] } = useFetchTaskRoles()
   const undoTaskMutation = useUndoTaskMutation({
     includeApplicationLists: true,
-    includePrelimLists: true,
+    includePrelimLists: false,
     onError: (message) => toast.error(message),
   })
   const taskNotes = useTaskNotesDrawerState({

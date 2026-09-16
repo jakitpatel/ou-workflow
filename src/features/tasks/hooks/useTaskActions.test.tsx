@@ -3,10 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Applicant } from '@/types/application'
 import { useTaskActions } from './useTaskActions'
 
-const mocks = vi.hoisted(() => ({ assign: vi.fn(), mutate: vi.fn(), message: vi.fn() }))
+const mocks = vi.hoisted(() => ({ assign: vi.fn(), mutate: vi.fn(), message: vi.fn(), assignOptions: vi.fn(), confirmOptions: vi.fn() }))
 vi.mock('@/features/tasks/hooks/useTaskMutations', () => ({
-  useAssignTaskMutation: () => ({ mutateAsync: mocks.assign, mutate: mocks.mutate }),
-  useConfirmTaskMutation: () => ({ mutate: vi.fn() }),
+  useAssignTaskMutation: (options: unknown) => {
+    mocks.assignOptions(options)
+    return { mutateAsync: mocks.assign, mutate: mocks.mutate }
+  },
+  useConfirmTaskMutation: (options: unknown) => {
+    mocks.confirmOptions(options)
+    return { mutate: vi.fn() }
+  },
 }))
 vi.mock('@/features/applications/api', () => ({
   createApplicationMessage: mocks.message,
@@ -39,6 +45,19 @@ describe('AssignNCRC notification', () => {
   beforeEach(() => {
     vi.resetAllMocks()
   })
+
+  it.each(['WORKFLOW', 'SUBMISSION', undefined] as const)(
+    'scopes confirmation and assignment refreshes to %s applications',
+    (applicationType) => {
+      renderHook(() => useTaskActions({ applications: [application], applicationType }))
+      const expected = expect.objectContaining({
+        includeApplicationLists: applicationType !== 'SUBMISSION',
+        includePrelimLists: applicationType === 'SUBMISSION',
+      })
+      expect(mocks.confirmOptions).toHaveBeenCalledWith(expected)
+      expect(mocks.assignOptions).toHaveBeenCalledWith(expected)
+    },
+  )
 
   it('waits for assignment success and sends the private notification with the application link', async () => {
     let finish!: () => void
