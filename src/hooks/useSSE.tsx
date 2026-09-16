@@ -73,7 +73,7 @@ export function useSSE(
         if (lastEventId) headers.set('Last-Event-ID', lastEventId)
         const response = await executeRequest(
           url,
-          { headers, signal: controller.signal, cache: 'no-store' },
+          { headers, signal: controller.signal, cache: 'no-store', timeoutMs: false },
           accessToken,
         )
         if (controller.signal.aborted) {

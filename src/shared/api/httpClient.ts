@@ -54,13 +54,14 @@ export function registerUserContext(ctx: UserContext): void {
 
 export async function executeRequest(
   url: string,
-  options: RequestInit,
+  options: RequestInit & { timeoutMs?: number | false },
   token: string | null | undefined,
 ): Promise<Response> {
-  const timeoutMs =
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Number((options as any).timeoutMs ?? DEFAULT_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS
-  const optionsWithTimeout = withTimeout(options, timeoutMs)
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, ...requestOptions } = options
+  // Long-lived streams opt out; ordinary API requests retain their timeout.
+  const optionsWithTimeout = timeoutMs === false
+    ? requestOptions
+    : withTimeout(requestOptions, Number(timeoutMs) || DEFAULT_TIMEOUT_MS)
 
   try {
     let response = await fetch(url, optionsWithTimeout)
