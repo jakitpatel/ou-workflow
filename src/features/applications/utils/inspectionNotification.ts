@@ -1,3 +1,13 @@
+export const formatInspectionContactName = (
+  contact?: { PREFIX?: string | null; LAST?: string | null; FIRST?: string | null } | string | null,
+): string => {
+  if (typeof contact === 'string') return contact.trim()
+  return [contact?.PREFIX, contact?.LAST, contact?.FIRST]
+    .map((part) => part?.replace(/\s+/g, ' ').trim() ?? '')
+    .filter(Boolean)
+    .join(', ')
+}
+
 export const formatDate = (ymd: string) => {
   const [year, month, day] = ymd.split('-').map(Number)
   return new Date(year, month - 1, day).toLocaleDateString('en-US', {
@@ -48,4 +58,3 @@ export const buildNotificationBody = ({
     '',
     'Please submit EIR for Initial Inspection on OUDirect',
   ].join('\n')
-

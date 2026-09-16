@@ -6,8 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useUser } from '@/context/UserContext'
-import { useAppPreferences } from '@/context/AppPreferencesContext'
-import { buildNotificationBody, formatDate } from '@/features/applications/utils/inspectionNotification'
+import { buildNotificationBody, formatDate, formatInspectionContactName } from '@/features/applications/utils/inspectionNotification'
 import { createApplicationMessage } from '@/features/applications/api'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
@@ -411,11 +410,6 @@ function EmailBodyPreview({ body, applicationUrl }: { body: string; applicationU
 
 export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: Props) {
   const { email, token, username } = useUser()
-  const { userPerson } = useAppPreferences()
-  const senderName =
-    [userPerson?.FIRST, userPerson?.LAST].map(normalizeText).filter(Boolean).join(' ') ||
-    username ||
-    'NCRC'
   const queryClient = useQueryClient()
   const resolvedApplicationId = String(applicant?.applicationId ?? '').trim()
   const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
@@ -456,8 +450,8 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   const applicationLinkLabel = applicant?.company || 'Application'
   const defaultEmailSubject = `OU Kosher - Inspection Assignment for ${applicant?.plant || 'Plant'} [${accountNumber || 'Application'}]`
   const defaultEmailBody = buildNotificationBody({
-    rfrName: selectedRfr?.name || '',
-    senderName,
+    rfrName: formatInspectionContactName(applicationDetail?.DesignatedRFR),
+    senderName: formatInspectionContactName(applicationDetail?.DesignatedNCRC),
     plant: applicant?.plant || '',
     company: applicant?.company || '',
     accountNumber,
