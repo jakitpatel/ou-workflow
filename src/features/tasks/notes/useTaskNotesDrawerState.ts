@@ -33,6 +33,7 @@ type OpenDrawerParams = {
 }
 
 type CreateReplyParams = {
+  isPrivate?: boolean
   parentMessageId: string
   text: string
   applicationId?: number | null
@@ -48,6 +49,7 @@ type UseTaskNotesDrawerStateParams = {
 }
 
 const EMPTY_NOTES: NotesByTab<TaskNote> = {
+  global: [],
   incoming: [],
   outgoing: [],
   mention: [],
@@ -295,6 +297,7 @@ export function useTaskNotesDrawerState({
         outgoing: notes.outgoing as TaskNote[],
         mention: notes.mention as TaskNote[],
         private: notes.private as TaskNote[],
+        global: notes.global ?? [],
       },
     }))
 
@@ -311,7 +314,7 @@ export function useTaskNotesDrawerState({
   }, [])
 
   const setContextLoading = useCallback((contextKey: string, isLoading: boolean) => {
-    const loadingKeys: NoteTab[] = ['incoming', 'outgoing', 'mention', 'private']
+    const loadingKeys: NoteTab[] = ['incoming', 'outgoing', 'mention', 'private', 'global']
     setLoadingByKey((prev) => {
       const next = { ...prev }
       for (const tab of loadingKeys) {
@@ -533,7 +536,7 @@ export function useTaskNotesDrawerState({
   ])
 
   const submitReply = useCallback(
-    async ({ parentMessageId, text, applicationId: replyApplicationId, taskId: replyTaskId, toUser }: CreateReplyParams) => {
+    async ({ parentMessageId, text, applicationId: replyApplicationId, taskId: replyTaskId, toUser, isPrivate }: CreateReplyParams) => {
       if (!drawer) return
 
       const trimmedText = text.trim()
@@ -546,7 +549,9 @@ export function useTaskNotesDrawerState({
         taskId: replyTaskId ?? drawer.taskId,
         applicationId: replyApplicationId ?? applicationId ?? null,
         note: trimmedText,
-        isPrivate: drawer.activeTab === 'incoming' || drawer.activeTab === 'private' || drawer.activeTab === 'outgoing',
+        isPrivate: drawer.activeTab === 'global'
+          ? Boolean(isPrivate)
+          : drawer.activeTab === 'incoming' || drawer.activeTab === 'private' || drawer.activeTab === 'outgoing',
         isRead: false,
         fromUser: username ?? undefined,
         parentMessageId,
@@ -638,6 +643,7 @@ export function useTaskNotesDrawerState({
       outgoing: drawer ? Boolean(loadingByKey[`${drawer.contextKey}:outgoing`]) : false,
       mention: drawer ? Boolean(loadingByKey[`${drawer.contextKey}:mention`]) : false,
       private: drawer ? Boolean(loadingByKey[`${drawer.contextKey}:private`]) : false,
+      global: drawer ? Boolean(loadingByKey[`${drawer.contextKey}:global`]) : false,
     }),
     [drawer, loadingByKey],
   )

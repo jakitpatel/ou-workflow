@@ -23,6 +23,7 @@ export type MentionUser = {
 }
 
 export type MyMessagesByTab = {
+  global?: TaskNote[]
   incoming: TaskNote[]
   outgoing: TaskNote[]
   mention: TaskNote[]
@@ -35,6 +36,7 @@ type FetchMyMessagesResponse = {
     OutgoingMessages?: WFApplicationMessageRecord[]
     MentionMessages?: WFApplicationMessageRecord[]
     PrivateMessages?: WFApplicationMessageRecord[]
+    GlobalMessages?: WFApplicationMessageRecord[]
   }
   status?: string
 }
@@ -614,6 +616,7 @@ export async function fetchMyMessages({
     outgoing: mapMessageRecordsToTaskNotes(response.messages?.OutgoingMessages ?? []),
     mention: mapMessageRecordsToTaskNotes(response.messages?.MentionMessages ?? []),
     private: mapMessageRecordsToTaskNotes(response.messages?.PrivateMessages ?? []),
+    global: mapMessageRecordsToTaskNotes(response.messages?.GlobalMessages ?? []),
   }
 }
 

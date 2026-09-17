@@ -16,6 +16,7 @@ import { PrelimApplicationDetailsDrawer } from '@/features/prelim/components/Pre
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
+import { getApplicationNotesTabs } from '@/features/tasks/notes/applicationNotesTabs'
 import type { Applicant, Task } from '@/types/application'
 
 const getAssignedNcrc = (applicant: Applicant) => {
@@ -198,6 +199,7 @@ export function ApplicantCard({
 
       <TaskNotesDrawer
         open={Boolean(applicationNotes.drawer)}
+        customTabs={getApplicationNotesTabs(applicationNotes.activeNotes, applicationNotes.activeLoading)}
         applicantCompany={applicant.company}
         applicationId={applicant.applicationId ?? null}
         contextType="application"

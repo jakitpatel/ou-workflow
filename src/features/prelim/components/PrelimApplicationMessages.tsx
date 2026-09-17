@@ -1,5 +1,6 @@
 import { MessageSquare } from 'lucide-react'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
+import { getApplicationNotesTabs } from '@/features/tasks/notes/applicationNotesTabs'
 import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState'
 import type { Applicant } from '@/types/application'
 
@@ -56,6 +57,7 @@ export function PrelimApplicationMessages({ application }: { application: Applic
         contextType="application"
         taskName={taskName}
         notesTitleOverride="Application Notes"
+        customTabs={getApplicationNotesTabs(messages.activeNotes, messages.activeLoading)}
         activeTab={messages.drawer?.activeTab ?? 'incoming'}
         incomingNotes={messages.activeNotes.incoming}
         outgoingNotes={messages.activeNotes.outgoing}
