@@ -331,16 +331,6 @@ export function PrelimResolutionComparisonSection({
               }
             />
             <ComparisonRow
-              field="DBA / Trade Name"
-              appValue={companyData.companyName}
-              dbValue="Not on file"
-              status="not-on-file"
-              editable={isEditMode || editableSection === 'company-info'}
-              onAppValueChange={(value) =>
-                setEditableCompanyData((prev) => ({ ...prev, companyName: value }))
-              }
-            />
-            <ComparisonRow
               field="Street Address"
               appValue={companyData.companyAddress || ''}
               dbValue={
