@@ -62,7 +62,7 @@ describe('Intake application messages', () => {
       </>,
     )
     expect(fetchMessages).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: 'Messages for First' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Notes for First' }))
     await waitFor(() =>
       expect(fetchMessages).toHaveBeenCalledWith(expect.objectContaining({ applicationId: 3719 })),
     )
@@ -81,7 +81,7 @@ describe('Intake application messages', () => {
     )
     fireEvent.click(screen.getByText('Close'))
     expect(screen.queryByRole('dialog')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Messages for Second' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Notes for Second' }))
     await waitFor(() =>
       expect(fetchMessages).toHaveBeenCalledWith(expect.objectContaining({ applicationId: 3720 })),
     )

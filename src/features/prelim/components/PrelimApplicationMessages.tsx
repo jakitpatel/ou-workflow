@@ -36,8 +36,8 @@ export function PrelimApplicationMessages({ application }: { application: Applic
         }}
         disabled={application.applicationId == null}
         className="group relative inline-flex items-center gap-1 rounded p-1 text-indigo-600 hover:bg-indigo-50 disabled:opacity-50"
-        aria-label={`Messages for ${taskName}`}
-        title={loading ? 'Loading messages...' : `Messages (${count})`}
+        aria-label={`Notes for ${taskName}`}
+        title={loading ? 'Loading notes...' : `Notes (${count})`}
       >
         <MessageSquare className="h-4 w-4" aria-hidden="true" />
         {loading && (
@@ -55,7 +55,7 @@ export function PrelimApplicationMessages({ application }: { application: Applic
         applicationId={application.applicationId}
         contextType="application"
         taskName={taskName}
-        notesTitleOverride="Application Messages"
+        notesTitleOverride="Application Notes"
         activeTab={messages.drawer?.activeTab ?? 'incoming'}
         incomingNotes={messages.activeNotes.incoming}
         outgoingNotes={messages.activeNotes.outgoing}
