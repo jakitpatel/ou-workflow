@@ -26,7 +26,7 @@ export function CertificationStageDrawer({ open, applicant, task, onClose }: Pro
   const accountNumber = String(applicant?.companyId ?? '').trim()
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/40">
       <aside
         className="fixed right-0 top-0 flex h-full w-full max-w-[96vw] flex-col overflow-hidden bg-white shadow-2xl xl:max-w-[82vw]"
         onClick={(event) => event.stopPropagation()}

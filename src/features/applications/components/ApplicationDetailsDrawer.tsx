@@ -13,7 +13,7 @@ export function ApplicationDetailsDrawer(props: ComponentProps<typeof DrawerCont
   return (
     <Suspense
       fallback={
-        <div className="fixed inset-0 z-50 bg-black/40" onClick={props.onClose}>
+        <div className="fixed inset-0 z-50 bg-black/40">
           <div
             role="status"
             className="fixed right-0 top-0 h-full w-full max-w-[96vw] bg-white p-8 shadow-2xl lg:max-w-[50vw]"

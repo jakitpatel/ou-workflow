@@ -268,7 +268,6 @@ export function InspectionInvoiceDrawer({
   return (
     <div
       className={isEmbedded ? 'h-full min-h-0' : 'fixed inset-0 z-50 bg-black/40'}
-      onClick={isEmbedded ? undefined : onClose}
     >
       <div
         className={

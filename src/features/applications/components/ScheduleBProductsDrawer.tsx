@@ -2078,7 +2078,7 @@ export function ScheduleBProductsDrawer({
           {content}
         </div>
       ) : (
-        <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
+        <div className="fixed inset-0 z-50 bg-black/40">
           <div
             className={`fixed right-0 top-0 flex h-full w-full max-w-[96vw] flex-col overflow-hidden bg-white shadow-2xl ${panelWidth}`}
             onClick={(event) => event.stopPropagation()}

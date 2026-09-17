@@ -698,7 +698,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/40">
       <div
         className="fixed right-0 top-0 flex h-full w-full max-w-[98vw] flex-col overflow-hidden bg-white shadow-2xl xl:max-w-[82vw]"
         onClick={(event) => event.stopPropagation()}

@@ -600,7 +600,7 @@ export function PrelimResolutionDrawer({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px] z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px] z-40" />
 
       <div className="fixed right-0 top-0 h-full w-full max-w-[780px] bg-white shadow-2xl z-50 translate-x-0 transition-transform duration-300 ease-in-out overflow-hidden flex flex-col">
         <PrelimResolutionDrawerHeader

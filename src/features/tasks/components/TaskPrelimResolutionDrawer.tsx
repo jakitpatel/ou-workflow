@@ -76,7 +76,7 @@ export function TaskPrelimResolutionDrawer({ open, task, onClose }: Props) {
     (!isCompany && !isPlant)
   ) {
     return (
-      <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
+      <div className="fixed inset-0 z-50 bg-black/40">
         <div
           className="fixed right-0 top-0 h-full w-full max-w-[780px] bg-white p-8 shadow-2xl"
           onClick={(event) => event.stopPropagation()}

@@ -3698,7 +3698,6 @@ ${packageUrl}`
             ? 'flex h-full min-h-[44rem] flex-col overflow-hidden rounded-lg border border-gray-200 bg-[#f5f7fb] shadow-sm'
             : 'fixed inset-0 z-50 bg-black/45'
         }
-        onClick={isEmbedded ? undefined : onClose}
       >
         <div
           className={
