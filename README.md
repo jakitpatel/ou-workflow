@@ -97,6 +97,16 @@ App bootstrap is now split into dedicated app-level modules:
 
 ### Auth And Session
 
+Stage and production use Okta SSO through Cognito. `VITE_COGNITO_IDP=OktaOIDC`
+in `.env.staging` and `.env.production` selects the identity provider in the
+authorization request. Each file also contains its environment's Cognito region,
+user pool ID, app client ID, and domain.
+
+Use `npm run build:stage` for staging and `npm run build:prod` (or `npm run build`)
+for production. These values are embedded at build time; rebuild when changing them.
+Callback and logout URLs are derived from the app's current origin and base path:
+`/dashboard/cognito-directcallback` and `/dashboard/cognito-logout` for deployed builds.
+
 The current auth/session split is:
 
 - [src/auth/authService.ts](c:/Users/Jakit/Documents/shouki/NCRC/ncrc-app/src/auth/authService.ts): PKCE login/logout helpers and authenticated fetch facade exports
