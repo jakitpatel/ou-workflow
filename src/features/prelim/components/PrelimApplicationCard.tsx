@@ -6,6 +6,7 @@ import { useUser } from '@/context/UserContext'
 import { CancelApplicationDialog } from '@/features/applications/components/CancelApplicationDialog'
 import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
 import { PrelimStageTasksPanel } from '@/features/prelim/components/PrelimStageTasksPanel'
+import { PrelimApplicationMessages } from '@/features/prelim/components/PrelimApplicationMessages'
 import { normalizeStatus, normalizeTaskRoles } from '@/lib/utils/taskHelpers'
 
 type Props = {
@@ -283,6 +284,7 @@ export function PrelimApplicationCard({
                 <span className="text-sm font-medium">{company.daysOverdue} days overdue</span>
               </div>
             )}
+            <PrelimApplicationMessages application={company} />
             <button
               onClick={(e) => {
                 e.stopPropagation()
