@@ -112,7 +112,6 @@ const TABS = [
   { id: 'task-events', label: 'Task Events', icon: ClipboardList },
   { id: 'emails', label: 'Emails', icon: Mail },
   { id: 'files', label: 'File Management', icon: Upload },
-  { id: 'notes', label: 'Messages', icon: MessageSquare },
 ] as const
 
 const SCHEDULE_A_TAB = { id: 'schedule-a', label: 'Schedule A', icon: ClipboardList } as const

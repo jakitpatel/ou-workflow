@@ -59,11 +59,6 @@ export const buildHtmlEmailFromPlainText = (
                 ${htmlBody}
               </td>
             </tr>
-            <tr>
-              <td style="padding:16px 28px;background-color:#f9fafb;border-top:1px solid #e5e7eb;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;color:#6b7280;">
-                This message was sent by OU Kosher Project Flow.
-              </td>
-            </tr>
           </table>
         </td>
       </tr>

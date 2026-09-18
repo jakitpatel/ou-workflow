@@ -144,7 +144,7 @@ What Happens Next
 
 1. Set Up Your OU Direct Account. You’ll be receiving an email with the subject line “Welcome to OU Direct” with instructions on how to set up your account with a temporary password.
 
-OU Direct is your online account with OU Kosher, and you can start using it to pay your invoice and search our millions of ingredient listings. Once you're certified, OU Direct is where you'll manage your kosher program. To receive your login, please reply to this letter or email your Account Manager below.
+OU Direct is your online account with OU Kosher, and you can start using it to pay your invoice and search our millions of ingredient listings. Once you're certified, OU Direct is where you'll manage your kosher program. If you haven't received your login, email your Account Manage below.
 
 2. Pay your initial evaluation invoice. Your invoice for the initial evaluation is enclosed. The easiest and safest way to pay is online at oudirect.org (U.S. bank accounts only). You can also pay by wire transfer or ACH; our bank details are on the invoice. Please don't send a check by mail.
 
