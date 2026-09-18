@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useUser } from '@/context/UserContext'
-import { buildNotificationBody, formatDate, formatInspectionContactName } from '@/features/applications/utils/inspectionNotification'
+import { buildInspectionContactLines, buildNotificationBody, formatDate, formatInspectionContactName } from '@/features/applications/utils/inspectionNotification'
 import { createApplicationMessage } from '@/features/applications/api'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
@@ -450,6 +450,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   const applicationLinkLabel = applicant?.company || 'Application'
   const defaultEmailSubject = `OU Kosher - Inspection Assignment for ${applicant?.plant || 'Plant'} [${accountNumber || 'Application'}]`
   const defaultEmailBody = buildNotificationBody({
+    ...buildInspectionContactLines(applicationDetail),
     rfrName: formatInspectionContactName(selectedRfr?.name),
     senderName: formatInspectionContactName(applicationDetail?.DesignatedNCRC),
     plant: applicant?.plant || '',

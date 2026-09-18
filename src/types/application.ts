@@ -492,9 +492,11 @@ export type CompanyContactGroups = {
 export interface PlantAddress {
   street: string
   line2?: string
+  street2?: string
   city: string
   state: string
   zip: string
+  postalCode?: string
   country?: string
   type: string // "Billing" | "Physical" ... (if you want, I can enum this)
 }

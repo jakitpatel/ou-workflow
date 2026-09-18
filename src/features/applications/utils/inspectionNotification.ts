@@ -1,3 +1,30 @@
+import type { ApplicationDetail } from '@/types/application'
+
+export const buildInspectionContactLines = (application?: ApplicationDetail) => {
+  const addresses = application?.plantAddresses ?? []
+  const address = addresses.find((entry) => entry.type?.toLowerCase() === 'physical') ?? addresses[0]
+  const addressText = address
+    ? [address.street, address.line2 || address.street2, address.city, address.state, address.zip || address.postalCode, address.country]
+        .map((part) => part?.trim())
+        .filter(Boolean)
+        .join(', ')
+    : ''
+  const contacts = application?.companyContacts
+  const primaryContacts = Array.isArray(contacts)
+    ? contacts.filter((contact) => contact.type?.toLowerCase() === 'primary contact')
+    : contacts?.primaryContact ?? contacts?.PrimaryContact ?? []
+
+  return {
+    plantAddressLines: addressText ? [`Address: ${addressText}`] : [],
+    primaryContactLines: primaryContacts.flatMap((contact) => [
+      ...(contact.name?.trim() ? [`Primary Contact: ${contact.name.trim()}`] : []),
+      ...(contact.role?.trim() ? [`Role: ${contact.role.trim()}`] : []),
+      ...(contact.email?.trim() ? [`Email: ${contact.email.trim()}`] : []),
+      ...(contact.phone?.trim() ? [`Phone: ${contact.phone.trim()}`] : []),
+    ]),
+  }
+}
+
 export const formatInspectionContactName = (
   contact?: { PREFIX?: string | null; LAST?: string | null; FIRST?: string | null } | string | null,
 ): string => {
@@ -27,6 +54,8 @@ export const buildNotificationBody = ({
   senderName,
   plant,
   company,
+  plantAddressLines = [],
+  primaryContactLines = [],
   accountNumber,
   applicationLinkLabel,
   accountApplicationUrl,
@@ -38,6 +67,8 @@ export const buildNotificationBody = ({
   senderName: string
   plant: string
   company: string
+  plantAddressLines?: string[]
+  primaryContactLines?: string[]
   accountNumber: string
   applicationLinkLabel: string
   accountApplicationUrl: string
@@ -51,8 +82,10 @@ export const buildNotificationBody = ({
     `You've been assigned an initial inspection by ${senderName || 'NCRC'}. Please review the plant and set your planned visit date.`,
     '',
     `Plant: ${plant || '-'}`,
+    ...plantAddressLines,
     '',
     `Company: ${company || '-'}`,
+    ...primaryContactLines,
     '',
     `Account #: ${accountNumber || '-'}`,
     ...(accountApplicationUrl ? ['', `Application link: ${applicationLinkLabel}`] : []),
