@@ -6,6 +6,8 @@ const STORAGE_KEYS = {
   oauthState: "oauth_state",
   pkceCodeVerifier: "pkce_code_verifier",
   authRedirect: "auth_redirect",
+  rfrSession: "rfr_session",
+  rfrApplicationId: "rfr_application_id",
 } as const;
 
 function getItem(key: string): string | null {
@@ -155,8 +157,26 @@ export function consumeAuthRedirectUrl(defaultPath = "/"): URL {
 }
 
 export function clearSessionArtifacts(): void {
+  removeItem(STORAGE_KEYS.rfrApplicationId);
+  removeItem(STORAGE_KEYS.rfrSession);
   clearTokenStorage();
   clearPendingOAuthState();
   clearOAuthHandledFlag();
   clearAuthRedirect();
+}
+
+export function enableRfrSession(): void {
+  setItem(STORAGE_KEYS.rfrSession, "1");
+}
+
+export function isRfrSession(): boolean {
+  return getItem(STORAGE_KEYS.rfrSession) === "1";
+}
+
+export function storeRfrApplicationId(applicationId: string): void {
+  setItem(STORAGE_KEYS.rfrApplicationId, applicationId);
+}
+
+export function getRfrApplicationId(): string | null {
+  return getItem(STORAGE_KEYS.rfrApplicationId);
 }

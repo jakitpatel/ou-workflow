@@ -7,6 +7,7 @@ import { useSaveProfileLayoutMutation } from '@/features/profile/hooks/useSavePr
 import { getBuildInfo } from '@/lib/utils'
 import type { NavigationMenuType, PaginationMode, StageLayout } from '@/types/application'
 import { PageShell } from '@/components/layout/PageShell'
+import { isRfrAccessRestricted } from '@/features/auth/model/rfrAccess'
 
 export const Route = createFileRoute('/_authed/profile')({
   component: ProfilePage,
@@ -45,6 +46,7 @@ function ProfilePage() {
     roles,
     setRole,
   } = useUser()
+  const rfrView = isRfrAccessRestricted({ role, roles })
   const {
     apiBaseUrl,
     stageLayout,
@@ -96,6 +98,7 @@ function ProfilePage() {
 
   const handleRoleChange = useCallback(
     (selectedValue: string) => {
+      if (rfrView) return
       if (selectedValue === role) return
 
       if (selectedValue === 'ALL') {
@@ -107,7 +110,7 @@ function ProfilePage() {
       setShowRoleChangeSuccess(true)
       setTimeout(() => setShowRoleChangeSuccess(false), 2000)
     },
-    [role, setRole],
+    [rfrView, role, setRole],
   )
 
   const handleStageLayoutChange = (value: 'horizontal' | 'mixed') => {
@@ -176,7 +179,9 @@ function ProfilePage() {
               <h2 className="text-lg font-semibold text-gray-900">Role Selection</h2>
             </div>
             <div className="px-6 py-5">
-              {hasRoles ? (
+              {rfrView ? (
+                <p className="text-sm text-gray-600">RFR application access is active for this session.</p>
+              ) : hasRoles ? (
                 <div className="space-y-3">
                   <label htmlFor="role-select" className="block text-sm font-medium text-gray-700">
                     Select your active role

@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 
 import { useUser } from '@/context/UserContext'
 import { buildInspectionContactLines, buildNotificationBody, formatDate, formatInspectionContactName } from '@/features/applications/utils/inspectionNotification'
+import { buildRfrApplicationUrl } from '@/features/applications/utils/rfrApplicationLink'
 import { createApplicationMessage } from '@/features/applications/api'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
@@ -109,20 +110,6 @@ const joinEmailAddresses = (...values: Array<string | null | undefined>) =>
 const getAccountNumber = (applicant?: Applicant) =>
   String(applicant?.companyId ?? applicant?.externalReferenceId ?? applicant?.applicationId ?? '').trim()
 
-const buildFilteredApplicationUrl = (applicationId: string) => {
-  const params = new URLSearchParams({
-    q: '',
-    status: 'all',
-    priority: 'all',
-    page: '0',
-    myOnly: 'true',
-    applicationId,
-  })
-  const basePath = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
-  const appPath = `${basePath && basePath !== '/' ? basePath : ''}/ou-workflow/ncrc-dashboard?${params.toString()}`
-
-  return typeof window === 'undefined' ? appPath : new URL(appPath, window.location.origin).toString()
-}
 
 const normalizeMatchText = (value: unknown) => normalizeText(value).toLowerCase()
 
@@ -443,7 +430,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
 
   const accountNumber = getAccountNumber(applicant)
   const accountApplicationUrl = resolvedApplicationId
-    ? buildFilteredApplicationUrl(resolvedApplicationId)
+    ? buildRfrApplicationUrl(resolvedApplicationId)
     : ''
   const assignmentStartDate = todayYmd()
   const assignmentEndDate = addDaysToYmd(assignmentStartDate, 90)

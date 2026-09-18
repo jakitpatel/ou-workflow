@@ -5,6 +5,7 @@ import { isAuthenticated } from '@/auth/authService'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { storeAuthRedirect } from '@/features/auth/model/sessionManager'
 import { AuthenticatedEventsProvider } from '@/app/providers/EventsProvider'
+import { getStoredRfrRedirect } from '@/features/auth/model/rfrAccess'
 
 export const Route = createFileRoute('/_authed')({
   beforeLoad: ({ location }) => {
@@ -13,6 +14,8 @@ export const Route = createFileRoute('/_authed')({
       storeAuthRedirect(location.href)
       throw redirect({ to: '/login' })
     }
+    const rfrRedirect = getStoredRfrRedirect(location.pathname)
+    if (rfrRedirect) throw redirect({ to: rfrRedirect, replace: true })
   },
   component: AuthedLayout,
 })

@@ -1,21 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type React from 'react'
 import {
-  Upload,
   CheckCircle,
-  FileText,
-  Building,
-  Users,
-  Package,
-  Beaker,
   Send,
   MessageSquare,
   AlertTriangle,
   Check,
   X,
   Shield,
-  ClipboardList,
-  Mail,
   Paperclip,
   Eye,
 } from 'lucide-react'
@@ -38,6 +30,7 @@ import { ContractStageDrawer } from '@/features/applications/components/Contract
 import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import type { Applicant, ApplicationDetail, ApplicationEmail } from '@/types/application'
+import { getApplicationDetailsTabs } from '@/features/applications/model/applicationDetailsTabs'
 
 type CompletionStatus = 'incomplete' | 'complete' | 'dispatched'
 type ActivityType = 'completion' | 'ingredient' | 'plant' | 'bulk' | 'company' | 'dispatch' | 'undo'
@@ -73,6 +66,7 @@ type Props = {
   showInterfaceLabel?: boolean
   dataSource?: 'application' | 'prelim'
   sourceApplicant?: Applicant
+  rfrView?: boolean
 }
 
 const resolveApplicationId = (
@@ -98,30 +92,6 @@ const resolveApplicationId = (
   return null
 }
 
-const TABS = [
-  { id: 'overview', label: 'Overview', icon: FileText },
-  { id: 'company', label: 'Company Details', icon: Building },
-  { id: 'contacts', label: 'Company Contacts', icon: Users },
-  { id: 'plants', label: 'Plants', icon: Building },
-  { id: 'products', label: 'Products', icon: Package },
-  { id: 'ingredients', label: 'Ingredients', icon: Beaker },
-  { id: 'raw-application', label: 'Raw Application', icon: FileText },
-  { id: 'quote', label: 'Quote', icon: FileText },
-  // Temporarily hidden from Application Details and Application Intake Details menus.
-  // { id: 'activity', label: 'Recent Activity', icon: AlertCircle },
-  { id: 'task-events', label: 'Task Events', icon: ClipboardList },
-  { id: 'emails', label: 'Emails', icon: Mail },
-  { id: 'files', label: 'File Management', icon: Upload },
-] as const
-
-const SCHEDULE_A_TAB = { id: 'schedule-a', label: 'Schedule A', icon: ClipboardList } as const
-const INSPECTION_INVOICE_TAB = {
-  id: 'inspection-invoice',
-  label: 'Inspection Invoice',
-  icon: FileText,
-} as const
-const SCHEDULE_B_TAB = { id: 'schedule-b', label: 'Schedule B', icon: Package } as const
-const CONTRACT_TAB = { id: 'contract', label: 'Contract', icon: FileText } as const
 
 const STATUS_BADGES: Record<string, string> = {
   'Not Started': 'bg-gray-100 text-gray-800',
@@ -578,8 +548,9 @@ export function ApplicationDetailsContent({
   showInterfaceLabel = true,
   dataSource = 'application',
   sourceApplicant,
+  rfrView = false,
 }: Props) {
-  const [activeTab, setActiveTab] = useState('overview')
+  const [selectedTab, setActiveTab] = useState(rfrView ? 'company' : 'overview')
   const [editMode] = useState(false)
   const [showRecentOnly, setShowRecentOnly] = useState(false)
   const [userRole] = useState('admin')
@@ -661,20 +632,8 @@ export function ApplicationDetailsContent({
     dataSource === 'prelim'
       ? 'Intake Application Review & Management'
       : 'Application Review & Management'
-  const tabs = useMemo(() => {
-    if (dataSource !== 'application') return TABS
-
-    const applicationTabs = TABS.filter((tab) => tab.id !== 'products' && tab.id !== 'ingredients')
-
-    return [
-      ...applicationTabs.slice(0, 4),
-      INSPECTION_INVOICE_TAB,
-      SCHEDULE_A_TAB,
-      SCHEDULE_B_TAB,
-      CONTRACT_TAB,
-      ...applicationTabs.slice(4),
-    ]
-  }, [dataSource])
+  const tabs = getApplicationDetailsTabs(dataSource, rfrView)
+  const activeTab = tabs.some((tab) => tab.id === selectedTab) ? selectedTab : tabs[0].id
   const applicationNotes = useTaskNotesDrawerState({
     applicationId: resolvedApplicationId,
   })
@@ -804,7 +763,7 @@ export function ApplicationDetailsContent({
               {pageTitle}
             </h1>
             {showInterfaceLabel ? (
-              <p className="text-gray-600">NCRC Preprocessing Interface</p>
+              <p className="text-gray-600">{rfrView ? 'RFR' : 'NCRC'} Preprocessing Interface</p>
             ) : null}
           </div>
           <div className="flex items-center space-x-4">
@@ -817,7 +776,7 @@ export function ApplicationDetailsContent({
         </div>
       </div>
 
-      {userRole === 'admin' && showAdminView && (
+      {!rfrView && userRole === 'admin' && showAdminView && (
         <div className="border-b bg-blue-50">
           <div
             className={

@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Bell, User, BarChart3, ClipboardList, LogOut, Settings, Inbox, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Bell, User, BarChart3, ClipboardList, FileText, LogOut, Settings, Inbox, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
+import { isRfrApplicationPath, isRfrAccessRestricted } from '@/features/auth/model/rfrAccess'
+import { getRfrApplicationId } from '@/features/auth/model/tokenStorage'
 
 // Navigation route constants
 const ROUTES = {
@@ -27,7 +29,8 @@ type LeftNavigationProps = {
 
 export function Navigation({ showMenu = true }: NavigationProps) {
   const location = useRouterState({ select: (s) => s.location.pathname })
-  const { username, role, logout } = useUser()
+  const { username, role, roles, logout } = useUser()
+  const rfrView = isRfrAccessRestricted({ role, roles }) || isRfrApplicationPath(location)
   const { apiBaseUrl } = useAppPreferences()
   const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -96,9 +99,9 @@ export function Navigation({ showMenu = true }: NavigationProps) {
           <div className="flex items-center space-x-4 sm:space-x-6">
             {/* Logo */}
             <Link
-              to={ROUTES.HOME}
+              to={rfrView ? ROUTES.PROFILE : ROUTES.HOME}
               className="flex items-center space-x-2 group"
-              aria-label="Home"
+              aria-label={rfrView ? 'Profile' : 'Home'}
             >
               <div className="w-7 h-7 bg-blue-600 rounded-md flex items-center justify-center group-hover:bg-blue-700 transition-colors">
                 <span className="text-white font-bold text-xs">OU</span>
@@ -109,7 +112,7 @@ export function Navigation({ showMenu = true }: NavigationProps) {
             </Link>
 
             {/* Navigation Menu */}
-            {showMenu && (
+            {showMenu && !rfrView && (
               <div className="hidden md:flex space-x-1">
                 <Link
                   to={ROUTES.NCRC_DASHBOARD}
@@ -157,13 +160,14 @@ export function Navigation({ showMenu = true }: NavigationProps) {
           {/* Right: API Info, Notifications & User Menu */}
           <div className="flex items-center space-x-2 sm:space-x-3 relative" ref={menuRef}>
             {/* API Base URL - Hidden on small screens */}
-            {apiBaseUrl && (
+            {apiBaseUrl && !rfrView && (
               <span className="hidden lg:inline text-xs sm:text-sm text-gray-500 mr-2 sm:mr-4">
                 API: {apiBaseUrl}
               </span>
             )}
 
             {/* Notifications */}
+            {!rfrView && (
             <button
               type="button"
               className="p-2 rounded-md hover:bg-gray-100 transition-colors"
@@ -171,6 +175,7 @@ export function Navigation({ showMenu = true }: NavigationProps) {
             >
               <Bell className="w-5 h-5 text-gray-500" aria-hidden="true" />
             </button>
+            )}
 
             {/* User Menu */}
             <button
@@ -230,7 +235,9 @@ export function Navigation({ showMenu = true }: NavigationProps) {
 
 export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationProps) {
   const location = useRouterState({ select: (s) => s.location.pathname })
-  const { username, role, logout } = useUser()
+  const { username, role, roles, logout } = useUser()
+  const rfrView = isRfrAccessRestricted({ role, roles }) || isRfrApplicationPath(location)
+  const rfrApplicationId = rfrView ? getRfrApplicationId() : null
   const queryClient = useQueryClient()
 
   const handleLogout = useCallback(() => {
@@ -269,9 +276,9 @@ export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationP
     >
       <div className="flex h-16 items-center justify-between border-b border-gray-200 px-3">
         <Link
-          to={ROUTES.HOME}
+          to={rfrView ? ROUTES.PROFILE : ROUTES.HOME}
           className={`flex min-w-0 items-center ${collapsed ? 'justify-center' : 'gap-2'}`}
-          aria-label="Home"
+          aria-label={rfrView ? 'Profile' : 'Home'}
         >
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white">
             OU
@@ -292,6 +299,7 @@ export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationP
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4">
+        {!rfrView && <>
         <Link
           to={ROUTES.NCRC_DASHBOARD}
           onClick={refreshApplicationsDashboardData}
@@ -341,6 +349,20 @@ export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationP
           {!collapsed ? <span className="truncate">Application Intake</span> : null}
         </Link>
 
+        </>}
+        {rfrApplicationId && (
+          <Link
+            to="/ou-workflow/rfr-dashboard/$applicationId"
+            params={{ applicationId: rfrApplicationId }}
+            className={linkClass(isRfrApplicationPath(location))}
+            aria-current={isRfrApplicationPath(location) ? 'page' : undefined}
+            aria-label="Application Details"
+            title="Application Details"
+          >
+            <FileText className={iconClass} aria-hidden="true" />
+            {!collapsed ? <span className="truncate">Application Details</span> : null}
+          </Link>
+        )}
         <Link
           to={ROUTES.PROFILE}
           className={linkClass(isActiveRoute('profile'))}
