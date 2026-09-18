@@ -1,11 +1,12 @@
-import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
+import { Outlet, createFileRoute, redirect, useRouterState } from '@tanstack/react-router'
 import { useState } from 'react'
 import { LeftNavigation, Navigation } from '@/components/layout/Navigation'
 import { isAuthenticated } from '@/auth/authService'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { storeAuthRedirect } from '@/features/auth/model/sessionManager'
 import { AuthenticatedEventsProvider } from '@/app/providers/EventsProvider'
-import { getStoredRfrRedirect } from '@/features/auth/model/rfrAccess'
+import { getStoredRfrRedirect, isRfrAccessRestricted, isRfrApplicationPath } from '@/features/auth/model/rfrAccess'
+import { useUser } from '@/context/UserContext'
 
 export const Route = createFileRoute('/_authed')({
   beforeLoad: ({ location }) => {
@@ -30,7 +31,17 @@ function AuthedLayout() {
 
 function AuthedNavigationLayout() {
   const { navigationMenuType } = useAppPreferences()
+  const { role, roles } = useUser()
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
   const [leftNavCollapsed, setLeftNavCollapsed] = useState(false)
+
+  if (isRfrAccessRestricted({ role, roles }) || isRfrApplicationPath(pathname)) {
+    return (
+      <main className="min-h-screen bg-gray-50">
+        <Outlet />
+      </main>
+    )
+  }
 
   if (navigationMenuType === 'left') {
     return (
