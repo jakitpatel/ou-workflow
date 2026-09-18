@@ -1,3 +1,4 @@
+import { EventsProvider } from '@/app/providers/EventsProvider'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNcrcDashboardState } from '@/features/applications/hooks/useNcrcDashboardState'
@@ -133,7 +134,7 @@ describe('useNcrcDashboardState', () => {
     }))
 
     try {
-      const { queryClient } = renderWithProviders(<DashboardStateHarness />)
+      const { queryClient } = renderWithProviders(<EventsProvider token="test-access-token"><DashboardStateHarness /></EventsProvider>)
       const key = applicationsQueryKeys.paged({ page: 0 })
       queryClient.setQueryData(key, { data: [{ applicationId: 1332, status: 'new' }] })
       fetchApplicantsMock.mockResolvedValue({ data: [{ applicationId: 1332, status: 'completed' }] })

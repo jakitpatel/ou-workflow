@@ -94,7 +94,7 @@ export function useNcrcDashboardState({
   const { q, status, priority, page, applicationId, myOnly } = search
   const { token, username } = useUser()
   const queryClient = useQueryClient()
-  const { apiBaseUrl, paginationMode } = useAppPreferences()
+  const { paginationMode } = useAppPreferences()
 
   const [myNotesOpen, setMyNotesOpen] = useState(false)
   const [myNotes, setMyNotes] = useState<MyMessagesByTab>(EMPTY_MY_MESSAGES)
@@ -304,11 +304,6 @@ export function useNcrcDashboardState({
     refetchIntervalInBackground: false,
   })
 
-  const sseEndpoint = useMemo(() => {
-    const normalizedBaseUrl = apiBaseUrl?.trim().replace(/\/+$/, '')
-    return normalizedBaseUrl ? `${normalizedBaseUrl}/events/` : '/events/'
-  }, [apiBaseUrl])
-
   const handleDashboardSSEMessage = useCallback(
     (message: SSEMessage) => {
       void refreshWorkflowApplicationFromEvent(message, queryClient, token).catch((error: unknown) => {
@@ -323,8 +318,6 @@ export function useNcrcDashboardState({
   )
 
   useSSE(handleDashboardSSEMessage, {
-    endpoint: sseEndpoint,
-    token,
     enabled: Boolean(token),
   })
 

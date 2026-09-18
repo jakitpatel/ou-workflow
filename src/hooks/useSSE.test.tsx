@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAccessToken, refreshAccessToken, cognitoLogout } from '@/auth/authService'
-import { useSSE } from './useSSE'
+import { useSSEConnection as useSSE } from '@/shared/api/useSSEConnection'
 import { executeRequest } from '@/shared/api/httpClient'
 
 vi.mock('@/auth/authService', () => ({

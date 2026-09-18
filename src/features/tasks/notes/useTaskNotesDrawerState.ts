@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import type { MyMessagesByTab } from '@/features/tasks/api'
 import { fetchMyMessages, markTaskNoteAsRead, updateTaskNoteTag } from '@/features/tasks/api'
@@ -274,7 +273,6 @@ export function useTaskNotesDrawerState({
   onError,
 }: UseTaskNotesDrawerStateParams) {
   const { username, token } = useUser()
-  const { apiBaseUrl } = useAppPreferences()
   const [drawer, setDrawer] = useState<DrawerState | null>(null)
   const [notesByContext, setNotesByContext] = useState<Record<string, NotesByTab<TaskNote>>>({})
   const [countsByContext, setCountsByContext] = useState<Record<string, ContextCounts>>({})
@@ -356,11 +354,6 @@ export function useTaskNotesDrawerState({
     refetchIntervalInBackground: false,
   })
 
-  const sseEndpoint = useMemo(() => {
-    const normalizedBaseUrl = apiBaseUrl?.trim().replace(/\/+$/, '')
-    return normalizedBaseUrl ? `${normalizedBaseUrl}/events/` : '/events/'
-  }, [apiBaseUrl])
-
   const visibleRootMessageIds = useMemo(() => {
     if (!drawer) return new Set<string>()
 
@@ -388,8 +381,6 @@ export function useTaskNotesDrawerState({
   )
 
   useSSE(handleSSEMessage, {
-    endpoint: sseEndpoint,
-    token,
     enabled: Boolean(token) && isMessageDrawerOpen,
   })
 

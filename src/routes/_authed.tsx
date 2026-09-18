@@ -4,6 +4,7 @@ import { LeftNavigation, Navigation } from '@/components/layout/Navigation'
 import { isAuthenticated } from '@/auth/authService'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { storeAuthRedirect } from '@/features/auth/model/sessionManager'
+import { AuthenticatedEventsProvider } from '@/app/providers/EventsProvider'
 
 export const Route = createFileRoute('/_authed')({
   beforeLoad: ({ location }) => {
@@ -17,6 +18,14 @@ export const Route = createFileRoute('/_authed')({
 })
 
 function AuthedLayout() {
+  return (
+    <AuthenticatedEventsProvider>
+      <AuthedNavigationLayout />
+    </AuthenticatedEventsProvider>
+  )
+}
+
+function AuthedNavigationLayout() {
   const { navigationMenuType } = useAppPreferences()
   const [leftNavCollapsed, setLeftNavCollapsed] = useState(false)
 

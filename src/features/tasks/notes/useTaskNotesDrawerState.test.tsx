@@ -1,3 +1,4 @@
+import { EventsProvider } from '@/app/providers/EventsProvider'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState'
@@ -755,7 +756,7 @@ describe('useTaskNotesDrawerState', () => {
     }))
 
     try {
-      renderWithProviders(<NotesHookHarness />)
+      renderWithProviders(<EventsProvider token="test-access-token"><NotesHookHarness /></EventsProvider>)
 
       fireEvent.click(screen.getByRole('button', { name: 'open-drawer' }))
 
@@ -843,7 +844,7 @@ describe('useTaskNotesDrawerState', () => {
     }))
 
     try {
-      renderWithProviders(<NotesHookHarness />)
+      renderWithProviders(<EventsProvider token="test-access-token"><NotesHookHarness /></EventsProvider>)
 
       fireEvent.click(screen.getByRole('button', { name: 'open-drawer' }))
 

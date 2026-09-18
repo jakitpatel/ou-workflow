@@ -25,17 +25,14 @@ export function usePrelimDashboardState() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
   const { token, username } = useUser()
-  const { paginationMode, apiBaseUrl } = useAppPreferences()
+  const { paginationMode } = useAppPreferences()
   const queryClient = useQueryClient()
   const handleSSEMessage = useCallback((message: SSEMessage) => {
     void refreshSubmissionApplicationFromEvent(message, queryClient, token).catch((error: unknown) => {
       console.error('Failed to refresh submission application', error)
     })
   }, [queryClient, token])
-  const baseUrl = apiBaseUrl?.trim().replace(/\/+$/, '')
   useSSE(handleSSEMessage, {
-    endpoint: baseUrl ? `${baseUrl}/events/` : '/events/',
-    token,
     enabled: Boolean(token),
   })
 
