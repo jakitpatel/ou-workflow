@@ -1,11 +1,16 @@
 export const formatInspectionContactName = (
   contact?: { PREFIX?: string | null; LAST?: string | null; FIRST?: string | null } | string | null,
 ): string => {
-  if (typeof contact === 'string') return contact.trim()
-  return [contact?.PREFIX, contact?.LAST, contact?.FIRST]
+  if (typeof contact === 'string') {
+    const parts = contact.split(',').map((part) => part.replace(/\s+/g, ' ').trim())
+    if (parts.length === 2) return [parts[1], parts[0]].filter(Boolean).join(' ')
+    if (parts.length === 3) return [parts[0], parts[2], parts[1]].filter(Boolean).join(' ')
+    return contact.replace(/\s+/g, ' ').trim()
+  }
+  return [contact?.PREFIX, contact?.FIRST, contact?.LAST]
     .map((part) => part?.replace(/\s+/g, ' ').trim() ?? '')
     .filter(Boolean)
-    .join(', ')
+    .join(' ')
 }
 
 export const formatDate = (ymd: string) => {

@@ -450,7 +450,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   const applicationLinkLabel = applicant?.company || 'Application'
   const defaultEmailSubject = `OU Kosher - Inspection Assignment for ${applicant?.plant || 'Plant'} [${accountNumber || 'Application'}]`
   const defaultEmailBody = buildNotificationBody({
-    rfrName: selectedRfr?.name || '',
+    rfrName: formatInspectionContactName(selectedRfr?.name),
     senderName: formatInspectionContactName(applicationDetail?.DesignatedNCRC),
     plant: applicant?.plant || '',
     company: applicant?.company || '',
