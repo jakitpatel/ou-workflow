@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Clock } from 'lucide-react'
+import { Clock, FileText } from 'lucide-react'
 import type { Applicant, Task } from '@/types/application'
 import { PrelimResolvedSection } from '@/features/prelim/components/PrelimResolvedSection'
 import { useUser } from '@/context/UserContext'
@@ -275,6 +275,14 @@ export function PrelimApplicationCard({
                 <span className="font-semibold text-gray-800">{assignedNcrc}</span>
               </div>
             )}
+            <div className="flex items-center gap-4 px-2 text-sm text-gray-500">
+              <span className="flex items-center">
+                <FileText className="w-4 h-4 mr-1" aria-hidden="true" />
+                <span className="sr-only">Documents:</span>
+                {company.documents ?? 0} docs
+              </span>
+              <PrelimApplicationMessages application={company} />
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -284,7 +292,6 @@ export function PrelimApplicationCard({
                 <span className="text-sm font-medium">{company.daysOverdue} days overdue</span>
               </div>
             )}
-            <PrelimApplicationMessages application={company} />
             <button
               onClick={(e) => {
                 e.stopPropagation()

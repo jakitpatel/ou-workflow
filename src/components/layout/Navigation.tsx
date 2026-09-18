@@ -335,10 +335,10 @@ export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationP
           }}
           className={linkClass(isActiveRoute('prelim-dashboard'))}
           aria-current={isActiveRoute('prelim-dashboard') ? 'page' : undefined}
-          title="Application Intake Dashboard"
+          title="Application Intake"
         >
           <Inbox className={iconClass} aria-hidden="true" />
-          {!collapsed ? <span className="truncate">Application Intake Dashboard</span> : null}
+          {!collapsed ? <span className="truncate">Application Intake</span> : null}
         </Link>
 
         <Link
