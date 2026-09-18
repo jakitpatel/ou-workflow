@@ -34,6 +34,48 @@ describe('useSSE', () => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
     vi.clearAllMocks()
+    vi.restoreAllMocks()
+  })
+
+  it('logs heartbeats without JSON errors and delivers subsequent events on the same stream', async () => {
+    const source = stream()
+    const fetch = vi.fn().mockResolvedValue(source.response)
+    vi.stubGlobal('fetch', fetch)
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const onMessage = vi.fn()
+    const { unmount } = renderHook(() => useSSE(onMessage, { token: 'access' }))
+    await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+    const workflow = { type: 'reload_workflow_application', data: { application_id: 1332, ApplicationType: 'WORKFLOW' } }
+    const messages = { type: 'refresh_messages', data: { ApplicationId: 1332, MessageId: null, root_conversation_id: null } }
+    await act(async () => {
+      source.controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(workflow)}\n\ndata: pi`))
+      source.controller.enqueue(new TextEncoder().encode(`ng\n\ndata: ping  \n\ndata: ${JSON.stringify(messages)}\n\n`))
+    })
+    expect(error).not.toHaveBeenCalled()
+    expect(onMessage).toHaveBeenCalledTimes(2)
+    expect(onMessage).toHaveBeenNthCalledWith(1, workflow)
+    expect(onMessage).toHaveBeenNthCalledWith(2, messages)
+    expect(log).toHaveBeenCalledWith('[SSE] event', workflow)
+    expect(log).toHaveBeenCalledWith('[SSE] event', messages)
+    expect(log.mock.calls.filter(([label]) => label === '[SSE] heartbeat')).toHaveLength(2)
+    expect(fetch).toHaveBeenCalledOnce()
+    unmount()
+  })
+
+  it('still reports malformed event payloads and continues processing valid events', async () => {
+    const source = stream()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(source.response))
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const onMessage = vi.fn()
+    const { unmount } = renderHook(() => useSSE(onMessage, { token: 'access' }))
+    await act(async () => {
+      source.controller.enqueue(new TextEncoder().encode('data: {broken\n\ndata: {"type":"ready"}\n\n'))
+    })
+    expect(error).toHaveBeenCalledExactlyOnceWith('Invalid SSE message', expect.any(Error), '{broken')
+    expect(onMessage).toHaveBeenCalledExactlyOnceWith({ type: 'ready' })
+    unmount()
   })
 
   it('allows delayed SSE headers beyond 30 seconds and still cancels on unmount', async () => {

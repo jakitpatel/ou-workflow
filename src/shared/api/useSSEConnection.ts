@@ -96,11 +96,17 @@ export function useSSEConnection(
         }
         const parse = createSSEParser(
           (data) => {
+            if (controller.signal.aborted) return
+            if (data.trim() === 'ping') {
+              console.log('[SSE] heartbeat', 'ping')
+              return
+            }
             try {
               const message = JSON.parse(data) as SSEMessage
-              if (!controller.signal.aborted) onMessageRef.current(message)
+              console.log('[SSE] event', message)
+              onMessageRef.current(message)
             } catch (error) {
-              console.error('Invalid SSE message', error)
+              console.error('Invalid SSE message', error, data)
             }
           },
           (id) => {
@@ -137,4 +143,3 @@ export function useSSEConnection(
     }
   }, [enabled, endpoint, token])
 }
-
