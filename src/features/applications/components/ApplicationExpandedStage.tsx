@@ -1,4 +1,6 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog'
+import { isExternalWaitTask } from '@/features/tasks/model/externalWaitTask'
 import {
   MessageSquare,
   Undo2,
@@ -90,6 +92,7 @@ export function ApplicationExpandedStage({
   applicant,
   handleTaskAction,
 }: Props) {
+  const [externalWaitTask, setExternalWaitTask] = useState<Task | null>(null)
   const { token, username, role, roles, delegated } = useUser()
   const { data: taskRolesAll = [] } = useFetchTaskRoles()
   const undoTaskMutation = useUndoTaskMutation({
@@ -155,15 +158,25 @@ export function ApplicationExpandedStage({
               task.capacity = action.capacity
               const taskId = getTaskInstanceId(task)
               const isCompleted = task.status?.toLowerCase() === 'completed'
+              const isExternalWait = isExternalWaitTask(task)
+              const canOpenTask = isExternalWait || !action.disabled
+              const openTask = (event: React.MouseEvent) => {
+                event.stopPropagation()
+                if (isExternalWait) {
+                  setExternalWaitTask(task)
+                } else if (!action.disabled) {
+                  handleTaskAction?.(event, applicant, task)
+                }
+              }
               const isUndoing =
                 undoTaskMutation.isPending && undoTaskMutation.variables?.taskId === taskId
 
               return (
                 <div
                   key={task.TaskInstanceId || index}
-                  onClick={action.disabled ? undefined : (e) => handleTaskAction?.(e, applicant, task)}
+                  onClick={canOpenTask ? openTask : undefined}
                   className={`rounded border-l-4 bg-white p-3 shadow-sm ${
-                    action.disabled ? '' : 'cursor-pointer hover:shadow-md'
+                    canOpenTask ? 'cursor-pointer hover:shadow-md' : ''
                   } ${getTaskBorderClass(
                     task.status || ''
                   )}`}
@@ -171,7 +184,7 @@ export function ApplicationExpandedStage({
                   <div className="mb-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        {action.disabled ? (
+                        {!canOpenTask ? (
                           <span
                             className="text-sm font-semibold leading-tight text-gray-900"
                             title={task.description || 'No description available'}
@@ -180,7 +193,7 @@ export function ApplicationExpandedStage({
                           </span>
                         ) : (
                           <button
-                            onClick={e => handleTaskAction?.(e, applicant, task)}
+                            onClick={openTask}
                             title={task.description || 'No description available'}
                             className="rounded bg-blue-600 px-2 py-1 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
@@ -362,6 +375,19 @@ export function ApplicationExpandedStage({
           </div>
         </div>
       )}
+      <Dialog open={externalWaitTask !== null} onOpenChange={(open) => { if (!open) setExternalWaitTask(null) }}>
+        <DialogContent>
+          <DialogTitle className="text-lg font-semibold">Waiting for external event</DialogTitle>
+          <DialogDescription className="text-sm text-gray-600">
+            Waiting for external "{externalWaitTask?.name}" event.
+          </DialogDescription>
+          <div className="flex justify-end">
+            <DialogClose className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+              Close
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
       <TaskNotesDrawer
         open={Boolean(taskNotes.drawer)}
         applicantCompany={applicant.company}
