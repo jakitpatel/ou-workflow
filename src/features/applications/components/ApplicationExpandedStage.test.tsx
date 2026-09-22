@@ -24,11 +24,11 @@ function setup(classification: Partial<Task>) {
   return onAction
 }
 
-describe('external wait stage tasks', () => {
+describe('external confirmation stage tasks', () => {
   it.each([
-    { taskType: 'WAIT', taskCategory: 'EXTERNAL' },
-    { taskType: ' wait ', taskCategory: ' external ' },
-    { TaskType: 'WAIT', TaskCategory: 'EXTERNAL' },
+    { taskType: 'CONFIRM', taskCategory: 'EXTERNAL' },
+    { taskType: ' confirm ', taskCategory: ' external ' },
+    { TaskType: 'CONFIRM', TaskCategory: 'EXTERNAL' },
   ])('opens a dismissible informational dialog for %j', (classification) => {
     const onAction = setup(classification)
     fireEvent.click(screen.getByRole('button', { name: 'Receive signed contract' }))
@@ -40,7 +40,8 @@ describe('external wait stage tasks', () => {
 
   it.each([
     { taskType: 'ACTION', taskCategory: 'EXTERNAL' },
-    { taskType: 'WAIT', taskCategory: 'CONFIRMATION' },
+    { taskType: 'WAIT', taskCategory: 'EXTERNAL' },
+    { taskType: 'CONFIRM', taskCategory: 'CONFIRMATION' },
   ])('preserves disabled behavior for other task classifications %j', (classification) => {
     const onAction = setup(classification)
     fireEvent.click(screen.getByText('Receive signed contract'))

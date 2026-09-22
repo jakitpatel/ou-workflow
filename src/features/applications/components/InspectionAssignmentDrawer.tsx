@@ -13,15 +13,14 @@ import { refreshApplicationInListCaches } from '@/features/applications/cache/ap
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import {
-  buildInspectionStatusDetails,
   getInspectionStatusInputParam,
 } from '@/features/applications/utils/inspectionStatusDetails'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
-import { patchTaskGuiDisplayResult, patchTaskResult } from '@/features/tasks/api'
+import { patchTaskGuiDisplayResult } from '@/features/tasks/api'
 import { useAssignTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
-import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
+import { withPatchedTaskGuiDisplayResult } from '@/features/applications/cache/assignmentTaskResult'
 import { detectRole } from '@/lib/utils/taskHelpers'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
@@ -137,118 +136,6 @@ const replaceApplicationLinkLabel = ({
 
 const getTaskInstanceId = (task?: Task): string =>
   String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '').trim()
-
-const getRawTaskInstanceId = (value: unknown): string => {
-  const record = value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
-  return String(record.TaskInstanceId ?? record.taskInstanceId ?? record.id ?? '').trim()
-}
-
-const withPatchedTaskGuiDisplayResult = (
-  value: unknown,
-  taskId: string,
-  guiDisplayResult?: string,
-  statusDetails?: unknown,
-): unknown => {
-  if (!value || typeof value !== 'object') return value
-
-  if (Array.isArray(value)) {
-    const nextValue = value.map((item) =>
-      withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult, statusDetails),
-    )
-    return nextValue.some((item, index) => item !== value[index]) ? nextValue : value
-  }
-
-  const record = value as Record<string, any>
-  const recordTaskId = getRawTaskInstanceId(record)
-  let changed = false
-  let nextRecord = record
-
-  if (recordTaskId && recordTaskId === taskId) {
-    changed = true
-    nextRecord = {
-      ...nextRecord,
-      ...(statusDetails ? { StatusDetails: statusDetails, statusDetails } : {}),
-      ...(guiDisplayResult
-        ? {
-            GUIDisplayResult: guiDisplayResult,
-            ResultData: {
-              GUIDisplayResult: guiDisplayResult,
-            },
-          }
-        : {}),
-    }
-  }
-
-  if (Array.isArray(record.data)) {
-    const nextData = record.data.map((item) =>
-      withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult, statusDetails),
-    )
-    if (nextData.some((item, index) => item !== record.data[index])) {
-      changed = true
-      nextRecord = { ...nextRecord, data: nextData }
-    }
-  }
-
-  if (Array.isArray(record.pages)) {
-    const nextPages = record.pages.map((page) =>
-      withPatchedTaskGuiDisplayResult(page, taskId, guiDisplayResult, statusDetails),
-    )
-    if (nextPages.some((page, index) => page !== record.pages[index])) {
-      changed = true
-      nextRecord = { ...nextRecord, pages: nextPages }
-    }
-  }
-
-  if (record.stages && typeof record.stages === 'object') {
-    let stagesChanged = false
-    const nextStages = Object.fromEntries(
-      Object.entries(record.stages).map(([stageKey, stageValue]) => {
-        if (!stageValue || typeof stageValue !== 'object') return [stageKey, stageValue]
-        const stageRecord = stageValue as Record<string, any>
-        if (!Array.isArray(stageRecord.tasks)) return [stageKey, stageValue]
-
-        const nextTasks = stageRecord.tasks.map((stageTask) =>
-          withPatchedTaskGuiDisplayResult(stageTask, taskId, guiDisplayResult, statusDetails),
-        )
-        if (!nextTasks.some((stageTask, index) => stageTask !== stageRecord.tasks[index])) {
-          return [stageKey, stageValue]
-        }
-
-        stagesChanged = true
-        return [stageKey, { ...stageRecord, tasks: nextTasks }]
-      }),
-    )
-
-    if (stagesChanged) {
-      changed = true
-      nextRecord = { ...nextRecord, stages: nextStages }
-    }
-  }
-
-  return changed ? nextRecord : value
-}
-
-const findVisitDateTaskId = (applicant?: Applicant): string => {
-  const tasks = Object.values(applicant?.stages ?? {}).flatMap((stage) => stage.tasks ?? [])
-  const visitDateTask = tasks.find((stageTask) => {
-    const taskCategory = normalizeMatchText((stageTask as any)?.taskCategory ?? (stageTask as any)?.TaskCategory)
-    const taskType = normalizeMatchText((stageTask as any)?.taskType ?? (stageTask as any)?.TaskType)
-    const taskName = normalizeMatchText((stageTask as any)?.name ?? (stageTask as any)?.TaskName)
-
-    return (
-      taskCategory === TASK_CATEGORIES.VISIT &&
-      taskType === TASK_TYPES.ACTION &&
-      (!taskName || taskName.includes('visit date'))
-    )
-  }) ?? tasks.find((stageTask) => {
-    const taskCategory = normalizeMatchText((stageTask as any)?.taskCategory ?? (stageTask as any)?.TaskCategory)
-    const taskType = normalizeMatchText((stageTask as any)?.taskType ?? (stageTask as any)?.TaskType)
-
-    return taskCategory === TASK_CATEGORIES.VISIT && taskType === TASK_TYPES.ACTION
-  })
-
-  return getTaskInstanceId(visitDateTask)
-}
 
 const extractRfrFromTaskResult = (task?: Task): string => {
   const rawResult = normalizeText(
@@ -561,12 +448,6 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       toast.error('Task instance id not found')
       return
     }
-    const visitDateTaskId = findVisitDateTaskId(applicant)
-    if (!visitDateTaskId) {
-      toast.error('Visit Date task instance id not found')
-      return
-    }
-
     setIsSendingAssignmentMessage(true)
     try {
       const assignResponse = await assignTaskMutation.mutateAsync({
@@ -626,12 +507,6 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         token,
       })
 
-      const rfrResultValue =
-        selectedRfr.userName || selectedRfr.assigneeValue || selectedRfr.id || selectedRfr.lookupKey || selectedRfr.name
-      const dateRangeResultValue = `${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`
-      const visitDateStatusDetails = buildInspectionStatusDetails(
-        `{RFR:${rfrResultValue}, visitId:"${nextVisitId}", Daterange:"${dateRangeResultValue}"}`,
-      )
       const assignmentSentDate = new Date()
       const assignmentGuiDisplayResult = buildAssignmentGuiDisplayResult({
         rfr: selectedRfr,
@@ -647,13 +522,6 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         token,
       })
       updateCachedAssignmentTaskResult(taskId, assignmentGuiDisplayResult)
-
-      await patchTaskResult({
-        taskId: visitDateTaskId,
-        result: visitDateStatusDetails,
-        token,
-      })
-      updateCachedAssignmentTaskResult(visitDateTaskId, undefined, visitDateStatusDetails)
 
       await Promise.all([
         refreshApplicationInListCaches({
