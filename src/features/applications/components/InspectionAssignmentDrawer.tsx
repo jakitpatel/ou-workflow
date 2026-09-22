@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useUser } from '@/context/UserContext'
+import { InspectionEmailBodyPreview } from './InspectionEmailBodyPreview'
 import { buildInspectionContactLines, buildNotificationBody, formatDate, formatInspectionContactName } from '@/features/applications/utils/inspectionNotification'
 import { buildRfrApplicationUrl } from '@/features/applications/utils/rfrApplicationLink'
 import { createApplicationMessage } from '@/features/applications/api'
@@ -255,31 +256,6 @@ function Section({ title, children }: { title: React.ReactNode; children: React.
       {children}
     </section>
   )
-}
-
-function EmailBodyPreview({ body, applicationUrl }: { body: string; applicationUrl: string }) {
-  return body.split('\n').map((line, index) => {
-    const applicationLinkLabel = line.match(/^Application link:\s*(.*)$/)?.[1]
-
-    return (
-      <span key={`${index}-${line}`}>
-        {applicationLinkLabel !== undefined && applicationUrl ? (
-          <>
-            Application link:{' '}
-            <a
-              href={applicationUrl}
-              className="font-semibold text-blue-700 underline hover:text-blue-800"
-            >
-              {applicationLinkLabel || applicationUrl}
-            </a>
-          </>
-        ) : (
-          line
-        )}
-        {index < body.split('\n').length - 1 ? '\n' : null}
-      </span>
-    )
-  })
 }
 
 export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: Props) {
@@ -887,7 +863,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
                   <InfoRow label="Subject" value={emailSubject} />
                 </div>
                 <div className="whitespace-pre-wrap rounded border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">
-                  <EmailBodyPreview
+                  <InspectionEmailBodyPreview
                     body={emailMessageBody}
                     applicationUrl={accountApplicationUrl}
                   />
