@@ -159,9 +159,10 @@ export function ApplicationExpandedStage({
               const taskId = getTaskInstanceId(task)
               const isCompleted = task.status?.toLowerCase() === 'completed'
               const isExternalWait = isExternalWaitTask(task)
-              const canOpenTask = isExternalWait || !action.disabled
+              const canOpenTask = !action.disabled
               const openTask = (event: React.MouseEvent) => {
                 event.stopPropagation()
+                if (!canOpenTask) return
                 if (isExternalWait) {
                   setExternalWaitTask(task)
                 } else if (!action.disabled) {
