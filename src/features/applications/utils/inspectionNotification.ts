@@ -1,5 +1,20 @@
 import type { ApplicationDetail } from '@/types/application'
 
+const buildPrimaryContactLines = (
+  contacts: ApplicationDetail['companyContacts'] | ApplicationDetail['plantContacts'],
+) => {
+  const primaryContacts = Array.isArray(contacts)
+    ? contacts.filter((contact) => contact.type?.toLowerCase() === 'primary contact')
+    : contacts?.primaryContact ?? contacts?.PrimaryContact ?? []
+
+  return primaryContacts.flatMap((contact) => [
+    ...(contact.name?.trim() ? [`Primary Contact: ${contact.name.trim()}`] : []),
+    ...(contact.role?.trim() ? [`Role: ${contact.role.trim()}`] : []),
+    ...(contact.email?.trim() ? [`Email: ${contact.email.trim()}`] : []),
+    ...(contact.phone?.trim() ? [`Phone: ${contact.phone.trim()}`] : []),
+  ])
+}
+
 export const buildInspectionContactLines = (application?: ApplicationDetail) => {
   const addresses = application?.plantAddresses ?? []
   const address = addresses.find((entry) => entry.type?.toLowerCase() === 'physical') ?? addresses[0]
@@ -9,19 +24,10 @@ export const buildInspectionContactLines = (application?: ApplicationDetail) => 
         .filter(Boolean)
         .join(', ')
     : ''
-  const contacts = application?.companyContacts
-  const primaryContacts = Array.isArray(contacts)
-    ? contacts.filter((contact) => contact.type?.toLowerCase() === 'primary contact')
-    : contacts?.primaryContact ?? contacts?.PrimaryContact ?? []
-
   return {
     plantAddressLines: addressText ? [`Address: ${addressText}`] : [],
-    primaryContactLines: primaryContacts.flatMap((contact) => [
-      ...(contact.name?.trim() ? [`Primary Contact: ${contact.name.trim()}`] : []),
-      ...(contact.role?.trim() ? [`Role: ${contact.role.trim()}`] : []),
-      ...(contact.email?.trim() ? [`Email: ${contact.email.trim()}`] : []),
-      ...(contact.phone?.trim() ? [`Phone: ${contact.phone.trim()}`] : []),
-    ]),
+    plantPrimaryContactLines: buildPrimaryContactLines(application?.plantContacts),
+    primaryContactLines: buildPrimaryContactLines(application?.companyContacts),
   }
 }
 
@@ -55,6 +61,7 @@ export const buildNotificationBody = ({
   plant,
   company,
   plantAddressLines = [],
+  plantPrimaryContactLines = [],
   primaryContactLines = [],
   accountNumber,
   // applicationLinkLabel,
@@ -68,6 +75,7 @@ export const buildNotificationBody = ({
   plant: string
   company: string
   plantAddressLines?: string[]
+  plantPrimaryContactLines?: string[]
   primaryContactLines?: string[]
   accountNumber: string
   applicationLinkLabel: string
@@ -83,6 +91,7 @@ export const buildNotificationBody = ({
     '',
     `Plant: ${plant || '-'}`,
     ...plantAddressLines,
+    ...plantPrimaryContactLines,
     '',
     `Company: ${company || '-'}`,
     ...primaryContactLines,
