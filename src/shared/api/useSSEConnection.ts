@@ -4,6 +4,9 @@ import { executeRequest } from '@/shared/api/httpClient'
 import { isAppError } from '@/shared/api/errors'
 import { createSSEParser } from '@/shared/api/sseParser'
 
+// Allow two missed heartbeats when the server sends traffic every 15–30 seconds.
+const STREAM_IDLE_TIMEOUT_MS = 60000
+
 export type SSEMessage = {
   type?: unknown
   data?: {
@@ -59,6 +62,22 @@ export function useSSEConnection(
     let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
     async function connect() {
       let reconnect = true
+      const requestController = new AbortController()
+      let idleTimer: ReturnType<typeof setTimeout> | undefined
+      let timedOut = false
+      const abortRequest = () => {
+        clearTimeout(idleTimer)
+        requestController.abort()
+      }
+      controller.signal.addEventListener('abort', abortRequest, { once: true })
+      const resetIdleTimer = () => {
+        clearTimeout(idleTimer)
+        idleTimer = setTimeout(() => {
+          timedOut = true
+          requestController.abort()
+          void reader?.cancel().catch(() => {})
+        }, STREAM_IDLE_TIMEOUT_MS)
+      }
       try {
         // Refresh stores the new token; prefer it over stale context on reconnect.
         const accessToken = getAccessToken() ?? token
@@ -73,7 +92,7 @@ export function useSSEConnection(
         if (lastEventId) headers.set('Last-Event-ID', lastEventId)
         const response = await executeRequest(
           url,
-          { headers, signal: controller.signal, cache: 'no-store', timeoutMs: false },
+          { headers, signal: requestController.signal, cache: 'no-store', timeoutMs: false },
           accessToken,
         )
         if (controller.signal.aborted) {
@@ -117,10 +136,14 @@ export function useSSEConnection(
           },
         )
         reader = response.body.getReader()
+        resetIdleTimer()
         const decoder = new TextDecoder()
         while (!controller.signal.aborted) {
           const { done, value } = await reader.read()
+          if (timedOut) throw new Error('SSE stream timed out after 60 seconds without data')
           if (done) break
+          // Count raw traffic, including comment heartbeats and split SSE frames.
+          if (value.byteLength) resetIdleTimer()
           parse(decoder.decode(value, { stream: true }))
         }
       } catch (error) {
@@ -130,6 +153,8 @@ export function useSSEConnection(
           onErrorRef.current?.(new Event('error'))
         }
       } finally {
+        clearTimeout(idleTimer)
+        controller.signal.removeEventListener('abort', abortRequest)
         reader?.releaseLock()
         reader = undefined
         if (reconnect && !controller.signal.aborted) timer = setTimeout(connect, retryMs)

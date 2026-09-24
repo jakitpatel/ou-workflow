@@ -106,6 +106,65 @@ describe('useSSE', () => {
     expect(source.cancel).toHaveBeenCalledOnce()
   })
 
+  it('reconnects a silent stream, retries while the server is down, and receives new events', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    const source = stream()
+    const restarted = stream()
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(source.response)
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(restarted.response)
+    vi.stubGlobal('fetch', fetch)
+    const onMessage = vi.fn()
+    const onError = vi.fn()
+    const { unmount } = renderHook(() => useSSE(onMessage, { token: 'access', onError }))
+    await act(async () => { await vi.advanceTimersByTimeAsync(59999) })
+    expect(source.cancel).not.toHaveBeenCalled()
+    await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+    expect(source.cancel).toHaveBeenCalledOnce()
+    expect(fetch.mock.calls[0][1].signal.aborted).toBe(true)
+    expect(onError).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledOnce()
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
+    expect(fetch).toHaveBeenCalledTimes(3)
+    expect(fetch.mock.calls[2][1].signal.aborted).toBe(false)
+    await act(async () => {
+      restarted.controller.enqueue(new TextEncoder().encode('data: {"type":"refresh_messages"}\n\n'))
+    })
+    expect(onMessage).toHaveBeenCalledExactlyOnceWith({ type: 'refresh_messages' })
+    unmount()
+    await act(async () => { await vi.advanceTimersByTimeAsync(120000) })
+    expect(fetch).toHaveBeenCalledTimes(3)
+    expect(restarted.cancel).toHaveBeenCalledOnce()
+  })
+
+  it.each(['data: ping\n\n', ': ping\n\n', 'data: {"type":"refresh_messages"}\n\n'])(
+    'resets the idle timeout on incoming traffic: %j',
+    async (frame) => {
+      vi.useFakeTimers()
+      vi.spyOn(console, 'log').mockImplementation(() => {})
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const source = stream()
+      const fetch = vi.fn().mockResolvedValue(source.response)
+      vi.stubGlobal('fetch', fetch)
+      const { unmount } = renderHook(() => useSSE(vi.fn(), { token: 'access' }))
+      for (let index = 0; index < 4; index++) {
+        await act(async () => { await vi.advanceTimersByTimeAsync(30000) })
+        await act(async () => { source.controller.enqueue(new TextEncoder().encode(frame)) })
+      }
+      await act(async () => { await vi.advanceTimersByTimeAsync(59999) })
+      expect(source.cancel).not.toHaveBeenCalled()
+      expect(fetch).toHaveBeenCalledOnce()
+      await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+      expect(source.cancel).toHaveBeenCalledOnce()
+      unmount()
+      await act(async () => { await vi.advanceTimersByTimeAsync(120000) })
+      expect(fetch).toHaveBeenCalledOnce()
+    },
+  )
+
   it('keeps the 30-second timeout for ordinary API requests', async () => {
     vi.useFakeTimers()
     vi.stubGlobal('fetch', vi.fn((_url: string, options: RequestInit) =>
