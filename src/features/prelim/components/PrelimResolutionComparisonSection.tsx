@@ -1,3 +1,4 @@
+import { PrelimMatchSelector } from './PrelimMatchSelector'
 import { ComparisonCard } from './PrelimResolutionComparisonCard'
 import { PrelimCompanyWebContactRow } from './PrelimCompanyWebContactRow'
 import type { IgnoredResolutionContacts } from '@/features/prelim/model/resolution'
@@ -63,6 +64,7 @@ type Props = {
   isManualPlantError: boolean
   setEditableCompanyData: Dispatch<SetStateAction<CompanyData>>
   setEditablePlantData: Dispatch<SetStateAction<PlantData>>
+  onSearchCompanySelect?: (match: Match) => void
   onMatchChange: (event: ChangeEvent<HTMLSelectElement>) => void
   onCreateNew: () => void | Promise<void>
   onCreatePrimaryCompanyContact?: () => void | Promise<void>
@@ -118,6 +120,7 @@ export function PrelimResolutionComparisonSection({
   setEditableCompanyData,
   setEditablePlantData,
   onMatchChange,
+  onSearchCompanySelect,
   onCreateNew,
   onCreatePrimaryCompanyContact,
   onCreateBillingCompanyContact,
@@ -146,8 +149,6 @@ export function PrelimResolutionComparisonSection({
     setEditableSection((current) => (current === section ? null : section))
   }
 
-  const selectedMatchIsListed =
-    selectedMatch != null && matches.some((match) => String(match.Id) === String(selectedMatch.Id))
   const companySubmittedCityStateZip = formatSubmittedCityStateZip(
     companyData.companyCity,
     companyData.companyState,
@@ -191,45 +192,19 @@ export function PrelimResolutionComparisonSection({
     <div className="flex-1 overflow-y-auto bg-white px-7 py-7">
       <div className="sticky top-0 z-10 -mt-3 mb-4 flex flex-col gap-3 border-b border-gray-100 bg-white py-3 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-base font-semibold text-[#1e1e2e]">Field Comparison</h3>
-        <select
-          value={
-            isManualCompanyIdEntry || isManualPlantIdEntry
-              ? isCompany
-                ? 'manual-company-id'
-                : 'manual-plant-id'
-              : selectedMatch
-                ? String(selectedMatch.Id)
-                : 'create-new'
-          }
-          onChange={onMatchChange}
-          className="w-full min-w-[220px] rounded-[7px] border border-gray-200 bg-white px-[14px] py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-auto"
-        >
-          {matches.map((match, idx) => (
-            <option key={String(match.Id)} value={String(match.Id)}>
-              Match {idx + 1}: {isCompany ? match.companyName : match.plantName} - #
-              {match.Id} ({match.matchRating}%)
-              {match.status ? ` - ${match.status}` : ''}
-            </option>
-          ))}
-          {selectedMatch &&
-            !selectedMatchIsListed &&
-            !isManualCompanyIdEntry &&
-            !isManualPlantIdEntry && (
-            <option value={String(selectedMatch.Id)}>
-              Created: {isCompany ? selectedMatch.companyName : selectedMatch.plantName} - #
-              {selectedMatch.Id}
-            </option>
-          )}
-          {isCompany && (
-            <option value="manual-company-id">+ Add a Company ID to the intake</option>
-          )}
-          {!isCompany && (
-            <option value="manual-plant-id">+ Add a Plant ID to the intake</option>
-          )}
-          <option value="create-new">
-            + No Match - Create New {isCompany ? 'Company' : 'Plant'}
-          </option>
-        </select>
+        <PrelimMatchSelector
+          isCompany={isCompany}
+          companyName={companyData.companyName}
+          matches={matches}
+          selectedMatch={selectedMatch}
+          isManualCompanyIdEntry={isManualCompanyIdEntry}
+          isManualPlantIdEntry={isManualPlantIdEntry}
+          isCreatedCompany={isCreatedCompany}
+          isCreatedPlant={isCreatedPlant}
+          onMatchChange={onMatchChange}
+          onSearchCompanySelect={onSearchCompanySelect}
+          searchDisabled={!drawerActionable || isSubmitting || isCreatingNew}
+        />
       </div>
 
       {isCompany && isManualCompanyIdEntry && (

@@ -8,6 +8,8 @@ type PrelimListParams = {
 
 export const prelimQueryKeys = {
   all: ['prelim'] as const,
+  companySearch: (companyName: string, page: number) =>
+    [...prelimQueryKeys.all, 'company-search', companyName, page] as const,
   lists: () => [...prelimQueryKeys.all, 'list'] as const,
   list: (params: PrelimListParams) => [...prelimQueryKeys.lists(), params] as const,
   details: () => [...prelimQueryKeys.all, 'detail'] as const,

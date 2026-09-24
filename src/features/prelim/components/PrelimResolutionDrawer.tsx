@@ -45,6 +45,7 @@ import type {
 } from '@/features/prelim/model/resolution'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { getResolutionDbContacts } from '@/features/prelim/lib/prelimResolutionDbContacts'
+import { useResolutionMatch } from '@/features/prelim/hooks/useResolutionMatch'
 
 export function PrelimResolutionDrawer({
   isOpen,
@@ -77,7 +78,9 @@ export function PrelimResolutionDrawer({
   const [manualCompanyId, setManualCompanyId] = useState('')
   const [isManualPlantIdEntry, setIsManualPlantIdEntry] = useState(false)
   const [manualPlantId, setManualPlantId] = useState('')
-  const [createdMatch, setCreatedMatch] = useState<Match | null>(null)
+  const { selectedMatch, setSelectedMatch, createdMatch, setCreatedMatch } = useResolutionMatch(
+    matches, selectedId, `${type}:${applicationId ?? ''}:${taskInstanceId ?? ''}`,
+  )
   const [confirmedCompanyMatch, setConfirmedCompanyMatch] = useState<Match | null>(null)
   const [confirmedPlantMatch, setConfirmedPlantMatch] = useState<Match | null>(null)
   const [createdCompanyContacts, setCreatedCompanyContacts] = useState({
@@ -94,24 +97,6 @@ export function PrelimResolutionDrawer({
   const [editablePlantData, setEditablePlantData] = useState<PlantData>(() =>
     createDefaultPlantData()
   )
-  const selectedIdNormalized =
-    selectedId != null && String(selectedId).trim() !== '' ? String(selectedId) : undefined
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(
-    matches.find((m) => String(m.Id) === selectedIdNormalized) ||
-      (matches.length > 0 ? matches[0] : null)
-  )
-
-  useEffect(() => {
-    if (createdMatch) {
-      setSelectedMatch(createdMatch)
-      return
-    }
-
-    const nextMatch =
-      matches.find((m) => String(m.Id) === selectedIdNormalized) ??
-      (matches.length > 0 ? matches[0] : null)
-    setSelectedMatch(nextMatch)
-  }, [createdMatch, matches, selectedIdNormalized])
 
   useEffect(() => {
     if (!isOpen) return
@@ -660,6 +645,15 @@ export function PrelimResolutionDrawer({
           setEditableCompanyData={setEditableCompanyData}
           setEditablePlantData={setEditablePlantData}
           onMatchChange={handleMatchChange}
+          onSearchCompanySelect={(match) => {
+            if (!drawerActionable || isSubmitting || isCreatingNew) return
+            setCreatedMatch(null)
+            setSelectedMatch(match)
+            setConfirmedCompanyMatch(null)
+            setCreatedCompanyContacts({ primary: false, billing: false })
+            setIsManualCompanyIdEntry(false)
+            setManualCompanyId('')
+          }}
           onCreateNew={handleCreateNew}
           onCreatePrimaryCompanyContact={() => handleCreateCompanyContact('primary')}
           onCreateBillingCompanyContact={() => handleCreateCompanyContact('billing')}
