@@ -7,7 +7,7 @@ import { CompanySearchDialog } from './CompanySearchDialog'
 import { createDefaultCompanyData, createDefaultPlantData } from '../lib/prelimResolution'
 
 vi.mock('@/shared/api/httpClient', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@/shared/api/httpClient')>(),
+  ...(await importOriginal<typeof import('@/shared/api/httpClient')>()),
   fetchWithAuth: vi.fn(),
 }))
 vi.mock('@/context/UserContext', async (importOriginal) => ({
@@ -16,19 +16,38 @@ vi.mock('@/context/UserContext', async (importOriginal) => ({
 }))
 
 const found = {
-  id: 'contact-row-7',
-  type: 'v_CompanyContactsAndAddresses',
-  attributes: {
-    COMPANY_ID: '1443584',
-    NAME: 'Naturally Homegrown Foods Distribution',
-    CITY: 'Vancouver',
-    STREET1: '120 Market Road',
-    Email: 'sam@example.com',
-    Status: 'Pending',
-  },
+  COMPANY_ID: 1443584,
+  NAME: 'Naturally Homegrown Foods Distribution',
+  CITY: 'Vancouver',
+  STREET1: '120 Market Road',
+  ADDRESS_SEQ_NUM: 3,
+  TYPE: 'Physical',
+  ATTN: null,
+  STREET3: 'Ontario',
+  COUNTRY: 'Canada',
 }
 
 describe('company search in the resolution drawer', () => {
+  it('renders flat billing and physical rows without metadata and selects their shared company ID', async () => {
+    vi.mocked(fetchWithAuth).mockResolvedValue({
+      data: [{ ...found, ADDRESS_SEQ_NUM: 2, TYPE: 'Billing', ATTN: '' }, found],
+    })
+    const onSelect = vi.fn()
+    const onClose = vi.fn()
+    renderWithProviders(
+      <CompanySearchDialog companyName="Foods" onClose={onClose} onSelect={onSelect} />,
+    )
+    await screen.findByText('Billing')
+    expect(screen.getByText('Physical')).toBeTruthy()
+    expect(screen.getAllByText('120 Market Road, Ontario, Vancouver, Canada')).toHaveLength(2)
+    fireEvent.click(
+      screen.getAllByRole('button', { name: /Naturally Homegrown Foods Distribution/ })[1],
+    )
+    expect(onSelect).toHaveBeenCalledWith(
+      expect.objectContaining({ Id: 1443584, companyName: found.NAME }),
+    )
+    expect(onClose).toHaveBeenCalledOnce()
+  })
   beforeEach(() => {
     vi.resetAllMocks()
   })
@@ -60,9 +79,7 @@ describe('company search in the resolution drawer', () => {
     expect(
       vi
         .mocked(fetchWithAuth)
-        .mock.calls.some(([request]) =>
-          request.path.startsWith('/get_company_address'),
-        ),
+        .mock.calls.some(([request]) => request.path.startsWith('/get_company_address')),
     ).toBe(false)
     fireEvent.click(screen.getByRole('button', { name: 'Search Company' }))
     const dialog = screen.getByRole('dialog', { name: 'Search Company' })
@@ -82,12 +99,10 @@ describe('company search in the resolution drawer', () => {
     )
     const searchRequest = vi
       .mocked(fetchWithAuth)
-      .mock.calls.find(([request]) =>
-        request.path.startsWith('/get_company_address'),
-      )![0]
-    expect(
-      new URL(searchRequest.path, 'http://localhost').searchParams.get('company_name'),
-    ).toBe('Naturally Homegrown Foods Ltd.')
+      .mock.calls.find(([request]) => request.path.startsWith('/get_company_address'))![0]
+    expect(new URL(searchRequest.path, 'http://localhost').searchParams.get('company_name')).toBe(
+      'Naturally Homegrown Foods Ltd.',
+    )
     expect(
       (screen.getByRole('combobox', { name: 'Matching list' }) as HTMLSelectElement).value,
     ).toBe('1443584')

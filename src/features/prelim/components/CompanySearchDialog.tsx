@@ -101,25 +101,26 @@ export function CompanySearchDialog({
                   <tr>
                     <th className="p-3">Company / ID</th>
                     <th className="p-3">Address</th>
-                    <th className="p-3">Contact</th>
-                    <th className="p-3">Status</th>
+                    <th className="p-3">Address type</th>
                   </tr>
                 </thead>
                 <tbody>
                   {records.map((record, index) => {
-                    const company = record.attributes
+                    const company = record
                     const address = [
                       company.STREET1,
                       company.STREET2,
+                      company.STREET3,
                       company.CITY,
                       company.STATE,
                       company.ZIP,
+                      company.COUNTRY,
                     ]
                       .filter(Boolean)
                       .join(', ')
                     return (
                       <tr
-                        key={`${record.id}-${index}`}
+                        key={`${company.COMPANY_ID}-${company.ADDRESS_SEQ_NUM}-${index}`}
                         className="border-t border-gray-100 hover:bg-indigo-50"
                       >
                         <td className="p-3">
@@ -135,7 +136,6 @@ export function CompanySearchDialog({
                                 companyName: company.NAME,
                                 Address: address,
                                 City: company.CITY ?? '',
-                                status: company.Status ?? undefined,
                               })
                               onClose()
                             }}
@@ -147,15 +147,7 @@ export function CompanySearchDialog({
                           </button>
                         </td>
                         <td className="p-3">{address || '—'}</td>
-                        <td className="p-3">
-                          <div>
-                            {[company.FirstName, company.LastName].filter(Boolean).join(' ')}
-                          </div>
-                          <div>{company.Email}</div>
-                          <div>{company.Voice}</div>
-                          <div className="text-xs text-gray-500">{company.ContactType}</div>
-                        </td>
-                        <td className="p-3">{company.Status || '—'}</td>
+                        <td className="p-3">{company.TYPE || '—'}</td>
                       </tr>
                     )
                   })}

@@ -1,23 +1,18 @@
 import { fetchWithAuth } from '@/shared/api/httpClient'
 
 export type CompanySearchRecord = {
-  id: string
-  type: string
-  attributes: {
-    COMPANY_ID: string | number
-    NAME: string
-    CITY?: string | null
-    STATE?: string | null
-    STREET1?: string | null
-    STREET2?: string | null
-    ZIP?: string | null
-    FirstName?: string | null
-    LastName?: string | null
-    Email?: string | null
-    Voice?: string | null
-    ContactType?: string | null
-    Status?: string | null
-  }
+  COMPANY_ID: string | number
+  NAME: string
+  CITY?: string | null
+  STATE?: string | null
+  STREET1?: string | null
+  STREET2?: string | null
+  ZIP?: string | null
+  STREET3?: string | null
+  COUNTRY?: string | null
+  TYPE?: string | null
+  ATTN?: string | null
+  ADDRESS_SEQ_NUM?: number | null
 }
 
 export type CompanySearchResponse = {
@@ -37,7 +32,7 @@ export function searchCompanies({
   token?: string
 }) {
   const params = new URLSearchParams({
-    'company_name': companyName.trim(),
+    company_name: companyName.trim(),
     'page[limit]': String(COMPANY_SEARCH_PAGE_SIZE),
     'page[offset]': String(page * COMPANY_SEARCH_PAGE_SIZE),
   })
