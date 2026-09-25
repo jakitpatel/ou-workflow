@@ -4,13 +4,13 @@ export type CompanySearchRecord = {
   id: string
   type: string
   attributes: {
-    companyID: string | number
-    Company: string
-    City?: string | null
-    State?: string | null
-    Street1?: string | null
-    Street2?: string | null
-    Zip?: string | null
+    COMPANY_ID: string | number
+    NAME: string
+    CITY?: string | null
+    STATE?: string | null
+    STREET1?: string | null
+    STREET2?: string | null
+    ZIP?: string | null
     FirstName?: string | null
     LastName?: string | null
     Email?: string | null
@@ -37,12 +37,12 @@ export function searchCompanies({
   token?: string
 }) {
   const params = new URLSearchParams({
-    'filter[Company]': companyName.trim(),
+    'company_name': companyName.trim(),
     'page[limit]': String(COMPANY_SEARCH_PAGE_SIZE),
     'page[offset]': String(page * COMPANY_SEARCH_PAGE_SIZE),
   })
   return fetchWithAuth<CompanySearchResponse>({
-    path: `/api/CompanyContactsAndAddresses?${params}`,
+    path: `/get_company_address?${params}`,
     token,
   })
 }

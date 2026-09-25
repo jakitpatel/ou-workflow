@@ -19,10 +19,10 @@ const found = {
   id: 'contact-row-7',
   type: 'v_CompanyContactsAndAddresses',
   attributes: {
-    companyID: '1443584',
-    Company: 'Naturally Homegrown Foods Distribution',
-    City: 'Vancouver',
-    Street1: '120 Market Road',
+    COMPANY_ID: '1443584',
+    NAME: 'Naturally Homegrown Foods Distribution',
+    CITY: 'Vancouver',
+    STREET1: '120 Market Road',
     Email: 'sam@example.com',
     Status: 'Pending',
   },
@@ -35,7 +35,7 @@ describe('company search in the resolution drawer', () => {
 
   it('searches the submitted name, selects by companyID, loads Kashrus details, and can switch back to a suggested match', async () => {
     vi.mocked(fetchWithAuth).mockImplementation(async ({ path }) => {
-      if (path.startsWith('/api/CompanyContactsAndAddresses')) return { data: [found] }
+      if (path.startsWith('/get_company_address')) return { data: [found] }
       if (path.includes('companyID=1443584'))
         return [
           {
@@ -61,7 +61,7 @@ describe('company search in the resolution drawer', () => {
       vi
         .mocked(fetchWithAuth)
         .mock.calls.some(([request]) =>
-          request.path.startsWith('/api/CompanyContactsAndAddresses'),
+          request.path.startsWith('/get_company_address'),
         ),
     ).toBe(false)
     fireEvent.click(screen.getByRole('button', { name: 'Search Company' }))
@@ -83,10 +83,10 @@ describe('company search in the resolution drawer', () => {
     const searchRequest = vi
       .mocked(fetchWithAuth)
       .mock.calls.find(([request]) =>
-        request.path.startsWith('/api/CompanyContactsAndAddresses'),
+        request.path.startsWith('/get_company_address'),
       )![0]
     expect(
-      new URL(searchRequest.path, 'http://localhost').searchParams.get('filter[Company]'),
+      new URL(searchRequest.path, 'http://localhost').searchParams.get('company_name'),
     ).toBe('Naturally Homegrown Foods Ltd.')
     expect(
       (screen.getByRole('combobox', { name: 'Matching list' }) as HTMLSelectElement).value,
@@ -109,7 +109,7 @@ describe('company search in the resolution drawer', () => {
     await waitFor(() =>
       expect(fetchWithAuth).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          path: '/api/CompanyContactsAndAddresses?filter%5BCompany%5D=Foods+%26+Co&page%5Blimit%5D=25&page%5Boffset%5D=0',
+          path: '/get_company_address?company_name=Foods+%26+Co&page%5Blimit%5D=25&page%5Boffset%5D=0',
         }),
       ),
     )

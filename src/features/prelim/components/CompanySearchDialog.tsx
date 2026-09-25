@@ -109,11 +109,11 @@ export function CompanySearchDialog({
                   {records.map((record, index) => {
                     const company = record.attributes
                     const address = [
-                      company.Street1,
-                      company.Street2,
-                      company.City,
-                      company.State,
-                      company.Zip,
+                      company.STREET1,
+                      company.STREET2,
+                      company.CITY,
+                      company.STATE,
+                      company.ZIP,
                     ]
                       .filter(Boolean)
                       .join(', ')
@@ -127,22 +127,22 @@ export function CompanySearchDialog({
                             type="button"
                             className="text-left font-medium text-indigo-700 hover:underline"
                             disabled={
-                              company.companyID == null || String(company.companyID).trim() === ''
+                              company.COMPANY_ID == null || String(company.COMPANY_ID).trim() === ''
                             }
                             onClick={() => {
                               onSelect({
-                                Id: company.companyID,
-                                companyName: company.Company,
+                                Id: company.COMPANY_ID,
+                                companyName: company.NAME,
                                 Address: address,
-                                City: company.City ?? '',
+                                City: company.CITY ?? '',
                                 status: company.Status ?? undefined,
                               })
                               onClose()
                             }}
                           >
-                            {company.Company || 'Unnamed company'}
+                            {company.NAME || 'Unnamed company'}
                             <span className="block text-xs text-gray-500">
-                              #{company.companyID}
+                              #{company.COMPANY_ID}
                             </span>
                           </button>
                         </td>
