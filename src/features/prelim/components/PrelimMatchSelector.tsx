@@ -72,7 +72,7 @@ export function PrelimMatchSelector({
             </option>
           )}
         {isCompany && onSearchCompanySelect && (
-          <option value="search-company" disabled={searchDisabled}>Search Company</option>
+          <option value="search-company" disabled={searchDisabled}>+ Search Company</option>
         )}
         {isCompany && <option value="manual-company-id">+ Add a Company ID to the intake</option>}
         {!isCompany && <option value="manual-plant-id">+ Add a Plant ID to the intake</option>}

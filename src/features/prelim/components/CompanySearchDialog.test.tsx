@@ -37,9 +37,7 @@ describe('company search in the resolution drawer', () => {
     renderWithProviders(
       <CompanySearchDialog companyName="Foods" onClose={onClose} onSelect={onSelect} />,
     )
-    await screen.findByText('Billing')
-    expect(screen.getByText('Physical')).toBeTruthy()
-    expect(screen.getAllByText('120 Market Road, Ontario, Vancouver, Canada')).toHaveLength(2)
+    expect(await screen.findAllByText('120 Market Road, Ontario, Vancouver, Canada')).toHaveLength(2)
     fireEvent.click(
       screen.getAllByRole('button', { name: /Naturally Homegrown Foods Distribution/ })[1],
     )
@@ -165,7 +163,7 @@ describe('company search in the resolution drawer', () => {
       />,
     )
     expect(
-      (screen.getByRole('option', { name: 'Search Company' }) as HTMLOptionElement).disabled,
+      (screen.getByRole('option', { name: '+ Search Company' }) as HTMLOptionElement).disabled,
     ).toBe(true)
     unmount()
     renderWithProviders(
@@ -178,6 +176,6 @@ describe('company search in the resolution drawer', () => {
         onAssign={vi.fn()}
       />,
     )
-    expect(screen.queryByRole('option', { name: 'Search Company' })).toBeNull()
+    expect(screen.queryByRole('option', { name: '+ Search Company' })).toBeNull()
   })
 })

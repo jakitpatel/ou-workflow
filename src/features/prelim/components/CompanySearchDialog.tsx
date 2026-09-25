@@ -102,7 +102,6 @@ export function CompanySearchDialog({
                     <th className="p-3">Company / ID</th>
                     <th className="p-3">Address</th>
                     <th className="p-3">Status</th>
-                    <th className="p-3">Address type</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -150,7 +149,6 @@ export function CompanySearchDialog({
                         </td>
                         <td className="p-3">{address || '—'}</td>
                         <td className="p-3">{company.STATUS || '—'}</td>
-                        <td className="p-3">{company.TYPE || '—'}</td>
                       </tr>
                     )
                   })}
