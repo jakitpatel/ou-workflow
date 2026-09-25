@@ -81,7 +81,16 @@ describe('company search in the resolution drawer', () => {
         .mocked(fetchWithAuth)
         .mock.calls.some(([request]) => request.path.startsWith('/get_company_address')),
     ).toBe(false)
-    fireEvent.click(screen.getByRole('button', { name: 'Search Company' }))
+    expect(screen.queryByRole('button', { name: 'Search Company' })).toBeNull()
+    fireEvent.change(screen.getByRole('combobox', { name: 'Matching list' }), {
+      target: { value: 'search-company' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Close company search' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect((screen.getByRole('combobox', { name: 'Matching list' }) as HTMLSelectElement).value).toBe('1356853')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Matching list' }), {
+      target: { value: 'search-company' },
+    })
     const dialog = screen.getByRole('dialog', { name: 'Search Company' })
     expect((within(dialog).getByLabelText('Company name') as HTMLInputElement).value).toBe(
       'Naturally Homegrown Foods Ltd.',
@@ -156,7 +165,7 @@ describe('company search in the resolution drawer', () => {
       />,
     )
     expect(
-      (screen.getByRole('button', { name: 'Search Company' }) as HTMLButtonElement).disabled,
+      (screen.getByRole('option', { name: 'Search Company' }) as HTMLOptionElement).disabled,
     ).toBe(true)
     unmount()
     renderWithProviders(
@@ -169,6 +178,6 @@ describe('company search in the resolution drawer', () => {
         onAssign={vi.fn()}
       />,
     )
-    expect(screen.queryByRole('button', { name: 'Search Company' })).toBeNull()
+    expect(screen.queryByRole('option', { name: 'Search Company' })).toBeNull()
   })
 })

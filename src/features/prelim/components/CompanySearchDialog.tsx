@@ -101,6 +101,7 @@ export function CompanySearchDialog({
                   <tr>
                     <th className="p-3">Company / ID</th>
                     <th className="p-3">Address</th>
+                    <th className="p-3">Status</th>
                     <th className="p-3">Address type</th>
                   </tr>
                 </thead>
@@ -136,6 +137,7 @@ export function CompanySearchDialog({
                                 companyName: company.NAME,
                                 Address: address,
                                 City: company.CITY ?? '',
+                                status: company.STATUS ?? undefined,
                               })
                               onClose()
                             }}
@@ -147,6 +149,7 @@ export function CompanySearchDialog({
                           </button>
                         </td>
                         <td className="p-3">{address || '—'}</td>
+                        <td className="p-3">{company.STATUS || '—'}</td>
                         <td className="p-3">{company.TYPE || '—'}</td>
                       </tr>
                     )

@@ -11,6 +11,7 @@ export type CompanySearchRecord = {
   STREET3?: string | null
   COUNTRY?: string | null
   TYPE?: string | null
+  STATUS?: string | null
   ATTN?: string | null
   ADDRESS_SEQ_NUM?: number | null
 }
