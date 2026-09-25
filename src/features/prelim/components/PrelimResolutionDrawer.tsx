@@ -645,6 +645,15 @@ export function PrelimResolutionDrawer({
           setEditableCompanyData={setEditableCompanyData}
           setEditablePlantData={setEditablePlantData}
           onMatchChange={handleMatchChange}
+          onSearchPlantSelect={(match) => {
+            if (!drawerActionable || isSubmitting || isCreatingNew) return
+            setCreatedMatch(null)
+            setSelectedMatch(match)
+            setConfirmedPlantMatch(null)
+            setCreatedPlantContacts({ primary: false, marketing: false })
+            setIsManualPlantIdEntry(false)
+            setManualPlantId('')
+          }}
           onSearchCompanySelect={(match) => {
             if (!drawerActionable || isSubmitting || isCreatingNew) return
             setCreatedMatch(null)

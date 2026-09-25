@@ -1,10 +1,13 @@
 import { useState, type ChangeEvent } from 'react'
 import { CompanySearchDialog } from './CompanySearchDialog'
+import { PlantSearchDialog } from './PlantSearchDialog'
 import type { Match } from '../model/resolution'
 
 type Props = {
   isCompany: boolean
   companyName: string
+  plantName?: string
+  onSearchPlantSelect?: (match: Match) => void
   matches: Match[]
   selectedMatch: Match | null
   isManualCompanyIdEntry: boolean
@@ -19,6 +22,8 @@ type Props = {
 export function PrelimMatchSelector({
   isCompany,
   companyName,
+  plantName = '',
+  onSearchPlantSelect,
   matches,
   selectedMatch,
   isManualCompanyIdEntry,
@@ -50,6 +55,10 @@ export function PrelimMatchSelector({
             if (isCompany && onSearchCompanySelect && !searchDisabled) setSearchOpen(true)
             return
           }
+          if (event.target.value === 'search-plant') {
+            if (!isCompany && onSearchPlantSelect && !searchDisabled) setSearchOpen(true)
+            return
+          }
           onMatchChange(event)
         }}
         className="w-full min-w-0 flex-1 rounded-[7px] border border-gray-200 bg-white px-[14px] py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -72,10 +81,17 @@ export function PrelimMatchSelector({
             </option>
           )}
         {isCompany && onSearchCompanySelect && (
-          <option value="search-company" disabled={searchDisabled}>+ Search Company</option>
+          <option value="search-company" disabled={searchDisabled}>
+            + Search Company
+          </option>
         )}
         {isCompany && <option value="manual-company-id">+ Add a Company ID to the intake</option>}
         {!isCompany && <option value="manual-plant-id">+ Add a Plant ID to the intake</option>}
+        {!isCompany && onSearchPlantSelect && (
+          <option value="search-plant" disabled={searchDisabled}>
+            + Search Plant
+          </option>
+        )}
         <option value="create-new">
           + No Match - Create New {isCompany ? 'Company' : 'Plant'}
         </option>
@@ -85,6 +101,13 @@ export function PrelimMatchSelector({
           companyName={companyName}
           onClose={() => setSearchOpen(false)}
           onSelect={onSearchCompanySelect}
+        />
+      )}
+      {!isCompany && searchOpen && onSearchPlantSelect && (
+        <PlantSearchDialog
+          plantName={plantName}
+          onClose={() => setSearchOpen(false)}
+          onSelect={onSearchPlantSelect}
         />
       )}
     </div>

@@ -65,6 +65,7 @@ type Props = {
   setEditableCompanyData: Dispatch<SetStateAction<CompanyData>>
   setEditablePlantData: Dispatch<SetStateAction<PlantData>>
   onSearchCompanySelect?: (match: Match) => void
+  onSearchPlantSelect?: (match: Match) => void
   onMatchChange: (event: ChangeEvent<HTMLSelectElement>) => void
   onCreateNew: () => void | Promise<void>
   onCreatePrimaryCompanyContact?: () => void | Promise<void>
@@ -121,6 +122,7 @@ export function PrelimResolutionComparisonSection({
   setEditablePlantData,
   onMatchChange,
   onSearchCompanySelect,
+  onSearchPlantSelect,
   onCreateNew,
   onCreatePrimaryCompanyContact,
   onCreateBillingCompanyContact,
@@ -195,6 +197,8 @@ export function PrelimResolutionComparisonSection({
         <PrelimMatchSelector
           isCompany={isCompany}
           companyName={companyData.companyName}
+          plantName={plantData.plantName}
+          onSearchPlantSelect={onSearchPlantSelect}
           matches={matches}
           selectedMatch={selectedMatch}
           isManualCompanyIdEntry={isManualCompanyIdEntry}
