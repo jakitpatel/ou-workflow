@@ -55,6 +55,7 @@ export function PrelimMatchSelector({
         }
         aria-label="Matching list"
         onChange={(event) => {
+          if (completed && ['manual-company-id', 'manual-plant-id', 'create-new'].includes(event.target.value)) return
           if (event.target.value === 'search-company') {
             if (isCompany && onSearchCompanySelect && (!searchDisabled || completed)) setSearchOpen(true)
             return
@@ -96,14 +97,14 @@ export function PrelimMatchSelector({
             + Search Company
           </option>
         )}
-        {isCompany && <option value="manual-company-id" disabled={searchDisabled && !completed}>+ Add a Company ID to the intake</option>}
-        {!isCompany && <option value="manual-plant-id" disabled={searchDisabled && !completed}>+ Add a Plant ID to the intake</option>}
+        {isCompany && <option value="manual-company-id" disabled={searchDisabled || completed}>+ Add a Company ID to the intake</option>}
+        {!isCompany && <option value="manual-plant-id" disabled={searchDisabled || completed}>+ Add a Plant ID to the intake</option>}
         {!isCompany && onSearchPlantSelect && (
           <option value="search-plant" disabled={searchDisabled && !completed}>
             + Search Plant
           </option>
         )}
-        <option value="create-new" disabled={searchDisabled && !completed}>
+        <option value="create-new" disabled={searchDisabled || completed}>
           + No Match - Create New {isCompany ? 'Company' : 'Plant'}
         </option>
       </select>

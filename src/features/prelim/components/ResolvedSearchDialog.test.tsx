@@ -21,8 +21,7 @@ it.each(['company', 'plant'] as const)('allows searching other %s records on com
     if (/get_company_address|get_plant_address/.test(path)) {
       return { data: [{ COMPANY_ID: 456, PLANT_ID: 456, NAME: 'Other record', STREET1: 'Other address' }] }
     }
-    const name = /(?:companyID|PlantId)=99/.test(path) ? 'Suggested details'
-      : /(?:companyID|PlantId)=789/.test(path) ? 'Manual details' : 'Resolved record'
+    const name = /(?:companyID|PlantId)=99/.test(path) ? 'Suggested details' : 'Resolved record'
     return [{ companyName: name, plantName: name }]
   })
   const onAssign = vi.fn()
@@ -60,7 +59,9 @@ it.each(['company', 'plant'] as const)('allows searching other %s records on com
   expect(screen.getByRole('dialog')).toBe(dialog)
   expect(within(dialog).getByText(/Resolved record.*#123/)).toBeTruthy()
   fireEvent.click(within(dialog).getByRole('button', { name: `Close ${type} search` }))
-  expect(within(selector).getAllByRole('option').every((option) => !(option as HTMLOptionElement).disabled)).toBe(true)
+  expect((within(selector).getByRole('option', { name: /Match 1:/ }) as HTMLOptionElement).disabled).toBe(false)
+  expect((within(selector).getByRole('option', { name: `+ Add a ${label} ID to the intake` }) as HTMLOptionElement).disabled).toBe(true)
+  expect((within(selector).getByRole('option', { name: `+ No Match - Create New ${label}` }) as HTMLOptionElement).disabled).toBe(true)
   fireEvent.change(selector, { target: { value: '99' } })
   await screen.findByText('Suggested details')
   expect(selector.value).toBe('99')
@@ -68,12 +69,10 @@ it.each(['company', 'plant'] as const)('allows searching other %s records on com
   expect(within(screen.getByRole('dialog')).getByText(/Resolved:.*#123/)).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: `Close ${type} search` }))
   fireEvent.change(selector, { target: { value: `manual-${type}-id` } })
-  fireEvent.change(screen.getByLabelText(`Kashrus ${label} ID`), { target: { value: '789' } })
-  fireEvent.click(screen.getByRole('button', { name: `Load ${label}` }))
-  await screen.findByText('Manual details')
-  expect((screen.getByRole('button', { name: /Complete Task/ }) as HTMLButtonElement).disabled).toBe(true)
+  expect(screen.queryByLabelText(`Kashrus ${label} ID`)).toBeNull()
+  expect(selector.value).toBe('99')
   fireEvent.change(selector, { target: { value: 'create-new' } })
-  expect(selector.value).toBe('create-new')
+  expect(selector.value).toBe('99')
   expect((screen.getByRole('button', { name: /Complete Task/ }) as HTMLButtonElement).disabled).toBe(true)
   fireEvent.change(selector, { target: { value: '123' } })
   await screen.findByText('Resolved record')
