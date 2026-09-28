@@ -6,15 +6,20 @@ import { useUser } from '@/context/UserContext'
 import { COMPANY_SEARCH_PAGE_SIZE, searchCompanies } from '../api/companySearch'
 import type { Match } from '../model/resolution'
 import { prelimQueryKeys } from '../model/queryKeys'
+import { ResolvedSearchRecord } from './ResolvedSearchRecord'
 
 export function CompanySearchDialog({
   companyName,
   onClose,
   onSelect,
+  readOnly = false,
+  resolvedMatch,
 }: {
   companyName: string
   onClose: () => void
   onSelect: (match: Match) => void
+  readOnly?: boolean
+  resolvedMatch?: Match | null
 }) {
   const { token } = useUser()
   const [input, setInput] = useState(companyName)
@@ -45,8 +50,9 @@ export function CompanySearchDialog({
         <Dialog.Content className="fixed left-1/2 top-1/2 z-[70] flex max-h-[85vh] w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-xl bg-white p-6 shadow-xl">
           <Dialog.Title className="text-lg font-semibold">Search Company</Dialog.Title>
           <Dialog.Description className="text-sm text-gray-600">
-            Search by company name and select a company to compare its Kashrus details with the
-            application.
+            {readOnly
+              ? 'This task is completed. Search and view companies; selection is disabled.'
+              : 'Search by company name and select a company to compare its Kashrus details with the application.'}
           </Dialog.Description>
           <Dialog.Close
             aria-label="Close company search"
@@ -54,6 +60,7 @@ export function CompanySearchDialog({
           >
             <X className="h-5 w-5" />
           </Dialog.Close>
+          {readOnly && <ResolvedSearchRecord isCompany match={resolvedMatch} />}
           <form
             className="flex items-end gap-2"
             onSubmit={(event) => {
@@ -126,11 +133,12 @@ export function CompanySearchDialog({
                         <td className="p-3">
                           <button
                             type="button"
-                            className="text-left font-medium text-indigo-700 hover:underline"
+                            className="text-left font-medium text-indigo-700 hover:underline disabled:text-gray-900 disabled:no-underline"
                             disabled={
-                              company.COMPANY_ID == null || String(company.COMPANY_ID).trim() === ''
+                              readOnly || company.COMPANY_ID == null || String(company.COMPANY_ID).trim() === ''
                             }
                             onClick={() => {
+                              if (readOnly) return
                               onSelect({
                                 Id: company.COMPANY_ID,
                                 companyName: company.NAME,

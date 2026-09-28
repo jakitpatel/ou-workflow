@@ -78,8 +78,10 @@ export function PrelimResolutionDrawer({
   const [manualCompanyId, setManualCompanyId] = useState('')
   const [isManualPlantIdEntry, setIsManualPlantIdEntry] = useState(false)
   const [manualPlantId, setManualPlantId] = useState('')
-  const { selectedMatch, setSelectedMatch, createdMatch, setCreatedMatch } = useResolutionMatch(
+  const isTaskCompleted = (taskStatus ?? '').trim().toLowerCase() === 'completed'
+  const { selectedMatch, setSelectedMatch, createdMatch, setCreatedMatch, resolvedMatch } = useResolutionMatch(
     matches, selectedId, `${type}:${applicationId ?? ''}:${taskInstanceId ?? ''}`,
+    isTaskCompleted,
   )
   const [confirmedCompanyMatch, setConfirmedCompanyMatch] = useState<Match | null>(null)
   const [confirmedPlantMatch, setConfirmedPlantMatch] = useState<Match | null>(null)
@@ -158,7 +160,6 @@ export function PrelimResolutionDrawer({
 
   if (!isOpen) return null
 
-  const isTaskCompleted = (taskStatus ?? '').trim().toLowerCase() === 'completed'
   const drawerActionable = !readOnly && isActionable && !isTaskCompleted
   const contactSectionActionable = drawerActionable
   const companyData = editableCompanyData
@@ -282,6 +283,7 @@ export function PrelimResolutionDrawer({
   }
 
   const handleMatchChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    if (!drawerActionable && !isTaskCompleted) return
     const matchId = event.target.value
     if (matchId === 'manual-company-id') {
       setCreatedMatch(null)
@@ -316,6 +318,7 @@ export function PrelimResolutionDrawer({
     }
 
     const match = matches.find((m) => String(m.Id) === matchId)
+      ?? (String(resolvedMatch?.Id) === matchId ? resolvedMatch : null)
     setCreatedMatch(null)
     setConfirmedCompanyMatch(null)
     setConfirmedPlantMatch(null)
@@ -673,6 +676,8 @@ export function PrelimResolutionDrawer({
           onCancelEdit={handleCancelEdit}
           onSaveAndConfirm={handleSaveAndConfirm}
           drawerActionable={drawerActionable}
+          isTaskCompleted={isTaskCompleted}
+          resolvedMatch={resolvedMatch}
           contactSectionActionable={contactSectionActionable}
           isCreatedCompany={isCompany && createdMatch != null}
           isCreatedPlant={!isCompany && createdMatch != null}

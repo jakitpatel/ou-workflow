@@ -77,6 +77,8 @@ type Props = {
   onCancelEdit: () => void
   onSaveAndConfirm: () => void | Promise<void>
   drawerActionable: boolean
+  isTaskCompleted?: boolean
+  resolvedMatch?: Match | null
   contactSectionActionable: boolean
   isCreatedCompany: boolean
   isCreatedPlant: boolean
@@ -133,6 +135,8 @@ export function PrelimResolutionComparisonSection({
   onCancelEdit,
   onSaveAndConfirm,
   drawerActionable,
+  isTaskCompleted = false,
+  resolvedMatch,
   contactSectionActionable,
   isCreatedCompany,
   isCreatedPlant,
@@ -208,6 +212,17 @@ export function PrelimResolutionComparisonSection({
           onMatchChange={onMatchChange}
           onSearchCompanySelect={onSearchCompanySelect}
           searchDisabled={!drawerActionable || isSubmitting || isCreatingNew}
+          completed={isTaskCompleted}
+          resolvedMatch={isTaskCompleted && String(resolvedMatch?.Id) !== String(selectedMatch?.Id) ? resolvedMatch : selectedMatch ? {
+            ...selectedMatch,
+            companyName: getCompanyName(companyDb) || selectedMatch.companyName,
+            plantName: getPlantName(plantDb) || selectedMatch.plantName,
+            Address: [
+              formatAddressStreet(isCompany ? dbCompanyAddress : dbPlantAddress),
+              formatAddressCityStateZip(isCompany ? dbCompanyAddress : dbPlantAddress),
+              (isCompany ? dbCompanyAddress : dbPlantAddress)?.country,
+            ].filter(Boolean).join(', ') || selectedMatch.Address,
+          } : null}
         />
       </div>
 

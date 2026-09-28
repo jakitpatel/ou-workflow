@@ -6,15 +6,20 @@ import { useUser } from '@/context/UserContext'
 import { PLANT_SEARCH_PAGE_SIZE, searchPlants } from '../api/plantSearch'
 import type { Match } from '../model/resolution'
 import { prelimQueryKeys } from '../model/queryKeys'
+import { ResolvedSearchRecord } from './ResolvedSearchRecord'
 
 export function PlantSearchDialog({
   plantName,
   onClose,
   onSelect,
+  readOnly = false,
+  resolvedMatch,
 }: {
   plantName: string
   onClose: () => void
   onSelect: (match: Match) => void
+  readOnly?: boolean
+  resolvedMatch?: Match | null
 }) {
   const { token } = useUser()
   const [input, setInput] = useState(plantName)
@@ -44,8 +49,9 @@ export function PlantSearchDialog({
         <Dialog.Content className="fixed left-1/2 top-1/2 z-[70] flex max-h-[85vh] w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-xl bg-white p-6 shadow-xl">
           <Dialog.Title className="text-lg font-semibold">Search Plant</Dialog.Title>
           <Dialog.Description className="text-sm text-gray-600">
-            Search by plant name and select a plant to compare its Kashrus details with the
-            application.
+            {readOnly
+              ? 'This task is completed. Search and view plants; selection is disabled.'
+              : 'Search by plant name and select a plant to compare its Kashrus details with the application.'}
           </Dialog.Description>
           <Dialog.Close
             aria-label="Close plant search"
@@ -53,6 +59,7 @@ export function PlantSearchDialog({
           >
             <X className="h-5 w-5" />
           </Dialog.Close>
+          {readOnly && <ResolvedSearchRecord isCompany={false} match={resolvedMatch} />}
           <form
             className="flex items-end gap-2"
             onSubmit={(event) => {
@@ -124,11 +131,12 @@ export function PlantSearchDialog({
                         <td className="p-3">
                           <button
                             type="button"
-                            className="text-left font-medium text-indigo-700 hover:underline"
+                            className="text-left font-medium text-indigo-700 hover:underline disabled:text-gray-900 disabled:no-underline"
                             disabled={
-                              plant.PLANT_ID == null || String(plant.PLANT_ID).trim() === ''
+                              readOnly || plant.PLANT_ID == null || String(plant.PLANT_ID).trim() === ''
                             }
                             onClick={() => {
+                              if (readOnly) return
                               onSelect({
                                 Id: plant.PLANT_ID,
                                 PlantID: plant.PLANT_ID,
