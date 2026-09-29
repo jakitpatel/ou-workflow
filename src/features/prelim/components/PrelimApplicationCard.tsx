@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Clock, FileText } from 'lucide-react'
 import type { Applicant, Task } from '@/types/application'
 import { PrelimResolvedSection } from '@/features/prelim/components/PrelimResolvedSection'
@@ -7,7 +7,7 @@ import { CancelApplicationDialog } from '@/features/applications/components/Canc
 import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
 import { PrelimStageTasksPanel } from '@/features/prelim/components/PrelimStageTasksPanel'
 import { PrelimApplicationMessages } from '@/features/prelim/components/PrelimApplicationMessages'
-import { normalizeStatus, normalizeTaskRoles } from '@/lib/utils/taskHelpers'
+import { mapTaskToAction, normalizeStatus, normalizeTaskRoles } from '@/lib/utils/taskHelpers'
 
 type Props = {
   company: Applicant
@@ -51,7 +51,7 @@ export function PrelimApplicationCard({
   handleTaskAction,
   handleCancelTask,
 }: Props) {
-  const { username, role, roles } = useUser()
+  const { username, role, roles, delegated } = useUser()
   const { data: taskRolesAll = [] } = useFetchTaskRoles()
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
@@ -92,8 +92,14 @@ export function PrelimApplicationCard({
     return role ? [role.toLowerCase()] : []
   }, [role, roles])
 
-  const hasCancelPermission = (task: Task | null): boolean => {
+  const getCancelAction = useCallback((task: Task) => mapTaskToAction({
+    task, application: company, username, userRoles, delegated, taskRolesAll,
+  }), [company, username, userRoles, delegated, taskRolesAll])
+
+  const hasCancelPermission = useCallback((task: Task | null): boolean => {
     if (!task) return false
+
+    if (getCancelAction(task).isdelegate) return true
 
     const taskRoles = normalizeTaskRoles(task.taskRoles)
     if (taskRoles.length === 0) return false
@@ -110,7 +116,7 @@ export function PrelimApplicationCard({
         (matchedRole) => ar?.[matchedRole.toUpperCase()]?.toLowerCase() === username?.toLowerCase(),
       ),
     )
-  }
+  }, [company.assignedRoles, taskRolesAll, userRoles, username, getCancelAction])
 
   const pendingCancelTask = useMemo(() => {
     const globalStageEntry = Object.entries(company.stages ?? {}).find(
@@ -126,7 +132,7 @@ export function PrelimApplicationCard({
           hasCancelPermission(task),
       ) ?? null
     )
-  }, [company.stages, company.assignedRoles, taskRolesAll, userRoles, username])
+  }, [company.stages, hasCancelPermission])
 
   const pendingUndoWithdrawTask = useMemo(() => {
     const globalStageEntry = Object.entries(company.stages ?? {}).find(
@@ -146,14 +152,14 @@ export function PrelimApplicationCard({
         )
       }) ?? null
     )
-  }, [company.stages, company.assignedRoles, taskRolesAll, userRoles, username])
+  }, [company.stages, hasCancelPermission])
 
   const canCancelApplication = useMemo(() => {
     return hasCancelPermission(pendingCancelTask)
-  }, [pendingCancelTask, company.assignedRoles, taskRolesAll, userRoles, username])
+  }, [pendingCancelTask, hasCancelPermission])
   const canUndoWithdrawApplication = useMemo(() => {
     return hasCancelPermission(pendingUndoWithdrawTask)
-  }, [pendingUndoWithdrawTask, company.assignedRoles, taskRolesAll, userRoles, username])
+  }, [pendingUndoWithdrawTask, hasCancelPermission])
   const normalizedStatus = company?.status?.toLowerCase()
   const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth'
 
@@ -164,7 +170,11 @@ export function PrelimApplicationCard({
 
     setIsSubmittingCancel(true)
     try {
-      await Promise.resolve(handleCancelTask(company, selectedTask, cancelReason.trim()))
+      const action = getCancelAction(selectedTask)
+      await Promise.resolve(handleCancelTask(company, {
+        ...selectedTask,
+        capacity: action.isdelegate ? 'ASSISTANT' : selectedTask.capacity,
+      }, cancelReason.trim()))
       setShowCancelDialog(false)
       setCancelReason('')
     } finally {
