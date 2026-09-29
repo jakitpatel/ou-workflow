@@ -82,6 +82,10 @@ export const ConditionalModal: React.FC<Props> = ({
       taskCategory === TASK_CATEGORIES.APPROVAL1;
   }, [taskCategory, taskType]);
 
+  const isApprovalOk =
+    [TASK_TYPES.CONDITION, TASK_TYPES.CONDITIONAL].includes(taskType as any) &&
+    taskCategory === TASK_CATEGORIES.APPROVALOK;
+
   const PreScript = useMemo(() => {
     return selectedAction?.action?.PreScript || "Enter Invoice Amount";
   }, [selectedAction?.action]);
@@ -445,11 +449,14 @@ export const ConditionalModal: React.FC<Props> = ({
         )}
 
         {/* Default Yes/No Modal */}
+        {isApprovalOk && (
+          <p className="mb-6 text-sm text-gray-700">Are you sure you want to do this?</p>
+        )}
         {modalType === 'default' && (
           <div className="flex justify-end gap-3">
             <button
               ref={noButtonRef}
-              onClick={() => handleSave("no")}
+              onClick={() => isApprovalOk ? setShowConditionModal(null) : handleSave("no")}
               disabled={saving}
               className={`px-4 py-2 text-sm rounded-lg transition-colors flex items-center gap-2
                 ${savingValue === 'no' && saving ? 'opacity-50' : ''}
@@ -465,7 +472,7 @@ export const ConditionalModal: React.FC<Props> = ({
 
             <button
               ref={yesButtonRef}
-              onClick={() => handleSave("yes")}
+              onClick={() => handleSave(isApprovalOk ? "YES" : "yes")}
               disabled={saving}
               className={`px-4 py-2 text-sm rounded-lg transition-colors flex items-center gap-2 ${
                 prefersYesByDefault
@@ -473,7 +480,7 @@ export const ConditionalModal: React.FC<Props> = ({
                   : 'text-gray-600 hover:text-gray-800 disabled:opacity-40'
               }`}
             >
-              {savingValue === 'yes' && saving && <Spinner />}
+              {(savingValue === 'yes' || savingValue === 'YES') && saving && <Spinner />}
               Yes
             </button>
           </div>

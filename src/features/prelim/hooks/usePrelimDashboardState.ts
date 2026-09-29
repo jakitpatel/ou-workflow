@@ -173,7 +173,7 @@ export function usePrelimDashboardState() {
 
     if (
       (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) &&
-      [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1].includes(actionCategory as any)
+      [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1, TASK_CATEGORIES.APPROVALOK].includes(actionCategory as any)
     ) {
       setShowConditionModal(action)
       return
