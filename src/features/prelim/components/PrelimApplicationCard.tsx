@@ -54,6 +54,7 @@ export function PrelimApplicationCard({
   const { username, role, roles, delegated } = useUser()
   const { data: taskRolesAll = [] } = useFetchTaskRoles()
   const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [isMarkLegacy, setIsMarkLegacy] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [isSubmittingCancel, setIsSubmittingCancel] = useState(false)
   const [resolutionTaskToOpen, setResolutionTaskToOpen] = useState<Task | null>(null)
@@ -134,6 +135,16 @@ export function PrelimApplicationCard({
     )
   }, [company.stages, hasCancelPermission])
 
+  const markLegacyTask = Object.entries(company.stages ?? {})
+    .find(([stageKey]) => stageKey.toLowerCase() === 'globalsubmission')?.[1]?.tasks
+    ?.find((task) =>
+      task.name?.toLowerCase() === 'mark legacy' &&
+      task.taskCategory?.toLowerCase() === 'approval' &&
+      task.taskType?.toLowerCase() === 'condition',
+    ) ?? null
+  const canMarkLegacy = markLegacyTask?.status?.toLowerCase() === 'pending' &&
+    hasCancelPermission(markLegacyTask)
+
   const pendingUndoWithdrawTask = useMemo(() => {
     const globalStageEntry = Object.entries(company.stages ?? {}).find(
       ([stageKey]) => stageKey.toLowerCase() === 'globalsubmission',
@@ -164,8 +175,8 @@ export function PrelimApplicationCard({
   const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth'
 
   const handleConfirmCancel = async () => {
-    const selectedTask = isWithdrawn ? pendingUndoWithdrawTask : pendingCancelTask
-    const canSubmitAction = isWithdrawn ? canUndoWithdrawApplication : canCancelApplication
+    const selectedTask = isMarkLegacy ? markLegacyTask : isWithdrawn ? pendingUndoWithdrawTask : pendingCancelTask
+    const canSubmitAction = isMarkLegacy ? canMarkLegacy : isWithdrawn ? canUndoWithdrawApplication : canCancelApplication
     if (!selectedTask || !canSubmitAction || !cancelReason.trim() || isSubmittingCancel) return
 
     setIsSubmittingCancel(true)
@@ -321,11 +332,32 @@ export function PrelimApplicationCard({
             >
               {isProgressVisible ? 'Hide Progress' : 'Show Progress'}
             </button>
+            {!isWithdrawn && markLegacyTask && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (!canMarkLegacy) return
+                  setIsMarkLegacy(true)
+                  setShowCancelDialog(true)
+                }}
+                disabled={!canMarkLegacy}
+                className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  canMarkLegacy
+                    ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
+                    : 'bg-red-100 text-red-300 cursor-not-allowed focus:ring-red-200'
+                }`}
+                title={canMarkLegacy ? 'Mark Legacy' : 'This submission cannot be marked legacy due to its current status or your permissions.'}
+              >
+                Mark Legacy
+              </button>
+            )}
             {!isWithdrawn && (
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   if (!canCancelApplication) return
+                  setIsMarkLegacy(false)
                   setShowCancelDialog(true)
                 }}
                 disabled={!canCancelApplication}
@@ -353,6 +385,7 @@ export function PrelimApplicationCard({
                 onClick={(e) => {
                   e.stopPropagation()
                   if (!canUndoWithdrawApplication) return
+                  setIsMarkLegacy(false)
                   setShowCancelDialog(true)
                 }}
                 disabled={!canUndoWithdrawApplication}
@@ -384,7 +417,7 @@ export function PrelimApplicationCard({
           companyName={company.company}
           reason={cancelReason}
           saving={isSubmittingCancel}
-          actionType={isWithdrawn ? 'undo_withdraw' : 'withdraw'}
+          actionType={isMarkLegacy ? 'mark_legacy' : isWithdrawn ? 'undo_withdraw' : 'withdraw'}
           onReasonChange={setCancelReason}
           onClose={() => {
             if (isSubmittingCancel) return

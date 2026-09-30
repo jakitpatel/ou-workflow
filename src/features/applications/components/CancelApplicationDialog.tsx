@@ -2,7 +2,8 @@ type CancelApplicationDialogProps = {
   companyName: string;
   reason: string;
   saving: boolean;
-  actionType?: 'withdraw' | 'undo_withdraw';
+  title?: string;
+  actionType?: 'withdraw' | 'undo_withdraw' | 'mark_legacy';
   onReasonChange: (value: string) => void;
   onClose: () => void;
   onConfirm: (reason: string) => void;
@@ -12,23 +13,29 @@ export function CancelApplicationDialog({
   companyName,
   reason,
   saving,
+  title: customTitle,
   actionType = 'withdraw',
   onReasonChange,
   onClose,
   onConfirm,
 }: CancelApplicationDialogProps) {
   const isUndoWithdraw = actionType === 'undo_withdraw';
-  const title = isUndoWithdraw ? 'Undo Withdraw Application' : 'Withdraw Application';
-  const confirmMessage = isUndoWithdraw
+  const isMarkLegacy = actionType === 'mark_legacy';
+  const title = customTitle ?? (isMarkLegacy ? 'Mark Legacy' : isUndoWithdraw ? 'Undo Withdraw Application' : 'Withdraw Application');
+  const confirmMessage = isMarkLegacy
+    ? 'Are you sure you want to mark legacy for'
+    : isUndoWithdraw
     ? 'Are you sure you want to undo withdraw for'
     : 'Are you sure you want to withdraw';
-  const reasonLabel = isUndoWithdraw ? 'Undo Withdraw Reason' : 'Withdrawal Reason';
-  const reasonPlaceholder = isUndoWithdraw
+  const reasonLabel = isMarkLegacy ? 'Mark Legacy Reason' : isUndoWithdraw ? 'Undo Withdraw Reason' : 'Withdrawal Reason';
+  const reasonPlaceholder = isMarkLegacy
+    ? 'Enter mark legacy reason'
+    : isUndoWithdraw
     ? 'Enter undo withdraw reason'
     : 'Enter withdrawal reason';
   const confirmButtonLabel = saving
-    ? (isUndoWithdraw ? 'Undoing Withdraw...' : 'Withdrawing...')
-    : (isUndoWithdraw ? 'Yes, Undo Withdraw' : 'Yes, Withdraw');
+    ? (isMarkLegacy ? 'Marking Legacy...' : isUndoWithdraw ? 'Undoing Withdraw...' : 'Withdrawing...')
+    : (isMarkLegacy ? 'Yes, Mark Legacy' : isUndoWithdraw ? 'Yes, Undo Withdraw' : 'Yes, Withdraw');
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">

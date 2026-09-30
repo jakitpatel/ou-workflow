@@ -13,8 +13,8 @@ vi.mock('./PrelimResolvedSection', () => ({ PrelimResolvedSection: () => null })
 vi.mock('./PrelimApplicationMessages', () => ({ PrelimApplicationMessages: () => null }))
 vi.mock('./PrelimStageTasksPanel', () => ({ PrelimStageTasksPanel: () => null }))
 
-function setup(status = 'PENDING') {
-  const task = { TaskInstanceId: 123, name: 'Cancel Submission', status,
+function setup(status = 'PENDING', name = 'Cancel Submission') {
+  const task = { TaskInstanceId: 123, name, status, taskCategory: 'APPROVAL',
     taskRoles: [{ taskRole: 'NCRC' }], taskType: 'CONDITION' }
   const company = { applicationId: 421, company: 'Example', status: 'NEW',
     assignedRoles: [{ NCRC: 's.benjamin' }],
@@ -47,5 +47,23 @@ describe('assistant cancellation permission', () => {
     setup(scenario === 'completed task' ? 'COMPLETED' : 'PENDING')
     const button = screen.getByRole('button', { name: /cannot be canceled/ }) as HTMLButtonElement
     expect(button.disabled).toBe(true)
+  })
+
+  it('completes Mark Legacy with the selected task and assistant capacity', async () => {
+    const { company, handleCancelTask } = setup('PENDING', 'Mark Legacy')
+    fireEvent.click(screen.getByRole('button', { name: 'Mark Legacy' }))
+    expect(screen.getByRole('heading', { name: 'Mark Legacy' })).toBeTruthy()
+    fireEvent.change(screen.getByLabelText('Mark Legacy Reason'), { target: { value: '  Legacy submission  ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, Mark Legacy' }))
+    await waitFor(() => expect(handleCancelTask).toHaveBeenCalledWith(company,
+      expect.objectContaining({ TaskInstanceId: 123, name: 'Mark Legacy', capacity: 'ASSISTANT' }), 'Legacy submission'))
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Mark Legacy' })).toBeNull())
+  })
+
+  it.each(['unrelated delegate', 'wrong role', 'completed task'])('disables Mark Legacy for %s', (scenario) => {
+    if (scenario === 'unrelated delegate') user.delegated = [{ name: 'someone.else' }]
+    if (scenario === 'wrong role') user.role = 'PROD'
+    setup(scenario === 'completed task' ? 'COMPLETED' : 'PENDING', 'Mark Legacy')
+    expect((screen.getByRole('button', { name: 'Mark Legacy' }) as HTMLButtonElement).disabled).toBe(true)
   })
 })
