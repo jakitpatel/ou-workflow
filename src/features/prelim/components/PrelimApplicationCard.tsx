@@ -168,7 +168,8 @@ export function PrelimApplicationCard({
   const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth'
   const hasMisRole = role?.trim().toUpperCase() === 'MIS' ||
     (roles ?? []).some((userRole) => userRole.name?.trim().toUpperCase() === 'MIS')
-  const canMarkLegacy = hasMisRole && !isWithdrawn && normalizedStatus !== 'legacy'
+  const canMarkLegacy = hasMisRole && !isWithdrawn && normalizedStatus !== 'legacy' &&
+    !normalizedStatus?.includes('legacy submission')
 
   const handleConfirmMarkLegacy = async () => {
     if (!canMarkLegacy || isSubmittingCancel) return
