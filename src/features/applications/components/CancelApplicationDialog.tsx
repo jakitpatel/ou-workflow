@@ -27,15 +27,13 @@ export function CancelApplicationDialog({
     : isUndoWithdraw
     ? 'Are you sure you want to undo withdraw for'
     : 'Are you sure you want to withdraw';
-  const reasonLabel = isMarkLegacy ? 'Mark Legacy Reason' : isUndoWithdraw ? 'Undo Withdraw Reason' : 'Withdrawal Reason';
-  const reasonPlaceholder = isMarkLegacy
-    ? 'Enter mark legacy reason'
-    : isUndoWithdraw
+  const reasonLabel = isUndoWithdraw ? 'Undo Withdraw Reason' : 'Withdrawal Reason';
+  const reasonPlaceholder = isUndoWithdraw
     ? 'Enter undo withdraw reason'
     : 'Enter withdrawal reason';
   const confirmButtonLabel = saving
     ? (isMarkLegacy ? 'Marking Legacy...' : isUndoWithdraw ? 'Undoing Withdraw...' : 'Withdrawing...')
-    : (isMarkLegacy ? 'Yes, Mark Legacy' : isUndoWithdraw ? 'Yes, Undo Withdraw' : 'Yes, Withdraw');
+    : (isMarkLegacy ? 'Yes' : isUndoWithdraw ? 'Yes, Undo Withdraw' : 'Yes, Withdraw');
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
@@ -45,6 +43,7 @@ export function CancelApplicationDialog({
           {confirmMessage} <span className="font-semibold">{companyName}</span>?
         </p>
 
+        {!isMarkLegacy && <>
         <label htmlFor="withdrawal-reason" className="block text-sm font-medium text-gray-700 mb-2">
           {reasonLabel}
         </label>
@@ -57,6 +56,7 @@ export function CancelApplicationDialog({
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none"
           placeholder={reasonPlaceholder}
         />
+        </>}
 
         <div className="mt-5 flex justify-end gap-3">
           <button
@@ -68,7 +68,7 @@ export function CancelApplicationDialog({
           </button>
           <button
             onClick={() => onConfirm(reason.trim())}
-            disabled={saving || !reason.trim()}
+            disabled={saving || (!isMarkLegacy && !reason.trim())}
             className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
           >
             {confirmButtonLabel}

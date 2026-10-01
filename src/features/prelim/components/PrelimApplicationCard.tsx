@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Clock, FileText } from 'lucide-react'
+import { toast } from 'sonner'
+import { useMarkLegacy } from '@/features/prelim/hooks/useMarkLegacy'
 import type { Applicant, Task } from '@/types/application'
 import { PrelimResolvedSection } from '@/features/prelim/components/PrelimResolvedSection'
 import { useUser } from '@/context/UserContext'
@@ -52,6 +54,7 @@ export function PrelimApplicationCard({
   handleCancelTask,
 }: Props) {
   const { username, role, roles, delegated } = useUser()
+  const markLegacy = useMarkLegacy()
   const { data: taskRolesAll = [] } = useFetchTaskRoles()
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [isMarkLegacy, setIsMarkLegacy] = useState(false)
@@ -135,16 +138,6 @@ export function PrelimApplicationCard({
     )
   }, [company.stages, hasCancelPermission])
 
-  const markLegacyTask = Object.entries(company.stages ?? {})
-    .find(([stageKey]) => stageKey.toLowerCase() === 'globalsubmission')?.[1]?.tasks
-    ?.find((task) =>
-      task.name?.toLowerCase() === 'mark legacy' &&
-      task.taskCategory?.toLowerCase() === 'approval' &&
-      task.taskType?.toLowerCase() === 'condition',
-    ) ?? null
-  const canMarkLegacy = markLegacyTask?.status?.toLowerCase() === 'pending' &&
-    hasCancelPermission(markLegacyTask)
-
   const pendingUndoWithdrawTask = useMemo(() => {
     const globalStageEntry = Object.entries(company.stages ?? {}).find(
       ([stageKey]) => stageKey.toLowerCase() === 'globalsubmission',
@@ -173,10 +166,27 @@ export function PrelimApplicationCard({
   }, [pendingUndoWithdrawTask, hasCancelPermission])
   const normalizedStatus = company?.status?.toLowerCase()
   const isWithdrawn = normalizedStatus === 'withdrawn' || normalizedStatus === 'wth'
+  const hasMisRole = role?.trim().toUpperCase() === 'MIS' ||
+    (roles ?? []).some((userRole) => userRole.name?.trim().toUpperCase() === 'MIS')
+  const canMarkLegacy = hasMisRole && !isWithdrawn && normalizedStatus !== 'legacy'
+
+  const handleConfirmMarkLegacy = async () => {
+    if (!canMarkLegacy || isSubmittingCancel) return
+    setIsSubmittingCancel(true)
+    try {
+      await markLegacy.mutateAsync(company.applicationId)
+      setShowCancelDialog(false)
+      setCancelReason('')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to mark application legacy.')
+    } finally {
+      setIsSubmittingCancel(false)
+    }
+  }
 
   const handleConfirmCancel = async () => {
-    const selectedTask = isMarkLegacy ? markLegacyTask : isWithdrawn ? pendingUndoWithdrawTask : pendingCancelTask
-    const canSubmitAction = isMarkLegacy ? canMarkLegacy : isWithdrawn ? canUndoWithdrawApplication : canCancelApplication
+    const selectedTask = isWithdrawn ? pendingUndoWithdrawTask : pendingCancelTask
+    const canSubmitAction = isWithdrawn ? canUndoWithdrawApplication : canCancelApplication
     if (!selectedTask || !canSubmitAction || !cancelReason.trim() || isSubmittingCancel) return
 
     setIsSubmittingCancel(true)
@@ -332,7 +342,7 @@ export function PrelimApplicationCard({
             >
               {isProgressVisible ? 'Hide Progress' : 'Show Progress'}
             </button>
-            {!isWithdrawn && markLegacyTask && (
+            {canMarkLegacy && (
               <button
                 type="button"
                 onClick={(e) => {
@@ -424,7 +434,7 @@ export function PrelimApplicationCard({
             setShowCancelDialog(false)
             setCancelReason('')
           }}
-          onConfirm={handleConfirmCancel}
+          onConfirm={isMarkLegacy ? handleConfirmMarkLegacy : handleConfirmCancel}
         />
       )}
 
