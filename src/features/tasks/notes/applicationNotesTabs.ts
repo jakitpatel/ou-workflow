@@ -9,6 +9,15 @@ export function getApplicationNotesTabs(
 ): TaskNotesDrawerTabConfig[] {
   return [
     {
+      id: 'global',
+      label: 'Global',
+      notes: notes.global,
+      loading: loading.global,
+      mode: 'public',
+      tabClassName: 'border-emerald-600 text-emerald-700',
+      badgeClassName: 'bg-emerald-100 text-emerald-700',
+    },
+    {
       id: 'incoming',
       label: 'Direct',
       notes: notes.incoming,
@@ -34,15 +43,6 @@ export function getApplicationNotesTabs(
       mode: 'public',
       tabClassName: 'border-amber-600 text-amber-700',
       badgeClassName: 'bg-amber-100 text-amber-700',
-    },
-    {
-      id: 'global',
-      label: 'Global',
-      notes: notes.global,
-      loading: loading.global,
-      mode: 'public',
-      tabClassName: 'border-emerald-600 text-emerald-700',
-      badgeClassName: 'bg-emerald-100 text-emerald-700',
     },
   ]
 }

@@ -50,10 +50,13 @@ function Harness({ applicationNotes = false }: { applicationNotes?: boolean }) {
 }
 
 describe('application-only Global tab', () => {
-  it('places Global after Mention and displays its messages when selected', () => {
+  it('places Global first and displays its messages when selected', () => {
     renderWithProviders(<Harness applicationNotes />)
     const labels = screen.getAllByRole('button').map((button) => button.textContent)
-    expect(labels.indexOf('Global1')).toBe(labels.indexOf('Mention0') + 1)
+    const tabLabels = labels
+      .map((label) => label?.match(/Global|Direct|Private|Mention/)?.[0])
+      .filter(Boolean)
+    expect(tabLabels).toEqual(['Global', 'Direct', 'Private', 'Mention'])
     expect(screen.queryByText('A global note')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /Global/ }))
     expect(screen.getAllByText('A global note').length).toBeGreaterThan(0)
