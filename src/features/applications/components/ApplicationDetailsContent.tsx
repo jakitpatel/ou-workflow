@@ -31,6 +31,8 @@ import { InspectionInvoiceDrawer } from '@/features/applications/components/Insp
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import type { Applicant, ApplicationDetail, ApplicationEmail } from '@/types/application'
 import { getApplicationDetailsTabs } from '@/features/applications/model/applicationDetailsTabs'
+import { getIntakePlantApplication } from '@/features/applications/model/intakePlantDetails'
+import { IntakePlantNavigation } from './IntakePlantNavigation'
 
 type CompletionStatus = 'incomplete' | 'complete' | 'dispatched'
 type ActivityType = 'completion' | 'ingredient' | 'plant' | 'bulk' | 'company' | 'dispatch' | 'undo'
@@ -551,6 +553,7 @@ export function ApplicationDetailsContent({
   rfrView = false,
 }: Props) {
   const [selectedTab, setActiveTab] = useState(rfrView ? 'company' : 'overview')
+  const [selectedPlantIndex, setSelectedPlantIndex] = useState(0)
   const [editMode] = useState(false)
   const [showRecentOnly, setShowRecentOnly] = useState(false)
   const [userRole] = useState('admin')
@@ -634,6 +637,11 @@ export function ApplicationDetailsContent({
       : 'Application Review & Management'
   const tabs = getApplicationDetailsTabs(dataSource, rfrView)
   const activeTab = tabs.some((tab) => tab.id === selectedTab) ? selectedTab : tabs[0].id
+  const intakePlantTree = dataSource === 'prelim' && !rfrView
+  const plantIndex = selectedPlantIndex < application.plants.length ? selectedPlantIndex : 0
+  const plantApplication = intakePlantTree
+    ? getIntakePlantApplication(application, plantIndex)
+    : application
   const applicationNotes = useTaskNotesDrawerState({
     applicationId: resolvedApplicationId,
   })
@@ -884,10 +892,27 @@ export function ApplicationDetailsContent({
             className={
               mode === 'page'
                 ? 'mr-8 w-64 space-y-1'
-                : 'mr-3 w-48 shrink-0 space-y-1 overflow-y-auto pr-1'
+                : intakePlantTree
+                  ? 'mr-3 w-40 shrink-0 space-y-1 overflow-y-auto pr-1 sm:w-56'
+                  : 'mr-3 w-48 shrink-0 space-y-1 overflow-y-auto pr-1'
             }
           >
             {tabs.map((tab) => {
+              if (intakePlantTree && (tab.id === 'products' || tab.id === 'ingredients')) return null
+              if (intakePlantTree && tab.id === 'plants') {
+                return (
+                  <IntakePlantNavigation
+                    key={`${application.applicationId}-plants`}
+                    application={application}
+                    selectedIndex={plantIndex}
+                    activeSection={activeTab}
+                    onSelect={(index, section) => {
+                      setSelectedPlantIndex(index)
+                      setActiveTab(section)
+                    }}
+                  />
+                )
+              }
               const Icon = tab.icon
               return (
                 <button
@@ -907,6 +932,17 @@ export function ApplicationDetailsContent({
           </nav>
 
           <div className={mode === 'page' ? 'min-w-0 flex-1' : 'min-w-0 flex-1 overflow-y-auto'}>
+            {intakePlantTree && ['plants', 'products', 'ingredients'].includes(activeTab) && (
+              <div className="mb-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
+                <p className="text-xs font-medium text-blue-600">
+                  Plants / Plant {application.plants[plantIndex]?.id ?? plantIndex + 1} /{' '}
+                  {activeTab === 'plants' ? 'Details' : activeTab === 'products' ? 'Products' : 'Ingredients'}
+                </p>
+                <h2 className="mt-1 break-words text-lg font-semibold text-slate-900">
+                  {application.plants[plantIndex]?.name || `Plant ${plantIndex + 1}`}
+                </h2>
+              </div>
+            )}
             {activeTab === 'overview' && (
               <Overview application={application} dataSource={dataSource} />
             )}
@@ -926,17 +962,23 @@ export function ApplicationDetailsContent({
             )}
             {activeTab === 'plants' && (
               <PlantsSection
-                application={application}
+                key={`plant-${plantIndex}`}
+                application={plantApplication}
                 editMode={editMode}
                 dataSource={dataSource}
               />
             )}
             {activeTab === 'products' && (
-              <ProductsTable application={application} dataSource={dataSource} />
+              <ProductsTable
+                key={`products-${plantIndex}`}
+                application={plantApplication}
+                dataSource={dataSource}
+              />
             )}
             {activeTab === 'ingredients' && (
               <IngredientMgmt
-                application={application}
+                key={`ingredients-${plantIndex}`}
+                application={plantApplication}
                 dataSource={dataSource}
                 showRecentOnly={showRecentOnly}
                 setShowRecentOnly={setShowRecentOnly}

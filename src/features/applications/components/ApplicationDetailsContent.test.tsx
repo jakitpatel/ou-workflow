@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { renderWithProviders } from '@/test/renderWithProviders'
 import { ApplicationDetailsContent } from './ApplicationDetailsContent'
 import type { ApplicationDetail } from '@/types/application'
+import { mapPrelimApplicationDetailToApplicationDetail } from '@/features/prelim/lib/prelimApplicationDetailAdapter'
 
 vi.mock('@/features/tasks/notes/useTaskNotesDrawerState', () => ({
   useTaskNotesDrawerState: () => ({ drawer: null, openDrawer: vi.fn() }),
@@ -50,5 +51,48 @@ describe('RFR application details', () => {
     expect(screen.queryByText('Overview content')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Inspection Invoice' })).toBeNull()
     expect(screen.getByRole('heading', { name: 'Company Information' })).toBeTruthy()
+  })
+})
+
+describe('intake plant navigation', () => {
+  const intake = mapPrelimApplicationDetailToApplicationDetail({
+    applicationId: 3719,
+    companyName: 'Multi Plant Company',
+    plants: [
+      { PlantId: 10, plantNumber: 1, plantName: 'Same Name', plantAddress: 'First Street', products: [{ productName: 'First Product' }], ingredients: [{ ingredientLabelName: 'First Ingredient' }] },
+      { PlantId: 20, plantNumber: 2, plantName: 'Same Name', plantAddress: 'Second Street', products: [{ productName: 'Second Product' }], ingredients: [{ ingredientLabelName: 'Second Ingredient' }] },
+      { PlantId: 30, plantNumber: 3, plantName: 'Empty Plant', products: [], ingredients: [] },
+    ],
+  })
+
+  it('shows only the selected plant products, ingredients and details, even with duplicate names', () => {
+    renderWithProviders(<ApplicationDetailsContent application={intake} dataSource="prelim" mode="drawer" />)
+    const productButtons = screen.getAllByRole('button', { name: /Products/ })
+    fireEvent.click(productButtons[0])
+    expect(screen.getByText('First Product')).toBeTruthy()
+    expect(screen.queryByText('Second Product')).toBeNull()
+    fireEvent.click(productButtons[1])
+    expect(screen.getByText('Second Product')).toBeTruthy()
+    expect(screen.queryByText('First Product')).toBeNull()
+    fireEvent.click(screen.getAllByRole('button', { name: /Ingredients/ })[1])
+    expect(screen.getByText('Second Ingredient')).toBeTruthy()
+    expect(screen.queryByText('First Ingredient')).toBeNull()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Details' })[1])
+    expect(screen.getByDisplayValue('Second Street')).toBeTruthy()
+    expect(screen.queryByDisplayValue('First Street')).toBeNull()
+    fireEvent.click(productButtons[2])
+    expect(screen.queryByText('First Product')).toBeNull()
+    expect(screen.queryByText('Second Product')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Products 0' }).getAttribute('aria-current')).toBe('page')
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse Empty Plant' }))
+    expect(screen.queryByRole('button', { name: 'Products 0' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Expand Empty Plant' }))
+    expect(screen.getByRole('button', { name: 'Products 0' })).toBeTruthy()
+  })
+
+  it('handles submissions without plants', () => {
+    renderWithProviders(<ApplicationDetailsContent application={application} dataSource="prelim" />)
+    expect(screen.getByText('No plants submitted')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Products/ })).toBeNull()
   })
 })
