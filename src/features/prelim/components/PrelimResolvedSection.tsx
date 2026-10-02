@@ -340,7 +340,7 @@ export function PrelimResolvedSection({
       to: DashboardRoute.to,
       search: (prev) => ({
         q: prev.q ?? '',
-        status: prev.status ?? 'all',
+        status: 'all',
         priority: prev.priority ?? 'all',
         applicationId,
         page: 0,
