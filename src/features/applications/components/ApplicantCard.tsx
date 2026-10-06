@@ -6,6 +6,7 @@ import { CancelApplicationDialog } from '@/features/applications/components/Canc
 import { ApplicantCardActions } from '@/features/applications/components/ApplicantCardActions'
 import { ApplicantAIAssistantPanel } from '@/features/applications/components/ApplicantAIAssistantPanel'
 import { ApplicantCardHeader } from '@/features/applications/components/ApplicantCardHeader'
+import { ApplicantAssignedRc } from '@/features/applications/components/ApplicantAssignedRc'
 import { ApplicantCardStats } from '@/features/applications/components/ApplicantCardStats'
 import { ApplicantProgressBar } from '@/features/applications/components/ApplicantProgressBar'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
@@ -115,6 +116,7 @@ export function ApplicantCard({
               <span className="font-semibold text-gray-800">{assignedNcrc}</span>
             </div>
           )}
+          <ApplicantAssignedRc applicant={applicant} />
         </div>
 
         <div className="flex-[4] min-w-[420px]">
