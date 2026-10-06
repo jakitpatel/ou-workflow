@@ -1,5 +1,16 @@
 import type { ApplicationDetail } from '@/types/application'
 
+export const getOuDirectLoginUrl = (mode = import.meta.env.MODE): string => {
+  switch (mode) {
+    case 'production':
+      return 'https://oudirect.org/oudirect/login'
+    case 'staging':
+      return 'https://oudirectstaging.org/oudirect/login'
+    default:
+      return 'https://oudirect-st.ou.org/oudirect/login'
+  }
+}
+
 const buildPrimaryContactLines = (
   contacts: ApplicationDetail['companyContacts'] | ApplicationDetail['plantContacts'],
 ) => {
@@ -98,7 +109,7 @@ export const buildNotificationBody = ({
     '',
     `Account #: ${accountNumber || '-'}`,
     '',
-    'OUDirect: https://oudirect-st.ou.org/oudirect/login',
+    `OUDirect: ${getOuDirectLoginUrl()}`,
     // Temporarily hidden until the client is ready for application links.
     // ...(accountApplicationUrl ? [`Application link: ${applicationLinkLabel}`] : []),
     '',

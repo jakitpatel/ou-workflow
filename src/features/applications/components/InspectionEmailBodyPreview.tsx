@@ -2,7 +2,7 @@ export function InspectionEmailBodyPreview({ body, applicationUrl }: { body: str
   const lines = body.split('\n')
   return lines.map((line, index) => {
     const applicationLinkLabel = line.match(/^Application link:\s*(.*)$/)?.[1]
-    const ouDirectUrl = line.match(/^OUDirect:\s*(https:\/\/oudirect-st\.ou\.org\/oudirect\/login)\s*$/)?.[1]
+    const ouDirectUrl = line.match(/^OUDirect:\s*(https:\/\/(?:oudirect-st\.ou\.org|oudirectstaging\.org|oudirect\.org)\/oudirect\/login)\s*$/)?.[1]
 
     return (
       <span key={`${index}-${line}`}>
