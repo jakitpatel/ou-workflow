@@ -369,6 +369,7 @@ export type Applicant = {
   priority: 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW' | 'MEDIUM'
   status: string // e.g. 'contract_sent'
   assignedRC: string
+  companyRC?: string
   assignedRoles?: AssignedRole[] // 👈 Added this line
   daysInProcess: number
   overdue: boolean

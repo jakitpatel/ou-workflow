@@ -17,7 +17,7 @@ const applicant: Applicant = {
   id: 3719, plant: 'Plant', region: '', priority: 'NORMAL', status: 'PENDING',
   daysInProcess: 0, overdue: false, daysOverdue: 0, lastUpdate: '', nextAction: '',
   documents: 0, notes: 0, stages: {},
-  applicationId: 3719, company: 'Company', assignedRC: 'Old RC', isNewCompany: true,
+  applicationId: 3719, company: 'Company', assignedRC: 'Different assigned RC', companyRC: 'Old RC', isNewCompany: true,
   assignedRoles: [{ NCRC: 'ncrc-user', isPrimary: true }],
 }
 
@@ -57,12 +57,19 @@ it.each([
   ['a company with an unknown new flag', { ...applicant, isNewCompany: undefined }, 'NCRC'],
   ['a different assigned NCRC', { ...applicant, assignedRoles: [{ NCRC: 'other-user' }] }, 'NCRC'],
   ['a user with another role', applicant, 'RC'],
-])('shows Assigned RC without editing for %s', (_label, application, role) => {
+])('shows Company RC without editing for %s', (_label, application, role) => {
   mocks.user.role = role
   mount(application)
   expect(screen.getByText('Old RC')).toBeTruthy()
+  expect(screen.queryByText('Different assigned RC')).toBeNull()
   expect(screen.queryByRole('combobox')).toBeNull()
   expect(mocks.request).not.toHaveBeenCalled()
+})
+
+it('shows Unassigned when companyRC is missing, even if assignedRC exists', () => {
+  mount({ ...applicant, companyRC: undefined, isNewCompany: false })
+  expect(screen.getByText('Unassigned')).toBeTruthy()
+  expect(screen.queryByText('Different assigned RC')).toBeNull()
 })
 
 it('allows an assigned NCRC in the ALL role view', async () => {

@@ -23,9 +23,9 @@ export function ApplicantAssignedRc({ applicant }: { applicant: Applicant }) {
     applicant.isNewCompany === true && Number.isFinite(appId) && appId > 0)
   const lookup = useUserListByRole('api/vSelectRC', { enabled: canEdit })
   const options = (lookup.data ?? []).filter((item) => item.isActive !== false && item.assigneeValue)
-  const assignedRc = applicant.assignedRC?.trim() || 'Unassigned'
+  const companyRc = applicant.companyRC?.trim() || 'Unassigned'
   const currentOption = options.find((item) =>
-    [item.assigneeValue, item.name].some((value) => value.toLowerCase() === assignedRc.toLowerCase()),
+    [item.assigneeValue, item.name].some((value) => value.toLowerCase() === companyRc.toLowerCase()),
   )
   const mutation = useMutation({
     mutationFn: (assignee: string) => {
@@ -52,11 +52,11 @@ export function ApplicantAssignedRc({ applicant }: { applicant: Applicant }) {
 
   return (
     <div className="mt-1 text-xs text-gray-600">
-      <span className="font-medium text-gray-500">Assigned RC:</span>{' '}
+      <span className="font-medium text-gray-500">Company RC:</span>{' '}
       {canEdit ? (
         <>
           <select
-            aria-label={`Assigned RC for ${applicant.company || applicant.applicationId}`}
+            aria-label={`Company RC for ${applicant.company || applicant.applicationId}`}
             value={currentOption?.assigneeValue ?? ''}
             disabled={lookup.isLoading || lookup.isError || mutation.isPending}
             onChange={(event) => {
@@ -64,7 +64,7 @@ export function ApplicantAssignedRc({ applicant }: { applicant: Applicant }) {
             }}
             className="max-w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs font-semibold text-gray-800 disabled:bg-gray-50"
           >
-            {!currentOption && <option value="">{assignedRc}</option>}
+            {!currentOption && <option value="">{companyRc}</option>}
             {options.map((item) => (
               <option key={item.lookupKey} value={item.assigneeValue}>{item.name}</option>
             ))}
@@ -77,7 +77,7 @@ export function ApplicantAssignedRc({ applicant }: { applicant: Applicant }) {
           )}
           {mutation.isError && <p role="alert" className="mt-1 text-red-600">Unable to save RC. Please try again.</p>}
         </>
-      ) : <span className="font-semibold text-gray-800">{assignedRc}</span>}
+      ) : <span className="font-semibold text-gray-800">{companyRc}</span>}
     </div>
   )
 }

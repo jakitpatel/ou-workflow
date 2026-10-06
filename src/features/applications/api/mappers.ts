@@ -58,6 +58,7 @@ export function mapApplicantsResponse(
       priority: applicant.priority ?? 'NORMAL',
       status: applicant.status ?? '',
       assignedRC: applicant.assignedRC ?? '',
+      companyRC: applicant.companyRC ?? '',
       daysInProcess: applicant.daysInProcess ?? 0,
       overdue: applicant.overdue ?? false,
       daysOverdue: applicant.daysOverdue ?? 0,
