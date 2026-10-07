@@ -1,4 +1,5 @@
 import { ScheduleRoundEmailCopies } from './ScheduleRoundEmailCopies'
+import { statusClass } from '../utils/scheduleAIngredientStatusClass'
 import { getDesignatedRfrName } from '@/features/applications/utils/designatedRfrName'
 import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { toast } from 'sonner'
@@ -255,23 +256,6 @@ const primaryContact = (contacts?: unknown) => {
   )
 
   return { name: name || 'Company Contact', email }
-}
-
-const statusClass = (status: string) => {
-  const value = status.toLowerCase()
-  if (value.includes('active') || value.includes('approved') || value.includes('submitted')) {
-    return 'bg-green-100 text-green-700'
-  }
-  if (value.includes('hold') || value.includes('pending')) return 'bg-amber-100 text-amber-800'
-  if (value.includes('reject') || value.includes('inactive')) return 'bg-red-100 text-red-700'
-  return 'bg-gray-100 text-gray-700'
-}
-
-const groupClass = (group: string) => {
-  if (group === '1') return 'bg-green-100 text-green-700'
-  if (group === '2') return 'bg-amber-100 text-amber-800'
-  if (group === '3') return 'bg-red-100 text-red-700'
-  return 'bg-gray-100 text-gray-700'
 }
 
 function ResolveButton({ resolved, onClick }: { resolved: boolean; onClick: () => void }) {
@@ -1479,7 +1463,6 @@ export function ScheduleAIngredientsDrawer({
                               ['name', 'Ingredient Name'],
                               ['companyName', 'CompanyName'],
                               ['brand', 'Brand Name'],
-                              ['group', 'Group'],
                               ['certifier', 'SYMBOL'],
                               ['plantStatus', 'Plant-Status'],
                             ]
@@ -1488,7 +1471,6 @@ export function ScheduleAIngredientsDrawer({
                               ['name', 'Ingredient Name'],
                               ['source', 'Source'],
                               ['brand', 'Brand Name'],
-                              ['group', 'Group'],
                               ['certifier', 'Certifier'],
                               ['plantStatus', 'Plant-Status'],
                             ]
@@ -1584,14 +1566,6 @@ export function ScheduleAIngredientsDrawer({
                           <td className="px-3 py-2">
                             <input
                               className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                              value={addRowDraft.group}
-                              placeholder="Group"
-                              onChange={(event) => updateAddRowDraft('group', event.target.value)}
-                            />
-                          </td>
-                          <td className="px-3 py-2">
-                            <input
-                              className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                               value={addRowDraft.certifier}
                               placeholder="Certifier"
                               onChange={(event) =>
@@ -1677,13 +1651,6 @@ export function ScheduleAIngredientsDrawer({
                                 <td className="px-3 py-3 text-gray-700">{row.source || '-'}</td>
                               )}
                               <td className="px-3 py-3 text-gray-700">{row.brand || '-'}</td>
-                              <td className="px-3 py-3">
-                                <span
-                                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${groupClass(row.group)}`}
-                                >
-                                  {row.group || '-'}
-                                </span>
-                              </td>
                               <td className="px-3 py-3 text-gray-700">
                                 {row.certifier || row.ukd || '-'}
                               </td>
@@ -1733,7 +1700,7 @@ export function ScheduleAIngredientsDrawer({
                               <CannedNoteRow
                                 rowId={row.id}
                                 note={scratchpad.flags[row.id]?.note ?? ''}
-                                colSpan={8}
+                                colSpan={7}
                                 customSelected={customNoteRows.has(row.id)}
                                 onCustomSelectedChange={setCustomNoteSelected}
                                 onNoteChange={scratchpadApi.updateFlagNote}
