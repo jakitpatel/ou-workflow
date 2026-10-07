@@ -1,4 +1,6 @@
 import { ScheduleRoundEmailCopies } from './ScheduleRoundEmailCopies'
+import { ScheduleIngredientEditCells } from './ScheduleIngredientEditCells'
+import { useScheduleIngredientActions } from '../hooks/useScheduleIngredientActions'
 import { statusClass } from '../utils/scheduleAIngredientStatusClass'
 import { getDesignatedRfrName } from '@/features/applications/utils/designatedRfrName'
 import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
@@ -19,6 +21,8 @@ import {
   MessageSquare,
   Minimize2,
   Plus,
+  Pencil,
+  Trash2,
   Send,
   Upload,
   X,
@@ -606,6 +610,7 @@ export function ScheduleAIngredientsDrawer({
     isActive ? resolvedApplicationId : undefined,
   )
   const createIngredientMutation = useCreateScheduleAIngredient(resolvedApplicationId)
+  const ingredientActions = useScheduleIngredientActions(resolvedApplicationId)
   const completeScheduleATaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
     includePrelimLists: false,
@@ -912,7 +917,11 @@ export function ScheduleAIngredientsDrawer({
       .map((row) => `<tr>${row.map((cell) => `<td>${String(cell ?? '')}</td>`).join('')}</tr>`)
       .join('')}</table></body></html>`
 
-    downloadTextFile(`${scheduleAFilenameBase}.xls`, html, 'application/vnd.ms-excel;charset=utf-8;')
+    downloadTextFile(
+      `${scheduleAFilenameBase}.xls`,
+      html,
+      'application/vnd.ms-excel;charset=utf-8;',
+    )
   }
 
   const openImportModal = () => {
@@ -1342,9 +1351,7 @@ export function ScheduleAIngredientsDrawer({
                         <button
                           type="button"
                           onClick={markScheduleAReady}
-                          disabled={
-                            isAssigningTask || completeScheduleATaskMutation.isPending
-                          }
+                          disabled={isAssigningTask || completeScheduleATaskMutation.isPending}
                           title={
                             isAssigningTask
                               ? 'Schedule A cannot be marked ready from the Assign Ingredients task.'
@@ -1524,6 +1531,14 @@ export function ScheduleAIngredientsDrawer({
                             </div>
                           </th>
                         ) : null}
+                        {ingView === 'application' && !readOnly ? (
+                          <th
+                            className={`w-24 ${stickyTableHeaderClass}`}
+                            style={stickyTableHeaderStyle}
+                          >
+                            Edit / Delete
+                          </th>
+                        ) : null}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -1597,6 +1612,7 @@ export function ScheduleAIngredientsDrawer({
                               </button>
                             </div>
                           </td>
+                          <td />
                         </tr>
                       ) : null}
                       {visibleRows.map((row, index) => {
@@ -1617,43 +1633,56 @@ export function ScheduleAIngredientsDrawer({
                               }
                             >
                               <td className="px-3 py-3 text-xs text-gray-500">{index + 1}</td>
-                              <td className="px-3 py-3 font-mono text-xs text-gray-700">
-                                {row.rmc || '-'}
-                              </td>
-                              <td className="px-3 py-3">
-                                <div className="flex items-center gap-1.5 font-medium text-gray-900">
-                                  <span
-                                    className={halacha?.open && !resolved ? 'text-red-700' : ''}
-                                  >
-                                    {row.name || '-'}
-                                  </span>
-                                  {resolved ? (
-                                    <span
-                                      className="inline-flex h-5 w-5 items-center justify-center rounded bg-green-100 text-green-700"
-                                      title="Resolved"
-                                    >
-                                      <Check className="h-3 w-3" strokeWidth={2.5} />
-                                    </span>
-                                  ) : null}
-                                </div>
-                                {halacha?.open && !resolved ? (
-                                  <div className="mt-1 inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700">
-                                    <AlertCircle className="h-3.5 w-3.5" strokeWidth={2.5} />
-                                    <span>Halachic review</span>
-                                  </div>
-                                ) : null}
-                              </td>
-                              {ingView === 'kashrus' ? (
-                                <td className="px-3 py-3 text-gray-700">
-                                  {row.companyName || '-'}
-                                </td>
+                              {ingView === 'application' &&
+                              !readOnly &&
+                              ingredientActions.editingId === row.ingredientId &&
+                              ingredientActions.draft ? (
+                                <ScheduleIngredientEditCells
+                                  draft={ingredientActions.draft}
+                                  disabled={ingredientActions.pending}
+                                  onChange={ingredientActions.change}
+                                />
                               ) : (
-                                <td className="px-3 py-3 text-gray-700">{row.source || '-'}</td>
+                                <>
+                                  <td className="px-3 py-3 font-mono text-xs text-gray-700">
+                                    {row.rmc || '-'}
+                                  </td>
+                                  <td className="px-3 py-3">
+                                    <div className="flex items-center gap-1.5 font-medium text-gray-900">
+                                      <span
+                                        className={halacha?.open && !resolved ? 'text-red-700' : ''}
+                                      >
+                                        {row.name || '-'}
+                                      </span>
+                                      {resolved ? (
+                                        <span
+                                          className="inline-flex h-5 w-5 items-center justify-center rounded bg-green-100 text-green-700"
+                                          title="Resolved"
+                                        >
+                                          <Check className="h-3 w-3" strokeWidth={2.5} />
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                    {halacha?.open && !resolved ? (
+                                      <div className="mt-1 inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700">
+                                        <AlertCircle className="h-3.5 w-3.5" strokeWidth={2.5} />
+                                        <span>Halachic review</span>
+                                      </div>
+                                    ) : null}
+                                  </td>
+                                  {ingView === 'kashrus' ? (
+                                    <td className="px-3 py-3 text-gray-700">
+                                      {row.companyName || '-'}
+                                    </td>
+                                  ) : (
+                                    <td className="px-3 py-3 text-gray-700">{row.source || '-'}</td>
+                                  )}
+                                  <td className="px-3 py-3 text-gray-700">{row.brand || '-'}</td>
+                                  <td className="px-3 py-3 text-gray-700">
+                                    {row.certifier || row.ukd || '-'}
+                                  </td>
+                                </>
                               )}
-                              <td className="px-3 py-3 text-gray-700">{row.brand || '-'}</td>
-                              <td className="px-3 py-3 text-gray-700">
-                                {row.certifier || row.ukd || '-'}
-                              </td>
                               {ingView === 'kashrus' ? (
                                 <td className="px-3 py-3">
                                   <span
@@ -1695,12 +1724,63 @@ export function ScheduleAIngredientsDrawer({
                                   ) : null}
                                 </td>
                               ) : null}
+                              {ingView === 'application' && !readOnly ? (
+                                <td className="px-3 py-3">
+                                  <div className="flex items-center gap-1">
+                                    {ingredientActions.editingId === row.ingredientId ? (
+                                      <>
+                                        <button
+                                          type="button"
+                                          title="Save ingredient"
+                                          aria-label="Save ingredient"
+                                          disabled={ingredientActions.pending}
+                                          onClick={ingredientActions.save}
+                                          className="rounded p-1 text-green-600 hover:bg-green-50 disabled:opacity-40"
+                                        >
+                                          <Check className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          title="Cancel editing"
+                                          aria-label="Cancel editing"
+                                          disabled={ingredientActions.pending}
+                                          onClick={ingredientActions.cancel}
+                                          className="rounded p-1 text-gray-500 hover:bg-gray-100 disabled:opacity-40"
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        title="Edit ingredient"
+                                        aria-label="Edit ingredient"
+                                        disabled={!row.ingredientId || ingredientActions.pending}
+                                        onClick={() => ingredientActions.start(row)}
+                                        className="rounded p-1 text-blue-600 hover:bg-blue-50 disabled:opacity-40"
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      title="Delete ingredient"
+                                      aria-label="Delete ingredient"
+                                      disabled={!row.ingredientId || ingredientActions.pending}
+                                      onClick={() => ingredientActions.remove(row.ingredientId!)}
+                                      className="rounded p-1 text-red-600 hover:bg-red-50 disabled:opacity-40"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              ) : null}
                             </tr>
                             {ingView === 'application' && flagged && !resolved && !readOnly ? (
                               <CannedNoteRow
                                 rowId={row.id}
                                 note={scratchpad.flags[row.id]?.note ?? ''}
-                                colSpan={7}
+                                colSpan={8}
                                 customSelected={customNoteRows.has(row.id)}
                                 onCustomSelectedChange={setCustomNoteSelected}
                                 onNoteChange={scratchpadApi.updateFlagNote}
@@ -2045,9 +2125,7 @@ export function ScheduleAIngredientsDrawer({
                       </span>
                     </div>
                     <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-2">
-                      <span className="text-sm font-medium text-gray-600">
-                        Actual Visit Date
-                      </span>
+                      <span className="text-sm font-medium text-gray-600">Actual Visit Date</span>
                       <span className="text-right text-sm font-semibold text-gray-900">
                         {reportedInspectionDate || '-'}
                       </span>
