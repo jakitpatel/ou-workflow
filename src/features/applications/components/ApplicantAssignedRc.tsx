@@ -5,10 +5,11 @@ import { refreshApplicationInListCaches } from '@/features/applications/cache/ap
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
+import { COMPLETED_STATUSES, normalizeStatus } from '@/lib/utils/taskHelpers'
 import type { Applicant } from '@/types/application'
 
 export function ApplicantAssignedRc({ applicant }: { applicant: Applicant }) {
-  const { token, username, role, roles } = useUser()
+  const { token, username, role, roles, delegated } = useUser()
   const queryClient = useQueryClient()
   const isNcrc = role?.toUpperCase() === 'NCRC' ||
     (role?.toUpperCase() === 'ALL' && roles?.some((item) => item.name.toUpperCase() === 'NCRC'))
@@ -18,8 +19,17 @@ export function ApplicantAssignedRc({ applicant }: { applicant: Applicant }) {
       value.trim().toLowerCase() === username?.trim().toLowerCase(),
     ),
   )
+  const delegatedNames = (delegated ?? []).map((item) => item.name.trim().toLowerCase())
+  const isAssistantToAssignedNcrc = (applicant.assignedRoles ?? []).some(
+    (assigned) => Object.entries(assigned).some(([key, value]) =>
+      key.toUpperCase() === 'NCRC' && typeof value === 'string' &&
+      Boolean(value.trim()) && delegatedNames.includes(value.trim().toLowerCase()),
+    ),
+  )
+  const isApplicationClosed = COMPLETED_STATUSES.includes(normalizeStatus(applicant.status))
   const appId = Number(applicant.applicationId)
-  const canEdit = Boolean(token && isNcrc && isAssignedNcrc &&
+  const canEdit = Boolean(token && isNcrc && (isAssignedNcrc || isAssistantToAssignedNcrc) &&
+    !isApplicationClosed &&
     applicant.isNewCompany === true && Number.isFinite(appId) && appId > 0)
   const lookup = useUserListByRole('api/vSelectRC', { enabled: canEdit })
   const options = (lookup.data ?? []).filter((item) => item.isActive !== false && item.assigneeValue)

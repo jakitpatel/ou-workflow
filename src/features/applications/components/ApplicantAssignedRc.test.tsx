@@ -5,7 +5,7 @@ import type { Applicant } from '@/types/application'
 import { ApplicantAssignedRc } from './ApplicantAssignedRc'
 
 const mocks = vi.hoisted(() => ({
-  user: { token: 'token', username: 'ncrc-user', role: 'NCRC', roles: [{ name: 'NCRC' }] },
+  user: { token: 'token', username: 'ncrc-user', role: 'NCRC', roles: [{ name: 'NCRC' }], delegated: [] as { name: string }[] },
   request: vi.fn(),
   refresh: vi.fn().mockResolvedValue(true),
 }))
@@ -23,6 +23,7 @@ const applicant: Applicant = {
 
 beforeEach(() => {
   mocks.user.role = 'NCRC'
+  mocks.user.delegated = []
   mocks.request.mockReset().mockImplementation(({ method }) => method === 'POST'
     ? Promise.resolve({ status: 'ok' })
     : Promise.resolve({ data: [{ id: 'rc-id', attributes: { userName: 'Rabbi Gutterman', fullName: 'Gutterman, Rabbi', IsActive: true } }] }))
@@ -89,4 +90,32 @@ it('keeps the existing assignment and reports a failed save', async () => {
   await screen.findByRole('alert')
   expect((screen.getByRole('combobox') as HTMLSelectElement).selectedOptions[0].textContent).toBe('Old RC')
   expect(mocks.refresh).not.toHaveBeenCalled()
+})
+
+it.each(['NCRC', 'ALL'])('allows an assistant to the assigned NCRC in the %s role view to save RC', async (role) => {
+  mocks.user.role = role
+  mocks.user.delegated = [{ name: 'alice' }]
+  mount({ ...applicant, assignedRoles: [{ NCRC: ' Alice ', isPrimary: false }] })
+  await screen.findByRole('option', { name: 'Gutterman, Rabbi' })
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Rabbi Gutterman' } })
+  await waitFor(() => expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({
+    method: 'POST',
+    body: { appId: 3719, role: 'RC', assignee: 'Rabbi Gutterman', capacity: 'DESIGNATED' },
+  })))
+})
+
+it.each([
+  ['an unrelated delegated user', { ...applicant, assignedRoles: [{ NCRC: 'bob' }] }, 'NCRC'],
+  ['an assistant with another selected role', { ...applicant, assignedRoles: [{ NCRC: 'alice' }] }, 'RC'],
+  ['an existing company', { ...applicant, assignedRoles: [{ NCRC: 'alice' }], isNewCompany: false }, 'NCRC'],
+  ...['complete', 'done', 'completed', 'withdrawn'].flatMap((status) => [
+    [`an assigned NCRC on a ${status} application`, { ...applicant, status }, 'NCRC'],
+    [`an assistant on a ${status} application`, { ...applicant, status, assignedRoles: [{ NCRC: 'alice' }] }, 'NCRC'],
+  ]),
+] as [string, Applicant, string][])('does not allow RC editing for %s', (_label, application, role) => {
+  mocks.user.role = role
+  mocks.user.delegated = [{ name: 'alice' }]
+  mount(application)
+  expect(screen.queryByRole('combobox')).toBeNull()
+  expect(mocks.request).not.toHaveBeenCalled()
 })
