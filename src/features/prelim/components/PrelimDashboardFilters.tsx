@@ -25,7 +25,7 @@ export function PrelimDashboardFilters({ q, status, applicationId, onChange }: P
         </div>
 
         <select
-          value={status || 'all'}
+          value={status || 'REVIEW'}
           onChange={(event) => onChange({ status: event.target.value, page: 0 })}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[140px]"
         >

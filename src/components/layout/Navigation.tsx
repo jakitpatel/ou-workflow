@@ -338,7 +338,7 @@ export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationP
           to={ROUTES.PRELIM_DASHBOARD}
           search={{
             q: '',
-            status: 'all',
+            status: 'REVIEW',
             page: 0,
           }}
           className={linkClass(isActiveRoute('prelim-dashboard'))}
