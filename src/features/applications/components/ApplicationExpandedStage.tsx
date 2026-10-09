@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog'
+import { ExternalVisitWaitDialog } from './ExternalVisitWaitDialog'
 import { isExternalWaitTask } from '@/features/tasks/model/externalWaitTask'
 import {
   MessageSquare,
@@ -376,19 +376,10 @@ export function ApplicationExpandedStage({
           </div>
         </div>
       )}
-      <Dialog open={externalWaitTask !== null} onOpenChange={(open) => { if (!open) setExternalWaitTask(null) }}>
-        <DialogContent>
-          <DialogTitle className="text-lg font-semibold">Waiting for external event</DialogTitle>
-          <DialogDescription className="text-sm text-gray-600">
-            Waiting for external "{externalWaitTask?.name}" event.
-          </DialogDescription>
-          <div className="flex justify-end">
-            <DialogClose className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-              Close
-            </DialogClose>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {externalWaitTask && (
+        <ExternalVisitWaitDialog task={externalWaitTask} stage={expandedStage} applicant={applicant}
+          onClose={() => setExternalWaitTask(null)} />
+      )}
       <TaskNotesDrawer
         open={Boolean(taskNotes.drawer)}
         applicantCompany={applicant.company}

@@ -4,6 +4,7 @@ import type { Applicant, Task } from '@/types/application'
 import { ApplicationExpandedStage } from './ApplicationExpandedStage'
 
 vi.mock('@/context/UserContext', () => ({ useUser: () => ({ username: 'tester', role: 'NCRC' }) }))
+vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ invalidateQueries: vi.fn() }) }))
 vi.mock('@/features/tasks/hooks/useTaskQueries', () => ({ useFetchTaskRoles: () => ({ data: [] }) }))
 vi.mock('@/features/tasks/hooks/useTaskMutations', () => ({ useUndoTaskMutation: () => ({}) }))
 vi.mock('@/features/tasks/notes/useTaskNotesDrawerState', () => ({
