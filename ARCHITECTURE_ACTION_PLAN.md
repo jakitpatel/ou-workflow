@@ -1,304 +1,232 @@
-# NCRC App Architecture Action Plan
+﻿# NCRC App Architecture Action Plan
 
-Audit date: 2026-07-29
+Reviewed: 2026-10-09. Scope: current local frontend and sibling mock backend.
+This document separates verified current behavior from proposed maintenance work.
+See [AGENTS.md](AGENTS.md) for working rules and [API contracts](docs/api-contracts.md)
+for local backend behavior.
 
-This replaces the mostly completed compatibility-move plan with the next executable work.
-The target is incremental improvement, not a rewrite.
+## Verified Baseline
 
-## Executive Assessment
+These observations include pre-existing local changes and should be refreshed after
+relevant implementation changes, rather than treated as permanent guarantees.
 
-The project has a sound top-level structure: feature ownership, TanStack file routes,
-automatic route splitting, TanStack Query server state, shared transport/query utilities,
-strict TypeScript, and a reusable authenticated layout.
+| Check                | Result on 2026-10-09                              |
+| -------------------- | ------------------------------------------------- |
+| Typecheck            | Pass                                              |
+| Tests                | 53 files / 311 tests pass                         |
+| Production build     | Pass with Vite 8.3.4                              |
+| Lint                 | Fails: 9 errors and 608 warnings                  |
+| Production audit     | 4 affected packages: 1 high, 3 moderate           |
+| Node used for checks | 24.18.1; no runtime pin found                     |
+| CI                   | No `.github` workflow directory found in this app |
+| API documentation    | `docs/` is currently Git-ignored                  |
 
-The next risks are below that structure:
+Typecheck, tests, lint, and build were verified during the dependency update in this
+session. The production audit was refreshed with `npm audit --omit=dev --json`.
+Its high finding is `@xmldom/xmldom`; moderate findings are the
+`mammoth` / `argparse` / `sprintf-js` chain. These are affected-package counts,
+not distinct-advisory counts or proof of exploitability. npm reports an xmldom fix;
+the proposed Mammoth remedy is a breaking downgrade and needs independent review.
+The earlier full install audit reported 21 findings; it is a different audit scope.
 
-1. Very large modules mix transport, domain rules, state machines, and rendering.
-2. Backend variability leaks into UI code through repeated `any` casts and casing fallbacks.
-3. Task execution and note normalization are duplicated.
-4. Lint is not yet a reliable gate.
-5. Tests are narrow relative to workflow risk.
-6. Dependency/security maintenance needs a controlled cadence.
+Declared dependency baselines: React/React DOM 19.3.0, TypeScript 5.9.3, Vite 8.3.4,
+React plugin 6.1.2, Router 1.170.41 / router plugin 1.168.42, Query 5.104.1,
+Vitest 5.0.3, jsdom 30.1.2, ESLint 10.12.0, Lucide React 1.54.0.
+Tailwind CSS is declared at 4.2.1 and its Vite plugin at 4.3.3; verify compatibility
+before aligning them. Resolved versions come from the lockfile. The previous plan's
+Vite 8, ESLint 10, Lucide 1, and related migrations are already adopted.
 
-## Audit Evidence
+## Current Architecture And Progress
 
-- 160 non-generated TypeScript source files.
-- 291 `any` / `as any` matches outside generated code and tests.
-- 26 production-source console calls.
-- 5 test files and 44 passing tests.
-- ESLint: 12 errors and 481 warnings.
-- Production build succeeds.
-- Four fixable transitive audit findings: PostCSS and picomatch high; Babel and esbuild low.
+The app uses strict TypeScript, feature ownership, TanStack file routes with automatic
+splitting, TanStack Query, shared transport, and authenticated layout composition.
 
-Largest hotspots:
+- `main.tsx` is the render entry; `app/providers` and `app/router` own bootstrap.
+- Dashboard/detail screens are feature-owned. Home now mounts
+  `features/applications/screens/HomePage`; Profile still contains substantial route UI.
+- Feature APIs, mappers, hooks, query keys, and cache modules own domain behavior.
+- The authenticated layout mounts `AuthenticatedEventsProvider` for one connection.
+  `hooks/useSSE.tsx` subscribes locally; `shared/api` owns parsing/connection mechanics.
+- Application/preliminary cache helpers refresh paged and infinite lists.
+- Preliminary resolution has pure adapters and dedicated search endpoints; RC assignment
+  and Schedule A edit/delete have dedicated API modules.
+- Shared email utilities cover common addresses, formatting, copies, and attachments.
+- Lazy boundaries exist for dashboards, application drawer content, preliminary detail
+  from message actions, and JSON editor content.
+- RFR sessions restrict navigation to Profile and RFR application detail. Builds use
+  `/dashboard/`; development serves at `/`. Preserve Cognito/Okta callbacks and browser targets.
 
-| Area                                 |   Lines | Concern                                        |
-| ------------------------------------ | ------: | ---------------------------------------------- |
-| `ContractStageDrawer.tsx`            |   4,329 | Templates, mapping, mutations, state, and UI   |
-| `TaskNotesDrawer.tsx`                |   2,299 | Parsing, threading, filtering, compose, and UI |
-| `ScheduleBProductsDrawer.tsx`        |   1,969 | UI and orchestration                           |
-| `ScheduleAIngredientsDrawer.tsx`     |   1,538 | UI and orchestration                           |
-| `useScheduleBProducts.ts`            |   1,325 | Parsing, matching, mutations, queries          |
-| `useInspectionInvoiceDrawerState.ts` |   1,179 | State machine and APIs                         |
-| `useScheduleAIngredients.ts`         |   1,143 | Parsing, matching, mutations, queries          |
-| `types/application.ts`               |     998 | Unrelated DTOs and models coupled together     |
-| `InspectionAssignmentDrawer.tsx`     |     957 | Adapters, workflow logic, and view             |
-| Feature API `index.ts` files         | 607–926 | Unrelated endpoints and weak returns           |
+Remaining gaps include aggregate API modules with `Promise<any>`, legacy shared types,
+duplicate task orchestration, very large drawers, and failing lint. The mock backend
+has incomplete filters and in-memory mutations; mock success does not prove production
+persistence or authorization.
 
-## Package Review
+Largest production modules (lines measured on review date):
 
-The core stack is modern: React 19.2.8, Query 5.101.4, Router 1.170.18, Vite 7.3.6,
-TypeScript 5.9.3, Tailwind 4.3.2, and Vitest 4.1.10.
+| Module                               | Lines | Concern                                     |
+| ------------------------------------ | ----: | ------------------------------------------- |
+| `ContractStageDrawer.tsx`            | 4,257 | Templates, approvals, payloads, preview, UI |
+| `ScheduleAIngredientsDrawer.tsx`     | 2,501 | Imports, edits, matching, UI                |
+| `TaskNotesDrawer.tsx`                | 2,304 | Normalization, threads, composer, UI        |
+| `ScheduleBProductsDrawer.tsx`        | 2,229 | Product orchestration and UI                |
+| `useScheduleBProducts.ts`            | 1,496 | Parsing, matching, queries, mutations       |
+| `useInspectionInvoiceDrawerState.ts` | 1,488 | Invoice state and requests                  |
+| `useScheduleAIngredients.ts`         | 1,378 | Parsing, matching, drafts                   |
+| `ApplicationDetailsContent.tsx`      | 1,170 | Detail tabs and composition                 |
+| `types/application.ts`               | 1,055 | DTO/domain coupling                         |
 
-Registry drift:
+Line count highlights review areas; responsibility and testability determine extraction.
 
-- Patch/minor candidates: Tailwind and its Vite plugin 4.3.3, typescript-eslint 8.65.0,
-  ESLint and `@eslint/js` 9.39.5.
-- Dedicated major migrations: Vite 8/plugin-react 6, ESLint 10, TypeScript 7, jsdom 29,
-  Lucide 1, web-vitals 6, Node types 26.
-
-Relevant official guidance:
-
-- Router automatic splitting:
-  https://tanstack.com/router/v1/docs/guide/automatic-code-splitting
-- Query defaults and refetch policy:
-  https://tanstack.com/query/latest/docs/framework/react/guides/important-defaults
-- React lazy/Suspense:
-  https://react.dev/reference/react/lazy
-- React memoization guidance:
-  https://react.dev/reference/react/useMemo
-- Vite performance measurement:
-  https://vite.dev/guide/performance.html
-
-## Target Direction
+## Target Boundaries
 
 ```text
+src/app/                     providers and router composition
+src/routes/                  declarations, loaders, search, access gates
 src/features/<feature>/
-|- api/
-|  |- <endpoint-group>.ts
-|  |- dto.ts
-|  |- mappers.ts
-|- components/<workflow>/
-|  |- <Workflow>Drawer.tsx
-|  |- sections/
-|- hooks/
-|- lib/       # pure adapters, parsers, calculations
-|- model/     # canonical types, query keys, constants
-|- screens/
+  api/                       endpoint groups, DTOs, boundary mappers
+  cache/                     domain event reconciliation and cache updates
+  components/                UI and cohesive workflow sections
+  hooks/                     queries, mutations, local orchestration
+  lib/                       pure parsers, adapters, payload builders
+  model/                     canonical types, keys, rules, constants
+  screens/                   route-facing composition
+src/shared/                  domain-independent infrastructure and utilities
+src/components/              reusable UI, layout, feedback
 ```
 
-External DTOs are tolerant; internal models are canonical. Mappers normalize casing once.
-Hooks orchestrate. Pure transforms live in `lib`. Components render and handle events.
+Routes/screens compose features; components/hooks consume APIs/models; APIs consume
+shared transport. Shared modules must not depend on features/routes. Necessary
+cross-feature collaboration uses explicit API/model modules, not screen internals.
+Avoid cycles and broad barrels. Maintain existing `utils` until substantive work
+justifies moving them.
 
-## Phase 0 — Restore A Trustworthy Quality Gate
+Normalize external aliases at typed boundaries. Separate tolerant DTOs from canonical
+models. Query owns server state; React owns transient UI and explicit drafts.
+New state/schema libraries or generic workflow frameworks require a demonstrated need.
 
-Priority: P0
+## P0: Quality Gates And Release Reproducibility
 
-1. Fix the 12 ESLint errors:
-   - ref mutation during render in `useSSE.tsx`;
-   - redundant boolean casts;
-   - Schedule A/B regex rules.
-2. Auto-fix import/export ordering separately.
-3. Track and burn down `any`, effect-sync, and Fast Refresh warnings; do not disable React
-   hook rules globally.
-4. Change build ordering so typecheck runs before Vite emits `dist`.
-5. Add `npm run check` and CI jobs for typecheck, tests, lint, and build.
-6. Pin the supported Node version.
+1. Fix nine lint errors in Schedule A/B hooks and TaskNotesDrawer with behavior preserved.
+   The previous SSE render-time ref assignment issue is already resolved.
+2. Separate formatting from behavior changes; reduce warnings by category. Do not disable
+   hooks rules to pass lint. Gradually promote correctness rules after debt is addressed.
+3. Add a check script and CI for lockfile install, typecheck, tests, lint, and build.
+   These do not exist yet. Remove `--passWithNoTests` from the required gate so discovery
+   failures cannot silently pass.
+4. Run typecheck before Vite in every build mode; current builds emit assets before `tsc`.
+5. Select/pin a supported Node release and align engines, developer setup, and CI.
+   Local Node 24 verification is not an established runtime support policy.
+6. Deliberately track docs by revising the blanket ignore or adding explicit exceptions.
 
-Done when:
+Acceptance: discovered tests pass, lint exits zero, type failures stop asset emission,
+and a fresh supported environment reproduces checks in CI.
 
-- Lint exits zero.
-- Tests remain green.
-- Type failures stop before bundling.
+## P0: Dependency And Document-Processing Hygiene
 
-## Phase 1 — Dependency And Security Hygiene
+1. Review production audit paths and actual document parsing/preview exposure. Apply
+   compatible remedies with focused tests; record advisory, dependency path, owner,
+   disposition, and review date when a fix is unsuitable or unavailable.
+2. Move `@tailwindcss/vite` to devDependencies; the router plugin is already there.
+3. Confirm planned `react-hook-form` usage; no source import was found. Remove it if
+   unnecessary. `web-vitals` is absent, so that old removal task is complete.
+4. Verify the Tailwind version difference. Separate patch/minor work from major migrations.
+5. Inspect lockfile changes and audit tooling separately. Do not run blind
+   `npm audit fix --force` or accept an incompatible downgrade automatically.
 
-Priority: P0
+Acceptance: findings have verified fixes or dated dispositions, package ownership is
+intentional, and dependency changes pass the full checks and lockfile review.
 
-1. Move `@tailwindcss/vite` and `@tanstack/router-plugin` to `devDependencies`.
-2. Apply low-risk patch/minor tool updates and regenerate the lockfile.
-3. Re-run the production audit and verify PostCSS, picomatch, Babel, and esbuild fixes.
-4. Confirm whether unused `react-hook-form` is planned; adopt consistently or remove.
-5. Create separate issues for every major upgrade line.
-6. Never combine major migrations or use `npm audit fix --force`.
+## P0: Typed Workflow Boundaries
 
-Done when:
+1. Split aggregate APIs by responsibility when touched. Replace `Promise<any>`, starting
+   with task assignment/completion, messages, resolution, and generated document responses.
+2. Establish canonical task accessors and one note adapter; remove aliases from UI branching.
+3. Move new domain types out of `types/application.ts`. Retire compatibility exports only
+   after consumers migrate; avoid a second catch-all module.
+4. Test direct KASH arrays, encoded role results, resolution fragments, mixed casing,
+   nullable IDs, malformed responses, and incomplete fixtures.
+5. Update API contracts whenever request/response semantics change.
 
-- No unexplained high production-audit findings.
-- Runtime dependencies contain runtime packages only.
-- Every direct dependency is used or documented.
+Acceptance: migrated consumers use one shape, touched API code adds no new `any`,
+and boundary tests cover missing, alternate, and invalid data.
 
-## Phase 2 — Canonical Boundary Types And Mappers
+## P1: Task Actions And Large Workflow Modules
 
-Priority: P0
+Task execution still overlaps in `useTaskActions.ts` and `useTaskDashboardState.ts`.
+Add parity tests before extracting a pure classifier with a discriminated union.
+Share payload construction/invalidation while keeping drawer visibility local.
+Cover resolution, assignment, NDA email/upload, conditions, confirmation, inspection,
+visits, contract, certification, and schedules; preserve role/capacity restrictions.
 
-1. Add feature-local DTO modules for applications, tasks, prelim, notes, and profile.
-2. Define canonical task accessors for ID, type/category, status/result, assignee, and
-   capacity.
-3. Move casing fallbacks out of components/hooks into mappers.
-4. Create one canonical TaskNote adapter used by notes UI and state hooks.
-5. Replace endpoint `Promise<any>` returns, starting with task actions and resolution.
-6. Split new domain types out of `src/types/application.ts`, with temporary compatibility
-   exports.
-7. Evaluate runtime schemas only for unstable/high-risk boundaries.
+Extract one cohesive slice per change:
 
-Done when:
+- Contract: templates, fee/payload builders, approval rules, preview sections, notifications.
+- Notes: adapters, threading/filtering, composer, attachments, list presentation.
+- Schedule A/B: import sanitization, hierarchy/matching, drafts, save builders, table sections.
+  Share identical mechanics while retaining ingredient/product rules.
+- Inspection: adapters, recipients, invoice state, previews, completion flow. Model explicit
+  states when boolean combinations can represent impossible workflows.
 
-- Migrated UI code consumes one field shape.
-- Touched API/domain code adds no new `any`.
-- Mapper tests cover missing and alternate-casing data.
+Acceptance: drawers compose tested modules; payloads, generated content, notifications,
+draft preservation, role gates, and failure recovery remain equivalent.
 
-## Phase 3 — Unify Task Action Execution
+## P1: Cache, Events, Routes, And Performance
 
-Priority: P0
+1. Preserve one SSE connection; test subscriptions, cleanup, abort/reconnect, identity
+   and API-base changes, malformed events, and stale-session isolation.
+2. Keep event policies feature-owned. Preserve metadata, ordering, page parameters, and
+   unrelated rows. Invalidate when filter membership/removals cannot be patched safely.
+3. The mock emits `refresh_messages` only. Use synthetic tests for workflow/submission
+   reload events and coordinate backend support before claiming end-to-end verification.
+4. Replace query-to-state effects with derived values or event-driven resets. Refetches
+   must not overwrite unsaved drafts.
+5. Move Profile UI into its feature screen. Reuse keys/options in loaders and hooks.
+   Preserve search state, RFR access, both navigation layouts, and the deployed base.
+6. Measure loading/chunks before memoization or manual splitting. Lazy-load heavy editors
+   and previews with loading/error recovery.
+7. Plan stale-chunk recovery and asset retention with hosting; avoid reload loops.
+   Review the current diagnostic SSE route's production exposure explicitly.
 
-`useTaskActions.ts` and `useTaskDashboardState.ts` currently overlap.
+Acceptance: cache tests cover paged/infinite data and event isolation; auth/navigation
+flows work; performance changes have measured before/after evidence.
 
-1. Add table-driven tests for every action combination.
-2. Extract pure `classifyTaskAction(task)` returning a discriminated union.
-3. Use it from application, prelim, and task dashboards.
-4. Centralize mutation inputs, result formatting, capacity, and invalidation.
-5. Keep modal/drawer visibility feature-local.
-6. Remove duplicate execution only after parity tests.
+## P1: Production Behavior And Observability
 
-Done when:
+1. Preserve intentional localhost login and test deployed SSO redirects, callback failures,
+   expired sessions, and role changes. Backend permissions remain independent of UI gates.
+2. Gate routine logs and redact tokens, contact data, and business payloads.
+3. Centralize typed timeout/abort and auth retries; legacy transport casts still need review.
+4. Cover loading, empty, error/retry, pending actions, labels, focus, and keyboard behavior.
+   Include upload/email failures, partial completion, and duplicate submission prevention.
+5. Establish staging smoke checks for production backend behavior, base path, authentication,
+   deep links, and refresh. Record the actual scope verified.
 
-- One classifier and mutation path govern all task actions.
-- Resolver, assignment, invoice, visit, contract, schedule, upload, confirmation, and
-  conditional paths have tests.
+Acceptance: expected failures have recovery UI and actionable redacted errors.
 
-## Phase 4 — Split Large Workflows Incrementally
+## Delivery And Maintenance
 
-Priority: P1
+For each change record workflow, source evidence, intended outcome, and acceptance criteria.
+Characterize risky behavior before moving it. Preserve unrelated changes and generated
+routes. Keep broad formatting, major upgrades, and business changes in separate reviews.
 
-### Contract
+Use proportionate checks from AGENTS.md. Dependencies require typecheck, all tests,
+lint, build, and lockfile inspection. Documentation-only changes need reference and
+formatting checks. Report baseline failures separately; never label failed gates passed.
 
-1. Move static legal templates into typed data modules.
-2. Extract parsing and payload builders.
-3. Extract mutation/notification orchestration into hooks.
-4. Split preview, approval, schedules, and actions into sections.
-5. Lazy-load preview/editor surfaces.
+Review patches/minors and audits regularly; review architectural debt periodically.
+Assign owners and target dates to maintenance work, and keep security dispositions
+time-bounded. Revisit them when paths or upstream remedies change.
 
-### Task Notes
-
-1. Move normalization, threading, and filtering to `notes/lib`.
-2. Split list, filters, composer, reactions, and thread view.
-3. Derive loading/error from Query rather than mirroring with effects.
-4. Preserve existing tests and add adapter tests.
-
-### Schedule A/B
-
-1. Extract shared import/text sanitization.
-2. Extract matching and payload builders.
-3. Separate query/mutation orchestration from editable drafts.
-4. Share only identical mechanics; keep ingredient/product rules separate.
-5. Test parsing, hierarchy, matching, and saves.
-
-### Inspection
-
-1. Extract application/task adapters shared by assignment, visit, and invoice.
-2. Model workflow stages explicitly instead of loosely related booleans.
-3. Split lookup, form, preview, and completion sections.
-
-Done when:
-
-- Main drawers are composition surfaces.
-- Pure helpers live in `lib`, not another UI component.
-- Behavior and bundle size are measured before/after.
-
-## Phase 5 — Query And Effect Discipline
-
-Priority: P1
-
-1. Review every `set-state-in-effect` warning.
-2. Replace query-to-state mirroring with query `select` or derived values.
-3. Use event-driven resets or component keys for drawer lifecycle.
-4. Keep explicit drafts only for editable server-backed forms.
-5. Standardize defaults for reference data, dashboard lists, details, and messages.
-6. Replace broad invalidations with targeted cache updates where safe.
-7. Profile before adding memoization.
-
-Done when:
-
-- Hook warnings are resolved rather than suppressed.
-- Server data has one source of truth.
-- Refetch behavior is predictable.
-
-## Phase 6 — Route, Screen, And Bundle Boundaries
-
-Priority: P1
-
-1. Move authenticated home UI into a feature/app screen.
-2. Move Profile UI into `features/profile/screens`.
-3. Keep route files declarative.
-4. Lazy-load rarely opened heavy drawers/editor surfaces at module scope with Suspense.
-5. Measure initial and route chunks with build output or a visualizer.
-6. Add `vite:preloadError` recovery for stale deployed chunks if deployment can replace
-   hashed assets.
-7. Add manual chunk rules only after measurement.
-
-Done when:
-
-- Home and Profile routes are thin.
-- Heavy workflows are absent from unrelated initial route work.
-- Chunk loading failures have recovery UI.
-
-## Phase 7 — Tests By Business Risk
-
-Priority: P1, continuous
-
-Add tests for:
-
-1. Task classification and mutation inputs.
-2. Application/task/prelim mapper aliases.
-3. Company/plant resolution adapters.
-4. Schedule A/B parsers and save payloads.
-5. Contract payload generation and approval gates.
-6. Notes adapter and threading.
-7. Auth redirects and callback failure.
-8. Top and left navigation layout.
-9. HTTP timeout, refresh retry, errors, and abort.
-
-Done when:
-
-- Every risky extraction starts with characterization tests.
-- Critical pure modules have meaningful branch coverage.
-- Browser checks cover both navigation modes and core completion paths.
-
-## Phase 8 — Production Hygiene
-
-Priority: P2
-
-1. Gate/remove routine `console.debug` in `httpClient.ts`.
-2. Keep actionable errors without logging tokens or sensitive payloads.
-3. Type request timeout options instead of attaching private fields through `any`.
-4. Document and isolate localhost authentication and its removal criteria.
-5. Either send web-vitals to a real sink or remove the call/package.
-6. Add recovery for expected lazy-load/network failures.
-
-Done when:
-
-- Normal production use is console-quiet.
-- Auth/transport failures are observable without sensitive exposure.
-
-## Recommended Order
-
-1. Quality gate.
-2. Dependency/security patching.
-3. Canonical task/note DTOs.
-4. Unified task actions.
-5. Notes split (best current test safety).
-6. Schedule A/B pure parsers.
-7. Contract and inspection decomposition.
-8. Query, route, testing, and production hygiene continuously.
+Record significant decisions in short dated ADRs: context, alternatives, outcome,
+consequences, acceptance evidence, follow-up. Use relative links. Update this plan after
+verified milestones; proposals alone do not complete work.
 
 ## Definition Of Done
 
-- Typecheck, tests, lint, and build are reliable gates.
-- No unexplained high production dependency vulnerabilities.
-- Routes are thin and heavy features lazy-load at useful boundaries.
-- Backend quirks are normalized at typed adapters.
-- Task execution has one classification/mutation path.
-- Large workflows are decomposed without regressions.
-- Tests grow with every risky extraction.
-- Documentation matches actual ownership and package baselines.
+- Gates reproduce locally and in CI; lint errors are resolved.
+- Production dependency risks have reviewed fixes or dated dispositions.
+- Typed adapters and feature ownership avoid cyclic dependencies.
+- Server state, drafts, event subscriptions, and caches have clear owners.
+- Core payloads, permissions, failures, and navigation modes have meaningful tests.
+- Large modules shrink by responsibility while preserving behavior.
+- Tracked documentation separates implemented behavior from pending work.
