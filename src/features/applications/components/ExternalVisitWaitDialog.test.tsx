@@ -23,7 +23,7 @@ function setup(
   name = 'SCHEDULE VISIT',
   overrides: Partial<Task> = {},
   stage = 'inspection',
-  peers: Task[] = [],
+  applicationOverrides: Partial<Applicant> = {},
 ) {
   const task = {
     TaskInstanceId: 1,
@@ -36,7 +36,9 @@ function setup(
   } as Task
   const applicant = {
     applicationId: 42,
-    stages: { [stage]: { tasks: [task, ...peers] } },
+    visit_id: 72182,
+    stages: { [stage]: { tasks: [task] } },
+    ...applicationOverrides,
   } as unknown as Applicant
   const onClose = vi.fn()
   render(
@@ -59,14 +61,14 @@ describe('external inspection visit dates', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
     expect(scheduleVisit).toHaveBeenCalledWith({
       visitType: 'SCHEDULE',
-      visitId: '2970391',
+      visitId: '72182',
       visitDate: '2026-10-15',
       token: 'test-token',
     })
     expect(invalidateQueries).toHaveBeenCalledTimes(3)
   })
 
-  it('records ACTUAL and accepts object-shaped assignment details', async () => {
+  it('records ACTUAL using the application visit_id instead of conflicting task details', async () => {
     const onClose = setup('Actual Date', {
       StatusDetails: { inputParam: { visitId: '2970391' } } as unknown as string,
     })
@@ -77,7 +79,7 @@ describe('external inspection visit dates', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Schedule' }))
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
     expect(scheduleVisit).toHaveBeenCalledWith(
-      expect.objectContaining({ visitType: 'ACTUAL', visitDate: '2026-10-08', visitId: '2970391' }),
+      expect.objectContaining({ visitType: 'ACTUAL', visitDate: '2026-10-08', visitId: '72182' }),
     )
   })
 
@@ -98,28 +100,24 @@ describe('external inspection visit dates', () => {
     expect(screen.queryByRole('button', { name: 'More' })).toBeNull()
   })
 
-  it('blocks submission when the visit ID is absent', () => {
-    setup('Actual Date', { StatusDetails: undefined })
-    fireEvent.click(screen.getByRole('button', { name: 'More' }))
-    fireEvent.change(screen.getByLabelText('Actual visit date'), {
-      target: { value: '2026-10-08' },
-    })
-    expect(screen.getByRole('alert').textContent).toContain('Visit ID not found')
-    expect(screen.getByRole('button', { name: 'Schedule' }).hasAttribute('disabled')).toBe(true)
-    expect(scheduleVisit).not.toHaveBeenCalled()
-  })
+  it.each([undefined, null, 0, -1, 'bad-id'])(
+    'blocks submission for application visit_id %s even with a task visit ID',
+    (visit_id) => {
+      setup('Actual Date', {}, 'inspection', { visit_id })
+      fireEvent.click(screen.getByRole('button', { name: 'More' }))
+      fireEvent.change(screen.getByLabelText('Actual visit date'), {
+        target: { value: '2026-10-08' },
+      })
+      expect(screen.getByRole('alert').textContent).toContain('Visit ID not found')
+      expect(screen.getByRole('button', { name: 'Schedule' }).hasAttribute('disabled')).toBe(true)
+      expect(scheduleVisit).not.toHaveBeenCalled()
+    },
+  )
 
-  it('uses the same Inspection stage schedule task when actual-date details omit the visit ID', () => {
-    setup('Actual Date', { StatusDetails: undefined }, 'inspection', [
-      {
-        name: 'SCHEDULE VISIT',
-        taskType: 'CONFIRM',
-        taskCategory: 'EXTERNAL',
-        StatusDetails: '{visitId:2970391}',
-      } as Task,
-    ])
+  it('accepts a string application visit_id without task assignment data', () => {
+    setup('Actual Date', { StatusDetails: undefined }, 'inspection', { visit_id: '2975730' })
     fireEvent.click(screen.getByRole('button', { name: 'More' }))
-    expect(screen.getByText('Visit ID: 2970391')).toBeTruthy()
+    expect(screen.getByText('Visit ID: 2975730')).toBeTruthy()
   })
 
   it('keeps the selected date on failure and permits retry', async () => {

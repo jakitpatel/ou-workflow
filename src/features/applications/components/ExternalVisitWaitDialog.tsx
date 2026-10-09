@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { useUser } from '@/context/UserContext'
 import {
   getExternalVisitScheduleType,
-  getInspectionVisitId,
+  getApplicationVisitId,
 } from '@/features/applications/lib/externalVisitSchedule'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { scheduleVisit } from '@/features/tasks/api/scheduleVisit'
@@ -29,14 +29,7 @@ export function ExternalVisitWaitDialog({ task, stage, applicant, onClose }: Pro
   const canSchedule =
     (import.meta.env.MODE === 'development' || import.meta.env.MODE === 'staging') &&
     visitType !== null
-  // Only use assignment data from the same Inspection stage as a fallback.
-  const scheduleTask = stage
-    ? applicant.stages[stage]?.tasks.find(
-        (item) => getExternalVisitScheduleType(stage, item) === 'SCHEDULE',
-      )
-    : undefined
-  const visitId =
-    getInspectionVisitId(task) || (scheduleTask ? getInspectionVisitId(scheduleTask) : '')
+  const visitId = getApplicationVisitId(applicant)
 
   const submit = async () => {
     if (!canSchedule || !visitType || submitting.current) return

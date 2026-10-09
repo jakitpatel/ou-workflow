@@ -1,6 +1,5 @@
-import { getInspectionStatusInputParam } from '@/features/applications/utils/inspectionStatusDetails'
 import { isExternalWaitTask } from '@/features/tasks/model/externalWaitTask'
-import type { Task } from '@/types/application'
+import type { Applicant, Task } from '@/types/application'
 
 export function getExternalVisitScheduleType(
   stage: string | null,
@@ -13,18 +12,10 @@ export function getExternalVisitScheduleType(
   return null
 }
 
-export function getInspectionVisitId(task: Task): string {
-  const record = task as unknown as Record<string, unknown>
-  for (const value of [
-    record.StatusDetails,
-    record.statusDetails,
-    record.Result,
-    record.result,
-    record.ResultData,
-  ]) {
-    const text = getInspectionStatusInputParam(value)
-    const match = text.match(/visitId\s*:\s*["']?(\d+)/i) ?? text.match(/Visit\s*#\s*(\d+)/i)
-    if (match && Number(match[1]) > 0) return match[1]
-  }
-  return ''
+export function getApplicationVisitId(applicant: Applicant): string {
+  // The application-list mapper normalizes visit_id, including GlobalData.appvars.
+  const value = String(applicant.visit_id ?? '').trim()
+  return /^\d+$/.test(value) && Number.isSafeInteger(Number(value)) && Number(value) > 0
+    ? value
+    : ''
 }
