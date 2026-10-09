@@ -27,6 +27,25 @@ type LeftNavigationProps = {
   onCollapsedChange: (collapsed: boolean) => void
 }
 
+function EnvironmentBadge() {
+  const mode = import.meta.env.MODE
+  const environment = mode === 'production'
+    ? { label: 'PROD', color: 'bg-red-100 text-red-800 ring-red-200' }
+    : mode === 'staging'
+      ? { label: 'STAGE', color: 'bg-amber-100 text-amber-800 ring-amber-200' }
+      : { label: 'DEV', color: 'bg-blue-100 text-blue-800 ring-blue-200' }
+
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-bold leading-none tracking-wide ring-1 ring-inset ${environment.color}`}
+      aria-label={`Build environment: ${environment.label}`}
+      title={`Build mode: ${mode}`}
+    >
+      {environment.label}
+    </span>
+  )
+}
+
 export function Navigation({ showMenu = true }: NavigationProps) {
   const location = useRouterState({ select: (s) => s.location.pathname })
   const { username, role, roles, logout } = useUser()
@@ -109,6 +128,7 @@ export function Navigation({ showMenu = true }: NavigationProps) {
               <span className="text-base sm:text-lg font-semibold text-gray-900 hidden sm:inline">
                 Workflow System
               </span>
+              <EnvironmentBadge />
             </Link>
 
             {/* Navigation Menu */}
@@ -284,7 +304,10 @@ export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationP
             OU
           </div>
           {!collapsed ? (
-            <span className="truncate text-sm font-semibold text-gray-900">Workflow System</span>
+            <div className="flex min-w-0 flex-col items-start gap-1">
+              <span className="truncate text-sm font-semibold text-gray-900">Workflow System</span>
+              <EnvironmentBadge />
+            </div>
           ) : null}
         </Link>
         <button
