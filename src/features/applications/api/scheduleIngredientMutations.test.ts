@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { fetchWithAuth } from '@/shared/api/httpClient'
+
 import { deleteScheduleIngredient, patchScheduleIngredient } from './scheduleIngredientMutations'
 
 vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: vi.fn() }))
@@ -22,16 +24,17 @@ describe('ScheduleIngredient mutations', () => {
       method: 'PATCH',
       token: 'token',
       body: {
-        data: { attributes: { ApplicationID: '421', ...attributes }, type: 'ScheduleIngredient' },
+        data: { attributes: { ApplicationID: '421', ...attributes }, id: 17, type: 'ScheduleIngredient' },
       },
     })
   })
 
-  it('deletes the ingredient resource without a request body', async () => {
+  it('soft deletes the ingredient resource with its ID and IsDeleted flag', async () => {
     await deleteScheduleIngredient('17', 'token')
     expect(fetchWithAuth).toHaveBeenCalledWith({
       path: '/api/ScheduleIngredient/17',
-      method: 'DELETE',
+      method: 'PATCH',
+      body: { data: { attributes: { IsDeleted: true }, id: 17, type: 'ScheduleIngredient' } },
       token: 'token',
     })
   })

@@ -23,9 +23,8 @@ export function ScheduleIngredientEditCells({
     <>
       <td className="px-3 py-3">{input('rawMaterialCode', 'RMC')}</td>
       <td className="px-3 py-3">{input('ingredientLabelName', 'Ingredient Name')}</td>
-      <td className="space-y-1 px-3 py-3">
+      <td className="px-3 py-3">
         {input('source', 'Source')}
-        {input('manufacturer', 'Manufacturer')}
       </td>
       <td className="px-3 py-3">{input('brandName', 'Brand Name')}</td>
       <td className="px-3 py-3">{input('certifyingAgency', 'Certifier')}</td>

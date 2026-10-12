@@ -21,6 +21,7 @@ export function patchScheduleIngredient(
     body: {
       data: {
         attributes: { ApplicationID: applicationId, ...attributes },
+        id: Number(id),
         type: 'ScheduleIngredient',
       },
     },
@@ -31,7 +32,14 @@ export function patchScheduleIngredient(
 export function deleteScheduleIngredient(id: string, token?: string | null) {
   return fetchWithAuth({
     path: `/api/ScheduleIngredient/${encodeURIComponent(id)}`,
-    method: 'DELETE',
+    method: 'PATCH',
+    body: {
+      data: {
+        attributes: { IsDeleted: true },
+        id: Number(id),
+        type: 'ScheduleIngredient',
+      },
+    },
     token,
   })
 }
