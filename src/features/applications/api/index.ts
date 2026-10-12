@@ -720,6 +720,8 @@ export async function fetchScheduleAIngredients({
   const params = new URLSearchParams()
   params.append('filter[ApplicationID]', String(applicationId))
 
+  params.append('filter[isDeleted]', 'false')
+
   const response = await fetchWithAuth<ScheduleAIngredientsResponse>({
     path: `/get_ingredients?${params.toString()}`,
     token,
