@@ -1,7 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
+
 import type { Applicant } from '@/types/application'
+
 import { ApplicantAssignedRc } from './ApplicantAssignedRc'
 
 const mocks = vi.hoisted(() => ({
@@ -45,12 +47,29 @@ it('loads the requested lookup and saves the selected username with the exact ro
     path: '/api/vSelectRC?page%5Blimit%5D=10000&page%5Boffset%5D=0&sort=fullName', token: 'token',
   }))
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Rabbi Gutterman' } })
+  expect(mocks.request.mock.calls.some(([request]) => request.method === 'POST')).toBe(false)
+  fireEvent.click(screen.getByRole('button', { name: 'Yes' }))
   await waitFor(() => expect(mocks.request).toHaveBeenCalledWith({
     path: '/assignRole', method: 'POST', token: 'token',
     body: { appId: 3719, role: 'RC', assignee: 'Rabbi Gutterman', capacity: 'DESIGNATED' },
   }))
   await waitFor(() => expect(mocks.refresh).toHaveBeenCalledWith({ applicationId: 3719, queryClient: client, token: 'token' }))
   await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['applications', 'detail', '3719'] }))
+})
+
+it.each(['No', 'Escape'])('keeps the old RC without a backend assignment when dismissed with %s', async (action) => {
+  mount()
+  await screen.findByRole('option', { name: 'Gutterman, Rabbi' })
+  const select = screen.getByRole('combobox') as HTMLSelectElement
+  fireEvent.change(select, { target: { value: 'Rabbi Gutterman' } })
+  expect(screen.getByRole('dialog').textContent).toContain('Are you sure you want to assign RC')
+  expect(select.selectedOptions[0].textContent).toBe('Old RC')
+  if (action === 'No') fireEvent.click(screen.getByRole('button', { name: 'No' }))
+  else fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  expect(select.selectedOptions[0].textContent).toBe('Old RC')
+  expect(mocks.request.mock.calls.some(([request]) => request.method === 'POST')).toBe(false)
+  expect(mocks.refresh).not.toHaveBeenCalled()
 })
 
 it.each([
@@ -87,6 +106,7 @@ it('keeps the existing assignment and reports a failed save', async () => {
   mount()
   await screen.findByRole('option', { name: 'Gutterman, Rabbi' })
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Rabbi Gutterman' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Yes' }))
   await screen.findByRole('alert')
   expect((screen.getByRole('combobox') as HTMLSelectElement).selectedOptions[0].textContent).toBe('Old RC')
   expect(mocks.refresh).not.toHaveBeenCalled()
@@ -98,6 +118,7 @@ it.each(['NCRC', 'ALL'])('allows an assistant to the assigned NCRC in the %s rol
   mount({ ...applicant, assignedRoles: [{ NCRC: ' Alice ', isPrimary: false }] })
   await screen.findByRole('option', { name: 'Gutterman, Rabbi' })
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Rabbi Gutterman' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Yes' }))
   await waitFor(() => expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({
     method: 'POST',
     body: { appId: 3719, role: 'RC', assignee: 'Rabbi Gutterman', capacity: 'DESIGNATED' },

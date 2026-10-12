@@ -1,4 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRef, useState } from 'react'
+
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog'
 import { useUser } from '@/context/UserContext'
 import { assignApplicationRc } from '@/features/applications/api/assignApplicationRc'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
@@ -11,6 +14,8 @@ import type { Applicant } from '@/types/application'
 export function ApplicantAssignedRc({ applicant }: { applicant: Applicant }) {
   const { token, username, role, roles, delegated } = useUser()
   const queryClient = useQueryClient()
+  const [pendingAssignee, setPendingAssignee] = useState<string | null>(null)
+  const selectRef = useRef<HTMLSelectElement>(null)
   const isNcrc = role?.toUpperCase() === 'NCRC' ||
     (role?.toUpperCase() === 'ALL' && roles?.some((item) => item.name.toUpperCase() === 'NCRC'))
   const isAssignedNcrc = Boolean(username?.trim()) && (applicant.assignedRoles ?? []).some(
@@ -66,11 +71,14 @@ export function ApplicantAssignedRc({ applicant }: { applicant: Applicant }) {
       {canEdit ? (
         <>
           <select
+            ref={selectRef}
             aria-label={`Company RC for ${applicant.company || applicant.applicationId}`}
             value={currentOption?.assigneeValue ?? ''}
             disabled={lookup.isLoading || lookup.isError || mutation.isPending}
             onChange={(event) => {
-              if (event.target.value) mutation.mutate(event.target.value)
+              if (event.target.value && event.target.value !== currentOption?.assigneeValue) {
+                setPendingAssignee(event.target.value)
+              }
             }}
             className="max-w-full rounded border border-gray-300 bg-white px-2 py-1 text-xs font-semibold text-gray-800 disabled:bg-gray-50"
           >
@@ -79,6 +87,33 @@ export function ApplicantAssignedRc({ applicant }: { applicant: Applicant }) {
               <option key={item.lookupKey} value={item.assigneeValue}>{item.name}</option>
             ))}
           </select>
+          <Dialog
+            open={pendingAssignee !== null}
+            onOpenChange={(open) => { if (!open) setPendingAssignee(null) }}
+          >
+            <DialogContent onCloseAutoFocus={(event) => {
+              event.preventDefault()
+              selectRef.current?.focus()
+            }}>
+              <DialogTitle className="text-lg font-semibold">Assign Company RC</DialogTitle>
+              <DialogDescription className="text-sm text-gray-600">
+                Are you sure you want to assign RC{' '}
+                <span className="font-semibold">{options.find((item) => item.assigneeValue === pendingAssignee)?.name}</span>
+                {' '}to {applicant.company || `application ${applicant.applicationId}`}?
+              </DialogDescription>
+              <DialogFooter>
+                <button type="button" className="rounded border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
+                  onClick={() => setPendingAssignee(null)}>No</button>
+                <button type="button" className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+                  disabled={mutation.isPending || !canEdit}
+                  onClick={() => {
+                    if (!pendingAssignee || mutation.isPending) return
+                    mutation.mutate(pendingAssignee)
+                    setPendingAssignee(null)
+                  }}>Yes</button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           {mutation.isPending && <span role="status" className="ml-2">Saving...</span>}
           {lookup.isError && (
             <span role="alert" className="ml-2 text-red-600">
