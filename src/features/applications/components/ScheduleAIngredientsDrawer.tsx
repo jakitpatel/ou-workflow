@@ -1,4 +1,5 @@
 import { ScheduleRoundEmailCopies } from './ScheduleRoundEmailCopies'
+import { ScheduleAEirNewTab } from './ScheduleAEirNewTab'
 import { ScheduleIngredientEditCells } from './ScheduleIngredientEditCells'
 import { useScheduleIngredientActions } from '../hooks/useScheduleIngredientActions'
 import { statusClass } from '../utils/scheduleAIngredientStatusClass'
@@ -39,6 +40,7 @@ import {
   type ScheduleAIngredientView,
   type ScheduleAIngredientDraft,
   getDaysSinceVisit,
+  getScheduleAEirUrl,
   getScheduleACommunicationMessageBody,
   useCreateScheduleAIngredient,
   useScheduleACommunicationMessages,
@@ -74,7 +76,7 @@ type Props = {
   onClose: () => void
 }
 
-type DrawerTab = 'ingredients' | 'comm' | 'eir'
+type DrawerTab = 'ingredients' | 'comm' | 'eir' | 'eir-new'
 
 const CUSTOM_NOTE_VALUE = '__custom__'
 
@@ -650,6 +652,7 @@ export function ScheduleAIngredientsDrawer({
   const eirSubmitterLabel = assignedRfr || 'the assigned RFR'
   const effectiveAppVars = { ...globalAppVars, ...appVars }
   const visitIdLabel = textValue(applicationDetail?.VisitId)
+  const eirNewUrl = getScheduleAEirUrl(applicationDetail?.VisitId)
   const inspectionDate = formatDisplayDate(applicationDetail?.InspectionDate)
   const reportedInspectionDate = formatDisplayDate(applicationDetail?.ReportedInspectionDate)
   const daysSinceVisit = getDaysSinceVisit(applicationDetail?.InspectionDate)
@@ -1318,6 +1321,7 @@ export function ScheduleAIngredientsDrawer({
               {[
                 { id: 'comm', label: 'Communication' },
                 { id: 'eir', label: 'EIR' },
+                { id: 'eir-new', label: 'EIR New' },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -1336,6 +1340,7 @@ export function ScheduleAIngredientsDrawer({
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto p-4">
+            {activeTab === 'eir-new' ? <ScheduleAEirNewTab url={eirNewUrl} /> : null}
             {activeTab === 'ingredients' ? (
               <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
                 <div

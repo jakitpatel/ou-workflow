@@ -1,4 +1,5 @@
 import { withImpliedBcc } from '@/shared/email/impliedBcc'
+export { getScheduleAEirUrl } from '../utils/scheduleAEirUrl'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
