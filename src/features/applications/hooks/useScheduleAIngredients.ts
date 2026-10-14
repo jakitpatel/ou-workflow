@@ -6,7 +6,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createApplicationMessage,
   createScheduleAIngredient,
-  fetchApplicants,
   fetchApplicationMessages,
   fetchScheduleAIngredients,
   updateApplicationMessage,
@@ -20,7 +19,8 @@ import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import { fetchTaskInstance, patchTaskStatusDetails } from '@/features/tasks/api'
 import { getInspectionStatusSavedState } from '@/features/applications/utils/inspectionStatusDetails'
-import type { ApplicantAppVars, ApplicationEmail, KashIngredient, ScheduleAIngredient } from '@/types/application'
+import { useScheduleAApplication } from './useScheduleAApplication'
+import type { ApplicationEmail, KashIngredient, ScheduleAIngredient } from '@/types/application'
 
 export type ScheduleAIngredientRow = {
   id: string
@@ -145,26 +145,8 @@ const todayLabel = () =>
 const valueText = (value: unknown) => String(value ?? '').trim()
 
 export function useScheduleAApplicationAppVars(applicationId?: string) {
-  const { token } = useUser()
-
-  return useQuery<ApplicantAppVars | null>({
-    queryKey: ['schedule-a-application-appvars', applicationId],
-    queryFn: async () => {
-      const response = await fetchApplicants({
-        applicationId: Number(applicationId),
-        limit: 10_000,
-        myOnly: false,
-        token: token ?? undefined,
-      })
-      const application = response.data.find(
-        (item) => String(item.applicationId ?? item.id) === applicationId,
-      )
-
-      return application?.appvars ?? null
-    },
-    enabled: Boolean(applicationId && token),
-    ...queryOptionDefaults.applicationsList,
-  })
+  const query = useScheduleAApplication(applicationId)
+  return { ...query, data: query.data?.appvars ?? null }
 }
 
 export const getDaysSinceVisit = (value?: string | null, now = new Date()) => {

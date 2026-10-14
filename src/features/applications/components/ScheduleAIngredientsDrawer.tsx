@@ -1,5 +1,6 @@
 import { ScheduleRoundEmailCopies } from './ScheduleRoundEmailCopies'
 import { ScheduleAEirNewTab } from './ScheduleAEirNewTab'
+import { useScheduleAApplication } from '../hooks/useScheduleAApplication'
 import { ScheduleIngredientEditCells } from './ScheduleIngredientEditCells'
 import { useScheduleIngredientActions } from '../hooks/useScheduleIngredientActions'
 import { statusClass } from '../utils/scheduleAIngredientStatusClass'
@@ -47,7 +48,6 @@ import {
   fetchScheduleAEirDocumentBlob,
   resolveScheduleADocumentUrl,
   useScheduleAEirDocument,
-  useScheduleAApplicationAppVars,
   useScheduleAIngredients,
   useScheduleAScratchpad,
   useSendScheduleACommunicationEmail,
@@ -626,7 +626,7 @@ export function ScheduleAIngredientsDrawer({
   const { data: applicationDetail } = useApplicationDetail(
     isActive ? resolvedApplicationId : undefined,
   )
-  const { data: globalAppVars } = useScheduleAApplicationAppVars(
+  const { data: applicationItem } = useScheduleAApplication(
     isActive ? resolvedApplicationId : undefined,
   )
   const assignedRfr = getDesignatedRfrName(applicationDetail?.DesignatedRFR)
@@ -650,9 +650,10 @@ export function ScheduleAIngredientsDrawer({
     }
   }, [scratchpadApi.saveError])
   const eirSubmitterLabel = assignedRfr || 'the assigned RFR'
-  const effectiveAppVars = { ...globalAppVars, ...appVars }
+  const effectiveAppVars = { ...applicationItem?.appvars, ...appVars }
+  const inspectionStatus = applicationItem?.stages?.inspection?.status
   const visitIdLabel = textValue(applicationDetail?.VisitId)
-  const eirNewUrl = getScheduleAEirUrl(applicationDetail?.VisitId)
+  const eirNewUrl = inspectionStatus === 'COMPLETED' ? getScheduleAEirUrl(applicationDetail?.VisitId) : ''
   const inspectionDate = formatDisplayDate(applicationDetail?.InspectionDate)
   const reportedInspectionDate = formatDisplayDate(applicationDetail?.ReportedInspectionDate)
   const daysSinceVisit = getDaysSinceVisit(applicationDetail?.InspectionDate)
@@ -1340,7 +1341,7 @@ export function ScheduleAIngredientsDrawer({
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto p-4">
-            {activeTab === 'eir-new' ? <ScheduleAEirNewTab url={eirNewUrl} /> : null}
+            {activeTab === 'eir-new' ? <ScheduleAEirNewTab url={eirNewUrl} inspectionStatus={inspectionStatus} /> : null}
             {activeTab === 'ingredients' ? (
               <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
                 <div

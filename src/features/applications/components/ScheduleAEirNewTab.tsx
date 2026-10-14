@@ -1,4 +1,12 @@
-export function ScheduleAEirNewTab({ url }: { url: string }) {
+export function ScheduleAEirNewTab({ url, inspectionStatus }: { url: string; inspectionStatus?: string }) {
+  if (inspectionStatus !== 'COMPLETED') {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500">
+        You are not allowed to see this Tab.
+      </div>
+    )
+  }
+
   if (!url) {
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500">
