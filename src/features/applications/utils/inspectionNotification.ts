@@ -1,14 +1,18 @@
 import type { ApplicationDetail } from '@/types/application'
 
-export const getOuDirectLoginUrl = (mode = import.meta.env.MODE): string => {
-  switch (mode) {
-    case 'production':
-      return 'https://oudirect.org/oudirect/login'
-    case 'staging':
-      return 'https://oudirectstaging.org/oudirect/login'
-    default:
-      return 'https://oudirect-st.ou.org/oudirect/login'
-  }
+export const getOuDirectLoginUrl = (): string =>
+  new URL('/oudirect/login', import.meta.env.VITE_OUDIRECT_BASE_URL).toString()
+
+export const getOuDirectInspectionUrl = (visitId: string): string => {
+  const url = new URL('/oudirect/inspections/RfrVisitInspectionForm', import.meta.env.VITE_OUDIRECT_BASE_URL)
+  url.search = new URLSearchParams({
+    type: 'Inspection',
+    mode: 'new',
+    subtype: 'short',
+    visitID: visitId,
+    menu: 'VisitsAsRfr',
+  }).toString()
+  return url.toString()
 }
 
 const buildPrimaryContactLines = (
@@ -109,7 +113,7 @@ export const buildNotificationBody = ({
     '',
     `Account #: ${accountNumber || '-'}`,
     '',
-    `OUDirect: ${getOuDirectLoginUrl()}`,
+    `OUDirect: ${getOuDirectInspectionUrl(visitId)}`,
     // Temporarily hidden until the client is ready for application links.
     // ...(accountApplicationUrl ? [`Application link: ${applicationLinkLabel}`] : []),
     '',

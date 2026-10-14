@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { expect, it, vi } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import type { Applicant, Task } from '@/types/application'
 import { InspectionAssignmentDrawer } from './InspectionAssignmentDrawer'
 
@@ -31,7 +31,10 @@ vi.mock('@/features/applications/api', () => ({ createApplicationMessage: mocks.
 vi.mock('@/features/tasks/api', () => ({ patchTaskGuiDisplayResult: mocks.display, patchTaskResult: mocks.result }))
 vi.mock('@/features/applications/cache/applicationListCache', () => ({ refreshApplicationInListCaches: vi.fn().mockResolvedValue(true) }))
 
+afterEach(() => vi.unstubAllEnvs())
+
 it('creates and notifies without a Visit Date task or status-details save', async () => {
+  vi.stubEnv('VITE_OUDIRECT_BASE_URL', 'https://oudirect-st.ou.org')
   const task = { TaskInstanceId: 123, name: 'Assign RFR' } as Task
   const applicant = { applicationId: 1, company: 'Test company', stages: {} } as Applicant
   render(
@@ -52,5 +55,10 @@ it('creates and notifies without a Visit Date task or status-details save', asyn
     }),
   }))
   expect(mocks.display).toHaveBeenCalledWith(expect.objectContaining({ taskId: '123', result: expect.stringContaining('Visit #789') }))
+  expect(mocks.message).toHaveBeenCalledWith(expect.objectContaining({
+    payload: expect.objectContaining({
+      MessageTextPlain: expect.stringContaining('/oudirect/inspections/RfrVisitInspectionForm?type=Inspection&mode=new&subtype=short&visitID=789&menu=VisitsAsRfr'),
+    }),
+  }))
   expect(mocks.result).not.toHaveBeenCalled()
 })

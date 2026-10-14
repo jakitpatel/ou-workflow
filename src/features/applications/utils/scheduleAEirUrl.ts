@@ -1,19 +1,14 @@
-import { getOuDirectLoginUrl } from './inspectionNotification'
-
-export const getScheduleAEirUrl = (
-  visitId?: string | number | null,
-  mode = import.meta.env.MODE,
-): string => {
+export const getScheduleAEirUrl = (visitId?: string | number | null): string => {
   const normalizedVisitId = String(visitId ?? '').trim()
   if (!normalizedVisitId || normalizedVisitId.toUpperCase() === 'NULL') return ''
 
-  const url = new URL('/oudirect/inspections/RfrVisitInspectionForm', getOuDirectLoginUrl(mode))
+  const url = new URL('/oudirect/inspections/RfrVisitInspectionForm', import.meta.env.VITE_OUDIRECT_BASE_URL)
   url.search = new URLSearchParams({
-    type: 'Historical',
+    emailLink: 'YF',
+    type: 'Inspection',
+    category: 'Inspection',
     mode: 'view',
-    subtype: 'short',
     visitID: normalizedVisitId,
-    menu: 'VisitsAsRfr',
   }).toString()
   return url.toString()
 }

@@ -13,12 +13,12 @@ it.each([
   ['production', 'oudirect.org'],
   ['staging', 'oudirectstaging.org'],
   ['development', 'oudirect-st.ou.org'],
-  ['unknown', 'oudirect-st.ou.org'],
-])('displays the current visit in the %s inspection form', (mode, host) => {
-  vi.stubEnv('MODE', mode)
+  ['custom', 'example.com'],
+])('displays the current visit in the %s inspection form', (_mode, host) => {
+  vi.stubEnv('VITE_OUDIRECT_BASE_URL', `https://${host}`)
   const url = getScheduleAEirUrl(3006890)
   expect(url).toBe(
-    `https://${host}/oudirect/inspections/RfrVisitInspectionForm?type=Historical&mode=view&subtype=short&visitID=3006890&menu=VisitsAsRfr`,
+    `https://${host}/oudirect/inspections/RfrVisitInspectionForm?emailLink=YF&type=Inspection&category=Inspection&mode=view&visitID=3006890`,
   )
   const { rerender } = render(<ScheduleAEirNewTab url={url} />)
   expect(screen.getByTitle('EIR New inspection form').getAttribute('src')).toBe(url)
@@ -26,7 +26,9 @@ it.each([
 
   const nextUrl = getScheduleAEirUrl(' 456 ')
   rerender(<ScheduleAEirNewTab url={nextUrl} />)
-  expect(screen.getByTitle('EIR New inspection form').getAttribute('src')).toContain('visitID=456&')
+  expect(screen.getByTitle('EIR New inspection form').getAttribute('src')).toBe(
+    `https://${host}/oudirect/inspections/RfrVisitInspectionForm?emailLink=YF&type=Inspection&category=Inspection&mode=view&visitID=456`,
+  )
 })
 
 it.each([undefined, null, '', ' ', 'NULL'])('shows an empty state for Visit ID %s', (visitId) => {
