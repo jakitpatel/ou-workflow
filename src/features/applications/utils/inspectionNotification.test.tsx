@@ -14,7 +14,8 @@ it.each([
   ['custom', 'https://example.com/'],
 ])('uses the %s OUDirect URL in the email and preview', (_mode, domain) => {
   vi.stubEnv('VITE_OUDIRECT_BASE_URL', domain)
-  const url = `${domain.replace(/\/$/, '')}/oudirect/inspections/RfrVisitInspectionForm?type=Inspection&mode=new&subtype=short&visitID=456&menu=VisitsAsRfr`
+  const url = `${domain.replace(/\/$/, '')}/oudirect/inspections/RfrVisitInspectionForm?type=Inspection&mode=new&subtype=short&visitID=456`
+  const plannedVisitUrl = `${domain.replace(/\/$/, '')}/oudirect/PlantVisitDetails/456`
   const body = buildNotificationBody({
     rfrName: 'RFR',
     senderName: 'NCRC',
@@ -28,9 +29,12 @@ it.each([
     visitId: '456',
   })
 
-  expect(body).toContain(`OUDirect: ${url}`)
+  expect(body).toContain(`Planned visit date: ${plannedVisitUrl}`)
+  expect(body).toContain(`Actual EIR/inspection: ${url}`)
+  expect(buildHtmlEmailFromPlainText(body).html).toContain(`href="${plannedVisitUrl}"`)
   expect(buildHtmlEmailFromPlainText(body).html).toContain(`href="${url.replace(/&/g, '&amp;')}"`)
   const { unmount } = render(<InspectionEmailBodyPreview body={body} applicationUrl="" />)
-  expect(screen.getByRole('link', { name: 'OUDirect' }).getAttribute('href')).toBe(url)
+  expect(screen.getByRole('link', { name: 'Planned visit date' }).getAttribute('href')).toBe(plannedVisitUrl)
+  expect(screen.getByRole('link', { name: 'Actual EIR/inspection' }).getAttribute('href')).toBe(url)
   unmount()
 })

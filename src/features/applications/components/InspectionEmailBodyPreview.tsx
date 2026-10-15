@@ -2,13 +2,13 @@ export function InspectionEmailBodyPreview({ body, applicationUrl }: { body: str
   const lines = body.split('\n')
   return lines.map((line, index) => {
     const applicationLinkLabel = line.match(/^Application link:\s*(.*)$/)?.[1]
-    const ouDirectUrl = line.match(/^OUDirect:\s*(https?:\/\/\S+)\s*$/)?.[1]
+    const ouDirectLink = line.match(/^(Planned visit date|Actual EIR\/inspection|OUDirect):\s*(https?:\/\/\S+)\s*$/)
 
     return (
       <span key={`${index}-${line}`}>
-        {ouDirectUrl ? (
-          <a href={ouDirectUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-700 underline hover:text-blue-800">
-            OUDirect
+        {ouDirectLink ? (
+          <a href={ouDirectLink[2]} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-700 underline hover:text-blue-800">
+            {ouDirectLink[1]}
           </a>
         ) : applicationLinkLabel !== undefined && applicationUrl ? (
           <>

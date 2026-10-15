@@ -57,7 +57,12 @@ it('creates and notifies without a Visit Date task or status-details save', asyn
   expect(mocks.display).toHaveBeenCalledWith(expect.objectContaining({ taskId: '123', result: expect.stringContaining('Visit #789') }))
   expect(mocks.message).toHaveBeenCalledWith(expect.objectContaining({
     payload: expect.objectContaining({
-      MessageTextPlain: expect.stringContaining('/oudirect/inspections/RfrVisitInspectionForm?type=Inspection&mode=new&subtype=short&visitID=789&menu=VisitsAsRfr'),
+      MessageTextPlain: expect.stringContaining('Actual EIR/inspection: https://oudirect-st.ou.org/oudirect/inspections/RfrVisitInspectionForm?type=Inspection&mode=new&subtype=short&visitID=789'),
+    }),
+  }))
+  expect(mocks.message).toHaveBeenCalledWith(expect.objectContaining({
+    payload: expect.objectContaining({
+      MessageTextPlain: expect.stringContaining('Planned visit date: https://oudirect-st.ou.org/oudirect/PlantVisitDetails/789'),
     }),
   }))
   expect(mocks.result).not.toHaveBeenCalled()

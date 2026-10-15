@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 
 import { useUser } from '@/context/UserContext'
 import { InspectionEmailBodyPreview } from './InspectionEmailBodyPreview'
-import { buildInspectionContactLines, buildNotificationBody, formatDate, formatInspectionContactName, getOuDirectInspectionUrl } from '@/features/applications/utils/inspectionNotification'
+import { buildInspectionContactLines, buildNotificationBody, formatDate, formatInspectionContactName, getOuDirectInspectionUrl, getOuDirectPlannedVisitUrl } from '@/features/applications/utils/inspectionNotification'
 import { buildRfrApplicationUrl } from '@/features/applications/utils/rfrApplicationLink'
 import { createApplicationMessage } from '@/features/applications/api'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
@@ -443,7 +443,13 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       const notificationMessageText = emailMessageBody.replace(
         /^Visit ID:\s*-\s*$/m,
         `Visit ID: ${nextVisitId}`,
-      ).replace(/^OUDirect:[ \t]*https?:\/\/\S+[ \t]*$/m, `OUDirect: ${getOuDirectInspectionUrl(nextVisitId)}`)
+      ).replace(
+        /^Planned visit date:[ \t]*https?:\/\/\S+[ \t]*$/m,
+        `Planned visit date: ${getOuDirectPlannedVisitUrl(nextVisitId)}`,
+      ).replace(
+        /^Actual EIR\/inspection:[ \t]*https?:\/\/\S+[ \t]*$/m,
+        `Actual EIR/inspection: ${getOuDirectInspectionUrl(nextVisitId)}`,
+      )
       const notificationEmail = buildHtmlEmailFromPlainText(notificationMessageText, {
         preheader: `Inspection assignment for ${applicant?.plant || 'Plant'}`,
         title: 'Inspection Assignment',
