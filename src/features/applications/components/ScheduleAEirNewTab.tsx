@@ -2,7 +2,7 @@ export function ScheduleAEirNewTab({ url, inspectionStatus }: { url: string; ins
   if (inspectionStatus !== 'COMPLETED') {
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500">
-        You are not allowed to see this Tab.
+        Inspection has not been done yet.
       </div>
     )
   }
@@ -18,7 +18,7 @@ export function ScheduleAEirNewTab({ url, inspectionStatus }: { url: string; ins
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-semibold text-gray-900">EIR New</h2>
+        <h2 className="text-xl font-semibold text-gray-900">EIR</h2>
         <a
           href={url}
           target="_blank"
@@ -29,7 +29,7 @@ export function ScheduleAEirNewTab({ url, inspectionStatus }: { url: string; ins
         </a>
       </div>
       <iframe
-        title="EIR New inspection form"
+        title="EIR inspection form"
         src={url}
         className="h-[720px] w-full rounded-lg border border-gray-200"
       />

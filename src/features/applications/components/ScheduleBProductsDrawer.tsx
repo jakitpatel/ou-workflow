@@ -1,4 +1,6 @@
 import { ScheduleRoundEmailCopies } from './ScheduleRoundEmailCopies'
+import { ScheduleAEirNewTab } from './ScheduleAEirNewTab'
+import { useScheduleEir } from '../hooks/useScheduleEir'
 import { getDesignatedRfrName } from '@/features/applications/utils/designatedRfrName'
 import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { toast } from 'sonner'
@@ -68,7 +70,7 @@ type Props = {
   onClose: () => void
 }
 
-type DrawerTab = 'products' | 'comm' | 'eir'
+type DrawerTab = 'products' | 'comm' | 'eir' | 'eir-new'
 
 const CUSTOM_NOTE_VALUE = '__custom__'
 
@@ -639,6 +641,10 @@ export function ScheduleBProductsDrawer({
     onError: (message) => toast.error(message),
   })
   const { data: applicationDetail } = useApplicationDetail(isActive ? resolvedApplicationId : undefined)
+  const { inspectionStatus, eirNewUrl } = useScheduleEir(
+    isActive ? resolvedApplicationId : undefined,
+    applicationDetail?.VisitId,
+  )
   const canonicalScheduleBTaskInstanceId =
     scheduleBTaskInstanceId ??
     (textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEB
@@ -1323,7 +1329,8 @@ export function ScheduleBProductsDrawer({
                   </div>
                   {[
                     { id: 'comm', label: 'Communication' },
-                    { id: 'eir', label: 'EIR' },
+                    { id: 'eir', label: 'EIROLD' },
+                    { id: 'eir-new', label: 'EIR' },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -1340,6 +1347,7 @@ export function ScheduleBProductsDrawer({
               </div>
 
               <div className="min-h-0 flex-1 overflow-auto p-4">
+                {activeTab === 'eir-new' ? <ScheduleAEirNewTab url={eirNewUrl} inspectionStatus={inspectionStatus} /> : null}
                 {activeTab === 'products' ? (
                   <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
                     <div ref={productsHeaderRef} className="sticky left-0 right-0 top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-t-lg border-b bg-gray-50 px-6 py-4 shadow-sm">

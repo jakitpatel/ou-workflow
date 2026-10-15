@@ -1,6 +1,6 @@
 import { ScheduleRoundEmailCopies } from './ScheduleRoundEmailCopies'
 import { ScheduleAEirNewTab } from './ScheduleAEirNewTab'
-import { useScheduleAApplication } from '../hooks/useScheduleAApplication'
+import { useScheduleEir } from '../hooks/useScheduleEir'
 import { ScheduleIngredientEditCells } from './ScheduleIngredientEditCells'
 import { useScheduleIngredientActions } from '../hooks/useScheduleIngredientActions'
 import { statusClass } from '../utils/scheduleAIngredientStatusClass'
@@ -41,7 +41,6 @@ import {
   type ScheduleAIngredientView,
   type ScheduleAIngredientDraft,
   getDaysSinceVisit,
-  getScheduleAEirUrl,
   getScheduleACommunicationMessageBody,
   useCreateScheduleAIngredient,
   useScheduleACommunicationMessages,
@@ -626,8 +625,9 @@ export function ScheduleAIngredientsDrawer({
   const { data: applicationDetail } = useApplicationDetail(
     isActive ? resolvedApplicationId : undefined,
   )
-  const { data: applicationItem } = useScheduleAApplication(
+  const { applicationItem, inspectionStatus, eirNewUrl } = useScheduleEir(
     isActive ? resolvedApplicationId : undefined,
+    applicationDetail?.VisitId,
   )
   const assignedRfr = getDesignatedRfrName(applicationDetail?.DesignatedRFR)
   const isAssigningTask =
@@ -651,9 +651,7 @@ export function ScheduleAIngredientsDrawer({
   }, [scratchpadApi.saveError])
   const eirSubmitterLabel = assignedRfr || 'the assigned RFR'
   const effectiveAppVars = { ...applicationItem?.appvars, ...appVars }
-  const inspectionStatus = applicationItem?.stages?.inspection?.status
   const visitIdLabel = textValue(applicationDetail?.VisitId)
-  const eirNewUrl = inspectionStatus === 'COMPLETED' ? getScheduleAEirUrl(applicationDetail?.VisitId) : ''
   const inspectionDate = formatDisplayDate(applicationDetail?.InspectionDate)
   const reportedInspectionDate = formatDisplayDate(applicationDetail?.ReportedInspectionDate)
   const daysSinceVisit = getDaysSinceVisit(applicationDetail?.InspectionDate)
@@ -1321,8 +1319,8 @@ export function ScheduleAIngredientsDrawer({
               </div>
               {[
                 { id: 'comm', label: 'Communication' },
-                { id: 'eir', label: 'EIR' },
-                { id: 'eir-new', label: 'EIR New' },
+                { id: 'eir', label: 'EIROLD' },
+                { id: 'eir-new', label: 'EIR' },
               ].map((tab) => (
                 <button
                   key={tab.id}
