@@ -28,7 +28,6 @@ import { ApplicationDetailsDrawer } from '@/features/applications/components/App
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import {
   CANNED_NOTES,
-  fetchScheduleBEirDocumentBlob,
   getDaysSinceVisit,
   getScheduleBCommunicationMessageBody,
   mapApplicationProductRow,
@@ -41,7 +40,6 @@ import {
   type ScheduleBProductDraft,
   useCreateScheduleBProduct,
   useScheduleBCommunicationMessages,
-  useScheduleBEirDocument,
   useScheduleBProducts,
   useScheduleBScratchpad,
   useSendScheduleBCommunicationEmail,
@@ -90,7 +88,6 @@ const EMPTY_ADD_ROW_DRAFT: ScheduleBProductDraft = {
   artwork: '',
 }
 
-const EIR_PREVIEW_HTML = `<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827}.page{max-width:760px;margin:28px auto;background:white;min-height:920px;box-shadow:0 12px 30px rgba(15,23,42,.14);padding:52px}.meta{color:#6b7280;font-size:12px}.title{font-size:20px;font-weight:700;text-align:center;margin:18px 0 28px}.section{border-top:1px solid #d1d5db;padding-top:16px;margin-top:20px}.h{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#374151}.p{font-size:13px;line-height:1.55;color:#374151}.stamp{display:inline-block;border:1px solid #f59e0b;background:#fffbeb;color:#92400e;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:700}</style></head><body><div class="page"><p class="meta">OU Direct - Visit ID 14056484 - Apr 10, 2026</p><div class="title">Initial Inspection Report</div><p class="stamp">Sample EIR for demonstration</p><div class="section"><p class="h">Facility observations</p><p class="p">Line 1 was clean and no non-kosher equipment was observed. Dairy products are stored in a designated separate area.</p></div><div class="section"><p class="h">Product observations</p><p class="p">Palm Shortening, Rosemary Extract, and an unlabeled Dough Conditioner were observed on-site and were not present on the original Schedule B submission.</p></div><div class="section"><p class="h">Follow-up required</p><p class="p">Confirm LOCs and supplier details for missing or unclear products before Schedule B can proceed.</p></div></div></body></html>`
 
 const textValue = (value: unknown) => String(value ?? '').trim()
 
@@ -108,12 +105,6 @@ const getDocumentFilename = (value?: string | null) => {
   return normalized.split('/').pop() || 'Inspection report'
 }
 
-const isPreviewableDocument = (value?: string | null) => {
-  const filename = getDocumentFilename(value).toLowerCase()
-  return ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.txt', '.html', '.htm', '.doc', '.docx', '.rtf'].some((extension) =>
-    filename.endsWith(extension),
-  )
-}
 
 type ScheduleBRoundMessageCard = {
   email: ApplicationEmail
@@ -607,7 +598,6 @@ export function ScheduleBProductsDrawer({
   const [copied, setCopied] = useState(false)
   const [sendError, setSendError] = useState('')
   const [sentMessage, setSentMessage] = useState('')
-  const [isEirDownloadPending, setIsEirDownloadPending] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [importText, setImportText] = useState('')
   const [importFilename, setImportFilename] = useState('')
@@ -662,7 +652,6 @@ export function ScheduleBProductsDrawer({
     }
   }, [scratchpadApi.saveError])
   const assignedRfr = getDesignatedRfrName(applicationDetail?.DesignatedRFR)
-  const eirSubmitterLabel = assignedRfr || 'the assigned RFR'
   const visitIdLabel = textValue(applicationDetail?.VisitId)
   const inspectionDate = formatDisplayDate(applicationDetail?.InspectionDate)
   const reportedInspectionDate = formatDisplayDate(applicationDetail?.ReportedInspectionDate)
@@ -671,8 +660,6 @@ export function ScheduleBProductsDrawer({
   const eirDocumentPath = textValue(applicationDetail?.RFRFileUrl)
   const eirDisplayName = eirDocumentPath ? getDocumentFilename(eirDocumentPath) : ''
   const eirDocumentUrl = resolveScheduleBDocumentUrl(applicationDetail?.RFRFileUrl)
-  const eirDocumentFilename = eirDisplayName
-  const canPreviewEirDocument = isPreviewableDocument(applicationDetail?.RFRFileUrl)
   const hasWorkflowEirDocument = Boolean(eirDisplayName && (eirWorkflowFileId || eirDocumentUrl))
   const effectiveEirNotRequired = scratchpad.eirNotRequired && !hasWorkflowEirDocument
   const effectiveEirReceived = hasWorkflowEirDocument || scratchpad.eirReceived
@@ -685,16 +672,6 @@ export function ScheduleBProductsDrawer({
   } = useScheduleBCommunicationMessages({
     applicationId: isActive ? resolvedApplicationId : undefined,
     taskInstanceId,
-  })
-  const {
-    objectUrl: eirViewerUrl,
-    previewHtml: eirPreviewHtml,
-    isLoading: isEirViewerLoading,
-    error: eirViewerError,
-  } = useScheduleBEirDocument({
-    wfFileId: hasWorkflowEirDocument ? eirWorkflowFileId : undefined,
-    filename: eirDocumentFilename,
-    enabled: isActive && activeTab === 'eir' && hasWorkflowEirDocument,
   })
 
   const contact = useMemo(
@@ -1015,79 +992,6 @@ export function ScheduleBProductsDrawer({
     }
   }
 
-  const downloadEirDocument = () => {
-    if (hasWorkflowEirDocument) {
-      setIsEirDownloadPending(true)
-      void (async () => {
-        try {
-          const blob = await fetchScheduleBEirDocumentBlob({
-            wfFileId: eirWorkflowFileId,
-            token: token ?? undefined,
-            download: true,
-          })
-          const href = URL.createObjectURL(blob)
-          const link = document.createElement('a')
-          link.href = href
-          link.download = eirDocumentFilename
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          window.setTimeout(() => URL.revokeObjectURL(href), 1000)
-        } catch (downloadError) {
-          toast.error(downloadError instanceof Error ? downloadError.message : 'Failed to download EIR document.')
-        } finally {
-          setIsEirDownloadPending(false)
-        }
-      })()
-      return
-    }
-
-    if (eirDocumentUrl) {
-      const link = document.createElement('a')
-      link.href = eirDocumentUrl
-      link.download = eirDocumentFilename
-      link.target = '_blank'
-      link.rel = 'noopener noreferrer'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      return
-    }
-
-    downloadTextFile(`${eirDocumentFilename}.html`, EIR_PREVIEW_HTML, 'text/html;charset=utf-8;')
-  }
-
-  const openEirDocument = () => {
-    if (hasWorkflowEirDocument) {
-      if (eirPreviewHtml) {
-        const previewWindow = window.open('', '_blank', 'noopener,noreferrer')
-        if (!previewWindow) {
-          toast.error('Unable to open the document preview in a new tab.')
-          return
-        }
-        previewWindow.document.open()
-        previewWindow.document.write(eirPreviewHtml)
-        previewWindow.document.close()
-      } else if (eirViewerUrl) {
-        window.open(eirViewerUrl, '_blank', 'noopener,noreferrer')
-      } else if (isEirViewerLoading) {
-        toast.message('Loading EIR document...')
-      } else if (eirViewerError) {
-        toast.error(eirViewerError instanceof Error ? eirViewerError.message : 'Failed to load EIR document.')
-      }
-      return
-    }
-
-    if (eirDocumentUrl) {
-      window.open(eirDocumentUrl, '_blank', 'noopener,noreferrer')
-      return
-    }
-
-    const blob = new Blob([EIR_PREVIEW_HTML], { type: 'text/html;charset=utf-8;' })
-    const href = URL.createObjectURL(blob)
-    window.open(href, '_blank', 'noopener,noreferrer')
-    window.setTimeout(() => URL.revokeObjectURL(href), 1000)
-  }
 
   const markScheduleBReady = async () => {
     if (readOnly) return
@@ -1958,12 +1862,6 @@ export function ScheduleBProductsDrawer({
                           <span className="text-sm font-medium text-gray-600">Actual Visit Date</span>
                           <span className="text-right text-sm font-semibold text-gray-900">{reportedInspectionDate || '-'}</span>
                         </div>
-                        <div className="flex items-start justify-between gap-4 py-2">
-                          <span className="text-sm font-medium text-gray-600">RFR File URL (Name)</span>
-                          <span className="max-w-[26rem] break-all text-right text-xs font-medium text-gray-700">
-                            {eirDisplayName || '-'}
-                          </span>
-                        </div>
                         <div className="flex items-center justify-between border-t border-gray-100 py-2">
                           <span className="text-sm font-medium text-gray-600">Days Since Visit</span>
                           <span className={effectiveEirReceived || effectiveEirNotRequired ? 'text-sm font-semibold text-gray-900' : 'text-sm font-semibold text-red-600'}>
@@ -1973,70 +1871,6 @@ export function ScheduleBProductsDrawer({
                       </div>
                     </div>
 
-                    {effectiveEirReceived ? (
-                      <div>
-                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-t-lg border border-gray-200 bg-gray-50 px-4 py-3">
-                          <div className="flex items-start gap-3">
-                            <FileText className="mt-0.5 h-8 w-8 shrink-0 text-red-400" strokeWidth={1.5} />
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">{eirDocumentFilename}</p>
-                              <p className="mt-0.5 text-xs text-gray-500">Submitted via OU Direct</p>
-                              {eirDocumentPath ? (
-                                <p className="mt-1 break-all text-[11px] text-gray-500">{eirDocumentPath}</p>
-                              ) : null}
-                            </div>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <button type="button" onClick={openEirDocument} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              Open in new tab
-                            </button>
-                            <button type="button" onClick={downloadEirDocument} disabled={isEirDownloadPending} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300">
-                              <Download className="h-3.5 w-3.5" />
-                              {isEirDownloadPending ? 'Downloading...' : 'Download'}
-                            </button>
-                          </div>
-                        </div>
-                        {hasWorkflowEirDocument ? (
-                          isEirViewerLoading ? (
-                            <div className="rounded-b-lg border-x border-b border-gray-200 bg-gray-50 p-8 text-center">
-                              <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
-                              <p className="text-sm text-gray-600">Loading EIR document...</p>
-                            </div>
-                          ) : eirViewerError ? (
-                            <div className="rounded-b-lg border-x border-b border-gray-200 bg-red-50 p-8 text-center">
-                              <AlertCircle className="mx-auto mb-3 h-12 w-12 text-red-300" strokeWidth={1.5} />
-                              <p className="text-sm text-red-700">
-                                {eirViewerError instanceof Error ? eirViewerError.message : 'Failed to load EIR document.'}
-                              </p>
-                            </div>
-                          ) : eirPreviewHtml ? (
-                            <iframe title="EIR document preview" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-white" srcDoc={eirPreviewHtml} />
-                          ) : eirViewerUrl ? (
-                            <iframe title="EIR document" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100" src={eirViewerUrl} />
-                          ) : (
-                            <div className="rounded-b-lg border-x border-b border-gray-200 bg-gray-50 p-8 text-center">
-                              <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
-                              <p className="text-sm text-gray-600">EIR document is not ready to preview yet.</p>
-                            </div>
-                          )
-                        ) : eirDocumentUrl && canPreviewEirDocument ? (
-                          <iframe title="EIR document" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100" src={eirDocumentUrl} />
-                        ) : eirDocumentUrl ? (
-                          <div className="rounded-b-lg border-x border-b border-gray-200 bg-gray-50 p-8 text-center">
-                            <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
-                            <p className="text-sm text-gray-600">This file type could not be rendered directly in the viewer. Use the document actions above to open or download it.</p>
-                          </div>
-                        ) : (
-                          <iframe title="EIR preview" className="h-[720px] w-full rounded-b-lg border-x border-b border-gray-200 bg-gray-100" srcDoc={EIR_PREVIEW_HTML} />
-                        )}
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-                        <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" strokeWidth={1.5} />
-                        <p className="text-sm text-gray-500">EIR document will appear here once {eirSubmitterLabel} submits via OU Direct</p>
-                      </div>
-                    )}
 
                     {effectiveEirReceived && !scratchpad.eirReviewComplete && !readOnly ? (
                       <div className="mt-5 rounded-lg border border-purple-200 bg-purple-50 p-4">
