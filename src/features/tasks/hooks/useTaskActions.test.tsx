@@ -122,6 +122,38 @@ describe('AssignNCRC notification', () => {
     })
     expect(mocks.assign).not.toHaveBeenCalled()
     expect(mocks.mutate).not.toHaveBeenCalled()
+    expect(mocks.message).toHaveBeenCalledExactlyOnceWith({
+      token: 'token',
+      payload: {
+        ApplicationID: 421, MessageText: 'Recommanded RFR is Rabbi Test Full Name',
+        isPrivate: false, isRead: false, FromUser: 'S.Benjamin', MessageType: 'Text',
+        SentDate: expect.any(String), Priority: 'NORMAL',
+      },
+    })
+  })
+
+  it('posts the recommendation only after completion succeeds', async () => {
+    let finish!: () => void
+    mocks.confirm.mockReturnValue(new Promise<void>((resolve) => { finish = resolve }))
+    const pending = setup().execute('selected.rfr', { ...action, taskCategory: 'ASSIGNRFR' }, 'Full Name')
+    expect(mocks.message).not.toHaveBeenCalled()
+    finish()
+    await pending
+    expect(mocks.message).toHaveBeenCalledOnce()
+  })
+
+  it('does not post a recommendation when completion fails', async () => {
+    mocks.confirm.mockRejectedValue(new Error('Completion failed'))
+    await expect(setup().execute('selected.rfr', { ...action, taskCategory: 'ASSIGNRFR' }, 'Full Name')).rejects.toThrow('Completion failed')
+    expect(mocks.message).not.toHaveBeenCalled()
+  })
+
+  it('reports a message failure separately after successful recommendation completion', async () => {
+    mocks.message.mockRejectedValue(new Error('Service unavailable'))
+    const { execute, onError } = setup()
+    await execute('selected.rfr', { ...action, taskCategory: 'ASSIGNRFR' }, 'Full Name')
+    expect(mocks.confirm).toHaveBeenCalledOnce()
+    expect(onError).toHaveBeenCalledWith('RFR recommendation completed, but the application message failed: Service unavailable')
   })
 
   it('reports notification failure separately from the successful assignment', async () => {

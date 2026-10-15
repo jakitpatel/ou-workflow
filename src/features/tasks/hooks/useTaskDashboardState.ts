@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { buildRfrRecommendationCompletion, isRfrRecommendationTask } from '../lib/rfrRecommendation'
+import { buildRfrRecommendationCompletion, isRfrRecommendationTask, postRfrRecommendationMessage } from '../lib/rfrRecommendation'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { type ErrorDialogRef } from '@/components/ErrorDialog'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
@@ -554,7 +554,13 @@ export function useTaskDashboardState() {
         return confirmTaskMutation.mutateAsync({
           ...mutationParams,
           ...buildRfrRecommendationCompletion(assignee, typeof result === 'string' ? result : undefined),
-        })
+        }).then(() => postRfrRecommendationMessage({
+          applicationId: resolvedApplicationId,
+          fullName: (typeof result === 'string' ? result.trim() : '') || assignee,
+          username: username ?? undefined,
+          token,
+          onError: (message) => errorDialogRef.current?.open(message),
+        }))
       }
 
       if (taskType === TASK_TYPES.CONFIRM && taskCategory === TASK_CATEGORIES.CONFIRMATION) {
