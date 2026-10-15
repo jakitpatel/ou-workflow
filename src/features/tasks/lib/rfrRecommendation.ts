@@ -7,9 +7,9 @@ export const isRfrRecommendationTask = (task: {
   String(task.taskCategory ?? task.TaskCategory ?? '').trim().toUpperCase() === 'ASSIGNRFR' &&
   String(task.taskType ?? task.TaskType ?? '').trim().toUpperCase() === 'ACTION'
 
-export const buildRfrRecommendationCompletion = (rfr: string) => ({
+export const buildRfrRecommendationCompletion = (rfr: string, fullName?: string) => ({
   capacity: 'DESIGNATED',
   completionNotes: 'Task completed successfully',
   result: `{selectRFR:YES, RFR:${rfr}}`,
-  resultData: `{RFR:${rfr}}`,
+  resultData: `{Recommended RFR:${fullName?.trim() || rfr}}`,
 })

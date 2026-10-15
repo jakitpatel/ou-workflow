@@ -553,7 +553,7 @@ export function useTaskDashboardState() {
       if (isRfrRecommendationTask(action)) {
         return confirmTaskMutation.mutateAsync({
           ...mutationParams,
-          ...buildRfrRecommendationCompletion(assignee),
+          ...buildRfrRecommendationCompletion(assignee, typeof result === 'string' ? result : undefined),
         })
       }
 

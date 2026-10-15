@@ -200,7 +200,13 @@ export const ActionModal: React.FC<Props> = ({
     if (!selectedRc || !selectedAction) return;
     setSaving(true);
     try {
-      await executeAction(selectedRc, selectedAction.action, undefined, selectedAction);
+      const selectedRfr = selectlist.find(
+        (item: RcLookupItem) => (item.lookupKey ?? item.id) === selectedLookupKey
+      );
+      const fullName = isRfrRecommendationTask(selectedAction.action)
+        ? selectedRfr?.fullName?.trim() || selectedRfr?.name?.trim() || selectedRc
+        : undefined;
+      await executeAction(selectedRc, selectedAction.action, fullName, selectedAction);
       if (isRfrRecommendationTask(selectedAction.action)) setShowActionModal(null);
     } catch (error) {
       console.error("Error executing action:", error);

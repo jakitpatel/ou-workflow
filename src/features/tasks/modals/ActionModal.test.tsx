@@ -4,7 +4,7 @@ import type { Task } from '@/types/application'
 import { ActionModal } from './ActionModal'
 
 const mocks = vi.hoisted(() => ({ lookup: vi.fn(), items: [
-  { id: 'rfr1', lookupKey: 'person1', assigneeValue: 'selected.rfr', name: 'Test RFR', email: 'rfr@example.com' },
+  { id: 'rfr1', lookupKey: 'person1', assigneeValue: 'selected.rfr', name: 'Test RFR', fullName: 'Rabbi Test Full Name', email: 'rfr@example.com' },
 ] }))
 vi.mock('@/features/tasks/hooks/useTaskQueries', () => ({
   useUserListByRole: (...args: unknown[]) => { mocks.lookup(...args); return { data: mocks.items, isLoading: false } },
@@ -29,14 +29,14 @@ it('opens the RFR lookup by category and type without requiring a PreScript or t
   fireEvent.change(search, { target: { value: 'Test' } })
   fireEvent.keyDown(search, { key: 'Enter' })
   fireEvent.keyDown(search, { key: 'Enter' })
-  await waitFor(() => expect(executeAction).toHaveBeenCalledWith('selected.rfr', action, undefined, expect.anything()))
+  await waitFor(() => expect(executeAction).toHaveBeenCalledWith('selected.rfr', action, 'Rabbi Test Full Name', expect.anything()))
   await waitFor(() => expect(close).toHaveBeenCalledWith(null))
 })
 
 it('keeps a recommendation open after a failed save', async () => {
   vi.spyOn(console, 'error').mockImplementation(() => {})
   const { close } = renderModal({ id: '123', TaskCategory: 'ASSIGNRFR', TaskType: 'ACTION' }, vi.fn().mockRejectedValue(new Error('Failed')))
-  fireEvent.click(screen.getByText('Test RFR'))
+  fireEvent.click(screen.getByText('Rabbi Test Full Name'))
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   await waitFor(() => expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(false))
   expect(close).not.toHaveBeenCalled()

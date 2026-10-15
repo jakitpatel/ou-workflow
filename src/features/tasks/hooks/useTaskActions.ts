@@ -214,7 +214,7 @@ export function useTaskActions({ applications, token, username, onError, applica
       if (isRfrRecommendationTask(action)) {
         await confirmTaskMutation.mutateAsync({
           ...baseParams,
-          ...buildRfrRecommendationCompletion(assignee),
+          ...buildRfrRecommendationCompletion(assignee, typeof result === 'string' ? result : undefined),
         })
         return
       }

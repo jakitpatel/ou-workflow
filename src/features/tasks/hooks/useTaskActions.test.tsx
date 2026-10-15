@@ -114,11 +114,11 @@ describe('AssignNCRC notification', () => {
     { taskCategory: 'ASSIGNRFR', taskType: 'ACTION' },
     { TaskCategory: 'ASSIGNRFR', TaskType: 'ACTION', taskCategory: undefined, taskType: undefined },
   ])('completes an RFR recommendation with the selected RFR and application refresh context', async (fields) => {
-    await setup().execute('selected.rfr', { ...action, ...fields, name: 'RFR Recommendation', capacity: 'OTHER' })
+    await setup().execute('selected.rfr', { ...action, ...fields, name: 'RFR Recommendation', capacity: 'OTHER' }, 'Rabbi Test Full Name')
     expect(mocks.confirm).toHaveBeenCalledExactlyOnceWith({
       taskId: '12', applicationId: 421, token: 'token', username: 'S.Benjamin',
       capacity: 'DESIGNATED', completionNotes: 'Task completed successfully',
-      result: '{selectRFR:YES, RFR:selected.rfr}', resultData: '{RFR:selected.rfr}',
+      result: '{selectRFR:YES, RFR:selected.rfr}', resultData: '{Recommended RFR:Rabbi Test Full Name}',
     })
     expect(mocks.assign).not.toHaveBeenCalled()
     expect(mocks.mutate).not.toHaveBeenCalled()
