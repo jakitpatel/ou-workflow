@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { buildRfrRecommendationCompletion, isRfrRecommendationTask } from '../lib/rfrRecommendation'
 import { createApplicationMessage, uploadApplicationFile } from '@/features/applications/api'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
@@ -208,6 +209,14 @@ export function useTaskActions({ applications, token, username, onError, applica
         token: token ?? undefined,
         username: username ?? undefined,
         capacity: action.capacity ?? undefined,
+      }
+
+      if (isRfrRecommendationTask(action)) {
+        await confirmTaskMutation.mutateAsync({
+          ...baseParams,
+          ...buildRfrRecommendationCompletion(assignee),
+        })
+        return
       }
 
       if (taskType === TASK_TYPES.CONFIRM) {

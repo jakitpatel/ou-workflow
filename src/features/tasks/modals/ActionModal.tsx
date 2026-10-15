@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { X } from "lucide-react";
 import { useUserListByRole } from "@/features/tasks/hooks/useTaskQueries";
 import type { Task, Applicant } from "@/types/application";
+import { isRfrRecommendationTask } from '../lib/rfrRecommendation';
 
 type SelectedAction = {
   application: Applicant | Task | any;
@@ -56,6 +57,9 @@ export const ActionModal: React.FC<Props> = ({
   };
 
   const actionMeta = useMemo<ActionMeta>(() => {
+    if (selectedAction?.action && isRfrRecommendationTask(selectedAction.action)) {
+      return { endpoint: 'api/vSelectRFR', roleType: 'RFR' };
+    }
     const prefix = selectedAction?.action?.PreScript;
 
     if (!prefix) {
@@ -71,7 +75,7 @@ export const ActionModal: React.FC<Props> = ({
       endpoint: endpoint?.trim() ?? "",
       roleType: role?.trim().toUpperCase(),
     };
-  }, [selectedAction?.action?.PreScript]);
+  }, [selectedAction?.action]);
   
 
   // The hook's internal 'enabled' option handles when to fetch
@@ -197,11 +201,12 @@ export const ActionModal: React.FC<Props> = ({
     setSaving(true);
     try {
       await executeAction(selectedRc, selectedAction.action, undefined, selectedAction);
+      if (isRfrRecommendationTask(selectedAction.action)) setShowActionModal(null);
     } catch (error) {
       console.error("Error executing action:", error);
     } finally {
       setSaving(false);
-      setShowActionModal(null);
+      if (!isRfrRecommendationTask(selectedAction.action)) setShowActionModal(null);
     }
   };
 

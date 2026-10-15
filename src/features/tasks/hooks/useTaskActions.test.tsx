@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Applicant } from '@/types/application'
 import { useTaskActions } from './useTaskActions'
 
-const mocks = vi.hoisted(() => ({ assign: vi.fn(), mutate: vi.fn(), message: vi.fn(), assignOptions: vi.fn(), confirmOptions: vi.fn() }))
+const mocks = vi.hoisted(() => ({ confirm: vi.fn(), assign: vi.fn(), mutate: vi.fn(), message: vi.fn(), assignOptions: vi.fn(), confirmOptions: vi.fn() }))
 vi.mock('@/features/tasks/hooks/useTaskMutations', () => ({
   useAssignTaskMutation: (options: unknown) => {
     mocks.assignOptions(options)
@@ -11,7 +11,7 @@ vi.mock('@/features/tasks/hooks/useTaskMutations', () => ({
   },
   useConfirmTaskMutation: (options: unknown) => {
     mocks.confirmOptions(options)
-    return { mutate: vi.fn() }
+    return { mutate: vi.fn(), mutateAsync: mocks.confirm }
   },
 }))
 vi.mock('@/features/applications/api', () => ({
@@ -108,6 +108,20 @@ describe('AssignNCRC notification', () => {
     await setup().execute('selected.rfr', { ...action, name: 'AssignRFR' })
     expect(mocks.mutate).toHaveBeenCalledOnce()
     expect(mocks.message).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { taskCategory: 'ASSIGNRFR', taskType: 'ACTION' },
+    { TaskCategory: 'ASSIGNRFR', TaskType: 'ACTION', taskCategory: undefined, taskType: undefined },
+  ])('completes an RFR recommendation with the selected RFR and application refresh context', async (fields) => {
+    await setup().execute('selected.rfr', { ...action, ...fields, name: 'RFR Recommendation', capacity: 'OTHER' })
+    expect(mocks.confirm).toHaveBeenCalledExactlyOnceWith({
+      taskId: '12', applicationId: 421, token: 'token', username: 'S.Benjamin',
+      capacity: 'DESIGNATED', completionNotes: 'Task completed successfully',
+      result: '{selectRFR:YES, RFR:selected.rfr}', resultData: '{RFR:selected.rfr}',
+    })
+    expect(mocks.assign).not.toHaveBeenCalled()
+    expect(mocks.mutate).not.toHaveBeenCalled()
   })
 
   it('reports notification failure separately from the successful assignment', async () => {

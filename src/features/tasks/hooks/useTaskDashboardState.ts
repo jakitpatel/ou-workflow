@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { buildRfrRecommendationCompletion, isRfrRecommendationTask } from '../lib/rfrRecommendation'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { type ErrorDialogRef } from '@/components/ErrorDialog'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
@@ -211,6 +212,7 @@ const calculateTaskStats = (tasks: ApplicationTask[]) => {
 }
 
 const getTaskActionPresentation = (application: TaskDashboardAction) => {
+  if (isRfrRecommendationTask(application)) return { type: 'assignment' as const }
   const actionType = application.taskType?.toLowerCase()
   const actionCategory = (application.taskCategory || application.TaskCategory)?.toLowerCase()
   const taskName = application.taskName ?? application.name
@@ -546,6 +548,13 @@ export function useTaskDashboardState() {
         token: token ?? undefined,
         username: username ?? undefined,
         capacity,
+      }
+
+      if (isRfrRecommendationTask(action)) {
+        return confirmTaskMutation.mutateAsync({
+          ...mutationParams,
+          ...buildRfrRecommendationCompletion(assignee),
+        })
       }
 
       if (taskType === TASK_TYPES.CONFIRM && taskCategory === TASK_CATEGORIES.CONFIRMATION) {

@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { ErrorDialog, type ErrorDialogRef } from '@/components/ErrorDialog'
 import { ActionModal } from '@/features/tasks/modals/ActionModal'
+import { isRfrRecommendationTask } from '@/features/tasks/lib/rfrRecommendation'
 import { ConditionalModal } from '@/features/tasks/modals/ConditionalModal'
 import { UploadNdaModal } from '@/features/tasks/modals/UploadNdaModal'
 import { NcrcDashboardControls } from '@/features/applications/components/NcrcDashboardControls'
@@ -398,7 +399,7 @@ export function NcrcDashboardContent() {
     }
 
     if (actionType === TASK_TYPES.ACTION) {
-      if (actionCategory === TASK_CATEGORIES.ASSIGNMENT) {
+      if (actionCategory === TASK_CATEGORIES.ASSIGNMENT || isRfrRecommendationTask(action)) {
         setShowActionModal(action)
       } else {
         setShowConditionModal(action)
