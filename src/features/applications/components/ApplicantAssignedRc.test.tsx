@@ -7,7 +7,7 @@ import type { Applicant } from '@/types/application'
 import { ApplicantAssignedRc } from './ApplicantAssignedRc'
 
 const mocks = vi.hoisted(() => ({
-  user: { token: 'token', username: 'ncrc-user', role: 'NCRC', roles: [{ name: 'NCRC' }], delegated: [] as { name: string }[] },
+  user: { token: 'token', username: 'ncrc-user', email: 'ncrc@example.com', role: 'NCRC', roles: [{ name: 'NCRC' }], delegated: [] as { name: string }[] },
   request: vi.fn(),
   refresh: vi.fn().mockResolvedValue(true),
 }))
@@ -28,7 +28,7 @@ beforeEach(() => {
   mocks.user.delegated = []
   mocks.request.mockReset().mockImplementation(({ method }) => method === 'POST'
     ? Promise.resolve({ status: 'ok' })
-    : Promise.resolve({ data: [{ id: 'rc-id', attributes: { userName: 'Rabbi Gutterman', fullName: 'Gutterman, Rabbi', IsActive: true } }] }))
+    : Promise.resolve({ data: [{ id: 'rc-id', attributes: { userName: 'Rabbi Gutterman', fullName: 'Gutterman, Rabbi', Email: 'rc@example.com', IsActive: true } }] }))
   mocks.refresh.mockClear()
 })
 
@@ -55,6 +55,52 @@ it('loads the requested lookup and saves the selected username with the exact ro
   }))
   await waitFor(() => expect(mocks.refresh).toHaveBeenCalledWith({ applicationId: 3719, queryClient: client, token: 'token' }))
   await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['applications', 'detail', '3719'] }))
+  const message = mocks.request.mock.calls.find(([request]) => request.path === '/api/WFApplicationMessage')?.[0]
+  expect(message).toEqual({
+    path: '/api/WFApplicationMessage', method: 'POST', token: 'token',
+    body: { data: { type: 'WFApplicationMessage', attributes: expect.objectContaining({
+      ApplicationID: 3719, FromUser: 'ncrc@example.com', ToUser: 'rc@example.com',
+      Subject: 'OU Kosher - Selected As RC', MessageType: 'Email',
+      TaskInstanceId: null, SentDate: expect.any(String),
+    }) } },
+  })
+  const attributes = message.body.data.attributes
+  expect(attributes.MessageTextPlain).toContain('You are selected as RC. Application Link : ')
+  const url = new URL(attributes.MessageTextPlain.split('Application Link : ')[1])
+  expect(url.origin).toBe(window.location.origin)
+  expect(url.pathname).toMatch(/\/ou-workflow\/ncrc-dashboard\/3719$/)
+  expect(attributes.PlainText).toBe(attributes.MessageTextPlain)
+  expect(attributes.Text).toBe(attributes.MessageTextPlain)
+  expect(attributes.MessageText).toContain('You are selected as RC.')
+  expect(attributes.MessageText).toContain(url.toString())
+  expect(attributes.MessageText).not.toContain('Invoice')
+})
+
+it('waits for assignment success before sending the email', async () => {
+  const initial = mocks.request.getMockImplementation()!
+  let finish!: (value: unknown) => void
+  mocks.request.mockImplementation((request) => request.path === '/assignRole'
+    ? new Promise((resolve) => { finish = resolve }) : initial(request))
+  mount()
+  await screen.findByRole('option', { name: 'Gutterman, Rabbi' })
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Rabbi Gutterman' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Yes' }))
+  await waitFor(() => expect(finish).toBeTypeOf('function'))
+  expect(mocks.request.mock.calls.some(([request]) => request.path === '/api/WFApplicationMessage')).toBe(false)
+  finish({ success: true })
+  await waitFor(() => expect(mocks.request.mock.calls.some(([request]) => request.path === '/api/WFApplicationMessage')).toBe(true))
+})
+
+it('reports email failure separately and refreshes the successful assignment', async () => {
+  const initial = mocks.request.getMockImplementation()!
+  mocks.request.mockImplementation((request) => request.path === '/api/WFApplicationMessage'
+    ? Promise.reject(new Error('Email unavailable')) : initial(request))
+  mount()
+  await screen.findByRole('option', { name: 'Gutterman, Rabbi' })
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Rabbi Gutterman' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Yes' }))
+  expect((await screen.findByRole('alert')).textContent).toBe('RC assigned, but the notification failed: Email unavailable')
+  await waitFor(() => expect(mocks.refresh).toHaveBeenCalledOnce())
 })
 
 it.each(['No', 'Escape'])('keeps the old RC without a backend assignment when dismissed with %s', async (action) => {
@@ -70,6 +116,7 @@ it.each(['No', 'Escape'])('keeps the old RC without a backend assignment when di
   expect(select.selectedOptions[0].textContent).toBe('Old RC')
   expect(mocks.request.mock.calls.some(([request]) => request.method === 'POST')).toBe(false)
   expect(mocks.refresh).not.toHaveBeenCalled()
+  expect(mocks.request.mock.calls.some(([request]) => request.path === '/api/WFApplicationMessage')).toBe(false)
 })
 
 it.each([

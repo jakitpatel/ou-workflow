@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog'
 import { useUser } from '@/context/UserContext'
 import { assignApplicationRc } from '@/features/applications/api/assignApplicationRc'
+import { notifyAssignedRc } from '@/features/applications/lib/notifyAssignedRc'
 import { refreshApplicationInListCaches } from '@/features/applications/cache/applicationListCache'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
@@ -12,9 +13,10 @@ import { COMPLETED_STATUSES, normalizeStatus } from '@/lib/utils/taskHelpers'
 import type { Applicant } from '@/types/application'
 
 export function ApplicantAssignedRc({ applicant }: { applicant: Applicant }) {
-  const { token, username, role, roles, delegated } = useUser()
+  const { token, username, email, role, roles, delegated } = useUser()
   const queryClient = useQueryClient()
   const [pendingAssignee, setPendingAssignee] = useState<string | null>(null)
+  const [notificationError, setNotificationError] = useState<string | null>(null)
   const selectRef = useRef<HTMLSelectElement>(null)
   const isNcrc = role?.toUpperCase() === 'NCRC' ||
     (role?.toUpperCase() === 'ALL' && roles?.some((item) => item.name.toUpperCase() === 'NCRC'))
@@ -44,12 +46,24 @@ export function ApplicantAssignedRc({ applicant }: { applicant: Applicant }) {
   )
   const mutation = useMutation({
     mutationFn: (assignee: string) => {
+      setNotificationError(null)
       if (!canEdit || !options.some((item) => item.assigneeValue === assignee)) {
         throw new Error('You cannot assign this RC.')
       }
       return assignApplicationRc({ appId, assignee, token })
     },
-    onSuccess: async () => {
+    onSuccess: async (_response, assignee) => {
+      try {
+        await notifyAssignedRc({
+          applicationId: appId,
+          fromUser: email || username,
+          toUser: options.find((item) => item.assigneeValue === assignee)?.email,
+          token,
+        })
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : 'Unable to send notification.'
+        setNotificationError(`RC assigned, but the notification failed: ${detail}`)
+      }
       try {
         const refreshed = await refreshApplicationInListCaches({
           applicationId: applicant.applicationId, queryClient, token,
@@ -68,6 +82,7 @@ export function ApplicantAssignedRc({ applicant }: { applicant: Applicant }) {
   return (
     <div className="mt-1 text-xs text-gray-600">
       <span className="font-medium text-gray-500">Company RC:</span>{' '}
+      {notificationError && <p role="alert" className="mt-1 text-red-600">{notificationError}</p>}
       {canEdit ? (
         <>
           <select
