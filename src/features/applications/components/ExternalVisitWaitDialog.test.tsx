@@ -68,8 +68,8 @@ describe('external inspection visit dates', () => {
     expect(invalidateQueries).toHaveBeenCalledTimes(3)
   })
 
-  it('records ACTUAL using the application visit_id instead of conflicting task details', async () => {
-    const onClose = setup('Actual Date', {
+  it.each(['Actual Date', 'Actual Visit'])('records %s using the application visit_id instead of conflicting task details', async (name) => {
+    const onClose = setup(name, {
       StatusDetails: { inputParam: { visitId: '2970391' } } as unknown as string,
     })
     fireEvent.click(screen.getByRole('button', { name: 'More' }))

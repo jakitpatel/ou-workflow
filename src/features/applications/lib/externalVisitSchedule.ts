@@ -8,7 +8,7 @@ export function getExternalVisitScheduleType(
   if (stage?.trim().toLowerCase() !== 'inspection' || !isExternalWaitTask(task)) return null
   const name = task.name.trim().replace(/\s+/g, ' ').toUpperCase()
   if (name === 'SCHEDULE VISIT') return 'SCHEDULE'
-  if (name === 'ACTUAL DATE') return 'ACTUAL'
+  if (name === 'ACTUAL DATE' || name === 'ACTUAL VISIT') return 'ACTUAL'
   return null
 }
 
