@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   message: vi.fn().mockResolvedValue({}),
   display: vi.fn().mockResolvedValue({}),
   result: vi.fn(),
-  rfrs: [{ id: 'rfr1', userName: 'rfr1', name: 'Test RFR', email: 'rfr@example.com' }],
+  rfrs: [{ id: 'rfr1', userName: 'rfr1', name: 'Test RFR', fullName: 'Rabbi Test Full Name', email: 'rfr@example.com' }],
 }))
 vi.mock('@/context/UserContext', () => ({ useUser: () => ({ email: 'sender@example.com', username: 'sender', token: 'token' }) }))
 vi.mock('@/features/applications/hooks/useApplicationDetail', () => ({
@@ -42,7 +42,7 @@ it('creates and notifies without a Visit Date task or status-details save', asyn
       <InspectionAssignmentDrawer open applicant={applicant} task={task} onClose={vi.fn()} />
     </QueryClientProvider>,
   )
-  fireEvent.click(screen.getByRole('button', { name: /Test RFR/ }))
+  fireEvent.click(screen.getByRole('button', { name: /Rabbi Test Full Name/ }))
   fireEvent.click(screen.getByRole('button', { name: 'Create Assignment & Notify' }))
   await waitFor(() => expect(screen.getByRole('button', { name: 'Resend Notification' })).toBeTruthy())
   expect(mocks.assign).toHaveBeenCalledWith(expect.objectContaining({ taskId: '123', assignee: 'rfr1' }))
@@ -55,6 +55,9 @@ it('creates and notifies without a Visit Date task or status-details save', asyn
     }),
   }))
   expect(mocks.display).toHaveBeenCalledWith(expect.objectContaining({ taskId: '123', result: expect.stringContaining('Visit #789') }))
+  expect(mocks.display).toHaveBeenCalledWith(expect.objectContaining({
+    taskId: '123', result: expect.stringContaining('{RFR:Rabbi Test Full Name,'),
+  }))
   expect(mocks.message).toHaveBeenCalledWith(expect.objectContaining({
     payload: expect.objectContaining({
       MessageTextPlain: expect.stringContaining('Actual EIR/inspection: https://oudirect-st.ou.org/oudirect/inspections/RfrVisitInspectionForm?type=Inspection&mode=new&subtype=short&visitID=789'),

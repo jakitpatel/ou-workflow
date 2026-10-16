@@ -334,7 +334,7 @@ const formatStatusInvoiceDate = (value: string) => {
 }
 
 const getInvoiceStatusRfrValue = (rfr: InspectionInvoiceRfr | null) =>
-  normalizeRfrText(rfr?.userName || rfr?.name || rfr?.id || rfr?.lookupKey || '-')
+  normalizeRfrText(rfr?.fullName || rfr?.name || rfr?.userName || rfr?.id || rfr?.lookupKey || '-')
 
 const buildInvoiceGuiDisplayResult = ({
   invoiceDate,

@@ -39,6 +39,7 @@ type RfrOption = {
   lookupKey: string
   assigneeValue: string
   userName: string
+  fullName: string
   name: string
   email: string
   region: string
@@ -63,6 +64,7 @@ const mapLookupRfr = (item: any): RfrOption => {
     lookupKey,
     assigneeValue,
     userName,
+    fullName: normalizeText(item.fullName),
     name,
     email: normalizeText(item.email),
     region: normalizeText(item.userRole),
@@ -207,7 +209,7 @@ const buildAssignmentGuiDisplayResult = ({
   endDate: string
   sentDate: Date
 }) => {
-  const rfrValue = rfr.userName || rfr.assigneeValue || rfr.id || rfr.lookupKey || rfr.name
+  const rfrValue = rfr.fullName || rfr.name || rfr.userName || rfr.assigneeValue || rfr.id || rfr.lookupKey
   return `{RFR:${rfrValue}, Visit #${visitId}, ${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)}, Sent ${formatSentDate(sentDate)}}`
 }
 
