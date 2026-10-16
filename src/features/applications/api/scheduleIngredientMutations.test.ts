@@ -29,12 +29,12 @@ describe('ScheduleIngredient mutations', () => {
     })
   })
 
-  it('soft deletes the ingredient resource with its ID and IsDeleted flag', async () => {
+  it('soft deletes the ingredient resource with its ID and isDeleted flag', async () => {
     await deleteScheduleIngredient('17', 'token')
     expect(fetchWithAuth).toHaveBeenCalledWith({
       path: '/api/ScheduleIngredient/17',
       method: 'PATCH',
-      body: { data: { attributes: { IsDeleted: true }, id: 17, type: 'ScheduleIngredient' } },
+      body: { data: { attributes: { isDeleted: true }, id: 17, type: 'ScheduleIngredient' } },
       token: 'token',
     })
   })

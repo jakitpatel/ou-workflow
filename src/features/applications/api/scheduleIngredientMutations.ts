@@ -35,7 +35,7 @@ export function deleteScheduleIngredient(id: string, token?: string | null) {
     method: 'PATCH',
     body: {
       data: {
-        attributes: { IsDeleted: true },
+        attributes: { isDeleted: true },
         id: Number(id),
         type: 'ScheduleIngredient',
       },
