@@ -338,6 +338,14 @@ export function InspectionInvoiceDrawer({
 
               {state.inspectionNeeded === true ? (
                 <div className="mt-4">
+                  {state.recommendedRfrUsername ? (
+                    <p className="mb-2 text-xs font-medium text-blue-800">
+                      Recommended RFR: {state.recommendedRfr?.name || state.recommendedRfrUsername}
+                      {!state.recommendedRfr && !state.isRfrListLoading && !state.isRfrListError
+                        ? ' (not available in the active RFR list)'
+                        : ''}
+                    </p>
+                  ) : null}
                   {state.selectedRfr ? (
                     <div className="rounded border border-blue-200 bg-blue-50 p-3">
                       <div className="flex items-start justify-between gap-3">

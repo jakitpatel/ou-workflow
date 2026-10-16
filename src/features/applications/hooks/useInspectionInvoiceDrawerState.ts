@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { useUser } from '@/context/UserContext'
 import { useInspectionInvoiceCc } from './useInspectionInvoiceCc'
+import { getRecommendedRfrUsername, useInspectionRfrSelection } from './useInspectionRfrSelection'
 import {
   createApplicationMessage,
   fetchApplicationDetail,
@@ -582,7 +583,6 @@ export function useInspectionInvoiceDrawerState({
   const [inspectionNeeded, setInspectionNeeded] = useState<boolean | null>(true)
   const [feeRequired, setFeeRequired] = useState<boolean | null>(true)
   const [awaitPayment, setAwaitPayment] = useState(true)
-  const [selectedRfrId, setSelectedRfrId] = useState<string | null>(null)
   const [restoredRfr, setRestoredRfr] = useState<InspectionInvoiceRfr | null>(null)
   const [rfrSearch, setRfrSearch] = useState('')
   const [feeAmount, setFeeAmount] = useState('')
@@ -616,6 +616,13 @@ export function useInspectionInvoiceDrawerState({
   const [isMarkingPaid, setIsMarkingPaid] = useState(false)
   const [isCompletingWithoutInspection, setIsCompletingWithoutInspection] = useState(false)
   const restoredTaskKeyRef = useRef('')
+
+  const recommendedRfrUsername = getRecommendedRfrUsername(
+    applicant && 'GlobalData' in applicant ? applicant.GlobalData : applicant?.globalData,
+  )
+  const { recommendedRfr, selectedRfrId, setSelectedRfrId } = useInspectionRfrSelection(
+    recommendedRfrUsername, rfrs, inspectionNeeded === true,
+  )
 
   const selectedRfr = useMemo(
     () =>
@@ -722,7 +729,7 @@ export function useInspectionInvoiceDrawerState({
     setInspectionNeeded(true)
     setFeeRequired(true)
     setAwaitPayment(true)
-    setSelectedRfrId(null)
+    setSelectedRfrId(undefined)
     setRestoredRfr(null)
     setRfrSearch('')
     setFeeAmount('')
@@ -1446,6 +1453,8 @@ export function useInspectionInvoiceDrawerState({
     recipient,
     recipientOptions,
     rfrSearch,
+    recommendedRfr,
+    recommendedRfrUsername,
     selectedRfr,
     selectedRecipient,
     sentAt,
