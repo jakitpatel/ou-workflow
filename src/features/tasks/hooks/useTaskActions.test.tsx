@@ -119,6 +119,7 @@ describe('AssignNCRC notification', () => {
       taskId: '12', applicationId: 421, token: 'token', username: 'S.Benjamin',
       capacity: 'DESIGNATED', completionNotes: 'Task completed successfully',
       result: '{selectRFR:YES, RFR:selected.rfr}', resultData: '{Recommended RFR:Rabbi Test Full Name}',
+      rfrRecommendationUsername: 'selected.rfr',
     })
     expect(mocks.assign).not.toHaveBeenCalled()
     expect(mocks.mutate).not.toHaveBeenCalled()

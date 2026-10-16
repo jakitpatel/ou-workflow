@@ -554,6 +554,7 @@ export function useTaskDashboardState() {
         return confirmTaskMutation.mutateAsync({
           ...mutationParams,
           ...buildRfrRecommendationCompletion(assignee, typeof result === 'string' ? result : undefined),
+          rfrRecommendationUsername: assignee,
         }).then(() => postRfrRecommendationMessage({
           applicationId: resolvedApplicationId,
           fullName: (typeof result === 'string' ? result.trim() : '') || assignee,

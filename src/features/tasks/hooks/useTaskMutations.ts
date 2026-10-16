@@ -10,6 +10,7 @@ import { refreshApplicationInListCaches } from '@/features/applications/cache/ap
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { refreshPrelimApplicationOrInvalidateLists } from '@/features/prelim/cache/submissionApplicationEvents'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
+import { saveApplicationGlobalData } from '@/features/applications/api/globalData'
 
 type ConfirmTaskInput = {
   taskId: string
@@ -157,8 +158,27 @@ export const useConfirmTaskMutation = (options: TaskMutationOptions = {}) => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: confirmTask,
+    mutationFn: ({ rfrRecommendationUsername: _rfr, ...input }: Parameters<typeof confirmTask>[0] & {
+      rfrRecommendationUsername?: string
+    }) => confirmTask(input),
     onSuccess: async (_response, variables) => {
+      if (variables.rfrRecommendationUsername) {
+        try {
+          const applicationId = Number(variables.applicationId)
+          const taskInstanceId = Number(variables.taskId)
+          if (!applicationId || !Number.isFinite(applicationId) || !taskInstanceId || !Number.isFinite(taskInstanceId)) {
+            throw new Error('Missing or invalid application or task ID.')
+          }
+          await saveApplicationGlobalData({
+            applicationId,
+            taskInstanceId,
+            jsonData: { RFRRecommendation: variables.rfrRecommendationUsername },
+            token: variables.token,
+          })
+        } catch (error) {
+          options.onError?.(`RFR recommendation completed, but saving application global data failed: ${resolveMutationErrorMessage(error, 'Unable to save global data.')}`)
+        }
+      }
       const nextStatus = mapTaskStatusFromConfirm(variables as ConfirmTaskInput)
       patchTaskCaches(queryClient, String((variables as ConfirmTaskInput).taskId), (task) => ({
         ...task,
