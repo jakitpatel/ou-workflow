@@ -13,6 +13,7 @@ import {
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
+import { useContractSchedules } from '@/features/applications/hooks/useContractSchedules'
 import { isValidContractFee } from '@/features/applications/model/contractFee'
 import {
   useContractCommunicationMessages,
@@ -72,51 +73,6 @@ const LABELING_RULES = [
   'Not recommended to print the OU on blank boxes/cartons/bags, since not all products in a plant may be certified.',
   'A website/brochure bearing the OU must include "Products certified when bearing the OU symbol" or "Not all products are OU certified."',
 ]
-
-type ContractPreviewProductRow = {
-  BrandName?: string
-  CompanyName?: string
-  ConsumerIndustrial?: string
-  LableType?: string
-  LabelType?: string
-  ProducedIn1Status?: string
-  ProductName?: string
-  STATUS?: string
-  SYMBOL?: string
-  UKID?: string | number
-  UKDID?: string | number
-  brandName?: string
-  bulkShipped?: boolean | string
-  certification?: string
-  group?: string
-  labelNo?: string | number
-  labelCompany?: string
-  labelName?: string
-  productName?: string
-  status?: string
-  symbol?: string
-}
-
-type ContractPreviewIngredientRow = {
-  BrandName?: string
-  CTA?: string
-  CompanyName?: string
-  GRP?: string | number
-  IngredientInPlantStatus?: string
-  IngredientName?: string
-  RMC?: string
-  SYMBOL?: string
-  addedBy?: string
-  addedDate?: string
-  brand?: string
-  certification?: string
-  ingredient?: string
-  manufacturer?: string
-  ncrcId?: number | string
-  packaging?: string
-  source?: string
-  status?: string
-}
 
 type AgreementClause = {
   id: string
@@ -1231,20 +1187,8 @@ export function ContractStageDrawer({
     }
   }, [applicationDetail?.companyAddresses])
   const senderEmail = textValue(email) || textValue(username)
-  const contractIngredients = useMemo(
-    () =>
-      ((applicationDetail?.ingredients as ContractPreviewIngredientRow[] | undefined) ?? []).filter(
-        Boolean,
-      ),
-    [applicationDetail?.ingredients],
-  )
-  const contractProducts = useMemo(
-    () =>
-      ((applicationDetail?.products as ContractPreviewProductRow[] | undefined) ?? []).filter(
-        Boolean,
-      ),
-    [applicationDetail?.products],
-  )
+  const { contractIngredients, contractProducts, ingredientsQuery, productsQuery } =
+    useContractSchedules(open ? resolvedApplicationId : undefined)
   const contractTypeLabel = isNewCompanyContract
     ? 'New Company Certification'
     : 'Plant Addendum (existing company)'
@@ -1646,6 +1590,10 @@ ${packageUrl}`
   }
 
   const handleGenerateContractPackage = async () => {
+    if (!ingredientsQuery.isSuccess || !productsQuery.isSuccess) {
+      toast.error('Load Kash ingredients and products successfully before generating the contract package.')
+      return
+    }
     try {
       const invoiceUrl = contractInvoiceDocumentUrl || ''
       const packagePayload = {
@@ -2006,7 +1954,7 @@ ${packageUrl}`
             </div>
             <h4 className="mt-2 text-2xl font-semibold text-gray-900">Ingredients</h4>
             <p className="mt-2 text-sm text-gray-500">
-              Pulled live from the application detail ingredient list for the contract preview.
+              Kash ingredients for this application.
             </p>
           </div>
           <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
@@ -2043,11 +1991,19 @@ ${packageUrl}`
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {contractIngredients.length > 0 ? (
+              {ingredientsQuery.isLoading ? (
+                <tr><td colSpan={7} className="px-4 py-12 text-center" role="status">Loading ingredients...</td></tr>
+              ) : ingredientsQuery.isError ? (
+                <tr><td colSpan={7} className="px-4 py-12 text-center">
+                  <p role="alert">Unable to load Kash ingredients.</p>
+                  <button type="button" className="mt-2 text-blue-700 underline" onClick={() => void ingredientsQuery.refetch()}>Retry</button>
+                </td></tr>
+              ) : contractIngredients.length > 0 ? (
                 contractIngredients.map((ingredient, index) => {
                   const ingredientRecord = ingredient as Record<string, unknown>
                   const rmc = readRecordText(ingredientRecord, [
                     'RMC',
+                    'RAW_MATERIAL_CODE',
                     'rawMaterialCode',
                     'RawMaterialCode',
                     'rmc',
@@ -2116,7 +2072,7 @@ ${packageUrl}`
                     <div className="text-gray-400">
                       <p className="text-sm font-medium">No ingredients found</p>
                       <p className="mt-1 text-xs">
-                        No application-detail ingredients are available for this contract preview.
+                        No Kash ingredients are available for this application.
                       </p>
                     </div>
                   </td>
@@ -2135,7 +2091,7 @@ ${packageUrl}`
             </div>
             <h4 className="mt-2 text-2xl font-semibold text-gray-900">Products</h4>
             <p className="mt-2 text-sm text-gray-500">
-              Pulled live from the application detail product list for the contract preview.
+              Kash products for this application.
             </p>
           </div>
           <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
@@ -2175,7 +2131,14 @@ ${packageUrl}`
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {contractProducts.length > 0 ? (
+              {productsQuery.isLoading ? (
+                <tr><td colSpan={8} className="px-4 py-12 text-center" role="status">Loading products...</td></tr>
+              ) : productsQuery.isError ? (
+                <tr><td colSpan={8} className="px-4 py-12 text-center">
+                  <p role="alert">Unable to load Kash products.</p>
+                  <button type="button" className="mt-2 text-blue-700 underline" onClick={() => void productsQuery.refetch()}>Retry</button>
+                </td></tr>
+              ) : contractProducts.length > 0 ? (
                 contractProducts.map((product, index) => {
                   const productRecord = product as Record<string, unknown>
                   const productName = readRecordText(productRecord, [
@@ -2245,7 +2208,7 @@ ${packageUrl}`
                     <div className="text-gray-400">
                       <p className="text-sm font-medium">No products found</p>
                       <p className="mt-1 text-xs">
-                        No application-detail products are available for this contract preview.
+                        No Kash products are available for this application.
                       </p>
                     </div>
                   </td>
