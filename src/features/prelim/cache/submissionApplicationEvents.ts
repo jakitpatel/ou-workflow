@@ -31,21 +31,37 @@ export async function refreshSubmissionApplicationFromEvent(
     cache && pagesOf(cache).some((page) => page.data.some((app) => matchesId(app, applicationId))),
   )) return
 
-  await refreshPrelimApplicationInListCaches({ applicationId, queryClient, token })
+  await refreshPrelimApplicationInListCaches({
+    applicationId,
+    queryClient,
+    token,
+    pushSeqNum:
+      typeof message.data.pushSeqNum === 'number' || typeof message.data.pushSeqNum === 'string'
+        ? message.data.pushSeqNum
+        : -1,
+  })
 }
 
 export async function refreshPrelimApplicationInListCaches({
   applicationId: rawId,
   queryClient,
   token,
+  pushSeqNum,
 }: {
+  pushSeqNum?: string | number
   applicationId?: string | number | null
   queryClient: QueryClient
   token?: string | null
 }): Promise<boolean> {
   const applicationId = Number(rawId)
   if (!Number.isSafeInteger(applicationId) || applicationId <= 0) return false
-  const response = await fetchPrelimApplications({ applicationId, page: 0, limit: 1, token })
+  const response = await fetchPrelimApplications({
+    applicationId,
+    page: 0,
+    limit: 1,
+    token,
+    ...(pushSeqNum !== undefined ? { pushSeqNum } : {}),
+  })
   const updated = response.data.find((app) => matchesId(app, applicationId))
   if (!updated) return false
 

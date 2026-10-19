@@ -54,10 +54,12 @@ export async function fetchApplicants({
   statusFilter,
   priorityFilter,
   applicationId,
+  pushSeqNum,
   myOnly,
   role,
 }: FetchApplicantsRequest = {}): Promise<ApplicantsResponse> {
   const params = buildPaginationParams(page, limit)
+  if (pushSeqNum !== undefined) params.append('pushSeqNum', String(pushSeqNum))
 
   addFilterParams(params, {
     'filter[name]': searchTerm,
@@ -92,6 +94,7 @@ export type FetchApplicantsRequest = {
   statusFilter?: string
   priorityFilter?: string
   applicationId?: number
+  pushSeqNum?: string | number
   myOnly?: string | boolean
   role?: string | null
 }

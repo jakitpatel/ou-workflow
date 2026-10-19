@@ -342,8 +342,10 @@ export async function fetchPrelimApplications({
   searchTerm,
   statusFilter,
   applicationId,
+  pushSeqNum,
 }: FetchPrelimApplicationsRequest = {}): Promise<ApplicantsResponse> {
   const params = buildPaginationParams(page, limit)
+  if (pushSeqNum !== undefined) params.append('pushSeqNum', String(pushSeqNum))
 
   addFilterParams(params, {
     'filter[name]': searchTerm,
@@ -368,6 +370,7 @@ export type FetchPrelimApplicationsRequest = {
   searchTerm?: string
   statusFilter?: string
   applicationId?: number
+  pushSeqNum?: string | number
 }
 
 export async function fetchPrelimApplicationDetails(

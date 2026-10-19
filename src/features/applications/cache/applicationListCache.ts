@@ -4,6 +4,7 @@ import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import type { Applicant, ApplicantsResponse } from '@/types/application'
 
 type RefreshApplicationListCacheParams = {
+  pushSeqNum?: string | number
   applicationId?: string | number | null
   queryClient: QueryClient
   token?: string | null
@@ -85,6 +86,7 @@ export async function refreshApplicationInListCaches({
   applicationId,
   queryClient,
   token,
+  pushSeqNum,
 }: RefreshApplicationListCacheParams): Promise<boolean> {
   const requestedApplicationId =
     applicationId === undefined || applicationId === null ? '' : String(applicationId).trim()
@@ -100,6 +102,7 @@ export async function refreshApplicationInListCaches({
 
   const response = await fetchApplicants({
     applicationId: parsedApplicationId,
+    ...(pushSeqNum !== undefined ? { pushSeqNum } : {}),
     limit: 1,
     myOnly: false,
     page: 0,

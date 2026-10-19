@@ -40,5 +40,13 @@ export async function refreshWorkflowApplicationFromEvent(
     .some(([, data]) => containsApplication(data, String(applicationId)))
   if (!isCached) return
 
-  await refreshApplicationInListCaches({ applicationId, queryClient, token })
+  await refreshApplicationInListCaches({
+    applicationId,
+    queryClient,
+    token,
+    pushSeqNum:
+      typeof message.data.pushSeqNum === 'number' || typeof message.data.pushSeqNum === 'string'
+        ? message.data.pushSeqNum
+        : -1,
+  })
 }

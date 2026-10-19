@@ -15,7 +15,7 @@ const event: SSEMessage = {
 describe('workflow application events', () => {
   beforeEach(() => vi.mocked(fetchApplicants).mockReset())
 
-  it('fetches only the matching ID and patches paged and infinite caches without invalidating lists', async () => {
+  it.each([undefined, 1, 0, '42'])('fetches and patches caches with pushSeqNum %s', async (pushSeqNum) => {
     const client = new QueryClient()
     const target = { id: 1332, applicationId: 1332, status: 'new' }
     const other = { id: 1333, applicationId: 1333, status: 'new' }
@@ -34,10 +34,10 @@ describe('workflow application events', () => {
     const invalidate = vi.spyOn(client, 'invalidateQueries')
     vi.mocked(fetchApplicants).mockResolvedValue({ data: [updated], meta } as Awaited<ReturnType<typeof fetchApplicants>>)
 
-    await refreshWorkflowApplicationFromEvent(event, client, 'token')
+    await refreshWorkflowApplicationFromEvent({ ...event, data: { ...event.data, pushSeqNum } }, client, 'token')
 
     expect(fetchApplicants).toHaveBeenCalledExactlyOnceWith({
-      applicationId: 1332, limit: 1, myOnly: false, page: 0, token: 'token',
+      applicationId: 1332, limit: 1, myOnly: false, page: 0, token: 'token', pushSeqNum: pushSeqNum ?? -1,
     })
     expect(client.getQueryData(pagedKey)).toEqual({ data: [updated, other], meta })
     expect(client.getQueryData(infiniteKey)).toEqual({
