@@ -29,7 +29,7 @@ describe('submission application events', () => {
     client.clear()
   })
 
-  it.each([undefined, 1, 0, '42'])('fetches and patches caches with pushSeqNum %s', async (pushSeqNum) => {
+  it.each([undefined, null, 1070, 0, '42'])('fetches and patches caches with pushSeqNum %s', async (pushSeqNum) => {
     const client = new QueryClient()
     const target = { id: 1367, applicationId: 1367, status: 'new' }
     const other = { id: 1333, applicationId: 1333, status: 'new' }
@@ -48,7 +48,7 @@ describe('submission application events', () => {
     const invalidate = vi.spyOn(client, 'invalidateQueries')
     vi.mocked(fetchPrelimApplications).mockResolvedValue({ data: [updated], meta } as Awaited<ReturnType<typeof fetchPrelimApplications>>)
 
-    await refreshSubmissionApplicationFromEvent({ ...event, data: { ...event.data, pushSeqNum } }, client, 'token')
+    await refreshSubmissionApplicationFromEvent({ ...event, pushSeqNum, data: { ...event.data, pushSeqNum: 999 } }, client, 'token')
 
     expect(fetchPrelimApplications).toHaveBeenCalledExactlyOnceWith({
       applicationId: 1367, limit: 1, page: 0, token: 'token', pushSeqNum: pushSeqNum ?? -1,

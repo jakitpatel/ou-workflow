@@ -8,6 +8,7 @@ import { createSSEParser } from '@/shared/api/sseParser'
 const STREAM_IDLE_TIMEOUT_MS = 60000
 
 export type SSEMessage = {
+  pushSeqNum?: unknown
   type?: unknown
   data?: {
     type?: unknown

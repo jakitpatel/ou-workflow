@@ -45,8 +45,8 @@ export async function refreshWorkflowApplicationFromEvent(
     queryClient,
     token,
     pushSeqNum:
-      typeof message.data.pushSeqNum === 'number' || typeof message.data.pushSeqNum === 'string'
-        ? message.data.pushSeqNum
+      typeof message.pushSeqNum === 'number' || typeof message.pushSeqNum === 'string'
+        ? message.pushSeqNum
         : -1,
   })
 }
