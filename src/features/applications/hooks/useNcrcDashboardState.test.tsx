@@ -156,7 +156,7 @@ describe('useNcrcDashboardState', () => {
         })
       })
       expect(fetchApplicantsMock).toHaveBeenCalledExactlyOnceWith({
-        applicationId: 1332, limit: 1, myOnly: false, page: 0, token: 'test-access-token',
+        applicationId: 1332, limit: 1, myOnly: false, page: 0, token: 'test-access-token', pushSeqNum: -1,
       })
       expect(fetchMyMessagesMock).not.toHaveBeenCalled()
 
