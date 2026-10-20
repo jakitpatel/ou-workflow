@@ -1206,7 +1206,7 @@ export function ScheduleAIngredientsDrawer({
               </div>
               {[
                 { id: 'comm', label: 'Communication' },
-                { id: 'eir', label: 'EIROLD' },
+                { id: 'eir', label: 'EIR Details' },
                 { id: 'eir-new', label: 'EIR' },
               ].map((tab) => (
                 <button
