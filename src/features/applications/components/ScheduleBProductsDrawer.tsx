@@ -1,3 +1,6 @@
+import { ScheduleProductEditCells } from './ScheduleProductEditCells'
+import { ScheduleProductActionButtons } from './ScheduleProductActionButtons'
+import { useScheduleProductActions } from '../hooks/useScheduleProductActions'
 import { ScheduleRoundEmailCopies } from './ScheduleRoundEmailCopies'
 import { ScheduleAEirNewTab } from './ScheduleAEirNewTab'
 import { useScheduleEir } from '../hooks/useScheduleEir'
@@ -619,6 +622,7 @@ export function ScheduleBProductsDrawer({
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const { token, username } = useUser()
   const { data, isLoading, error } = useScheduleBProducts(isActive ? resolvedApplicationId : undefined)
+  const productActions = useScheduleProductActions(resolvedApplicationId)
   const createProductMutation = useCreateScheduleBProduct(resolvedApplicationId)
   const completeScheduleBTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
@@ -1520,7 +1524,9 @@ export function ScheduleBProductsDrawer({
                                 }
                               >
                                 <td className="px-3 py-3 text-xs text-gray-500">{index + 1}</td>
-                                {ingView === 'application' ? (
+                                {ingView === 'application' && !readOnly && productActions.editingId === row.productId && productActions.draft ? (
+                                  <ScheduleProductEditCells row={row} draft={productActions.draft} disabled={productActions.pending} onChange={productActions.change} />
+                                ) : ingView === 'application' ? (
                                   <>
                                     <td className="px-3 py-3 text-gray-700">{renderApplicationValue(row.labelNo)}</td>
                                     <td className="px-3 py-3">
@@ -1566,6 +1572,7 @@ export function ScheduleBProductsDrawer({
                                   {ingView === 'application' && !readOnly ? (
                                     <td className="px-3 py-3">
                                     <div className="flex flex-nowrap items-center gap-1">
+                                      <ScheduleProductActionButtons row={row} actions={productActions} />
                                       {resolved ? null : (
                                         <>
                                           <FlagActionButton flagged={flagged} onClick={() => scratchpadApi.toggleFlag(row.id)} />

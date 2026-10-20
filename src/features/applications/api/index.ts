@@ -864,6 +864,7 @@ export async function fetchScheduleBProducts({
 
   const params = new URLSearchParams()
   params.append('filter[ApplicationID]', String(applicationId))
+  params.append('filter[isDeleted]', 'false')
 
   const response = await fetchWithAuth<ScheduleBProductsResponse>({
     path: `/get_products?${params.toString()}`,
