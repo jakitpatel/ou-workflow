@@ -383,11 +383,13 @@ export async function fetchApplicationMessages({
   taskInstanceId,
   messageType,
   token,
+  pushSeqNum,
 }: {
   applicationId?: string | number | null
   taskInstanceId?: string | number | null
   messageType?: string | null
   token?: string | null
+  pushSeqNum?: string | number
 }): Promise<ApplicationEmail[]> {
   const params = new URLSearchParams()
 
@@ -404,6 +406,7 @@ export async function fetchApplicationMessages({
   }
 
   params.append('sort', '-MessageID')
+  if (pushSeqNum !== undefined) params.append('pushSeqNum', String(pushSeqNum))
 
   const response = await fetchWithAuth<
     | {

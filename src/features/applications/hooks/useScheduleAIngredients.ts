@@ -1,3 +1,4 @@
+import { useCommunicationMessageEvents } from './useCommunicationMessageEvents'
 import { withImpliedBcc } from '@/shared/email/impliedBcc'
 export { getScheduleAEirUrl } from '../utils/scheduleAEirUrl'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
@@ -671,6 +672,13 @@ export function useScheduleACommunicationMessages({
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const normalizedTaskInstanceId =
     taskInstanceId === undefined || taskInstanceId === null ? undefined : String(taskInstanceId)
+
+  useCommunicationMessageEvents({
+    applicationId: normalizedApplicationId,
+    taskInstanceId: normalizedTaskInstanceId,
+    token,
+    queryKey: applicationsQueryKeys.scheduleAMessages(normalizedApplicationId, normalizedTaskInstanceId),
+  })
 
   return useQuery({
     queryKey: applicationsQueryKeys.scheduleAMessages(normalizedApplicationId, normalizedTaskInstanceId),

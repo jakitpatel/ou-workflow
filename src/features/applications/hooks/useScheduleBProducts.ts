@@ -1,3 +1,4 @@
+import { useCommunicationMessageEvents } from './useCommunicationMessageEvents'
 import { withImpliedBcc } from '@/shared/email/impliedBcc'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -802,6 +803,13 @@ export function useScheduleBCommunicationMessages({
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const normalizedTaskInstanceId =
     taskInstanceId === undefined || taskInstanceId === null ? undefined : String(taskInstanceId)
+
+  useCommunicationMessageEvents({
+    applicationId: normalizedApplicationId,
+    taskInstanceId: normalizedTaskInstanceId,
+    token,
+    queryKey: scheduleBMessagesQueryKey(normalizedApplicationId, normalizedTaskInstanceId),
+  })
 
   return useQuery({
     queryKey: scheduleBMessagesQueryKey(normalizedApplicationId, normalizedTaskInstanceId),

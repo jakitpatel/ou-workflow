@@ -1,3 +1,4 @@
+import { useCommunicationMessageEvents } from './useCommunicationMessageEvents'
 import { useState } from 'react'
 import { withImpliedBcc } from '@/shared/email/impliedBcc'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -184,6 +185,13 @@ export function useContractCommunicationMessages({
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const normalizedTaskInstanceId =
     taskInstanceId === undefined || taskInstanceId === null ? undefined : String(taskInstanceId)
+
+  useCommunicationMessageEvents({
+    applicationId: normalizedApplicationId,
+    taskInstanceId: normalizedTaskInstanceId,
+    token,
+    queryKey: applicationsQueryKeys.contractMessages(normalizedApplicationId, normalizedTaskInstanceId),
+  })
 
   return useQuery({
     queryKey: applicationsQueryKeys.contractMessages(
