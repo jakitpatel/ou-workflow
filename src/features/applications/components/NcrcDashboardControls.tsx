@@ -1,3 +1,4 @@
+import { ApplicationIdFilter } from '@/components/filters/ApplicationIdFilter'
 import { MessageSquareText, Search } from 'lucide-react'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { ApplicantStatsCards } from '@/features/applications/components/ApplicantStatsCards'
@@ -14,6 +15,7 @@ type ApplicantStats = {
 }
 
 type DashboardSearchUpdates = {
+  applicationId?: number
   q?: string
   status?: string
   priority?: string
@@ -22,6 +24,7 @@ type DashboardSearchUpdates = {
 }
 
 type NcrcDashboardControlsProps = {
+  applicationId?: number
   q: string
   status: string
   priority: string
@@ -45,6 +48,7 @@ type NcrcDashboardControlsProps = {
 }
 
 export function NcrcDashboardControls({
+  applicationId,
   q,
   status,
   priority,
@@ -178,6 +182,7 @@ export function NcrcDashboardControls({
             </div>
           </div>
         </div>
+        <ApplicationIdFilter applicationId={applicationId} onApply={(id) => onUpdateSearch({ applicationId: id, page: 0 })} />
       </div>
 
       {isLoading && paginationMode === 'paged' && (

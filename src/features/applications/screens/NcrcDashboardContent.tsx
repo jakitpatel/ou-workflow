@@ -458,6 +458,7 @@ export function NcrcDashboardContent() {
     <>
       <PageShell>
         <NcrcDashboardControls
+          applicationId={search.applicationId}
           q={q}
           status={status}
           priority={priority}

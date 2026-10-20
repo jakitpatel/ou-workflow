@@ -1,3 +1,4 @@
+import { ApplicationIdFilter } from '@/components/filters/ApplicationIdFilter'
 import { Search } from 'lucide-react'
 
 type Props = {
@@ -38,17 +39,9 @@ export function PrelimDashboardFilters({ q, status, applicationId, onChange }: P
           <option value="WTH">Withdrawn</option>
         </select>
 
-        {applicationId !== undefined && (
-          <button
-            type="button"
-            onClick={() => onChange({ applicationId: undefined, page: 0 })}
-            className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
-            title="Clear application id filter"
-          >
-            AppId: {applicationId} x
-          </button>
-        )}
+
       </div>
+      <ApplicationIdFilter applicationId={applicationId} onApply={(id) => onChange({ applicationId: id, page: 0 })} />
     </div>
   )
 }
