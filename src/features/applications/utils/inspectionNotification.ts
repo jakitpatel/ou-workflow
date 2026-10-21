@@ -115,14 +115,15 @@ export const buildNotificationBody = ({
     '',
     `Account #: ${accountNumber || '-'}`,
     '',
-    `Planned visit date: ${getOuDirectPlannedVisitUrl(visitId)}`,
-    `Actual EIR/inspection: ${getOuDirectInspectionUrl(visitId)}`,
     // Temporarily hidden until the client is ready for application links.
     // ...(accountApplicationUrl ? [`Application link: ${applicationLinkLabel}`] : []),
     '',
     `Date range: ${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`,
     '',
     `Visit ID: ${visitId || '-'}`,
+    '',
+    `Planned visit date: ${getOuDirectPlannedVisitUrl(visitId)}`,
+    `Actual EIR/inspection: ${getOuDirectInspectionUrl(visitId)}`,
     '',
     'Please submit EIR for Initial Inspection on OUDirect',
   ].join('\n')

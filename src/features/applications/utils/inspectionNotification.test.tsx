@@ -31,6 +31,9 @@ it.each([
 
   expect(body).toContain(`Planned visit date: ${plannedVisitUrl}`)
   expect(body).toContain(`Actual EIR/inspection: ${url}`)
+  expect(body).toContain(
+    `Visit ID: 456\n\nPlanned visit date: ${plannedVisitUrl}\nActual EIR/inspection: ${url}`,
+  )
   expect(buildHtmlEmailFromPlainText(body).html).toContain(`href="${plannedVisitUrl}"`)
   expect(buildHtmlEmailFromPlainText(body).html).toContain(`href="${url.replace(/&/g, '&amp;')}"`)
   const { unmount } = render(<InspectionEmailBodyPreview body={body} applicationUrl="" />)
