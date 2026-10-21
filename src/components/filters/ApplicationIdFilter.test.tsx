@@ -7,10 +7,10 @@ import { NcrcDashboardControls } from '@/features/applications/components/NcrcDa
 vi.mock('@/context/AppPreferencesContext', () => ({ useAppPreferences: () => ({ navigationMenuType: 'left' }) }))
 
 describe.each(['dashboard', 'intake'] as const)('%s Application ID filter', (dashboard) => {
-  it('applies and clears an ID while resetting pagination', () => {
+  it('applies an ID with other filters reset and clears the ID without changing filters', () => {
     const onChange = vi.fn()
-    render(dashboard === 'intake' ? <PrelimDashboardFilters applicationId={123} onChange={onChange} /> :
-      <NcrcDashboardControls applicationId={123} q="" status="all" priority="all" page={10} myOnly={false}
+    render(dashboard === 'intake' ? <PrelimDashboardFilters applicationId={123} q="company" status="REVIEW" onChange={onChange} /> :
+      <NcrcDashboardControls applicationId={123} q="company" status="NEW" priority="high" page={10} myOnly={true}
         totalCount={100} totalPages={20} paginationMode="paged" isLoading={false} isError={false} error={null}
         applicantStats={{ total: 0, new: 0, inProgress: 0, withdrawn: 0, completed: 0, others: 0 }}
         onOpenMyNotes={() => {}} onUpdateSearch={onChange} onFirstPage={() => {}} onPrevPage={() => {}}
@@ -19,7 +19,9 @@ describe.each(['dashboard', 'intake'] as const)('%s Application ID filter', (das
     expect((input as HTMLInputElement).value).toBe('123')
     fireEvent.change(input, { target: { value: '3719' } })
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }))
-    expect(onChange).toHaveBeenLastCalledWith({ applicationId: 3719, page: 0 })
+    expect(onChange).toHaveBeenLastCalledWith(dashboard === 'intake'
+      ? { applicationId: 3719, q: '', status: 'all', page: 0 }
+      : { applicationId: 3719, q: '', status: 'all', priority: 'all', myOnly: false, page: 0 })
     fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
     expect(onChange).toHaveBeenLastCalledWith({ applicationId: undefined, page: 0 })
     expect((input as HTMLInputElement).value).toBe('')

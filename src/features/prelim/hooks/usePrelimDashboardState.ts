@@ -48,7 +48,7 @@ export function usePrelimDashboardState() {
   const debouncedSearch = useDebounce(q, DEBOUNCE_DELAY)
 
   const prelimApplicationsQuery = usePrelimApplications({
-    searchTerm: debouncedSearch,
+    searchTerm: q ? debouncedSearch : '',
     statusFilter: status,
     applicationId,
     page,
@@ -56,7 +56,7 @@ export function usePrelimDashboardState() {
     enabled: paginationMode === 'paged',
   })
   const infiniteApplicationsQuery = useInfinitePrelimApplications({
-    searchTerm: debouncedSearch,
+    searchTerm: q ? debouncedSearch : '',
     statusFilter: status,
     applicationId,
     limit: PAGE_LIMIT,

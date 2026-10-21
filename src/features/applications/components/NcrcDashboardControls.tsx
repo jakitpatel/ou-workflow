@@ -182,7 +182,12 @@ export function NcrcDashboardControls({
             </div>
           </div>
         </div>
-        <ApplicationIdFilter applicationId={applicationId} onApply={(id) => onUpdateSearch({ applicationId: id, page: 0 })} />
+        <ApplicationIdFilter
+          applicationId={applicationId}
+          onApply={(id) => onUpdateSearch(id === undefined
+            ? { applicationId: undefined, page: 0 }
+            : { applicationId: id, q: '', status: 'all', priority: 'all', myOnly: false, page: 0 })}
+        />
       </div>
 
       {isLoading && paginationMode === 'paged' && (

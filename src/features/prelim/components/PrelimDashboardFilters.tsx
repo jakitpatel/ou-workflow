@@ -41,7 +41,12 @@ export function PrelimDashboardFilters({ q, status, applicationId, onChange }: P
 
 
       </div>
-      <ApplicationIdFilter applicationId={applicationId} onApply={(id) => onChange({ applicationId: id, page: 0 })} />
+      <ApplicationIdFilter
+        applicationId={applicationId}
+        onApply={(id) => onChange(id === undefined
+          ? { applicationId: undefined, page: 0 }
+          : { applicationId: id, q: '', status: 'all', page: 0 })}
+      />
     </div>
   )
 }

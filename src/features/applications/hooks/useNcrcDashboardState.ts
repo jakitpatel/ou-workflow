@@ -117,7 +117,7 @@ export function useNcrcDashboardState({
     Boolean(myNotesReactingMessageId)
 
   const pagedQuery = usePagedApplications({
-    searchTerm: debouncedSearch,
+    searchTerm: q ? debouncedSearch : '',
     statusFilter: status,
     priorityFilter: priority,
     applicationId,
@@ -128,7 +128,7 @@ export function useNcrcDashboardState({
   })
 
   const infiniteQuery = useInfiniteApplications({
-    searchTerm: debouncedSearch,
+    searchTerm: q ? debouncedSearch : '',
     statusFilter: status,
     priorityFilter: priority,
     applicationId,
