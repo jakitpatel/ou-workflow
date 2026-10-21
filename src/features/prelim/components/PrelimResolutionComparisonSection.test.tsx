@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { CompanyData, PlantData } from '../model/resolution'
+import type { CompanyData, Match, PlantData } from '../model/resolution'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { PrelimResolutionComparisonSection } from './PrelimResolutionComparisonSection'
@@ -7,7 +7,11 @@ import { createDefaultCompanyData, createDefaultPlantData } from '../lib/prelimR
 
 const noop = () => {}
 
-function Harness({ isCompany }: { isCompany: boolean }) {
+function Harness({ isCompany, selectedMatch = null, isManualCompanyIdEntry = false }: {
+  isCompany: boolean
+  selectedMatch?: Match | null
+  isManualCompanyIdEntry?: boolean
+}) {
   const [companyData, setEditableCompanyData] = useState<CompanyData>({
     ...createDefaultCompanyData(),
     companyCity: 'New York',
@@ -38,8 +42,8 @@ function Harness({ isCompany }: { isCompany: boolean }) {
         ignoredContacts={{}}
         onToggleIgnoreContact={noop}
         matches={[]}
-        selectedMatch={null}
-        isManualCompanyIdEntry={false}
+        selectedMatch={selectedMatch}
+        isManualCompanyIdEntry={isManualCompanyIdEntry}
         manualCompanyId=""
         onManualCompanyIdChange={noop}
         onLoadManualCompanyId={noop}
@@ -73,6 +77,25 @@ function Harness({ isCompany }: { isCompany: boolean }) {
     </>
   )
 }
+
+describe('Company web contact visibility', () => {
+  it('shows the row only for create-new and restores it after changing back from a match', () => {
+    const { rerender } = render(<Harness isCompany />)
+    expect(screen.getByText('Create this person as Web Contact')).toBeTruthy()
+
+    rerender(<Harness isCompany selectedMatch={{ Id: 123, companyName: 'Existing company', Address: '' }} />)
+    expect(screen.queryByText('Create this person as Web Contact')).toBeNull()
+    expect(screen.queryByText('Web Contact')).toBeNull()
+
+    rerender(<Harness isCompany />)
+    expect(screen.getByText('Create this person as Web Contact')).toBeTruthy()
+  })
+
+  it('hides the row while entering an existing company ID', () => {
+    render(<Harness isCompany isManualCompanyIdEntry />)
+    expect(screen.queryByText('Create this person as Web Contact')).toBeNull()
+  })
+})
 
 describe.each([true, false])('Resolution address editing (company=%s)', (isCompany) => {
   it('edits each address part independently without repeating state or ZIP', () => {

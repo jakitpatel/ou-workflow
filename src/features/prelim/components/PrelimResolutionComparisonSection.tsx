@@ -413,14 +413,16 @@ export function PrelimResolutionComparisonSection({
                 }))
               }
             />
-            <PrelimCompanyWebContactRow
-              checked={!!companyData.createPrimaryWebContact}
-              databaseWebContact={dbCompanyPrimaryContact?.WebCT}
-              disabled={!drawerActionable || isSubmitting || isCreatingNew || !!ignoredContacts.primaryContact}
-              onChange={(checked) =>
-                setEditableCompanyData((prev) => ({ ...prev, createPrimaryWebContact: checked }))
-              }
-            />
+            {!selectedMatch && !isManualCompanyIdEntry && (
+              <PrelimCompanyWebContactRow
+                checked={!!companyData.createPrimaryWebContact}
+                databaseWebContact={dbCompanyPrimaryContact?.WebCT}
+                disabled={!drawerActionable || isSubmitting || isCreatingNew || !!ignoredContacts.primaryContact}
+                onChange={(checked) =>
+                  setEditableCompanyData((prev) => ({ ...prev, createPrimaryWebContact: checked }))
+                }
+              />
+            )}
             {sectionActions(
               false,
               onCreatePrimaryCompanyContact ?? onCreateNew,
