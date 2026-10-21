@@ -19,7 +19,7 @@ const extractAttachmentUrls = (attachments?: string) => {
 
     // S3 object references are resolved by WFApplicationMessage on the server and are not
     // directly accessible to the browser for a Content-Length check.
-    if (/^s3:\/\/\S+$/i.test(fileReference)) return []
+    if (/^s3:\/\/[^/\s]+\/.+$/i.test(fileReference)) return []
 
     const httpUrl = fileReference.match(/https?:\/\/\S+/i)?.[0]
     if (!httpUrl) {
