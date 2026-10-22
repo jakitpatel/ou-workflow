@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Applicant } from '@/types/application'
 import { sendTaskEmail, useTaskActions } from './useTaskActions'
 
@@ -42,6 +42,29 @@ const setup = () => {
 }
 
 describe('Complete NDA email', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  it.each([
+    [undefined, 'KashrusITTestBox@ou.org'],
+    ['other@example.com', 'other@example.com, KashrusITTestBox@ou.org'],
+    ['kashrusittestbox@ou.org', 'kashrusittestbox@ou.org'],
+  ])('includes implied Bcc while preserving explicit Bcc %s', async (bcc, expectedBcc) => {
+    vi.stubEnv('VITE_EMAIL_IMPLIED_BCC', 'KashrusITTestBox@ou.org')
+    mocks.message.mockReset()
+    await sendTaskEmail({
+      applicationId: 421,
+      to: 'contact@example.com',
+      bcc,
+      subject: 'Complete NDA',
+      body: 'Please complete the NDA.',
+    }, 'token', 's.benjamin@example.com')
+
+    expect(mocks.message).toHaveBeenCalledExactlyOnceWith({
+      token: 'token',
+      payload: expect.objectContaining({ BCCUser: expectedBcc }),
+    })
+  })
+
   it('uses the sender email address in the application message payload', async () => {
     mocks.message.mockReset()
     await sendTaskEmail({

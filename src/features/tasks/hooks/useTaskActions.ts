@@ -3,6 +3,7 @@ import { buildRfrRecommendationCompletion, isRfrRecommendationTask, postRfrRecom
 import { createApplicationMessage, uploadApplicationFile } from '@/features/applications/api'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
+import { withImpliedBcc } from '@/shared/email/impliedBcc'
 import {
   useAssignTaskMutation,
   useConfirmTaskMutation,
@@ -89,7 +90,7 @@ export async function sendTaskEmail(input: SendTaskEmailInput, token?: string, u
       FromUser: userEmail?.trim() || null,
       ToUser: input.to.trim(),
       CCUser: input.cc?.trim() || null,
-      BCCUser: input.bcc?.trim() || null,
+      BCCUser: withImpliedBcc(input.bcc),
       Subject: input.subject.trim(),
       MessageText: email.html,
       MessageTextPlain: email.text,
