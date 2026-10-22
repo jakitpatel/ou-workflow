@@ -44,7 +44,7 @@ export const UploadNdaModal: React.FC<Props> = ({
   setShowUploadModal,
   completeTaskWithResult,
 }) => {
-  const { token, username } = useUser();
+  const { token, email } = useUser();
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -365,7 +365,7 @@ export const UploadNdaModal: React.FC<Props> = ({
           subject: emailSubject,
           body: emailBody,
           file,
-        }, token ?? undefined, username ?? undefined);
+        }, token ?? undefined, email ?? undefined);
         completeTaskWithResult(
           selectedAction.action,
           "yes",
@@ -395,7 +395,7 @@ export const UploadNdaModal: React.FC<Props> = ({
     completeTaskWithResult,
     openMailSender,
     setShowUploadModal,
-    emailCc, emailBcc, emailSubject, emailBody, file, taskInstanceId, token, username,
+    emailCc, emailBcc, emailSubject, emailBody, file, taskInstanceId, token, email,
   ]);
 
   const handleNegotiate = useCallback(async () => {

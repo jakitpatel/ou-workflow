@@ -62,7 +62,7 @@ const findUploadedFileUrl = (value: unknown): string => {
   return ''
 }
 
-export async function sendTaskEmail(input: SendTaskEmailInput, token?: string, username?: string) {
+export async function sendTaskEmail(input: SendTaskEmailInput, token?: string, userEmail?: string) {
   assertValidEmailRecipients({ to: input.to, cc: input.cc, bcc: input.bcc })
   if (!input.subject.trim()) throw new Error('Email subject is required.')
   if (!input.body.trim()) throw new Error('Email body is required.')
@@ -86,7 +86,7 @@ export async function sendTaskEmail(input: SendTaskEmailInput, token?: string, u
     payload: {
       MessageID: null,
       ApplicationID: input.applicationId,
-      FromUser: username || null,
+      FromUser: userEmail?.trim() || null,
       ToUser: input.to.trim(),
       CCUser: input.cc?.trim() || null,
       BCCUser: input.bcc?.trim() || null,

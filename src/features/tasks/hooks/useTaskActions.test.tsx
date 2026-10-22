@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Applicant } from '@/types/application'
-import { useTaskActions } from './useTaskActions'
+import { sendTaskEmail, useTaskActions } from './useTaskActions'
 
 const mocks = vi.hoisted(() => ({ confirm: vi.fn(), assign: vi.fn(), mutate: vi.fn(), message: vi.fn(), assignOptions: vi.fn(), confirmOptions: vi.fn() }))
 vi.mock('@/features/tasks/hooks/useTaskMutations', () => ({
@@ -40,6 +40,31 @@ const setup = () => {
   )
   return { execute: result.current.executeAction, onError }
 }
+
+describe('Complete NDA email', () => {
+  it('uses the sender email address in the application message payload', async () => {
+    mocks.message.mockReset()
+    await sendTaskEmail({
+      applicationId: 421,
+      taskInstanceId: 12,
+      to: 'contact@example.com',
+      subject: 'Complete NDA',
+      body: 'Please complete the NDA.',
+    }, 'token', ' s.benjamin@example.com ')
+
+    expect(mocks.message).toHaveBeenCalledExactlyOnceWith({
+      token: 'token',
+      payload: expect.objectContaining({
+        ApplicationID: 421,
+        TaskInstanceId: 12,
+        FromUser: 's.benjamin@example.com',
+        ToUser: 'contact@example.com',
+        MessageType: 'Email',
+        TemplateName: 'complete-nda',
+      }),
+    })
+  })
+})
 
 describe('AssignNCRC notification', () => {
   beforeEach(() => {
