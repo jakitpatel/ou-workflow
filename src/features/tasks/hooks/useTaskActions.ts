@@ -45,15 +45,18 @@ const findUploadedFileUrl = (value: unknown): string => {
   if (!value || typeof value !== 'object') return ''
   const record = value as Record<string, unknown>
   for (const key of [
+    'file_path',
     'fileUrl',
     'fileURL',
+    'file_url',
+    'filePath',
     'FilePath',
     'DownloadUrl',
     'downloadUrl',
     'url',
     'path',
   ]) {
-    const candidate = String(record[key] ?? '').trim()
+    const candidate = typeof record[key] === 'string' ? record[key].trim() : ''
     if (candidate) return candidate
   }
   for (const nested of Object.values(record)) {

@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Applicant } from '@/types/application'
+import { uploadApplicationFile } from '@/features/applications/api'
 import { sendTaskEmail, useTaskActions } from './useTaskActions'
 
 const mocks = vi.hoisted(() => ({ confirm: vi.fn(), assign: vi.fn(), mutate: vi.fn(), message: vi.fn(), assignOptions: vi.fn(), confirmOptions: vi.fn() }))
@@ -42,7 +43,44 @@ const setup = () => {
 }
 
 describe('Complete NDA email', () => {
+  beforeEach(() => vi.resetAllMocks())
   afterEach(() => vi.unstubAllEnvs())
+
+  it.each([
+    { file_path: 's3://newcompany-documents/uploads/1205/invoice_609749.pdf', link: '/file/661', message: 'File uploaded and task completed successfully' },
+    { data: { file_path: 's3://newcompany-documents/uploads/1205/invoice_609749.pdf' } },
+    { fileUrl: 's3://newcompany-documents/uploads/1205/invoice_609749.pdf' },
+  ])('sends the uploaded attachment using the returned storage path: %j', async (response) => {
+    vi.mocked(uploadApplicationFile).mockResolvedValue(response)
+    const file = new File(['NDA'], 'nda.pdf', { type: 'application/pdf' })
+
+    await sendTaskEmail({
+      applicationId: 1205, taskInstanceId: 12, to: 'contact@example.com',
+      subject: 'Complete NDA', body: 'Please complete the NDA.', file,
+    }, 'token')
+
+    expect(uploadApplicationFile).toHaveBeenCalledExactlyOnceWith({
+      file, applicationId: 1205, taskInstanceID: 12,
+      description: 'Complete NDA email attachment', token: 'token',
+    })
+    expect(mocks.message).toHaveBeenCalledExactlyOnceWith({
+      token: 'token',
+      payload: expect.objectContaining({
+        Attachments: 'nda.pdf<s3://newcompany-documents/uploads/1205/invoice_609749.pdf>',
+      }),
+    })
+  })
+
+  it.each([{ message: 'Uploaded' }, { file_path: { invalid: true } }])(
+    'does not send an email when the upload has no usable attachment path: %j', async (response) => {
+      vi.mocked(uploadApplicationFile).mockResolvedValue(response)
+      await expect(sendTaskEmail({
+        applicationId: 1205, to: 'contact@example.com', subject: 'Complete NDA',
+        body: 'Please complete the NDA.', file: new File(['NDA'], 'nda.pdf'),
+      }, 'token')).rejects.toThrow('The file was uploaded, but no attachment URL was returned.')
+      expect(mocks.message).not.toHaveBeenCalled()
+    },
+  )
 
   it.each([
     [undefined, 'KashrusITTestBox@ou.org'],
