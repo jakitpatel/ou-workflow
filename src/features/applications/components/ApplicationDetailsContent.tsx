@@ -33,6 +33,7 @@ import type { Applicant, ApplicationDetail, ApplicationEmail } from '@/types/app
 import { getApplicationDetailsTabs } from '@/features/applications/model/applicationDetailsTabs'
 import { getIntakePlantApplication } from '@/features/applications/model/intakePlantDetails'
 import { IntakePlantNavigation } from './IntakePlantNavigation'
+import { ApplicationEirPanel } from './ApplicationEirPanel'
 
 type CompletionStatus = 'incomplete' | 'complete' | 'dispatched'
 type ActivityType = 'completion' | 'ingredient' | 'plant' | 'bulk' | 'company' | 'dispatch' | 'undo'
@@ -943,6 +944,14 @@ export function ApplicationDetailsContent({
                 </h2>
               </div>
             )}
+            {activeTab === 'eir' && (resolvedApplicationId === null ? (
+              <p className="p-6 text-sm text-gray-500">EIR is unavailable because this application does not have a valid application ID.</p>
+            ) : (
+              <ApplicationEirPanel key={resolvedApplicationId} applicationId={resolvedApplicationId}
+                appVars={application.appvars}
+                taskInstanceId={scheduleATask?.TaskInstanceId ?? (scheduleATask as any)?.taskInstanceId}
+                taskStatusDetails={scheduleATask?.StatusDetails ?? (scheduleATask as any)?.statusDetails} />
+            ))}
             {activeTab === 'overview' && (
               <Overview application={application} dataSource={dataSource} />
             )}

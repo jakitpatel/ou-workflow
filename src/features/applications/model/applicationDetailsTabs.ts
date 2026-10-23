@@ -17,6 +17,7 @@ const TABS = [
 ] as const
 
 const SCHEDULE_A_TAB = { id: 'schedule-a', label: 'Schedule A', icon: ClipboardList } as const
+const EIR_TAB = { id: 'eir', label: 'EIR', icon: FileText } as const
 const INSPECTION_INVOICE_TAB = {
   id: 'inspection-invoice',
   label: 'Inspection Invoice',
@@ -34,7 +35,7 @@ export function getApplicationDetailsTabs(dataSource: 'application' | 'prelim', 
   const applicationTabs = TABS.filter((tab) => tab.id !== 'products' && tab.id !== 'ingredients')
   return [
     ...applicationTabs.slice(0, 4),
-    INSPECTION_INVOICE_TAB, SCHEDULE_A_TAB, SCHEDULE_B_TAB, CONTRACT_TAB,
+    INSPECTION_INVOICE_TAB, EIR_TAB, SCHEDULE_A_TAB, SCHEDULE_B_TAB, CONTRACT_TAB,
     ...applicationTabs.slice(4),
   ]
 }

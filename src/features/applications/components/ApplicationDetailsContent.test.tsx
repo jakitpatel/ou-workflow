@@ -9,6 +9,7 @@ vi.mock('@/features/tasks/notes/useTaskNotesDrawerState', () => ({
   useTaskNotesDrawerState: () => ({ drawer: null, openDrawer: vi.fn() }),
 }))
 vi.mock('./application-management/Overview', () => ({ default: () => <div>Overview content</div> }))
+vi.mock('./ApplicationEirPanel', () => ({ ApplicationEirPanel: () => <div>Application EIR panel</div> }))
 vi.mock('./ScheduleAIngredientsDrawer', () => ({
   ScheduleAIngredientsDrawer: ({ applicationId, readOnly }: { applicationId: number; readOnly: boolean }) => (
     <div>Schedule A application {applicationId} {readOnly ? 'read-only' : 'editable'}</div>
@@ -47,6 +48,10 @@ describe('RFR application details', () => {
     expect(screen.getByText('Overview content')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Inspection Invoice' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Contract' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'EIR' }))
+    expect(screen.getByText('Application EIR panel')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Schedule A' }))
+    expect(screen.getByText('Schedule A application 421 read-only')).toBeTruthy()
     view.rerender(<ApplicationDetailsContent application={application} rfrView />)
     expect(screen.queryByText('Overview content')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Inspection Invoice' })).toBeNull()
