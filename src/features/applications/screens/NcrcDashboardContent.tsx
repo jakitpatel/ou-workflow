@@ -4,6 +4,7 @@ import { ActionModal } from '@/features/tasks/modals/ActionModal'
 import { isRfrRecommendationTask } from '@/features/tasks/lib/rfrRecommendation'
 import { ConditionalModal } from '@/features/tasks/modals/ConditionalModal'
 import { UploadNdaModal } from '@/features/tasks/modals/UploadNdaModal'
+import { isLegalReviewTask } from '@/features/tasks/lib/legalReview'
 import { NcrcDashboardControls } from '@/features/applications/components/NcrcDashboardControls'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
 import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer'
@@ -390,7 +391,7 @@ export function NcrcDashboardContent() {
     }
 
     if (
-      (actionType === TASK_TYPES.ACTION &&
+      isLegalReviewTask(action) || (actionType === TASK_TYPES.ACTION &&
         [TASK_CATEGORIES.UPLOAD, TASK_CATEGORIES.EMAIL].includes(actionCategory as any)) ||
       (actionCategory === TASK_CATEGORIES.UPLOAD && actionType === TASK_TYPES.UPLOAD)
     ) {

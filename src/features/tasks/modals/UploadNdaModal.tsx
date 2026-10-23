@@ -6,6 +6,8 @@ import { useUploadApplicationFileMutation } from "@/features/applications/hooks/
 import { TASK_CATEGORIES, TASK_TYPES } from "@/lib/constants/task";
 import { sendTaskEmail } from "@/features/tasks/hooks/useTaskActions";
 import { saveUploadedNda } from "@/features/tasks/lib/saveUploadedNda";
+import { isLegalReviewTask } from '../lib/legalReview';
+import { LegalReviewModal } from './LegalReviewModal';
 import type { Applicant, ApplicationTask, CompanyContact, CompanyContactGroups, Task } from "@/types/application";
 
 type SelectedAction = {
@@ -38,7 +40,23 @@ const normalizeCompanyContacts = (contacts?: CompanyContact[] | CompanyContactGr
   ];
 };
 
-export const UploadNdaModal: React.FC<Props> = ({
+export const UploadNdaModal: React.FC<Props> = (props) => {
+  if (props.showUploadModal && isLegalReviewTask(props.selectedAction?.action)) {
+    const selected = props.selectedAction!;
+    return <LegalReviewModal
+      key={String(props.taskInstanceId ?? selected.action.TaskInstanceId ?? selected.action.taskInstanceId)}
+      applicationId={selected.application.applicationId ?? selected.action.applicationId}
+      application={selected.application}
+      capacity={selected.action.capacity}
+      companyName={selected.application.company ?? selected.application.companyName ?? selected.action.companyName ?? 'Unknown Company'}
+      taskInstanceId={props.taskInstanceId ?? selected.action.TaskInstanceId ?? selected.action.taskInstanceId}
+      onClose={() => props.setShowUploadModal(null)}
+    />;
+  }
+  return <NdaUploadModalContent {...props} />;
+};
+
+const NdaUploadModalContent: React.FC<Props> = ({
   showUploadModal,
   selectedAction,
   taskInstanceId,

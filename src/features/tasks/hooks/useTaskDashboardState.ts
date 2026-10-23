@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { buildRfrRecommendationCompletion, isRfrRecommendationTask, postRfrRecommendationMessage } from '../lib/rfrRecommendation'
+import { isLegalReviewTask } from '../lib/legalReview'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { type ErrorDialogRef } from '@/components/ErrorDialog'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
@@ -214,6 +215,7 @@ const calculateTaskStats = (tasks: ApplicationTask[]) => {
 }
 
 const getTaskActionPresentation = (application: TaskDashboardAction) => {
+  if (isLegalReviewTask(application)) return { type: 'upload' as const }
   if (isRfrRecommendationTask(application)) return { type: 'assignment' as const }
   const actionType = application.taskType?.toLowerCase()
   const actionCategory = (application.taskCategory || application.TaskCategory)?.toLowerCase()
