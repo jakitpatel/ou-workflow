@@ -5,6 +5,7 @@ import { useApplicationDetail } from "@/features/applications/hooks/useApplicati
 import { useUploadApplicationFileMutation } from "@/features/applications/hooks/useUploadApplicationFileMutation";
 import { TASK_CATEGORIES, TASK_TYPES } from "@/lib/constants/task";
 import { sendTaskEmail } from "@/features/tasks/hooks/useTaskActions";
+import { saveUploadedNda } from "@/features/tasks/lib/saveUploadedNda";
 import type { Applicant, ApplicationTask, CompanyContact, CompanyContactGroups, Task } from "@/types/application";
 
 type SelectedAction = {
@@ -226,7 +227,7 @@ export const UploadNdaModal: React.FC<Props> = ({
     setSaving(true);
     setError("");
     try {
-      await uploadMutation.mutateAsync({
+      const uploadedFile = await uploadMutation.mutateAsync({
         file,
         applicationId:
           selectedAction?.application?.applicationId ??
@@ -238,6 +239,20 @@ export const UploadNdaModal: React.FC<Props> = ({
         description: taskName,
         token: token ?? undefined,
       });
+      const action = typeof showUploadModal === "object" && showUploadModal
+        ? showUploadModal : selectedAction.action;
+      if (taskName.trim().toLowerCase() === "send nda" &&
+          String(action.taskCategory ?? action.TaskCategory).toLowerCase() === TASK_CATEGORIES.UPLOAD &&
+          String(action.taskType ?? action.TaskType).toLowerCase() === TASK_TYPES.UPLOAD) {
+        await saveUploadedNda({
+          applicationId,
+          taskInstanceId: taskInstanceId ?? selectedAction.action.TaskInstanceId ??
+            selectedAction.action.taskInstanceId ?? selectedAction.action.taskId,
+          fileName: file.name,
+          uploaded: uploadedFile,
+          token,
+        });
+      }
       if (isReviewUploadTask) {
         setUploaded(true);
       } else {
@@ -251,7 +266,8 @@ export const UploadNdaModal: React.FC<Props> = ({
         setShowUploadModal(null);
       }
       return true;
-    } catch {
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to save the uploaded NDA.");
       return false;
     } finally {
       setSaving(false);
@@ -262,6 +278,7 @@ export const UploadNdaModal: React.FC<Props> = ({
     applicationId,
     taskInstanceId,
     taskName,
+    showUploadModal,
     token,
     isReviewUploadTask,
     completeTaskWithResult,
