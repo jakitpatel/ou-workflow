@@ -1,7 +1,11 @@
 import { Outlet, createFileRoute } from '@tanstack/react-router'
+import { normalizeTaskApplicationId } from '@/features/tasks/model/applicationIdFilter'
 
 export const Route = createFileRoute('/_authed/ou-workflow/tasks-dashboard')({
   validateSearch: (search) => ({
+    ...(normalizeTaskApplicationId(search.applicationId) === undefined
+      ? {}
+      : { applicationId: normalizeTaskApplicationId(search.applicationId) }),
     qs: typeof search.qs === 'string' ? search.qs : '',
     days:
       search.days === 'pending' || search.days === 7 || search.days === '7'

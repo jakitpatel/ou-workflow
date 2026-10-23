@@ -8,12 +8,14 @@ import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { detectRole, getProgressStatus, normalizeStatus } from '@/lib/utils/taskHelpers'
 import type { Applicant, ApplicationTask, Task } from '@/types/application'
 import { useInfiniteTasks, useTasks } from '@/features/tasks/hooks/useTaskQueries'
+import { normalizeTaskApplicationId } from '@/features/tasks/model/applicationIdFilter'
 import {
   useAssignTaskMutation,
   useConfirmTaskMutation,
 } from '@/features/tasks/hooks/useTaskMutations'
 
 type TaskSearchParams = {
+  applicationId?: number
   qs?: string
   days?: string | number
   page?: number
@@ -381,12 +383,8 @@ export function useTaskDashboardState() {
     return () => clearTimeout(handler)
   }, [searchTerm])
 
-  const normalizedAppId = useMemo(() => {
-    if (typeof applicationId === 'string' || applicationId === undefined) {
-      return applicationId
-    }
-    return applicationId != null ? String(applicationId) : undefined
-  }, [applicationId])
+  const filteredApplicationId = search.applicationId ?? normalizeTaskApplicationId(applicationId)
+  const normalizedAppId = filteredApplicationId === undefined ? undefined : String(filteredApplicationId)
 
   const pagedTasksQuery = useTasks(
     normalizedAppId,
@@ -473,6 +471,13 @@ export function useTaskDashboardState() {
   )
 
   const handleFirst = useCallback(() => updateSearch({ page: 0 }), [updateSearch])
+  const setApplicationId = useCallback((id: number | undefined) => {
+    setDebouncedSearchTerm('')
+    navigate({
+      to: '/ou-workflow/tasks-dashboard',
+      search: (prev) => ({ ...prev, applicationId: id, qs: '', days: prev.days ?? 'pending', page: 0 }),
+    })
+  }, [navigate])
   const handlePrev = useCallback(
     () => updateSearch({ page: Math.max(page - PAGE_LIMIT, 0) }),
     [page, updateSearch],
@@ -834,6 +839,8 @@ export function useTaskDashboardState() {
     role,
     searchTerm,
     daysFilter,
+    filteredApplicationId,
+    setApplicationId,
     page,
     paginationMode,
     filteredTasks,

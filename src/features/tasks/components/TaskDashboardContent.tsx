@@ -23,6 +23,8 @@ export function TaskDashboardContent() {
     role,
     searchTerm,
     daysFilter,
+    filteredApplicationId,
+    setApplicationId,
     page,
     paginationMode,
     filteredTasks,
@@ -102,6 +104,8 @@ export function TaskDashboardContent() {
     <>
       <PageShell>
         <TaskDashboardHeader
+          applicationId={filteredApplicationId}
+          setApplicationId={setApplicationId}
           daysFilter={daysFilter}
           role={role}
           searchTerm={searchTerm}

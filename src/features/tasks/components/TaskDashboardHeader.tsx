@@ -1,10 +1,13 @@
 import { TaskFilters } from './TaskFilters';
+import { ApplicationIdFilter } from '@/components/filters/ApplicationIdFilter';
 import { TaskStatsCards } from './TaskStatsCards';
 import { useAppPreferences } from '@/context/AppPreferencesContext';
 
 const dayFilterOptions = ['pending', 7, 30] as const;
 
 type TaskDashboardHeaderProps = {
+  applicationId?: number;
+  setApplicationId: (value: number | undefined) => void;
   daysFilter: string | number;
   role: string | null | undefined;
   searchTerm: string;
@@ -24,6 +27,8 @@ type TaskDashboardHeaderProps = {
 };
 
 export function TaskDashboardHeader({
+  applicationId,
+  setApplicationId,
   daysFilter,
   role,
   searchTerm,
@@ -65,7 +70,8 @@ export function TaskDashboardHeader({
         <TaskStatsCards stats={stats} />
       </div>
 
-      <div className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:flex-row">
+      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row">
         <div className="flex-1">
           <TaskFilters searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </div>
@@ -91,6 +97,9 @@ export function TaskDashboardHeader({
             ))}
           </div>
         </div>
+      </div>
+
+      <ApplicationIdFilter applicationId={applicationId} onApply={setApplicationId} />
       </div>
 
       {paginationMode === 'paged' && (
