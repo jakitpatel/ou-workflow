@@ -27,7 +27,7 @@ export async function saveUploadedNda({
   await saveApplicationGlobalData({
     applicationId: Number(applicationId),
     taskInstanceId: Number(taskInstanceId),
-    jsonData: { customerNDAURL: response.file_path, customerNDALink: response.link },
+    jsonData: { customerNDAURL: response.file_path, customerNDALink: response.link, customerNDAFileName: fileName },
     token,
   })
 }

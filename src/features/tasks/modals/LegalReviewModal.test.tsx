@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LegalReviewModal } from './LegalReviewModal'
-import { getNdaGlobalData, isLegalReviewTask } from '../lib/legalReview'
+import { getCustomerNdaFileName, getNdaGlobalData, isLegalReviewTask } from '../lib/legalReview'
 
 const mocks = vi.hoisted(() => ({ upload: vi.fn(), patch: vi.fn(), global: vi.fn(), complete: vi.fn() }))
 vi.mock('@/context/UserContext', () => ({ useUser: () => ({ token: 'token', username: 'legal' }) }))
@@ -21,10 +21,26 @@ function setup() {
   return close
 }
 function selectFile() {
-  fireEvent.change(screen.getByLabelText('Signed NDA file'), { target: { files: [new File(['signed NDA'], 'signed.pdf')] } })
+  fireEvent.change(screen.getByLabelText('Attach NDA'), { target: { files: [new File(['signed NDA'], 'signed.pdf')] } })
 }
 
 describe('Legal NDA review', () => {
+  it('uses the original filename when available and decodes older storage paths', () => {
+    expect(getCustomerNdaFileName({ customerNDAFileName: 'Customer agreement.pdf', customerNDAURL: 's3://bucket/123.pdf' })).toBe('Customer agreement.pdf')
+    expect(getCustomerNdaFileName({ customerNDAURL: 's3://bucket/Customer%20NDA.pdf?download=1' })).toBe('Customer NDA.pdf')
+    expect(getCustomerNdaFileName({})).toBe('')
+  })
+  it('accepts a dropped NDA and clears approval when a replacement is attached', async () => {
+    setup()
+    expect(screen.queryByText('Signed NDA file')).toBeNull()
+    fireEvent.drop(screen.getByRole('button', { name: /Drop NDA here or click to attach/ }), {
+      dataTransfer: { files: [new File(['NDA'], 'dropped.pdf')] },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Upload NDA' }))
+    await screen.findByRole('link', { name: 'dropped.pdf' })
+    selectFile()
+    expect((screen.getByRole('button', { name: /Approve/ }) as HTMLButtonElement).disabled).toBe(true)
+  })
   beforeEach(() => {
     vi.resetAllMocks()
     mocks.upload.mockResolvedValue({ file_path: 's3://signed.pdf', link: '/file/662' })
@@ -38,7 +54,7 @@ describe('Legal NDA review', () => {
   it('shows company, app ID and document link and opens application details', () => {
     setup()
     expect(screen.getByText('Example Company · App #421')).toBeTruthy()
-    expect(screen.getByRole('link', { name: /customer NDA/ }).getAttribute('href')).toBe('https://api.example.com/file/661')
+    expect(screen.getByRole('link', { name: 'customer.pdf' }).getAttribute('href')).toBe('https://api.example.com/file/661')
     expect((screen.getByRole('button', { name: /Approve/ }) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: 'View Application' }))
     expect(screen.getByText('Application details')).toBeTruthy()
@@ -47,7 +63,7 @@ describe('Legal NDA review', () => {
     const close = setup()
     selectFile()
     fireEvent.click(screen.getByRole('button', { name: 'Upload NDA' }))
-    await screen.findByText('signed.pdf')
+    await screen.findByRole('link', { name: 'signed.pdf' })
     expect(mocks.patch).toHaveBeenCalledWith({ taskId: '317', result: '{approvedNDAfile:"signed.pdf"}', token: 'token' })
     expect(mocks.global).toHaveBeenCalledWith({ applicationId: 421, taskInstanceId: 317, token: 'token',
       jsonData: { approvedNDAURL: 's3://signed.pdf', approvedNDALink: '/file/662' } })
@@ -69,7 +85,7 @@ describe('Legal NDA review', () => {
     mocks.complete.mockRejectedValueOnce(new Error('Complete failed'))
     const close = setup(); selectFile()
     fireEvent.click(screen.getByRole('button', { name: 'Upload NDA' }))
-    await screen.findByText('signed.pdf')
+    await screen.findByRole('link', { name: 'signed.pdf' })
     fireEvent.click(screen.getByRole('button', { name: /Approve/ }))
     expect((await screen.findByRole('alert')).textContent).toBe('Complete failed')
     expect(close).not.toHaveBeenCalled()

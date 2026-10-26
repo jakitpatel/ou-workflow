@@ -34,7 +34,7 @@ describe('save uploaded Send NDA metadata', () => {
     expect(fetchWithAuth).toHaveBeenLastCalledWith({
       path: '/global_data', method: 'POST', token: 'token',
       body: { applicationId: 421, taskInstanceId: 14216, jsonData: {
-        customerNDAURL: input.uploaded.file_path, customerNDALink: '/file/661',
+        customerNDAURL: input.uploaded.file_path, customerNDALink: '/file/661', customerNDAFileName: input.fileName,
       } },
     })
   })

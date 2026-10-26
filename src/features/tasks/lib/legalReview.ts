@@ -16,6 +16,15 @@ export function getNdaGlobalData(detail: unknown): Record<string, unknown> {
   return data && typeof data === 'object' ? data as Record<string, unknown> : {}
 }
 
+export function getCustomerNdaFileName(data: Record<string, unknown>): string {
+  for (const value of [data.customerNDAFileName, data.UploadNDAFileName]) {
+    if (typeof value === 'string' && value.trim()) return value.trim()
+  }
+  if (typeof data.customerNDAURL !== 'string') return ''
+  const name = data.customerNDAURL.split(/[?#]/)[0].split('/').pop() ?? ''
+  try { return decodeURIComponent(name) } catch { return name }
+}
+
 export async function saveApprovedNda({ applicationId, taskInstanceId, fileName, uploaded, token }: {
   applicationId: number; taskInstanceId: number; fileName: string; uploaded: unknown; token?: string | null
 }) {
