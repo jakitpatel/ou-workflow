@@ -47,6 +47,7 @@ export function LegalReviewModal({ applicationId, companyName, taskInstanceId, a
     } catch (err) { setError(err instanceof Error ? err.message : 'Unable to save the signed NDA.') }
     finally { setBusy(false) }
   }
+  
   const approve = async () => {
     if (!approved || busy) return
     setBusy(true); setError('')

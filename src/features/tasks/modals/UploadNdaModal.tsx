@@ -534,6 +534,7 @@ const NdaUploadModalContent: React.FC<Props> = ({
         )}
 
         {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+        
 
         {!isEmailActionTask && (
           <div className="flex justify-end gap-3 mt-6">
