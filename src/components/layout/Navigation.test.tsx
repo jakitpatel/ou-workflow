@@ -33,6 +33,13 @@ beforeEach(() => {
 })
 
 describe('navigation sign-out', () => {
+  it.each(['top', 'left', 'collapsed'] as const)('opens Stats in the %s navigation layout', (layout) => {
+    session.pathname = '/stats'
+    render(layout === 'top' ? <Navigation /> : <LeftNavigation collapsed={layout === 'collapsed'} onCollapsedChange={vi.fn()} />)
+    const link = screen.getByRole('link', { name: 'Stats' })
+    expect(link.getAttribute('href')).toBe('/stats')
+    expect(link.getAttribute('aria-current')).toBe('page')
+  })
   it.each([false, true])('links back to the saved RFR application above Profile (collapsed: %s)', (collapsed) => {
     getStoredRfrRedirect('/ou-workflow/rfr-dashboard/421')
     session.pathname = '/profile'
@@ -54,6 +61,7 @@ describe('navigation sign-out', () => {
     render(layout === 'top' ? <Navigation /> : <LeftNavigation collapsed={false} onCollapsedChange={vi.fn()} />)
     expect(screen.queryByText('Application Dashboard')).toBeNull()
     expect(screen.queryByText('Application Intake')).toBeNull()
+    expect(screen.queryByText('Stats')).toBeNull()
     expect(screen.queryByText('Tasks & Notifications')).toBeNull()
     if (layout === 'top') fireEvent.click(screen.getByRole('button', { name: 'User menu' }))
     expect(screen.getByText('Profile')).toBeTruthy()

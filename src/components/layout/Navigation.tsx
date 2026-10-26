@@ -13,6 +13,7 @@ import { getRfrApplicationId } from '@/features/auth/model/tokenStorage'
 const ROUTES = {
   HOME: '/',
   PROFILE: '/profile',
+  STATS: '/stats',
   NCRC_DASHBOARD: '/ou-workflow/ncrc-dashboard',
   TASKS_DASHBOARD: '/ou-workflow/tasks-dashboard',
   PRELIM_DASHBOARD: '/ou-workflow/prelim-dashboard',
@@ -173,6 +174,10 @@ export function Navigation({ showMenu = true }: NavigationProps) {
                   <ClipboardList className="w-4 h-4 mr-1.5" aria-hidden="true" />
                   Tasks & Notifications
                 </Link>
+                <Link to={ROUTES.STATS} aria-current={isActiveRoute('stats') ? 'page' : undefined}
+                  className={`px-3 py-2 rounded-md text-sm font-medium flex items-center ${isActiveRoute('stats') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <BarChart3 className="w-4 h-4 mr-1.5" aria-hidden="true" />Stats
+                </Link>
               </div>
             )}
           </div>
@@ -221,6 +226,10 @@ export function Navigation({ showMenu = true }: NavigationProps) {
                 aria-orientation="vertical"
               >
                 {/* Profile Link */}
+                {showMenu && !rfrView && <Link to={ROUTES.STATS} onClick={closeMenu} role="menuitem"
+                  className="md:hidden w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                  <BarChart3 className="w-4 h-4 mr-2" aria-hidden="true" />Stats
+                </Link>}
                 <Link
                   to={ROUTES.PROFILE}
                   onClick={closeMenu}
@@ -372,6 +381,11 @@ export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationP
           {!collapsed ? <span className="truncate">Application Intake</span> : null}
         </Link>
 
+        <Link to={ROUTES.STATS} className={linkClass(isActiveRoute('stats'))}
+          aria-label="Stats" aria-current={isActiveRoute('stats') ? 'page' : undefined} title="Stats">
+          <BarChart3 className={iconClass} aria-hidden="true" />
+          {!collapsed ? <span className="truncate">Stats</span> : null}
+        </Link>
         </>}
         {rfrApplicationId && (
           <Link
