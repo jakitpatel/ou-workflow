@@ -259,8 +259,7 @@ const NdaUploadModalContent: React.FC<Props> = ({
       });
       const action = typeof showUploadModal === "object" && showUploadModal
         ? showUploadModal : selectedAction.action;
-      if (taskName.trim().toLowerCase() === "send nda" &&
-          String(action.taskCategory ?? action.TaskCategory).toLowerCase() === TASK_CATEGORIES.UPLOAD &&
+      if (String(action.taskCategory ?? action.TaskCategory).toLowerCase() === TASK_CATEGORIES.UPLOAD &&
           String(action.taskType ?? action.TaskType).toLowerCase() === TASK_TYPES.UPLOAD) {
         await saveUploadedNda({
           applicationId,
