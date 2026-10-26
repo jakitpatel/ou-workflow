@@ -39,6 +39,7 @@ export type SendTaskEmailInput = {
   subject: string
   body: string
   file?: File | null
+  existingAttachment?: { name: string; url: string } | null
 }
 
 const findUploadedFileUrl = (value: unknown): string => {
@@ -71,7 +72,9 @@ export async function sendTaskEmail(input: SendTaskEmailInput, token?: string, u
   if (!input.subject.trim()) throw new Error('Email subject is required.')
   if (!input.body.trim()) throw new Error('Email body is required.')
 
-  let attachments: string | null = null
+  let attachments: string | null = input.existingAttachment
+    ? `${input.existingAttachment.name}<${input.existingAttachment.url}>`
+    : null
   if (input.file) {
     const uploaded = await uploadApplicationFile({
       file: input.file,

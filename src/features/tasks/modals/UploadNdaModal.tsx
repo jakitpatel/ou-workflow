@@ -6,6 +6,8 @@ import { useUploadApplicationFileMutation } from "@/features/applications/hooks/
 import { TASK_CATEGORIES, TASK_TYPES } from "@/lib/constants/task";
 import { sendTaskEmail } from "@/features/tasks/hooks/useTaskActions";
 import { saveUploadedNda } from "@/features/tasks/lib/saveUploadedNda";
+import { getNdaGlobalData } from '../lib/legalReview';
+import { resolveApiBaseUrl } from '@/shared/api/httpClient';
 import { isLegalReviewTask } from '../lib/legalReview';
 import { LegalReviewModal } from './LegalReviewModal';
 import type { Applicant, ApplicationTask, CompanyContact, CompanyContactGroups, Task } from "@/types/application";
@@ -159,6 +161,18 @@ const NdaUploadModalContent: React.FC<Props> = ({
       (contact: any) => Boolean(contact?.email) && Boolean(contact?.name)
     );
   }, [applicationDetail?.companyContacts]);
+
+  const ndaData = { ...getNdaGlobalData(selectedAction?.application), ...getNdaGlobalData(applicationDetail) };
+  const approvedNdaPath = typeof ndaData.approvedNDAURL === 'string' ? ndaData.approvedNDAURL.trim() : '';
+  const approvedNdaLink = typeof ndaData.approvedNDALink === 'string' ? ndaData.approvedNDALink.trim() : '';
+  const approvedNdaName = (() => {
+    if (typeof ndaData.approvedNDAFileName === 'string' && ndaData.approvedNDAFileName.trim()) return ndaData.approvedNDAFileName.trim();
+    const name = approvedNdaPath.split(/[?#]/)[0].split('/').pop() || 'Approved NDA';
+    try { return decodeURIComponent(name); } catch { return name; }
+  })();
+  const approvedNdaDownloadUrl = /^https?:\/\//i.test(approvedNdaLink) ? approvedNdaLink
+    : approvedNdaLink.startsWith('/') && !approvedNdaLink.startsWith('//')
+      ? `${resolveApiBaseUrl().replace(/\/api\/?$/, '')}${approvedNdaLink}` : '';
 
   useEffect(() => {
     if (!showUploadModal) {
@@ -399,6 +413,7 @@ const NdaUploadModalContent: React.FC<Props> = ({
           subject: emailSubject,
           body: emailBody,
           file,
+          existingAttachment: approvedNdaPath ? { name: approvedNdaName, url: approvedNdaPath } : null,
         }, token ?? undefined, email ?? undefined);
         completeTaskWithResult(
           selectedAction.action,
@@ -430,6 +445,7 @@ const NdaUploadModalContent: React.FC<Props> = ({
     openMailSender,
     setShowUploadModal,
     emailCc, emailBcc, emailSubject, emailBody, file, taskInstanceId, token, email,
+    approvedNdaPath, approvedNdaName,
   ]);
 
   const handleNegotiate = useCallback(async () => {
@@ -614,10 +630,15 @@ const NdaUploadModalContent: React.FC<Props> = ({
                 <label className="block text-xs font-medium text-gray-700">Body
                   <textarea value={emailBody} onChange={(e) => setEmailBody(e.target.value)} className="mt-1 min-h-24 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
                 </label>
+                {!file && approvedNdaPath && <p className="text-sm text-gray-700">
+                  Attached: {approvedNdaDownloadUrl
+                    ? <a className="text-blue-700 underline" href={approvedNdaDownloadUrl} target="_blank" rel="noreferrer">{approvedNdaName}</a>
+                    : approvedNdaName}
+                </p>}
                 <input ref={inputRef} type="file" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0])} />
                 <button type="button" onClick={() => inputRef.current?.click()} disabled={saving} className="flex w-full items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 p-3 text-left text-sm hover:border-blue-400">
                   <Upload className="h-4 w-4 text-blue-600" />
-                  {file ? file.name : "Attach file (optional)"}
+                  {file ? file.name : approvedNdaPath ? "Replace attachment" : "Attach file (optional)"}
                 </button>
               </>
             )}

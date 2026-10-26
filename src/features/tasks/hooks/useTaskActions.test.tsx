@@ -43,6 +43,27 @@ const setup = () => {
 }
 
 describe('Complete NDA email', () => {
+  it('sends the approved NDA storage path without uploading it again', async () => {
+    await sendTaskEmail({
+      applicationId: 421, to: 'contact@example.com', subject: 'Complete NDA', body: 'Please review.',
+      existingAttachment: { name: 'approved.pdf', url: 's3://bucket/approved.pdf' },
+    }, 'token')
+    expect(uploadApplicationFile).not.toHaveBeenCalled()
+    expect(mocks.message).toHaveBeenCalledWith(expect.objectContaining({
+      payload: expect.objectContaining({ Attachments: 'approved.pdf<s3://bucket/approved.pdf>' }),
+    }))
+  })
+  it('uses a replacement file instead of the approved attachment', async () => {
+    vi.mocked(uploadApplicationFile).mockResolvedValue({ file_path: 's3://bucket/replacement.pdf' })
+    await sendTaskEmail({
+      applicationId: 421, to: 'contact@example.com', subject: 'Complete NDA', body: 'Please review.',
+      existingAttachment: { name: 'approved.pdf', url: 's3://bucket/approved.pdf' },
+      file: new File(['replacement'], 'replacement.pdf'),
+    }, 'token')
+    expect(mocks.message).toHaveBeenCalledWith(expect.objectContaining({
+      payload: expect.objectContaining({ Attachments: 'replacement.pdf<s3://bucket/replacement.pdf>' }),
+    }))
+  })
   beforeEach(() => vi.resetAllMocks())
   afterEach(() => vi.unstubAllEnvs())
 

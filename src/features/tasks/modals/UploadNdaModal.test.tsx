@@ -5,10 +5,12 @@ import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 
 import { UploadNdaModal } from './UploadNdaModal'
 
-const mocks = vi.hoisted(() => ({ upload: vi.fn(), save: vi.fn() }))
+const mocks = vi.hoisted(() => ({ upload: vi.fn(), save: vi.fn(), send: vi.fn() }))
+vi.mock('@/features/tasks/hooks/useTaskActions', () => ({ sendTaskEmail: mocks.send }))
+vi.mock('@/shared/api/httpClient', () => ({ resolveApiBaseUrl: () => 'https://api.example.com/api' }))
 vi.mock('@/context/UserContext', () => ({ useUser: () => ({ token: 'token' }) }))
 vi.mock('@/features/applications/hooks/useApplicationDetail', () => ({
-  useApplicationDetail: () => ({ data: undefined }),
+  useApplicationDetail: () => ({ data: { companyContacts: [{ name: 'Customer', email: 'customer@example.com', type: 'primary contact' }] } }),
 }))
 vi.mock('@/features/applications/hooks/useUploadApplicationFileMutation', () => ({
   useUploadApplicationFileMutation: () => ({ mutateAsync: mocks.upload }),
@@ -36,6 +38,21 @@ function setup(taskName: string, fields: Record<string, string>) {
 }
 
 describe('NDA upload task classification', () => {
+  it('displays and sends the approved NDA from application global data', async () => {
+    const complete = vi.fn()
+    render(<UploadNdaModal showUploadModal taskInstanceId={317}
+      selectedAction={{ application: { applicationId: 421, GlobalData: JSON.stringify({
+        approvedNDAURL: 's3://bucket/approved.pdf', approvedNDALink: '/file/661',
+      }) }, action: { taskName: 'Complete NDA', taskCategory: TASK_CATEGORIES.EMAIL, taskType: TASK_TYPES.ACTION } }}
+      setShowUploadModal={vi.fn()} completeTaskWithResult={complete} />)
+    expect(screen.getByRole('link', { name: 'approved.pdf' }).getAttribute('href')).toBe('https://api.example.com/file/661')
+    expect(screen.getByRole('button', { name: 'Replace attachment' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Send Email & Complete' }))
+    await waitFor(() => expect(complete).toHaveBeenCalledOnce())
+    expect(mocks.send).toHaveBeenCalledWith(expect.objectContaining({
+      existingAttachment: { name: 'approved.pdf', url: 's3://bucket/approved.pdf' },
+    }), 'token', undefined)
+  })
   beforeEach(() => {
     vi.resetAllMocks()
     mocks.upload.mockResolvedValue({ file_path: 's3://customer.pdf', link: '/file/661' })
