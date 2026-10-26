@@ -192,6 +192,11 @@ flows work; performance changes have measured before/after evidence.
 
 ## P1: Production Behavior And Observability
 
+2026-10-26: SSE exponential reconnect backoff with jitter and shared terminal-401
+login recovery implemented. Focused auth/SSE tests (31), typecheck, and staging build
+pass. Live staging acceptance is pending deployment access; see
+[decision and acceptance checks](EVENTS_AUTH_RECOVERY.md).
+
 1. Preserve intentional localhost login and test deployed SSO redirects, callback failures,
    expired sessions, and role changes. Backend permissions remain independent of UI gates.
 2. Gate routine logs and redact tokens, contact data, and business payloads.

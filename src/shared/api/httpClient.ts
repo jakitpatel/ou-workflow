@@ -76,15 +76,23 @@ export async function executeRequest(
         const newHeaders = new Headers(options.headers)
         newHeaders.set('Authorization', `Bearer ${newToken}`)
 
-        response = await fetch(url, {
-          ...optionsWithTimeout,
-          headers: newHeaders,
-        })
-
         console.debug('[API] Token refresh successful')
+        // Keep request/network failures separate from refresh failures.
+        optionsWithTimeout.headers = newHeaders
       } catch (err) {
         if (optionsWithTimeout.signal?.aborted) throw err
         console.error('[API] Token refresh failed:', err)
+        cognitoLogout()
+        throw createAppError('Session expired. Please log in again.', {
+          status: 401,
+          code: 'AUTH_ERROR',
+        })
+      }
+
+      response = await fetch(url, optionsWithTimeout)
+      if (response.status === 401) {
+        await response.body?.cancel()
+        optionsWithTimeout.signal?.throwIfAborted()
         cognitoLogout()
         throw createAppError('Session expired. Please log in again.', {
           status: 401,

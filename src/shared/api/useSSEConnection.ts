@@ -59,6 +59,7 @@ export function useSSEConnection(
     const controller = new AbortController()
     let timer: ReturnType<typeof setTimeout> | undefined
     let retryMs = 3000
+    let nextRetryMs = retryMs
     let lastEventId = ''
     let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
     async function connect() {
@@ -66,6 +67,7 @@ export function useSSEConnection(
       const requestController = new AbortController()
       let idleTimer: ReturnType<typeof setTimeout> | undefined
       let timedOut = false
+      let connectedAt: number | undefined
       const abortRequest = () => {
         clearTimeout(idleTimer)
         requestController.abort()
@@ -134,9 +136,11 @@ export function useSSEConnection(
           },
           (delay) => {
             retryMs = Math.min(30000, Math.max(1000, delay))
+            nextRetryMs = retryMs
           },
         )
         reader = response.body.getReader()
+        connectedAt = Date.now()
         resetIdleTimer()
         const decoder = new TextDecoder()
         while (!controller.signal.aborted) {
@@ -144,7 +148,10 @@ export function useSSEConnection(
           if (timedOut) throw new Error('SSE stream timed out after 60 seconds without data')
           if (done) break
           // Count raw traffic, including comment heartbeats and split SSE frames.
-          if (value.byteLength) resetIdleTimer()
+          if (value.byteLength) {
+            nextRetryMs = retryMs
+            resetIdleTimer()
+          }
           parse(decoder.decode(value, { stream: true }))
         }
       } catch (error) {
@@ -158,7 +165,15 @@ export function useSSEConnection(
         controller.signal.removeEventListener('abort', abortRequest)
         reader?.releaseLock()
         reader = undefined
-        if (reconnect && !controller.signal.aborted) timer = setTimeout(connect, retryMs)
+        if (reconnect && !controller.signal.aborted) {
+          // Reset after traffic or a stable connection, not merely successful headers.
+          if (connectedAt !== undefined && Date.now() - connectedAt >= 30000) {
+            nextRetryMs = retryMs
+          }
+          const delay = Math.min(30000, Math.round(nextRetryMs * (1 + Math.random() * 0.2)))
+          nextRetryMs = Math.min(30000, nextRetryMs * 2)
+          timer = setTimeout(connect, delay)
+        }
       }
     }
     void connect()
