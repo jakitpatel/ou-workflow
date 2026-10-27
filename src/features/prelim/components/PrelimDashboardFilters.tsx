@@ -36,6 +36,7 @@ export function PrelimDashboardFilters({ q, status, applicationId, onChange }: P
           <option value="LEGACY">Legacy</option>
           <option value="NEW">New</option>
           <option value="REVIEW">Review</option>
+          <option value="Waiting for Certification">Waiting</option>
           <option value="WTH">Withdrawn</option>
         </select>
 
