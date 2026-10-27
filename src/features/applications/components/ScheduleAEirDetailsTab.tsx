@@ -111,12 +111,12 @@ export function ScheduleAEirDetailsTab({
           </div>
           <div className="flex items-center justify-between border-b border-gray-100 py-2">
             <span className="text-sm font-medium text-gray-600">Proposed Visit Date</span>
-            <span className="text-sm font-semibold text-gray-900">{inspectionDate || '-'}</span>
+            <span className="text-sm font-semibold text-gray-900">{reportedInspectionDate || '-'}</span>
           </div>
           <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-2">
             <span className="text-sm font-medium text-gray-600">Actual Visit Date</span>
             <span className="text-right text-sm font-semibold text-gray-900">
-              {reportedInspectionDate || '-'}
+              {inspectionDate || '-'}
             </span>
           </div>
           <div className="flex items-center justify-between border-t border-gray-100 py-2">
