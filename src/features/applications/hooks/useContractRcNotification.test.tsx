@@ -2,9 +2,10 @@ import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useContractRcNotification } from './useContractRcNotification'
 
-const mocks = vi.hoisted(() => ({ generateInvoice: vi.fn() }))
+const mocks = vi.hoisted(() => ({ generateInvoice: vi.fn(), uploadFile: vi.fn() }))
 vi.mock('@/features/applications/api', () => ({
   generateInspectionInvoice: mocks.generateInvoice,
+  uploadApplicationFile: mocks.uploadFile,
 }))
 
 describe('contract invoice fee requirement', () => {
@@ -37,5 +38,37 @@ describe('contract invoice fee requirement', () => {
     expect(mocks.generateInvoice).toHaveBeenCalledWith(expect.objectContaining({
       payload: expect.objectContaining({ fee: 1250.50, feeRequired: true }),
     }))
+  })
+})
+
+describe('contract email attachments', () => {
+  beforeEach(() => vi.resetAllMocks())
+
+  it.each([
+    { file_path: 's3://documents/uploads/detailresp.txt' },
+    { data: { attributes: { file_path: 's3://documents/uploads/detailresp.txt' } } },
+  ])('preserves the uploaded file_path reference: %j', async (response) => {
+    mocks.uploadFile.mockResolvedValue(response)
+    const { result } = renderHook(() => useContractRcNotification({ token: 'token' }))
+    await act(async () => {
+      const attachment = await result.current.uploadContractEmailAttachment({
+        applicationId: 123,
+        file: new File(['details'], 'detailresp.txt'),
+      })
+      expect(attachment.fileName).toBe('detailresp.txt')
+      expect(attachment.fileUrl).toBe('s3://documents/uploads/detailresp.txt')
+    })
+  })
+
+  it('rejects an upload without a file reference before adding it to the email', async () => {
+    mocks.uploadFile.mockResolvedValue({ message: 'Uploaded' })
+    const { result } = renderHook(() => useContractRcNotification({ token: 'token' }))
+    await act(async () => {
+      await expect(result.current.uploadContractEmailAttachment({
+        applicationId: 123,
+        file: new File(['details'], 'detailresp.txt'),
+      })).rejects.toThrow('Upload did not return a file URL')
+    })
+    expect(result.current.isUploadingContractAttachment).toBe(false)
   })
 })

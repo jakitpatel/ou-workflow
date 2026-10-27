@@ -131,21 +131,27 @@ const normalizeUploadedContractAttachment = (
       : {}
   const source = { ...data, ...attributes }
 
-  return {
+  const attachment = {
     fileName:
       readStringFromRecord(source, ['FileName', 'fileName', 'filename', 'name', 'originalName']) ||
       fallbackFileName,
     fileUrl: readStringFromRecord(source, [
       'FilePath',
       'filePath',
+      'file_path',
       'file_url',
       'fileUrl',
       'downloadUrl',
       'download_url',
       'url',
+      'link',
     ]),
     raw: response,
   }
+  if (!attachment.fileUrl) {
+    throw new Error('Upload did not return a file URL. Please upload the attachment again.')
+  }
+  return attachment
 }
 
 const getCreatedMessageId = (response: unknown) => {
