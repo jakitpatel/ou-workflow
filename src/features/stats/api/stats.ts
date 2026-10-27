@@ -5,9 +5,12 @@ export type ApplicationStat = { dayRange: string; totalApps: number }
 export function parseStats(response: unknown): ApplicationStat[] {
   if (!response || typeof response !== 'object') throw new Error('Invalid stats response.')
   const payload = response as Record<string, unknown>
-  if (payload.status !== 'ok' || !Array.isArray(payload.data))
+  const stats = payload.stats
+  if (payload.status !== 'ok' || !stats || typeof stats !== 'object')
     throw new Error('Unable to load application stats.')
-  return payload.data
+  const rows = (stats as Record<string, unknown>).stats
+  if (!Array.isArray(rows)) throw new Error('Unable to load application stats.')
+  return rows
     .map((row: unknown) => {
       if (!row || typeof row !== 'object') throw new Error('Invalid stats row.')
       const value = row as Record<string, unknown>
