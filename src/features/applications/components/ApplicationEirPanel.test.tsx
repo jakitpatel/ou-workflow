@@ -36,6 +36,8 @@ describe('Application Details EIR', () => {
     render(<ApplicationEirPanel applicationId={421} />)
     expect(screen.getByText('Inspection Report (EIR)')).toBeTruthy()
     expect(screen.getByText('42')).toBeTruthy()
+    expect(screen.getByText('Report Ready')).toBeTruthy()
+    expect(screen.queryByText(/Awaiting EIR Submission/)).toBeNull()
     expect(screen.getByText('Proposed Visit Date').parentElement?.textContent).toContain('Sep 10, 2026')
     expect(screen.getByText('Actual Visit Date').parentElement?.textContent).toContain('Sep 18, 2026')
     expect(screen.queryByRole('button', { name: 'Mark EIR review complete' })).toBeNull()
@@ -50,6 +52,8 @@ describe('Application Details EIR', () => {
   it('shows the existing empty state when inspection is incomplete', () => {
     state.detail.data.InspectionDate = null
     render(<ApplicationEirPanel applicationId={421} />)
+    expect(screen.getByText('Awaiting Report')).toBeTruthy()
+    expect(screen.getByText(/Awaiting EIR Submission/)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'EIR' }))
     expect(screen.getByText('Inspection has not been done yet.')).toBeTruthy()
   })
