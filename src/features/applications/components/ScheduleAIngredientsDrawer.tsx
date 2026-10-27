@@ -587,10 +587,7 @@ export function ScheduleAIngredientsDrawer({
   const { data: applicationDetail } = useApplicationDetail(
     isActive ? resolvedApplicationId : undefined,
   )
-  const { applicationItem, inspectionStatus, eirNewUrl } = useScheduleEir(
-    isActive ? resolvedApplicationId : undefined,
-    applicationDetail?.VisitId,
-  )
+  const { eirNewUrl } = useScheduleEir(applicationDetail?.VisitId)
   const isAssigningTask =
     textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA_ASSIGNING
   const isStartTask = textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA_START
@@ -1196,7 +1193,7 @@ export function ScheduleAIngredientsDrawer({
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto p-4">
-            {activeTab === 'eir-new' ? <ScheduleAEirNewTab url={eirNewUrl} inspectionStatus={inspectionStatus} /> : null}
+            {activeTab === 'eir-new' ? <ScheduleAEirNewTab url={eirNewUrl} inspectionDate={applicationDetail?.InspectionDate} /> : null}
             {activeTab === 'ingredients' ? (
               <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
                 <div
@@ -1919,7 +1916,7 @@ export function ScheduleAIngredientsDrawer({
             ) : null}
 
             {activeTab === 'eir' ? (
-              <ScheduleAEirDetailsTab applicationDetail={applicationDetail} applicationAppVars={applicationItem?.appvars} appVars={appVars} scratchpadApi={scratchpadApi} readOnly={readOnly} />
+              <ScheduleAEirDetailsTab applicationDetail={applicationDetail} appVars={appVars} scratchpadApi={scratchpadApi} readOnly={readOnly} />
             ) : null}
           </div>
         </div>

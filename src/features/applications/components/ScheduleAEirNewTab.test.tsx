@@ -20,12 +20,12 @@ it.each([
   expect(url).toBe(
     `https://${host}/oudirect/inspections/RfrVisitInspectionForm?emailLink=YF&type=Inspection&category=Inspection&mode=view&visitID=3006890`,
   )
-  const { rerender } = render(<ScheduleAEirNewTab url={url} inspectionStatus="COMPLETED" />)
+  const { rerender } = render(<ScheduleAEirNewTab url={url} inspectionDate="2026-09-18 00:00:00" />)
   expect(screen.getByTitle('EIR inspection form').getAttribute('src')).toBe(url)
   expect(screen.getByRole('link').getAttribute('href')).toBe(url)
 
   const nextUrl = getScheduleAEirUrl(' 456 ')
-  rerender(<ScheduleAEirNewTab url={nextUrl} inspectionStatus="COMPLETED" />)
+  rerender(<ScheduleAEirNewTab url={nextUrl} inspectionDate="2026-09-18 00:00:00" />)
   expect(screen.getByTitle('EIR inspection form').getAttribute('src')).toBe(
     `https://${host}/oudirect/inspections/RfrVisitInspectionForm?emailLink=YF&type=Inspection&category=Inspection&mode=view&visitID=456`,
   )
@@ -34,24 +34,24 @@ it.each([
 it.each([undefined, null, '', ' ', 'NULL'])('shows an empty state for Visit ID %s', (visitId) => {
   const url = getScheduleAEirUrl(visitId)
   expect(url).toBe('')
-  render(<ScheduleAEirNewTab url={url} inspectionStatus="COMPLETED" />)
+  render(<ScheduleAEirNewTab url={url} inspectionDate="2026-09-18 00:00:00" />)
   expect(screen.getByText(/once a Visit ID is assigned/)).toBeTruthy()
   expect(screen.queryByTitle('EIR inspection form')).toBeNull()
   expect(screen.queryByRole('link')).toBeNull()
 })
 
-it.each([undefined, '', 'IN_PROGRESS', 'PENDING', 'NOT_STARTED', 'completed'])
-  ('shows inspection pending for status %s even with a Visit URL', (inspectionStatus) => {
-    render(<ScheduleAEirNewTab url="https://oudirect.org/oudirect/inspections/RfrVisitInspectionForm?visitID=123" inspectionStatus={inspectionStatus} />)
+it.each([undefined, null, '', ' ', 'NULL', 'null'])
+  ('shows inspection pending for date %s even with a Visit URL', (inspectionDate) => {
+    render(<ScheduleAEirNewTab url="https://oudirect.org/oudirect/inspections/RfrVisitInspectionForm?visitID=123" inspectionDate={inspectionDate} />)
     expect(screen.getByText('Inspection has not been done yet.')).toBeTruthy()
     expect(screen.queryByTitle('EIR inspection form')).toBeNull()
     expect(screen.queryByRole('link')).toBeNull()
   })
 
-it('removes the inspection form when Inspection is no longer completed', () => {
-  const { rerender } = render(<ScheduleAEirNewTab url="https://oudirect.org" inspectionStatus="COMPLETED" />)
+it('removes the inspection form when the inspection date is removed', () => {
+  const { rerender } = render(<ScheduleAEirNewTab url="https://oudirect.org" inspectionDate="2026-09-18" />)
   expect(screen.getByTitle('EIR inspection form')).toBeTruthy()
-  rerender(<ScheduleAEirNewTab url="https://oudirect.org" inspectionStatus="IN_PROGRESS" />)
+  rerender(<ScheduleAEirNewTab url="https://oudirect.org" inspectionDate={null} />)
   expect(screen.getByText('Inspection has not been done yet.')).toBeTruthy()
   expect(screen.queryByTitle('EIR inspection form')).toBeNull()
   expect(screen.queryByRole('link')).toBeNull()

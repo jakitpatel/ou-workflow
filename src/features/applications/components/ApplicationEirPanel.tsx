@@ -21,10 +21,7 @@ export function ApplicationEirPanel({
 }: Props) {
   const [tab, setTab] = useState<'details' | 'eir'>('details')
   const detail = useApplicationDetail(String(applicationId))
-  const { applicationItem, inspectionStatus, eirNewUrl } = useScheduleEir(
-    String(applicationId),
-    detail.data?.VisitId,
-  )
+  const { eirNewUrl } = useScheduleEir(detail.data?.VisitId)
   const scratchpadApi = useScheduleAScratchpad(applicationId, taskInstanceId, taskStatusDetails)
 
   if (detail.isLoading) return <p className="p-6 text-sm text-gray-500">Loading EIR...</p>
@@ -56,13 +53,12 @@ export function ApplicationEirPanel({
       {tab === 'details' ? (
         <ScheduleAEirDetailsTab
           applicationDetail={detail.data}
-          applicationAppVars={applicationItem?.appvars}
           appVars={appVars}
           scratchpadApi={scratchpadApi}
           readOnly
         />
       ) : (
-        <ScheduleAEirNewTab url={eirNewUrl} inspectionStatus={inspectionStatus} />
+        <ScheduleAEirNewTab url={eirNewUrl} inspectionDate={detail.data?.InspectionDate} />
       )}
     </section>
   )

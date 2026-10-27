@@ -1,5 +1,5 @@
-export function ScheduleAEirNewTab({ url, inspectionStatus }: { url: string; inspectionStatus?: string }) {
-  if (inspectionStatus !== 'COMPLETED') {
+export function ScheduleAEirNewTab({ url, inspectionDate }: { url: string; inspectionDate?: string | null }) {
+  if (!inspectionDate?.trim() || inspectionDate.trim().toUpperCase() === 'NULL') {
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500">
         Inspection has not been done yet.
