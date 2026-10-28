@@ -1,3 +1,4 @@
+import { formatAttachmentReference, getContractPackageAttachmentUrl } from '../lib/contractAttachments'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronRight,
@@ -132,6 +133,7 @@ type ContractStageSavedState = {
   package?: {
     generated?: boolean
     downloadUrl?: string | null
+    filePath?: string | null
     packagePdfUrl?: string | null
     generatedAt?: string
   }
@@ -990,6 +992,7 @@ export function ContractStageDrawer({
   )
   const [contractInvoicePdfUrl, setContractInvoicePdfUrl] = useState<string | null>(null)
   const [contractPackageDownloadUrl, setContractPackageDownloadUrl] = useState<string | null>(null)
+  const [contractPackageFilePath, setContractPackageFilePath] = useState<string | null>(null)
   const [contractPackagePdfUrl, setContractPackagePdfUrl] = useState<string | null>(null)
   const [showEmailPreview, setShowEmailPreview] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
@@ -1030,6 +1033,7 @@ export function ContractStageDrawer({
     setContractInvoiceDownloadLink(null)
     setContractInvoicePdfUrl(null)
     setContractPackageDownloadUrl(null)
+    setContractPackageFilePath(null)
     setContractPackagePdfUrl(null)
     setShowEmailPreview(false)
     setEmailSent(false)
@@ -1089,6 +1093,7 @@ export function ContractStageDrawer({
     setContractInvoiceDownloadLink(invoice.downloadLink ?? null)
     setContractInvoicePdfUrl(invoice.invoicePdfUrl ?? null)
     setContractPackageDownloadUrl(contractPackage.downloadUrl ?? null)
+    setContractPackageFilePath(contractPackage.filePath ?? null)
     setContractPackagePdfUrl(contractPackage.packagePdfUrl ?? null)
     setPackageGenerated(Boolean(contractPackage.generated || emailState.sent))
     setEmailSent(Boolean(emailState.sent))
@@ -1247,8 +1252,6 @@ export function ContractStageDrawer({
   const invoiceDate = formatShortDate(effectiveDate)
   const invoiceAmount = formatCurrency(annualFee)
   const invoiceTotal = `${invoiceAmount} USD`
-  const formatAttachmentReference = (fileName: string, fileUrl?: string | null) =>
-    fileUrl ? `${fileName}<${fileUrl}>` : fileName
   const paymentCycleYear = getYearFromDateValue(effectiveDate)
   const companyPaymentCycleStart =
     textValue(appVars?.companyPaymentCycleStart) ||
@@ -1318,12 +1321,15 @@ export function ContractStageDrawer({
         },
       ]
     : []
+  const contractPackageAttachmentUrl = getContractPackageAttachmentUrl(
+    contractPackageFilePath, contractPackagePdfUrl, contractPackageDownloadUrl,
+  )
   const contractPackageDocumentUrl = contractPackagePdfUrl || contractPackageDownloadUrl
   const contractPackageDownloadLink = contractPackageDownloadUrl || contractPackagePdfUrl
   const contractEmailAttachments = [
     formatAttachmentReference(
       `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
-      contractPackageDocumentUrl,
+      contractPackageAttachmentUrl,
     ),
     ...extraEmailAttachments.map((attachment) =>
       formatAttachmentReference(attachment.fileName, attachment.fileUrl),
@@ -1401,6 +1407,7 @@ ${packageUrl}`
     nextContractInvoiceId = contractInvoiceId,
     nextContractInvoicePdfUrl = contractInvoicePdfUrl,
     nextContractPackageDownloadUrl = contractPackageDownloadUrl,
+    nextContractPackageFilePath = contractPackageFilePath,
     nextContractPackagePdfUrl = contractPackagePdfUrl,
     nextContractSigned = contractSigned,
     nextEmailSent = emailSent,
@@ -1419,6 +1426,7 @@ ${packageUrl}`
     nextContractInvoiceId?: string | null
     nextContractInvoicePdfUrl?: string | null
     nextContractPackageDownloadUrl?: string | null
+    nextContractPackageFilePath?: string | null
     nextContractPackagePdfUrl?: string | null
     nextContractSigned?: boolean
     nextEmailSent?: boolean
@@ -1437,7 +1445,9 @@ ${packageUrl}`
     const nextInvoiceDocumentUrl = nextContractInvoiceDownloadLink || nextContractInvoicePdfUrl
     const nextEmailAttachments = [
       ...(nextPackageGenerated || nextContractPackageDownloadUrl || nextContractPackagePdfUrl
-        ? [formatAttachmentReference(nextPackageFileName, nextContractPackageDownloadUrl)]
+        ? [formatAttachmentReference(nextPackageFileName, getContractPackageAttachmentUrl(
+            nextContractPackageFilePath, nextContractPackagePdfUrl, nextContractPackageDownloadUrl,
+          ))]
         : []),
       ...nextExtraEmailAttachments.map((attachment) =>
         formatAttachmentReference(attachment.fileName, attachment.fileUrl),
@@ -1478,6 +1488,7 @@ ${packageUrl}`
       package: {
         generated: nextPackageGenerated,
         downloadUrl: nextContractPackageDownloadUrl,
+        filePath: nextContractPackageFilePath,
         packagePdfUrl: nextContractPackagePdfUrl,
         generatedAt: nextPackageGenerated ? new Date().toISOString() : undefined,
       },
@@ -1677,12 +1688,14 @@ ${packageUrl}`
       const packageDownloadUrl = result.downloadUrl || null
       const packageUrl = packagePdfUrl || packageDownloadUrl
       setContractPackageDownloadUrl(packageDownloadUrl)
+      setContractPackageFilePath(result.filePath || null)
       setContractPackagePdfUrl(packagePdfUrl)
       setPackageGenerated(true)
       setCoverLetterBody(packageUrl ? emailBodyWithPackageUrl(packageUrl) : emailBody)
       setPreviewTab('cover')
       await saveCurrentContractStageState({
         nextContractPackageDownloadUrl: packageDownloadUrl,
+        nextContractPackageFilePath: result.filePath || null,
         nextContractPackagePdfUrl: packagePdfUrl,
         nextCoverLetterBody: packageUrl ? emailBodyWithPackageUrl(packageUrl) : emailBody,
         nextPackageGenerated: true,
@@ -1816,7 +1829,7 @@ ${packageUrl}`
               attachments: [
                 formatAttachmentReference(
                   `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
-                  contractPackageDocumentUrl,
+                  contractPackageAttachmentUrl,
                 ),
                 ...nextAttachments.map((attachment) =>
                   formatAttachmentReference(attachment.fileName, attachment.fileUrl),
@@ -1853,6 +1866,7 @@ ${packageUrl}`
 
   const handleRemoveContractPackageAttachment = async () => {
     setContractPackageDownloadUrl(null)
+    setContractPackageFilePath(null)
     setContractPackagePdfUrl(null)
     setPackageGenerated(false)
     setEmailSent(false)
@@ -1860,6 +1874,7 @@ ${packageUrl}`
     setContractEmailDraft(null)
     await saveCurrentContractStageState({
       nextContractPackageDownloadUrl: null,
+      nextContractPackageFilePath: null,
       nextContractPackagePdfUrl: null,
       nextCoverLetterBody: emailBody,
       nextEmailSent: false,
@@ -1898,7 +1913,7 @@ ${packageUrl}`
             attachments: [
               formatAttachmentReference(
                 `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
-                contractPackageDocumentUrl,
+                contractPackageAttachmentUrl,
               ),
               ...nextAttachments.map((item) =>
                 formatAttachmentReference(item.fileName, item.fileUrl),
@@ -2542,9 +2557,11 @@ ${packageUrl}`
                     setPackageGenerated(false)
                     setEmailSent(false)
                     setContractPackageDownloadUrl(null)
+                    setContractPackageFilePath(null)
                     setContractPackagePdfUrl(null)
                     await saveCurrentContractStageState({
                       nextContractPackageDownloadUrl: null,
+                      nextContractPackageFilePath: null,
                       nextContractPackagePdfUrl: null,
                       nextEmailSent: false,
                       nextPackageGenerated: false,

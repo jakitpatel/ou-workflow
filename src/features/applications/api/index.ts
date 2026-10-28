@@ -521,6 +521,7 @@ export type GenerateContractPackagePayload = {
 }
 
 export type GenerateContractPackageResponse = {
+  filePath: string
   certificationPackagePdfUrl: string
   downloadUrl: string
   raw: unknown
@@ -646,6 +647,7 @@ export async function generateContractPackage({
   }
 
   return {
+    filePath: readStringFromRecord(data, ['filePath']),
     certificationPackagePdfUrl,
     downloadUrl,
     raw: response,
