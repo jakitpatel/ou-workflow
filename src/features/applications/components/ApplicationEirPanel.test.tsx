@@ -7,8 +7,8 @@ const state = vi.hoisted(() => ({
     data: {
       VisitId: 42,
       DesignatedRFR: 'Assigned RFR',
-      ReportedInspectionDate: '2026-09-10 00:00:00',
-      InspectionDate: '2026-09-18 00:00:00' as string | null,
+      scheduleVisitDate: '2026-09-10 00:00:00',
+      actualVisitDate: '2026-09-18 00:00:00' as string | null,
     },
     isLoading: false,
     isError: false,
@@ -27,7 +27,7 @@ afterEach(() => vi.unstubAllEnvs())
 beforeEach(() => {
   state.detail.isLoading = false
   state.detail.isError = false
-  state.detail.data.InspectionDate = '2026-09-18 00:00:00'
+  state.detail.data.actualVisitDate = '2026-09-18 00:00:00'
   vi.stubEnv('VITE_OUDIRECT_BASE_URL', 'https://example.com')
 })
 
@@ -50,7 +50,7 @@ describe('Application Details EIR', () => {
   })
 
   it('shows the existing empty state when inspection is incomplete', () => {
-    state.detail.data.InspectionDate = null
+    state.detail.data.actualVisitDate = null
     render(<ApplicationEirPanel applicationId={421} />)
     expect(screen.getByText('Awaiting Report')).toBeTruthy()
     expect(screen.getByText(/Awaiting EIR Submission/)).toBeTruthy()

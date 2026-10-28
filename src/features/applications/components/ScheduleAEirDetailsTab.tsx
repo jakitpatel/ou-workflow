@@ -44,9 +44,9 @@ export function ScheduleAEirDetailsTab({
   const assignedRfr = getDesignatedRfrName(applicationDetail?.DesignatedRFR)
   const effectiveAppVars = { ...applicationAppVars, ...appVars }
   const visitIdLabel = textValue(applicationDetail?.VisitId)
-  const inspectionDate = formatDisplayDate(applicationDetail?.InspectionDate)
-  const reportedInspectionDate = formatDisplayDate(applicationDetail?.ReportedInspectionDate)
-  const daysSinceVisit = getDaysSinceVisit(applicationDetail?.InspectionDate)
+  const inspectionDate = formatDisplayDate(applicationDetail?.actualVisitDate)
+  const scheduleVisitDate = formatDisplayDate(applicationDetail?.scheduleVisitDate)
+  const daysSinceVisit = getDaysSinceVisit(applicationDetail?.actualVisitDate)
   const eirWorkflowFileId = textValue(effectiveAppVars.wf_file_id)
   const eirDocumentPath = textValue(applicationDetail?.RFRFileUrl)
   const eirDisplayName = eirDocumentPath ? getDocumentFilename(eirDocumentPath) : ''
@@ -58,7 +58,7 @@ export function ScheduleAEirDetailsTab({
     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <h2 className="mb-4 text-2xl font-semibold text-gray-900">Inspection Report (EIR)</h2>
 
-      {!hasInspectionDate(applicationDetail?.InspectionDate) ? (
+      {!hasInspectionDate(applicationDetail?.actualVisitDate) ? (
         <div className="mb-6 flex items-center gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3">
           <AlertCircle className="h-5 w-5 shrink-0 text-red-500" />
           <p className="text-sm font-semibold text-red-800">
@@ -81,7 +81,7 @@ export function ScheduleAEirDetailsTab({
         <div className="space-y-3">
           <div className="flex items-center justify-between border-b border-gray-100 py-2">
             <span className="text-sm font-medium text-gray-600">Inspection Status</span>
-            <EirInspectionStatus inspectionDate={applicationDetail?.InspectionDate} />
+            <EirInspectionStatus inspectionDate={applicationDetail?.actualVisitDate} />
           </div>
           <div className="flex items-center justify-between border-b border-gray-100 py-2">
             <span className="text-sm font-medium text-gray-600">RFR Assigned</span>
@@ -95,7 +95,7 @@ export function ScheduleAEirDetailsTab({
           </div>
           <div className="flex items-center justify-between border-b border-gray-100 py-2">
             <span className="text-sm font-medium text-gray-600">Proposed Visit Date</span>
-            <span className="text-sm font-semibold text-gray-900">{reportedInspectionDate || '-'}</span>
+            <span className="text-sm font-semibold text-gray-900">{scheduleVisitDate || '-'}</span>
           </div>
           <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-2">
             <span className="text-sm font-medium text-gray-600">Actual Visit Date</span>

@@ -58,7 +58,7 @@ export function ApplicationEirPanel({
           readOnly
         />
       ) : (
-        <ScheduleAEirNewTab url={eirNewUrl} inspectionDate={detail.data?.InspectionDate} />
+        <ScheduleAEirNewTab url={eirNewUrl} actualVisitDate={detail.data?.actualVisitDate} />
       )}
     </section>
   )

@@ -608,9 +608,9 @@ export interface ApplicationDetail {
   assignedRFR?: string | null
   DesignatedRFR?: DesignatedNcrcContact | string | null
   RFRFileUrl?: string | null
-  ReportedInspectionDate?: string | null
+  scheduleVisitDate?: string | null
   VisitId?: number | string | null
-  InspectionDate?: string | null
+  actualVisitDate?: string | null
   companyId?: number | string
   PlantId?: number | string
   PlantID?: number | string

@@ -1193,7 +1193,7 @@ export function ScheduleAIngredientsDrawer({
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto p-4">
-            {activeTab === 'eir-new' ? <ScheduleAEirNewTab url={eirNewUrl} inspectionDate={applicationDetail?.InspectionDate} /> : null}
+            {activeTab === 'eir-new' ? <ScheduleAEirNewTab url={eirNewUrl} actualVisitDate={applicationDetail?.actualVisitDate} /> : null}
             {activeTab === 'ingredients' ? (
               <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
                 <div

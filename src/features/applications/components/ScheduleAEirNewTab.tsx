@@ -1,7 +1,7 @@
 import { hasInspectionDate } from '../utils/inspectionDate'
 
-export function ScheduleAEirNewTab({ url, inspectionDate }: { url: string; inspectionDate?: string | null }) {
-  if (!hasInspectionDate(inspectionDate)) {
+export function ScheduleAEirNewTab({ url, actualVisitDate }: { url: string; actualVisitDate?: string | null }) {
+  if (!hasInspectionDate(actualVisitDate)) {
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-6 text-sm text-gray-500">
         Inspection has not been done yet.
