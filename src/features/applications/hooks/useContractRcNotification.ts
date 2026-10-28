@@ -1,3 +1,4 @@
+import { removeContractPackageFooter } from '../lib/contractCoverLetter'
 import { useCommunicationMessageEvents } from './useCommunicationMessageEvents'
 import { useState } from 'react'
 import { withImpliedBcc } from '@/shared/email/impliedBcc'
@@ -240,6 +241,7 @@ export function useSendContractCommunicationEmail() {
         throw new Error('Application id is required before sending the contract email.')
       }
 
+      body = removeContractPackageFooter(body)
       if (!body.trim()) {
         throw new Error('Cover letter body is required before sending the contract email.')
       }
@@ -456,6 +458,7 @@ export function useContractRcNotification({
       throw new Error('Application id is required before sending the contract email.')
     }
 
+    body = removeContractPackageFooter(body)
     if (!body.trim()) {
       throw new Error('Cover letter body is required before sending the contract email.')
     }

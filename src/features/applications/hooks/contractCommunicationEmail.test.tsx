@@ -32,7 +32,7 @@ it.each([
       applicationId: 1441,
       taskInstanceId: 20,
       attachments,
-      body: 'Contract attached',
+      body: 'Contract attached\n\nCertification package:\n/file/1308',
       companyName: 'Company',
       subject: 'Contract',
       toUser: 'recipient@example.com',
@@ -44,6 +44,7 @@ it.each([
       payload: expect.objectContaining({
         MessageType: 'Email-Staging',
         Attachments: attachments,
+        MessageTextPlain: 'Contract attached',
       }),
     }),
   )

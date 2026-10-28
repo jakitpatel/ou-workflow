@@ -1,3 +1,4 @@
+import { removeContractPackageFooter } from '../lib/contractCoverLetter'
 import { formatAttachmentReference, getContractPackageAttachmentUrl, getContractInvoiceAttachmentUrl } from '../lib/contractAttachments'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -1099,7 +1100,7 @@ export function ContractStageDrawer({
     setEmailSent(Boolean(emailState.sent))
     setContractSigned(Boolean(completion.contractSigned))
     setInvoicePaid(Boolean(completion.paid))
-    setCoverLetterBody(setup.coverLetterBody || '')
+    setCoverLetterBody(removeContractPackageFooter(setup.coverLetterBody || ''))
     setExtraEmailAttachments(
       Array.isArray(emailState.customAttachments) ? emailState.customAttachments : [],
     )
@@ -1393,10 +1394,6 @@ Sincerely,
 ${rcName}
 Rabbinic Coordinator`
 
-  const emailBodyWithPackageUrl = (packageUrl: string) => `${emailBody}
-
-Certification package:
-${packageUrl}`
   const contractRoundMessageCards = useMemo(
     () => buildContractRoundMessageCards(contractRoundEmails),
     [contractRoundEmails],
@@ -1691,18 +1688,17 @@ ${packageUrl}`
       const result = await generateContractPackage({ payload: packagePayload })
       const packagePdfUrl = result.certificationPackagePdfUrl || null
       const packageDownloadUrl = result.downloadUrl || null
-      const packageUrl = packagePdfUrl || packageDownloadUrl
       setContractPackageDownloadUrl(packageDownloadUrl)
       setContractPackageFilePath(result.filePath || null)
       setContractPackagePdfUrl(packagePdfUrl)
       setPackageGenerated(true)
-      setCoverLetterBody(packageUrl ? emailBodyWithPackageUrl(packageUrl) : emailBody)
+      setCoverLetterBody(emailBody)
       setPreviewTab('cover')
       await saveCurrentContractStageState({
         nextContractPackageDownloadUrl: packageDownloadUrl,
         nextContractPackageFilePath: result.filePath || null,
         nextContractPackagePdfUrl: packagePdfUrl,
-        nextCoverLetterBody: packageUrl ? emailBodyWithPackageUrl(packageUrl) : emailBody,
+        nextCoverLetterBody: emailBody,
         nextPackageGenerated: true,
         nextStage: 'GeneratePackage',
       })
@@ -1718,7 +1714,7 @@ ${packageUrl}`
     const roundNumber = nextContractRoundNumber
     const taskSubjectPart = taskInstanceId ? `, Task: #${taskInstanceId}` : ''
     const subject = `OU Kosher - Contract Package for ${companyName} (App #${resolvedApplicationId ?? '-'}${taskSubjectPart}, Round ${roundNumber})`
-    const body = coverLetterBody.trim() || emailBody
+    const body = removeContractPackageFooter(coverLetterBody).trim() || emailBody
 
     setContractEmailDraft({
       roundNumber,
