@@ -4,13 +4,13 @@ Internal React + TypeScript application for NCRC review and operations. It suppo
 application intake, workflow/task management, company and plant resolution, inspection,
 contracts, certification, Schedule A/B, files, and messages.
 
-Reviewed against the local source on **2026-10-09**. Development uses the sibling
+Reviewed against the local source on **2026-10-28**. Development uses the sibling
 [ncrc-server-app](../ncrc-server-app/) mock; deployed environments use their configured API.
 
 ## Getting Started
 
-The latest checks used **Node 24.18.1** and npm. The repository does not yet pin Node.
-Use that verified version when reproducing the baseline. Installed jsdom requires
+The latest checks used **Node 24.22.1** and npm. The repository does not yet pin Node.
+The dependency checks in this session used npm 11.19.1. Installed jsdom requires
 `^22.22.2 || ^24.15.0 || >=26.0.0`; the old “Node 20+” guidance is insufficient
 for the current test stack.
 
@@ -73,6 +73,14 @@ stored/context URL only when it matches that configured URL; saved preferences c
 redirect requests to an unrelated backend. See [API URL resolution](src/shared/api/httpClient.ts)
 and [preferences](src/context/AppPreferencesContext.tsx).
 
+Additional feature configuration:
+
+- `VITE_OUDIRECT_BASE_URL`: absolute OU Direct base URL used by inspection links and the
+  embedded EIR form; configure it before opening a visit with an assigned Visit ID.
+- `VITE_EMAIL_REPLY_TO`: reply-to address used by schedule and contract notifications.
+- `VITE_EMAIL_IMPLIED_BCC`: additional BCC recipients merged by the shared email helper.
+- `VITE_MAX_EMAIL_ATTACHMENT_SIZE_MB`: positive attachment limit; defaults to 25 MB.
+
 ## Workflows And Routes
 
 Paths below are application-relative; deployed builds prepend `/dashboard`.
@@ -82,6 +90,7 @@ Paths below are application-relative; deployed builds prepend `/dashboard`.
 | Home and dashboard management     | `/`                                           |
 | Application Dashboard             | `/ou-workflow/ncrc-dashboard`                 |
 | Application Intake                | `/ou-workflow/prelim-dashboard`               |
+| Application age statistics        | `/stats`                                      |
 | Tasks & Notifications             | `/ou-workflow/tasks-dashboard`                |
 | Application detail                | `/ou-workflow/ncrc-dashboard/$applicationId`  |
 | Task application detail           | `/ou-workflow/tasks-dashboard/$applicationId` |
@@ -89,7 +98,7 @@ Paths below are application-relative; deployed builds prepend `/dashboard`.
 | Profile and display preferences   | `/profile`                                    |
 
 Application detail includes company/contact/plant information, ingredients, products,
-quote data, files, messages, activity, and task events. Workflow controls depend on
+quote data, files, messages, activity, task events, and a read-only EIR panel. Workflow controls depend on
 role and task state. The authenticated layout supports top and left navigation;
 preferences also include pagination and stage presentation.
 
@@ -104,6 +113,13 @@ redirects other navigation. This is UI policy; backend authorization remains ind
 See [session management](src/features/auth/model/sessionManager.ts) and
 [RFR access policy](src/features/auth/model/rfrAccess.ts).
 
+EIR Details and EIR are shared by the application panel and Schedule A/B workflows.
+`actualVisitDate` controls inspection readiness, the pending-report warning, form visibility,
+and days since visit. `scheduleVisitDate` supplies Proposed Visit Date. Missing, blank,
+and literal `NULL` actual dates mean inspection is incomplete. These replace the old
+`InspectionDate` and `ReportedInspectionDate` response fields; there is no old-field fallback.
+The form also needs `VisitId`; its URL opens OU Direct in view mode.
+
 ## Architecture
 
 ```text
@@ -115,6 +131,7 @@ src/
     auth/                    session, OAuth, access policy
     prelim/                  intake, resolution, company/plant search
     profile/                 profile APIs and mutation hooks
+    stats/                   application age distribution API and screen
     tasks/                   task dashboard, actions, notes
   components/
     layout/                  navigation and PageShell
@@ -150,7 +167,10 @@ APIs use shared authenticated transport, and boundary mappers normalize backend 
 connection through [useSSEConnection](src/shared/api/useSSEConnection.ts).
 [useSSE](src/hooks/useSSE.tsx) subscribes locally. Workflow/submission event handlers
 live in feature cache modules. The local mock emits only `refresh_messages`; other
-event types need synthetic tests or a backend that emits them.
+event types need synthetic tests or a backend that emits them. The client has exponential
+reconnect backoff with jitter, a 60-second idle timeout, and shared terminal-401 session
+recovery. Live staging acceptance remains pending; see
+[Events/auth recovery](EVENTS_AUTH_RECOVERY.md).
 
 `src/api.ts` and `src/types/application.ts` remain compatibility/legacy modules.
 New code imports from the owning feature/shared module. The retired
@@ -162,12 +182,17 @@ Declared baselines from [package.json](package.json); the lockfile determines re
 
 | Area               | Packages                                                            |
 | ------------------ | ------------------------------------------------------------------- |
-| UI                 | React / React DOM 19.3.0, Radix primitives, Sonner                  |
-| Language and build | TypeScript 5.9.3, Vite 8.3.4, React plugin 6.1.2                    |
-| Routing and data   | TanStack Router 1.170.41, Query 5.104.1                             |
-| Styling and icons  | Tailwind CSS 4.2.1, Tailwind Vite plugin 4.3.3, Lucide React 1.54.0 |
-| Tests              | Vitest 5.0.3, Testing Library React 16.3.3, jsdom 30.1.2            |
-| Code checks        | ESLint 10.12.0, typescript-eslint 8.71.1, Prettier                  |
+| UI                 | React / React DOM 19.3.1, Radix primitives, Sonner                  |
+| Language and build | TypeScript 5.9.3, Vite 8.3.5, React plugin 6.1.2                    |
+| Routing and data   | TanStack Router 1.170.46, Query 5.105.0                             |
+| Styling and icons  | Tailwind CSS 4.2.1, Tailwind Vite plugin 4.3.3, Lucide React 1.63.0 |
+| Tests              | Vitest 5.0.5, Testing Library React 16.3.3, jsdom 30.1.3            |
+| Code checks        | ESLint 10.13.0, typescript-eslint 8.72.1, Prettier                  |
+
+Document tooling: `read-excel-file` 9.3.13, Mammoth 1.13.0, and shadcn CLI 4.23.0.
+The October 28 update also moved Query to 5.105.0, Lucide to 1.63.0, and
+`typescript-eslint` to 8.72.1. Typecheck, tests, and build required no compatibility edits.
+The mock declares and locks Express 5.3.0 and CORS 2.8.6.
 
 ## Commands And Verification
 
@@ -205,12 +230,15 @@ npm run lint
 npm run build
 ```
 
-The latest review on **2026-10-09** found:
+Dependency validation on **2026-10-28**, using `npm run typecheck`, `npm test`,
+`npm run lint`, `npm run build`, and `npm audit --omit=dev`, found:
 
 - Typecheck and production build pass.
-- All **53 test files / 311 tests** pass.
-- Lint fails with **9 errors and 608 warnings**.
-- Production audit reports **4 affected packages: 1 high and 3 moderate**.
+- All **73 test files / 488 tests** pass.
+- Lint fails with **9 errors and 632 warnings**.
+- Production audit reports **1 affected package: 1 high**, `@xmldom/xmldom`.
+- The full install audit reports **6 affected packages: 3 low, 1 moderate, 2 high**;
+  this includes development tooling and is a different scope.
 
 These are dated results, not a claim that every quality gate passes. Test count does not
 establish full workflow or production coverage. Existing tests cover auth/access,
@@ -222,6 +250,11 @@ No aggregate check script, Node pin, or app-local GitHub workflow is present yet
 
 The mock's route registration lives in [src/app.js](../ncrc-server-app/src/app.js),
 with feature handlers under [src/routes](../ncrc-server-app/src/routes/).
+Its `npm test` is a placeholder that fails. Route tests use Node's built-in test runner
+(`node --test src/routes/*.test.js`). `npm run baseline` sends requests to an already
+running server and writes response snapshots, including mutation cases; use a disposable
+local mock. This documentation review inspected handlers and fixtures, without claiming
+live production or staging response validation.
 Mock data is reset on restart. Some filters are ignored and some handlers return success
 without persisting input. Request casing and response formats vary; consult
 [API contracts](docs/api-contracts.md) before changing integrations.

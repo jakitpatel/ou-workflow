@@ -1,6 +1,6 @@
 ﻿# NCRC App Architecture Action Plan
 
-Reviewed: 2026-10-09. Scope: current local frontend and sibling mock backend.
+Reviewed: 2026-10-28. Scope: current local frontend and sibling mock backend.
 This document separates verified current behavior from proposed maintenance work.
 See [AGENTS.md](AGENTS.md) for working rules and [API contracts](docs/api-contracts.md)
 for local backend behavior.
@@ -10,31 +10,33 @@ for local backend behavior.
 These observations include pre-existing local changes and should be refreshed after
 relevant implementation changes, rather than treated as permanent guarantees.
 
-| Check                | Result on 2026-10-09                              |
+| Check                | Result on 2026-10-28                              |
 | -------------------- | ------------------------------------------------- |
 | Typecheck            | Pass                                              |
-| Tests                | 53 files / 311 tests pass                         |
-| Production build     | Pass with Vite 8.3.4                              |
-| Lint                 | Fails: 9 errors and 608 warnings                  |
-| Production audit     | 4 affected packages: 1 high, 3 moderate           |
-| Node used for checks | 24.18.1; no runtime pin found                     |
+| Tests                | 73 files / 488 tests pass                         |
+| Production build     | Pass with Vite 8.3.5                              |
+| Lint                 | Fails: 9 errors and 632 warnings                  |
+| Production audit     | 1 affected package: 1 high                        |
+| Node used for checks | 24.22.1; no runtime pin found                     |
 | CI                   | No `.github` workflow directory found in this app |
 | API documentation    | `docs/` is currently Git-ignored                  |
 
-Typecheck, tests, lint, and build were verified during the dependency update in this
-session. The production audit was refreshed with `npm audit --omit=dev --json`.
-Its high finding is `@xmldom/xmldom`; moderate findings are the
-`mammoth` / `argparse` / `sprintf-js` chain. These are affected-package counts,
-not distinct-advisory counts or proof of exploitability. npm reports an xmldom fix;
-the proposed Mammoth remedy is a breaking downgrade and needs independent review.
-The earlier full install audit reported 21 findings; it is a different audit scope.
+The dependency validation on 2026-10-28 ran `npm run typecheck`, `npm test`,
+`npm run lint`, `npm run build`, and `npm audit --omit=dev` on the local frontend.
+Production audit reports only `@xmldom/xmldom` at high severity; npm reports a compatible
+fix. The full installation audit has 6 affected packages (3 low, 1 moderate, 2 high),
+including development dependencies. These are package counts, not distinct advisories.
+No audit fixes were applied as part of the five requested package upgrades.
+Documentation review checked server source/fixtures; live staging acceptance is pending.
 
-Declared dependency baselines: React/React DOM 19.3.0, TypeScript 5.9.3, Vite 8.3.4,
-React plugin 6.1.2, Router 1.170.41 / router plugin 1.168.42, Query 5.104.1,
-Vitest 5.0.3, jsdom 30.1.2, ESLint 10.12.0, Lucide React 1.54.0.
+Declared dependency baselines: React/React DOM 19.3.1, TypeScript 5.9.3, Vite 8.3.5,
+React plugin 6.1.2, Router 1.170.46 / router plugin 1.168.42, Query 5.105.0,
+Vitest 5.0.5, jsdom 30.1.3, ESLint 10.13.0, Lucide React 1.63.0.
 Tailwind CSS is declared at 4.2.1 and its Vite plugin at 4.3.3; verify compatibility
-before aligning them. Resolved versions come from the lockfile. The previous plan's
-Vite 8, ESLint 10, Lucide 1, and related migrations are already adopted.
+before aligning them. Resolved versions come from the lockfile. Query 5.105.0, Lucide 1.63.0, read-excel-file 9.3.13, shadcn 4.23.0, and
+typescript-eslint 8.72.1 are installed. The lockfile changes include shadcn's move from
+`@modelcontextprotocol/sdk` to `@modelcontextprotocol/server` and removal of unused
+transitive packages; no frontend compatibility changes were needed.
 
 ## Current Architecture And Progress
 
@@ -50,6 +52,14 @@ splitting, TanStack Query, shared transport, and authenticated layout compositio
 - Application/preliminary cache helpers refresh paged and infinite lists.
 - Preliminary resolution has pure adapters and dedicated search endpoints; RC assignment
   and Schedule A edit/delete have dedicated API modules.
+- Application details include the shared read-only EIR panel; Schedule A/B and the panel
+  consume `actualVisitDate` and `scheduleVisitDate`, with `VisitId` for the external form.
+- Stats has a feature-owned API and screen at `/stats` consuming `stats.stats`.
+- `/global_data` preserves application-level data for RFR recommendations, NDA uploads,
+  and legal review. The mock shallow-merges top-level keys in memory; task completion,
+  data storage, and notification are separate calls, so partial failures need recovery.
+- Schedule B product edits have a dedicated API module and PATCH handler; Schedule A
+  ingredient edit/delete handlers also mutate fixtures in memory.
 - Shared email utilities cover common addresses, formatting, copies, and attachments.
 - Lazy boundaries exist for dashboards, application drawer content, preliminary detail
   from message actions, and JSON editor content.
@@ -61,18 +71,18 @@ duplicate task orchestration, very large drawers, and failing lint. The mock bac
 has incomplete filters and in-memory mutations; mock success does not prove production
 persistence or authorization.
 
-Largest production modules (lines measured on review date):
+Selected large production modules (physical lines measured on 2026-10-28):
 
 | Module                               | Lines | Concern                                     |
 | ------------------------------------ | ----: | ------------------------------------------- |
-| `ContractStageDrawer.tsx`            | 4,257 | Templates, approvals, payloads, preview, UI |
-| `ScheduleAIngredientsDrawer.tsx`     | 2,501 | Imports, edits, matching, UI                |
+| `ContractStageDrawer.tsx`            | 4,220 | Templates, approvals, payloads, preview, UI |
+| `ScheduleAIngredientsDrawer.tsx`     | 2,102 | Imports, edits, matching, UI                |
 | `TaskNotesDrawer.tsx`                | 2,304 | Normalization, threads, composer, UI        |
-| `ScheduleBProductsDrawer.tsx`        | 2,229 | Product orchestration and UI                |
-| `useScheduleBProducts.ts`            | 1,496 | Parsing, matching, queries, mutations       |
-| `useInspectionInvoiceDrawerState.ts` | 1,488 | Invoice state and requests                  |
-| `useScheduleAIngredients.ts`         | 1,378 | Parsing, matching, drafts                   |
-| `ApplicationDetailsContent.tsx`      | 1,170 | Detail tabs and composition                 |
+| `ScheduleBProductsDrawer.tsx`        | 2,067 | Product orchestration and UI                |
+| `useScheduleBProducts.ts`            | 1,504 | Parsing, matching, queries, mutations       |
+| `useInspectionInvoiceDrawerState.ts` | 1,497 | Invoice state and requests                  |
+| `useScheduleAIngredients.ts`         | 1,369 | Parsing, matching, drafts                   |
+| `ApplicationDetailsContent.tsx`      | 1,179 | Detail tabs and composition                 |
 | `types/application.ts`               | 1,055 | DTO/domain coupling                         |
 
 Line count highlights review areas; responsibility and testability determine extraction.
@@ -106,7 +116,8 @@ New state/schema libraries or generic workflow frameworks require a demonstrated
 
 ## P0: Quality Gates And Release Reproducibility
 
-1. Fix nine lint errors in Schedule A/B hooks and TaskNotesDrawer with behavior preserved.
+1. Fix nine lint errors: control-character regexes in Schedule A/B hooks, unnecessary
+   escapes in Schedule B, and redundant Boolean calls in TaskNotesDrawer. Preserve behavior.
    The previous SSE render-time ref assignment issue is already resolved.
 2. Separate formatting from behavior changes; reduce warnings by category. Do not disable
    hooks rules to pass lint. Gradually promote correctness rules after debt is addressed.

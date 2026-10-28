@@ -2,7 +2,7 @@
 
 Guidance for coding agents working in `ncrc-app`.
 
-Last reviewed: 2026-10-09. This file defines working rules; the dated findings and
+Last reviewed: 2026-10-28. This file defines working rules; the dated findings and
 prioritized backlog live in [ARCHITECTURE_ACTION_PLAN.md](ARCHITECTURE_ACTION_PLAN.md).
 Verify mutable facts against source and the lockfile rather than treating this snapshot
 as a permanent baseline.
@@ -21,6 +21,7 @@ Primary authenticated routes:
 - Application Intake: `/ou-workflow/prelim-dashboard`
 - Tasks & Notifications: `/ou-workflow/tasks-dashboard`
 - Profile: `/profile`
+- Application statistics: `/stats`
 - Restricted RFR application detail: `/ou-workflow/rfr-dashboard/$applicationId`
 
 Development serves at `/` on port 3000. Vite builds use `/dashboard/`, including
@@ -31,22 +32,22 @@ RFR route/session restrictions are UI policy, not a substitute for backend autho
 Read `README.md`, `docs/api-contracts.md`, and `ARCHITECTURE_ACTION_PLAN.md` before broad
 changes.
 
-## Current Toolchain (reviewed 2026-10-09)
+## Current Toolchain (reviewed 2026-10-28)
 
-- React / React DOM `19.3.0`
+- React / React DOM `19.3.1`
 - TypeScript `5.9.3`
-- Vite `8.3.4`, React plugin `6.1.2`
-- TanStack Router `1.170.41`, router plugin `1.168.42`
-- TanStack Query `5.104.1`
+- Vite `8.3.5`, React plugin `6.1.2`
+- TanStack Router `1.170.46`, router plugin `1.168.42`
+- TanStack Query `5.105.0`
 - Tailwind CSS `4.2.1`, Tailwind Vite plugin `4.3.3` (declared versions differ)
-- Vitest `5.0.3`, Testing Library React `16.3.3`, jsdom `30.1.2`
-- ESLint `10.12.0`, typescript-eslint `8.71.1`
-- Lucide React `1.54.0`
+- Vitest `5.0.5`, Testing Library React `16.3.3`, jsdom `30.1.3`
+- ESLint `10.13.0`, typescript-eslint `8.72.1`
+- Lucide React `1.63.0`, read-excel-file `9.3.13`, shadcn `4.23.0`
 
 These are declared dependency baselines, not a registry upgrade wishlist. Vite 8,
 React plugin 6, ESLint 10, Vitest 5, jsdom 30, and Lucide 1 are already adopted.
 `package-lock.json` determines resolved versions. Do not upgrade majors incidentally.
-Node `24.18.1` was used for the latest checks; the repository does not yet pin a runtime.
+Node `24.22.1` and npm `11.19.1` were used for the latest checks; the repository does not yet pin a runtime.
 
 ## Commands And Required Checks
 
@@ -71,10 +72,10 @@ Minimum verification:
 
 Known baseline:
 
-- Checks on 2026-10-09: typecheck and production build pass; 53 files / 311 tests pass.
-- Lint: 9 errors and 608 warnings; do not claim lint passes or lower rule severity
+- Checks on 2026-10-28: typecheck and production build pass; 73 files / 488 tests pass.
+- Lint: 9 errors and 632 warnings; do not claim lint passes or lower rule severity
   to hide debt. Report existing failures separately from regressions.
-- Production audit: 4 affected packages (1 high, 3 moderate). Re-audit before dependency
+- Production audit: 1 high affected package (`@xmldom/xmldom`). Re-audit before dependency
   work; do not describe the full install audit as the production audit.
 - Build scripts currently run Vite before `tsc`; run explicit typecheck first when validating.
 
@@ -156,6 +157,22 @@ handlers validate event type, application type, and ID before fetching/patching 
 Preserve unsubscribe, reconnect, abort, and session-switch cleanup. The local backend
 currently emits `refresh_messages` only; other frontend event handlers need synthetic
 tests or a backend that emits those events.
+
+Current integration details:
+
+- EIR detail response fields are `actualVisitDate` and `scheduleVisitDate`. Do not reintroduce
+  `InspectionDate` / `ReportedInspectionDate`. Actual date controls readiness, report warning,
+  form access, and elapsed days; scheduled date is displayed as Proposed Visit Date.
+  Readiness uses the existing helper (nonblank and not literal `NULL`), not strict parsing.
+- EIR form URLs require `VisitId` and `VITE_OUDIRECT_BASE_URL`; use the shared URL builder.
+- `/global_data` requires positive integer application/task IDs and an object `jsonData`.
+  The mock shallow-merges top-level keys, including `RFRRecommendation`, into serialized
+  `GlobalData`; do not assume a deep merge or transactional task completion.
+- Schedule B edits use singular `/api/ScheduleProduct/:id`; creation uses plural
+  `/api/ScheduleProducts`. Preserve that distinction.
+- Stats consumes nested `stats.stats`. Keep the feature API/screen ownership.
+- SSE reconnect backoff, idle timeout, and terminal-401 recovery are implemented; preserve
+  their tests. Live staging acceptance is still pending in `EVENTS_AUTH_RECOVERY.md`.
 
 Known quirks:
 
