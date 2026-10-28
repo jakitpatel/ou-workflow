@@ -69,9 +69,9 @@ const getClientVerifiableAttachments = (attachments?: string) => {
   const clientVerifiableReferences = references.filter((reference) => {
     const fileReference = reference.match(/<([^>]+)>/)?.[1]?.trim() || reference
 
-    // Invoice and contract-package generation returns server-managed references such as
-    // data.filePath (s3://bucket/key.pdf) and /file/1308. The application-message service resolves these when
-    // attaching the files, but the browser cannot verify them with an unauthenticated HEAD request.
+    // Invoice attachments come from invoicePDFurl; package attachments come from data.filePath.
+    // Each response is stored separately by the drawer. Preserve both S3 references in
+    // Attachments: the message service resolves them; browser HEAD checks cannot.
     return (
       !/^\/?file\/\d+(?:[/?#].*)?$/i.test(fileReference) &&
       !/^s3:\/\/\S+$/i.test(fileReference)

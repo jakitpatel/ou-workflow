@@ -1,4 +1,4 @@
-import { formatAttachmentReference, getContractPackageAttachmentUrl } from '../lib/contractAttachments'
+import { formatAttachmentReference, getContractPackageAttachmentUrl, getContractInvoiceAttachmentUrl } from '../lib/contractAttachments'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronRight,
@@ -1243,6 +1243,9 @@ export function ContractStageDrawer({
 
   const invoiceNumber = contractInvoiceId ?? 'no invoice id'
   const invoiceDisplayNumber = contractInvoiceId ? `#${contractInvoiceId}` : '#Draft'
+  const contractInvoiceAttachmentUrl = getContractInvoiceAttachmentUrl(
+    contractInvoicePdfUrl, contractInvoiceDownloadLink, contractInvoiceDisplayUrl,
+  )
   const contractInvoiceDocumentUrl = contractInvoicePdfUrl || contractInvoiceDownloadLink
   const contractInvoiceDisplayLink = contractInvoiceDisplayUrl || contractInvoiceDocumentUrl
   const contractInvoiceDownloadUrl = contractInvoiceDownloadLink || contractInvoicePdfUrl
@@ -1315,7 +1318,7 @@ export function ContractStageDrawer({
           label: 'Certification Invoice',
           sub: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - separate attachment`,
           file: `Certification_Invoice_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`,
-          fileUrl: contractInvoiceDisplayLink || undefined,
+          fileUrl: contractInvoiceAttachmentUrl || undefined,
           desc: `${invoiceDisplayNumber} - ${formatCurrency(annualFee)} - ${invoicePaid ? 'paid' : 'awaiting payment'}`,
           tab: 'invoice' as PreviewTab,
         },
@@ -1442,7 +1445,9 @@ ${packageUrl}`
   } = {}): ContractStageSavedState => {
     const nextPackageFileName = `Certification_Package_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`
     const nextInvoiceFileName = `Certification_Invoice_${companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf`
-    const nextInvoiceDocumentUrl = nextContractInvoiceDownloadLink || nextContractInvoicePdfUrl
+    const nextInvoiceAttachmentUrl = getContractInvoiceAttachmentUrl(
+      nextContractInvoicePdfUrl, nextContractInvoiceDownloadLink, nextContractInvoiceDisplayUrl,
+    )
     const nextEmailAttachments = [
       ...(nextPackageGenerated || nextContractPackageDownloadUrl || nextContractPackagePdfUrl
         ? [formatAttachmentReference(nextPackageFileName, getContractPackageAttachmentUrl(
@@ -1453,7 +1458,7 @@ ${packageUrl}`
         formatAttachmentReference(attachment.fileName, attachment.fileUrl),
       ),
       ...(nextContractInvoiceId
-        ? [formatAttachmentReference(nextInvoiceFileName, nextInvoiceDocumentUrl)]
+        ? [formatAttachmentReference(nextInvoiceFileName, nextInvoiceAttachmentUrl)]
         : []),
     ].join(', ')
 

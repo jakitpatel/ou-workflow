@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchWithAuth } from '@/shared/api/httpClient'
-import { generateContractPackage } from './index'
+import { generateContractPackage, generateInspectionInvoice } from './index'
 import {
   formatAttachmentReference,
   getContractPackageAttachmentUrl,
+  getContractInvoiceAttachmentUrl,
 } from '../lib/contractAttachments'
 
 vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: vi.fn() }))
@@ -56,4 +57,56 @@ describe('generated contract package references', () => {
       '/download_file/1308',
     )
   })
+})
+
+it('preserves invoicePDFurl separately from browser display/download URLs', async () => {
+  vi.mocked(fetchWithAuth).mockResolvedValue({
+    display_url: '/file/1307',
+    download_url: '/download_file/1307',
+    invoiceID: 612522,
+    invoicePDFurl: 's3://newcompany-documents/contracts/1441/Contract_Invoice_612522.pdf',
+    message_id: 1307,
+  })
+  const result = await generateInspectionInvoice({
+    payload: {
+      applicationId: 1441,
+      fee: 1250,
+      expense: 0,
+      invoiceDate: '2026-10-28',
+      invoiceType: 'subscription',
+      inspectionNeeded: false,
+      feeRequired: true,
+      awaitPayment: true,
+    },
+  })
+  expect(result).toMatchObject({
+    invoiceId: '612522',
+    displayUrl: '/file/1307',
+    downloadLink: '/download_file/1307',
+    invoicePdfUrl: 's3://newcompany-documents/contracts/1441/Contract_Invoice_612522.pdf',
+  })
+})
+
+it('keeps invoice and package attachment references separate in the same message', () => {
+  const invoicePDFurl = 's3://newcompany-documents/contracts/1441/Contract_Invoice_612522.pdf'
+  const filePath = 's3://newcompany-documents/contracts/1441/contract_package.pdf'
+  const invoiceAttachmentUrl = getContractInvoiceAttachmentUrl(
+    invoicePDFurl,
+    '/download_file/1307',
+    '/file/1307',
+  )
+  const packageAttachmentUrl = getContractPackageAttachmentUrl(
+    filePath,
+    '/file/1308',
+    '/download_file/1308',
+  )
+  expect(
+    [
+      formatAttachmentReference('Invoice.pdf', invoiceAttachmentUrl),
+      formatAttachmentReference('Package.pdf', packageAttachmentUrl),
+    ].join(', '),
+  ).toBe(`Invoice.pdf<${invoicePDFurl}>, Package.pdf<${filePath}>`)
+  expect(getContractInvoiceAttachmentUrl(undefined, '/download_file/1307', '/file/1307')).toBe(
+    '/download_file/1307',
+  )
 })

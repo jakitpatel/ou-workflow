@@ -15,7 +15,11 @@ vi.mock('@/features/applications/api', () => ({
 }))
 vi.mock('@/shared/email/attachmentSizeValidation', () => ({ assertEmailAttachmentSize: vi.fn() }))
 
-it('stages Communication email with the S3 package attachment and sends it', async () => {
+it.each([
+  'Package.pdf<s3://newcompany-documents/contracts/1441/contract_package.pdf>',
+  'Invoice.pdf<s3://newcompany-documents/contracts/1441/Contract_Invoice_612522.pdf>',
+  'Package.pdf<s3://newcompany-documents/contracts/1441/contract_package.pdf>, Invoice.pdf<s3://newcompany-documents/contracts/1441/Contract_Invoice_612522.pdf>',
+])('stages Communication email with server attachments: %s', async (attachments) => {
   vi.mocked(createApplicationMessage).mockResolvedValue({ data: { id: '42' } })
   vi.mocked(updateApplicationMessage).mockResolvedValue({})
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
@@ -23,7 +27,6 @@ it('stages Communication email with the S3 package attachment and sends it', asy
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   )
   const { result } = renderHook(() => useSendContractCommunicationEmail(), { wrapper })
-  const attachments = 'Package.pdf<s3://newcompany-documents/contracts/1441/contract_package.pdf>'
   await act(async () => {
     await result.current.mutateAsync({
       applicationId: 1441,
