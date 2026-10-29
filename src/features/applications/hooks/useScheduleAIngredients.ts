@@ -1,4 +1,5 @@
 import { useCommunicationMessageEvents } from './useCommunicationMessageEvents'
+import { saveScheduleIngredientSelection } from '../api/scheduleIngredientSelection'
 import { withImpliedBcc } from '@/shared/email/impliedBcc'
 export { getScheduleAEirUrl } from '../utils/scheduleAEirUrl'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
@@ -21,7 +22,7 @@ import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import { fetchTaskInstance, patchTaskStatusDetails } from '@/features/tasks/api'
 import { getInspectionStatusSavedState } from '@/features/applications/utils/inspectionStatusDetails'
 import { useScheduleAApplication } from './useScheduleAApplication'
-import type { ApplicationEmail, KashIngredient, ScheduleAIngredient } from '@/types/application'
+import type { ApplicationEmail, KashIngredient, ScheduleAIngredient, ScheduleAIngredientsResult } from '@/types/application'
 
 export type ScheduleAIngredientRow = {
   id: string
@@ -623,6 +624,34 @@ export function useScheduleAIngredients(applicationId?: string | number) {
   })
 }
 
+export function useSaveScheduleIngredientSelection(applicationId?: string | number) {
+  const { token } = useUser()
+  const queryClient = useQueryClient()
+  return useMutation({
+    scope: { id: 'schedule-ingredient-selection' },
+    mutationFn: ({ rows, selected }: { rows: ScheduleAIngredientRow[]; selected: boolean }) => {
+      const ingredientIds = Array.from(new Set(
+        rows.filter((row) => row.origin === 'Application').map((row) => row.ingredientId).filter(
+          (id): id is string => Boolean(id),
+        ),
+      ))
+      if (!ingredientIds.length) return Promise.resolve()
+      return saveScheduleIngredientSelection(ingredientIds, selected, token)
+    },
+    onSuccess: (_data, { rows, selected }) => {
+      const ids = new Set(rows.map((row) => row.ingredientId))
+      queryClient.setQueryData<ScheduleAIngredientsResult>(
+        applicationsQueryKeys.scheduleAIngredients(applicationId == null ? undefined : String(applicationId)),
+        (current) => current ? {
+          ...current,
+          scheduleIngredients: current.scheduleIngredients.map((ingredient) =>
+            ids.has(String(ingredient.IngredientId)) ? { ...ingredient, isSelected: selected } : ingredient),
+        } : current,
+      )
+    },
+  })
+}
+
 export function useCreateScheduleAIngredient(applicationId?: string | number) {
   const { token } = useUser()
   const queryClient = useQueryClient()
@@ -807,10 +836,24 @@ const getTaskStatusDetails = (value: unknown): unknown => {
   return undefined
 }
 
+export function withScheduleIngredientSelection(
+  scratchpad: ScheduleAScratchpad,
+  ingredients: ScheduleAIngredient[],
+): ScheduleAScratchpad {
+  const resolved = Object.fromEntries(
+    Object.entries(scratchpad.resolved).filter(([id]) => !id.startsWith('application-')),
+  )
+  ingredients.forEach((ingredient, index) => {
+    if (ingredient.isSelected === true) resolved[getApplicationIngredientRowId(ingredient, index)] = true
+  })
+  return { ...scratchpad, resolved }
+}
+
 export function useScheduleAScratchpad(
   applicationId?: string | number,
   taskInstanceId?: string | number | null,
   initialStatusDetails?: unknown,
+  ingredients: ScheduleAIngredient[] = [],
 ) {
   const { token, username } = useUser()
   const queryClient = useQueryClient()
@@ -819,7 +862,11 @@ export function useScheduleAScratchpad(
   const normalizedTaskInstanceId =
     taskInstanceId === undefined || taskInstanceId === null ? '' : String(taskInstanceId).trim()
   const storageKey = useMemo(() => makeScratchpadKey(normalizedApplicationId), [normalizedApplicationId])
-  const [scratchpad, setScratchpad] = useState<ScheduleAScratchpad>(EMPTY_SCRATCHPAD)
+  const [storedScratchpad, setScratchpad] = useState<ScheduleAScratchpad>(EMPTY_SCRATCHPAD)
+  const scratchpad = useMemo(
+    () => withScheduleIngredientSelection(storedScratchpad, ingredients),
+    [storedScratchpad, ingredients],
+  )
   const [hydratedKey, setHydratedKey] = useState('')
   const [saveError, setSaveError] = useState('')
   const lastPersistedScratchpadRef = useRef('')
@@ -903,11 +950,11 @@ export function useScheduleAScratchpad(
       return
     }
 
-    const serialized = JSON.stringify(scratchpad)
+    const serialized = JSON.stringify(storedScratchpad)
     if (serialized === lastPersistedScratchpadRef.current) return
 
     const timeoutId = window.setTimeout(() => {
-      saveScratchpadMutation.mutate(scratchpad, {
+      saveScratchpadMutation.mutate(storedScratchpad, {
         onSuccess: () => {
           lastPersistedScratchpadRef.current = serialized
         },
@@ -919,7 +966,7 @@ export function useScheduleAScratchpad(
     hydratedKey,
     hydrationKey,
     normalizedTaskInstanceId,
-    scratchpad,
+    storedScratchpad,
     saveScratchpadMutation,
     taskInstanceQuery.isLoading,
   ])
@@ -928,7 +975,7 @@ export function useScheduleAScratchpad(
     (updater: (current: ScheduleAScratchpad) => ScheduleAScratchpad) => {
       setScratchpad((current) => {
         const next = normalizeScratchpad({
-          ...updater(normalizeScratchpad(current)),
+          ...updater(withScheduleIngredientSelection(normalizeScratchpad(current), ingredients)),
           username: valueText(username) || undefined,
         })
         if (normalizedApplicationId) {
@@ -937,7 +984,7 @@ export function useScheduleAScratchpad(
         return next
       })
     },
-    [normalizedApplicationId, storageKey, username],
+    [normalizedApplicationId, storageKey, username, ingredients],
   )
 
   const toggleFlag = useCallback(

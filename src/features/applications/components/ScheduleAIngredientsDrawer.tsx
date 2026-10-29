@@ -44,6 +44,7 @@ import {
   useCreateScheduleAIngredient,
   useScheduleACommunicationMessages,
   useScheduleAIngredients,
+  useSaveScheduleIngredientSelection,
   useScheduleAScratchpad,
   useSendScheduleACommunicationEmail,
 } from '@/features/applications/hooks/useScheduleAIngredients'
@@ -226,12 +227,13 @@ const primaryContact = (contacts?: unknown) => {
   return { name: name || 'Company Contact', email }
 }
 
-function ResolveButton({ resolved, onClick }: { resolved: boolean; onClick: () => void }) {
+function ResolveButton({ resolved, onClick, disabled }: { resolved: boolean; onClick: () => void; disabled?: boolean }) {
   return (
     <button
       type="button"
       title={resolved ? 'Resolved - click to reopen' : 'Mark resolved / done'}
       aria-label={resolved ? 'Resolved - click to reopen' : 'Mark resolved / done'}
+      disabled={disabled}
       onClick={onClick}
       className={
         resolved
@@ -600,6 +602,7 @@ export function ScheduleAIngredientsDrawer({
     resolvedApplicationId,
     canonicalScheduleATaskInstanceId,
     scheduleATaskStatusDetails,
+    data?.scheduleIngredients,
   )
   const { scratchpad, buildScheduleAExportRows } = scratchpadApi
   useEffect(() => {
@@ -646,7 +649,7 @@ export function ScheduleAIngredientsDrawer({
     )
     scratchpad.rounds.forEach((round) => {
       round.items.forEach((item) => {
-        if (item.resolved) resolvedIds.add(item.ingId)
+        if (item.resolved && !item.ingId.startsWith('application-')) resolvedIds.add(item.ingId)
       })
     })
 
@@ -668,7 +671,7 @@ export function ScheduleAIngredientsDrawer({
     )
     scratchpad.rounds.forEach((round) => {
       round.items.forEach((item) => {
-        if (item.resolved) resolvedIds.add(item.ingId)
+        if (item.resolved && !item.ingId.startsWith('application-')) resolvedIds.add(item.ingId)
       })
     })
 
@@ -688,7 +691,25 @@ export function ScheduleAIngredientsDrawer({
   const allVisibleRowsResolved =
     visibleRows.length > 0 && visibleRows.every((row) => Boolean(scratchpad.resolved[row.id]))
 
+  const saveIngredientSelection = useSaveScheduleIngredientSelection(resolvedApplicationId)
+  const persistIngredientSelection = (rows: ScheduleAIngredientRow[], selected: boolean) => {
+    if (ingView !== 'application') return
+    saveIngredientSelection.mutate({ rows, selected }, {
+      onError: (error) => toast.error(
+        error instanceof Error ? error.message : 'Unable to save ingredient selection',
+      ),
+    })
+  }
+
+  const toggleRowResolved = (row: ScheduleAIngredientRow) => {
+    if (saveIngredientSelection.isPending) return
+    persistIngredientSelection([row], !scratchpad.resolved[row.id])
+    scratchpadApi.toggleResolved(row.id)
+  }
+
   const toggleAllVisibleRowsResolved = () => {
+    if (saveIngredientSelection.isPending) return
+    persistIngredientSelection(visibleRows, !allVisibleRowsResolved)
     scratchpadApi.setRowsResolved(
       visibleRows.map((row) => row.id),
       !allVisibleRowsResolved,
@@ -1366,7 +1387,7 @@ export function ScheduleAIngredientsDrawer({
                               <span>Actions</span>
                               <button
                                 type="button"
-                                disabled={!visibleRows.length}
+                                disabled={!visibleRows.length || saveIngredientSelection.isPending}
                                 aria-pressed={allVisibleRowsResolved}
                                 title={
                                   allVisibleRowsResolved
@@ -1566,8 +1587,9 @@ export function ScheduleAIngredientsDrawer({
                                       </>
                                     )}
                                     <ResolveButton
+                                      disabled={saveIngredientSelection.isPending}
                                       resolved={resolved}
-                                      onClick={() => scratchpadApi.toggleResolved(row.id)}
+                                      onClick={() => toggleRowResolved(row)}
                                     />
                                   </div>
                                   {halacha?.open && !resolved ? (

@@ -648,6 +648,7 @@ export interface ApplicationDetail {
 }
 
 export type ScheduleAIngredient = {
+  isSelected?: boolean
   ApplicationID: number
   IngredientId: number
   UKDID?: string
