@@ -649,6 +649,10 @@ export interface ApplicationDetail {
 
 export type ScheduleAIngredient = {
   isSelected?: boolean
+  isFlagged?: boolean
+  flaggedNote?: string
+  isHalachic?: boolean
+  halachicNote?: string
   ApplicationID: number
   IngredientId: number
   UKDID?: string

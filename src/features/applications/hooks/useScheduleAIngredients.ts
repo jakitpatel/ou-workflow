@@ -1,4 +1,10 @@
 import { useCommunicationMessageEvents } from './useCommunicationMessageEvents'
+import {
+  patchScheduleIngredientFollowUp,
+  patchScheduleIngredientHalachicReview,
+  type ScheduleIngredientFollowUp,
+  type ScheduleIngredientHalachicReview,
+} from '../api/scheduleIngredientMutations'
 import { saveScheduleIngredientSelection } from '../api/scheduleIngredientSelection'
 import { withImpliedBcc } from '@/shared/email/impliedBcc'
 export { getScheduleAEirUrl } from '../utils/scheduleAEirUrl'
@@ -126,6 +132,16 @@ export type ScheduleAScratchpad = {
   scheduleAReady: boolean
   scheduleAReadyBy?: string
   scheduleAReadyDate?: string
+}
+
+type ScheduleATaskScratchpad = Omit<ScheduleAScratchpad, 'flags' | 'halacha' | 'resolved'>
+
+export function getScheduleATaskScratchpad(
+  scratchpad: Partial<ScheduleAScratchpad>,
+): Partial<ScheduleATaskScratchpad> {
+  return Object.fromEntries(Object.entries(scratchpad).filter(
+    ([key]) => key !== 'flags' && key !== 'halacha' && key !== 'resolved',
+  )) as Partial<ScheduleATaskScratchpad>
 }
 
 const EMPTY_SCRATCHPAD: ScheduleAScratchpad = {
@@ -849,6 +865,30 @@ export function withScheduleIngredientSelection(
   return { ...scratchpad, resolved }
 }
 
+export function withScheduleIngredientState(
+  scratchpad: ScheduleAScratchpad,
+  ingredients: ScheduleAIngredient[],
+): ScheduleAScratchpad {
+  const selectedState = withScheduleIngredientSelection(scratchpad, ingredients)
+  const flags = Object.fromEntries(
+    Object.entries(scratchpad.flags).filter(([id]) => !id.startsWith('application-')),
+  )
+  const halacha = Object.fromEntries(
+    Object.entries(scratchpad.halacha).filter(([id]) => !id.startsWith('application-')),
+  )
+  ingredients.forEach((ingredient, index) => {
+    flags[getApplicationIngredientRowId(ingredient, index)] = {
+      flagged: ingredient.isFlagged === true,
+      note: ingredient.flaggedNote ?? '',
+    }
+    halacha[getApplicationIngredientRowId(ingredient, index)] = {
+      open: ingredient.isHalachic === true,
+      note: ingredient.halachicNote ?? '',
+    }
+  })
+  return { ...selectedState, flags, halacha }
+}
+
 export function useScheduleAScratchpad(
   applicationId?: string | number,
   taskInstanceId?: string | number | null,
@@ -864,11 +904,41 @@ export function useScheduleAScratchpad(
   const storageKey = useMemo(() => makeScratchpadKey(normalizedApplicationId), [normalizedApplicationId])
   const [storedScratchpad, setScratchpad] = useState<ScheduleAScratchpad>(EMPTY_SCRATCHPAD)
   const scratchpad = useMemo(
-    () => withScheduleIngredientSelection(storedScratchpad, ingredients),
+    () => withScheduleIngredientState(storedScratchpad, ingredients),
     [storedScratchpad, ingredients],
   )
   const [hydratedKey, setHydratedKey] = useState('')
   const [saveError, setSaveError] = useState('')
+  const [reviewSaveError, setReviewSaveError] = useState('')
+  const ingredientQueryKey = applicationsQueryKeys.scheduleAIngredients(normalizedApplicationId)
+  const reviewMutationKey = ['schedule-ingredient-review', normalizedApplicationId]
+  const reviewMutation = useMutation({
+    mutationKey: reviewMutationKey,
+    scope: { id: `schedule-ingredient-review:${normalizedApplicationId}` },
+    mutationFn: ({ id, attributes }: {
+      id: string; attributes: ScheduleIngredientFollowUp | ScheduleIngredientHalachicReview
+    }) => 'isHalachic' in attributes
+      ? patchScheduleIngredientHalachicReview(id, attributes, token)
+      : patchScheduleIngredientFollowUp(id, attributes, token),
+    onMutate: async ({ id, attributes }) => {
+      setReviewSaveError('')
+      await queryClient.cancelQueries({ queryKey: ingredientQueryKey, exact: true })
+      queryClient.setQueryData<ScheduleAIngredientsResult>(ingredientQueryKey, (current) => current ? {
+        ...current,
+        scheduleIngredients: current.scheduleIngredients.map((ingredient) =>
+          String(ingredient.IngredientId) === id ? { ...ingredient, ...attributes } : ingredient),
+      } : current)
+    },
+    onError: (error: unknown) => {
+      setReviewSaveError(error instanceof Error ? error.message : 'Unable to save ingredient review changes')
+    },
+    onSettled: () => {
+      // Reconcile only after queued note edits finish so an earlier response cannot erase newer input.
+      if (queryClient.isMutating({ mutationKey: reviewMutationKey }) === 1) {
+        return queryClient.invalidateQueries({ queryKey: ingredientQueryKey, exact: true })
+      }
+    },
+  })
   const lastPersistedScratchpadRef = useRef('')
   const hydrationKey = `${normalizedApplicationId ?? ''}:${normalizedTaskInstanceId}`
   const taskInstanceQuery = useQuery({
@@ -883,7 +953,7 @@ export function useScheduleAScratchpad(
     refetchOnMount: 'always',
   })
   const saveScratchpadMutation = useMutation({
-    mutationFn: (nextScratchpad: ScheduleAScratchpad) =>
+    mutationFn: (nextScratchpad: Partial<ScheduleATaskScratchpad>) =>
       patchTaskStatusDetails({
         taskId: normalizedTaskInstanceId,
         statusDetails: { savedState: nextScratchpad },
@@ -917,11 +987,11 @@ export function useScheduleAScratchpad(
       )
       const localSaved = window.localStorage.getItem(storageKey)
       const nextScratchpad = remoteSavedState
-        ? normalizeScratchpad(remoteSavedState)
+        ? normalizeScratchpad(getScheduleATaskScratchpad(remoteSavedState))
         : localSaved
-          ? normalizeScratchpad(JSON.parse(localSaved) as Partial<ScheduleAScratchpad>)
+          ? normalizeScratchpad(getScheduleATaskScratchpad(JSON.parse(localSaved) as Partial<ScheduleAScratchpad>))
           : EMPTY_SCRATCHPAD
-      const serialized = JSON.stringify(nextScratchpad)
+      const serialized = JSON.stringify(getScheduleATaskScratchpad(nextScratchpad))
       setScratchpad(nextScratchpad)
       window.localStorage.setItem(storageKey, serialized)
       lastPersistedScratchpadRef.current = remoteSavedState ? serialized : ''
@@ -950,11 +1020,12 @@ export function useScheduleAScratchpad(
       return
     }
 
-    const serialized = JSON.stringify(storedScratchpad)
+    const taskScratchpad = getScheduleATaskScratchpad(storedScratchpad)
+    const serialized = JSON.stringify(taskScratchpad)
     if (serialized === lastPersistedScratchpadRef.current) return
 
     const timeoutId = window.setTimeout(() => {
-      saveScratchpadMutation.mutate(storedScratchpad, {
+      saveScratchpadMutation.mutate(taskScratchpad, {
         onSuccess: () => {
           lastPersistedScratchpadRef.current = serialized
         },
@@ -975,11 +1046,13 @@ export function useScheduleAScratchpad(
     (updater: (current: ScheduleAScratchpad) => ScheduleAScratchpad) => {
       setScratchpad((current) => {
         const next = normalizeScratchpad({
-          ...updater(withScheduleIngredientSelection(normalizeScratchpad(current), ingredients)),
-          username: valueText(username) || undefined,
+          ...updater(withScheduleIngredientState(normalizeScratchpad(current), ingredients)),
         })
+        if (JSON.stringify(getScheduleATaskScratchpad(next)) !== JSON.stringify(getScheduleATaskScratchpad(current))) {
+          next.username = valueText(username) || undefined
+        }
         if (normalizedApplicationId) {
-          window.localStorage.setItem(storageKey, JSON.stringify(next))
+          window.localStorage.setItem(storageKey, JSON.stringify(getScheduleATaskScratchpad(next)))
         }
         return next
       })
@@ -989,29 +1062,41 @@ export function useScheduleAScratchpad(
 
   const toggleFlag = useCallback(
     (rowId: string) => {
-      updateScratchpad((current) => {
-        const existing = current.flags[rowId] ?? { flagged: false, note: '' }
+      const existing = scratchpad.flags[rowId] ?? { flagged: false, note: '' }
+      const nextFlag = { ...existing, flagged: !existing.flagged }
+      if (!rowId.startsWith('application-')) updateScratchpad((current) => {
         return {
           ...current,
-          flags: { ...current.flags, [rowId]: { ...existing, flagged: !existing.flagged } },
+          flags: { ...current.flags, [rowId]: nextFlag },
         }
       })
+      const ingredient = ingredients.find((item, index) => getApplicationIngredientRowId(item, index) === rowId)
+      if (ingredient) reviewMutation.mutate({
+        id: String(ingredient.IngredientId),
+        attributes: { isFlagged: nextFlag.flagged, flaggedNote: nextFlag.note },
+      })
     },
-    [updateScratchpad],
+    [updateScratchpad, scratchpad.flags, ingredients, reviewMutation],
   )
 
   const updateFlagNote = useCallback(
     (rowId: string, note: string) => {
-      updateScratchpad((current) => ({
+      if (!rowId.startsWith('application-')) updateScratchpad((current) => ({
         ...current,
         flags: { ...current.flags, [rowId]: { flagged: true, note } },
       }))
+      const ingredient = ingredients.find((item, index) => getApplicationIngredientRowId(item, index) === rowId)
+      if (ingredient) reviewMutation.mutate({
+        id: String(ingredient.IngredientId),
+        attributes: { isFlagged: true, flaggedNote: note },
+      })
     },
-    [updateScratchpad],
+    [updateScratchpad, ingredients, reviewMutation],
   )
 
   const toggleResolved = useCallback(
     (rowId: string) => {
+      if (rowId.startsWith('application-')) return
       updateScratchpad((current) => {
         const resolved = { ...current.resolved }
         if (resolved[rowId]) {
@@ -1042,7 +1127,7 @@ export function useScheduleAScratchpad(
 
   const setRowsResolved = useCallback(
     (rowIds: string[], isResolved: boolean) => {
-      const uniqueRowIds = Array.from(new Set(rowIds.filter(Boolean)))
+      const uniqueRowIds = Array.from(new Set(rowIds.filter((id) => id && !id.startsWith('application-'))))
       if (!uniqueRowIds.length) return
 
       updateScratchpad((current) => {
@@ -1071,31 +1156,39 @@ export function useScheduleAScratchpad(
 
   const toggleHalacha = useCallback(
     (rowId: string) => {
-      updateScratchpad((current) => {
-        const existing = current.halacha[rowId]
-        const nextEntry =
-          existing?.open
-            ? { ...existing, open: false, resolvedAt: new Date().toISOString().slice(0, 10) }
-            : { open: true, note: existing?.note ?? '' }
-
+      const existing = scratchpad.halacha[rowId]
+      const nextEntry = existing?.open
+        ? { ...existing, open: false, resolvedAt: new Date().toISOString().slice(0, 10) }
+        : { open: true, note: existing?.note ?? '' }
+      if (!rowId.startsWith('application-')) updateScratchpad((current) => {
         return {
           ...current,
           eirNeedsEntry: nextEntry.open ? true : current.eirNeedsEntry,
           halacha: { ...current.halacha, [rowId]: nextEntry },
         }
       })
+      const ingredient = ingredients.find((item, index) => getApplicationIngredientRowId(item, index) === rowId)
+      if (ingredient) reviewMutation.mutate({
+        id: String(ingredient.IngredientId),
+        attributes: { isHalachic: nextEntry.open, halachicNote: nextEntry.note },
+      })
     },
-    [updateScratchpad],
+    [updateScratchpad, scratchpad.halacha, ingredients, reviewMutation],
   )
 
   const updateHalachaNote = useCallback(
     (rowId: string, note: string) => {
-      updateScratchpad((current) => ({
+      if (!rowId.startsWith('application-')) updateScratchpad((current) => ({
         ...current,
         halacha: { ...current.halacha, [rowId]: { ...current.halacha[rowId], open: true, note } },
       }))
+      const ingredient = ingredients.find((item, index) => getApplicationIngredientRowId(item, index) === rowId)
+      if (ingredient) reviewMutation.mutate({
+        id: String(ingredient.IngredientId),
+        attributes: { isHalachic: true, halachicNote: note },
+      })
     },
-    [updateScratchpad],
+    [updateScratchpad, ingredients, reviewMutation],
   )
 
   const generateRound = useCallback(
@@ -1388,7 +1481,7 @@ export function useScheduleAScratchpad(
     scratchpad,
     isLoadingSavedState: Boolean(normalizedTaskInstanceId && taskInstanceQuery.isLoading),
     isSaving: saveScratchpadMutation.isPending,
-    saveError,
+    saveError: reviewSaveError || saveError,
     toggleFlag,
     updateFlagNote,
     toggleResolved,

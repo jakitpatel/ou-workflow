@@ -2,12 +2,30 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fetchWithAuth } from '@/shared/api/httpClient'
 
-import { deleteScheduleIngredient, patchScheduleIngredient } from './scheduleIngredientMutations'
+import { deleteScheduleIngredient, patchScheduleIngredient, patchScheduleIngredientFollowUp, patchScheduleIngredientHalachicReview } from './scheduleIngredientMutations'
 
 vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: vi.fn() }))
 
 describe('ScheduleIngredient mutations', () => {
   beforeEach(() => vi.clearAllMocks())
+
+  it.each([true, false])('patches halachic review %s with its note', async (isHalachic) => {
+    const attributes = { isHalachic, halachicNote: 'Provide updated LOC' }
+    await patchScheduleIngredientHalachicReview('566', attributes, 'token')
+    expect(fetchWithAuth).toHaveBeenCalledWith({
+      path: '/api/ScheduleIngredient/566', method: 'PATCH', token: 'token',
+      body: { data: { attributes, id: 566, type: 'ScheduleIngredient' } },
+    })
+  })
+
+  it.each([true, false])('patches follow-up flag %s with its note', async (isFlagged) => {
+    const attributes = { isFlagged, flaggedNote: 'Provide updated LOC - Letter of Certification.' }
+    await patchScheduleIngredientFollowUp('566', attributes, 'token')
+    expect(fetchWithAuth).toHaveBeenCalledWith({
+      path: '/api/ScheduleIngredient/566', method: 'PATCH', token: 'token',
+      body: { data: { attributes, id: 566, type: 'ScheduleIngredient' } },
+    })
+  })
 
   it('patches the ingredient resource with the application and edited attributes', async () => {
     const attributes = {

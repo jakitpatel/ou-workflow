@@ -1,5 +1,34 @@
 import { fetchWithAuth } from '@/shared/api/httpClient'
 
+export type ScheduleIngredientFollowUp = { isFlagged: boolean; flaggedNote: string }
+export type ScheduleIngredientHalachicReview = { isHalachic: boolean; halachicNote: string }
+
+export function patchScheduleIngredientHalachicReview(
+  id: string,
+  attributes: ScheduleIngredientHalachicReview,
+  token?: string | null,
+) {
+  return fetchWithAuth({
+    path: `/api/ScheduleIngredient/${encodeURIComponent(id)}`,
+    method: 'PATCH',
+    body: { data: { attributes, id: Number(id), type: 'ScheduleIngredient' } },
+    token,
+  })
+}
+
+export function patchScheduleIngredientFollowUp(
+  id: string,
+  attributes: ScheduleIngredientFollowUp,
+  token?: string | null,
+) {
+  return fetchWithAuth({
+    path: `/api/ScheduleIngredient/${encodeURIComponent(id)}`,
+    method: 'PATCH',
+    body: { data: { attributes, id: Number(id), type: 'ScheduleIngredient' } },
+    token,
+  })
+}
+
 export type ScheduleIngredientEdit = {
   ingredientLabelName: string
   manufacturer: string
