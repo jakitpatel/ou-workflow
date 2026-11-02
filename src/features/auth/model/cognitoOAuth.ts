@@ -38,9 +38,7 @@ export async function exchangeAuthorizationCodeForTokens({
   });
 
   if (!tokenResponse.ok) {
-    const text = await tokenResponse.text();
-    console.error("Token response error:", text);
-    throw new Error(text);
+    throw new Error(`Sign-in token exchange failed (${tokenResponse.status}).`);
   }
 
   return tokenResponse.json();

@@ -81,7 +81,7 @@ export async function executeRequest(
         optionsWithTimeout.headers = newHeaders
       } catch (err) {
         if (optionsWithTimeout.signal?.aborted) throw err
-        console.error('[API] Token refresh failed:', err)
+        console.error('[API] Token refresh failed.')
         cognitoLogout()
         throw createAppError('Session expired. Please log in again.', {
           status: 401,

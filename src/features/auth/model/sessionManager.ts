@@ -47,7 +47,14 @@ export type SessionUserInfo = {
 }
 
 function decodeJwtPayload(token: string): JwtPayload {
-  return JSON.parse(atob(token.split('.')[1])) as JwtPayload
+  const payload = token.split('.')[1]
+  if (!payload || !/^[A-Za-z0-9_-]+={0,2}$/.test(payload)) {
+    throw new Error('Invalid JWT payload encoding')
+  }
+  const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
+  const bytes = Uint8Array.from(atob(padded), (character) => character.charCodeAt(0))
+  return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as JwtPayload
 }
 
 function mapRoleNames(values: unknown): UserRole[] {
@@ -114,8 +121,8 @@ export function isAuthenticated(): boolean {
     }
 
     return true
-  } catch (error) {
-    console.error('Error parsing token:', error)
+  } catch {
+    console.error('Unable to read session token.')
     clearSessionArtifacts()
     return false
   }
@@ -125,16 +132,12 @@ export function getUserInfo(): SessionUserInfo | null {
   try {
     const idToken = getStoredIdToken()
     const accessToken = getStoredAccessToken()
-    console.log('Retrieved tokens:', { idToken, accessToken })
     if (!idToken || !accessToken) {
       return null
     }
 
     const idPayload = decodeJwtPayload(idToken)
     const accessPayload = decodeJwtPayload(accessToken)
-    console.log('Decoded token payloads:', { accessPayload })
-    console.log('Access token payload properties:', Object.keys(accessPayload))
-    console.log('accessPayload.roles:', accessPayload.roles)
     return {
       email: String(idPayload.email ?? ''),
       username: String(accessPayload.app_username ?? ''),
@@ -143,8 +146,8 @@ export function getUserInfo(): SessionUserInfo | null {
       access_token: accessToken,
       id_token: idToken,
     }
-  } catch (error) {
-    console.error('Error parsing user info:', error)
+  } catch {
+    console.error('Unable to read session user info.')
     return null
   }
 }
