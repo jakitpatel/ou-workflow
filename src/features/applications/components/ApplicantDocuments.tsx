@@ -1,3 +1,4 @@
+import { SignedFileLink } from '@/shared/utils/fileLinks'
 import { ClipboardList, ExternalLink, FileText, Package } from 'lucide-react'
 
 const DOCUMENT_TYPES = [
@@ -6,7 +7,7 @@ const DOCUMENT_TYPES = [
   { key: 'PROD', label: 'Product Details', icon: FileText },
 ] as const
 
-export function ApplicantDocuments({ filesByType }: { filesByType?: Record<string, any> }) {
+export function ApplicantDocuments({ filesByType }: { filesByType?: Record<string, import('@/types/application').ApplicantFile> }) {
   if (!filesByType) return null
 
   const availableDocs = DOCUMENT_TYPES.filter((doc) => filesByType[doc.key])
@@ -18,7 +19,7 @@ export function ApplicantDocuments({ filesByType }: { filesByType?: Record<strin
       {availableDocs.map(({ key, label, icon: Icon }) => {
         const file = filesByType[key]
         return (
-          <a
+          <SignedFileLink
             key={key}
             href={file.filePath}
             target="_blank"
@@ -30,7 +31,7 @@ export function ApplicantDocuments({ filesByType }: { filesByType?: Record<strin
             {label}
             <ExternalLink className="w-3 h-3 ml-1" aria-hidden="true" />
             <span className="sr-only">(opens in new tab)</span>
-          </a>
+          </SignedFileLink>
         )
       })}
     </div>

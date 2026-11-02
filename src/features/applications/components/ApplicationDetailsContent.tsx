@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { MessageAttachmentLinks } from '@/shared/utils/fileLinks'
+import { ModalSurface } from '@/components/ui/ModalSurface'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import type React from 'react'
 import {
   CheckCircle,
@@ -79,10 +81,10 @@ const resolveApplicationId = (
   const candidates = [
     applicationId,
     application.applicationId,
-    (application as any)?.ApplicationID,
-    (application as any)?.ApplicationId,
-    (application as any)?.appId,
-    (application as any)?.id,
+    application?.ApplicationID,
+    application?.ApplicationId,
+    application?.appId,
+    application?.id,
   ]
 
   for (const candidate of candidates) {
@@ -268,10 +270,10 @@ function EmailPreviewModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 pointer-events-auto z-[60] flex items-center justify-center bg-black/50 p-4"
       onClick={onClose}
     >
-      <div
+      <ModalSurface onClose={onClose} label={`Email preview: ${email.Subject || '(No subject)'}`}
         className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
@@ -320,7 +322,7 @@ function EmailPreviewModal({
                 value={
                   <span className="inline-flex items-center gap-1.5">
                     <Paperclip className="h-4 w-4 text-gray-400" />
-                    {attachmentText}
+                    <MessageAttachmentLinks text={attachmentText} />
                   </span>
                 }
               />
@@ -329,7 +331,7 @@ function EmailPreviewModal({
 
           <EmailBodyPreview email={email} />
         </div>
-      </div>
+      </ModalSurface>
     </div>
   )
 }
@@ -487,8 +489,8 @@ const Modal = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-md rounded-lg bg-white p-6">
+    <div className="fixed inset-0 pointer-events-auto z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <ModalSurface onClose={onClose} label="Application dialog" className="w-full max-w-md rounded-lg bg-white p-6">
         <h3 className="mb-4 text-lg font-semibold">{title}</h3>
         <textarea
           value={value}
@@ -510,7 +512,7 @@ const Modal = ({
             {submitLabel}
           </button>
         </div>
-      </div>
+      </ModalSurface>
     </div>
   )
 }
@@ -573,26 +575,26 @@ export function ApplicationDetailsContent({
     const tasks = Object.values(sourceApplicant?.stages ?? {})
       .flatMap((stage) => stage.tasks ?? [])
       .sort((left, right) => {
-        const leftId = Number((left as any).taskInstanceId ?? left.TaskInstanceId ?? 0)
-        const rightId = Number((right as any).taskInstanceId ?? right.TaskInstanceId ?? 0)
+        const leftId = Number(left.taskInstanceId ?? left.TaskInstanceId ?? 0)
+        const rightId = Number(right.taskInstanceId ?? right.TaskInstanceId ?? 0)
         return rightId - leftId
       })
     return (
       tasks.find((task) => {
-        const category = String(task.taskCategory ?? (task as any).TaskCategory ?? '')
+        const category = String(task.taskCategory ?? task.TaskCategory ?? '')
           .trim()
           .toLowerCase()
-        const type = String(task.taskType ?? (task as any).TaskType ?? '')
+        const type = String(task.taskType ?? task.TaskType ?? '')
           .trim()
           .toLowerCase()
-        const statusDetails = task.StatusDetails ?? (task as any).statusDetails
+        const statusDetails = task.StatusDetails ?? task.statusDetails
         return category === TASK_CATEGORIES.INVOICE && type === TASK_TYPES.ACTION && statusDetails
       }) ??
       tasks.find((task) => {
-        const category = String(task.taskCategory ?? (task as any).TaskCategory ?? '')
+        const category = String(task.taskCategory ?? task.TaskCategory ?? '')
           .trim()
           .toLowerCase()
-        const type = String(task.taskType ?? (task as any).TaskType ?? '')
+        const type = String(task.taskType ?? task.TaskType ?? '')
           .trim()
           .toLowerCase()
         return category === TASK_CATEGORIES.INVOICE && type === TASK_TYPES.ACTION
@@ -605,10 +607,10 @@ export function ApplicationDetailsContent({
         .flatMap((stage) => stage.tasks ?? [])
         .find(
           (task) =>
-            String(task.taskCategory ?? (task as any).TaskCategory ?? '')
+            String(task.taskCategory ?? task.TaskCategory ?? '')
               .trim()
               .toLowerCase() === TASK_CATEGORIES.SCHEDULEA &&
-            String(task.taskType ?? (task as any).TaskType ?? '')
+            String(task.taskType ?? task.TaskType ?? '')
               .trim()
               .toLowerCase() === TASK_TYPES.ACTION,
         ),
@@ -620,10 +622,10 @@ export function ApplicationDetailsContent({
         .flatMap((stage) => stage.tasks ?? [])
         .find(
           (task) =>
-            String(task.taskCategory ?? (task as any).TaskCategory ?? '')
+            String(task.taskCategory ?? task.TaskCategory ?? '')
               .trim()
               .toLowerCase() === TASK_CATEGORIES.SCHEDULEB &&
-            String(task.taskType ?? (task as any).TaskType ?? '')
+            String(task.taskType ?? task.TaskType ?? '')
               .trim()
               .toLowerCase() === TASK_TYPES.ACTION,
         ),
@@ -636,6 +638,7 @@ export function ApplicationDetailsContent({
     dataSource === 'prelim'
       ? 'Intake Application Review & Management'
       : 'Application Review & Management'
+  const tabId = useId()
   const tabs = getApplicationDetailsTabs(dataSource, rfrView)
   const activeTab = tabs.some((tab) => tab.id === selectedTab) ? selectedTab : tabs[0].id
   const intakePlantTree = dataSource === 'prelim' && !rfrView
@@ -890,6 +893,22 @@ export function ApplicationDetailsContent({
       >
         <div className={mode === 'page' ? 'flex' : 'flex h-full min-h-0'}>
           <nav
+            role="tablist"
+            aria-label="Application details"
+            aria-orientation="vertical"
+            onKeyDown={(event) => {
+              const target = event.target as HTMLElement
+              if (target.getAttribute('role') !== 'tab') return
+              const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+              const index = items.indexOf(target as HTMLButtonElement)
+              const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1
+                : ['ArrowDown', 'ArrowRight'].includes(event.key) ? (index + 1) % items.length
+                : ['ArrowUp', 'ArrowLeft'].includes(event.key) ? (index - 1 + items.length) % items.length : -1
+              if (next < 0) return
+              event.preventDefault()
+              items[next]?.focus()
+              items[next]?.click()
+            }}
             className={
               mode === 'page'
                 ? 'mr-8 w-64 space-y-1'
@@ -905,6 +924,7 @@ export function ApplicationDetailsContent({
                   <IntakePlantNavigation
                     key={`${application.applicationId}-plants`}
                     application={application}
+                    tabId={tabId}
                     selectedIndex={plantIndex}
                     activeSection={activeTab}
                     onSelect={(index, section) => {
@@ -918,6 +938,11 @@ export function ApplicationDetailsContent({
               return (
                 <button
                   key={tab.id}
+                  role="tab"
+                  id={`${tabId}-tab-${tab.id}`}
+                  aria-controls={`${tabId}-panel`}
+                  aria-selected={activeTab === tab.id}
+                  tabIndex={activeTab === tab.id ? 0 : -1}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     activeTab === tab.id
@@ -932,7 +957,11 @@ export function ApplicationDetailsContent({
             })}
           </nav>
 
-          <div className={mode === 'page' ? 'min-w-0 flex-1' : 'min-w-0 flex-1 overflow-y-auto'}>
+          <div role="tabpanel"
+            id={`${tabId}-panel`}
+            aria-labelledby={`${tabId}-tab-${activeTab}${intakePlantTree && ['plants', 'products', 'ingredients'].includes(activeTab) ? `-${plantIndex}` : ''}`}
+            tabIndex={0}
+            className={mode === 'page' ? 'min-w-0 flex-1' : 'min-w-0 flex-1 overflow-y-auto'}>
             {intakePlantTree && ['plants', 'products', 'ingredients'].includes(activeTab) && (
               <div className="mb-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
                 <p className="text-xs font-medium text-blue-600">
@@ -949,8 +978,8 @@ export function ApplicationDetailsContent({
             ) : (
               <ApplicationEirPanel key={resolvedApplicationId} applicationId={resolvedApplicationId}
                 appVars={application.appvars}
-                taskInstanceId={scheduleATask?.TaskInstanceId ?? (scheduleATask as any)?.taskInstanceId}
-                taskStatusDetails={scheduleATask?.StatusDetails ?? (scheduleATask as any)?.statusDetails} />
+                taskInstanceId={scheduleATask?.TaskInstanceId ?? scheduleATask?.taskInstanceId}
+                taskStatusDetails={scheduleATask?.StatusDetails ?? scheduleATask?.statusDetails} />
             ))}
             {activeTab === 'overview' && (
               <Overview application={application} dataSource={dataSource} />
@@ -1003,13 +1032,13 @@ export function ApplicationDetailsContent({
                   applicationId={resolvedApplicationId}
                   applicationName={applicationDisplayName}
                   taskInstanceId={
-                    (inspectionInvoiceTask as any)?.taskInstanceId ??
-                    (inspectionInvoiceTask as any)?.TaskInstanceId
+                    inspectionInvoiceTask?.taskInstanceId ??
+                    inspectionInvoiceTask?.TaskInstanceId
                   }
                   taskName="Inspection Invoice"
                   taskStatusDetails={
                     inspectionInvoiceTask?.StatusDetails ??
-                    (inspectionInvoiceTask as any)?.statusDetails
+                    inspectionInvoiceTask?.statusDetails
                   }
                   onClose={() => {}}
                 />
@@ -1032,10 +1061,10 @@ export function ApplicationDetailsContent({
                   applicationId={resolvedApplicationId}
                   applicationName={applicationDisplayName}
                   scheduleATaskInstanceId={
-                    scheduleATask?.TaskInstanceId ?? (scheduleATask as any)?.taskInstanceId
+                    scheduleATask?.TaskInstanceId ?? scheduleATask?.taskInstanceId
                   }
                   scheduleATaskStatusDetails={
-                    scheduleATask?.StatusDetails ?? (scheduleATask as any)?.statusDetails
+                    scheduleATask?.StatusDetails ?? scheduleATask?.statusDetails
                   }
                   visitId={application.visit_id ?? null}
                   appVars={application.appvars ?? null}
@@ -1061,10 +1090,10 @@ export function ApplicationDetailsContent({
                   applicationId={resolvedApplicationId}
                   applicationName={applicationDisplayName}
                   scheduleBTaskInstanceId={
-                    scheduleBTask?.TaskInstanceId ?? (scheduleBTask as any)?.taskInstanceId
+                    scheduleBTask?.TaskInstanceId ?? scheduleBTask?.taskInstanceId
                   }
                   scheduleBTaskStatusDetails={
-                    scheduleBTask?.StatusDetails ?? (scheduleBTask as any)?.statusDetails
+                    scheduleBTask?.StatusDetails ?? scheduleBTask?.statusDetails
                   }
                   visitId={application.visit_id ?? null}
                   appVars={application.appvars ?? null}

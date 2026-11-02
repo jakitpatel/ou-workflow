@@ -59,7 +59,7 @@ export function ApplicantCard({
     queryKey: prelimQueryKeys.detail(externalReferenceId),
     queryFn: () => fetchPrelimApplicationDetails(externalReferenceId as number, token ?? undefined),
     enabled: showIntakeDetailsDrawer && externalReferenceId !== null,
-    select: (data: any[]) => data?.[0] ?? null,
+    select: (data) => data?.[0] ?? null,
     ...queryOptionDefaults.prelimDetail,
   })
   const assignedNcrc = getAssignedNcrc(applicant)

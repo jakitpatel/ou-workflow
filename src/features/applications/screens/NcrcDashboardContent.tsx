@@ -192,9 +192,9 @@ export function NcrcDashboardContent() {
         notes: myNotes.incoming.map((note) => ({
           ...note,
           ApplicationID: normalizeApplicationId(
-            (note as any)?.ApplicationID ??
-              (note as any)?.applicationId ??
-              (note as any)?.ApplicationId,
+            note?.ApplicationID ??
+              note?.applicationId ??
+              note?.ApplicationId,
           ),
         })),
         loading: myNotesLoading,
@@ -209,9 +209,9 @@ export function NcrcDashboardContent() {
         notes: myNotes.mention.map((note) => ({
           ...note,
           ApplicationID: normalizeApplicationId(
-            (note as any)?.ApplicationID ??
-              (note as any)?.applicationId ??
-              (note as any)?.ApplicationId,
+            note?.ApplicationID ??
+              note?.applicationId ??
+              note?.ApplicationId,
           ),
         })),
         loading: myNotesLoading,
@@ -226,9 +226,9 @@ export function NcrcDashboardContent() {
         notes: myNotes.private.map((note) => ({
           ...note,
           ApplicationID: normalizeApplicationId(
-            (note as any)?.ApplicationID ??
-              (note as any)?.applicationId ??
-              (note as any)?.ApplicationId,
+            note?.ApplicationID ??
+              note?.applicationId ??
+              note?.ApplicationId,
           ),
         })),
         loading: myNotesLoading,
@@ -273,9 +273,9 @@ export function NcrcDashboardContent() {
       const scheduleATask = getAllTasks(application).find(
         (task) =>
           normalizeTaskText(task.name) === TASK_CATEGORIES.SCHEDULEA &&
-          normalizeTaskText(task.taskCategory ?? (task as any).TaskCategory) ===
+          normalizeTaskText(task.taskCategory ?? task.TaskCategory) ===
             TASK_CATEGORIES.SCHEDULEA &&
-          normalizeTaskText(task.taskType ?? (task as any).TaskType) === TASK_TYPES.ACTION,
+          normalizeTaskText(task.taskType ?? task.TaskType) === TASK_TYPES.ACTION,
       )
       setScheduleADrawerState({
         open: true,
@@ -289,9 +289,9 @@ export function NcrcDashboardContent() {
         taskName: action.name,
         taskCategory: actionCategory,
         scheduleATaskInstanceId:
-          scheduleATask?.TaskInstanceId ?? (scheduleATask as any)?.taskInstanceId,
+          scheduleATask?.TaskInstanceId ?? scheduleATask?.taskInstanceId,
         scheduleATaskStatusDetails:
-          scheduleATask?.StatusDetails ?? (scheduleATask as any)?.statusDetails,
+          scheduleATask?.StatusDetails ?? scheduleATask?.statusDetails,
       })
       return
     }
@@ -305,9 +305,9 @@ export function NcrcDashboardContent() {
       const scheduleBTask = getAllTasks(application).find(
         (task) =>
           normalizeTaskText(task.name) === TASK_CATEGORIES.SCHEDULEB &&
-          normalizeTaskText(task.taskCategory ?? (task as any).TaskCategory) ===
+          normalizeTaskText(task.taskCategory ?? task.TaskCategory) ===
             TASK_CATEGORIES.SCHEDULEB &&
-          normalizeTaskText(task.taskType ?? (task as any).TaskType) === TASK_TYPES.ACTION,
+          normalizeTaskText(task.taskType ?? task.TaskType) === TASK_TYPES.ACTION,
       )
       setScheduleBDrawerState({
         open: true,
@@ -321,9 +321,9 @@ export function NcrcDashboardContent() {
         taskName: action.name,
         taskCategory: actionCategory,
         scheduleBTaskInstanceId:
-          scheduleBTask?.TaskInstanceId ?? (scheduleBTask as any)?.taskInstanceId,
+          scheduleBTask?.TaskInstanceId ?? scheduleBTask?.taskInstanceId,
         scheduleBTaskStatusDetails:
-          scheduleBTask?.StatusDetails ?? (scheduleBTask as any)?.statusDetails,
+          scheduleBTask?.StatusDetails ?? scheduleBTask?.statusDetails,
       })
       return
     }
@@ -387,7 +387,7 @@ export function NcrcDashboardContent() {
       [
         TASK_CATEGORIES.APPROVAL,
         TASK_CATEGORIES.APPROVAL1,
-      ].includes(actionCategory as any)
+      ].some((value) => value === actionCategory)
     ) {
       setShowConditionModal(action)
       return
@@ -395,7 +395,7 @@ export function NcrcDashboardContent() {
 
     if (
       isLegalReviewTask(action) || (actionType === TASK_TYPES.ACTION &&
-        [TASK_CATEGORIES.UPLOAD, TASK_CATEGORIES.EMAIL].includes(actionCategory as any)) ||
+        [TASK_CATEGORIES.UPLOAD, TASK_CATEGORIES.EMAIL].some((value) => value === actionCategory)) ||
       (actionCategory === TASK_CATEGORIES.UPLOAD && actionType === TASK_TYPES.UPLOAD)
     ) {
       setShowUploadModal(action)
@@ -636,7 +636,7 @@ export function NcrcDashboardContent() {
       <CertificationStageDrawer
         key={String(
           certificationDrawerState.task?.TaskInstanceId ??
-            (certificationDrawerState.task as any)?.taskInstanceId ??
+            (certificationDrawerState.task)?.taskInstanceId ??
             'certification-drawer',
         )}
         open={certificationDrawerState.open}

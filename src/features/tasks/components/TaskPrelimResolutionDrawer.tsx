@@ -1,3 +1,4 @@
+import { ModalSurface, ModalFocusBoundary } from '@/components/ui/ModalSurface'
 import { useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
@@ -24,7 +25,12 @@ type Props = TaskPrelimResolutionDrawerState & {
   onClose: () => void
 }
 
-export function TaskPrelimResolutionDrawer({ open, task, onClose }: Props) {
+export function TaskPrelimResolutionDrawer(props: Props) {
+  if (!props.open) return null
+  return <ModalFocusBoundary><ResolutionDrawerContent {...props} /></ModalFocusBoundary>
+}
+
+function ResolutionDrawerContent({ open, task, onClose }: Props) {
   const queryClient = useQueryClient()
   const { token, username } = useUser()
   const numericApplicationId = Number(task?.applicationId)
@@ -60,10 +66,10 @@ export function TaskPrelimResolutionDrawer({ open, task, onClose }: Props) {
 
   if (prelimApplicationsQuery.isLoading || prelimApplicationsQuery.isFetching) {
     return (
-      <div className="fixed inset-0 z-50 bg-black/40">
-        <div className="fixed right-0 top-0 h-full w-full max-w-[780px] bg-white p-8 shadow-2xl">
+      <div className="fixed inset-0 pointer-events-auto z-50 bg-black/40">
+        <ModalSurface onClose={onClose} label="Resolution details" className="fixed right-0 top-0 h-full w-full max-w-[780px] bg-white p-8 shadow-2xl">
           Loading resolution details...
-        </div>
+        </ModalSurface>
       </div>
     )
   }
@@ -76,8 +82,8 @@ export function TaskPrelimResolutionDrawer({ open, task, onClose }: Props) {
     (!isCompany && !isPlant)
   ) {
     return (
-      <div className="fixed inset-0 z-50 bg-black/40">
-        <div
+      <div className="fixed inset-0 pointer-events-auto z-50 bg-black/40">
+        <ModalSurface onClose={onClose} label="Resolution details"
           className="fixed right-0 top-0 h-full w-full max-w-[780px] bg-white p-8 shadow-2xl"
           onClick={(event) => event.stopPropagation()}
         >
@@ -94,7 +100,7 @@ export function TaskPrelimResolutionDrawer({ open, task, onClose }: Props) {
               ? prelimApplicationsQuery.error.message
               : 'Resolution task details could not be loaded from the submission application.'}
           </p>
-        </div>
+        </ModalSurface>
       </div>
     )
   }

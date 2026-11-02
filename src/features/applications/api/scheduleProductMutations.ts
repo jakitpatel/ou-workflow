@@ -1,4 +1,4 @@
-import { fetchWithAuth } from '@/shared/api/httpClient'
+import { fetchWithAuth, isJsonApiRecord } from '@/shared/api/httpClient'
 
 export type ScheduleProductEdit = {
   productName: string
@@ -24,6 +24,7 @@ export function patchScheduleProduct(id: string, applicationId: string, attribut
       id: Number(id), type: 'ScheduleProduct',
     } },
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -33,5 +34,6 @@ export function deleteScheduleProduct(id: string, token?: string | null) {
     method: 'PATCH',
     body: { data: { attributes: { isDeleted: true }, id: Number(id), type: 'ScheduleProduct' } },
     token,
+    expectBody: isJsonApiRecord,
   })
 }

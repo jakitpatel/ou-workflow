@@ -1,3 +1,4 @@
+import { ModalSurface } from '@/components/ui/ModalSurface'
 type CancelApplicationDialogProps = {
   companyName: string;
   reason: string;
@@ -36,9 +37,9 @@ export function CancelApplicationDialog({
     : (isMarkLegacy ? 'Yes' : isUndoWithdraw ? 'Yes, Undo Withdraw' : 'Yes, Withdraw');
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+    <div className="fixed inset-0 pointer-events-auto z-50 bg-black/40 flex items-center justify-center p-4">
+      <ModalSurface onClose={onClose} label={title} dismissible={!saving} className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <h3 aria-hidden="true" className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
         <p className="text-sm text-gray-700 mb-4">
           {confirmMessage} <span className="font-semibold">{companyName}</span>?
         </p>
@@ -74,7 +75,7 @@ export function CancelApplicationDialog({
             {confirmButtonLabel}
           </button>
         </div>
-      </div>
+      </ModalSurface>
     </div>
   );
 }

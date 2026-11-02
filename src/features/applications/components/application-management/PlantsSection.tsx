@@ -97,6 +97,7 @@ export default function PlantsSection({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
                 <input
+                  aria-label="Street Address"
                   type="text"
                   value={physicalAddress?.street || ''}
                   readOnly={!editMode}
@@ -110,6 +111,7 @@ export default function PlantsSection({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Address Line 2</label>
                 <input
+                  aria-label="Address Line 2"
                   type="text"
                   value={physicalAddress?.line2 || ''}
                   readOnly={!editMode}
@@ -123,6 +125,7 @@ export default function PlantsSection({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
                 <input
+                  aria-label="City"
                   type="text"
                   value={physicalAddress?.city || ''}
                   readOnly={!editMode}
@@ -136,6 +139,7 @@ export default function PlantsSection({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
                 <input
+                  aria-label="State"
                   type="text"
                   value={physicalAddress?.state || ''}
                   readOnly={!editMode}
@@ -149,6 +153,7 @@ export default function PlantsSection({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">ZIP Code</label>
                 <input
+                  aria-label="ZIP Code"
                   type="text"
                   value={physicalAddress?.zip || ''}
                   readOnly={!editMode}
@@ -162,6 +167,7 @@ export default function PlantsSection({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
                 <input
+                  aria-label="Country"
                   type="text"
                   value={physicalAddress?.country || ''}
                   readOnly={!editMode}
@@ -189,6 +195,7 @@ export default function PlantsSection({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
                 <input
+                  aria-label="Contact Name"
                   type="text"
                   value={primaryContact?.name || ''}
                   readOnly={!editMode}
@@ -202,6 +209,7 @@ export default function PlantsSection({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Job Title</label>
                 <input
+                  aria-label="Job Title"
                   type="text"
                   value={primaryContact?.role || ''}
                   readOnly={!editMode}
@@ -215,6 +223,7 @@ export default function PlantsSection({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
                 <input
+                  aria-label="Phone"
                   type="text"
                   value={primaryContact?.phone || ''}
                   readOnly={!editMode}
@@ -228,6 +237,7 @@ export default function PlantsSection({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                 <input
+                  aria-label="Email"
                   type="email"
                   value={primaryContact?.email || ''}
                   readOnly={!editMode}
@@ -254,6 +264,7 @@ export default function PlantsSection({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Process Description</label>
               <textarea
+                  aria-label="Process Description"
                 value={plant.manufacturing?.process || ''}
                 readOnly={!editMode}
                 rows={4}
@@ -267,6 +278,7 @@ export default function PlantsSection({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Closest Major City</label>
               <input
+                  aria-label="Closest Major City"
                 type="text"
                 value={plant.manufacturing?.closestMajorCity || ''}
                 readOnly={!editMode}
@@ -301,6 +313,7 @@ export default function PlantsSection({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Other Products List</label>
                 <input
+                  aria-label="Other Products List"
                   type="text"
                   value={plant.otherProductsList || ''}
                   readOnly={!editMode}
@@ -328,6 +341,7 @@ export default function PlantsSection({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Other Plant Locations</label>
                 <input
+                  aria-label="Other Plant Locations"
                   type="text"
                   value={plant.otherPlantsLocation || ''}
                   readOnly={!editMode}

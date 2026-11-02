@@ -27,7 +27,17 @@ import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import { fetchTaskInstance, patchTaskStatusDetails } from '@/features/tasks/api'
 import { getInspectionStatusSavedState } from '@/features/applications/utils/inspectionStatusDetails'
+import { parseStatusDetailsValue } from '@/features/applications/utils/pythonLiteral'
 import { useScheduleAApplication } from './useScheduleAApplication'
+import { localCalendarDate } from '@/shared/utils/calendarDate'
+import {
+  clearUnsavedDraft,
+  comparableScratchpad,
+  describeScratchpadSaveError,
+  migrateLegacyRowKeys,
+  readUnsavedDraft,
+  writeUnsavedDraft,
+} from '@/features/applications/utils/scratchpadSave'
 import type { ApplicationEmail, KashIngredient, ScheduleAIngredient, ScheduleAIngredientsResult } from '@/types/application'
 
 export type ScheduleAIngredientRow = {
@@ -276,8 +286,10 @@ const stripRtf = (value: string) =>
 
 const normalizeExtractedText = (value: string) =>
   value
+    // eslint-disable-next-line no-control-regex -- Strip NUL bytes extracted from uploaded documents.
     .replace(/\u0000/g, '')
     .replace(/[^\S\r\n]+/g, ' ')
+    // eslint-disable-next-line no-control-regex -- Preserve document tabs and line breaks while removing non-text bytes.
     .replace(/[^\x09\x0A\x0D\x20-\x7E\u00A0-\u024F]/g, ' ')
     .replace(/ +\n/g, '\n')
     .replace(/\n +/g, '\n')
@@ -546,8 +558,28 @@ export const getAssignedRoleValue = (
   return roleValue || fallback
 }
 
-const makeScratchpadKey = (applicationId?: string | number) =>
+// Scoped per user so reviewers sharing a browser never see or re-save each other's marks.
+export const makeScratchpadKey = (applicationId?: string | number, username?: string | null) =>
+  `schedule-a-ingredients-v33:${valueText(username).toLowerCase() || 'anonymous'}:${applicationId ?? 'unknown'}`
+
+const makeLegacyScratchpadKey = (applicationId?: string | number) =>
   `schedule-a-ingredients-v32:${applicationId ?? 'unknown'}`
+
+// The pre-v33 key was shared by every user; only adopt it when the current user wrote it.
+const readLocalScratchpad = (
+  storageKey: string,
+  applicationId: string | number,
+  username?: string | null,
+): Partial<ScheduleAScratchpad> | null => {
+  const localSaved = window.localStorage.getItem(storageKey)
+  if (localSaved) return JSON.parse(localSaved) as Partial<ScheduleAScratchpad>
+
+  const legacySaved = window.localStorage.getItem(makeLegacyScratchpadKey(applicationId))
+  if (!legacySaved) return null
+  const legacy = JSON.parse(legacySaved) as Partial<ScheduleAScratchpad>
+  const currentUser = valueText(username).toLowerCase()
+  return currentUser !== '' && valueText(legacy?.username).toLowerCase() === currentUser ? legacy : null
+}
 
 const normalizeScratchpad = (value: Partial<ScheduleAScratchpad> | null | undefined): ScheduleAScratchpad => ({
   ...EMPTY_SCRATCHPAD,
@@ -560,12 +592,27 @@ const normalizeScratchpad = (value: Partial<ScheduleAScratchpad> | null | undefi
   attachments: value?.attachments ?? {},
 })
 
+// Saved task state, browser copies and unsaved drafts all leave out the database-owned marks, so
+// every "did anything change?" check compares that same shape.
+const comparableTaskScratchpad = (value: Partial<ScheduleAScratchpad>) =>
+  comparableScratchpad(getScheduleATaskScratchpad(normalizeScratchpad(value)))
+
 const csvEscape = (value: unknown) => {
   const text = String(value ?? '').replace(/"/g, '""')
   return /[,"\n\r]/.test(text) ? `"${text}"` : text
 }
 
-export const getApplicationIngredientRowId = (ingredient: ScheduleAIngredient, index: number) =>
+// Review marks are stored under this id, so it must not change when a row's fields are edited:
+// saved rows are keyed by their ingredient id alone. Unsaved rows (no id yet) fall back to their position.
+export const getApplicationIngredientRowId = (ingredient: ScheduleAIngredient, index: number) => {
+  const ingredientId = valueText(ingredient.IngredientId)
+  return ingredientId
+    ? `application-${valueText(ingredient.ApplicationID)}-${ingredientId}`
+    : `application-${valueText(ingredient.ApplicationID)}-row${index}-${valueText(ingredient.rawMaterialCode) || valueText(ingredient.ingredientLabelName) || 'ingredient'}`
+}
+
+/** The id marks were stored under before it was made stable (included the RMC/name); used to migrate them. */
+export const getLegacyApplicationIngredientRowId = (ingredient: ScheduleAIngredient, index: number) =>
   `application-${valueText(ingredient.ApplicationID)}-${valueText(ingredient.IngredientId) || index}-${valueText(
     ingredient.rawMaterialCode,
   ) || valueText(ingredient.ingredientLabelName) || 'ingredient'}`
@@ -844,13 +891,15 @@ export function useSendScheduleACommunicationEmail() {
 
 const getTaskStatusDetails = (value: unknown): unknown => {
   if (!value || typeof value !== 'object') return undefined
-  const record = value as Record<string, any>
+  const record = value as Record<string, unknown>
   if (record.StatusDetails !== undefined) return record.StatusDetails
   if (record.statusDetails !== undefined) return record.statusDetails
   if (record.attributes) return getTaskStatusDetails(record.attributes)
   if (record.data) return getTaskStatusDetails(record.data)
   return undefined
 }
+
+const NO_INGREDIENTS: ScheduleAIngredient[] = []
 
 export function withScheduleIngredientSelection(
   scratchpad: ScheduleAScratchpad,
@@ -893,20 +942,46 @@ export function useScheduleAScratchpad(
   applicationId?: string | number,
   taskInstanceId?: string | number | null,
   initialStatusDetails?: unknown,
-  ingredients: ScheduleAIngredient[] = [],
+  options: {
+    readOnly?: boolean
+    legacyRowKeys?: Record<string, string>
+    ingredients?: ScheduleAIngredient[]
+  } = {},
 ) {
+  const readOnly = Boolean(options.readOnly)
+  // Stable row id -> the id its marks had before ids were stable; picks the right old key to migrate.
+  const legacyRowKeys = options.legacyRowKeys
+  // Application-ingredient selection comes from the database (isSelected), not the saved marks.
+  const ingredients = options.ingredients ?? NO_INGREDIENTS
   const { token, username } = useUser()
   const queryClient = useQueryClient()
   const normalizedApplicationId =
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const normalizedTaskInstanceId =
     taskInstanceId === undefined || taskInstanceId === null ? '' : String(taskInstanceId).trim()
-  const storageKey = useMemo(() => makeScratchpadKey(normalizedApplicationId), [normalizedApplicationId])
-  const [storedScratchpad, setScratchpad] = useState<ScheduleAScratchpad>(EMPTY_SCRATCHPAD)
-  const scratchpad = useMemo(
-    () => withScheduleIngredientState(storedScratchpad, ingredients),
-    [storedScratchpad, ingredients],
+  const storageKey = useMemo(
+    () => makeScratchpadKey(normalizedApplicationId, username),
+    [normalizedApplicationId, username],
   )
+  const [storedScratchpad, setScratchpad] = useState<ScheduleAScratchpad>(EMPTY_SCRATCHPAD)
+  // Marks saved under the old name-based row keys are shown (and re-saved on the next edit) under stable ids.
+  const persistableScratchpad = useMemo(
+    () => migrateLegacyRowKeys(storedScratchpad, legacyRowKeys),
+    [legacyRowKeys, storedScratchpad],
+  )
+  // What auto-save persists: flags, halacha and resolved belong to the database, not the task.
+  const taskScratchpad = useMemo(
+    () => getScheduleATaskScratchpad(persistableScratchpad),
+    [persistableScratchpad],
+  )
+  const scratchpad = useMemo(
+    () => withScheduleIngredientState(persistableScratchpad, ingredients),
+    [persistableScratchpad, ingredients],
+  )
+  const legacyRowKeysRef = useRef(legacyRowKeys)
+  useEffect(() => {
+    legacyRowKeysRef.current = legacyRowKeys
+  }, [legacyRowKeys])
   const [hydratedKey, setHydratedKey] = useState('')
   const [saveError, setSaveError] = useState('')
   const [reviewSaveError, setReviewSaveError] = useState('')
@@ -940,6 +1015,15 @@ export function useScheduleAScratchpad(
     },
   })
   const lastPersistedScratchpadRef = useRef('')
+  const remoteUnreadableRef = useRef(false)
+  // Auto-save follows a real edit only: opening or re-hydrating must never write (w6b).
+  const userEditedRef = useRef(false)
+  // Marks restored from this browser that the server doesn't have; sent only when the user asks.
+  const [hasUnsavedLocalDraft, setHasUnsavedLocalDraft] = useState(false)
+  // Persistent reasons auto-save is off: saved state could not be read (never overwrite it), or
+  // the last save failed (wait for an explicit retry instead of re-sending in a loop).
+  const [saveBlockedReason, setSaveBlockedReason] = useState('')
+  const [saveFailed, setSaveFailed] = useState(false)
   const hydrationKey = `${normalizedApplicationId ?? ''}:${normalizedTaskInstanceId}`
   const taskInstanceQuery = useQuery({
     queryKey: ['schedule-a-task-instance', normalizedTaskInstanceId],
@@ -960,10 +1044,14 @@ export function useScheduleAScratchpad(
         token: token ?? undefined,
       }),
     onError: (error: unknown) => {
-      setSaveError(error instanceof Error ? error.message : 'Unable to save Schedule A changes')
+      setSaveFailed(true)
+      setSaveError(describeScratchpadSaveError(error, 'Schedule A'))
     },
-    onSuccess: async () => {
+    onSuccess: async (_data, savedScratchpad) => {
+      clearUnsavedDraft(storageKey, savedScratchpad)
+      setSaveFailed(false)
       setSaveError('')
+      setHasUnsavedLocalDraft(false)
       await refreshApplicationInListCaches({
         applicationId: normalizedApplicationId,
         queryClient,
@@ -974,6 +1062,8 @@ export function useScheduleAScratchpad(
 
   useEffect(() => {
     if (!normalizedApplicationId) {
+      userEditedRef.current = false
+      setHasUnsavedLocalDraft(false)
       setScratchpad(EMPTY_SCRATCHPAD)
       setHydratedKey('')
       return
@@ -981,24 +1071,51 @@ export function useScheduleAScratchpad(
 
     if (normalizedTaskInstanceId && taskInstanceQuery.isLoading) return
 
+    // Hydrated state is the server's (or a browser draft); it only becomes a change once edited.
+    userEditedRef.current = false
     try {
-      const remoteSavedState = getInspectionStatusSavedState<ScheduleAScratchpad>(
-        initialStatusDetails ?? getTaskStatusDetails(taskInstanceQuery.data),
-      )
-      const localSaved = window.localStorage.getItem(storageKey)
-      const nextScratchpad = remoteSavedState
-        ? normalizeScratchpad(getScheduleATaskScratchpad(remoteSavedState))
-        : localSaved
-          ? normalizeScratchpad(getScheduleATaskScratchpad(JSON.parse(localSaved) as Partial<ScheduleAScratchpad>))
+      const rawStatusDetails = initialStatusDetails ?? getTaskStatusDetails(taskInstanceQuery.data)
+      const parsedStatusDetails = parseStatusDetailsValue(rawStatusDetails)
+      // Never auto-save over server state we could not load or read: that would erase it.
+      const unreadable =
+        (normalizedTaskInstanceId !== '' && initialStatusDetails === undefined && taskInstanceQuery.isError) ||
+        (typeof rawStatusDetails === 'string' &&
+          !['', '{}'].includes(rawStatusDetails.trim()) &&
+          parsedStatusDetails === undefined)
+      remoteUnreadableRef.current = unreadable
+      const unreadableMessage = unreadable
+        ? 'Saved Schedule A review marks could not be read, so changes are not being saved to avoid overwriting them. Refresh and try again.'
+        : ''
+      setSaveError(unreadableMessage)
+      setSaveBlockedReason(unreadableMessage)
+      setSaveFailed(false)
+      const remoteSavedState = getInspectionStatusSavedState<ScheduleAScratchpad>(parsedStatusDetails)
+      // What the server holds, or the default when nothing is stored: equal state is never saved.
+      // Database-owned marks are ignored in saved state, browser copies and drafts.
+      const serverBaseline = comparableTaskScratchpad(remoteSavedState ?? EMPTY_SCRATCHPAD)
+      // Changes whose save failed or was cut short by closing are kept until saved (NEW-3), as long
+      // as the server still holds the state they were made on.
+      const unsavedDraft =
+        remoteSavedState && !readOnly && !unreadable
+          ? readUnsavedDraft<Partial<ScheduleAScratchpad>>(storageKey, serverBaseline)
+          : null
+      const localSaved = remoteSavedState
+        ? unsavedDraft
+        : readLocalScratchpad(storageKey, normalizedApplicationId, username)
+      const nextScratchpad = localSaved
+        ? normalizeScratchpad(getScheduleATaskScratchpad(localSaved))
+        : remoteSavedState
+          ? normalizeScratchpad(getScheduleATaskScratchpad(remoteSavedState))
           : EMPTY_SCRATCHPAD
-      const serialized = JSON.stringify(getScheduleATaskScratchpad(nextScratchpad))
       setScratchpad(nextScratchpad)
-      window.localStorage.setItem(storageKey, serialized)
-      lastPersistedScratchpadRef.current = remoteSavedState ? serialized : ''
+      if (!readOnly) window.localStorage.setItem(storageKey, JSON.stringify(getScheduleATaskScratchpad(nextScratchpad)))
+      lastPersistedScratchpadRef.current = serverBaseline
+      setHasUnsavedLocalDraft(!readOnly && comparableTaskScratchpad(nextScratchpad) !== serverBaseline)
       setHydratedKey(hydrationKey)
     } catch {
       setScratchpad(EMPTY_SCRATCHPAD)
-      lastPersistedScratchpadRef.current = ''
+      lastPersistedScratchpadRef.current = comparableTaskScratchpad(EMPTY_SCRATCHPAD)
+      setHasUnsavedLocalDraft(false)
       setHydratedKey(hydrationKey)
     }
   }, [
@@ -1006,26 +1123,34 @@ export function useScheduleAScratchpad(
     initialStatusDetails,
     normalizedApplicationId,
     normalizedTaskInstanceId,
+    readOnly,
     storageKey,
     taskInstanceQuery.data,
+    taskInstanceQuery.isError,
     taskInstanceQuery.isLoading,
+    username,
   ])
+
+  const { mutate: mutateScratchpad } = saveScratchpadMutation
 
   useEffect(() => {
     if (
+      readOnly ||
       !normalizedTaskInstanceId ||
       hydratedKey !== hydrationKey ||
-      taskInstanceQuery.isLoading
+      taskInstanceQuery.isLoading ||
+      remoteUnreadableRef.current ||
+      !userEditedRef.current ||
+      saveFailed
     ) {
       return
     }
 
-    const taskScratchpad = getScheduleATaskScratchpad(storedScratchpad)
-    const serialized = JSON.stringify(taskScratchpad)
+    const serialized = comparableTaskScratchpad(taskScratchpad)
     if (serialized === lastPersistedScratchpadRef.current) return
 
     const timeoutId = window.setTimeout(() => {
-      saveScratchpadMutation.mutate(taskScratchpad, {
+      mutateScratchpad(taskScratchpad, {
         onSuccess: () => {
           lastPersistedScratchpadRef.current = serialized
         },
@@ -1036,28 +1161,69 @@ export function useScheduleAScratchpad(
   }, [
     hydratedKey,
     hydrationKey,
+    // Re-runs the effect when "Save now" clears a restored browser draft.
+    hasUnsavedLocalDraft,
+    mutateScratchpad,
     normalizedTaskInstanceId,
-    storedScratchpad,
-    saveScratchpadMutation,
+    readOnly,
+    saveFailed,
+    taskScratchpad,
     taskInstanceQuery.isLoading,
   ])
 
+  // Retry is explicit: clearing the failure lets the auto-save effect send the latest state once.
+  // It is also how a restored browser draft is saved, so it counts as the user's change.
+  const retrySave = useCallback(() => {
+    if (readOnly || remoteUnreadableRef.current) return
+    userEditedRef.current = true
+    setSaveError('')
+    setSaveFailed(false)
+    setHasUnsavedLocalDraft(false)
+  }, [readOnly])
+
   const updateScratchpad = useCallback(
     (updater: (current: ScheduleAScratchpad) => ScheduleAScratchpad) => {
+      // Read-only views, and unreadable saved state: marks stay read-only so nothing looks saved
+      // when it isn't.
+      if (readOnly || remoteUnreadableRef.current) return
+      userEditedRef.current = true
       setScratchpad((current) => {
         const next = normalizeScratchpad({
-          ...updater(withScheduleIngredientState(normalizeScratchpad(current), ingredients)),
+          ...updater(
+            withScheduleIngredientState(
+              normalizeScratchpad(migrateLegacyRowKeys(current, legacyRowKeysRef.current)),
+              ingredients,
+            ),
+          ),
         })
         if (JSON.stringify(getScheduleATaskScratchpad(next)) !== JSON.stringify(getScheduleATaskScratchpad(current))) {
           next.username = valueText(username) || undefined
         }
         if (normalizedApplicationId) {
-          window.localStorage.setItem(storageKey, JSON.stringify(getScheduleATaskScratchpad(next)))
+          const nextTaskScratchpad = getScheduleATaskScratchpad(next)
+          window.localStorage.setItem(storageKey, JSON.stringify(nextTaskScratchpad))
+          // Until the server confirms it, this edit survives closing the drawer.
+          if (normalizedTaskInstanceId) {
+            writeUnsavedDraft(storageKey, lastPersistedScratchpadRef.current, nextTaskScratchpad)
+          }
         }
         return next
       })
     },
-    [normalizedApplicationId, storageKey, username, ingredients],
+    [ingredients, normalizedApplicationId, normalizedTaskInstanceId, readOnly, storageKey, username],
+  )
+
+  // For close prompts: an edit not yet confirmed by the server (failed, in flight, or still debouncing).
+  const isSavePending = saveScratchpadMutation.isPending
+  const hasUnsavedChanges = useCallback(
+    () =>
+      !readOnly &&
+      !remoteUnreadableRef.current &&
+      Boolean(normalizedTaskInstanceId) &&
+      (saveFailed ||
+        isSavePending ||
+        (userEditedRef.current && comparableTaskScratchpad(taskScratchpad) !== lastPersistedScratchpadRef.current)),
+    [isSavePending, normalizedTaskInstanceId, readOnly, saveFailed, taskScratchpad],
   )
 
   const toggleFlag = useCallback(
@@ -1071,12 +1237,12 @@ export function useScheduleAScratchpad(
         }
       })
       const ingredient = ingredients.find((item, index) => getApplicationIngredientRowId(item, index) === rowId)
-      if (ingredient) reviewMutation.mutate({
+      if (ingredient && !readOnly) reviewMutation.mutate({
         id: String(ingredient.IngredientId),
         attributes: { isFlagged: nextFlag.flagged, flaggedNote: nextFlag.note },
       })
     },
-    [updateScratchpad, scratchpad.flags, ingredients, reviewMutation],
+    [updateScratchpad, scratchpad.flags, ingredients, readOnly, reviewMutation],
   )
 
   const updateFlagNote = useCallback(
@@ -1086,12 +1252,12 @@ export function useScheduleAScratchpad(
         flags: { ...current.flags, [rowId]: { flagged: true, note } },
       }))
       const ingredient = ingredients.find((item, index) => getApplicationIngredientRowId(item, index) === rowId)
-      if (ingredient) reviewMutation.mutate({
+      if (ingredient && !readOnly) reviewMutation.mutate({
         id: String(ingredient.IngredientId),
         attributes: { isFlagged: true, flaggedNote: note },
       })
     },
-    [updateScratchpad, ingredients, reviewMutation],
+    [updateScratchpad, ingredients, readOnly, reviewMutation],
   )
 
   const toggleResolved = useCallback(
@@ -1114,7 +1280,7 @@ export function useScheduleAScratchpad(
             halacha[rowId] = {
               ...halacha[rowId],
               open: false,
-              resolvedAt: new Date().toISOString().slice(0, 10),
+              resolvedAt: localCalendarDate(),
             }
           }
         }
@@ -1134,7 +1300,7 @@ export function useScheduleAScratchpad(
         const resolved = { ...current.resolved }
         const flags = { ...current.flags }
         const halacha = { ...current.halacha }
-        const resolvedAt = new Date().toISOString().slice(0, 10)
+        const resolvedAt = localCalendarDate()
 
         uniqueRowIds.forEach((rowId) => {
           if (isResolved) {
@@ -1158,7 +1324,7 @@ export function useScheduleAScratchpad(
     (rowId: string) => {
       const existing = scratchpad.halacha[rowId]
       const nextEntry = existing?.open
-        ? { ...existing, open: false, resolvedAt: new Date().toISOString().slice(0, 10) }
+        ? { ...existing, open: false, resolvedAt: localCalendarDate() }
         : { open: true, note: existing?.note ?? '' }
       if (!rowId.startsWith('application-')) updateScratchpad((current) => {
         return {
@@ -1168,12 +1334,12 @@ export function useScheduleAScratchpad(
         }
       })
       const ingredient = ingredients.find((item, index) => getApplicationIngredientRowId(item, index) === rowId)
-      if (ingredient) reviewMutation.mutate({
+      if (ingredient && !readOnly) reviewMutation.mutate({
         id: String(ingredient.IngredientId),
         attributes: { isHalachic: nextEntry.open, halachicNote: nextEntry.note },
       })
     },
-    [updateScratchpad, scratchpad.halacha, ingredients, reviewMutation],
+    [updateScratchpad, scratchpad.halacha, ingredients, readOnly, reviewMutation],
   )
 
   const updateHalachaNote = useCallback(
@@ -1183,12 +1349,12 @@ export function useScheduleAScratchpad(
         halacha: { ...current.halacha, [rowId]: { ...current.halacha[rowId], open: true, note } },
       }))
       const ingredient = ingredients.find((item, index) => getApplicationIngredientRowId(item, index) === rowId)
-      if (ingredient) reviewMutation.mutate({
+      if (ingredient && !readOnly) reviewMutation.mutate({
         id: String(ingredient.IngredientId),
         attributes: { isHalachic: true, halachicNote: note },
       })
     },
-    [updateScratchpad, ingredients, reviewMutation],
+    [updateScratchpad, ingredients, readOnly, reviewMutation],
   )
 
   const generateRound = useCallback(
@@ -1482,6 +1648,11 @@ export function useScheduleAScratchpad(
     isLoadingSavedState: Boolean(normalizedTaskInstanceId && taskInstanceQuery.isLoading),
     isSaving: saveScratchpadMutation.isPending,
     saveError: reviewSaveError || saveError,
+    saveBlockedReason,
+    saveFailed,
+    hasUnsavedLocalDraft,
+    hasUnsavedChanges,
+    retrySave,
     toggleFlag,
     updateFlagNote,
     toggleResolved,

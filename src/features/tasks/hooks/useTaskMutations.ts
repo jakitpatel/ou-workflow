@@ -160,7 +160,10 @@ export const useConfirmTaskMutation = (options: TaskMutationOptions = {}) => {
   return useMutation({
     mutationFn: ({ rfrRecommendationUsername: _rfr, ...input }: Parameters<typeof confirmTask>[0] & {
       rfrRecommendationUsername?: string
-    }) => confirmTask(input),
+    }) => {
+      void _rfr
+      return confirmTask(input)
+    },
     onSuccess: async (_response, variables) => {
       if (variables.rfrRecommendationUsername) {
         try {
@@ -223,8 +226,10 @@ export const usePatchTaskStatusMutation = (options: TaskMutationOptions = {}) =>
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ applicationId: _applicationId, ...input }: PatchTaskStatusInput) =>
-      patchTaskStatus(input),
+    mutationFn: ({ applicationId: _applicationId, ...input }: PatchTaskStatusInput) => {
+      void _applicationId
+      return patchTaskStatus(input)
+    },
     onSuccess: async (_response, variables) => {
       const payload = variables as PatchTaskStatusInput
       patchTaskCaches(queryClient, payload.taskId, (task) => ({

@@ -1,6 +1,6 @@
-import { useMutation } from "@tanstack/react-query";
+import { SignedFileLink } from '@/shared/utils/fileLinks'
 import type { ApplicationDetail } from "@/types/application";
-import { ExternalLink, Package, Pencil, Trash2, Plus } from "lucide-react";
+import { ExternalLink, Package, Pencil, Plus } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 
 type ProductRow = {
@@ -81,7 +81,7 @@ export default function ProductsTable({ application, dataSource = 'application' 
       ? (
           application.products?.length
             ? (application.products as ProductRow[])
-            : application.preferences?.prelimPlantsRaw?.flatMap((plant: any) => plant.products ?? [])
+            : application.preferences?.prelimPlantsRaw?.flatMap((plant) => plant.products ?? [])
         ) || []
       : (application.products as ProductRow[]) || [];
   const filteredProducts = productData;
@@ -93,24 +93,6 @@ export default function ProductsTable({ application, dataSource = 'application' 
     consumer: productData.filter(p => p.ConsumerIndustrial === "Consumer").length,
     bulkShipped: productData.filter(p => p.bulkShipped === true).length,
     fromApplication: productData.filter(p => p.source === "Form Data").length
-  };
-
-  // Delete Product mutation
-  const deleteProductMutation = useMutation({
-    mutationFn: async (productId: string) => {
-      const res = await fetch(`/api/products/${productId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Delete failed");
-      return res.json();
-    },
-  });
-
-  const onDeleteProduct = async (productId: string) => {
-    if (!confirm("Are you sure you want to delete this product?")) return;
-    try {
-      await deleteProductMutation.mutateAsync(productId);
-    } catch (err) {
-      console.error("Delete product failed:", err);
-    }
   };
 
   return (
@@ -265,7 +247,7 @@ export default function ProductsTable({ application, dataSource = 'application' 
                           <td className="py-3 px-4 align-top text-gray-700">{displayText(list)}</td>
                           <td className="py-3 px-4 align-top">
                             {artworkHref ? (
-                              <a
+                              <SignedFileLink
                                 href={artworkHref}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -274,7 +256,7 @@ export default function ProductsTable({ application, dataSource = 'application' 
                               >
                                 Artwork
                                 <ExternalLink className="h-3.5 w-3.5" />
-                              </a>
+                              </SignedFileLink>
                             ) : (
                               <span className="text-gray-700">{displayText(artwork)}</span>
                             )}
@@ -295,13 +277,6 @@ export default function ProductsTable({ application, dataSource = 'application' 
                               title="Edit Product"
                             >
                               <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => product.id && onDeleteProduct(product.id)}
-                              className="text-red-600 hover:text-red-800 transition-colors p-1 hover:bg-red-50 rounded"
-                              title="Delete Product"
-                            >
-                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>

@@ -565,7 +565,7 @@ describe('useTaskNotesDrawerState', () => {
                 MessageText: 'Incoming note',
                 ToUser: 'S.Benjamin,Other.User',
                 isRead: 0,
-              } as any)
+              })
             }
           >
             mark-read
@@ -626,7 +626,7 @@ describe('useTaskNotesDrawerState', () => {
                 MessageText: 'Incoming note',
                 ToUser: 'A.User,Another.User',
                 isRead: 0,
-              } as any)
+              })
             }
           >
             mark-read-blocked
@@ -682,7 +682,7 @@ describe('useTaskNotesDrawerState', () => {
                 MessageText: 'Incoming note',
                 ToUser: 'S.Benjamin',
                 isRead: 1,
-              } as any)
+              })
             }
           >
             mark-read-already-read

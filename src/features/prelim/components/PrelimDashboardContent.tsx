@@ -84,9 +84,9 @@ export function PrelimDashboardContent() {
         notes: myMessages.activeNotes.incoming.map((note) => ({
           ...note,
           ApplicationID: normalizeApplicationId(
-            (note as any)?.ApplicationID ??
-              (note as any)?.applicationId ??
-              (note as any)?.ApplicationId,
+            note?.ApplicationID ??
+              note?.applicationId ??
+              note?.ApplicationId,
           ),
         })),
         loading: myMessages.activeLoading.incoming,
@@ -101,9 +101,9 @@ export function PrelimDashboardContent() {
         notes: myMessages.activeNotes.mention.map((note) => ({
           ...note,
           ApplicationID: normalizeApplicationId(
-            (note as any)?.ApplicationID ??
-              (note as any)?.applicationId ??
-              (note as any)?.ApplicationId,
+            note?.ApplicationID ??
+              note?.applicationId ??
+              note?.ApplicationId,
           ),
         })),
         loading: myMessages.activeLoading.mention,
@@ -118,9 +118,9 @@ export function PrelimDashboardContent() {
         notes: myMessages.activeNotes.private.map((note) => ({
           ...note,
           ApplicationID: normalizeApplicationId(
-            (note as any)?.ApplicationID ??
-              (note as any)?.applicationId ??
-              (note as any)?.ApplicationId,
+            note?.ApplicationID ??
+              note?.applicationId ??
+              note?.ApplicationId,
           ),
         })),
         loading: myMessages.activeLoading.private,

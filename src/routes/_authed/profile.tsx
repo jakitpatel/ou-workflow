@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useState } from 'react'
 import { Check, Code, Mail, Server, Shield, User } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { useSaveProfileLayoutMutation } from '@/features/profile/hooks/useSaveProfileLayoutMutation'
@@ -8,6 +9,7 @@ import { getBuildInfo } from '@/lib/utils'
 import type { NavigationMenuType, PaginationMode, StageLayout } from '@/types/application'
 import { PageShell } from '@/components/layout/PageShell'
 import { isRfrAccessRestricted } from '@/features/auth/model/rfrAccess'
+import { getErrorMessage } from '@/shared/api/record'
 
 export const Route = createFileRoute('/_authed/profile')({
   component: ProfilePage,
@@ -93,6 +95,7 @@ function ProfilePage() {
     },
     onError: (error) => {
       console.error('Failed to save profile layout:', error)
+      toast.error(getErrorMessage(error, 'Failed to save your preferences.'))
     },
   })
 

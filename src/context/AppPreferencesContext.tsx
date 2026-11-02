@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -33,7 +34,6 @@ const AppPreferencesContext = createContext<AppPreferencesContextType | undefine
 
 export function AppPreferencesProvider({ children }: { children: ReactNode }) {
   const stored = loadStoredAppPreferences();
-  const defaults = getDefaultAppPreferences();
   const { token, username } = useUser();
 
   const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(stored.apiBaseUrl);
@@ -123,13 +123,14 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
     };
   }, [token, username]);
 
-  const resetAppPreferences = () => {
+  const resetAppPreferences = useCallback(() => {
+    const defaults = getDefaultAppPreferences();
     setApiBaseUrl(defaults.apiBaseUrl);
     setStageLayout(defaults.stageLayout);
     setPaginationMode(defaults.paginationMode);
     setNavigationMenuType(defaults.navigationMenuType);
     clearStoredAppPreferences();
-  };
+  }, []);
 
   const value = useMemo<AppPreferencesContextType>(
     () => ({
@@ -144,7 +145,7 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
       setNavigationMenuType,
       resetAppPreferences,
     }),
-    [apiBaseUrl, stageLayout, paginationMode, navigationMenuType, userPerson],
+    [apiBaseUrl, stageLayout, paginationMode, navigationMenuType, userPerson, resetAppPreferences],
   );
 
   return (

@@ -2,7 +2,9 @@ import { getAccessToken } from '@/auth/authService'
 import {
   executeRequest,
   fetchWithAuth,
+  isJsonApiRecord,
   parseErrorBody,
+  readSuccessBody,
   resolveApiBaseUrl,
 } from '@/shared/api/httpClient'
 import { createAppError } from '@/shared/api/errors'
@@ -132,8 +134,9 @@ export async function fetchUserByRole({
     token,
   })
 
-  return response.data.map((item: any) => {
-    const attributes = item.attributes ?? {}
+  return response.data.map((item) => {
+    // the user endpoints return more attributes than WFUserAttributes declares (RFR, PERSON_ID, state, stats)
+    const attributes: Record<string, unknown> = { ...item.attributes }
     const fullName = normalizeLookupText(
       attributes.fullName ?? attributes.FullName ?? attributes.RFR ?? item.id,
     )
@@ -156,14 +159,19 @@ export async function fetchUserByRole({
       email,
       userName,
       fullName,
-      userRole: attributes.UserRole,
+      userRole: (attributes.UserRole ?? undefined) as string | undefined,
       state: normalizeLookupText(attributes.state ?? attributes.State ?? attributes.STATE),
-      isActive: attributes.IsActive,
+      isActive: attributes.IsActive as boolean | undefined,
       rfr: normalizeLookupText(attributes.RFR) || fullName,
-      pct_of_total_apps: attributes.pct_of_total_apps,
-      pct_of_total_apps_at_work: attributes.pct_of_total_apps_at_work,
+      pct_of_total_apps: attributes.pct_of_total_apps as number | undefined,
+      pct_of_total_apps_at_work: attributes.pct_of_total_apps_at_work as number | undefined,
     }
   })
+}
+
+const hasNonEmptyString = (body: unknown, key: string) => {
+  const value = body && typeof body === 'object' ? (body as Record<string, unknown>)[key] : undefined
+  return typeof value === 'string' && value.trim() !== ''
 }
 
 export async function uploadApplicationFile({
@@ -182,7 +190,7 @@ export async function uploadApplicationFile({
   taskInstanceID?: string | number | null
   description?: string
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const baseUrl = resolveApiBaseUrl()
   const uploadBaseUrl = baseUrl.replace('/api', '')
   const url = `${uploadBaseUrl}/upload_files`
@@ -235,13 +243,18 @@ export async function uploadApplicationFile({
     throw createApiError(message, response.status, errorBody)
   }
 
-  try {
-    return await response.json()
-  } catch {
-    return await response.text()
-  }
+  // `/upload_files` answers {message, file_path, link} once the WF_File row is committed.
+  return await readSuccessBody(response, {
+    method: 'POST',
+    path: '/upload_files',
+    expectBody: (body) => hasNonEmptyString(body, 'file_path'),
+  })
 }
 
+/**
+ * Uploads an ingredient spreadsheet (xlsx) or PDF for the application's submission plant; the API resolves
+ * application_id to that plant and stores the parsed rows as SubmissionIngredients.
+ */
 export async function uploadScheduleAIngredientsFile({
   applicationId,
   file,
@@ -285,25 +298,27 @@ export async function uploadScheduleAIngredientsFile({
     throw createApiError(message, response.status, errorBody)
   }
 
-  try {
-    return await response.json()
-  } catch {
-    return await response.text()
-  }
+  // `/ingredient_file_upload` answers {message: "... uploaded successfully ..."}.
+  return await readSuccessBody(response, {
+    method: 'POST',
+    path: '/ingredient_file_upload',
+    expectBody: (body) => hasNonEmptyString(body, 'message'),
+  })
 }
 
 export async function sendMsgTask({
   newMessage,
   token,
 }: {
-  newMessage: any
+  newMessage: unknown
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   return await fetchWithAuth({
     path: '/api/WFApplicationMessage',
     method: 'POST',
     body: newMessage,
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -339,7 +354,7 @@ export async function createApplicationMessage({
 }: {
   payload: ApplicationMessagePayload
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   return await fetchWithAuth({
     path: '/api/WFApplicationMessage',
     method: 'POST',
@@ -350,6 +365,7 @@ export async function createApplicationMessage({
       },
     },
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -361,7 +377,7 @@ export async function updateApplicationMessage({
   messageId: string | number
   payload: ApplicationMessagePayload
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const resolvedMessageId = String(messageId).trim()
 
   return await fetchWithAuth({
@@ -375,6 +391,7 @@ export async function updateApplicationMessage({
       },
     },
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -797,29 +814,6 @@ export async function createScheduleAIngredient({
     body: {
       data: {
         attributes: payload,
-        type: 'ScheduleIngredient',
-      },
-    },
-    token,
-  })
-}
-
-export async function updateScheduleAIngredientDeleted({
-  ingredientId,
-  token,
-}: {
-  ingredientId: string | number
-  token?: string | null
-}): Promise<unknown> {
-  return await fetchWithAuth({
-    path: '/api/ScheduleIngredient',
-    method: 'PATCH',
-    body: {
-      data: {
-        attributes: {
-          IngredientId: ingredientId,
-          isDeleted: true,
-        },
         type: 'ScheduleIngredient',
       },
     },

@@ -14,7 +14,7 @@ export function ApplicantCardStats({
   applicationNotesLoading = false,
   onOpenApplicationNotes,
 }: Props) {
-  const withdrawnReason = (applicant as any)?.withdrawn_reason
+  const withdrawnReason = applicant?.withdrawn_reason
   const isWithdrawn =
     applicant?.status?.toLowerCase() === 'withdrawn' ||
     applicant?.status?.toLowerCase() === 'wth'

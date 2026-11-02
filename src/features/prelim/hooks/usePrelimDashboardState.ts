@@ -17,7 +17,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 import { Route } from '@/routes/_authed/ou-workflow/prelim-dashboard'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
-import type { Task } from '@/types/application'
+import type { Applicant, Task } from '@/types/application'
 
 const PAGE_LIMIT = PRELIM_DASHBOARD_PAGE_SIZE
 const DEBOUNCE_DELAY = 1000
@@ -85,7 +85,7 @@ export function usePrelimDashboardState() {
     queryKey: prelimQueryKeys.detail(selectedId),
     queryFn: () => fetchPrelimApplicationDetails(selectedId as number, token ?? undefined),
     enabled: !!selectedId,
-    select: (data: any[]) => data?.[0] ?? null,
+    select: (data) => data?.[0] ?? null,
     ...queryOptionDefaults.prelimDetail,
     staleTime: 0,
     gcTime: 0,
@@ -118,18 +118,21 @@ export function usePrelimDashboardState() {
     [totalPages, updateSearch],
   )
 
+  const { fetchNextPage: paginationFetchNextPage, hasNextPage: paginationHasNextPage,
+    isFetchingNextPage: paginationIsFetchingNextPage } = infiniteApplicationsQuery
+
   useEffect(() => {
     if (paginationMode !== 'infinite' || !sentinelRef.current) return
-    if (!infiniteApplicationsQuery.hasNextPage) return
+    if (!paginationHasNextPage) return
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (
           entry.isIntersecting &&
-          infiniteApplicationsQuery.hasNextPage &&
-          !infiniteApplicationsQuery.isFetchingNextPage
+          paginationHasNextPage &&
+          !paginationIsFetchingNextPage
         ) {
-          void infiniteApplicationsQuery.fetchNextPage()
+          void paginationFetchNextPage()
         }
       },
       { rootMargin: '300px' },
@@ -137,9 +140,9 @@ export function usePrelimDashboardState() {
     observer.observe(sentinelRef.current)
     return () => observer.disconnect()
   }, [
-    infiniteApplicationsQuery.fetchNextPage,
-    infiniteApplicationsQuery.hasNextPage,
-    infiniteApplicationsQuery.isFetchingNextPage,
+    paginationFetchNextPage,
+    paginationHasNextPage,
+    paginationIsFetchingNextPage,
     paginationMode,
   ])
 
@@ -164,7 +167,7 @@ export function usePrelimDashboardState() {
     setSelectedActionId(`${applicationId}:${actionId}`)
   }
 
-  const handleTaskAction = (event: React.MouseEvent, application: any, action: Task) => {
+  const handleTaskAction = (event: React.MouseEvent, application: Applicant, action: Task) => {
     event.stopPropagation()
     event.preventDefault()
     selectAction(application.applicationId, action.TaskInstanceId)
@@ -179,7 +182,7 @@ export function usePrelimDashboardState() {
 
     if (
       (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) &&
-      [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1, TASK_CATEGORIES.APPROVALOK].includes(actionCategory as any)
+      [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1, TASK_CATEGORIES.APPROVALOK].some((value) => value === actionCategory)
     ) {
       setShowConditionModal(action)
       return
@@ -199,7 +202,7 @@ export function usePrelimDashboardState() {
     }
   }
 
-  const handleCancelTask = async (application: any, action: Task, reason: string) => {
+  const handleCancelTask = async (application: Applicant, action: Task, reason: string) => {
     selectAction(application.applicationId, action.TaskInstanceId)
     completeTaskWithResult(action, reason, undefined, undefined, application.applicationId)
   }

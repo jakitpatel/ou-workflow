@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useUser } from '@/context/UserContext'
@@ -17,6 +17,8 @@ export function useScheduleIngredientActions(applicationId?: string) {
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<ScheduleIngredientEdit | null>(null)
+  // mutation.isPending only updates after a re-render; this ref blocks a double/triple click at once.
+  const inFlightRef = useRef(false)
   const mutation = useMutation({
     mutationFn: async ({ id, attributes }: { id: string; attributes?: ScheduleIngredientEdit }) => {
       if (!applicationId || !id) throw new Error('Application and ingredient IDs are required.')
@@ -37,6 +39,19 @@ export function useScheduleIngredientActions(applicationId?: string) {
     },
     onError: (error) => toast.error(error.message),
   })
+  const run = (
+    variables: { id: string; attributes?: ScheduleIngredientEdit },
+    onSettled?: () => void,
+  ) => {
+    if (inFlightRef.current) return
+    inFlightRef.current = true
+    mutation.mutate(variables, {
+      onSettled: () => {
+        inFlightRef.current = false
+        onSettled?.()
+      },
+    })
+  }
   return {
     editingId,
     draft,
@@ -65,8 +80,8 @@ export function useScheduleIngredientActions(applicationId?: string) {
       setDraft(null)
     },
     save: () => {
-      if (editingId && draft) mutation.mutate({ id: editingId, attributes: draft })
+      if (editingId && draft) run({ id: editingId, attributes: draft })
     },
-    remove: (id: string) => mutation.mutate({ id }),
+    remove: (id: string, options?: { onSettled?: () => void }) => run({ id }, options?.onSettled),
   }
 }

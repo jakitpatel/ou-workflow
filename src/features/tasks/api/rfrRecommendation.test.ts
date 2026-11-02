@@ -3,7 +3,7 @@ import { fetchWithAuth } from '@/shared/api/httpClient'
 import { confirmTask } from './index'
 import { buildRfrRecommendationCompletion, postRfrRecommendationMessage } from '../lib/rfrRecommendation'
 
-vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: vi.fn().mockResolvedValue({ success: true }) }))
+vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: vi.fn().mockResolvedValue({ status: 'ok', data: { id: '1' } }), isJsonApiRecord: vi.fn() }))
 
 it('sends the RFR recommendation completion payload', async () => {
   await confirmTask({ taskId: '123', username: 'S.Benjamin', token: 'token', ...buildRfrRecommendationCompletion('selected.rfr', 'Rabbi Test Full Name') })
@@ -22,7 +22,7 @@ it('posts the public recommendation message in the application message envelope'
   const before = Date.now()
   await postRfrRecommendationMessage({ applicationId: 1548, fullName: 'Full Name', username: 'S.Benjamin', token: 'token' })
   expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith({
-    path: '/api/WFApplicationMessage', method: 'POST', token: 'token',
+    path: '/api/WFApplicationMessage', method: 'POST', token: 'token', expectBody: expect.any(Function),
     body: { data: { type: 'WFApplicationMessage', attributes: {
       ApplicationID: 1548, MessageText: 'Recommanded RFR is Full Name', isPrivate: false,
       isRead: false, FromUser: 'S.Benjamin', MessageType: 'Text', SentDate: expect.any(String), Priority: 'NORMAL',

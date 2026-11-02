@@ -37,7 +37,7 @@ it('loads and saves ingredient flags and notes without task PATCHes, and preserv
   } }
   const { result, unmount } = renderHook(() => {
     const { data } = useScheduleAIngredients('1166')
-    return useScheduleAScratchpad('1166', '123', initialStatus, data?.scheduleIngredients)
+    return useScheduleAScratchpad('1166', '123', initialStatus, { ingredients: data?.scheduleIngredients })
   }, { wrapper: ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> })
   await waitFor(() => expect(result.current.scratchpad.flags[id]).toEqual({ flagged: true, note: 'Server note' }))
   expect(result.current.scratchpad.halacha[id]).toEqual({ open: true, note: 'Keep halacha' })
@@ -96,7 +96,7 @@ it('loads halachic review from ingredients and saves review toggles and typed no
   } }
   const { result, unmount } = renderHook(() => {
     const { data } = useScheduleAIngredients('1166')
-    return useScheduleAScratchpad('1166', '123', initialStatus, data?.scheduleIngredients)
+    return useScheduleAScratchpad('1166', '123', initialStatus, { ingredients: data?.scheduleIngredients })
   }, { wrapper: ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> })
   await waitFor(() => expect(result.current.scratchpad.halacha[id]).toEqual({ open: true, note: 'Server review' }))
   act(() => result.current.toggleHalacha(id))
@@ -120,6 +120,31 @@ it('loads halachic review from ingredients and saves review toggles and typed no
   await waitFor(() => expect(result.current.saveError).toBe('Review save failed'))
   await waitFor(() => expect(result.current.scratchpad.halacha[id]).toEqual({ open: true, note: 'Typed review note' }))
   await act(async () => { await new Promise((resolve) => setTimeout(resolve, 750)) })
+  expect(patchTaskStatusDetails).not.toHaveBeenCalled()
+  unmount()
+  client.clear()
+})
+
+it('read-only views never write ingredient review marks to the database', async () => {
+  const initialStatus = { savedState: {} }
+  const serverIngredient = { ApplicationID: 1166, IngredientId: 566, isFlagged: false, flaggedNote: '', isHalachic: false, halachicNote: '' }
+  const id = getApplicationIngredientRowId(serverIngredient, 0)
+  vi.mocked(fetchScheduleAIngredients).mockResolvedValue({ scheduleIngredients: [{ ...serverIngredient }], kashIngredients: [] })
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  const { result, unmount } = renderHook(() => {
+    const { data } = useScheduleAIngredients('1166')
+    return useScheduleAScratchpad('1166', '123', initialStatus, { readOnly: true, ingredients: data?.scheduleIngredients })
+  }, { wrapper: ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> })
+  await waitFor(() => expect(result.current.scratchpad.flags[id]).toEqual({ flagged: false, note: '' }))
+  act(() => {
+    result.current.toggleFlag(id)
+    result.current.updateFlagNote(id, 'note')
+    result.current.toggleHalacha(id)
+    result.current.updateHalachaNote(id, 'review')
+  })
+  await act(async () => { await new Promise((resolve) => setTimeout(resolve, 750)) })
+  expect(patchScheduleIngredientFollowUp).not.toHaveBeenCalled()
+  expect(patchScheduleIngredientHalachicReview).not.toHaveBeenCalled()
   expect(patchTaskStatusDetails).not.toHaveBeenCalled()
   unmount()
   client.clear()

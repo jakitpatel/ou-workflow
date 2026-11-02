@@ -62,7 +62,7 @@ describe('plant search', () => {
     expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('99')
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'search-plant' } })
     fireEvent.click(await screen.findByRole('button', { name: /TTT Foods Plant/ }))
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /Search/ })).toBeNull())
     await screen.findByText('Selected Kashrus plant')
     expect(fetchWithAuth).toHaveBeenCalledWith(
       expect.objectContaining({ path: '/get_PlantDetailsFromKASH?PlantId=14063838' }),

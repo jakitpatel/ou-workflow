@@ -104,8 +104,8 @@ function LoginPage() {
             window.location.replace(consumeAuthRedirectUrl("/").toString());
           },
         );
-      } catch (err: any) {
-        setError("Login failed: " + err.message);
+      } catch (err) {
+        setError("Login failed: " + (err instanceof Error ? err.message : String(err)));
       }
       return;
     }

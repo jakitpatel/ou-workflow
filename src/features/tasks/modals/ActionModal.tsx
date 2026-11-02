@@ -1,21 +1,18 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { X } from "lucide-react";
 import { useUserListByRole } from "@/features/tasks/hooks/useTaskQueries";
-import type { Task, Applicant } from "@/types/application";
+import type { Task } from "@/types/application";
 import { isRfrRecommendationTask } from '../lib/rfrRecommendation';
 
-type SelectedAction = {
-  application: Applicant | Task | any;
-  action: Task | { id: string; name?: string; taskName?: string } | any;
-};
+type SelectedAction = import('@/features/tasks/model/taskAction').SelectedTaskAction;
 
 type Props = {
-  showActionModal: boolean | null | Task;
+  showActionModal: boolean | null | Task | import('@/types/application').ApplicationTask;
   selectedAction: SelectedAction | null;
-  setShowActionModal: (val: boolean | null | Task) => void;
+  setShowActionModal: (val: null) => void;
   executeAction: (
     value: string,
-    action: { id: string; name?: string; taskName?: string },
+    action: import('@/features/tasks/model/taskAction').TaskAction,
     result?: string,
     selectedAction?: SelectedAction | null
   ) => void;

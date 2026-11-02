@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   refresh: vi.fn().mockResolvedValue(true),
 }))
 vi.mock('@/context/UserContext', () => ({ useUser: () => mocks.user }))
-vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: mocks.request }))
+vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: mocks.request, isJsonApiRecord: vi.fn() }))
 vi.mock('@/features/applications/cache/applicationListCache', () => ({ refreshApplicationInListCaches: mocks.refresh }))
 
 const applicant: Applicant = {
@@ -57,7 +57,7 @@ it('loads the requested lookup and saves the selected username with the exact ro
   await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['applications', 'detail', '3719'] }))
   const message = mocks.request.mock.calls.find(([request]) => request.path === '/api/WFApplicationMessage')?.[0]
   expect(message).toEqual({
-    path: '/api/WFApplicationMessage', method: 'POST', token: 'token',
+    path: '/api/WFApplicationMessage', method: 'POST', token: 'token', expectBody: expect.any(Function),
     body: { data: { type: 'WFApplicationMessage', attributes: expect.objectContaining({
       ApplicationID: 3719, FromUser: 'ncrc@example.com', ToUser: 'rc@example.com',
       Subject: 'OU Kosher - Selected As RC', MessageType: 'Email',

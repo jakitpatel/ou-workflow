@@ -1,6 +1,10 @@
+import { ModalSurface } from '@/components/ui/ModalSurface'
 import { ScheduleProductEditCells } from './ScheduleProductEditCells'
 import { ScheduleProductActionButtons } from './ScheduleProductActionButtons'
 import { useScheduleProductActions } from '../hooks/useScheduleProductActions'
+import { useSingleFlight } from '../hooks/useSingleFlight'
+import { ScheduleSaveStatusBanner } from './ScheduleSaveStatusBanner'
+import { ScheduleIngredientDeleteConfirm } from './ScheduleIngredientDeleteConfirm'
 import { ScheduleRoundEmailCopies } from './ScheduleRoundEmailCopies'
 import { ScheduleAEirNewTab } from './ScheduleAEirNewTab'
 import { EirInspectionStatus } from './EirInspectionStatus'
@@ -47,14 +51,18 @@ import {
   useScheduleBCommunicationMessages,
   useScheduleBProducts,
   useScheduleBScratchpad,
+  getLegacyApplicationProductRowId,
+  getApplicationProductRowId,
   useSendScheduleBCommunicationEmail,
 } from '@/features/applications/hooks/useScheduleBProducts'
 import {
   useConfirmTaskMutation,
   usePatchTaskStatusMutation,
 } from '@/features/tasks/hooks/useTaskMutations'
-import { TASK_CATEGORIES } from '@/lib/constants/task'
-import type { ApplicantAppVars, ApplicationEmail, AssignedRole } from '@/types/application'
+import { usePagedApplications } from '@/features/applications/hooks/usePagedApplications'
+import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
+import { getAllTasks } from '@/lib/utils/taskHelpers'
+import type { Applicant, ApplicantAppVars, ApplicationEmail, AssignedRole } from '@/types/application'
 
 type Props = {
   open: boolean
@@ -575,6 +583,24 @@ const LIST_OPTIONS = [
   { value: 'N', label: 'N' },
 ] as const
 
+export function findScheduleBTaskInstanceId(
+  applications: Applicant[] | undefined,
+  applicationId?: string | number,
+): string | number | null {
+  const application = applications?.find(
+    (candidate) => String(candidate.applicationId) === String(applicationId),
+  )
+  if (!application) return null
+  const scheduleBTask = getAllTasks(application).find(
+    (task) =>
+      textValue(task.name).toLowerCase() === TASK_CATEGORIES.SCHEDULEB &&
+      textValue(task.taskCategory ?? task.TaskCategory).toLowerCase() ===
+        TASK_CATEGORIES.SCHEDULEB &&
+      textValue(task.taskType ?? task.TaskType).toLowerCase() === TASK_TYPES.ACTION,
+  )
+  return scheduleBTask?.TaskInstanceId ?? scheduleBTask?.taskInstanceId ?? null
+}
+
 export function ScheduleBProductsDrawer({
   open,
   applicationId,
@@ -608,6 +634,10 @@ export function ScheduleBProductsDrawer({
   const [importFilename, setImportFilename] = useState('')
   const [importError, setImportError] = useState('')
   const [isImporting, setIsImporting] = useState(false)
+  const [pendingDeleteProduct, setPendingDeleteProduct] = useState<{
+    id: string
+    name: string
+  } | null>(null)
   const productsHeaderRef = useRef<HTMLDivElement | null>(null)
   const productsTableRef = useRef<HTMLTableElement | null>(null)
   const isEmbedded = mode === 'embedded'
@@ -636,19 +666,64 @@ export function ScheduleBProductsDrawer({
     includePrelimLists: false,
     onError: (message) => toast.error(message),
   })
+  const stageFlight = useSingleFlight()
+  const addRowFlight = useSingleFlight()
+  const sendFlight = useSingleFlight()
   const { data: applicationDetail } = useApplicationDetail(isActive ? resolvedApplicationId : undefined)
   const { eirNewUrl } = useScheduleEir(applicationDetail?.VisitId)
-  const canonicalScheduleBTaskInstanceId =
+  const directScheduleBTaskInstanceId =
     scheduleBTaskInstanceId ??
     (textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEB
       ? taskInstanceId
       : null)
+  // Callers such as the Tasks dashboard only see pending tasks, so the (usually NEW) ScheduleB
+  // task that stores review marks is missing; look it up from the application's full task list.
+  const needsScheduleBTaskLookup =
+    isActive && !readOnly && Boolean(resolvedApplicationId) && directScheduleBTaskInstanceId == null
+  const scheduleBTaskLookupQuery = usePagedApplications({
+    applicationId: Number(resolvedApplicationId),
+    myOnly: false,
+    page: 0,
+    limit: 1,
+    enabled: needsScheduleBTaskLookup && Number.isFinite(Number(resolvedApplicationId)),
+  })
+  const lookedUpScheduleBTaskInstanceId = needsScheduleBTaskLookup
+    ? findScheduleBTaskInstanceId(scheduleBTaskLookupQuery.data?.data, resolvedApplicationId)
+    : null
+  const canonicalScheduleBTaskInstanceId =
+    directScheduleBTaskInstanceId ?? lookedUpScheduleBTaskInstanceId
+  const scheduleBTaskMissing =
+    needsScheduleBTaskLookup &&
+    !scheduleBTaskLookupQuery.isLoading &&
+    !scheduleBTaskLookupQuery.isFetching &&
+    lookedUpScheduleBTaskInstanceId == null
+  // Marks saved under the old name-based row ids move to the stable id of the row they belong to.
+  const legacyRowKeys = useMemo(
+    () =>
+      Object.fromEntries(
+        (data?.scheduleProducts ?? []).map((item, index) => [getApplicationProductRowId(item, index), getLegacyApplicationProductRowId(item, index)]),
+      ),
+    [data?.scheduleProducts],
+  )
   const scratchpadApi = useScheduleBScratchpad(
     resolvedApplicationId,
     canonicalScheduleBTaskInstanceId,
     scheduleBTaskStatusDetails,
+    { readOnly, legacyRowKeys },
   )
   const { scratchpad, buildScheduleBExportRows } = scratchpadApi
+  // Closing never discards marks (they stay in this browser), but say so when the server doesn't have them.
+  const requestClose = () => {
+    if (
+      scratchpadApi.hasUnsavedChanges() &&
+      !window.confirm(
+        'Your latest Schedule B review marks are not saved to the server yet. They stay in this browser, and you can save them when you reopen this drawer. Close anyway?',
+      )
+    ) {
+      return
+    }
+    onClose()
+  }
   useEffect(() => {
     if (scratchpadApi.saveError) {
       toast.error(scratchpadApi.saveError)
@@ -832,7 +907,7 @@ export function ScheduleBProductsDrawer({
     setAddRowError('')
   }
 
-  const saveAddRow = async () => {
+  const saveAddRowNow = async () => {
     if (!addRowDraft.labelName.trim()) {
       setAddRowError('Label name is required before saving.')
       return
@@ -873,7 +948,7 @@ export function ScheduleBProductsDrawer({
     window.setTimeout(() => setCopied(false), 1500)
   }
 
-  const sendRoundEmail = async () => {
+  const sendRoundEmailNow = async () => {
     if (!latestRound) return
 
     const recipientEmail = textValue(latestRound.email.to || contact.email)
@@ -967,7 +1042,7 @@ export function ScheduleBProductsDrawer({
     }
   })()
 
-  const importProducts = async () => {
+  const importProductsNow = async () => {
     const drafts = getImportDraftsFromText(importText).filter((draft) => draft.labelName.trim())
     if (!drafts.length) {
       setImportError('Provide a CSV or tab-delimited file with at least one row containing a Label Name.')
@@ -996,7 +1071,7 @@ export function ScheduleBProductsDrawer({
   }
 
 
-  const markScheduleBReady = async () => {
+  const markScheduleBReadyNow = async () => {
     if (readOnly) return
     if (counts.resolved < counts.all) {
       toast.warning('All application products items are not resolved')
@@ -1028,7 +1103,7 @@ export function ScheduleBProductsDrawer({
     }
   }
 
-  const assignProducts = async () => {
+  const assignProductsNow = async () => {
     if (readOnly) return
     const resolvedTaskInstanceId = textValue(taskInstanceId)
     if (!resolvedTaskInstanceId) {
@@ -1053,7 +1128,7 @@ export function ScheduleBProductsDrawer({
     }
   }
 
-  const startProcessing = async () => {
+  const startProcessingNow = async () => {
     if (readOnly) return
     const resolvedTaskInstanceId = textValue(taskInstanceId)
     if (!resolvedTaskInstanceId) {
@@ -1078,7 +1153,7 @@ export function ScheduleBProductsDrawer({
     }
   }
 
-  const signOffProducts = async () => {
+  const signOffProductsNow = async () => {
     if (readOnly) return
     const resolvedTaskInstanceId = textValue(taskInstanceId)
     if (!resolvedTaskInstanceId) {
@@ -1103,7 +1178,7 @@ export function ScheduleBProductsDrawer({
     }
   }
 
-  const rejectProducts = async () => {
+  const rejectProductsNow = async () => {
     if (readOnly) return
     const resolvedScheduleBTaskInstanceId = textValue(scheduleBTaskInstanceId)
     const resolvedSignoffTaskInstanceId = textValue(taskInstanceId)
@@ -1140,6 +1215,16 @@ export function ScheduleBProductsDrawer({
     }
   }
 
+  // Synchronous single-flight guards: a double/triple click must not send duplicate writes.
+  const markScheduleBReady = () => stageFlight.run(markScheduleBReadyNow)
+  const assignProducts = () => stageFlight.run(assignProductsNow)
+  const startProcessing = () => stageFlight.run(startProcessingNow)
+  const signOffProducts = () => stageFlight.run(signOffProductsNow)
+  const rejectProducts = () => stageFlight.run(rejectProductsNow)
+  const saveAddRow = () => addRowFlight.run(saveAddRowNow)
+  const importProducts = () => addRowFlight.run(importProductsNow)
+  const sendRoundEmail = () => sendFlight.run(sendRoundEmailNow)
+
   const panelWidth = expanded ? 'lg:max-w-[96vw]' : 'lg:max-w-[72vw]'
   const stickyTableHeaderClass =
     'sticky z-10 bg-gray-50 px-3 py-2.5 text-xs font-semibold text-gray-600 shadow-[inset_0_-1px_0_#e5e7eb]'
@@ -1154,7 +1239,7 @@ export function ScheduleBProductsDrawer({
                       <button
                         type="button"
                         onClick={signOffProducts}
-                        disabled={completeScheduleBTaskMutation.isPending || patchTaskStatusMutation.isPending}
+                        disabled={completeScheduleBTaskMutation.isPending || patchTaskStatusMutation.isPending || stageFlight.isRunning}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                       >
                         <Check className="h-3.5 w-3.5" />
@@ -1163,7 +1248,7 @@ export function ScheduleBProductsDrawer({
                       <button
                         type="button"
                         onClick={rejectProducts}
-                        disabled={completeScheduleBTaskMutation.isPending || patchTaskStatusMutation.isPending}
+                        disabled={completeScheduleBTaskMutation.isPending || patchTaskStatusMutation.isPending || stageFlight.isRunning}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                       >
                         <X className="h-3.5 w-3.5" />
@@ -1175,7 +1260,7 @@ export function ScheduleBProductsDrawer({
                     <button
                       type="button"
                       onClick={startProcessing}
-                      disabled={completeScheduleBTaskMutation.isPending}
+                      disabled={completeScheduleBTaskMutation.isPending || stageFlight.isRunning}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                     >
                       <Check className="h-3.5 w-3.5" />
@@ -1188,7 +1273,7 @@ export function ScheduleBProductsDrawer({
                     <button
                       type="button"
                       onClick={assignProducts}
-                      disabled={completeScheduleBTaskMutation.isPending}
+                      disabled={completeScheduleBTaskMutation.isPending || stageFlight.isRunning}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                     >
                       <Check className="h-3.5 w-3.5" />
@@ -1254,9 +1339,28 @@ export function ScheduleBProductsDrawer({
               </div>
 
               <div className="min-h-0 flex-1 overflow-auto p-4">
+                {!readOnly ? (
+                  <ScheduleSaveStatusBanner
+                    blockedReason={scratchpadApi.saveBlockedReason}
+                    saveFailed={scratchpadApi.saveFailed}
+                    unsavedDraft={scratchpadApi.hasUnsavedLocalDraft}
+                    saveError={scratchpadApi.saveError}
+                    isSaving={scratchpadApi.isSaving}
+                    onRetry={scratchpadApi.retrySave}
+                  />
+                ) : null}
                 {activeTab === 'eir-new' ? <ScheduleAEirNewTab url={eirNewUrl} actualVisitDate={applicationDetail?.actualVisitDate} /> : null}
                 {activeTab === 'products' ? (
                   <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                    {scheduleBTaskMissing && ingView === 'application' ? (
+                      <div
+                        role="alert"
+                        className="rounded-t-lg border-b border-amber-200 bg-amber-50 px-6 py-3 text-sm text-amber-800"
+                      >
+                        The Schedule B task for this application could not be found, so flags, halacha
+                        questions and resolved marks are kept only in this browser and are not saved.
+                      </div>
+                    ) : null}
                     <div ref={productsHeaderRef} className="sticky left-0 right-0 top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-t-lg border-b bg-gray-50 px-6 py-4 shadow-sm">
                       <div>
                         <h2 className="text-2xl font-semibold text-gray-900">
@@ -1273,7 +1377,7 @@ export function ScheduleBProductsDrawer({
                               type="button"
                               onClick={markScheduleBReady}
                               disabled={
-                                isAssignProductsTask || completeScheduleBTaskMutation.isPending
+                                isAssignProductsTask || completeScheduleBTaskMutation.isPending || stageFlight.isRunning
                               }
                               title={
                                 isAssignProductsTask
@@ -1412,11 +1516,14 @@ export function ScheduleBProductsDrawer({
                             <tr className="border-b border-blue-100 border-l-4 border-l-blue-400 bg-blue-50/60">
                               <td className="w-8 px-2 py-2 text-xs text-blue-400">+</td>
                               <td className="px-3 py-2">
+                                {/* Label # is read-only: it cannot be typed when adding a row. */}
                                 <input
-                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  className="w-full cursor-not-allowed rounded border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-500 outline-none"
                                   value={addRowDraft.labelNo}
                                   placeholder="Label #"
-                                  onChange={(event) => updateAddRowDraft('labelNo', event.target.value)}
+                                  aria-label="Label #"
+                                  readOnly
+                                  tabIndex={-1}
                                 />
                               </td>
                               <td className="px-3 py-2">
@@ -1571,7 +1678,11 @@ export function ScheduleBProductsDrawer({
                                   {ingView === 'application' && !readOnly ? (
                                     <td className="px-3 py-3">
                                     <div className="flex flex-nowrap items-center gap-1">
-                                      <ScheduleProductActionButtons row={row} actions={productActions} />
+                                      <ScheduleProductActionButtons
+                                        row={row}
+                                        actions={productActions}
+                                        onDelete={() => setPendingDeleteProduct({ id: row.productId!, name: row.labelName })}
+                                      />
                                       {resolved ? null : (
                                         <>
                                           <FlagActionButton flagged={flagged} onClick={() => scratchpadApi.toggleFlag(row.id)} />
@@ -1720,7 +1831,7 @@ export function ScheduleBProductsDrawer({
                               {copied ? 'Copied' : 'Copy'}
                             </button>
                             {!readOnly ? (
-                              <button type="button" onClick={() => void sendRoundEmail()} disabled={sendRoundEmailMutation.isPending} className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60">
+                              <button type="button" onClick={() => void sendRoundEmail()} disabled={sendRoundEmailMutation.isPending || sendFlight.isRunning} className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60">
                                 <Send className="h-3.5 w-3.5" />
                                 {sendRoundEmailMutation.isPending ? 'Sending...' : 'Send Email'}
                               </button>
@@ -1916,8 +2027,8 @@ export function ScheduleBProductsDrawer({
           {content}
         </div>
       ) : (
-        <div className="fixed inset-0 z-50 bg-black/40">
-          <div
+        <div className="fixed inset-0 pointer-events-auto z-50 bg-black/40">
+          <ModalSurface onClose={requestClose} label="Schedule B"
             className={`fixed right-0 top-0 flex h-full w-full max-w-[96vw] flex-col overflow-hidden bg-white shadow-2xl ${panelWidth}`}
             onClick={(event) => event.stopPropagation()}
           >
@@ -1949,7 +2060,7 @@ export function ScheduleBProductsDrawer({
                 </button>
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={requestClose}
                   className="rounded p-1 text-gray-200 hover:bg-gray-700 hover:text-white"
                   aria-label="Close Schedule B drawer"
                 >
@@ -1958,12 +2069,26 @@ export function ScheduleBProductsDrawer({
               </div>
             </div>
             {content}
-          </div>
+          </ModalSurface>
         </div>
       )}
+      {pendingDeleteProduct ? (
+        <ScheduleIngredientDeleteConfirm
+          ingredientName={pendingDeleteProduct.name}
+          itemLabel="product"
+          scheduleName="Schedule B"
+          pending={productActions.pending}
+          onCancel={() => setPendingDeleteProduct(null)}
+          onConfirm={() =>
+            productActions.remove(pendingDeleteProduct.id, {
+              onSettled: () => setPendingDeleteProduct(null),
+            })
+          }
+        />
+      ) : null}
       {!isEmbedded && importOpen ? (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" onClick={closeImportModal}>
-          <div
+        <div className="fixed inset-0 pointer-events-auto z-[70] flex items-center justify-center bg-black/50 p-4" onClick={closeImportModal}>
+          <ModalSurface onClose={closeImportModal} label="Import spreadsheet"
             className="w-full max-w-3xl rounded-xl bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
@@ -2052,7 +2177,7 @@ export function ScheduleBProductsDrawer({
                 {isImporting ? 'Importing...' : `Import ${importPreviewRows.length || ''}`.trim()}
               </button>
             </div>
-          </div>
+          </ModalSurface>
         </div>
       ) : null}
       {!isEmbedded ? (

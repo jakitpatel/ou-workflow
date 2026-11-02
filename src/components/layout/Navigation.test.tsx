@@ -17,9 +17,10 @@ vi.mock('@tanstack/react-query', () => ({
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }))
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to, params, search: _search, ...props }: { children: ReactNode; to: string; params?: { applicationId: string }; search?: unknown }) => (
-    <a href={to.replace('$applicationId', params?.applicationId ?? '')} {...props}>{children}</a>
-  ),
+  Link: ({ children, to, params, search: _search, ...props }: { children: ReactNode; to: string; params?: { applicationId: string }; search?: unknown }) => {
+    void _search
+    return <a href={to.replace('$applicationId', params?.applicationId ?? '')} {...props}>{children}</a>
+  },
   useRouterState: () => session.pathname,
   useNavigate: () => navigate,
 }))

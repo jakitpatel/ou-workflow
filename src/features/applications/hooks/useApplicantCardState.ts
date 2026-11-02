@@ -87,7 +87,7 @@ export function useApplicantCardState({ applicant, handleCancelTask }: Params) {
     return applicant.files?.reduce((acc, file) => {
       acc[file.fileType] = file
       return acc
-    }, {} as Record<string, (typeof applicant.files)[number]>)
+    }, {} as Record<string, NonNullable<Applicant['files']>[number]>)
   }, [applicant.files])
 
   const userRoles = useMemo(() => {
@@ -123,10 +123,11 @@ export function useApplicantCardState({ applicant, handleCancelTask }: Params) {
 
     const assignedRoles = Array.isArray(applicant?.assignedRoles) ? applicant.assignedRoles : []
 
-    return assignedRoles.some((assignedRole: any) =>
+    return assignedRoles.some((assignedRole) =>
       matchingRoles.some(
         (matchingRole) =>
-          assignedRole?.[matchingRole.toUpperCase()]?.toLowerCase() === username?.toLowerCase(),
+          typeof assignedRole?.[matchingRole.toUpperCase()] === 'string' &&
+          String(assignedRole[matchingRole.toUpperCase()]).toLowerCase() === username?.toLowerCase(),
       ),
     )
   }
@@ -166,15 +167,9 @@ export function useApplicantCardState({ applicant, handleCancelTask }: Params) {
     )
   }, [applicant.stages])
 
-  const canCancelApplication = useMemo(
-    () => hasCancelPermission(pendingCancelTask),
-    [pendingCancelTask, applicant.assignedRoles, taskRolesAll, userRoles, username],
-  )
+  const canCancelApplication = hasCancelPermission(pendingCancelTask)
 
-  const canUndoWithdrawApplication = useMemo(
-    () => hasCancelPermission(pendingUndoWithdrawTask),
-    [pendingUndoWithdrawTask, applicant.assignedRoles, taskRolesAll, userRoles, username],
-  )
+  const canUndoWithdrawApplication = hasCancelPermission(pendingUndoWithdrawTask)
 
   const applicationNotesCount = useMemo(() => {
     const counts = applicationNotes.getCounts(applicationNotesContextKey)
@@ -182,8 +177,8 @@ export function useApplicantCardState({ applicant, handleCancelTask }: Params) {
     if (fetchedTotal > 0) return fetchedTotal
 
     return (
-      toSafeCount((applicant as any)?.IsPrivateNotes) +
-      toSafeCount((applicant as any)?.IsGlobalNotes)
+      toSafeCount(applicant?.IsPrivateNotes) +
+      toSafeCount(applicant?.IsGlobalNotes)
     )
   }, [applicant, applicationNotes, applicationNotesContextKey])
 

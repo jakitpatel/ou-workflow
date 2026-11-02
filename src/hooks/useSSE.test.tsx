@@ -166,6 +166,14 @@ describe('useSSE', () => {
 
   it('keeps the 30-second timeout for ordinary API requests', async () => {
     vi.useFakeTimers()
+    // Chrome DOMException inherits Error and carries legacy numeric code 20;
+    // jsdom's cross-realm DOMException does not reproduce that Error inheritance.
+    vi.stubGlobal('DOMException', class BrowserDOMException extends Error {
+      readonly code = 20
+      constructor(message: string, name: string) { super(message); this.name = name }
+    })
+    expect(new DOMException('Aborted', 'AbortError')).toBeInstanceOf(Error)
+    expect(new DOMException('Aborted', 'AbortError').code).toBe(20)
     vi.stubGlobal('fetch', vi.fn((_url: string, options: RequestInit) =>
       new Promise<Response>((_resolve, reject) => {
         options.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))

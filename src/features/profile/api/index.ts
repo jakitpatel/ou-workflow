@@ -1,7 +1,7 @@
 import { getAccessToken } from '@/auth/authService'
 import { createAppError } from '@/shared/api/errors'
-import { fetchWithAuth } from '@/shared/api/httpClient'
-import type { ApplicationTasksResponse } from '@/types/application'
+import { fetchWithAuth, isJsonApiRecord } from '@/shared/api/httpClient'
+import type { UserRole } from '@/types/application'
 
 const createApiError = (message: string, status?: number, details?: unknown) =>
   createAppError(message, { status, details, code: 'API_ERROR' })
@@ -50,7 +50,7 @@ export async function fetchRoles({
   token,
 }: {
   token?: string | null
-} = {}): Promise<any[]> {
+} = {}): Promise<UserRole[]> {
   const accessToken = token ?? getAccessToken()
 
   if (!accessToken) {
@@ -73,7 +73,7 @@ export async function saveProfileLayout({
   token?: string | null
   username?: string
   profileLayout?: string
-}): Promise<any> {
+}): Promise<unknown> {
   const body = {
     data: {
       type: 'WFUserProfile',
@@ -90,6 +90,7 @@ export async function saveProfileLayout({
     method: 'POST',
     body,
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -99,7 +100,7 @@ export async function fetchProfileLayout({
 }: {
   token?: string | null
   username?: string
-}): Promise<any> {
+}): Promise<JsonApiRecord<{ Profile?: string }>[]> {
   const params = new URLSearchParams()
   if (username) {
     params.append('filter[Username]', username)
@@ -108,7 +109,7 @@ export async function fetchProfileLayout({
   const queryString = params.toString()
   const path = `/api/WFUserProfile${queryString ? `?${queryString}` : ''}`
 
-  const response = await fetchWithAuth<ApplicationTasksResponse>({
+  const response = await fetchWithAuth<{ data: JsonApiRecord<{ Profile?: string }>[] }>({
     path,
     token,
   })

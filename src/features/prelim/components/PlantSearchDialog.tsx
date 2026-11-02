@@ -1,3 +1,4 @@
+import { useDialogReturnFocus } from '@/components/ui/useDialogReturnFocus'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import * as Dialog from '@radix-ui/react-dialog'
@@ -21,6 +22,7 @@ export function PlantSearchDialog({
   readOnly?: boolean
   resolvedMatch?: Match | null
 }) {
+  const focusReturn = useDialogReturnFocus()
   const { token } = useUser()
   const [input, setInput] = useState(plantName)
   const [search, setSearch] = useState(plantName.trim())
@@ -46,7 +48,7 @@ export function PlantSearchDialog({
     >
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[60] bg-black/40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-[70] flex max-h-[85vh] w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-xl bg-white p-6 shadow-xl">
+        <Dialog.Content {...focusReturn} className="fixed left-1/2 top-1/2 z-[70] flex max-h-[85vh] w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-xl bg-white p-6 shadow-xl">
           <Dialog.Title className="text-lg font-semibold">Search Plant</Dialog.Title>
           <Dialog.Description className="text-sm text-gray-600">
             {readOnly

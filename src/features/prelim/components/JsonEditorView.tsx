@@ -1,11 +1,12 @@
+import { asRecord } from '@/shared/api/record'
 import { useEffect, useRef } from 'react'
 import JSONEditor from 'jsoneditor'
 import 'jsoneditor/dist/jsoneditor.css'
 
 type Props = {
-  value: any
+  value: unknown
   title?: string
-  onSelect?: (nodeValue: any) => void
+  onSelect?: (nodeValue: unknown) => void
   headerAction?: React.ReactNode
 }
 
@@ -28,27 +29,27 @@ export function JsonEditorView({
       search: true,
       navigationBar: true,
       statusBar: false,
-      onEvent: (node: any, event: any) => {
-        void event
+      onEvent: (node) => {
         if (!node) return
 
         try {
-          let selected: any = undefined
-          if (typeof (node as any).getValue === 'function') {
-            selected = (node as any).getValue()
+          let selected: unknown = undefined
+          if (typeof asRecord(node).getValue === 'function') {
+            const getValue = asRecord(node).getValue as () => unknown
+            selected = getValue.call(node)
           }
 
-          if (selected === undefined && (node as any).path && editorRef.current) {
+          if (selected === undefined && node.path && editorRef.current) {
             const root = editorRef.current.get()
-            const path = (node as any).path as Array<string | number>
+            const path = node.path as Array<string | number>
             selected = path.reduce(
-              (acc: any, key) => (acc != null ? acc[key as any] : undefined),
+              (acc: unknown, key) => Array.isArray(acc) && typeof key === 'number' ? acc[key] : asRecord(acc)[key],
               root,
             )
           }
 
-          if (selected === undefined && (node as any).value !== undefined) {
-            selected = (node as any).value
+          if (selected === undefined && node.value !== undefined) {
+            selected = node.value
           }
 
           if (selected === undefined) selected = node

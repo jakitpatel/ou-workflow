@@ -10,7 +10,7 @@ import {
 } from '@/features/tasks/hooks/useTaskMutations'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { detectRole, getAllTasks, getProgressStatus } from '@/lib/utils/taskHelpers'
-import type { Applicant, Task } from '@/types/application'
+import type { Applicant } from '@/types/application'
 
 type Params = {
   applicationType?: 'WORKFLOW' | 'SUBMISSION'
@@ -25,10 +25,7 @@ type InspectionFeeChoice = {
   feeNeeded: 'YES' | 'NO'
 }
 
-export type SelectedTaskAction = {
-  application: Applicant
-  action: Task
-}
+export type SelectedTaskAction = import('@/features/tasks/model/taskAction').SelectedTaskAction
 
 export type SendTaskEmailInput = {
   applicationId: string | number
@@ -119,43 +116,43 @@ const normalizeTaskValue = (value: unknown) =>
     .trim()
     .toLowerCase()
 
-export const isCertificateActionTask = (action: Task): boolean =>
-  normalizeTaskValue(action.taskType ?? (action as any).TaskType) === TASK_TYPES.ACTION &&
-  normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
+export const isCertificateActionTask = (action: import('@/features/tasks/model/taskAction').TaskAction): boolean =>
+  normalizeTaskValue(action.taskType ?? action.TaskType) === TASK_TYPES.ACTION &&
+  normalizeTaskValue(action.taskCategory ?? action.TaskCategory) ===
     TASK_CATEGORIES.CERTIFICATE
 
-export const isScheduleAAssigningActionTask = (action: Task): boolean =>
-  normalizeTaskValue(action.taskType ?? (action as any).TaskType) === TASK_TYPES.ACTION &&
-  normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
+export const isScheduleAAssigningActionTask = (action: import('@/features/tasks/model/taskAction').TaskAction): boolean =>
+  normalizeTaskValue(action.taskType ?? action.TaskType) === TASK_TYPES.ACTION &&
+  normalizeTaskValue(action.taskCategory ?? action.TaskCategory) ===
     TASK_CATEGORIES.SCHEDULEA_ASSIGNING
 
-export const isScheduleAStartActionTask = (action: Task): boolean =>
-  normalizeTaskValue(action.taskType ?? (action as any).TaskType) === TASK_TYPES.ACTION &&
-  normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
+export const isScheduleAStartActionTask = (action: import('@/features/tasks/model/taskAction').TaskAction): boolean =>
+  normalizeTaskValue(action.taskType ?? action.TaskType) === TASK_TYPES.ACTION &&
+  normalizeTaskValue(action.taskCategory ?? action.TaskCategory) ===
     TASK_CATEGORIES.SCHEDULEA_START
 
-export const isScheduleBAssignProductsActionTask = (action: Task): boolean =>
-  normalizeTaskValue(action.taskType ?? (action as any).TaskType) === TASK_TYPES.ACTION &&
-  normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
+export const isScheduleBAssignProductsActionTask = (action: import('@/features/tasks/model/taskAction').TaskAction): boolean =>
+  normalizeTaskValue(action.taskType ?? action.TaskType) === TASK_TYPES.ACTION &&
+  normalizeTaskValue(action.taskCategory ?? action.TaskCategory) ===
     TASK_CATEGORIES.SCHEDULEB_ASSIGNING
 
-export const isScheduleBStartActionTask = (action: Task): boolean =>
-  normalizeTaskValue(action.taskType ?? (action as any).TaskType) === TASK_TYPES.ACTION &&
-  normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
+export const isScheduleBStartActionTask = (action: import('@/features/tasks/model/taskAction').TaskAction): boolean =>
+  normalizeTaskValue(action.taskType ?? action.TaskType) === TASK_TYPES.ACTION &&
+  normalizeTaskValue(action.taskCategory ?? action.TaskCategory) ===
     TASK_CATEGORIES.SCHEDULEB_START
 
-export const isScheduleBSignoffConditionTask = (action: Task): boolean =>
-  [TASK_TYPES.CONDITION, TASK_TYPES.CONDITIONAL].includes(
-    normalizeTaskValue(action.taskType ?? (action as any).TaskType) as any,
+export const isScheduleBSignoffConditionTask = (action: import('@/features/tasks/model/taskAction').TaskAction): boolean =>
+  [TASK_TYPES.CONDITION, TASK_TYPES.CONDITIONAL].some(
+    (value) => value === normalizeTaskValue(action.taskType ?? action.TaskType),
   ) &&
-  normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
+  normalizeTaskValue(action.taskCategory ?? action.TaskCategory) ===
     TASK_CATEGORIES.APPROVAL_SIGNOFF_B
 
-export const isScheduleASignoffConditionTask = (action: Task): boolean =>
-  [TASK_TYPES.CONDITION, TASK_TYPES.CONDITIONAL].includes(
-    normalizeTaskValue(action.taskType ?? (action as any).TaskType) as any,
+export const isScheduleASignoffConditionTask = (action: import('@/features/tasks/model/taskAction').TaskAction): boolean =>
+  [TASK_TYPES.CONDITION, TASK_TYPES.CONDITIONAL].some(
+    (value) => value === normalizeTaskValue(action.taskType ?? action.TaskType),
   ) &&
-  normalizeTaskValue(action.taskCategory ?? (action as any).TaskCategory) ===
+  normalizeTaskValue(action.taskCategory ?? action.TaskCategory) ===
     TASK_CATEGORIES.APPROVAL_SIGNOFF_A
 
 const buildInspectionFeeResult = (value: InspectionFeeChoice): string =>
@@ -198,7 +195,7 @@ export function useTaskActions({ applications, token, username, onError, applica
   const executeAction = useCallback(
     async (
       assignee: string,
-      action: any,
+      action: import('@/features/tasks/model/taskAction').TaskAction,
       result?: string | InspectionFeeChoice,
       selectedAction?: SelectedTaskAction | null,
     ) => {
@@ -225,7 +222,7 @@ export function useTaskActions({ applications, token, username, onError, applica
           rfrRecommendationUsername: assignee,
         })
         await postRfrRecommendationMessage({
-          applicationId,
+          applicationId: applicationId ?? '',
           fullName: (typeof result === 'string' ? result.trim() : '') || assignee,
           username, token, onError,
         })
@@ -237,7 +234,7 @@ export function useTaskActions({ applications, token, username, onError, applica
         return
       }
 
-      if ([TASK_TYPES.CONDITIONAL, TASK_TYPES.CONDITION].includes(taskType as any)) {
+      if ([TASK_TYPES.CONDITIONAL, TASK_TYPES.CONDITION].some((value) => value === taskType)) {
         const isApproval1 = taskCategory === TASK_CATEGORIES.APPROVAL1
         if (isApproval1 && result && typeof result === 'object') {
           confirmTaskMutation.mutate({
@@ -347,7 +344,7 @@ export function useTaskActions({ applications, token, username, onError, applica
 
   const completeTaskWithResult = useCallback(
     (
-      action: Task,
+      action: import('@/features/tasks/model/taskAction').TaskAction,
       result: string,
       status?: string,
       completionNotes?: string,
@@ -356,8 +353,8 @@ export function useTaskActions({ applications, token, username, onError, applica
       const isCancelApplicationTask = action?.name?.toLowerCase().trim() === 'cancel application'
       const resolvedApplicationId =
         applicationId ??
-        (action as any)?.applicationId ??
-        (action as any)?.application?.applicationId
+        action?.applicationId ??
+        action?.application?.applicationId
 
       confirmTaskMutation.mutate({
         taskId: String(action.TaskInstanceId),

@@ -1,3 +1,6 @@
+import { SignedFileLink } from '@/shared/utils/fileLinks'
+import { ModalSurface } from '@/components/ui/ModalSurface'
+import { localCalendarDate } from '@/shared/utils/calendarDate'
 import { removeContractPackageFooter } from '../lib/contractCoverLetter'
 import { formatAttachmentReference, getContractPackageAttachmentUrl, getContractInvoiceAttachmentUrl } from '../lib/contractAttachments'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -344,7 +347,7 @@ const textValue = (value: unknown) => String(value ?? '').trim()
 
 const getDefaultEffectiveDate = () => {
   const today = new Date()
-  return new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10)
+  return localCalendarDate(new Date(today.getFullYear(), today.getMonth(), 1))
 }
 
 const formatDate = (value?: string | null) => {
@@ -1066,10 +1069,10 @@ export function ContractStageDrawer({
 
     const currentTask = findTaskById(applicant, contractTaskId)
     const savedState = getContractStageSavedState(
-      (currentTask as any)?.StatusDetails ??
-        (currentTask as any)?.statusDetails ??
-        (currentTask as any)?.Result ??
-        (currentTask as any)?.result,
+      currentTask?.StatusDetails ??
+        currentTask?.statusDetails ??
+        currentTask?.Result ??
+        currentTask?.result,
     )
     if (!savedState) return
     restoredTaskKeyRef.current = restoreKey
@@ -1181,7 +1184,7 @@ export function ContractStageDrawer({
     const normalizeAddressPart = (value: unknown) => textValue(value).replace(/,\s*$/, '')
     const street1 = normalizeAddressPart(address?.street)
     const street2 = normalizeAddressPart(address?.line2)
-    const street3 = normalizeAddressPart((address as any)?.line3)
+    const street3 = normalizeAddressPart(address?.line3)
     const remainingStreetLines = [street2, street3].filter(Boolean).join(' ')
 
     return {
@@ -1368,7 +1371,7 @@ export function ContractStageDrawer({
     const parsed = new Date(`${effectiveDate}T00:00:00`)
     if (Number.isNaN(parsed.getTime())) return formatFullDate(effectiveDate)
     return formatFullDate(
-      new Date(parsed.getFullYear(), parsed.getMonth(), 1).toISOString().slice(0, 10),
+      localCalendarDate(new Date(parsed.getFullYear(), parsed.getMonth(), 1)),
     )
   })()
   const invoiceTermEnd = (() => {
@@ -1376,7 +1379,7 @@ export function ContractStageDrawer({
     const parsed = new Date(`${effectiveDate}T00:00:00`)
     if (Number.isNaN(parsed.getTime())) return formatFullDate(effectiveDate)
     return formatFullDate(
-      new Date(parsed.getFullYear() + 1, parsed.getMonth() + 1, 0).toISOString().slice(0, 10),
+      localCalendarDate(new Date(parsed.getFullYear() + 1, parsed.getMonth() + 1, 0)),
     )
   })()
 
@@ -2633,14 +2636,14 @@ Rabbinic Coordinator`
                 <div className="mb-2 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[12.5px]">
                   <FileText className="h-4 w-4 text-[#185087]" />
                   {contractPackageDocumentUrl ? (
-                    <a
+                    <SignedFileLink
                       href={contractPackageDocumentUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-semibold text-[#185087] underline-offset-2 hover:underline"
                     >
                       Certification_Package_{companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf
-                    </a>
+                    </SignedFileLink>
                   ) : (
                     <span className="font-semibold text-[#1e1e2e]">
                       Certification_Package_{companyName.replace(/[^A-Za-z0-9]+/g, '_')}.pdf
@@ -2650,7 +2653,7 @@ Rabbinic Coordinator`
                     Agreement + Schedules A-E - {coverPackageItems.length} documents
                   </span>
                   {contractPackageDownloadLink ? (
-                    <a
+                    <SignedFileLink
                       href={contractPackageDownloadLink}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -2658,7 +2661,7 @@ Rabbinic Coordinator`
                     >
                       <Download className="h-3.5 w-3.5" />
                       Download
-                    </a>
+                    </SignedFileLink>
                   ) : (
                     <button
                       type="button"
@@ -2687,20 +2690,20 @@ Rabbinic Coordinator`
                   >
                     <FileText className="h-4 w-4 text-[#185087]" />
                     {attachment.fileUrl ? (
-                      <a
+                      <SignedFileLink
                         href={attachment.fileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-semibold text-[#185087] underline-offset-2 hover:underline"
                       >
                         {attachment.file}
-                      </a>
+                      </SignedFileLink>
                     ) : (
                       <span className="font-semibold text-[#1e1e2e]">{attachment.file}</span>
                     )}
                     <span className="ml-auto text-[11px] text-gray-400">{attachment.desc}</span>
                     {attachment.label === 'Certification Invoice' && contractInvoiceDownloadUrl ? (
-                      <a
+                      <SignedFileLink
                         href={contractInvoiceDownloadUrl}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -2708,7 +2711,7 @@ Rabbinic Coordinator`
                       >
                         <Download className="h-3.5 w-3.5" />
                         Download
-                      </a>
+                      </SignedFileLink>
                     ) : (
                       <button
                         type="button"
@@ -2740,14 +2743,14 @@ Rabbinic Coordinator`
                     <span className="font-semibold text-[#1e1e2e]">{attachment.fileName}</span>
                     <span className="ml-auto text-[11px] text-gray-400">Uploaded attachment</span>
                     {attachment.fileUrl ? (
-                      <a
+                      <SignedFileLink
                         href={attachment.fileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087]"
                       >
                         Open
-                      </a>
+                      </SignedFileLink>
                     ) : null}
                     {!emailSent && !isWorkflowReadOnly ? (
                       <button
@@ -2925,14 +2928,14 @@ Rabbinic Coordinator`
                     <div className="mt-0.5 text-[11px] text-gray-500">Uploaded attachment</div>
                   </div>
                   {attachment.fileUrl ? (
-                    <a
+                    <SignedFileLink
                       href={attachment.fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="ml-auto shrink-0 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11.5px] font-semibold text-[#185087] hover:bg-blue-100"
                     >
                       Open
-                    </a>
+                    </SignedFileLink>
                   ) : null}
                   {!isWorkflowReadOnly ? (
                     <button
@@ -2959,21 +2962,21 @@ Rabbinic Coordinator`
                   </div>
                   <div>
                     {item.label === 'Certification Invoice' && contractInvoiceDisplayLink ? (
-                      <a
+                      <SignedFileLink
                         href={contractInvoiceDisplayLink}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[12.5px] font-semibold text-[#185087] underline-offset-2 hover:underline"
                       >
                         {item.label}
-                      </a>
+                      </SignedFileLink>
                     ) : (
                       <div className="text-[12.5px] font-semibold text-[#1e1e2e]">{item.label}</div>
                     )}
                     <div className="mt-0.5 text-[11px] text-gray-500">{item.sub}</div>
                   </div>
                   {item.label === 'Certification Invoice' && contractInvoiceDownloadUrl ? (
-                    <a
+                    <SignedFileLink
                       href={contractInvoiceDownloadUrl}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -2981,7 +2984,7 @@ Rabbinic Coordinator`
                     >
                       <Download className="h-3.5 w-3.5" />
                       Download
-                    </a>
+                    </SignedFileLink>
                   ) : null}
                   {!isWorkflowReadOnly ? (
                     <button
@@ -3677,7 +3680,7 @@ Rabbinic Coordinator`
         className={
           isEmbedded
             ? 'flex h-full min-h-[44rem] flex-col overflow-hidden rounded-lg border border-gray-200 bg-[#f5f7fb] shadow-sm'
-            : 'fixed inset-0 z-50 bg-black/45'
+            : 'fixed inset-0 pointer-events-auto z-50 bg-black/45'
         }
       >
         <div
@@ -4044,7 +4047,7 @@ Rabbinic Coordinator`
                   {previewTab === 'invoice' ? (
                     <div className="flex flex-wrap items-center gap-2">
                       {contractInvoiceDownloadUrl ? (
-                        <a
+                        <SignedFileLink
                           href={contractInvoiceDownloadUrl}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -4052,7 +4055,7 @@ Rabbinic Coordinator`
                         >
                           <Download className="h-3.5 w-3.5" />
                           Download
-                        </a>
+                        </SignedFileLink>
                       ) : null}
                       {!isWorkflowReadOnly ? (
                         <button
@@ -4157,8 +4160,8 @@ Rabbinic Coordinator`
       </div>
 
       {showEmailPreview ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
+        <div className="fixed inset-0 pointer-events-auto z-[60] flex items-center justify-center bg-black/50 p-4">
+          <ModalSurface onClose={() => setShowEmailPreview(false)} label="Email preview" className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl">
             <div className="border-b px-5 py-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -4230,7 +4233,7 @@ Rabbinic Coordinator`
                 </button>
               ) : null}
             </div>
-          </div>
+          </ModalSurface>
         </div>
       ) : null}
     </>

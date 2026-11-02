@@ -8,7 +8,7 @@ import { useScheduleACommunicationMessages } from './useScheduleAIngredients'
 import { useScheduleBCommunicationMessages } from './useScheduleBProducts'
 import { useContractCommunicationMessages } from './useContractRcNotification'
 
-const listener = vi.hoisted(() => ({ callback: (_message: SSEMessage) => {}, enabled: false }))
+const listener = vi.hoisted(() => ({ callback: (_message: SSEMessage) => { void _message }, enabled: false }))
 vi.mock('@/hooks/useSSE', () => ({
   useSSE: (callback: (message: SSEMessage) => void, options: { enabled: boolean }) => {
     listener.callback = callback

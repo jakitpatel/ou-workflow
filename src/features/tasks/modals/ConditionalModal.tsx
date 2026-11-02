@@ -1,27 +1,18 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { ModalSurface } from '@/components/ui/ModalSurface'
+import React, { useState, useEffect, useRef, useMemo, useCallback, useId } from "react";
 import { X } from "lucide-react";
-import type { Task, Applicant } from "@/types/application";
+import type { Task } from "@/types/application";
 import { TASK_CATEGORIES, TASK_TYPES } from "@/lib/constants/task";
 
-type SelectedAction = {
-  application: Applicant | Task | any;
-  action: {
-    id: string;
-    name: string;
-    taskType?: string;
-    taskCategory?: string;
-    taskName?: string;
-    TaskCategory?: string;
-  } | Task | any;
-};
+type SelectedAction = import('@/features/tasks/model/taskAction').SelectedTaskAction;
 
 type Props = {
-  showConditionModal: boolean | null | Task;
+  showConditionModal: boolean | null | Task | import('@/types/application').ApplicationTask;
   selectedAction: SelectedAction | null;
-  setShowConditionModal: (val: boolean | null | Task) => void;
+  setShowConditionModal: (val: null) => void;
   executeAction: (
     id: string,
-    action: { id: string; name?: string },
+    action: import('@/features/tasks/model/taskAction').TaskAction,
     value: string | { inspectionNeeded: "YES" | "NO"; feeNeeded: "YES" | "NO" },
     selectedAction: SelectedAction | null
   ) => void;
@@ -42,6 +33,7 @@ export const ConditionalModal: React.FC<Props> = ({
   executeAction,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
 
   // 🔹 All state hooks at the top
   const [feeValue, setFeeValue] = useState("0");
@@ -78,12 +70,12 @@ export const ConditionalModal: React.FC<Props> = ({
   }, [selectedAction?.action]);
 
   const isInspectionFeeNeededModal = useMemo(() => {
-    return [TASK_TYPES.CONDITION, TASK_TYPES.CONDITIONAL].includes(taskType as any) &&
+    return [TASK_TYPES.CONDITION, TASK_TYPES.CONDITIONAL].some((value) => value === taskType) &&
       taskCategory === TASK_CATEGORIES.APPROVAL1;
   }, [taskCategory, taskType]);
 
   const isApprovalOk =
-    [TASK_TYPES.CONDITION, TASK_TYPES.CONDITIONAL].includes(taskType as any) &&
+    [TASK_TYPES.CONDITION, TASK_TYPES.CONDITIONAL].some((value) => value === taskType) &&
     taskCategory === TASK_CATEGORIES.APPROVALOK;
 
   const PreScript = useMemo(() => {
@@ -155,16 +147,6 @@ export const ConditionalModal: React.FC<Props> = ({
     }
   }, [showConditionModal]);
 
-  // 🔹 Close on ESC
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !saving) {
-        setShowConditionModal(null);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [saving, setShowConditionModal]);
 
   // 🔹 Click outside to close
   const handleOverlayClick = useCallback((e: React.MouseEvent) => {
@@ -182,7 +164,7 @@ export const ConditionalModal: React.FC<Props> = ({
     setSaving(true);
     setSavingValue(typeof value === 'string' ? value : null);
     try {
-      await executeAction(selectedAction.action.id, selectedAction.action, value, selectedAction);
+      await executeAction(String(selectedAction.action.id ?? selectedAction.action.TaskInstanceId ?? selectedAction.action.taskInstanceId ?? ''), selectedAction.action, value, selectedAction);
       setShowConditionModal(null);
       // State will be reset by useEffect
     } catch (error) {
@@ -210,7 +192,7 @@ export const ConditionalModal: React.FC<Props> = ({
 
     setSaving(true);
     try {
-      await executeAction(selectedAction.action.id, selectedAction.action, status, selectedAction);
+      await executeAction(String(selectedAction.action.id ?? selectedAction.action.TaskInstanceId ?? selectedAction.action.taskInstanceId ?? ''), selectedAction.action, status, selectedAction);
       setShowConditionModal(null);
     } catch (error) {
       console.error("Error updating progress:", error);
@@ -243,11 +225,14 @@ export const ConditionalModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn"
+      className="fixed inset-0 pointer-events-auto bg-black/40 flex items-center justify-center z-50 animate-fadeIn"
       onMouseDown={handleOverlayClick}
     >
-      <div
+      <ModalSurface onClose={() => setShowConditionModal(null)} label="Application Review" dismissible={!saving}
         ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className="relative bg-white rounded-xl p-6 max-w-md w-full shadow-xl animate-scaleIn"
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -262,7 +247,7 @@ export const ConditionalModal: React.FC<Props> = ({
         </button>
 
         {/* Title */}
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <h3 id={titleId} className="text-lg font-semibold text-gray-900 mb-4">
           {taskName}
         </h3>
 
@@ -485,7 +470,7 @@ export const ConditionalModal: React.FC<Props> = ({
             </button>
           </div>
         )}
-      </div>
+      </ModalSurface>
     </div>
   );
 };

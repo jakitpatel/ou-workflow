@@ -1,3 +1,5 @@
+import { ModalSurface } from '@/components/ui/ModalSurface'
+import { localCalendarDate } from '@/shared/utils/calendarDate'
 import { useEffect, useMemo, useState } from 'react'
 import type React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -13,6 +15,7 @@ import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import { confirmTask, patchTaskGuiDisplayResult, scheduleVisit } from '@/features/tasks/api'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import type { Applicant, PlantContact, PlantContactGroups, Task } from '@/types/application'
+import { useSingleFlight } from '@/features/applications/hooks/useSingleFlight'
 
 type Props = {
   open: boolean
@@ -21,13 +24,13 @@ type Props = {
   onClose: () => void
 }
 
-const todayYmd = () => new Date().toISOString().slice(0, 10)
+const todayYmd = () => localCalendarDate()
 
 const addDaysToYmd = (ymd: string, days: number) => {
   const [year, month, day] = ymd.split('-').map(Number)
   const date = new Date(year, month - 1, day)
   date.setDate(date.getDate() + days)
-  return date.toISOString().slice(0, 10)
+  return localCalendarDate(date)
 }
 
 const formatDate = (ymd?: string) => {
@@ -169,7 +172,7 @@ const withPatchedTaskGuiDisplayResult = (
     return nextValue.some((item, index) => item !== value[index]) ? nextValue : value
   }
 
-  const record = value as Record<string, any>
+  const record = value as Record<string, unknown>
   const recordTaskId = getRawTaskInstanceId(record)
   let changed = false
   let nextRecord = record
@@ -185,21 +188,23 @@ const withPatchedTaskGuiDisplayResult = (
     }
   }
 
-  if (Array.isArray(record.data)) {
-    const nextData = record.data.map((item) =>
+  const data = record.data
+  if (Array.isArray(data)) {
+    const nextData = data.map((item) =>
       withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult),
     )
-    if (nextData.some((item, index) => item !== record.data[index])) {
+    if (nextData.some((item, index) => item !== data[index])) {
       changed = true
       nextRecord = { ...nextRecord, data: nextData }
     }
   }
 
-  if (Array.isArray(record.pages)) {
-    const nextPages = record.pages.map((page) =>
+  const pages = record.pages
+  if (Array.isArray(pages)) {
+    const nextPages = pages.map((page) =>
       withPatchedTaskGuiDisplayResult(page, taskId, guiDisplayResult),
     )
-    if (nextPages.some((page, index) => page !== record.pages[index])) {
+    if (nextPages.some((page, index) => page !== pages[index])) {
       changed = true
       nextRecord = { ...nextRecord, pages: nextPages }
     }
@@ -210,13 +215,14 @@ const withPatchedTaskGuiDisplayResult = (
     const nextStages = Object.fromEntries(
       Object.entries(record.stages).map(([stageKey, stageValue]) => {
         if (!stageValue || typeof stageValue !== 'object') return [stageKey, stageValue]
-        const stageRecord = stageValue as Record<string, any>
-        if (!Array.isArray(stageRecord.tasks)) return [stageKey, stageValue]
+        const stageRecord = stageValue as Record<string, unknown>
+        const tasks = stageRecord.tasks
+        if (!Array.isArray(tasks)) return [stageKey, stageValue]
 
-        const nextTasks = stageRecord.tasks.map((stageTask) =>
+        const nextTasks = tasks.map((stageTask) =>
           withPatchedTaskGuiDisplayResult(stageTask, taskId, guiDisplayResult),
         )
-        if (!nextTasks.some((stageTask, index) => stageTask !== stageRecord.tasks[index])) {
+        if (!nextTasks.some((stageTask, index) => stageTask !== tasks[index])) {
           return [stageKey, stageValue]
         }
 
@@ -276,6 +282,8 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
   const [rfrNote, setRfrNote] = useState('')
   const [confirmed, setConfirmed] = useState(false)
   const [isSchedulingVisit, setIsSchedulingVisit] = useState(false)
+  // Schedules the visit and completes the task: ignore repeated clicks synchronously (fe4a N4).
+  const visitFlight = useSingleFlight()
   const [showApplicationDetails, setShowApplicationDetails] = useState(false)
 
   useEffect(() => {
@@ -320,9 +328,9 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
         : '',
       plantName: detailPlantName,
       plantType: pickFirstText(
-        (detailPlant?.manufacturing as any)?.brieflySummarize,
-        (detailPlant?.manufacturing as any)?.type,
-        (detailPlant as any)?.brieflySummarize,
+        (detailPlant?.manufacturing)?.brieflySummarize,
+        (detailPlant?.manufacturing)?.type,
+        detailPlant?.brieflySummarize,
       ),
       productsCount: applicationDetail?.products?.length ?? 0,
       ingredientsCount: applicationDetail?.ingredients?.length ?? 0,
@@ -334,14 +342,14 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
   const accountNumber = getAccountNumber(applicant)
   const reportDueDate = plannedVisitDate ? addDaysToYmd(plannedVisitDate, 7) : ''
   const assignmentResult = parseAssignmentResult(
-    (task as any)?.StatusDetails ??
-      (task as any)?.statusDetails ??
-      (task as any)?.Result ??
-      (task as any)?.result,
+    task?.StatusDetails ??
+      task?.statusDetails ??
+      task?.Result ??
+      task?.result,
   )
   const rfrName =
     assignmentResult.rfr ||
-    String((task as any)?.assignee ?? (task as any)?.assignedTo ?? 'Assigned RFR')
+    String(task?.assignee ?? task?.assignedTo ?? 'Assigned RFR')
   const assignmentDateRange =
     assignmentResult.dateRange ||
     `${formatDate(assignmentStartDate)} - ${formatDate(assignmentEndDate)}`
@@ -372,7 +380,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
       return
     }
 
-    const taskId = String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '')
+    const taskId = String(task?.TaskInstanceId ?? task?.taskInstanceId ?? '')
     if (!taskId) {
       toast.error('Task instance id not found')
       return
@@ -405,7 +413,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
           rfrNote: rfrNote.trim(),
         }),
         completionNotes: rfrNote.trim() || `Visit scheduled for ${formatDate(plannedVisitDate)}`,
-        capacity: (task as any)?.capacity ?? undefined,
+        capacity: task?.capacity ?? undefined,
       })
 
       await patchTaskGuiDisplayResult({
@@ -442,8 +450,8 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/40">
-        <div
+      <div className="fixed inset-0 pointer-events-auto z-50 bg-black/40">
+        <ModalSurface onClose={onClose} label="Visit Date"
           className="fixed right-0 top-0 flex h-full w-full max-w-[98vw] flex-col overflow-hidden bg-white shadow-2xl xl:max-w-[82vw]"
           onClick={(event) => event.stopPropagation()}
         >
@@ -551,7 +559,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
                     </label>
                     <button
                       type="button"
-                      onClick={confirmVisitDate}
+                      onClick={() => visitFlight.run(confirmVisitDate)}
                       disabled={isConfirmingVisitDate || !plannedVisitDate}
                       className="inline-flex items-center gap-2 rounded bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                     >
@@ -662,7 +670,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
               Close
             </button>
           </div>
-        </div>
+        </ModalSurface>
       </div>
       <ApplicationDetailsDrawer
         open={showApplicationDetails}

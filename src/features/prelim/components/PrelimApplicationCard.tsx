@@ -17,7 +17,7 @@ type Props = {
   expanded: boolean
   setExpanded: (id: string | null) => void
   handleCancelTask: (application: Applicant, action: Task, reason: string) => Promise<void> | void
-  handleTaskAction?: (e: React.MouseEvent, application: any, action: any) => void
+  handleTaskAction?: (e: React.MouseEvent, application: Applicant, action: Task) => void
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -115,9 +115,9 @@ export function PrelimApplicationCard({
     if (matchingRoles.length === 0) return false
 
     const assignedRoles = Array.isArray(company?.assignedRoles) ? company.assignedRoles : []
-    return assignedRoles.some((ar: any) =>
+    return assignedRoles.some((ar) =>
       matchingRoles.some(
-        (matchedRole) => ar?.[matchedRole.toUpperCase()]?.toLowerCase() === username?.toLowerCase(),
+        (matchedRole) => String(ar?.[matchedRole.toUpperCase()] ?? '').toLowerCase() === username?.toLowerCase(),
       ),
     )
   }, [company.assignedRoles, taskRolesAll, userRoles, username, getCancelAction])

@@ -1,3 +1,4 @@
+import { asRecord } from '@/shared/api/record'
 import React, { useMemo, useState } from 'react'
 import { ExternalVisitWaitDialog } from './ExternalVisitWaitDialog'
 import { isExternalWaitTask } from '@/features/tasks/model/externalWaitTask'
@@ -35,7 +36,7 @@ type Props = {
 }
 
 const getTaskInstanceId = (task: Task): string =>
-  String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '')
+  String(task?.TaskInstanceId ?? task?.taskInstanceId ?? '')
 
 const getGUIDisplayResult = (resultData: unknown): string | null => {
   if (resultData === null || resultData === undefined) return null
@@ -45,16 +46,16 @@ const getGUIDisplayResult = (resultData: unknown): string | null => {
     return text.startsWith('{') && text.endsWith('}') ? text.slice(1, -1).trim() : text
   }
 
-  const formatInspectionFeeObject = (value: any): string | null => {
+  const formatInspectionFeeObject = (value: unknown): string | null => {
     if (!value || typeof value !== 'object') return null
-    const inspectionNeeded = value?.inspectionNeeded
-    const feeNeeded = value?.feeNeeded
+    const inspectionNeeded = asRecord(value).inspectionNeeded
+    const feeNeeded = asRecord(value).feeNeeded
     if (inspectionNeeded === undefined || feeNeeded === undefined) return null
     return `{inspectionNeeded:${String(inspectionNeeded)}, feeNeeded:${String(feeNeeded)}}`
   }
 
-  const readValue = (data: any): string | null => {
-    const value = data?.GUIDisplayResult
+  const readValue = (data: unknown): string | null => {
+    const value = asRecord(data).GUIDisplayResult
     if (value === null || value === undefined) return null
     if (typeof value === 'object') {
       const formatted = formatInspectionFeeObject(value)
@@ -358,7 +359,7 @@ export function ApplicationExpandedStage({
 
                   {(() => {
                     const guiDisplayResult = getGUIDisplayResult(
-                      (task as any)?.GUIDisplayResult ?? (task as any)?.ResultData,
+                      task?.GUIDisplayResult ?? task?.ResultData,
                     )
                     if (!guiDisplayResult) return null
 

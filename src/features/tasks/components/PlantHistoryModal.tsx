@@ -1,3 +1,4 @@
+import { ModalSurface } from '@/components/ui/ModalSurface'
 import React from 'react';
 import { History, X } from 'lucide-react';
 import type { PlantHistoryEntry } from '@/features/tasks/model/plantHistory';
@@ -21,8 +22,8 @@ export const PlantHistoryModal: React.FC<PlantHistoryModalProps> = ({
   if (!plant) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="plant-history-modal max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-xl">
+    <div className="fixed inset-0 pointer-events-auto z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <ModalSurface onClose={() => setShowPlantHistory(null)} label="Plant History" className="plant-history-modal max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-lg bg-white shadow-xl">
         <div className="flex items-center justify-between border-b bg-gray-50 p-6">
           <div className="flex items-center space-x-3">
             <History className="h-6 w-6 text-blue-600" />
@@ -95,7 +96,7 @@ export const PlantHistoryModal: React.FC<PlantHistoryModalProps> = ({
             </div>
           )}
         </div>
-      </div>
+      </ModalSurface>
     </div>
   );
 };

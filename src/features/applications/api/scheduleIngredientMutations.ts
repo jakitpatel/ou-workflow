@@ -1,4 +1,4 @@
-import { fetchWithAuth } from '@/shared/api/httpClient'
+import { fetchWithAuth, isJsonApiRecord } from '@/shared/api/httpClient'
 
 export type ScheduleIngredientFollowUp = { isFlagged: boolean; flaggedNote: string }
 export type ScheduleIngredientHalachicReview = { isHalachic: boolean; halachicNote: string }
@@ -13,6 +13,7 @@ export function patchScheduleIngredientHalachicReview(
     method: 'PATCH',
     body: { data: { attributes, id: Number(id), type: 'ScheduleIngredient' } },
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -26,6 +27,7 @@ export function patchScheduleIngredientFollowUp(
     method: 'PATCH',
     body: { data: { attributes, id: Number(id), type: 'ScheduleIngredient' } },
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -55,6 +57,7 @@ export function patchScheduleIngredient(
       },
     },
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -70,5 +73,6 @@ export function deleteScheduleIngredient(id: string, token?: string | null) {
       },
     },
     token,
+    expectBody: isJsonApiRecord,
   })
 }

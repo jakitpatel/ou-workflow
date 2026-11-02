@@ -18,7 +18,7 @@ export const withPatchedTaskGuiDisplayResult = (
     return nextValue.some((item, index) => item !== value[index]) ? nextValue : value
   }
 
-  const record = value as Record<string, any>
+  const record = value as Record<string, unknown>
   const recordTaskId = getRawTaskInstanceId(record)
   let changed = false
   let nextRecord = record
@@ -39,21 +39,23 @@ export const withPatchedTaskGuiDisplayResult = (
     }
   }
 
-  if (Array.isArray(record.data)) {
-    const nextData = record.data.map((item) =>
+  const data = record.data
+  if (Array.isArray(data)) {
+    const nextData = data.map((item) =>
       withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult, statusDetails),
     )
-    if (nextData.some((item, index) => item !== record.data[index])) {
+    if (nextData.some((item, index) => item !== data[index])) {
       changed = true
       nextRecord = { ...nextRecord, data: nextData }
     }
   }
 
-  if (Array.isArray(record.pages)) {
-    const nextPages = record.pages.map((page) =>
+  const pages = record.pages
+  if (Array.isArray(pages)) {
+    const nextPages = pages.map((page) =>
       withPatchedTaskGuiDisplayResult(page, taskId, guiDisplayResult, statusDetails),
     )
-    if (nextPages.some((page, index) => page !== record.pages[index])) {
+    if (nextPages.some((page, index) => page !== pages[index])) {
       changed = true
       nextRecord = { ...nextRecord, pages: nextPages }
     }
@@ -64,13 +66,14 @@ export const withPatchedTaskGuiDisplayResult = (
     const nextStages = Object.fromEntries(
       Object.entries(record.stages).map(([stageKey, stageValue]) => {
         if (!stageValue || typeof stageValue !== 'object') return [stageKey, stageValue]
-        const stageRecord = stageValue as Record<string, any>
-        if (!Array.isArray(stageRecord.tasks)) return [stageKey, stageValue]
+        const stageRecord = stageValue as Record<string, unknown>
+        const tasks = stageRecord.tasks
+        if (!Array.isArray(tasks)) return [stageKey, stageValue]
 
-        const nextTasks = stageRecord.tasks.map((stageTask) =>
+        const nextTasks = tasks.map((stageTask) =>
           withPatchedTaskGuiDisplayResult(stageTask, taskId, guiDisplayResult, statusDetails),
         )
-        if (!nextTasks.some((stageTask, index) => stageTask !== stageRecord.tasks[index])) {
+        if (!nextTasks.some((stageTask, index) => stageTask !== tasks[index])) {
           return [stageKey, stageValue]
         }
 

@@ -25,6 +25,7 @@ describe('schedule visit request contract', () => {
         method: 'POST',
         body: { visit_type: visitType, visit_id: '2970391', visit_date: '2026-10-15' },
         token: 'token',
+        expectBody: expect.any(Function),
       })
     },
   )

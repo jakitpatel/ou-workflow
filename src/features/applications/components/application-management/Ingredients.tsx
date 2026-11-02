@@ -57,7 +57,7 @@ export default function IngredientMgmt({
       ? (
           application.ingredients?.length
             ? (application.ingredients as IngredientRow[])
-            : application.preferences?.prelimPlantsRaw?.flatMap((plant: any) => plant.ingredients ?? [])
+            : application.preferences?.prelimPlantsRaw?.flatMap((plant) => plant.ingredients ?? [])
         ) || []
       : (application.ingredients as IngredientRow[]) || []
   const filteredIngredients = !isPrelimApplicationDetail && showRecentOnly

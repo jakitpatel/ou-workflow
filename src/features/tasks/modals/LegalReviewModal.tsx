@@ -1,3 +1,4 @@
+import { SignedFileLink } from '@/shared/utils/fileLinks'
 import { useRef, useState } from 'react'
 import { Upload } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
@@ -76,7 +77,7 @@ export function LegalReviewModal({ applicationId, companyName, taskInstanceId, a
           <h3 className="font-semibold">Customer NDA uploaded by NCRC</h3>
           {detail.isLoading ? <p role="status">Loading NDA...</p> : detail.isError ?
             <p role="alert">Unable to load the NDA. <button className="underline" onClick={() => void detail.refetch()}>Retry</button></p> :
-            customerUrl ? <a className="text-blue-700 underline" href={customerUrl} target="_blank" rel="noreferrer">{customerFileName || 'View or download customer NDA'}</a> :
+            customerUrl ? <SignedFileLink className="text-blue-700 underline" href={customerUrl} target="_blank" rel="noreferrer">{customerFileName || 'View or download customer NDA'}</SignedFileLink> :
               <p>No customer NDA is available.</p>}
         </section>
         <section className="rounded-lg border p-4 space-y-3">
@@ -98,7 +99,7 @@ export function LegalReviewModal({ applicationId, companyName, taskInstanceId, a
             </div>
           </button>
           <button className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50" disabled={!file || busy} onClick={() => void upload()}>{busy ? 'Saving...' : 'Upload NDA'}</button>
-          {approved && <p role="status">Saved: <a className="text-blue-700 underline" href={documentUrl(approved.link)} target="_blank" rel="noreferrer">{approved.name}</a></p>}
+          {approved && <p role="status">Saved: <SignedFileLink className="text-blue-700 underline" href={documentUrl(approved.link)} target="_blank" rel="noreferrer">{approved.name}</SignedFileLink></p>}
         </section>
         {error && <p role="alert" className="text-red-700">{error}</p>}
         <div className="flex justify-end gap-3">

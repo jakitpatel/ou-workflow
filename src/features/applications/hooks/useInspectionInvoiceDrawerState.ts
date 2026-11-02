@@ -1,3 +1,5 @@
+import { asRecord } from '@/shared/api/record'
+import { localCalendarDate } from '@/shared/utils/calendarDate'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
@@ -202,7 +204,7 @@ type InspectionInvoiceSavedState = {
   }
 }
 
-const todayYmd = () => new Date().toISOString().slice(0, 10)
+const todayYmd = () => localCalendarDate()
 
 export const formatCurrency = (value: number) =>
   value.toLocaleString('en-US', {
@@ -277,7 +279,8 @@ const mapCompanyContactToRecipientOption = (
   }
 }
 
-const mapLookupRfr = (item: any): InspectionInvoiceRfr => {
+const mapLookupRfr = (value: unknown): InspectionInvoiceRfr => {
+  const item = asRecord(value)
   const name = normalizeRfrText(item.rfr ?? item.fullName ?? item.name ?? item.userName ?? item.id)
   const userName = normalizeRfrText(item.userName ?? item.id)
   const email = normalizeRfrText(item.email)
@@ -378,7 +381,7 @@ const withPatchedTaskGuiDisplayResult = (
     return nextValue.some((item, index) => item !== value[index]) ? nextValue : value
   }
 
-  const record = value as Record<string, any>
+  const record = value as Record<string, unknown>
   const recordTaskId = getRawTaskInstanceId(record)
   let changed = false
   let nextRecord = record
@@ -395,21 +398,23 @@ const withPatchedTaskGuiDisplayResult = (
     }
   }
 
-  if (Array.isArray(record.data)) {
-    const nextData = record.data.map((item) =>
+  const data = record.data
+  if (Array.isArray(data)) {
+    const nextData = data.map((item) =>
       withPatchedTaskGuiDisplayResult(item, taskId, guiDisplayResult, statusDetails),
     )
-    if (nextData.some((item, index) => item !== record.data[index])) {
+    if (nextData.some((item, index) => item !== data[index])) {
       changed = true
       nextRecord = { ...nextRecord, data: nextData }
     }
   }
 
-  if (Array.isArray(record.pages)) {
-    const nextPages = record.pages.map((page) =>
+  const pages = record.pages
+  if (Array.isArray(pages)) {
+    const nextPages = pages.map((page) =>
       withPatchedTaskGuiDisplayResult(page, taskId, guiDisplayResult, statusDetails),
     )
-    if (nextPages.some((page, index) => page !== record.pages[index])) {
+    if (nextPages.some((page, index) => page !== pages[index])) {
       changed = true
       nextRecord = { ...nextRecord, pages: nextPages }
     }
@@ -420,13 +425,14 @@ const withPatchedTaskGuiDisplayResult = (
     const nextStages = Object.fromEntries(
       Object.entries(record.stages).map(([stageKey, stageValue]) => {
         if (!stageValue || typeof stageValue !== 'object') return [stageKey, stageValue]
-        const stageRecord = stageValue as Record<string, any>
-        if (!Array.isArray(stageRecord.tasks)) return [stageKey, stageValue]
+        const stageRecord = stageValue as Record<string, unknown>
+        const tasks = stageRecord.tasks
+        if (!Array.isArray(tasks)) return [stageKey, stageValue]
 
-        const nextTasks = stageRecord.tasks.map((task) =>
+        const nextTasks = tasks.map((task) =>
           withPatchedTaskGuiDisplayResult(task, taskId, guiDisplayResult, statusDetails),
         )
-        if (!nextTasks.some((task, index) => task !== stageRecord.tasks[index])) {
+        if (!nextTasks.some((task, index) => task !== tasks[index])) {
           return [stageKey, stageValue]
         }
 
@@ -668,7 +674,7 @@ export function useInspectionInvoiceDrawerState({
       normalizeContactText(value).replace(/,\s*$/, '')
     const street1 = normalizeAddressPart(address?.street)
     const street2 = normalizeAddressPart(address?.line2)
-    const street3 = normalizeAddressPart((address as any)?.line3)
+    const street3 = normalizeAddressPart(address?.line3)
     const remainingStreetLines = [street2, street3].filter(Boolean).join(' ')
     const billingAddress = [street1, remainingStreetLines].filter(Boolean).join(', ')
     const billingCityStateZip = [address?.city, address?.state, address?.zip]
@@ -758,10 +764,10 @@ export function useInspectionInvoiceDrawerState({
     const currentTask = findTaskById(applicant, invoiceTaskId)
     const savedState = getInspectionStatusSavedState<InspectionInvoiceSavedState>(
       taskStatusDetails ??
-        (currentTask as any)?.StatusDetails ??
-        (currentTask as any)?.statusDetails ??
-        (currentTask as any)?.Result ??
-        (currentTask as any)?.result,
+        currentTask?.StatusDetails ??
+        currentTask?.statusDetails ??
+        currentTask?.Result ??
+        currentTask?.result,
     )
     if (!savedState) return
 
@@ -804,7 +810,7 @@ export function useInspectionInvoiceDrawerState({
             ? 'generated'
             : 'configured'
     setStage(restoredStage)
-  }, [applicant, enabled, resolvedApplicationId, taskInstanceId, taskStatusDetails])
+  }, [applicant, enabled, resolvedApplicationId, taskInstanceId, taskStatusDetails, setEmailCc, setSelectedRfrId])
 
   useEffect(() => {
     if (recipient || recipientOptions.length === 0) return

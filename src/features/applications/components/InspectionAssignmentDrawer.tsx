@@ -1,3 +1,6 @@
+import { asRecord } from '@/shared/api/record'
+import { ModalSurface } from '@/components/ui/ModalSurface'
+import { localCalendarDate } from '@/shared/utils/calendarDate'
 import { useQueryClient } from '@tanstack/react-query'
 import { withImpliedBcc } from '@/shared/email/impliedBcc'
 import { Check, Mail, Pencil, Search, UserRound, X } from 'lucide-react'
@@ -26,6 +29,7 @@ import { detectRole } from '@/lib/utils/taskHelpers'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import type { Applicant, Task } from '@/types/application'
+import { useSingleFlight } from '@/features/applications/hooks/useSingleFlight'
 
 type Props = {
   open: boolean
@@ -53,7 +57,8 @@ const normalizeText = (value: unknown) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-const mapLookupRfr = (item: any): RfrOption => {
+const mapLookupRfr = (value: unknown): RfrOption => {
+  const item = asRecord(value)
   const name = normalizeText(item.rfr ?? item.fullName ?? item.name ?? item.userName ?? item.id)
   const userName = normalizeText(item.userName ?? item.id)
   const lookupKey = normalizeText(item.lookupKey ?? item.id ?? userName ?? name)
@@ -73,13 +78,13 @@ const mapLookupRfr = (item: any): RfrOption => {
   }
 }
 
-const todayYmd = () => new Date().toISOString().slice(0, 10)
+const todayYmd = () => localCalendarDate()
 
 const addDaysToYmd = (ymd: string, days: number) => {
   const [year, month, day] = ymd.split('-').map(Number)
   const date = new Date(year, month - 1, day)
   date.setDate(date.getDate() + days)
-  return date.toISOString().slice(0, 10)
+  return localCalendarDate(date)
 }
 
 const formatDisplayDate = (ymd: string) => {
@@ -138,12 +143,12 @@ const replaceApplicationLinkLabel = ({
 }
 
 const getTaskInstanceId = (task?: Task): string =>
-  String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '').trim()
+  String(task?.TaskInstanceId ?? task?.taskInstanceId ?? '').trim()
 
 const extractRfrFromTaskResult = (task?: Task): string => {
   const rawResult = normalizeText(
     getInspectionStatusInputParam(
-      (task as any)?.StatusDetails ?? (task as any)?.statusDetails ?? (task as any)?.Result ?? (task as any)?.result,
+      task?.StatusDetails ?? task?.statusDetails ?? task?.Result ?? task?.result,
     ),
   )
   if (!rawResult) return ''
@@ -287,6 +292,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   const [emailSubject, setEmailSubject] = useState('')
   const [emailMessageBody, setEmailMessageBody] = useState('')
   const [isSendingAssignmentMessage, setIsSendingAssignmentMessage] = useState(false)
+  const assignmentFlight = useSingleFlight()
 
   const selectedRfr = useMemo(
     () => rfrs.find((rfr) => rfr.lookupKey === selectedRfrId || rfr.id === selectedRfrId) ?? null,
@@ -397,7 +403,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
     )
   }
 
-  const createAssignment = async () => {
+  const createAssignmentNow = async () => {
     if (!selectedRfr || !task) {
       toast.error('Select an RFR before creating the assignment')
       return
@@ -434,7 +440,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         role: detectRole(task.PreScript),
         assignee: selectedRfr.assigneeValue || selectedRfr.id,
         token: token ?? undefined,
-        capacity: (task as any)?.capacity ?? undefined,
+        capacity: task?.capacity ?? undefined,
         override: 1,
       })
       const nextVisitId = extractVisitIdFromAssignResponse(assignResponse)
@@ -532,14 +538,17 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
     }
   }
 
+  // Assign + notify writes twice; ignore repeated clicks before isSendingAssignmentMessage renders.
+  const createAssignment = () => assignmentFlight.run(createAssignmentNow)
+
   const resendNotification = () => {
     toast.success('Notification resent')
     setShowEmailPreview(true)
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40">
-      <div
+    <div className="fixed inset-0 pointer-events-auto z-50 bg-black/40">
+      <ModalSurface onClose={onClose} label="Inspection Assignment"
         className="fixed right-0 top-0 flex h-full w-full max-w-[98vw] flex-col overflow-hidden bg-white shadow-2xl xl:max-w-[82vw]"
         onClick={(event) => event.stopPropagation()}
       >
@@ -841,8 +850,8 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
         </div>
 
         {showEmailPreview ? (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-3xl rounded-lg bg-white shadow-2xl">
+          <div className="fixed inset-0 pointer-events-auto z-[60] flex items-center justify-center bg-black/50 p-4">
+            <ModalSurface onClose={() => setShowEmailPreview(false)} label="Email preview" className="w-full max-w-3xl rounded-lg bg-white shadow-2xl">
               <div className="border-b px-5 py-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -886,10 +895,10 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
                   Done
                 </button>
               </div>
-            </div>
+            </ModalSurface>
           </div>
         ) : null}
-      </div>
+      </ModalSurface>
     </div>
   )
 }

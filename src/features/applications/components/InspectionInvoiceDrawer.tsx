@@ -1,3 +1,4 @@
+import { ModalSurface } from '@/components/ui/ModalSurface'
 import { Check, FileText, Mail, Paperclip, Search, TriangleAlert, UserRoundCheck, X } from 'lucide-react'
 import type React from 'react'
 import { useMemo, useRef } from 'react'
@@ -16,6 +17,7 @@ import {
 import { getInvalidEmailAddresses, isValidEmailAddressList } from '@/shared/email/addressValidation'
 import { MAX_EMAIL_ATTACHMENT_SIZE_MB } from '@/shared/email/attachmentSizeValidation'
 import type { Applicant } from '@/types/application'
+import { useSingleFlight } from '@/features/applications/hooks/useSingleFlight'
 
 type Props = {
   open: boolean
@@ -149,6 +151,8 @@ export function InspectionInvoiceDrawer({
     taskStatusDetails,
   })
   const emailAttachmentInputRef = useRef<HTMLInputElement | null>(null)
+  const primaryFlight = useSingleFlight()
+  const sendFlight = useSingleFlight()
   const accountNumber = getApplicantAccountNumber(applicant)
   const resolvedApplicationId = String(applicationId ?? applicant?.applicationId ?? '').trim()
   const isEmbedded = mode === 'embedded'
@@ -220,7 +224,7 @@ export function InspectionInvoiceDrawer({
     })
   }
 
-  const onPrimaryClick = async () => {
+  const onPrimaryClickNow = async () => {
     if (state.skipInvoiceWorkflow) {
       try {
         await state.completeWithoutInspection()
@@ -264,10 +268,12 @@ export function InspectionInvoiceDrawer({
       }
     }
   }
+  // Generate/complete/mark-paid and Send are writes: ignore repeated clicks synchronously.
+  const onPrimaryClick = () => primaryFlight.run(onPrimaryClickNow)
 
   return (
     <div
-      className={isEmbedded ? 'h-full min-h-0' : 'fixed inset-0 z-50 bg-black/40'}
+      className={isEmbedded ? 'h-full min-h-0' : 'fixed inset-0 pointer-events-auto z-50 bg-black/40'}
     >
       <div
         className={
@@ -823,6 +829,7 @@ export function InspectionInvoiceDrawer({
                   onClick={onPrimaryClick}
                   disabled={
                     state.isGeneratingInvoice ||
+                    primaryFlight.isRunning ||
                     state.isMarkingPaid ||
                     state.isCompletingWithoutInspection ||
                     (!state.skipInvoiceWorkflow &&
@@ -843,8 +850,8 @@ export function InspectionInvoiceDrawer({
         ) : null}
 
         {state.showEmailPreview ? (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-3xl rounded-lg bg-white shadow-2xl">
+          <div className="fixed inset-0 pointer-events-auto z-[60] flex items-center justify-center bg-black/50 p-4">
+            <ModalSurface onClose={() => state.setShowEmailPreview(false)} label="Email preview" className="w-full max-w-3xl rounded-lg bg-white shadow-2xl">
               <div className="border-b px-5 py-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -1031,11 +1038,12 @@ export function InspectionInvoiceDrawer({
                   type="button"
                   disabled={
                     state.isSendingEmail ||
+                    sendFlight.isRunning ||
                     state.isUploadingEmailAttachment ||
                     !areEmailRecipientsValid ||
                     !state.emailBody.trim()
                   }
-                  onClick={async () => {
+                  onClick={() => sendFlight.run(async () => {
                     try {
                       await state.sendEmail({
                         attachments: emailAttachment,
@@ -1051,14 +1059,14 @@ export function InspectionInvoiceDrawer({
                         error instanceof Error ? error.message : 'Unable to send email'
                       toast.error(message)
                     }
-                  }}
+                  })}
                   className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
                   <UserRoundCheck className="h-4 w-4" />
                   {state.isSendingEmail ? 'Sending...' : 'Send'}
                 </button>
               </div>
-            </div>
+            </ModalSurface>
           </div>
         ) : null}
       </div>

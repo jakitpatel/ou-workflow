@@ -4,7 +4,7 @@ import { fetchWithAuth } from '@/shared/api/httpClient'
 
 import { deleteScheduleProduct, patchScheduleProduct } from './scheduleProductMutations'
 
-vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: vi.fn() }))
+vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: vi.fn(), isJsonApiRecord: vi.fn() }))
 
 describe('ScheduleProduct mutations', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -20,6 +20,7 @@ describe('ScheduleProduct mutations', () => {
       path: '/api/ScheduleProduct/17',
       method: 'PATCH',
       token: 'token',
+      expectBody: expect.any(Function),
       body: {
         data: { attributes: { ApplicationID: '421', ...attributes, inHouse: true }, id: 17, type: 'ScheduleProduct' },
       },
@@ -33,6 +34,7 @@ describe('ScheduleProduct mutations', () => {
       method: 'PATCH',
       body: { data: { attributes: { isDeleted: true }, id: 17, type: 'ScheduleProduct' } },
       token: 'token',
+      expectBody: expect.any(Function),
     })
   })
 

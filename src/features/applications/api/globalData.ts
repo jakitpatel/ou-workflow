@@ -13,5 +13,7 @@ export function saveApplicationGlobalData({
     method: 'POST',
     body: { applicationId, taskInstanceId, jsonData },
     token,
+    // `/global_data` answers {status: "ok", message} after it commits.
+    expectBody: (response) => (response as { status?: unknown } | null)?.status === 'ok',
   })
 }

@@ -1,3 +1,4 @@
+import { ModalSurface } from '@/components/ui/ModalSurface'
 import { lazy, Suspense } from 'react'
 
 const JsonEditorView = lazy(() =>
@@ -12,15 +13,15 @@ export function PrelimJsonModal({
   data,
   isLoading,
   error,
-}: any) {
+}: { open: boolean; onClose: () => void; data: unknown; isLoading: boolean; error: unknown }) {
   if (!open) return null
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className="fixed inset-0 pointer-events-auto z-50 flex items-center justify-center bg-black/40"
       onClick={onClose}
     >
-      <div
+      <ModalSurface onClose={onClose} label="Application JSON"
         className="max-h-[85vh] w-[85vw] rounded-lg bg-white p-4"
         onClick={(event) => event.stopPropagation()}
       >
@@ -42,7 +43,7 @@ export function PrelimJsonModal({
             </Suspense>
           </div>
         )}
-      </div>
+      </ModalSurface>
     </div>
   )
 }

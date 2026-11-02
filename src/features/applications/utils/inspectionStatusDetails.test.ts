@@ -6,7 +6,7 @@ describe('getInspectionStatusSavedState', () => {
     const statusDetails =
       "{'savedState': {'version': 1, 'stage': 'generated', 'setup': {'inspectionNeeded': True, 'feeRequired': True, 'awaitPayment': True, 'selectedRfrId': '531549', 'rfr': {'id': 'SHOUKI.BENJAMIN', 'name': 'BENJAMIN, SHOUKI', 'lookupKey': '531549', 'isActive': True}, 'feeAmount': '600.00'}, 'email': {'sent': False, 'sentAt': None}}}"
 
-    const savedState = getInspectionStatusSavedState<any>(statusDetails)
+    const savedState = getInspectionStatusSavedState<unknown>(statusDetails)
 
     expect(savedState).toMatchObject({
       version: 1,
@@ -29,7 +29,7 @@ describe('getInspectionStatusSavedState', () => {
   })
 
   it('restores a Python-style savedState nested inside an object', () => {
-    const savedState = getInspectionStatusSavedState<any>({
+    const savedState = getInspectionStatusSavedState<unknown>({
       savedState: "{'setup': {'inspectionNeeded': False}, 'payment': {'paid': True}}",
     })
 

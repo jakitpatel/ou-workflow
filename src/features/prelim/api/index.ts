@@ -1,5 +1,6 @@
 import { createAppError } from '@/shared/api/errors'
-import { fetchWithAuth } from '@/shared/api/httpClient'
+import { asRecord } from '@/shared/api/record'
+import { fetchWithAuth, isJsonApiRecord } from '@/shared/api/httpClient'
 import { addFilterParams, buildPaginationParams } from '@/shared/api/queryParams'
 import type { ApplicantsResponse } from '@/types/application'
 import type { CompanyData, PlantData } from '@/features/prelim/model/resolution'
@@ -438,13 +439,14 @@ export async function createOrUpdateCompanyFromApplication({
   appValue: AppCompanyValue
   companyId?: number | null
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const body = buildCompanyPayloadFromApplication(appValue, companyId)
   return await fetchWithAuth({
     path: '/api/COMPANYTB',
     method: 'POST',
     body,
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -456,13 +458,14 @@ export async function createOrUpdatePlantFromApplication({
   appValue: AppPlantValue
   plantId?: number | null
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const body = buildPlantPayloadFromApplication(appValue, plantId)
   return await fetchWithAuth({
     path: '/api/PLANTTB',
     method: 'POST',
     body,
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -474,13 +477,14 @@ export async function createCompanyAddressFromApplication({
   appValue: AppCompanyValue
   companyId: string | number
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const body = buildCompanyAddressPayloadFromApplication(appValue, companyId)
   return await fetchWithAuth({
     path: '/api/COMPANYADDRESSTB',
     method: 'POST',
     body,
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -492,13 +496,14 @@ export async function createPlantAddressFromApplication({
   appValue: AppPlantValue
   plantId: string | number
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const body = buildPlantAddressPayloadFromApplication(appValue, plantId)
   return await fetchWithAuth({
     path: '/api/PLANTADDRESSTB',
     method: 'POST',
     body,
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -510,13 +515,14 @@ export async function createContactFromApplication({
   appValue: AppContactValue
   username?: string
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const body = buildContactPayloadFromApplication(appValue, username)
   return await fetchWithAuth({
     path: '/api/Contacts',
     method: 'POST',
     body,
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -536,7 +542,7 @@ export async function createCompanyContactLinkFromApplication({
   isBilling: boolean
   isOther: boolean
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const body = buildCompanyContactPayloadFromApplication({
     companyId,
     companyTitle,
@@ -550,6 +556,7 @@ export async function createCompanyContactLinkFromApplication({
     method: 'POST',
     body,
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -571,7 +578,7 @@ export async function createPlantContactLinkFromApplication({
   isWeb: boolean
   isOther: boolean
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const body = buildPlantContactPayloadFromApplication({
     ownsId,
     companyTitle,
@@ -586,6 +593,7 @@ export async function createPlantContactLinkFromApplication({
     method: 'POST',
     body,
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
@@ -662,7 +670,7 @@ export async function saveResolveTaskState({
   taskInstanceId: string | number
   savedState: ResolveSavedState
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const taskId = String(taskInstanceId)
   return await fetchWithAuth({
     path: `/api/TaskInstance/${encodeURIComponent(taskId)}`,
@@ -679,27 +687,41 @@ export async function saveResolveTaskState({
       },
     },
     token,
+    expectBody: isJsonApiRecord,
   })
 }
 
 export function extractCreatedRecordId(
-  response: any,
+  response: unknown,
   key?: 'companyId' | 'plantId',
 ): string | number | null {
+  const record = asRecord(response)
+  const data = asRecord(record.data)
+  const attributes = asRecord(data.attributes)
   const keyedValue =
     key == null
       ? undefined
-      : response?.[key] ??
-        response?.data?.[key] ??
-        response?.result?.[key] ??
-        response?.payload?.[key]
+      : record[key] ??
+        data[key] ??
+        asRecord(record.result)[key] ??
+        asRecord(record.payload)[key]
 
-  const jsonApiId = response?.data?.id
-  const fallbackAttributeId =
-    response?.data?.attributes?.COMPANY_ID ?? response?.data?.attributes?.PLANT_ID
+  const jsonApiId = data.id
+  const fallbackAttributeId = attributes.COMPANY_ID ?? attributes.PLANT_ID
 
   const candidate = keyedValue ?? jsonApiId ?? fallbackAttributeId
-  return candidate == null || candidate === '' ? null : candidate
+  return typeof candidate === 'string' || typeof candidate === 'number'
+    ? candidate === '' ? null : candidate
+    : null
+}
+
+/**
+ * The create/delete application routes are GETs that change data; they answer
+ * `{status: "...", application_id}` or `{result: "..."}` once done.
+ */
+export function isApplicationActionResult(response: unknown): boolean {
+  const record = asRecord(response)
+  return [record.status, record.result].some((value) => typeof value === 'string' && value.trim() !== '')
 }
 
 export async function createSubmissionApplication({
@@ -709,13 +731,14 @@ export async function createSubmissionApplication({
   applicationId: number
   token?: string | null
   applicationType?: number
-}): Promise<any> {
+}): Promise<unknown> {
   const params = new URLSearchParams()
   params.append('application_id', String(applicationId))
 
   return await fetchWithAuth({
     path: `/createSubmissionApplication?${params.toString()}`,
     token,
+    expectBody: isApplicationActionResult,
   })
 }
 
@@ -727,7 +750,7 @@ export async function deleteSubmissionApplication({
   applicationId: number
   token?: string | null
   applicationType?: number
-}): Promise<any> {
+}): Promise<unknown> {
   const params = new URLSearchParams()
   params.append('application_id', String(applicationType))
   params.append('applicationID', String(applicationId))
@@ -735,5 +758,6 @@ export async function deleteSubmissionApplication({
   return await fetchWithAuth({
     path: `/deleteSubmissionApplication?${params.toString()}`,
     token,
+    expectBody: isApplicationActionResult,
   })
 }

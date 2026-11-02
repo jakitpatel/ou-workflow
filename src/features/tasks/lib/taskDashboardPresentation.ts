@@ -4,7 +4,7 @@ import { normalizeStatus } from '@/lib/utils/taskHelpers';
 type StatusConfig = {
   label: string;
   color: string;
-  icon: any;
+  icon: import('lucide-react').LucideIcon;
 };
 
 const STATUS_CONFIGS: Record<string, StatusConfig> = {

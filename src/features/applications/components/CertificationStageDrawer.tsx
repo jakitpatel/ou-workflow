@@ -1,7 +1,10 @@
+import { SignedFileFrame, SignedFileLink } from '@/shared/utils/fileLinks'
+import { ModalSurface } from '@/components/ui/ModalSurface'
 import { Check, Clock3, ExternalLink, FileText, Mail, Paperclip, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useCertificationStageDrawerState } from '@/features/applications/hooks/useCertificationStageDrawerState'
+import { useSingleFlight } from '@/features/applications/hooks/useSingleFlight'
 import type { Applicant, Task } from '@/types/application'
 
 type Props = {
@@ -19,6 +22,7 @@ const steps = [
 
 export function CertificationStageDrawer({ open, applicant, task, onClose }: Props) {
   const state = useCertificationStageDrawerState({ applicant, task, enabled: open })
+  const actionFlight = useSingleFlight()
   if (!open) return null
 
   const activeIndex = steps.findIndex((step) => step.id === state.stage)
@@ -26,8 +30,8 @@ export function CertificationStageDrawer({ open, applicant, task, onClose }: Pro
   const accountNumber = String(applicant?.companyId ?? '').trim()
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40">
-      <aside
+    <div className="fixed inset-0 pointer-events-auto z-50 bg-black/40">
+      <ModalSurface onClose={onClose} label="Certification Stage"
         className="fixed right-0 top-0 flex h-full w-full max-w-[96vw] flex-col overflow-hidden bg-white shadow-2xl xl:max-w-[82vw]"
         onClick={(event) => event.stopPropagation()}
       >
@@ -112,8 +116,8 @@ export function CertificationStageDrawer({ open, applicant, task, onClose }: Pro
                 </p>
                 <button
                   type="button"
-                  disabled={state.isSaving}
-                  onClick={async () => {
+                  disabled={state.isSaving || actionFlight.isRunning}
+                  onClick={() => actionFlight.run(async () => {
                     try {
                       await state.recordBichelReceived()
                       toast.success('Bichel email recorded')
@@ -122,7 +126,7 @@ export function CertificationStageDrawer({ open, applicant, task, onClose }: Pro
                         error instanceof Error ? error.message : 'Unable to record Bichel email',
                       )
                     }
-                  }}
+                  })}
                   className="mt-5 w-full rounded-lg border border-dashed border-amber-400 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60"
                 >
                   {state.isSaving ? 'Recording…' : 'Record Bichel Email Received'}
@@ -257,11 +261,12 @@ export function CertificationStageDrawer({ open, applicant, task, onClose }: Pro
                   type="button"
                   disabled={
                     state.isSaving ||
+                    actionFlight.isRunning ||
                     !state.to.trim() ||
                     !state.subject.trim() ||
                     !state.body.trim()
                   }
-                  onClick={async () => {
+                  onClick={() => actionFlight.run(async () => {
                     try {
                       await state.sendWelcomeEmail()
                       toast.success('Welcome email sent and application certified')
@@ -270,7 +275,7 @@ export function CertificationStageDrawer({ open, applicant, task, onClose }: Pro
                         error instanceof Error ? error.message : 'Unable to send welcome email',
                       )
                     }
-                  }}
+                  })}
                   className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-gray-300"
                 >
                   <Mail className="h-4 w-4" />
@@ -282,16 +287,16 @@ export function CertificationStageDrawer({ open, applicant, task, onClose }: Pro
                   <div className="flex min-h-[560px] flex-col">
                     <div className="flex items-center justify-between gap-3 border-b px-5 py-3 text-sm text-gray-600">
                       <span>Bichel document</span>
-                      <a
+                      <SignedFileLink
                         href={state.bichelFileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 font-medium text-blue-700 hover:underline"
                       >
                         Open in new tab <ExternalLink className="h-4 w-4" />
-                      </a>
+                      </SignedFileLink>
                     </div>
-                    <iframe
+                    <SignedFileFrame
                       title="Bichel document"
                       src={state.bichelFileUrl}
                       className="min-h-[520px] flex-1 border-0 bg-gray-100"
@@ -343,7 +348,7 @@ export function CertificationStageDrawer({ open, applicant, task, onClose }: Pro
             Close
           </button>
         </footer>
-      </aside>
+      </ModalSurface>
     </div>
   )
 }

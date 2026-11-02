@@ -96,7 +96,7 @@ const normalizeNoteTab = (tab: NoteTab): NoteTab => {
 }
 
 const getMessageId = (note: TaskNote): string | null => {
-  const candidate = (note as any)?.MessageID ?? (note as any)?.messageId ?? (note as any)?.id
+  const candidate = note?.MessageID ?? note?.messageId ?? note?.id
   if (candidate === undefined || candidate === null) return null
 
   const value = String(candidate).trim()
@@ -105,9 +105,9 @@ const getMessageId = (note: TaskNote): string | null => {
 
 const getParentMessageId = (note: TaskNote): string | null => {
   const candidate =
-    (note as any)?.parentMessageId ??
-    (note as any)?.ParentMessageId ??
-    (note as any)?.parent_message_id
+    note?.parentMessageId ??
+    note?.ParentMessageId ??
+    note?.parent_message_id
 
   if (candidate === undefined || candidate === null) return null
 
@@ -208,7 +208,7 @@ const getSSEToUser = (message: SSEMessage): string | null => {
 }
 
 const isTaskNoteRead = (note: TaskNote): boolean => {
-  const value = (note as any)?.isRead
+  const value = note?.isRead
   if (value === true) return true
   if (value === false || value === undefined || value === null) return false
 
@@ -224,9 +224,9 @@ const noteTargetsCurrentUser = (note: TaskNote, currentUsername?: string | null)
   if (!normalizedCurrentUsername) return false
 
   const rawToUser =
-    (note as any)?.ToUser ??
-    (note as any)?.toUser ??
-    (note as any)?.to_user
+    note?.ToUser ??
+    note?.toUser ??
+    note?.to_user
 
   if (rawToUser === undefined || rawToUser === null) return false
 

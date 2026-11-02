@@ -84,7 +84,7 @@ describe('company search in the resolution drawer', () => {
       target: { value: 'search-company' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Close company search' }))
-    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByRole('dialog', { name: /Search/ })).toBeNull()
     expect((screen.getByRole('combobox', { name: 'Matching list' }) as HTMLSelectElement).value).toBe('1356853')
     fireEvent.change(screen.getByRole('combobox', { name: 'Matching list' }), {
       target: { value: 'search-company' },
@@ -96,7 +96,7 @@ describe('company search in the resolution drawer', () => {
     fireEvent.click(
       await within(dialog).findByRole('button', { name: /Naturally Homegrown Foods Distribution/ }),
     )
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /Search/ })).toBeNull())
     await screen.findByText('Selected Kashrus company')
     expect(fetchWithAuth).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -1,12 +1,12 @@
 import { PrelimApplicationCard } from '@/features/prelim/components/PrelimApplicationCard'
 
 type Props = {
-  applications: any[]
+  applications: import('@/types/application').Applicant[]
   expandedTaskPanel: string | null
   setExpandedTaskPanel: (id: string | null) => void
   onViewApplication: (externalReferenceId: string | number | null | undefined) => void
-  handleCancelTask: (...args: any[]) => void
-  handleTaskAction: (...args: any[]) => void
+  handleCancelTask: (application: import('@/types/application').Applicant, action: import('@/types/application').Task, reason: string) => void
+  handleTaskAction: (event: React.MouseEvent, application: import('@/types/application').Applicant, action: import('@/types/application').Task) => void
   paginationMode: 'paged' | 'infinite'
   hasNextPage: boolean
   isFetchingNextPage: boolean
@@ -28,7 +28,7 @@ export function PrelimDashboardList({
   return (
     <div className="flex flex-col gap-4">
       {applications.length > 0 ? (
-        applications.map((application: any) => (
+        applications.map((application) => (
           <PrelimApplicationCard
             key={application.applicationId}
             company={application}

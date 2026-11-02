@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { deleteScheduleProduct, patchScheduleProduct, type ScheduleProductEdit } from '../api/scheduleProductMutations'
@@ -11,6 +11,8 @@ export function useScheduleProductActions(applicationId?: string) {
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<ScheduleProductEdit | null>(null)
+  // mutation.isPending only updates after a re-render; this ref blocks a double/triple click at once.
+  const inFlightRef = useRef(false)
   const mutation = useMutation({
     mutationFn: ({ id, attributes }: { id: string; attributes?: ScheduleProductEdit }) => {
       if (!applicationId || !Number.isSafeInteger(Number(id)) || Number(id) <= 0) {
@@ -31,6 +33,16 @@ export function useScheduleProductActions(applicationId?: string) {
     },
     onError: (error) => toast.error(error.message),
   })
+  const run = (variables: { id: string; attributes?: ScheduleProductEdit }, onSettled?: () => void) => {
+    if (inFlightRef.current) return
+    inFlightRef.current = true
+    mutation.mutate(variables, {
+      onSettled: () => {
+        inFlightRef.current = false
+        onSettled?.()
+      },
+    })
+  }
   return {
     editingId, draft, pending: mutation.isPending,
     start: (row: ScheduleBProductRow) => {
@@ -46,7 +58,7 @@ export function useScheduleProductActions(applicationId?: string) {
     change: <K extends keyof ScheduleProductEdit>(key: K, value: ScheduleProductEdit[K]) =>
       setDraft((current) => current ? { ...current, [key]: value } : current),
     cancel: () => { setEditingId(null); setDraft(null) },
-    save: () => { if (editingId && draft) mutation.mutate({ id: editingId, attributes: draft }) },
-    remove: (id: string) => mutation.mutate({ id }),
+    save: () => { if (editingId && draft) run({ id: editingId, attributes: draft }) },
+    remove: (id: string, options?: { onSettled?: () => void }) => run({ id }, options?.onSettled),
   }
 }

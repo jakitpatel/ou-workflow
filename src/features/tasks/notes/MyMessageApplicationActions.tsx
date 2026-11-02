@@ -1,3 +1,4 @@
+import { ModalSurface, ModalFocusBoundary } from '@/components/ui/ModalSurface'
 import { lazy, Suspense, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from '@tanstack/react-router'
@@ -92,11 +93,12 @@ export function MyMessageApplicationActions({
       </button>
       {open &&
         createPortal(
+          <ModalFocusBoundary>
           <Suspense
             fallback={
-              <div className="fixed inset-0 z-[60] bg-white p-8">
+              <ModalSurface onClose={() => setOpen(false)} label="Application Details" className="fixed inset-0 pointer-events-auto z-[60] bg-white p-8">
                 Loading application details...
-              </div>
+              </ModalSurface>
             }
           >
             <div className="relative z-[60]">
@@ -110,7 +112,8 @@ export function MyMessageApplicationActions({
                 />
               )}
             </div>
-          </Suspense>,
+          </Suspense>
+          </ModalFocusBoundary>,
           document.body,
         )}
     </>

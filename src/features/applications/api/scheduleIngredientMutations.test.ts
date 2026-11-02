@@ -4,7 +4,7 @@ import { fetchWithAuth } from '@/shared/api/httpClient'
 
 import { deleteScheduleIngredient, patchScheduleIngredient, patchScheduleIngredientFollowUp, patchScheduleIngredientHalachicReview } from './scheduleIngredientMutations'
 
-vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: vi.fn() }))
+vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: vi.fn(), isJsonApiRecord: vi.fn() }))
 
 describe('ScheduleIngredient mutations', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -13,7 +13,7 @@ describe('ScheduleIngredient mutations', () => {
     const attributes = { isHalachic, halachicNote: 'Provide updated LOC' }
     await patchScheduleIngredientHalachicReview('566', attributes, 'token')
     expect(fetchWithAuth).toHaveBeenCalledWith({
-      path: '/api/ScheduleIngredient/566', method: 'PATCH', token: 'token',
+      path: '/api/ScheduleIngredient/566', method: 'PATCH', token: 'token', expectBody: expect.any(Function),
       body: { data: { attributes, id: 566, type: 'ScheduleIngredient' } },
     })
   })
@@ -22,7 +22,7 @@ describe('ScheduleIngredient mutations', () => {
     const attributes = { isFlagged, flaggedNote: 'Provide updated LOC - Letter of Certification.' }
     await patchScheduleIngredientFollowUp('566', attributes, 'token')
     expect(fetchWithAuth).toHaveBeenCalledWith({
-      path: '/api/ScheduleIngredient/566', method: 'PATCH', token: 'token',
+      path: '/api/ScheduleIngredient/566', method: 'PATCH', token: 'token', expectBody: expect.any(Function),
       body: { data: { attributes, id: 566, type: 'ScheduleIngredient' } },
     })
   })
@@ -41,6 +41,7 @@ describe('ScheduleIngredient mutations', () => {
       path: '/api/ScheduleIngredient/17',
       method: 'PATCH',
       token: 'token',
+      expectBody: expect.any(Function),
       body: {
         data: { attributes: { ApplicationID: '421', ...attributes }, id: 17, type: 'ScheduleIngredient' },
       },
@@ -54,6 +55,7 @@ describe('ScheduleIngredient mutations', () => {
       method: 'PATCH',
       body: { data: { attributes: { isDeleted: true }, id: 17, type: 'ScheduleIngredient' } },
       token: 'token',
+      expectBody: expect.any(Function),
     })
   })
 

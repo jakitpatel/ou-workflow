@@ -14,10 +14,11 @@ const state = vi.hoisted(() => ({
     isError: false,
     refetch: vi.fn(),
   },
+  scratchpad: vi.fn(() => ({ scratchpad: {} })),
 }))
 vi.mock('../hooks/useApplicationDetail', () => ({ useApplicationDetail: () => state.detail }))
 vi.mock('../hooks/useScheduleAIngredients', () => ({
-  useScheduleAScratchpad: () => ({ scratchpad: {} }),
+  useScheduleAScratchpad: state.scratchpad,
   getDaysSinceVisit: () => null,
   resolveScheduleADocumentUrl: () => '',
 }))
@@ -34,6 +35,7 @@ beforeEach(() => {
 describe('Application Details EIR', () => {
   it('shows report details and switches to the inspection form without edit actions', () => {
     render(<ApplicationEirPanel applicationId={421} />)
+    expect(state.scratchpad).toHaveBeenCalledWith(421, undefined, undefined, { readOnly: true })
     expect(screen.getByText('Inspection Report (EIR)')).toBeTruthy()
     expect(screen.getByText('42')).toBeTruthy()
     expect(screen.getByText('Report Ready')).toBeTruthy()

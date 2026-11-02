@@ -1,9 +1,13 @@
+import { ModalSurface } from '@/components/ui/ModalSurface'
 import { ScheduleAEirDetailsTab } from './ScheduleAEirDetailsTab'
 import { ScheduleRoundEmailCopies } from './ScheduleRoundEmailCopies'
 import { ScheduleAEirNewTab } from './ScheduleAEirNewTab'
 import { useScheduleEir } from '../hooks/useScheduleEir'
 import { ScheduleIngredientEditCells } from './ScheduleIngredientEditCells'
+import { ScheduleIngredientDeleteConfirm } from './ScheduleIngredientDeleteConfirm'
 import { useScheduleIngredientActions } from '../hooks/useScheduleIngredientActions'
+import { useSingleFlight } from '../hooks/useSingleFlight'
+import { ScheduleSaveStatusBanner } from './ScheduleSaveStatusBanner'
 import { statusClass } from '../utils/scheduleAIngredientStatusClass'
 import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { toast } from 'sonner'
@@ -46,14 +50,18 @@ import {
   useScheduleAIngredients,
   useSaveScheduleIngredientSelection,
   useScheduleAScratchpad,
+  getLegacyApplicationIngredientRowId,
+  getApplicationIngredientRowId,
   useSendScheduleACommunicationEmail,
 } from '@/features/applications/hooks/useScheduleAIngredients'
 import {
   useConfirmTaskMutation,
   usePatchTaskStatusMutation,
 } from '@/features/tasks/hooks/useTaskMutations'
-import { TASK_CATEGORIES } from '@/lib/constants/task'
-import type { ApplicantAppVars, ApplicationEmail, AssignedRole } from '@/types/application'
+import { usePagedApplications } from '@/features/applications/hooks/usePagedApplications'
+import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
+import { getAllTasks } from '@/lib/utils/taskHelpers'
+import type { Applicant, ApplicantAppVars, ApplicationEmail, AssignedRole } from '@/types/application'
 
 type Props = {
   open: boolean
@@ -530,6 +538,24 @@ function buildScheduleAHtml(
   return `<!doctype html><html><head><meta charset="utf-8"><title>Schedule A</title><style>body{font-family:Arial,sans-serif;padding:24px}table{border-collapse:collapse;width:100%;font-size:12px}td,th{border:1px solid #ddd;padding:6px;text-align:left}th{background:#f3f4f6}.foot{margin-top:18px;color:#555}</style></head><body><h1>Schedule A Ingredients</h1><p>${applicationName ?? 'Application'} - App #${applicationId ?? ''}</p><table><thead><tr><th>#</th><th>RMC</th><th>Name</th><th>Source</th><th>Brand</th><th>Group</th><th>Certifier</th><th>Plant Status</th></tr></thead><tbody>${tableRows}</tbody></table><p class="foot">UKD IDs sourced from label data. Group 2 items require a certified source or LOC before Schedule A can be completed.</p></body></html>`
 }
 
+export function findScheduleATaskInstanceId(
+  applications: Applicant[] | undefined,
+  applicationId?: string | number,
+): string | number | null {
+  const application = applications?.find(
+    (candidate) => String(candidate.applicationId) === String(applicationId),
+  )
+  if (!application) return null
+  const scheduleATask = getAllTasks(application).find(
+    (task) =>
+      textValue(task.name).toLowerCase() === TASK_CATEGORIES.SCHEDULEA &&
+      textValue(task.taskCategory ?? task.TaskCategory).toLowerCase() ===
+        TASK_CATEGORIES.SCHEDULEA &&
+      textValue(task.taskType ?? task.TaskType).toLowerCase() === TASK_TYPES.ACTION,
+  )
+  return scheduleATask?.TaskInstanceId ?? scheduleATask?.taskInstanceId ?? null
+}
+
 export function ScheduleAIngredientsDrawer({
   open,
   applicationId,
@@ -563,6 +589,10 @@ export function ScheduleAIngredientsDrawer({
   const [importFilename, setImportFilename] = useState('')
   const [importError, setImportError] = useState('')
   const [isImporting, setIsImporting] = useState(false)
+  const [pendingDeleteIngredient, setPendingDeleteIngredient] = useState<{
+    id: string
+    name: string
+  } | null>(null)
   const ingredientsHeaderRef = useRef<HTMLDivElement | null>(null)
   const ingredientsTableRef = useRef<HTMLTableElement | null>(null)
   const isEmbedded = mode === 'embedded'
@@ -586,6 +616,9 @@ export function ScheduleAIngredientsDrawer({
     includePrelimLists: false,
     onError: (message) => toast.error(message),
   })
+  const stageFlight = useSingleFlight()
+  const addRowFlight = useSingleFlight()
+  const sendFlight = useSingleFlight()
   const { data: applicationDetail } = useApplicationDetail(
     isActive ? resolvedApplicationId : undefined,
   )
@@ -595,16 +628,57 @@ export function ScheduleAIngredientsDrawer({
   const isStartTask = textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA_START
   const isSignoffTask = textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.APPROVAL_SIGNOFF_A
   const usesTaskHeader = isAssigningTask || isStartTask || isSignoffTask
-  const canonicalScheduleATaskInstanceId =
+  const directScheduleATaskInstanceId =
     scheduleATaskInstanceId ??
     (textValue(taskCategory).toLowerCase() === TASK_CATEGORIES.SCHEDULEA ? taskInstanceId : null)
+  // Callers such as the Tasks dashboard only see pending tasks, so the (usually NEW) ScheduleA
+  // task that stores review marks is missing; look it up from the application's full task list.
+  const needsScheduleATaskLookup =
+    isActive && !readOnly && Boolean(resolvedApplicationId) && directScheduleATaskInstanceId == null
+  const scheduleATaskLookupQuery = usePagedApplications({
+    applicationId: Number(resolvedApplicationId),
+    myOnly: false,
+    page: 0,
+    limit: 1,
+    enabled: needsScheduleATaskLookup && Number.isFinite(Number(resolvedApplicationId)),
+  })
+  const lookedUpScheduleATaskInstanceId = needsScheduleATaskLookup
+    ? findScheduleATaskInstanceId(scheduleATaskLookupQuery.data?.data, resolvedApplicationId)
+    : null
+  const canonicalScheduleATaskInstanceId =
+    directScheduleATaskInstanceId ?? lookedUpScheduleATaskInstanceId
+  const scheduleATaskMissing =
+    needsScheduleATaskLookup &&
+    !scheduleATaskLookupQuery.isLoading &&
+    !scheduleATaskLookupQuery.isFetching &&
+    lookedUpScheduleATaskInstanceId == null
+  // Marks saved under the old name-based row ids move to the stable id of the row they belong to.
+  const legacyRowKeys = useMemo(
+    () =>
+      Object.fromEntries(
+        (data?.scheduleIngredients ?? []).map((item, index) => [getApplicationIngredientRowId(item, index), getLegacyApplicationIngredientRowId(item, index)]),
+      ),
+    [data?.scheduleIngredients],
+  )
   const scratchpadApi = useScheduleAScratchpad(
     resolvedApplicationId,
     canonicalScheduleATaskInstanceId,
     scheduleATaskStatusDetails,
-    data?.scheduleIngredients,
+    { readOnly, legacyRowKeys, ingredients: data?.scheduleIngredients },
   )
   const { scratchpad, buildScheduleAExportRows } = scratchpadApi
+  // Closing never discards marks (they stay in this browser), but say so when the server doesn't have them.
+  const requestClose = () => {
+    if (
+      scratchpadApi.hasUnsavedChanges() &&
+      !window.confirm(
+        'Your latest Schedule A review marks are not saved to the server yet. They stay in this browser, and you can save them when you reopen this drawer. Close anyway?',
+      )
+    ) {
+      return
+    }
+    onClose()
+  }
   useEffect(() => {
     if (scratchpadApi.saveError) {
       toast.error(scratchpadApi.saveError)
@@ -693,7 +767,7 @@ export function ScheduleAIngredientsDrawer({
 
   const saveIngredientSelection = useSaveScheduleIngredientSelection(resolvedApplicationId)
   const persistIngredientSelection = (rows: ScheduleAIngredientRow[], selected: boolean) => {
-    if (ingView !== 'application') return
+    if (readOnly || ingView !== 'application') return
     saveIngredientSelection.mutate({ rows, selected }, {
       onError: (error) => toast.error(
         error instanceof Error ? error.message : 'Unable to save ingredient selection',
@@ -780,7 +854,7 @@ export function ScheduleAIngredientsDrawer({
     setAddRowError('')
   }
 
-  const saveAddRow = async () => {
+  const saveAddRowNow = async () => {
     if (!addRowDraft.name.trim()) {
       setAddRowError('Ingredient name is required before saving.')
       return
@@ -821,7 +895,7 @@ export function ScheduleAIngredientsDrawer({
     window.setTimeout(() => setCopied(false), 1500)
   }
 
-  const sendRoundEmail = async () => {
+  const sendRoundEmailNow = async () => {
     if (!latestRound) return
 
     const recipientEmail = textValue(latestRound.email.to || contact.email)
@@ -917,7 +991,7 @@ export function ScheduleAIngredientsDrawer({
     }
   })()
 
-  const importIngredients = async () => {
+  const importIngredientsNow = async () => {
     const drafts = getImportDraftsFromText(importText).filter((draft) => draft.name.trim())
     if (!drafts.length) {
       setImportError(
@@ -950,7 +1024,7 @@ export function ScheduleAIngredientsDrawer({
   }
 
 
-  const markScheduleAReady = async () => {
+  const markScheduleAReadyNow = async () => {
     if (readOnly) return
     if (counts.resolved < counts.all) {
       toast.warning('All application ingredients items are not resolved')
@@ -982,7 +1056,7 @@ export function ScheduleAIngredientsDrawer({
     }
   }
 
-  const assignIngredients = async () => {
+  const assignIngredientsNow = async () => {
     if (readOnly) return
     const resolvedTaskInstanceId = textValue(taskInstanceId)
     if (!resolvedTaskInstanceId) {
@@ -1007,7 +1081,7 @@ export function ScheduleAIngredientsDrawer({
     }
   }
 
-  const startProcessing = async () => {
+  const startProcessingNow = async () => {
     if (readOnly) return
     const resolvedTaskInstanceId = textValue(taskInstanceId)
     if (!resolvedTaskInstanceId) {
@@ -1032,7 +1106,7 @@ export function ScheduleAIngredientsDrawer({
     }
   }
 
-  const signOffIngredients = async () => {
+  const signOffIngredientsNow = async () => {
     if (readOnly) return
     const resolvedTaskInstanceId = textValue(taskInstanceId)
     if (!resolvedTaskInstanceId) {
@@ -1057,7 +1131,7 @@ export function ScheduleAIngredientsDrawer({
     }
   }
 
-  const rejectIngredients = async () => {
+  const rejectIngredientsNow = async () => {
     if (readOnly) return
     const resolvedScheduleATaskInstanceId = textValue(scheduleATaskInstanceId)
     const resolvedSignoffTaskInstanceId = textValue(taskInstanceId)
@@ -1094,6 +1168,16 @@ export function ScheduleAIngredientsDrawer({
     }
   }
 
+  // Synchronous single-flight guards: a double/triple click must not send duplicate writes.
+  const markScheduleAReady = () => stageFlight.run(markScheduleAReadyNow)
+  const assignIngredients = () => stageFlight.run(assignIngredientsNow)
+  const startProcessing = () => stageFlight.run(startProcessingNow)
+  const signOffIngredients = () => stageFlight.run(signOffIngredientsNow)
+  const rejectIngredients = () => stageFlight.run(rejectIngredientsNow)
+  const saveAddRow = () => addRowFlight.run(saveAddRowNow)
+  const importIngredients = () => addRowFlight.run(importIngredientsNow)
+  const sendRoundEmail = () => sendFlight.run(sendRoundEmailNow)
+
   const panelWidth = expanded ? 'lg:max-w-[96vw]' : 'lg:max-w-[72vw]'
   const stickyTableHeaderClass =
     'sticky z-10 bg-gray-50 px-3 py-2.5 text-xs font-semibold text-gray-600 shadow-[inset_0_-1px_0_#e5e7eb]'
@@ -1110,7 +1194,7 @@ export function ScheduleAIngredientsDrawer({
                     type="button"
                     onClick={signOffIngredients}
                     disabled={
-                      completeScheduleATaskMutation.isPending || patchTaskStatusMutation.isPending
+                      completeScheduleATaskMutation.isPending || patchTaskStatusMutation.isPending || stageFlight.isRunning
                     }
                     className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                   >
@@ -1121,7 +1205,7 @@ export function ScheduleAIngredientsDrawer({
                     type="button"
                     onClick={rejectIngredients}
                     disabled={
-                      completeScheduleATaskMutation.isPending || patchTaskStatusMutation.isPending
+                      completeScheduleATaskMutation.isPending || patchTaskStatusMutation.isPending || stageFlight.isRunning
                     }
                     className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                   >
@@ -1134,7 +1218,7 @@ export function ScheduleAIngredientsDrawer({
                 <button
                   type="button"
                   onClick={startProcessing}
-                  disabled={completeScheduleATaskMutation.isPending}
+                  disabled={completeScheduleATaskMutation.isPending || stageFlight.isRunning}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
                   <Check className="h-3.5 w-3.5" />
@@ -1145,7 +1229,7 @@ export function ScheduleAIngredientsDrawer({
                 <button
                   type="button"
                   onClick={assignIngredients}
-                  disabled={completeScheduleATaskMutation.isPending}
+                  disabled={completeScheduleATaskMutation.isPending || stageFlight.isRunning}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
                   <Check className="h-3.5 w-3.5" />
@@ -1214,9 +1298,28 @@ export function ScheduleAIngredientsDrawer({
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto p-4">
+            {!readOnly ? (
+              <ScheduleSaveStatusBanner
+                blockedReason={scratchpadApi.saveBlockedReason}
+                saveFailed={scratchpadApi.saveFailed}
+                unsavedDraft={scratchpadApi.hasUnsavedLocalDraft}
+                saveError={scratchpadApi.saveError}
+                isSaving={scratchpadApi.isSaving}
+                onRetry={scratchpadApi.retrySave}
+              />
+            ) : null}
             {activeTab === 'eir-new' ? <ScheduleAEirNewTab url={eirNewUrl} actualVisitDate={applicationDetail?.actualVisitDate} /> : null}
             {activeTab === 'ingredients' ? (
               <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                {scheduleATaskMissing && ingView === 'application' ? (
+                  <div
+                    role="alert"
+                    className="rounded-t-lg border-b border-amber-200 bg-amber-50 px-6 py-3 text-sm text-amber-800"
+                  >
+                    The Schedule A task for this application could not be found, so flags, halacha
+                    questions and resolved marks are kept only in this browser and are not saved.
+                  </div>
+                ) : null}
                 <div
                   ref={ingredientsHeaderRef}
                   className="sticky left-0 right-0 top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-t-lg border-b bg-gray-50 px-6 py-4 shadow-sm"
@@ -1230,7 +1333,7 @@ export function ScheduleAIngredientsDrawer({
                         <button
                           type="button"
                           onClick={markScheduleAReady}
-                          disabled={isAssigningTask || completeScheduleATaskMutation.isPending}
+                          disabled={isAssigningTask || completeScheduleATaskMutation.isPending || stageFlight.isRunning}
                           title={
                             isAssigningTask
                               ? 'Schedule A cannot be marked ready from the Assign Ingredients task.'
@@ -1647,7 +1750,12 @@ export function ScheduleAIngredientsDrawer({
                                       title="Delete ingredient"
                                       aria-label="Delete ingredient"
                                       disabled={!row.ingredientId || ingredientActions.pending}
-                                      onClick={() => ingredientActions.remove(row.ingredientId!)}
+                                      onClick={() =>
+                                        setPendingDeleteIngredient({
+                                          id: row.ingredientId!,
+                                          name: row.name,
+                                        })
+                                      }
                                       className="rounded p-1 text-red-600 hover:bg-red-50 disabled:opacity-40"
                                     >
                                       <Trash2 className="h-4 w-4" />
@@ -1806,7 +1914,7 @@ export function ScheduleAIngredientsDrawer({
                           <button
                             type="button"
                             onClick={() => void sendRoundEmail()}
-                            disabled={sendRoundEmailMutation.isPending}
+                            disabled={sendRoundEmailMutation.isPending || sendFlight.isRunning}
                             className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             <Send className="h-3.5 w-3.5" />
@@ -1961,8 +2069,8 @@ export function ScheduleAIngredientsDrawer({
           {content}
         </div>
       ) : (
-        <div className="fixed inset-0 z-50 bg-black/40">
-          <div
+        <div className="fixed inset-0 pointer-events-auto z-50 bg-black/40">
+          <ModalSurface onClose={requestClose} label="Schedule A"
             className={`fixed right-0 top-0 flex h-full w-full max-w-[96vw] flex-col overflow-hidden bg-white shadow-2xl ${panelWidth}`}
             onClick={(event) => event.stopPropagation()}
           >
@@ -1995,7 +2103,7 @@ export function ScheduleAIngredientsDrawer({
                 </button>
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={requestClose}
                   className="rounded p-1 text-gray-200 hover:bg-gray-700 hover:text-white"
                   aria-label="Close Schedule A drawer"
                 >
@@ -2004,15 +2112,27 @@ export function ScheduleAIngredientsDrawer({
               </div>
             </div>
             {content}
-          </div>
+          </ModalSurface>
         </div>
       )}
+      {pendingDeleteIngredient ? (
+        <ScheduleIngredientDeleteConfirm
+          ingredientName={pendingDeleteIngredient.name}
+          pending={ingredientActions.pending}
+          onCancel={() => setPendingDeleteIngredient(null)}
+          onConfirm={() =>
+            ingredientActions.remove(pendingDeleteIngredient.id, {
+              onSettled: () => setPendingDeleteIngredient(null),
+            })
+          }
+        />
+      ) : null}
       {!isEmbedded && importOpen ? (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 pointer-events-auto z-[70] flex items-center justify-center bg-black/50 p-4"
           onClick={closeImportModal}
         >
-          <div
+          <ModalSurface onClose={closeImportModal} label="Import spreadsheet"
             className="w-full max-w-3xl rounded-xl bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
@@ -2109,7 +2229,7 @@ export function ScheduleAIngredientsDrawer({
                 {isImporting ? 'Importing...' : `Import ${importPreviewRows.length || ''}`.trim()}
               </button>
             </div>
-          </div>
+          </ModalSurface>
         </div>
       ) : null}
       {!isEmbedded ? (

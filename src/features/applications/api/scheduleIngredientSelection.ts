@@ -10,5 +10,7 @@ export function saveScheduleIngredientSelection(
     method: 'POST',
     body: { [selected ? 'selected_ids' : 'unselected_ids']: ingredientIds.join(',') },
     token,
+    // `/schedule_ingredients` answers {status: "ok", ids: [...]} once it has committed the change.
+    expectBody: (body) => (body as { status?: unknown }).status === 'ok',
   })
 }

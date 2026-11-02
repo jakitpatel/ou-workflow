@@ -106,6 +106,7 @@ export function PrelimResolutionDrawerHeader({
           </div>
         </div>
         <button
+          aria-label="Close resolution"
           onClick={onClose}
           className="flex h-8 w-8 items-center justify-center rounded-[7px] bg-white/15 text-white transition-colors hover:bg-white/25"
         >

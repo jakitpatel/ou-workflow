@@ -1,3 +1,6 @@
+import { SignedFileLink } from '@/shared/utils/fileLinks'
+import { getErrorMessage } from '@/shared/api/record'
+import { ModalSurface } from '@/components/ui/ModalSurface'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Upload, X } from "lucide-react";
 import { useUser } from "@/context/UserContext";
@@ -10,12 +13,9 @@ import { getNdaGlobalData } from '../lib/legalReview';
 import { resolveApiBaseUrl } from '@/shared/api/httpClient';
 import { isLegalReviewTask } from '../lib/legalReview';
 import { LegalReviewModal } from './LegalReviewModal';
-import type { Applicant, ApplicationTask, CompanyContact, CompanyContactGroups, Task } from "@/types/application";
+import type { ApplicationTask, CompanyContact, CompanyContactGroups, Task } from "@/types/application";
 
-type SelectedAction = {
-  application: Applicant | Task | any;
-  action: Task | any;
-};
+type SelectedAction = import('@/features/tasks/model/taskAction').SelectedTaskAction;
 
 type Props = {
   showUploadModal: boolean | null | Task | ApplicationTask;
@@ -23,7 +23,7 @@ type Props = {
   taskInstanceId?: string | number | null;
   setShowUploadModal: (val: boolean | null | Task) => void;
   completeTaskWithResult: (
-    action: Task,
+    action: import('@/features/tasks/model/taskAction').TaskAction,
     result: string,
     status?: string,
     completionNotes?: string,
@@ -47,11 +47,11 @@ export const UploadNdaModal: React.FC<Props> = (props) => {
     const selected = props.selectedAction!;
     return <LegalReviewModal
       key={String(props.taskInstanceId ?? selected.action.TaskInstanceId ?? selected.action.taskInstanceId)}
-      applicationId={selected.application.applicationId ?? selected.action.applicationId}
+      applicationId={selected.application.applicationId ?? selected.action.applicationId ?? ''}
       application={selected.application}
       capacity={selected.action.capacity}
       companyName={selected.application.company ?? selected.application.companyName ?? selected.action.companyName ?? 'Unknown Company'}
-      taskInstanceId={props.taskInstanceId ?? selected.action.TaskInstanceId ?? selected.action.taskInstanceId}
+      taskInstanceId={props.taskInstanceId ?? selected.action.TaskInstanceId ?? selected.action.taskInstanceId ?? ''}
       onClose={() => props.setShowUploadModal(null)}
     />;
   }
@@ -84,7 +84,7 @@ const NdaUploadModalContent: React.FC<Props> = ({
     onError: (message) => setError(message),
   });
 
-  const formatContactLabel = useCallback((contact: any) => {
+  const formatContactLabel = useCallback((contact: CompanyContact) => {
     const contactName = String(contact?.name ?? "").trim();
     const contactType = String(contact?.type ?? "").trim();
 
@@ -100,7 +100,7 @@ const NdaUploadModalContent: React.FC<Props> = ({
   }, [selectedAction?.application]);
 
   const taskName = useMemo(() => {
-    const clickedTask: any = typeof showUploadModal === "object" ? showUploadModal : null;
+    const clickedTask = typeof showUploadModal === "object" ? showUploadModal : null;
     return (
       clickedTask?.name ||
       selectedAction?.action?.name ||
@@ -110,14 +110,14 @@ const NdaUploadModalContent: React.FC<Props> = ({
   }, [showUploadModal, selectedAction?.action]);
 
   const isReviewUploadTask = useMemo(() => {
-    const clickedTask: any = typeof showUploadModal === "object" ? showUploadModal : null;
+    const clickedTask = typeof showUploadModal === "object" ? showUploadModal : null;
     const taskType =
       clickedTask?.taskType?.toLowerCase() ||
       selectedAction?.action?.taskType?.toLowerCase() ||
       "";
     const taskCategory =
       clickedTask?.taskCategory?.toLowerCase() ||
-      (clickedTask as any)?.TaskCategory?.toLowerCase() ||
+      clickedTask?.TaskCategory?.toLowerCase() ||
       selectedAction?.action?.taskCategory?.toLowerCase() ||
       selectedAction?.action?.TaskCategory?.toLowerCase() ||
       "";
@@ -126,14 +126,14 @@ const NdaUploadModalContent: React.FC<Props> = ({
   }, [showUploadModal, selectedAction?.action]);
 
   const isEmailActionTask = useMemo(() => {
-    const clickedTask: any = typeof showUploadModal === "object" ? showUploadModal : null;
+    const clickedTask = typeof showUploadModal === "object" ? showUploadModal : null;
     const taskType =
       clickedTask?.taskType?.toLowerCase() ||
       selectedAction?.action?.taskType?.toLowerCase() ||
       "";
     const taskCategory =
       clickedTask?.taskCategory?.toLowerCase() ||
-      (clickedTask as any)?.TaskCategory?.toLowerCase() ||
+      clickedTask?.TaskCategory?.toLowerCase() ||
       selectedAction?.action?.taskCategory?.toLowerCase() ||
       selectedAction?.action?.TaskCategory?.toLowerCase() ||
       "";
@@ -158,7 +158,7 @@ const NdaUploadModalContent: React.FC<Props> = ({
   const companyContacts = useMemo(() => {
     const contacts = normalizeCompanyContacts(applicationDetail?.companyContacts);
     return contacts.filter(
-      (contact: any) => Boolean(contact?.email) && Boolean(contact?.name)
+      (contact: CompanyContact) => Boolean(contact?.email) && Boolean(contact?.name)
     );
   }, [applicationDetail?.companyContacts]);
 
@@ -207,12 +207,12 @@ const NdaUploadModalContent: React.FC<Props> = ({
       return;
     }
 
-    if (selectedContactEmail && companyContacts.some((c: any) => c.email === selectedContactEmail)) {
+    if (selectedContactEmail && companyContacts.some((c) => c.email === selectedContactEmail)) {
       return;
     }
 
     const primaryContact = companyContacts.find(
-      (contact: any) => String(contact.type).toLowerCase() === "primary contact"
+      (contact: CompanyContact) => String(contact.type).toLowerCase() === "primary contact"
     );
     setSelectedContactEmail(primaryContact?.email ?? companyContacts[0]?.email ?? "");
   }, [
@@ -223,16 +223,6 @@ const NdaUploadModalContent: React.FC<Props> = ({
     companyContacts,
     selectedContactEmail,
   ]);
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !saving) {
-        setShowUploadModal(null);
-      }
-    };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [saving, setShowUploadModal]);
 
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent) => {
@@ -466,9 +456,9 @@ const NdaUploadModalContent: React.FC<Props> = ({
         applicationId
       );
       setShowUploadModal(null);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Negotiate action failed:", err);
-      setError(err?.message || "Failed to set task as negotiate.");
+      setError(getErrorMessage(err, "Failed to set task as negotiate."));
     } finally {
       setSaving(false);
       setProcessingAction(null);
@@ -481,10 +471,10 @@ const NdaUploadModalContent: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn"
+      className="fixed inset-0 pointer-events-auto bg-black/40 flex items-center justify-center z-50 animate-fadeIn"
       onMouseDown={handleOverlayClick}
     >
-      <div
+      <ModalSurface onClose={() => setShowUploadModal(null)} label="Upload" dismissible={!saving}
         ref={dialogRef}
         onMouseDown={(e) => e.stopPropagation()}
         className="relative bg-white rounded-xl shadow-xl p-6 max-w-md w-full animate-scaleIn"
@@ -590,7 +580,7 @@ const NdaUploadModalContent: React.FC<Props> = ({
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 disabled:bg-gray-100 disabled:text-gray-500"
               >
                 <option value="">Select contact</option>
-                {companyContacts.map((contact: any) => (
+                {companyContacts.map((contact: CompanyContact) => (
                   <option
                     key={`${contact.email}-${contact.name}`}
                     value={contact.email}
@@ -632,7 +622,7 @@ const NdaUploadModalContent: React.FC<Props> = ({
                 </label>
                 {!file && approvedNdaPath && <p className="text-sm text-gray-700">
                   Attached: {approvedNdaDownloadUrl
-                    ? <a className="text-blue-700 underline" href={approvedNdaDownloadUrl} target="_blank" rel="noreferrer">{approvedNdaName}</a>
+                    ? <SignedFileLink className="text-blue-700 underline" href={approvedNdaDownloadUrl} target="_blank" rel="noreferrer">{approvedNdaName}</SignedFileLink>
                     : approvedNdaName}
                 </p>}
                 <input ref={inputRef} type="file" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0])} />
@@ -668,7 +658,7 @@ const NdaUploadModalContent: React.FC<Props> = ({
             </div>
           </div>
         )}
-      </div>
+      </ModalSurface>
     </div>
   );
 };

@@ -49,7 +49,7 @@ type UseNcrcDashboardStateParams = {
 const normalizeMyNotesWithApplicationId = (notes: TaskNote[]): TaskNote[] =>
   notes.map((note) => {
     const rawApplicationId =
-      (note as any)?.ApplicationID ?? (note as any)?.applicationId ?? (note as any)?.ApplicationId
+      note?.ApplicationID ?? note?.applicationId ?? note?.ApplicationId
     const parsedApplicationId = Number(rawApplicationId)
 
     return Number.isFinite(parsedApplicationId)
@@ -72,7 +72,7 @@ const EMPTY_MY_MESSAGES: MyMessagesByTab = {
 }
 
 const getMyNoteMessageId = (note: TaskNote): string | null => {
-  const candidate = (note as any)?.MessageID ?? (note as any)?.messageId ?? (note as any)?.id
+  const candidate = note?.MessageID ?? note?.messageId ?? note?.id
   if (candidate === undefined || candidate === null) return null
 
   const value = String(candidate).trim()
@@ -80,7 +80,7 @@ const getMyNoteMessageId = (note: TaskNote): string | null => {
 }
 
 const isMyNoteRead = (note: TaskNote): boolean => {
-  const value = (note as any)?.isRead
+  const value = note?.isRead
   if (value === true) return true
   if (value === false || value === undefined || value === null) return false
 
@@ -212,6 +212,9 @@ export function useNcrcDashboardState({
     })
   }, [paginationMode])
 
+  const { fetchNextPage: paginationFetchNextPage, hasNextPage: paginationHasNextPage,
+    isFetchingNextPage: paginationIsFetchingNextPage } = infiniteQuery
+
   useEffect(() => {
     if (paginationMode !== 'infinite') return
     if (!infiniteQuery.data) return
@@ -248,16 +251,16 @@ export function useNcrcDashboardState({
   useEffect(() => {
     if (paginationMode !== 'infinite') return
     if (!sentinelRef.current) return
-    if (!infiniteQuery.hasNextPage) return
+    if (!paginationHasNextPage) return
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (
           entries[0].isIntersecting &&
-          infiniteQuery.hasNextPage &&
-          !infiniteQuery.isFetchingNextPage
+          paginationHasNextPage &&
+          !paginationIsFetchingNextPage
         ) {
-          infiniteQuery.fetchNextPage()
+          paginationFetchNextPage()
         }
       },
       { rootMargin: '300px' },
@@ -266,9 +269,9 @@ export function useNcrcDashboardState({
     observer.observe(sentinelRef.current)
     return () => observer.disconnect()
   }, [
-    infiniteQuery.fetchNextPage,
-    infiniteQuery.hasNextPage,
-    infiniteQuery.isFetchingNextPage,
+    paginationFetchNextPage,
+    paginationHasNextPage,
+    paginationIsFetchingNextPage,
     paginationMode,
   ])
 

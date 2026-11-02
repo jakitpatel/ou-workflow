@@ -1,3 +1,5 @@
+import { SignedFileLink, openFileLink, signedFileUrl } from '@/shared/utils/fileLinks'
+import { ModalSurface } from '@/components/ui/ModalSurface'
 import { useRef, useState } from "react";
 import type { ApplicationDetail } from "@/types/application";
 import { AlertCircle, Beaker, CheckCircle, Download, FileText, LoaderCircle, Package, Upload, X } from "lucide-react";
@@ -111,7 +113,7 @@ export default function FilesList({ application, applicationId, showProcessingSt
       return;
     }
 
-    window.open(filePath, "_blank", "noopener,noreferrer");
+    void openFileLink(filePath);
   };
 
   const previewOfficeFile = async (fileUrl: string, fileName: string, extension: string) => {
@@ -121,7 +123,7 @@ export default function FilesList({ application, applicationId, showProcessingSt
     setPreviewLoading(true);
 
     try {
-      const response = await fetch(fileUrl, { credentials: 'include' });
+      const response = await fetch(await signedFileUrl(fileUrl), { credentials: 'include' });
       if (!response.ok) throw new Error(`Unable to load file (${response.status})`);
       const arrayBuffer = await response.arrayBuffer();
 
@@ -224,7 +226,7 @@ export default function FilesList({ application, applicationId, showProcessingSt
                       <div className="flex flex-col gap-2 min-w-0">
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between min-w-0">
                           <h3 className="min-w-0 flex-1 font-medium text-gray-900 truncate">
-                            <a
+                            <SignedFileLink
                               href={previewFileUrl}
                               onClick={canPreviewOfficeFile ? event => {
                                 event.preventDefault();
@@ -235,7 +237,7 @@ export default function FilesList({ application, applicationId, showProcessingSt
                               className="text-blue-700 hover:text-blue-900 hover:underline"
                             >
                               {file.FileName}
-                            </a>
+                            </SignedFileLink>
                           </h3>
                           <div className="flex items-center flex-wrap gap-2 sm:justify-end sm:ml-4">
                             {file.description && (
@@ -313,7 +315,7 @@ export default function FilesList({ application, applicationId, showProcessingSt
       </div>
 
       {(previewLoading || previewHtml || previewError) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-label={`Preview ${previewName}`}>
+        <ModalSurface onClose={closePreview} label="File preview" className="fixed inset-0 pointer-events-auto z-50 flex items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-label={`Preview ${previewName}`}>
           <div className="flex h-[90vh] w-full max-w-7xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-gray-200 px-5 py-3">
               <div>
@@ -345,11 +347,11 @@ export default function FilesList({ application, applicationId, showProcessingSt
               )}
             </div>
           </div>
-        </div>
+        </ModalSurface>
       )}
 
       {attachmentFiles.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-labelledby="attachment-dialog-title">
+        <ModalSurface onClose={resetAttachmentDialog} dismissible={!uploadFileMutation.isPending} label="Attach file" className="fixed inset-0 pointer-events-auto z-50 flex items-center justify-center bg-black/55 p-4" role="dialog" aria-modal="true" aria-labelledby="attachment-dialog-title">
           <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
               <div>
@@ -398,7 +400,7 @@ export default function FilesList({ application, applicationId, showProcessingSt
               </button>
             </div>
           </div>
-        </div>
+        </ModalSurface>
       )}
     </div>
   );

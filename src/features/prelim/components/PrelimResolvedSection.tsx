@@ -161,7 +161,7 @@ export function PrelimResolvedSection({
   const stageTasks = getStageTasks(application)
 
   const companyTask = stageTasks?.find((task) => task.name === 'ResolveCompany')
-  const plantTasks = stageTasks?.filter((task) => isResolvePlantTask(task.name)) || []
+  const plantTasks = useMemo(() => stageTasks?.filter((task) => isResolvePlantTask(task.name)) || [], [stageTasks])
   const userRoles = useMemo(() => {
     if (role?.toUpperCase() === 'ALL') {
       return (roles ?? [])
@@ -213,7 +213,7 @@ export function PrelimResolvedSection({
 
     const taskCategory = resolutionTaskToOpen.taskCategory?.trim().toLowerCase()
     const taskInstanceId =
-      resolutionTaskToOpen.TaskInstanceId ?? (resolutionTaskToOpen as any).taskInstanceId
+      resolutionTaskToOpen.TaskInstanceId ?? resolutionTaskToOpen.taskInstanceId
 
     if (taskCategory === 'resolvecompany') {
       setDrawerState({ isOpen: true, type: 'company' })
@@ -223,7 +223,7 @@ export function PrelimResolvedSection({
 
     if (taskCategory === 'resolveplant') {
       const plantIndex = plantTasks.findIndex((task) => {
-        const candidateId = task.TaskInstanceId ?? (task as any).taskInstanceId
+        const candidateId = task.TaskInstanceId ?? task.taskInstanceId
         return String(candidateId ?? '') === String(taskInstanceId ?? '')
       })
 
@@ -249,12 +249,12 @@ export function PrelimResolvedSection({
     ])
   }
 
-  const handleAssignCompany = async (match: any) => {
+  const handleAssignCompany = async (match: import('@/features/prelim/model/resolution').Match) => {
     if (!companyTask || !companyAction || companyAction.disabled || !username) return
 
     const result = String(match.Id)
     await confirmTask({
-      taskId: String(companyTask.TaskInstanceId ?? (companyTask as any).taskInstanceId ?? ''),
+      taskId: String(companyTask.TaskInstanceId ?? companyTask.taskInstanceId ?? ''),
       applicationId: application?.applicationId,
       result,
       token: token ?? undefined,
@@ -264,13 +264,13 @@ export function PrelimResolvedSection({
     await refreshApplication()
   }
 
-  const handleAssignPlant = async (match: any, plantTask: any, plantIndex: number) => {
+  const handleAssignPlant = async (match: import('@/features/prelim/model/resolution').Match, plantTask: Task, plantIndex: number) => {
     const plantAction = plantActions[plantIndex]
     if (!plantTask || !plantAction || plantAction.disabled || !username) return
 
     const result = String(match.Id)
     await confirmTask({
-      taskId: String(plantTask.TaskInstanceId ?? (plantTask as any).taskInstanceId ?? ''),
+      taskId: String(plantTask.TaskInstanceId ?? plantTask.taskInstanceId ?? ''),
       applicationId: application?.applicationId,
       result,
       token: token ?? undefined,
@@ -308,7 +308,7 @@ export function PrelimResolvedSection({
 
   const companyDrawerData = toCompanyDrawerData(companyTask?.companyFromApplication)
   const companyResolveSavedState = getResolveSavedState(
-    companyTask?.StatusDetails ?? (companyTask as any)?.statusDetails,
+    companyTask?.StatusDetails ?? companyTask?.statusDetails,
   )
   const activePlantIndex = drawerState.plantIndex
   const activePlantTask = activePlantIndex !== undefined ? plantTasks[activePlantIndex] : undefined
@@ -319,11 +319,11 @@ export function PrelimResolvedSection({
     companyTask?.companyFromApplication?.companyWebsite,
   )
   const plantResolveSavedState = getResolveSavedState(
-    activePlantTask?.StatusDetails ?? (activePlantTask as any)?.statusDetails,
+    activePlantTask?.StatusDetails ?? activePlantTask?.statusDetails,
   )
-  const companyTaskInstanceId = companyTask?.TaskInstanceId ?? (companyTask as any)?.taskInstanceId
+  const companyTaskInstanceId = companyTask?.TaskInstanceId ?? companyTask?.taskInstanceId
   const activePlantTaskInstanceId =
-    activePlantTask?.TaskInstanceId ?? (activePlantTask as any)?.taskInstanceId
+    activePlantTask?.TaskInstanceId ?? activePlantTask?.taskInstanceId
   const completedCompanyId = companyResolveSavedState?.resolveId?.companyId ?? resolved?.company?.Id
   const completedPlantId =
     plantResolveSavedState?.resolveId?.plantId ??
@@ -364,6 +364,8 @@ export function PrelimResolvedSection({
                   <div className="flex items-start gap-3">
                     <button
                       type="button"
+                      aria-label={open ? "Collapse intake plants" : "Expand intake plants"}
+                      aria-expanded={open}
                       onClick={() => setOpen(!open)}
                       className="flex-shrink-0 hover:bg-yellow-200 rounded p-1 transition-colors"
                     >

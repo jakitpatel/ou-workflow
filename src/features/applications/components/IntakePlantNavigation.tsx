@@ -7,11 +7,13 @@ export type IntakePlantSection = 'plants' | 'products' | 'ingredients'
 
 export function IntakePlantNavigation({
   application,
+  tabId,
   selectedIndex,
   activeSection,
   onSelect,
 }: {
   application: ApplicationDetail
+  tabId?: string
   selectedIndex: number
   activeSection?: string
   onSelect: (index: number, section: IntakePlantSection) => void
@@ -40,11 +42,11 @@ export function IntakePlantNavigation({
                 type="button"
                 aria-expanded={expanded}
                 aria-label={`${expanded ? 'Collapse' : 'Expand'} ${label}`}
-                onClick={() =>
-                  setCollapsed(
-                    expanded ? [...collapsed, index] : collapsed.filter((item) => item !== index),
-                  )
-                }
+                onClick={() => {
+                  setCollapsed(expanded ? [...collapsed, index] : collapsed.filter((item) => item !== index))
+                  // Keep a selected tab available when its plant group is collapsed.
+                  if (expanded && selected) onSelect(index, 'plants')
+                }}
                 className={`flex w-full items-start gap-2 rounded-lg px-2 py-2 text-left text-sm font-semibold focus-visible:outline-2 focus-visible:outline-blue-600 ${selected ? 'bg-blue-50 text-blue-800' : 'text-slate-700 hover:bg-slate-100'}`}
               >
                 <ChevronRight
@@ -59,7 +61,7 @@ export function IntakePlantNavigation({
                   {label}
                 </span>
               </button>
-              {expanded && (
+              {(expanded || selected) && (
                 <ul
                   aria-label={`${label} sections`}
                   className="ml-4 mt-1 space-y-1 border-l border-slate-200 pl-3"
@@ -80,10 +82,15 @@ export function IntakePlantNavigation({
                         count: scoped.ingredients?.length ?? 0,
                       },
                     ] as const
-                  ).map((item) => (
+                  ).filter((item) => expanded || item.section === 'plants').map((item) => (
                     <li key={item.section}>
                       <button
                         type="button"
+                        role={tabId ? 'tab' : undefined}
+                        id={tabId ? `${tabId}-tab-${item.section}-${index}` : undefined}
+                        aria-controls={tabId ? `${tabId}-panel` : undefined}
+                        aria-selected={tabId ? selected && activeSection === item.section : undefined}
+                        tabIndex={tabId && !(selected && activeSection === item.section) ? -1 : 0}
                         aria-label={item.count === undefined ? item.label : `${item.label} ${item.count}`}
                         aria-current={
                           selected && activeSection === item.section ? 'page' : undefined

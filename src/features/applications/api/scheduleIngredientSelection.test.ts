@@ -17,7 +17,16 @@ describe('Schedule ingredient selection', () => {
       method: 'POST',
       body: { [field]: '17,23' },
       token: 'token',
+      expectBody: expect.any(Function),
     })
+  })
+
+  it('accepts only the committed status as confirmation', async () => {
+    await saveScheduleIngredientSelection(['17'], true, 'token')
+    const { expectBody } = vi.mocked(fetchWithAuth).mock.calls[0][0] as { expectBody: (body: unknown) => boolean }
+    expect(expectBody({ status: 'ok', ids: ['17'] })).toBe(true)
+    expect(expectBody({ status: 'error' })).toBe(false)
+    expect(expectBody({})).toBe(false)
   })
 
   it('posts a single ingredient ID', async () => {

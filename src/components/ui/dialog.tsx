@@ -1,3 +1,4 @@
+import { useDialogReturnFocus } from './useDialogReturnFocus'
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
@@ -26,11 +27,14 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 export const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => {
+  const focusReturn = useDialogReturnFocus();
+  return (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      {...focusReturn}
       className={cn(
         "fixed z-50 grid w-full max-w-md gap-4 rounded-lg border bg-white p-6 shadow-lg top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2",
         className
@@ -38,12 +42,13 @@ export const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 text-gray-500 hover:text-gray-700">
+      <DialogPrimitive.Close aria-label="Close dialog" className="absolute right-4 top-4 text-gray-500 hover:text-gray-700">
         <X className="h-4 w-4" />
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>
-));
+);
+});
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 export const DialogHeader = ({ children }: { children: React.ReactNode }) => (

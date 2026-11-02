@@ -5,7 +5,7 @@ type Props = {
   applicant: Applicant
   canCancelApplication?: boolean
   canUndoWithdrawApplication?: boolean
-  filesByType?: Record<string, any>
+  filesByType?: Record<string, import('@/types/application').ApplicantFile>
   onCancelApplication?: () => void
   onViewDetails: () => void
   onViewIntakeDetails: () => void

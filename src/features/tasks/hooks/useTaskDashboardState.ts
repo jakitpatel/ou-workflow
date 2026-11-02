@@ -29,7 +29,7 @@ type InspectionFeeChoice = {
   feeNeeded: 'YES' | 'NO'
 }
 
-type TaskDashboardAction = ApplicationTask & {
+type TaskDashboardAction = import('@/features/tasks/model/taskAction').TaskAction & {
   id?: string | number
   name?: string
   taskName?: string
@@ -38,10 +38,7 @@ type TaskDashboardAction = ApplicationTask & {
   TaskInstanceId?: string | number
 }
 
-type SelectedTaskAction = {
-  application: any
-  action: any
-}
+type SelectedTaskAction = import('@/features/tasks/model/taskAction').SelectedTaskAction
 
 type ScheduleADrawerState = {
   open: boolean
@@ -115,14 +112,14 @@ const STATUS = {
 } as const
 
 const getTaskInstanceId = (task: ApplicationTask): number => {
-  const taskId = Number((task as any).taskInstanceId ?? (task as any).TaskInstanceId ?? task.id)
+  const taskId = Number(task.taskInstanceId ?? task.TaskInstanceId ?? task.id)
 
   return Number.isFinite(taskId) ? taskId : 0
 }
 
 const mapApplicationTaskToStageTask = (task: ApplicationTask): Task => ({
   TaskInstanceId: getTaskInstanceId(task),
-  name: task.taskName ?? (task as any).name ?? '',
+  name: task.taskName ?? task.name ?? '',
   PreScript: task.PreScript ?? '',
   status: ['completed', 'in_progress', 'overdue', 'blocked', 'pending'].includes(
     String(task.status ?? '').toLowerCase(),
@@ -131,8 +128,8 @@ const mapApplicationTaskToStageTask = (task: ApplicationTask): Task => ({
     : 'pending',
   assignee: task.assignee ?? '',
   daysActive: task.daysActive ?? 0,
-  required: Boolean((task as any).required),
-  overdue: (task.daysOverdue ?? 0) > 0 || Boolean((task as any).overdue),
+  required: Boolean(task.required),
+  overdue: (task.daysOverdue ?? 0) > 0 || Boolean(task.overdue),
   overdueDays: task.daysOverdue,
   daysPending: task.daysPending,
   daysOverdue: task.daysOverdue,
@@ -174,7 +171,7 @@ const buildInspectionApplicant = (
     company: selectedTask.companyName ?? '',
     plantId: selectedTask.plantId,
     plant: selectedTask.plantName ?? '',
-    region: (selectedTask as any).region ?? '',
+    region: selectedTask.region ?? '',
     priority: selectedTask.priority ?? 'NORMAL',
     status: '',
     assignedRC: '',
@@ -285,7 +282,7 @@ const getTaskActionPresentation = (application: TaskDashboardAction) => {
       TASK_CATEGORIES.SCHEDULEB,
       TASK_CATEGORIES.SCHEDULEB_ASSIGNING,
       TASK_CATEGORIES.SCHEDULEB_START,
-    ].includes(actionCategory as any)
+    ].some((value) => value === actionCategory)
   ) {
     return { type: 'schedule-b' as const }
   }
@@ -296,16 +293,14 @@ const getTaskActionPresentation = (application: TaskDashboardAction) => {
 
   if (
     actionType === TASK_TYPES.ACTION &&
-    [TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].includes(
-      actionCategory as any,
-    )
+    [TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].some((value) => value === actionCategory)
   ) {
     return { type: 'condition' as const }
   }
 
   if (
     (actionType === TASK_TYPES.ACTION &&
-      [TASK_CATEGORIES.UPLOAD, TASK_CATEGORIES.EMAIL].includes(actionCategory as any)) ||
+      [TASK_CATEGORIES.UPLOAD, TASK_CATEGORIES.EMAIL].some((value) => value === actionCategory)) ||
     (actionType === TASK_TYPES.UPLOAD && actionCategory === TASK_CATEGORIES.UPLOAD)
   ) {
     return { type: 'upload' as const }
@@ -345,9 +340,9 @@ export function useTaskDashboardState() {
 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm)
   const [showPlantHistory, setShowPlantHistory] = useState<string | null>(null)
-  const [showActionModal, setShowActionModal] = useState<any>(null)
-  const [showConditionModal, setShowConditionModal] = useState<any>(null)
-  const [showUploadModal, setShowUploadModal] = useState<any>(null)
+  const [showActionModal, setShowActionModal] = useState<boolean | Task | ApplicationTask | null>(null)
+  const [showConditionModal, setShowConditionModal] = useState<boolean | Task | ApplicationTask | null>(null)
+  const [showUploadModal, setShowUploadModal] = useState<boolean | Task | ApplicationTask | null>(null)
   const [selectedAction, setSelectedAction] = useState<SelectedTaskAction | null>(null)
   const [scheduleADrawerState, setScheduleADrawerState] = useState<ScheduleADrawerState>({
     open: false,
@@ -463,11 +458,15 @@ export function useTaskDashboardState() {
   const updateSearch = useCallback(
     (updates: Partial<TaskSearchParams>) => {
       navigate({
-        search: (prev: TaskSearchParams) => ({
+        from: '/ou-workflow/tasks-dashboard',
+        search: (prev) => ({
           ...prev,
           ...updates,
+          qs: updates.qs ?? prev.qs,
+          days: updates.days ?? prev.days,
+          page: updates.page ?? prev.page,
         }),
-      } as any)
+      })
     },
     [navigate],
   )
@@ -536,7 +535,7 @@ export function useTaskDashboardState() {
   const executeAction = useCallback(
     (
       assignee: string,
-      action: any,
+      action: TaskDashboardAction,
       result?: string | InspectionFeeChoice,
       selectedActionArg?: SelectedTaskAction | null,
     ) => {
@@ -563,7 +562,7 @@ export function useTaskDashboardState() {
           ...buildRfrRecommendationCompletion(assignee, typeof result === 'string' ? result : undefined),
           rfrRecommendationUsername: assignee,
         }).then(() => postRfrRecommendationMessage({
-          applicationId: resolvedApplicationId,
+          applicationId: resolvedApplicationId ?? '',
           fullName: (typeof result === 'string' ? result.trim() : '') || assignee,
           username: username ?? undefined,
           token,
@@ -598,9 +597,7 @@ export function useTaskDashboardState() {
 
       if (
         taskType === TASK_TYPES.ACTION &&
-        [TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].includes(
-          taskCategory as any,
-        )
+        [TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].some((value) => value === taskCategory)
       ) {
         confirmTaskMutation.mutate({
           ...mutationParams,
@@ -644,7 +641,7 @@ export function useTaskDashboardState() {
 
   const completeTaskWithResult = useCallback(
     (
-      action: any,
+      action: TaskDashboardAction,
       result: string,
       status?: string,
       completionNotes?: string,
@@ -674,7 +671,7 @@ export function useTaskDashboardState() {
       event.stopPropagation()
       event.preventDefault()
 
-      const action: any = {
+      const action = {
         ...application,
         id: application.taskInstanceId,
         name: application.taskName,
@@ -721,7 +718,7 @@ export function useTaskDashboardState() {
         const scheduleATask = tasks.find(
           (candidate) =>
             String(candidate.applicationId) === String(action.applicationId) &&
-            String(candidate.taskName ?? (candidate as any).name ?? '').trim().toLowerCase() ===
+            String(candidate.taskName ?? candidate.name ?? '').trim().toLowerCase() ===
               TASK_CATEGORIES.SCHEDULEA &&
             String(candidate.taskCategory ?? candidate.TaskCategory ?? '').trim().toLowerCase() ===
               TASK_CATEGORIES.SCHEDULEA &&
@@ -736,7 +733,7 @@ export function useTaskDashboardState() {
           taskName: action.taskName ?? action.name,
           taskCategory: action.taskCategory ?? action.TaskCategory,
           scheduleATaskInstanceId:
-            scheduleATask?.taskInstanceId ?? (scheduleATask as any)?.TaskInstanceId,
+            scheduleATask?.taskInstanceId ?? scheduleATask?.TaskInstanceId,
           scheduleATaskStatusDetails:
             scheduleATask?.StatusDetails ?? scheduleATask?.statusDetails,
         })
@@ -747,7 +744,7 @@ export function useTaskDashboardState() {
         const scheduleBTask = tasks.find(
           (candidate) =>
             String(candidate.applicationId) === String(action.applicationId) &&
-            String(candidate.taskName ?? (candidate as any).name ?? '').trim().toLowerCase() ===
+            String(candidate.taskName ?? candidate.name ?? '').trim().toLowerCase() ===
               TASK_CATEGORIES.SCHEDULEB &&
             String(candidate.taskCategory ?? candidate.TaskCategory ?? '').trim().toLowerCase() ===
               TASK_CATEGORIES.SCHEDULEB &&
@@ -762,7 +759,7 @@ export function useTaskDashboardState() {
           taskName: action.taskName ?? action.name,
           taskCategory: action.taskCategory ?? action.TaskCategory,
           scheduleBTaskInstanceId:
-            scheduleBTask?.taskInstanceId ?? (scheduleBTask as any)?.TaskInstanceId,
+            scheduleBTask?.taskInstanceId ?? scheduleBTask?.TaskInstanceId,
           scheduleBTaskStatusDetails:
             scheduleBTask?.StatusDetails ?? scheduleBTask?.statusDetails,
         })

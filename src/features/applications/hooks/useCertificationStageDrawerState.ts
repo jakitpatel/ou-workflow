@@ -120,7 +120,7 @@ export function useCertificationStageDrawerState({
   const { email: userEmail, token, username } = useUser()
   const queryClient = useQueryClient()
   const applicationId = String(applicant?.applicationId ?? '').trim()
-  const taskId = String((task as any)?.TaskInstanceId ?? (task as any)?.taskInstanceId ?? '').trim()
+  const taskId = String(task?.TaskInstanceId ?? task?.taskInstanceId ?? '').trim()
   const savedState = useMemo(() => parseSavedState(task), [task])
   const detailQuery = useQuery({
     queryKey: applicationsQueryKeys.detail(applicationId),

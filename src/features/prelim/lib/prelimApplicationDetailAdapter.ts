@@ -41,7 +41,7 @@ type PrelimCompanyContactGroups = {
   OtherContact?: PrelimCompanyContact[]
 }
 
-type PrelimPlant = {
+export type PrelimPlant = {
   PlantId?: number
   brieflySummarize?: string
   contactEmail?: string
@@ -59,8 +59,8 @@ type PrelimPlant = {
   plantNumber?: number
   plantState?: string
   plantZip?: string
-  products?: any[]
-  ingredients?: any[]
+  products?: PrelimProduct[]
+  ingredients?: PrelimIngredient[]
 }
 
 type PrelimProduct = {
@@ -102,8 +102,8 @@ type PrelimIngredient = {
   plantStatus?: string
 }
 
-type PrelimApplicationDetail = {
-  applicationId?: number
+export type PrelimApplicationDetail = {
+  applicationId?: number | string
   GlobalData?: string | null
   globalData?: Array<{ GlobalData?: string | null }>
   OUCertified?: boolean
@@ -125,7 +125,7 @@ type PrelimApplicationDetail = {
   raw_data?: ApplicationDetail['raw_data']
   status?: string
   submissionDate?: string
-  submission_files?: any[]
+  submission_files?: { FileId?: number; fileName?: string; FilePath?: string; DownloadUrl?: string; fileURL?: string; fileSize?: string | number; fileType?: string; uploadDate?: string }[]
   taskEvents?: TaskEvent[]
   task_events?: TaskEvent[]
   ValidationStatus?: string
@@ -271,7 +271,7 @@ const mapFiles = (detail: PrelimApplicationDetail): UploadedFile[] => {
     fileId: file.FileId,
     FileID: file.FileId,
     FileName: file.fileName,
-    FilePath: file.FilePath ?? file.DownloadUrl ?? file.fileURL,
+    FilePath: file.FilePath ?? file.DownloadUrl ?? file.fileURL ?? '',
     DownloadUrl: file.DownloadUrl,
     fileURL: file.fileURL,
     FileSize: file.fileSize == null ? '' : String(file.fileSize),

@@ -190,6 +190,18 @@ export type PlantSelected = {
 
 export type Task = {
   TaskInstanceId: number
+  taskInstanceId?: number | string
+  taskId?: number | string
+  taskName?: string
+  id?: number | string
+  TaskType?: string
+  TaskCategory?: string
+  statusDetails?: string
+  result?: string
+  assignedTo?: string
+  applicationId?: number | string
+  application?: Applicant
+  companyName?: string
   name: string
   PreScript: string
   status: 'completed' | 'in_progress' | 'overdue' | 'blocked' | 'pending'
@@ -235,7 +247,7 @@ export type TaskNote = {
   text?: string
   details?: string
   ApplicationID?: number
-  MessageID?: number
+  MessageID?: number | string
   MessageText?: string
   MessageType?: string
   Priority?: string
@@ -280,7 +292,7 @@ export type WFApplicationMessageAttributes = {
   EmailStatus?: string | null
   FromUser?: string
   isRead?: boolean | number | string
-  MessageID?: number
+  MessageID?: number | string
   MessageText?: string
   MessageTextPlain?: string | null
   MessageType?: string
@@ -352,6 +364,9 @@ export type ResolvedData = {
 }
 
 export type Applicant = {
+  IsPrivateNotes?: number
+  IsGlobalNotes?: number
+  withdrawn_reason?: string
   id: number
   applicationId: number
   IntakeID?: number | string | null
@@ -382,7 +397,7 @@ export type Applicant = {
   /** 👇 Matches API response */
   application_messages?: WFApplicationMessage[]
   /** If API sends extra stuff (like aiSuggestions), allow it */
-  aiSuggestions?: Record<string, any>
+  aiSuggestions?: { todoItems?: string[]; criticalPath?: string }
   /** 👇 New property for applicant files */
   files?: ApplicantFile[]
   createdDate?: string
@@ -420,9 +435,10 @@ export interface Plant {
     ownsId?: number | string
     status?: string
   }>
-  address: any
-  contact: any
-  manufacturing: any
+  brieflySummarize?: string
+  address: Partial<PlantAddress> | null
+  contact: Partial<PlantContact> | null
+  manufacturing: { process?: string; closestMajorCity?: string; brieflySummarize?: string; type?: string } | null
   otherProducts?: boolean
   otherProductsList?: string
   otherPlantsProducing?: boolean
@@ -467,6 +483,7 @@ export interface CompanyAddress {
   city: string
   country: string
   line2: string
+  line3?: string
   state: string
   street: string
   type: string // or "Billing" | "Physical"
@@ -596,6 +613,10 @@ export interface DesignatedNcrcContact {
 }
 
 export interface ApplicationDetail {
+  ApplicationID?: number | string
+  ApplicationId?: number | string
+  appId?: number | string
+  id?: number | string
   applicationId: string
   createdDate?: string
   daysInProcess?: number
@@ -636,10 +657,10 @@ export interface ApplicationDetail {
   plants: Plant[]
   plantAddresses?: PlantAddress[]
   plantContacts?: PlantContact[] | PlantContactGroups
-  products: any[]
-  preferences?: any
+  products: Record<string, unknown>[]
+  preferences?: { [key: string]: unknown; plantCount?: number; prelimPlantsRaw?: import('@/features/prelim/lib/prelimApplicationDetailAdapter').PrelimPlant[] }
   files?: UploadedFile[]
-  ingredients?: any[]
+  ingredients?: Record<string, unknown>[]
   quotes?: QuoteData[] // <-- added here
   messages?: WFApplicationMessage[]
   taskEvents?: TaskEvent[]
@@ -802,6 +823,11 @@ export interface ScheduleBProductsResponse {
 }
 
 export interface ApplicationTask {
+  TaskInstanceId?: number | string
+  name?: string
+  required?: boolean
+  overdue?: boolean
+  region?: string
   TaskCategory: string // e.g., "CONFIRMATION"
   taskCategory?: string
   applicationId: number
@@ -878,13 +904,13 @@ export interface WFUserAttributes {
 
 export interface WFUserRelationships {
   RoleAssigmentList: {
-    data: any[]
+    data: { id: string; type: string }[]
     links: {
       self: string
     }
   }
   WF_Role: {
-    data: any | null
+    data: { id: string; type: string } | null
     links: {
       self: string
     }

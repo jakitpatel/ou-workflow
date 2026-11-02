@@ -44,7 +44,7 @@ describe('intake task mutation refresh', () => {
     })
     expect(events).toEqual(['complete', 'save', 'refresh'])
     expect(fetchWithAuth).toHaveBeenLastCalledWith({
-      path: '/global_data', method: 'POST', token: 'token',
+      path: '/global_data', method: 'POST', token: 'token', expectBody: expect.any(Function),
       body: { applicationId: 15, taskInstanceId: 232, jsonData: { RFRRecommendation: 'selected.rfr' } },
     })
     if (fails) expect(onError).toHaveBeenCalledWith('RFR recommendation completed, but saving application global data failed: Service unavailable')

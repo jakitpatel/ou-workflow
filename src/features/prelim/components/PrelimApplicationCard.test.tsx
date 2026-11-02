@@ -5,7 +5,7 @@ import { PrelimApplicationCard } from './PrelimApplicationCard'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fetchWithAuth } from '@/shared/api/httpClient'
 
-vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: vi.fn() }))
+vi.mock('@/shared/api/httpClient', () => ({ fetchWithAuth: vi.fn(), isJsonApiRecord: vi.fn() }))
 
 const user = vi.hoisted(() => ({
   username: 'assistant.user', role: 'NCRC', roles: [] as { name: string }[], token: 'test-token',
@@ -67,7 +67,7 @@ describe('assistant cancellation permission', () => {
     expect(screen.queryByRole('textbox')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Yes' }))
     await waitFor(() => expect(fetchWithAuth).toHaveBeenCalledWith({
-      path: '/api/WFApplication/421', method: 'PATCH', token: 'test-token',
+      path: '/api/WFApplication/421', method: 'PATCH', token: 'test-token', expectBody: expect.any(Function),
       body: { data: { attributes: { Status: 'LEGACY' }, id: 421, type: 'WFApplication' } },
     }))
     expect(handleCancelTask).not.toHaveBeenCalled()

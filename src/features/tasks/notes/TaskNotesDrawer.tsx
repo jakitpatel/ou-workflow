@@ -1,3 +1,5 @@
+import { SignedFileLink } from '@/shared/utils/fileLinks'
+import { ModalSurface } from '@/components/ui/ModalSurface'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { MyMessageApplicationActions } from './MyMessageApplicationActions'
 import {
@@ -246,7 +248,7 @@ const parseReactionRecords = (value: unknown): TaskNoteReaction[] => {
 }
 
 const getReactionRecordsFromNote = (note: TaskNote): TaskNoteReaction[] =>
-  parseReactionRecords((note as any)?.tag ?? (note as any)?.Tag)
+  parseReactionRecords(note?.tag ?? note?.Tag)
 
 const PUBLIC_ROOT_TONE: RootTone = {
   avatar: 'bg-emerald-700',
@@ -277,11 +279,11 @@ const getNoteText = (note: TaskNote): string => {
   const directCandidates = [
     note.note,
     note.text,
-    (note as any)?.MessageText,
+    note?.MessageText,
     note.details,
-    (note as any)?.message,
-    (note as any)?.content,
-    (note as any)?.note1,
+    note?.message,
+    note?.content,
+    note?.note1,
   ]
 
   for (const item of directCandidates) {
@@ -291,7 +293,7 @@ const getNoteText = (note: TaskNote): string => {
 
   const dynamicNoteKey = Object.keys(note).find((key) => /^note\d*$/i.test(key))
   if (dynamicNoteKey) {
-    const value = normalizeNoteValue((note as any)[dynamicNoteKey])
+    const value = normalizeNoteValue(note[dynamicNoteKey])
     if (value) return value
   }
 
@@ -380,7 +382,7 @@ const renderNoteTextContent = (
     }
 
     parts.push(
-      <a
+      <SignedFileLink
         key={`${matchIndex}-${href}`}
         href={href}
         target="_blank"
@@ -389,7 +391,7 @@ const renderNoteTextContent = (
         onClick={(event) => event.stopPropagation()}
       >
         {href}
-      </a>,
+      </SignedFileLink>,
     )
 
     if (trailingPunctuation) {
@@ -417,7 +419,7 @@ const renderNoteTextContent = (
 
 const getMetaValue = (note: TaskNote, ...keys: string[]): string => {
   for (const key of keys) {
-    const value = normalizeNoteValue((note as any)?.[key])
+    const value = normalizeNoteValue(note?.[key])
     if (value) return value
   }
   return '-'
@@ -448,7 +450,7 @@ const getInitials = (name: string): string => {
 }
 
 const getNoteId = (note: TaskNote, idx: number): string => {
-  const idCandidate = (note as any)?.MessageID ?? (note as any)?.messageId ?? (note as any)?.id
+  const idCandidate = note?.MessageID ?? note?.messageId ?? note?.id
   if (idCandidate !== undefined && idCandidate !== null && String(idCandidate).trim()) {
     return String(idCandidate)
   }
@@ -512,7 +514,7 @@ const serializeComposeToUsers = (values: string[]): string | null => {
 }
 
 const getParentMessageId = (note: TaskNote): string => {
-  const idCandidate = (note as any)?.MessageID ?? (note as any)?.messageId ?? (note as any)?.id
+  const idCandidate = note?.MessageID ?? note?.messageId ?? note?.id
   if (idCandidate !== undefined && idCandidate !== null && String(idCandidate).trim()) {
     return String(idCandidate)
   }
@@ -521,9 +523,9 @@ const getParentMessageId = (note: TaskNote): string => {
 
 const getNoteApplicationId = (note: TaskNote): number | null => {
   const candidates = [
-    (note as any)?.ApplicationID,
-    (note as any)?.applicationId,
-    (note as any)?.ApplicationId,
+    note?.ApplicationID,
+    note?.applicationId,
+    note?.ApplicationId,
   ]
 
   for (const candidate of candidates) {
@@ -571,10 +573,10 @@ const noteMatchesMessageFilters = (note: TaskNote, filters: MessageFilterValues)
 
 const getNoteTaskId = (note: TaskNote): string | null => {
   const candidates = [
-    (note as any)?.TaskInstanceId,
-    (note as any)?.taskInstanceId,
-    (note as any)?.TaskId,
-    (note as any)?.taskId,
+    note?.TaskInstanceId,
+    note?.taskInstanceId,
+    note?.TaskId,
+    note?.taskId,
   ]
 
   for (const candidate of candidates) {
@@ -589,9 +591,9 @@ const getNoteTaskId = (note: TaskNote): string | null => {
 
 const getNoteTaskName = (note: TaskNote): string => {
   const candidates = [
-    (note as any)?.TaskName,
-    (note as any)?.taskName,
-    (note as any)?.task_name,
+    note?.TaskName,
+    note?.taskName,
+    note?.task_name,
   ]
 
   for (const candidate of candidates) {
@@ -604,9 +606,9 @@ const getNoteTaskName = (note: TaskNote): string => {
 
 const getThreadParentMessageId = (note: TaskNote): string | null => {
   const candidate =
-    (note as any)?.parentMessageId ??
-    (note as any)?.ParentMessageId ??
-    (note as any)?.parent_message_id
+    note?.parentMessageId ??
+    note?.ParentMessageId ??
+    note?.parent_message_id
 
   if (candidate === undefined || candidate === null) return null
 
@@ -620,7 +622,7 @@ const getSortableTimestamp = (note: TaskNote): number => {
   const timestamp = rawDate && rawDate !== '-' ? new Date(rawDate).getTime() : Number.NaN
   if (!Number.isNaN(timestamp)) return timestamp
 
-  const rawMessageId = (note as any)?.MessageID ?? (note as any)?.messageId ?? (note as any)?.id
+  const rawMessageId = note?.MessageID ?? note?.messageId ?? note?.id
   const numericMessageId = Number(rawMessageId)
   if (!Number.isNaN(numericMessageId)) return numericMessageId
 
@@ -628,7 +630,7 @@ const getSortableTimestamp = (note: TaskNote): number => {
 }
 
 const isNoteRead = (note: TaskNote): boolean => {
-  const value = (note as any)?.isRead
+  const value = note?.isRead
   if (value === true) return true
   if (value === false || value === undefined || value === null) return false
 
@@ -821,11 +823,6 @@ const isCurrentUserMessage = (fromName: string, currentUsername?: string | null)
   )
 }
 
-const getLatestThreadTimestamp = (node: PublicNoteNode): number => {
-  const childLatest = node.children.map(getLatestThreadTimestamp)
-  return Math.max(getSortableTimestamp(node.note), ...childLatest)
-}
-
 const normalizeDrawerTab = (tab: NoteTab): NoteTab => {
   if (tab === 'directed') return 'incoming'
   if (tab === 'outgoing') return 'incoming'
@@ -944,7 +941,7 @@ export function TaskNotesDrawer({
   const tabs = customTabs?.length ? customTabs : defaultTabs
   const normalizedActiveTab = normalizeDrawerTab(activeTab)
   const activeTabConfig = tabs.find((tab) => tab.id === normalizedActiveTab) ?? tabs[0]
-  const notes = activeTabConfig?.notes ?? []
+  const notes = useMemo(() => activeTabConfig?.notes ?? [], [activeTabConfig?.notes])
   const isLoading = activeTabConfig?.loading ?? false
   const canSubmit = composeText.trim().length > 0 && !isSubmitting
   // isSubmitting only flips after a re-render, so a fast double-click needs a synchronous guard.
@@ -1290,12 +1287,12 @@ export function TaskNotesDrawer({
       isPublicTab ? renderNoteTextWithMentionHighlight(previewText || '-', currentUsername) : previewText || '-'
     const isDirectedMyNote =
       showMyNotesThreadType &&
-      ((note as any)?.isPrivate === true || String((note as any)?.isPrivate).toLowerCase() === 'true') &&
+      (note?.isPrivate === true || String(note?.isPrivate).toLowerCase() === 'true') &&
       toUser !== '-'
     const isPrivateMyNote =
       showMyNotesThreadType &&
       !isDirectedMyNote &&
-      ((note as any)?.isPrivate === true || String((note as any)?.isPrivate).toLowerCase() === 'true')
+      (note?.isPrivate === true || String(note?.isPrivate).toLowerCase() === 'true')
     const myNoteThreadLabel = isDirectedMyNote ? 'Directed' : isPrivateMyNote ? 'Private' : 'Public'
     const myNoteThreadLabelClass = isDirectedMyNote
       ? 'bg-violet-100 text-violet-800'
@@ -1341,8 +1338,8 @@ export function TaskNotesDrawer({
             : null
           : null
       const resolvedIsPrivate =
-        (messageNote as any)?.isPrivate === true ||
-        String((messageNote as any)?.isPrivate).toLowerCase() === 'true'
+        messageNote?.isPrivate === true ||
+        String(messageNote?.isPrivate).toLowerCase() === 'true'
 
       setReplyTargetByThreadId((prev) => ({
         ...prev,
@@ -1406,7 +1403,7 @@ export function TaskNotesDrawer({
               e.stopPropagation()
               setExpandedThreads((prev) => ({
                 ...prev,
-                [rootMessageId]: !Boolean(prev[rootMessageId]),
+                [rootMessageId]: !prev[rootMessageId],
               }))
             }}
             className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full transition ${rootTone.toggle}`}
@@ -1548,7 +1545,7 @@ export function TaskNotesDrawer({
                             onClick={() =>
                               setReactionPickerOpenById((prev) => ({
                                 ...prev,
-                                [messageId]: !Boolean(prev[messageId]),
+                                [messageId]: !prev[messageId],
                               }))
                             }
                             className="rounded-full p-1 text-slate-600 transition hover:bg-slate-100"
@@ -1589,7 +1586,7 @@ export function TaskNotesDrawer({
                             onClick={() =>
                               setActionMenuOpenById((prev) => ({
                                 ...prev,
-                                [messageId]: !Boolean(prev[messageId]),
+                                [messageId]: !prev[messageId],
                               }))
                             }
                             className="rounded-full p-1 text-slate-600 transition hover:bg-slate-100"
@@ -2305,13 +2302,13 @@ export function TaskNotesDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40">
-      <div
+    <div className="fixed inset-0 pointer-events-auto z-50 bg-black/40">
+      <ModalSurface onClose={onClose} label="Application Notes"
         className="fixed right-0 top-0 flex h-full w-full max-w-lg flex-col overflow-hidden bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {notesContent}
-      </div>
+      </ModalSurface>
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { SignedFileLink } from '@/shared/utils/fileLinks'
 import { useRef } from 'react'
 import type { Applicant } from '@/types/application'
 import {
@@ -89,7 +90,7 @@ export function InspectionInvoicePreview(props: Props) {
         </span>
         <div className="flex gap-2">
           {invoiceDownloadLink ? (
-            <a
+            <SignedFileLink
               href={invoiceDownloadLink}
               download={fileName}
               target="_blank"
@@ -97,7 +98,7 @@ export function InspectionInvoicePreview(props: Props) {
               className="rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700"
             >
               Download PDF
-            </a>
+            </SignedFileLink>
           ) : (
             <button
               disabled

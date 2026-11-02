@@ -1,3 +1,5 @@
+import { ModalSurface } from '@/components/ui/ModalSurface'
+import { useId } from 'react'
 import { X } from 'lucide-react'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import { ApplicationDetailsContent } from '@/features/applications/components/ApplicationDetailsContent'
@@ -15,18 +17,22 @@ export function ApplicationDetailsDrawer({ open, applicationId, applicant, onClo
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const activeApplicationId = open ? resolvedApplicationId : undefined
   const { data, isLoading, error } = useApplicationDetail(activeApplicationId)
+  const titleId = useId()
 
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40">
-      <div
+    <div className="fixed inset-0 pointer-events-auto z-50 bg-black/40">
+      <ModalSurface onClose={onClose} label="Application Details"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className="fixed right-0 top-0 flex h-full w-full max-w-[96vw] flex-col overflow-hidden bg-white shadow-2xl lg:max-w-[50vw]"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b bg-gray-800 px-4 py-3 text-white">
           <div>
-            <h3 className="text-lg font-semibold">Application Details</h3>
+            <h3 id={titleId} className="text-lg font-semibold">Application Details</h3>
             {resolvedApplicationId ? (
               <p className="text-xs text-gray-200">AppId: {resolvedApplicationId}</p>
             ) : null}
@@ -56,7 +62,7 @@ export function ApplicationDetailsDrawer({ open, applicationId, applicant, onClo
             />
           ) : null}
         </div>
-      </div>
+      </ModalSurface>
     </div>
   )
 }

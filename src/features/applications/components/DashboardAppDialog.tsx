@@ -1,3 +1,5 @@
+import { getErrorMessage } from '@/shared/api/record'
+import { ModalSurface } from '@/components/ui/ModalSurface'
 import { useState, useEffect, useRef } from "react"
 import { useMutation } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
@@ -5,6 +7,7 @@ import { useUser } from "@/context/UserContext"
 import {
   createSubmissionApplication,
   deleteSubmissionApplication,
+  isApplicationActionResult,
 } from "@/features/prelim/api"
 import { fetchWithAuth } from "@/shared/api/httpClient"
 import { X, AlertCircle } from "lucide-react"
@@ -61,15 +64,13 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
             ? `/createApplication?ownsId=${trimmedValue}`
             : `/deleteApplication?applicationID=${trimmedValue}`,
         token,
+        expectBody: isApplicationActionResult,
       })
     },
 
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       const backendMessage =
-        err?.details?.status ||
-        err?.details?.message ||
-        err?.message ||
-        "An unexpected error occurred"
+        getErrorMessage(err, "An unexpected error occurred")
 
       setError(backendMessage)
       toast.error(backendMessage)
@@ -108,19 +109,6 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
     }
   }, [isOpen])
 
-  // Close on ESC key
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !mutation.isPending) {
-        onClose()
-      }
-    }
-
-    window.addEventListener("keydown", handler)
-    return () => window.removeEventListener("keydown", handler)
-  }, [isOpen, mutation.isPending, onClose])
 
   // Reset state when dialog closes
   useEffect(() => {
@@ -177,8 +165,8 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
   const fieldLabel = mode === "create" ? "Owner ID" : "Application ID"
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+    <ModalSurface onClose={onClose} label="Application" dismissible={!mutation.isPending}
+      className="fixed inset-0 pointer-events-auto bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onMouseDown={handleOverlayClick}
       role="dialog"
       aria-modal="true"
@@ -317,6 +305,6 @@ export default function DashboardAppDialog({ mode, isOpen, onClose }: Props) {
           </button>
         </div>
       </div>
-    </div>
+    </ModalSurface>
   )
 }

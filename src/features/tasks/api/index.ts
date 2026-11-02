@@ -4,7 +4,6 @@ import type {
   ApplicationTasksResponse,
   TaskNote,
   TaskNoteReaction,
-  UserRoleResponse,
   WFApplicationMessageAttributes,
   WFApplicationMessageRecord,
 } from '@/types/application'
@@ -77,7 +76,7 @@ export async function assignTask({
   token?: string | null
   capacity?: string
   override?: string | number
-}): Promise<any> {
+}): Promise<unknown> {
   const body: Record<string, unknown> = { appId, taskId, role, assignee, capacity }
 
   if (override !== undefined) {
@@ -117,7 +116,7 @@ export async function confirmTask({
   overwrite?: string | number
   includeCompletedBy?: boolean
   includeCompletionNotes?: boolean
-}): Promise<any> {
+}): Promise<unknown> {
   const completionNotesMap: Record<string, string> = {
     completed: 'Task completed successfully',
     in_progress: 'Task IN PROGRESS successfully',
@@ -128,7 +127,7 @@ export async function confirmTask({
     completionNotes ??
     ((typeof result === 'string' && completionNotesMap[result]) || 'Task completed successfully')
 
-  const body: Record<string, any> = {
+  const body: Record<string, unknown> = {
     task_instance_id: taskId,
     capacity,
   }
@@ -191,7 +190,7 @@ export async function patchTaskResult({
   result: unknown
   guiDisplayResult?: string
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const attributes: Record<string, unknown> = {
     StatusDetails: result,
   }
@@ -250,7 +249,7 @@ export async function fetchTaskInstance({
 }: {
   taskId: string
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   return await fetchWithAuth({
     path: `/api/TaskInstance/${encodeURIComponent(taskId)}`,
     token,
@@ -381,17 +380,17 @@ export async function fetchTaskRoles({
 } = {}): Promise<Array<string>> {
   const params = buildPaginationParams(0, 10000)
 
-  const response = await fetchWithAuth<UserRoleResponse>({
+  const response = await fetchWithAuth<{ data: { attributes: { groupAssignment?: boolean; groupAssigment?: boolean; RoleCode: string } }[] }>({
     path: `/api/TaskRole?${params.toString()}`,
     token,
   })
 
   return response.data
-    .filter((item: any) => {
+    .filter((item) => {
       const attributes = item.attributes ?? {}
       return Boolean(attributes.groupAssignment ?? attributes.groupAssigment)
     })
-    .map((item: any) => String(item.attributes.RoleCode).toLowerCase())
+    .map((item) => String(item.attributes.RoleCode).toLowerCase())
 }
 
 
@@ -417,7 +416,7 @@ export async function createTaskNote({
   fromUser?: string
   toUser?: string | null
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const attributes: Record<string, unknown> = {
     ApplicationID: applicationId,
     MessageText: note,
@@ -465,7 +464,7 @@ export async function markTaskNoteAsRead({
 }: {
   messageId: string | number
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const resolvedMessageId = String(messageId).trim()
 
   return await fetchWithAuth({
@@ -492,7 +491,7 @@ export async function updateTaskNoteTag({
   messageId: string | number
   tag: TaskNoteReaction[]
   token?: string | null
-}): Promise<any> {
+}): Promise<unknown> {
   const resolvedMessageId = String(messageId).trim()
 
   return await fetchWithAuth({

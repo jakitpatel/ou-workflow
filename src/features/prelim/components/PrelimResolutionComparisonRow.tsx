@@ -27,6 +27,7 @@ export function ComparisonRow({
           editor
         ) : editable && onAppValueChange ? (
           <input
+            aria-label={field}
             value={appValue}
             onChange={(e) => onAppValueChange(e.target.value)}
             className="w-full min-w-0 rounded border-[1.5px] border-[#fbbf24] bg-amber-50 px-2.5 py-1.5 text-[14px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-400"

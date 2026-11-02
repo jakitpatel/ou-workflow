@@ -22,7 +22,10 @@ export function ApplicationEirPanel({
   const [tab, setTab] = useState<'details' | 'eir'>('details')
   const detail = useApplicationDetail(String(applicationId))
   const { eirNewUrl } = useScheduleEir(detail.data?.VisitId)
-  const scratchpadApi = useScheduleAScratchpad(applicationId, taskInstanceId, taskStatusDetails)
+  // Display only: never edits or saves the review marks (w6b).
+  const scratchpadApi = useScheduleAScratchpad(applicationId, taskInstanceId, taskStatusDetails, {
+    readOnly: true,
+  })
 
   if (detail.isLoading) return <p className="p-6 text-sm text-gray-500">Loading EIR...</p>
   if (detail.isError)

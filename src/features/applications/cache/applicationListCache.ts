@@ -50,7 +50,7 @@ const patchApplicationsCacheValue = (
     return patchApplicantList(current as Applicant[], updatedApplication, requestedApplicationId)
   }
 
-  const record = current as Record<string, any>
+  const record = current as Record<string, unknown>
 
   if (Array.isArray(record.data)) {
     const nextData = patchApplicantList(
