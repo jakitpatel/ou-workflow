@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useUser } from '@/context/UserContext'
 import type { MyMessagesByTab } from '@/features/tasks/api'
@@ -322,6 +322,8 @@ export function useTaskNotesDrawerState({
     })
   }, [])
 
+  // Synchronous guard: the mutation's isPending only updates after a re-render.
+  const submitNoteInFlightRef = useRef(false)
   const createTaskNoteMutation = useCreateTaskNoteMutation({
     includeApplicationLists,
     includePrelimLists,
@@ -479,7 +481,7 @@ export function useTaskNotesDrawerState({
   }, [])
 
   const submitNote = useCallback(async () => {
-    if (!drawer) return
+    if (!drawer || submitNoteInFlightRef.current) return
 
     const trimmedText = composeText.trim()
     const normalizedToUser = normalizeComposeToUsers(composeToUserId)
@@ -497,17 +499,22 @@ export function useTaskNotesDrawerState({
     const isMentionTab = drawer.activeTab === 'mention'
     const isPrivateTab = drawer.activeTab === 'private' || isOutgoingTab
 
-    await createTaskNoteMutation.mutateAsync({
-      taskId: drawer.taskId,
-      applicationId: applicationId ?? null,
-      note: trimmedText,
-      isPrivate: isIncomingTab ? true : isMentionTab ? false : isPrivateTab ? true : composePrivate,
-      isRead: false,
-      priority: 'NORMAL',
-      fromUser: username ?? undefined,
-      toUser: isIncomingTab || isOutgoingTab ? normalizedToUser ?? undefined : undefined,
-      token: token ?? undefined,
-    })
+    submitNoteInFlightRef.current = true
+    try {
+      await createTaskNoteMutation.mutateAsync({
+        taskId: drawer.taskId,
+        applicationId: applicationId ?? null,
+        note: trimmedText,
+        isPrivate: isIncomingTab ? true : isMentionTab ? false : isPrivateTab ? true : composePrivate,
+        isRead: false,
+        priority: 'NORMAL',
+        fromUser: username ?? undefined,
+        toUser: isIncomingTab || isOutgoingTab ? normalizedToUser ?? undefined : undefined,
+        token: token ?? undefined,
+      })
+    } finally {
+      submitNoteInFlightRef.current = false
+    }
 
     setError('')
     setComposeTextState('')

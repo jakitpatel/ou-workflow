@@ -227,6 +227,31 @@ describe('useTaskNotesDrawerState', () => {
     })
   })
 
+  it('posts a note only once when submit fires twice before the first post settles', async () => {
+    let finish!: (value: unknown) => void
+    mutateAsyncMock.mockReturnValue(new Promise((resolve) => { finish = resolve }))
+    renderWithProviders(<NotesHookHarness />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'open-drawer' }))
+    await waitFor(() => {
+      expect(screen.getByText('active-tab:mention')).toBeTruthy()
+    })
+    fireEvent.change(screen.getByLabelText('compose-text'), {
+      target: { value: 'Double click note' },
+    })
+
+    const submit = screen.getByRole('button', { name: 'submit-note' })
+    fireEvent.click(submit)
+    fireEvent.click(submit)
+    expect(mutateAsyncMock).toHaveBeenCalledTimes(1)
+
+    await act(async () => finish({ status: 'ok' }))
+    await waitFor(() => {
+      expect(fetchMyMessagesMock).toHaveBeenCalledTimes(2)
+    })
+    expect(mutateAsyncMock).toHaveBeenCalledTimes(1)
+  })
+
   it('refreshes public notes after a successful reply submission', async () => {
     renderWithProviders(<NotesHookHarness />)
 

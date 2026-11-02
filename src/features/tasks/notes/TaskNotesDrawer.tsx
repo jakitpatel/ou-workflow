@@ -83,7 +83,7 @@ type Props = {
   onComposeTextChange: (text: string) => void
   onComposeToUserChange: (toUserId: string | null) => void
   onComposePrivateChange: (value: boolean) => void
-  onSubmit: () => void
+  onSubmit: () => void | Promise<void>
   onReplySubmit: (params: {
     parentMessageId: string
     text: string
@@ -947,6 +947,19 @@ export function TaskNotesDrawer({
   const notes = activeTabConfig?.notes ?? []
   const isLoading = activeTabConfig?.loading ?? false
   const canSubmit = composeText.trim().length > 0 && !isSubmitting
+  // isSubmitting only flips after a re-render, so a fast double-click needs a synchronous guard.
+  const submitInFlightRef = useRef(false)
+  const handleSubmitClick = async () => {
+    if (!canSubmit || submitInFlightRef.current) return
+    submitInFlightRef.current = true
+    try {
+      await onSubmit()
+    } catch {
+      // The submit handler reports its own error.
+    } finally {
+      submitInFlightRef.current = false
+    }
+  }
   const tabMode = activeTabConfig?.mode ?? 'public'
   const isThreadedTab =
     activeTabConfig?.threaded ?? (tabMode === 'directed' || tabMode === 'public')
@@ -2270,7 +2283,7 @@ export function TaskNotesDrawer({
             )}
             <button
               type="button"
-              onClick={onSubmit}
+              onClick={handleSubmitClick}
               disabled={!canSubmit}
               className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
