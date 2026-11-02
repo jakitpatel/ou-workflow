@@ -155,7 +155,7 @@ export default function PlantsSection({
                 <input
                   aria-label="ZIP Code"
                   type="text"
-                  value={physicalAddress?.zip || ''}
+                  value={physicalAddress?.zip || physicalAddress?.postalCode || ''}
                   readOnly={!editMode}
                   className={`w-full px-3 py-2 border rounded-lg text-gray-900 ${
                     editMode 

@@ -305,7 +305,7 @@ export function InspectionVisitDateDrawer({ open, applicant, task, onClose }: Pr
         detailPlantAddress?.line2,
         detailPlantAddress?.city,
         detailPlantAddress?.state,
-        detailPlantAddress?.zip,
+        detailPlantAddress?.zip || detailPlantAddress?.postalCode,
         detailPlantAddress?.country,
       ),
       formatAddressObject(detailPlant?.address),

@@ -1163,7 +1163,7 @@ export function ContractStageDrawer({
       plantAddressRecord.line2,
       plantAddressRecord.city,
       plantAddressRecord.state,
-      plantAddressRecord.zip,
+      plantAddressRecord.zip || plantAddressRecord.postalCode,
       plantAddressRecord.country,
     ]
       .filter(Boolean)

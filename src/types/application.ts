@@ -513,7 +513,8 @@ export interface PlantAddress {
   street2?: string
   city: string
   state: string
-  zip: string
+  // get_application_detail_v2 sends postalCode; zip is kept for the intake adapter.
+  zip?: string
   postalCode?: string
   country?: string
   type: string // "Billing" | "Physical" ... (if you want, I can enum this)
