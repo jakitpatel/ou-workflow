@@ -6,6 +6,7 @@ type NcrcDashboardListSectionProps = {
   applicants: Applicant[]
   paginationMode: 'paged' | 'infinite'
   isLoading: boolean
+  isRefreshing?: boolean
   isError: boolean
   isInfiniteInitialLoading: boolean
   hasNextPage: boolean
@@ -20,6 +21,7 @@ export function NcrcDashboardListSection({
   applicants,
   paginationMode,
   isLoading,
+  isRefreshing = false,
   isError,
   isInfiniteInitialLoading,
   hasNextPage,
@@ -39,7 +41,11 @@ export function NcrcDashboardListSection({
       )}
 
       {!isError && (
-        <div className="space-y-4">
+        <div
+          className={`space-y-4 transition-opacity ${isRefreshing ? 'pointer-events-none opacity-50' : ''}`}
+          aria-busy={isRefreshing || undefined}
+          data-testid="ncrc-application-list"
+        >
           {applicants.length > 0 ? (
             applicants.map((applicant) => (
               <ApplicantCard

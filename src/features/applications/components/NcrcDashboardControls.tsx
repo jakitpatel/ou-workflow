@@ -2,8 +2,14 @@ import { ApplicationIdFilter } from '@/components/filters/ApplicationIdFilter'
 import { MessageSquareText, Search } from 'lucide-react'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { ApplicantStatsCards } from '@/features/applications/components/ApplicantStatsCards'
-
-const PAGE_SIZE = 5
+import {
+  DEFAULT_PRIORITY_OPTIONS,
+  type PriorityOption,
+} from '@/features/applications/api/priorities'
+import {
+  NCRC_DASHBOARD_PAGE_SIZE,
+  getOffsetPagination,
+} from '@/features/applications/lib/pagination'
 
 type ApplicantStats = {
   total: number
@@ -31,9 +37,13 @@ type NcrcDashboardControlsProps = {
   page: number
   myOnly: boolean
   totalCount: number
-  totalPages: number
+  /** Ignored: derived from totalCount and pageSize so the summary, page count and buttons agree. */
+  totalPages?: number
+  pageSize?: number
   paginationMode: 'paged' | 'infinite'
   isLoading: boolean
+  isRefreshing?: boolean
+  priorityOptions?: PriorityOption[]
   isError: boolean
   error: unknown
   username?: string | null
@@ -55,9 +65,11 @@ export function NcrcDashboardControls({
   page,
   myOnly,
   totalCount,
-  totalPages,
+  pageSize = NCRC_DASHBOARD_PAGE_SIZE,
   paginationMode,
   isLoading,
+  isRefreshing = false,
+  priorityOptions = DEFAULT_PRIORITY_OPTIONS,
   isError,
   error,
   username,
@@ -71,6 +83,7 @@ export function NcrcDashboardControls({
   onLastPage,
 }: NcrcDashboardControlsProps) {
   const { navigationMenuType } = useAppPreferences()
+  const pagination = getOffsetPagination({ offset: page, pageSize, totalCount })
 
   return (
     <div
@@ -141,10 +154,11 @@ export function NcrcDashboardControls({
             className="min-w-[120px] rounded-lg border border-gray-300 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Priorities</option>
-            <option value="urgent">Urgent</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
+            {priorityOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
 
           <div className="ml-auto flex items-center border-gray-200">
@@ -193,6 +207,12 @@ export function NcrcDashboardControls({
       {isLoading && paginationMode === 'paged' && (
         <div className="mb-4 text-gray-500">Loading applicants...</div>
       )}
+      {!isLoading && isRefreshing && !isError && (
+        <div role="status" className="mb-4 flex items-center gap-2 text-sm text-gray-500">
+          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-blue-600 border-r-transparent" />
+          Updating results...
+        </div>
+      )}
       {isError && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 py-4 text-center">
           <div className="font-semibold text-red-600">Error loading applications</div>
@@ -203,36 +223,36 @@ export function NcrcDashboardControls({
       {paginationMode === 'paged' && !isError && (
         <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
           <div className="text-sm text-gray-600">
-            Showing {page + 1}-{Math.min(page + PAGE_SIZE, totalCount)} of {totalCount} applications
+            Showing {pagination.start}-{pagination.end} of {totalCount} applications
           </div>
           <div className="flex items-center space-x-2">
             <button
               onClick={onFirstPage}
-              disabled={page === 0}
+              disabled={!pagination.hasPrevious}
               className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               First
             </button>
             <button
               onClick={onPrevPage}
-              disabled={page === 0}
+              disabled={!pagination.hasPrevious}
               className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Prev
             </button>
             <span className="rounded-md bg-gray-50 px-3 py-1.5 text-sm font-medium">
-              Page {Math.floor(page / PAGE_SIZE) + 1} of {totalPages}
+              Page {pagination.currentPage} of {pagination.totalPages}
             </span>
             <button
               onClick={onNextPage}
-              disabled={page + PAGE_SIZE >= totalCount}
+              disabled={!pagination.hasNext}
               className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Next
             </button>
             <button
               onClick={onLastPage}
-              disabled={page + PAGE_SIZE >= totalCount}
+              disabled={!pagination.hasNext}
               className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Last

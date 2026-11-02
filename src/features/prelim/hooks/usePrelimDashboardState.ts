@@ -11,6 +11,7 @@ import {
   usePrelimApplications,
 } from '@/features/prelim/hooks/usePrelimApplications'
 import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
+import { PRELIM_DASHBOARD_PAGE_SIZE } from '@/features/applications/lib/pagination'
 import { useTaskActions, type SelectedTaskAction } from '@/features/tasks/hooks/useTaskActions'
 import { useDebounce } from '@/hooks/useDebounce'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
@@ -18,7 +19,7 @@ import { Route } from '@/routes/_authed/ou-workflow/prelim-dashboard'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import type { Task } from '@/types/application'
 
-const PAGE_LIMIT = 20
+const PAGE_LIMIT = PRELIM_DASHBOARD_PAGE_SIZE
 const DEBOUNCE_DELAY = 1000
 
 export function usePrelimDashboardState() {
@@ -74,6 +75,11 @@ export function usePrelimDashboardState() {
       ? (prelimApplicationsQuery.data?.meta.total_count ?? 0)
       : (infiniteApplicationsQuery.data?.pages[0]?.meta.total_count ?? 0)
   const totalPages = Math.ceil(totalCount / PAGE_LIMIT)
+  // keepPreviousData (and the search debounce) keep the last result on screen while a new filter
+  // loads; flag it so the UI can mark it stale, as the NCRC dashboard does.
+  const isRefreshing =
+    (paginationMode === 'paged' && Boolean(prelimApplicationsQuery.isPlaceholderData)) ||
+    (Boolean(q) && q !== debouncedSearch)
 
   const applicationDetailsQuery = useQuery({
     queryKey: prelimQueryKeys.detail(selectedId),
@@ -207,6 +213,8 @@ export function usePrelimDashboardState() {
     page,
     totalCount,
     totalPages,
+    pageSize: PAGE_LIMIT,
+    isRefreshing,
     isLoading:
       paginationMode === 'paged'
         ? prelimApplicationsQuery.isLoading

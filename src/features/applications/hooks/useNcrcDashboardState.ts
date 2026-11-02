@@ -5,6 +5,7 @@ import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { useInfiniteApplications } from '@/features/applications/hooks/useInfiniteApplications'
 import { usePagedApplications } from '@/features/applications/hooks/usePagedApplications'
+import { NCRC_DASHBOARD_PAGE_SIZE } from '@/features/applications/lib/pagination'
 import {
   fetchMyMessages,
   markTaskNoteAsRead,
@@ -16,8 +17,17 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { useSSE, type SSEMessage } from '@/hooks/useSSE'
 import type { Applicant, TaskNote, TaskNoteReaction } from '@/types/application'
 
-const PAGE_LIMIT = 50
+const PAGE_LIMIT = NCRC_DASHBOARD_PAGE_SIZE
 const DEBOUNCE_DELAY = 1000
+
+// Older links used urgent/medium; the list API filters on WF_Priorities codes.
+const LEGACY_PRIORITY_CODES: Record<string, string> = { urgent: 'CRITICAL', medium: 'NORMAL' }
+
+const normalizePriorityFilter = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed || trimmed.toLowerCase() === 'all') return 'all'
+  return LEGACY_PRIORITY_CODES[trimmed.toLowerCase()] ?? trimmed.toUpperCase()
+}
 
 type DashboardSearch = {
   q: string
@@ -91,7 +101,8 @@ export function useNcrcDashboardState({
   search,
   navigate,
 }: UseNcrcDashboardStateParams) {
-  const { q, status, priority, page, applicationId, myOnly } = search
+  const { q, status, page, applicationId, myOnly } = search
+  const priority = normalizePriorityFilter(search.priority ?? 'all')
   const { token, username } = useUser()
   const queryClient = useQueryClient()
   const { paginationMode } = useAppPreferences()
@@ -137,6 +148,10 @@ export function useNcrcDashboardState({
   })
 
   const isLoading = paginationMode === 'paged' ? pagedQuery.isLoading : infiniteQuery.isLoading
+  // keepPreviousData shows the last result while a new filter loads; flag it so the UI can mark it stale.
+  const isRefreshing =
+    paginationMode === 'paged' &&
+    (pagedQuery.isPlaceholderData || (Boolean(q) && q !== debouncedSearch))
   const isError = paginationMode === 'paged' ? pagedQuery.isError : infiniteQuery.isError
   const error = paginationMode === 'paged' ? pagedQuery.error : infiniteQuery.error
 
@@ -257,10 +272,12 @@ export function useNcrcDashboardState({
     paginationMode,
   ])
 
+  // Reset to the first page only when the pagination mode is switched, not on every page change.
+  const previousPaginationModeRef = useRef(paginationMode)
   useEffect(() => {
-    if (paginationMode === 'paged' && page !== 0) {
-      updateSearch({ page: 0 })
-    }
+    if (previousPaginationModeRef.current === paginationMode) return
+    previousPaginationModeRef.current = paginationMode
+    if (page !== 0) updateSearch({ page: 0 })
   }, [page, paginationMode, updateSearch])
 
   const applicantStats = useMemo(() => {
@@ -476,11 +493,13 @@ export function useNcrcDashboardState({
     myOnly,
     paginationMode,
     isLoading,
+    isRefreshing,
     isError,
     error,
     applicants,
     totalCount,
     totalPages,
+    pageSize: PAGE_LIMIT,
     applicantStats,
     pagedQuery,
     infiniteQuery,

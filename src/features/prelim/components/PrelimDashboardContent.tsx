@@ -11,6 +11,10 @@ import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDraw
 import { useUser } from '@/context/UserContext'
 import type { NoteTab, TaskNotesDrawerTabConfig } from '@/features/tasks/notes/TaskNotesDrawer'
 import { PageShell } from '@/components/layout/PageShell'
+import {
+  PRELIM_DASHBOARD_PAGE_SIZE,
+  getOffsetPagination,
+} from '@/features/applications/lib/pagination'
 
 const normalizeApplicationId = (value: unknown): number | undefined => {
   const parsed = Number(value)
@@ -28,7 +32,7 @@ export function PrelimDashboardContent() {
     paginationMode,
     page,
     totalCount,
-    totalPages,
+    isRefreshing,
     isLoading,
     isError,
     error,
@@ -56,6 +60,11 @@ export function PrelimDashboardContent() {
     selectedAction,
     executeAction,
   } = usePrelimDashboardState()
+  const pagination = getOffsetPagination({
+    offset: page,
+    pageSize: PRELIM_DASHBOARD_PAGE_SIZE,
+    totalCount,
+  })
   const myMessages = useTaskNotesDrawerState({
     includeApplicationLists: true,
     includePrelimLists: true,
@@ -176,40 +185,47 @@ export function PrelimDashboardContent() {
           </div>
         )}
 
+        {isRefreshing && !isError && (
+          <div role="status" className="flex items-center gap-2 text-sm text-gray-500">
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-blue-600 border-r-transparent" />
+            Updating results...
+          </div>
+        )}
+
         {paginationMode === 'paged' && !isError && (
           <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
             <span className="text-sm text-gray-600">
-              Showing {totalCount === 0 ? 0 : page + 1}-{Math.min(page + 5, totalCount)} of{' '}
+              Showing {pagination.start}-{pagination.end} of{' '}
               {totalCount} applications
             </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleFirst}
-                disabled={page === 0}
+                disabled={!pagination.hasPrevious}
                 className="rounded border px-3 py-1.5 text-sm disabled:opacity-50"
               >
                 First
               </button>
               <button
                 onClick={handlePrev}
-                disabled={page === 0}
+                disabled={!pagination.hasPrevious}
                 className="rounded border px-3 py-1.5 text-sm disabled:opacity-50"
               >
                 Prev
               </button>
               <span className="px-2 text-sm">
-                Page {totalPages === 0 ? 0 : Math.floor(page / 5) + 1} of {totalPages}
+                Page {pagination.currentPage} of {pagination.totalPages}
               </span>
               <button
                 onClick={handleNext}
-                disabled={page + 5 >= totalCount}
+                disabled={!pagination.hasNext}
                 className="rounded border px-3 py-1.5 text-sm disabled:opacity-50"
               >
                 Next
               </button>
               <button
                 onClick={handleLast}
-                disabled={page + 5 >= totalCount}
+                disabled={!pagination.hasNext}
                 className="rounded border px-3 py-1.5 text-sm disabled:opacity-50"
               >
                 Last
@@ -218,20 +234,26 @@ export function PrelimDashboardContent() {
           </div>
         )}
 
-        <PrelimDashboardList
-          applications={applications}
-          expandedTaskPanel={expandedTaskPanel}
-          setExpandedTaskPanel={setExpandedTaskPanel}
-          onViewApplication={(externalReferenceId) =>
-            setSelectedId(externalReferenceId == null ? null : Number(externalReferenceId))
-          }
-          handleCancelTask={handleCancelTask}
-          handleTaskAction={handleTaskAction}
-          paginationMode={paginationMode}
-          hasNextPage={Boolean(hasNextPage)}
-          isFetchingNextPage={isFetchingNextPage}
-          sentinelRef={sentinelRef}
-        />
+        <div
+          className={`transition-opacity ${isRefreshing ? 'pointer-events-none opacity-50' : ''}`}
+          aria-busy={isRefreshing || undefined}
+          data-testid="prelim-application-list"
+        >
+          <PrelimDashboardList
+            applications={applications}
+            expandedTaskPanel={expandedTaskPanel}
+            setExpandedTaskPanel={setExpandedTaskPanel}
+            onViewApplication={(externalReferenceId) =>
+              setSelectedId(externalReferenceId == null ? null : Number(externalReferenceId))
+            }
+            handleCancelTask={handleCancelTask}
+            handleTaskAction={handleTaskAction}
+            paginationMode={paginationMode}
+            hasNextPage={Boolean(hasNextPage)}
+            isFetchingNextPage={isFetchingNextPage}
+            sentinelRef={sentinelRef}
+          />
+        </div>
 
         <PrelimApplicationDetailsDrawer
           open={selectedId !== null}

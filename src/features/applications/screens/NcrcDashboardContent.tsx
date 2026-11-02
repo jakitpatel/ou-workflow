@@ -16,6 +16,7 @@ import { NcrcDashboardListSection } from '@/features/applications/components/Ncr
 import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer'
 import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer'
 import { useNcrcDashboardState } from '@/features/applications/hooks/useNcrcDashboardState'
+import { usePriorityOptions } from '@/features/applications/hooks/usePriorityOptions'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
 import {
   isCertificateActionTask,
@@ -144,11 +145,12 @@ export function NcrcDashboardContent() {
     myOnly,
     paginationMode,
     isLoading,
+    isRefreshing,
     isError,
     error,
     applicants,
     totalCount,
-    totalPages,
+    pageSize,
     applicantStats,
     infiniteQuery,
     sentinelRef,
@@ -173,6 +175,7 @@ export function NcrcDashboardContent() {
     search,
     navigate,
   })
+  const priorityOptions = usePriorityOptions()
 
   const { executeAction, completeTaskWithResult } = useTaskActions({
     applicationType: 'WORKFLOW',
@@ -466,9 +469,11 @@ export function NcrcDashboardContent() {
           page={page}
           myOnly={myOnly}
           totalCount={totalCount}
-          totalPages={totalPages}
+          pageSize={pageSize}
           paginationMode={paginationMode}
           isLoading={isLoading}
+          isRefreshing={isRefreshing}
+          priorityOptions={priorityOptions}
           isError={isError}
           error={error}
           username={username}
@@ -486,6 +491,7 @@ export function NcrcDashboardContent() {
           applicants={applicants}
           paginationMode={paginationMode}
           isLoading={isLoading}
+          isRefreshing={isRefreshing}
           isError={isError}
           isInfiniteInitialLoading={
             paginationMode === 'infinite' && infiniteQuery.isLoading && !infiniteQuery.data

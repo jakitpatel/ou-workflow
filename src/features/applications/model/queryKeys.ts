@@ -10,6 +10,7 @@ export const applicationsQueryKeys = {
     [...applicationsQueryKeys.lists(), 'paged', params] as const,
   infinite: (params: ApplicantsListParams) =>
     [...applicationsQueryKeys.lists(), 'infinite', params] as const,
+  priorities: () => [...applicationsQueryKeys.all, 'priorities'] as const,
   details: () => [...applicationsQueryKeys.all, 'detail'] as const,
   detail: (applicationId?: string) =>
     [...applicationsQueryKeys.details(), applicationId ?? 'unknown'] as const,
