@@ -119,23 +119,21 @@ export function useSSEConnection(
         const parse = createSSEParser(
           (data) => {
             if (controller.signal.aborted) return
-            if (data.trim() === 'ping') {
-              console.log('[SSE] heartbeat', 'ping')
-              return
-            }
+            if (data.trim() === 'ping' || data.trim() === 'connected') return
             try {
               const message = JSON.parse(data) as SSEMessage
-              console.log('[SSE] event', message)
+              if (!message || typeof message !== 'object' || Array.isArray(message)) return
+              if (message.type === 'connected' || message.type === 'ping') return
               onMessageRef.current(message)
-            } catch (error) {
-              console.error('Invalid SSE message', error, data)
+            } catch {
+              console.error('Invalid SSE message')
             }
           },
           (id) => {
             lastEventId = id
           },
           (delay) => {
-            retryMs = Math.min(30000, Math.max(1000, delay))
+            retryMs = Math.min(2147483647, delay)
             nextRetryMs = retryMs
           },
         )
@@ -170,8 +168,9 @@ export function useSSEConnection(
           if (connectedAt !== undefined && Date.now() - connectedAt >= 30000) {
             nextRetryMs = retryMs
           }
-          const delay = Math.min(30000, Math.round(nextRetryMs * (1 + Math.random() * 0.2)))
-          nextRetryMs = Math.min(30000, nextRetryMs * 2)
+          const maxDelay = Math.max(30000, retryMs)
+          const delay = Math.min(maxDelay, Math.round(nextRetryMs * (1 + Math.random() * 0.2)))
+          nextRetryMs = Math.min(maxDelay, nextRetryMs * 2)
           timer = setTimeout(connect, delay)
         }
       }

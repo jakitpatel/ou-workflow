@@ -24,6 +24,13 @@ export const shouldRetryApiQuery = (
   return failureCount < maxRetries
 }
 
+// A timed-out request already waited the full client timeout; retrying it twice more keeps a
+// route on its loading screen for ~90 s before the error (and Try Again) can show.
+export const shouldRetryApiQueryUnlessTimedOut = (failureCount: number, error: unknown): boolean => {
+  if ((error as { code?: unknown } | null)?.code === 'TIMEOUT_ERROR') return false
+  return shouldRetryApiQuery(failureCount, error)
+}
+
 export const appQueryDefaultOptions: DefaultOptions = {
   queries: {
     staleTime: 30_000,
@@ -44,6 +51,7 @@ export const queryOptionDefaults = {
     refetchOnWindowFocus: false,
   },
   applicationsDetail: {
+    retry: shouldRetryApiQueryUnlessTimedOut,
     refetchOnWindowFocus: false,
   },
   applicationScheduleAIngredients: {

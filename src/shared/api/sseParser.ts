@@ -21,7 +21,9 @@ export function createSSEParser(
       if (field === 'data') data.push(value)
       if (field === 'event') event = value
       if (field === 'id' && !value.includes('\0')) onId(value)
-      if (field === 'retry' && /^\d+$/.test(value)) onRetry(Number(value))
+      if (field === 'retry' && /^\d+$/.test(value) && Number.isSafeInteger(Number(value))) {
+        onRetry(Number(value))
+      }
     }
     line = ''
   }

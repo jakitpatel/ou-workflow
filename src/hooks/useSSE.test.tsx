@@ -38,7 +38,7 @@ describe('useSSE', () => {
     vi.restoreAllMocks()
   })
 
-  it('logs heartbeats without JSON errors and delivers subsequent events on the same stream', async () => {
+  it('ignores control frames without JSON errors and delivers subsequent events on the same stream', async () => {
     const source = stream()
     const fetch = vi.fn().mockResolvedValue(source.response)
     vi.stubGlobal('fetch', fetch)
@@ -50,16 +50,14 @@ describe('useSSE', () => {
     const workflow = { type: 'reload_workflow_application', data: { application_id: 1332, ApplicationType: 'WORKFLOW' } }
     const messages = { type: 'refresh_messages', data: { ApplicationId: 1332, MessageId: null, root_conversation_id: null } }
     await act(async () => {
-      source.controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(workflow)}\n\ndata: pi`))
+      source.controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(workflow)}\n\ndata: connected\n\n: comment\n\ndata: {"type":"connected"}\n\ndata: {"type":"ping"}\n\ndata: pi`))
       source.controller.enqueue(new TextEncoder().encode(`ng\n\ndata: ping  \n\ndata: ${JSON.stringify(messages)}\n\n`))
     })
     expect(error).not.toHaveBeenCalled()
     expect(onMessage).toHaveBeenCalledTimes(2)
     expect(onMessage).toHaveBeenNthCalledWith(1, workflow)
     expect(onMessage).toHaveBeenNthCalledWith(2, messages)
-    expect(log).toHaveBeenCalledWith('[SSE] event', workflow)
-    expect(log).toHaveBeenCalledWith('[SSE] event', messages)
-    expect(log.mock.calls.filter(([label]) => label === '[SSE] heartbeat')).toHaveLength(2)
+    expect(log).not.toHaveBeenCalled()
     expect(fetch).toHaveBeenCalledOnce()
     unmount()
   })
@@ -74,7 +72,7 @@ describe('useSSE', () => {
     await act(async () => {
       source.controller.enqueue(new TextEncoder().encode('data: {broken\n\ndata: {"type":"ready"}\n\n'))
     })
-    expect(error).toHaveBeenCalledExactlyOnceWith('Invalid SSE message', expect.any(Error), '{broken')
+    expect(error).toHaveBeenCalledExactlyOnceWith('Invalid SSE message')
     expect(onMessage).toHaveBeenCalledExactlyOnceWith({ type: 'ready' })
     unmount()
   })
@@ -224,13 +222,15 @@ describe('useSSE', () => {
     vi.stubGlobal('fetch', fetch)
     const { unmount } = renderHook(() => useSSE(vi.fn(), { token: 'original' }))
     await act(async () => {
-      source.controller.enqueue(new TextEncoder().encode('id: 42\nretry: 1000\ndata: {}\n\n'))
+      source.controller.enqueue(new TextEncoder().encode('id: 42\nretry: 250\ndata: {}\n\n'))
       source.controller.close()
     })
     vi.mocked(getAccessToken).mockReturnValue('updated')
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(249)
     })
+    expect(fetch).toHaveBeenCalledOnce()
+    await act(async () => { await vi.advanceTimersByTimeAsync(1) })
     expect(fetch).toHaveBeenCalledTimes(2)
     const headers = new Headers(fetch.mock.calls[1][1].headers)
     expect(headers.get('Last-Event-ID')).toBe('42')
