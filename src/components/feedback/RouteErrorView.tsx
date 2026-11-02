@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useRouter } from '@tanstack/react-router'
 
 type RouteErrorViewProps = {
   error: unknown
@@ -30,6 +31,16 @@ export function RouteErrorView({
   secondaryAction,
 }: RouteErrorViewProps) {
   const message = getErrorMessage(error)
+  const router = useRouter({ warn: false })
+  // reset() only clears the error boundary; a failed loader must be re-run via invalidate(),
+  // otherwise "Try Again" re-renders the same error without sending a request.
+  const retry = () => {
+    if (router) {
+      void router.invalidate()
+      return
+    }
+    reset?.()
+  }
 
   return (
     <div className="flex min-h-[50vh] items-center justify-center p-6">
@@ -48,7 +59,7 @@ export function RouteErrorView({
           {reset ? (
             <button
               type="button"
-              onClick={() => reset()}
+              onClick={retry}
               className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
             >
               {primaryActionLabel}
