@@ -56,7 +56,11 @@ const PlantNameButton = memo(
       onClick={onClick}
       className="text-left group rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       title={`Click to view details for ${plantName}`}
-      aria-label={`View details for ${plantName} - ${applicationCount} applications`}
+      aria-label={
+        applicationCount > 0
+          ? `View details for ${plantName} - ${applicationCount} ${applicationCount === 1 ? 'application' : 'applications'}`
+          : `View details for ${plantName}`
+      }
     >
       <div className="text-base font-bold text-gray-900 transition-colors group-hover:text-blue-600">
         {plantName}
@@ -148,6 +152,14 @@ function formatDateOnly(date?: string | null) {
   });
 }
 
+export function getTaskRowDisplayName(application: ApplicationTask): string {
+  const name = [application.plantName, application.companyName].find(
+    (value) => typeof value === 'string' && value.trim() !== ''
+  );
+  if (name) return name.trim();
+  return application.applicationId ? `Application ${application.applicationId}` : 'Unnamed application';
+}
+
 export const TaskRow = memo(
   ({
     application,
@@ -206,7 +218,7 @@ export const TaskRow = memo(
         <td className="px-6 py-4 align-top">
           <div>
             <PlantNameButton
-              plantName={application.plantName}
+              plantName={getTaskRowDisplayName(application)}
               applicationCount={applicationCount}
               onClick={handleTaskApplicationClick}
             />
