@@ -874,7 +874,12 @@ export async function fetchScheduleBProducts({
   })
 
   return {
-    scheduleProducts: normalizeScheduleBProducts(response.products?.schedule_products),
+    // /get_products hides soft-deleted rows itself now; keep dropping them here for older APIs.
+    scheduleProducts: normalizeScheduleBProducts(
+      response.products?.schedule_products?.filter(
+        (product) => !(product as { isDeleted?: unknown })?.isDeleted,
+      ),
+    ),
     kashProducts: normalizeKashProducts(response.products?.ou_kash_products),
   }
 }
