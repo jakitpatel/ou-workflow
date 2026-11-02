@@ -123,10 +123,11 @@ export async function executeRequest(
 }
 
 export async function parseErrorBody(response: Response): Promise<unknown> {
+  const text = await response.text()
   try {
-    return await response.json()
+    return JSON.parse(text) as unknown
   } catch {
-    return await response.text().catch(() => null)
+    return text
   }
 }
 
