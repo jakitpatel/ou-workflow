@@ -1,10 +1,9 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { ErrorDialog, type ErrorDialogRef } from '@/components/ErrorDialog'
 import { ActionModal } from '@/features/tasks/modals/ActionModal'
-import { isRfrRecommendationTask } from '@/features/tasks/lib/rfrRecommendation'
 import { ConditionalModal } from '@/features/tasks/modals/ConditionalModal'
 import { UploadNdaModal } from '@/features/tasks/modals/UploadNdaModal'
-import { isLegalReviewTask } from '@/features/tasks/lib/legalReview'
+import { resolveNcrcTaskUi, type NcrcTaskUi } from '@/features/applications/lib/ncrcTaskUiRoutes'
 import { NcrcDashboardControls } from '@/features/applications/components/NcrcDashboardControls'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
 import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer'
@@ -18,16 +17,7 @@ import { ScheduleBProductsDrawer } from '@/features/applications/components/Sche
 import { useNcrcDashboardState } from '@/features/applications/hooks/useNcrcDashboardState'
 import { usePriorityOptions } from '@/features/applications/hooks/usePriorityOptions'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
-import {
-  isCertificateActionTask,
-  isScheduleAAssigningActionTask,
-  isScheduleAStartActionTask,
-  isScheduleASignoffConditionTask,
-  isScheduleBAssignProductsActionTask,
-  isScheduleBStartActionTask,
-  isScheduleBSignoffConditionTask,
-  useTaskActions,
-} from '@/features/tasks/hooks/useTaskActions'
+import { useTaskActions } from '@/features/tasks/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
 import { Route } from '@/routes/_authed/ou-workflow/ncrc-dashboard'
@@ -256,164 +246,99 @@ export function NcrcDashboardContent() {
       TaskCategory?: unknown
       taskInstanceId?: unknown
     }
-    const actionType = normalizeTaskText(actionRecord.taskType ?? actionRecord.TaskType)
     const actionCategory = normalizeTaskText(actionRecord.taskCategory ?? actionRecord.TaskCategory)
 
-    if (isCertificateActionTask(action)) {
-      setCertificationDrawerState({ open: true, applicant: application, task: action })
-      return
+    // Which UI a task opens is configured in NCRC_TASK_UI_ROUTES; these open each kind of UI.
+    const openTaskUi: Record<NcrcTaskUi, () => void> = {
+      'certification-drawer': () => {
+        setCertificationDrawerState({ open: true, applicant: application, task: action })
+      },
+      'schedule-a-drawer': () => {
+        const scheduleATask = getAllTasks(application).find(
+          (task) =>
+            normalizeTaskText(task.name) === TASK_CATEGORIES.SCHEDULEA &&
+            normalizeTaskText(task.taskCategory ?? task.TaskCategory) ===
+              TASK_CATEGORIES.SCHEDULEA &&
+            normalizeTaskText(task.taskType ?? task.TaskType) === TASK_TYPES.ACTION,
+        )
+        setScheduleADrawerState({
+          open: true,
+          applicationId: application.applicationId,
+          applicationName: application.company,
+          visitId:
+            application.visit_id ?? application.visitId ?? application.appvars?.visit_id ?? null,
+          appVars: application.appvars ?? null,
+          assignedRoles: application.assignedRoles,
+          taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
+          taskName: action.name,
+          taskCategory: actionCategory,
+          scheduleATaskInstanceId:
+            scheduleATask?.TaskInstanceId ?? scheduleATask?.taskInstanceId,
+          scheduleATaskStatusDetails:
+            scheduleATask?.StatusDetails ?? scheduleATask?.statusDetails,
+        })
+      },
+      'schedule-b-drawer': () => {
+        const scheduleBTask = getAllTasks(application).find(
+          (task) =>
+            normalizeTaskText(task.name) === TASK_CATEGORIES.SCHEDULEB &&
+            normalizeTaskText(task.taskCategory ?? task.TaskCategory) ===
+              TASK_CATEGORIES.SCHEDULEB &&
+            normalizeTaskText(task.taskType ?? task.TaskType) === TASK_TYPES.ACTION,
+        )
+        setScheduleBDrawerState({
+          open: true,
+          applicationId: application.applicationId,
+          applicationName: application.company,
+          visitId:
+            application.visit_id ?? application.visitId ?? application.appvars?.visit_id ?? null,
+          appVars: application.appvars ?? null,
+          assignedRoles: application.assignedRoles,
+          taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
+          taskName: action.name,
+          taskCategory: actionCategory,
+          scheduleBTaskInstanceId:
+            scheduleBTask?.TaskInstanceId ?? scheduleBTask?.taskInstanceId,
+          scheduleBTaskStatusDetails:
+            scheduleBTask?.StatusDetails ?? scheduleBTask?.statusDetails,
+        })
+      },
+      'inspection-invoice-drawer': () => {
+        setInspectionInvoiceDrawerState({
+          open: true,
+          applicant: application,
+          applicationId: application.applicationId,
+          applicationName: application.company,
+          taskInstanceId: action.TaskInstanceId,
+          taskName: action.name,
+        })
+      },
+      'inspection-assignment-drawer': () => {
+        setInspectionAssignmentDrawerState({ open: true, applicant: application, task: action })
+      },
+      'inspection-visit-drawer': () => {
+        setInspectionVisitDateDrawerState({ open: true, applicant: application, task: action })
+      },
+      'contract-drawer': () => {
+        setContractDrawerState({
+          open: true,
+          applicant: application,
+          applicationId: application.applicationId,
+          applicationName: application.company,
+          taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
+          taskName: action.name,
+          appVars: application.appvars ?? null,
+          assignedRoles: application.assignedRoles,
+        })
+      },
+      confirm: () => executeAction('Confirmed', action, 'yes', { application, action }),
+      'condition-modal': () => setShowConditionModal(action),
+      'upload-modal': () => setShowUploadModal(action),
+      'action-modal': () => setShowActionModal(action),
     }
 
-    if (
-      (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEA) ||
-      isScheduleAAssigningActionTask(action) ||
-      isScheduleAStartActionTask(action) ||
-      isScheduleASignoffConditionTask(action)
-    ) {
-      const scheduleATask = getAllTasks(application).find(
-        (task) =>
-          normalizeTaskText(task.name) === TASK_CATEGORIES.SCHEDULEA &&
-          normalizeTaskText(task.taskCategory ?? task.TaskCategory) ===
-            TASK_CATEGORIES.SCHEDULEA &&
-          normalizeTaskText(task.taskType ?? task.TaskType) === TASK_TYPES.ACTION,
-      )
-      setScheduleADrawerState({
-        open: true,
-        applicationId: application.applicationId,
-        applicationName: application.company,
-        visitId:
-          application.visit_id ?? application.visitId ?? application.appvars?.visit_id ?? null,
-        appVars: application.appvars ?? null,
-        assignedRoles: application.assignedRoles,
-        taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
-        taskName: action.name,
-        taskCategory: actionCategory,
-        scheduleATaskInstanceId:
-          scheduleATask?.TaskInstanceId ?? scheduleATask?.taskInstanceId,
-        scheduleATaskStatusDetails:
-          scheduleATask?.StatusDetails ?? scheduleATask?.statusDetails,
-      })
-      return
-    }
-
-    if (
-      (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.SCHEDULEB) ||
-      isScheduleBAssignProductsActionTask(action) ||
-      isScheduleBStartActionTask(action) ||
-      isScheduleBSignoffConditionTask(action)
-    ) {
-      const scheduleBTask = getAllTasks(application).find(
-        (task) =>
-          normalizeTaskText(task.name) === TASK_CATEGORIES.SCHEDULEB &&
-          normalizeTaskText(task.taskCategory ?? task.TaskCategory) ===
-            TASK_CATEGORIES.SCHEDULEB &&
-          normalizeTaskText(task.taskType ?? task.TaskType) === TASK_TYPES.ACTION,
-      )
-      setScheduleBDrawerState({
-        open: true,
-        applicationId: application.applicationId,
-        applicationName: application.company,
-        visitId:
-          application.visit_id ?? application.visitId ?? application.appvars?.visit_id ?? null,
-        appVars: application.appvars ?? null,
-        assignedRoles: application.assignedRoles,
-        taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
-        taskName: action.name,
-        taskCategory: actionCategory,
-        scheduleBTaskInstanceId:
-          scheduleBTask?.TaskInstanceId ?? scheduleBTask?.taskInstanceId,
-        scheduleBTaskStatusDetails:
-          scheduleBTask?.StatusDetails ?? scheduleBTask?.statusDetails,
-      })
-      return
-    }
-
-    if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.INVOICE) {
-      setInspectionInvoiceDrawerState({
-        open: true,
-        applicant: application,
-        applicationId: application.applicationId,
-        applicationName: application.company,
-        taskInstanceId: action.TaskInstanceId,
-        taskName: action.name,
-      })
-      return
-    }
-
-    if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.ASSIGNMENT1) {
-      setInspectionAssignmentDrawerState({
-        open: true,
-        applicant: application,
-        task: action,
-      })
-      return
-    }
-
-    if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.VISIT) {
-      setInspectionVisitDateDrawerState({
-        open: true,
-        applicant: application,
-        task: action,
-      })
-      return
-    }
-
-    if (
-      (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.CONTRACT) ||
-      (actionType === TASK_TYPES.CONFIRM &&
-        actionCategory === TASK_CATEGORIES.CONFIRMATION &&
-        action.name.toLowerCase().includes('contract'))
-    ) {
-      setContractDrawerState({
-        open: true,
-        applicant: application,
-        applicationId: application.applicationId,
-        applicationName: application.company,
-        taskInstanceId: actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId,
-        taskName: action.name,
-        appVars: application.appvars ?? null,
-        assignedRoles: application.assignedRoles,
-      })
-      return
-    }
-
-    if (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION) {
-      executeAction('Confirmed', action, 'yes', { application, action })
-      return
-    }
-
-    if (
-      (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) &&
-      [
-        TASK_CATEGORIES.APPROVAL,
-        TASK_CATEGORIES.APPROVAL1,
-      ].some((value) => value === actionCategory)
-    ) {
-      setShowConditionModal(action)
-      return
-    }
-
-    if (
-      isLegalReviewTask(action) || (actionType === TASK_TYPES.ACTION &&
-        [TASK_CATEGORIES.UPLOAD, TASK_CATEGORIES.EMAIL].some((value) => value === actionCategory)) ||
-      (actionCategory === TASK_CATEGORIES.UPLOAD && actionType === TASK_TYPES.UPLOAD)
-    ) {
-      setShowUploadModal(action)
-      return
-    }
-
-    if (actionType === TASK_TYPES.ACTION) {
-      if (actionCategory === TASK_CATEGORIES.ASSIGNMENT || isRfrRecommendationTask(action)) {
-        setShowActionModal(action)
-      } else {
-        setShowConditionModal(action)
-      }
-      return
-    }
-
-    if (actionType === TASK_TYPES.PROGRESS && actionCategory === TASK_CATEGORIES.PROGRESS_TASK) {
-      setShowConditionModal(action)
-    }
+    const ui = resolveNcrcTaskUi(action)
+    if (ui) openTaskUi[ui]()
   }
 
   const handleCancelTask = async (application: Applicant, action: Task, reason: string) => {
