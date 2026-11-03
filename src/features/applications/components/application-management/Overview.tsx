@@ -28,6 +28,13 @@ const formatDesignatedContact = (value: unknown) => {
   return name || '-';
 };
 
+// Workflow detail sends the assignment as assignedNCRC/assignedRC; Designated* is often null.
+const formatAssignedCoordinator = (designated: unknown, assigned: unknown) => {
+  const formatted = formatDesignatedContact(designated);
+  if (formatted !== '-') return formatted;
+  return typeof assigned === 'string' && assigned.trim() ? assigned.trim() : '-';
+};
+
 function MatchMarker({ isNew, modifiedLabel = 'Matched' }: { isNew?: boolean; modifiedLabel?: string }) {
   if (isNew == null) return null;
 
@@ -85,7 +92,7 @@ export default function Overview({
 
   // Calculate statistics
   const stats = {
-    plantCount: application.preferences?.plantCount || 0,
+    plantCount: application.preferences?.plantCount ?? application.plants?.length ?? 0,
     productCount: application.products?.length || 0,
     ingredientCount: application.ingredients?.length || 0,
     uploadedFiles: application.files?.length || 0
@@ -276,14 +283,14 @@ export default function Overview({
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-sm font-medium text-gray-600">Assigned NCRC</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {formatDesignatedContact(application.DesignatedNCRC)}
+                    {formatAssignedCoordinator(application.DesignatedNCRC, application.assignedNCRC)}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-sm font-medium text-gray-600">Assigned RC</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {formatDesignatedContact(application.DesignatedRC)}
+                    {formatAssignedCoordinator(application.DesignatedRC, application.assignedRC)}
                   </span>
                 </div>
               </>

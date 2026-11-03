@@ -93,3 +93,30 @@ describe('Application Detail Overview', () => {
     expect(row('Owns Status').getByText('Active')).toBeTruthy()
   })
 })
+
+describe('Application Detail Overview workflow fields (F12)', () => {
+  it('counts the plants returned by get_application_detail_v2', () => {
+    const application = detail()
+    application.plants.push({ ...application.plants[0], plantID: 2, plantId: '2' })
+    render(<Overview application={application} />)
+    expect(row('Plants').getByText('2')).toBeTruthy()
+  })
+
+  it('keeps the intake adapter plant count when present', () => {
+    const application = detail()
+    application.preferences = { plantCount: 3 }
+    render(<Overview application={application} />)
+    expect(row('Plants').getByText('3')).toBeTruthy()
+  })
+
+  it('falls back to assignedNCRC/assignedRC when no designated contact is sent', () => {
+    const application = detail()
+    application.DesignatedNCRC = null
+    application.DesignatedRC = null
+    application.assignedNCRC = 'rachel.levy'
+    application.assignedRC = 'david.cohen'
+    render(<Overview application={application} />)
+    expect(row('Assigned NCRC').getByText('rachel.levy')).toBeTruthy()
+    expect(row('Assigned RC').getByText('david.cohen')).toBeTruthy()
+  })
+})
