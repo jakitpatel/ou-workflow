@@ -1,4 +1,6 @@
-const parseInspectionInputParam = (inputParam: string): Record<string, string> | string => {
+import { parseStatusDetailsValue } from '@/features/applications/utils/pythonLiteral'
+
+export const parseInspectionInputParam = (inputParam: string): Record<string, string> | string => {
   const text = inputParam.trim()
   if (!text.startsWith('{') || !text.endsWith('}')) return inputParam
 
@@ -38,26 +40,10 @@ const formatInspectionInputParam = (inputParam: Record<string, unknown>): string
     .join(', ')}}`
 }
 
+// StatusDetails may be JSON or an older Python repr (str(dict)); quote-swapping the repr corrupts
+// any value containing ' or ", so use the strict reader.
 const parseJsonLikeObject = (text: string): unknown | null => {
-  const candidates = [
-    text,
-    text
-      .replace(/\bNone\b/g, 'null')
-      .replace(/\bTrue\b/g, 'true')
-      .replace(/\bFalse\b/g, 'false')
-      .replace(/\\(?!["\\/bfnrtu])/g, '')
-      .replace(/'/g, '"'),
-  ]
-
-  for (const candidate of candidates) {
-    try {
-      return JSON.parse(candidate)
-    } catch {
-      // Try the next supported backend serialization format.
-    }
-  }
-
-  return null
+  return parseStatusDetailsValue(text) ?? null
 }
 
 export const buildInspectionStatusDetails = (inputParam: string, savedState?: unknown) => {

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { getInspectionStatusSavedState } from './inspectionStatusDetails'
+import {
+  getInspectionStatusInputParam,
+  getInspectionStatusSavedState,
+} from './inspectionStatusDetails'
 
 describe('getInspectionStatusSavedState', () => {
   it('restores Python-style invoice state including the selected RFR', () => {
@@ -37,5 +40,43 @@ describe('getInspectionStatusSavedState', () => {
       setup: { inspectionNeeded: false },
       payment: { paid: true },
     })
+  })
+})
+
+describe('StatusDetails reprs containing quotes', () => {
+  // Python's repr switches to double quotes when a value contains an apostrophe.
+  const repr =
+    `{'savedState': {'company': "O'Brien's Bakery", 'note': 'He said "ok"', 'mixed': 'it\\'s "both"', 'sent': True, 'sentAt': None}, 'inputParam': "{company:O'Brien's}"}`
+
+  it('reads savedState values with apostrophes and double quotes intact', () => {
+    expect(getInspectionStatusSavedState<unknown>(repr)).toEqual({
+      company: "O'Brien's Bakery",
+      note: 'He said "ok"',
+      mixed: `it's "both"`,
+      sent: true,
+      sentAt: null,
+    })
+  })
+
+  it('reads a nested repr savedState string with an apostrophe', () => {
+    expect(
+      getInspectionStatusSavedState<unknown>({ savedState: `{'company': "O'Brien's", 'paid': False}` }),
+    ).toEqual({ company: "O'Brien's", paid: false })
+  })
+
+  it('reads JSON StatusDetails with quotes unchanged', () => {
+    const json = JSON.stringify({
+      savedState: { company: "O'Brien's", note: 'He said "ok"' },
+      inputParam: '{visitDate:2026-11-01}',
+    })
+    expect(getInspectionStatusSavedState<unknown>(json)).toEqual({
+      company: "O'Brien's",
+      note: 'He said "ok"',
+    })
+    expect(getInspectionStatusInputParam(json)).toBe('{visitDate:2026-11-01}')
+  })
+
+  it('returns null instead of a corrupted object for unreadable text', () => {
+    expect(getInspectionStatusSavedState(`{'savedState': {'company': 'O'Brien'}}`)).toBeNull()
   })
 })
