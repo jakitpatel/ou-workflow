@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useId } from "react";
 import { X } from "lucide-react";
+import { ModalSurface } from "@/components/ui/ModalSurface";
 import { useUserListByRole } from "@/features/tasks/hooks/useTaskQueries";
 import type { Task } from "@/types/application";
 import { isRfrRecommendationTask } from '../lib/rfrRecommendation';
@@ -41,6 +42,7 @@ export const ActionModal: React.FC<Props> = ({
   executeAction,
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
   const rfrTableBodyRef = useRef<HTMLTableSectionElement>(null);
   const [selectedRc, setSelectedRc] = useState("");
   const [selectedLookupKey, setSelectedLookupKey] = useState("");
@@ -175,17 +177,6 @@ export const ActionModal: React.FC<Props> = ({
     activeRow?.scrollIntoView({ block: "nearest" });
   }, [highlightedIndex, isRfrSelection]);
 
-  // ESC key close
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !saving) {
-        setShowActionModal(null);
-      }
-    };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [saving, setShowActionModal]);
-
   // Click outside to close
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (!saving && dialogRef.current && !dialogRef.current.contains(e.target as Node)) {
@@ -266,11 +257,19 @@ export const ActionModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 animate-fadeIn"
+      className="fixed inset-0 pointer-events-auto bg-black/40 flex items-center justify-center z-50 animate-fadeIn"
       onMouseDown={handleOverlayClick}
     >
-      <div
+      {/* A real modal: dialog role named by the task title, focus kept inside and returned to
+          the opener, Escape closes (not while saving). */}
+      <ModalSurface
         ref={dialogRef}
+        onClose={() => setShowActionModal(null)}
+        label={taskName || "Task"}
+        dismissible={!saving}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         onMouseDown={(e) => e.stopPropagation()}
         className={`relative bg-white rounded-xl shadow-xl p-6 w-full animate-scaleIn ${
           isRfrSelection ? "max-w-4xl" : "max-w-md"
@@ -287,7 +286,7 @@ export const ActionModal: React.FC<Props> = ({
         </button>
 
         {/* Header */}
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <h3 id={titleId} className="text-lg font-semibold text-gray-900 mb-4">
           {taskName}
         </h3>
 
@@ -475,7 +474,7 @@ export const ActionModal: React.FC<Props> = ({
             {saving ? "Saving..." : "Save"}
           </button>
         </div>
-      </div>
+      </ModalSurface>
     </div>
   );
 };

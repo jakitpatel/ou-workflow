@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { toast } from 'sonner'
 import { buildRfrRecommendationCompletion, isRfrRecommendationTask, postRfrRecommendationMessage } from '../lib/rfrRecommendation'
 import { createApplicationMessage, uploadApplicationFile } from '@/features/applications/api'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
@@ -214,6 +215,9 @@ export function useTaskActions({ applications, token, username, onError, applica
         username: username ?? undefined,
         capacity: action.capacity ?? undefined,
       }
+      // Confirm success only once the server has accepted the write; failures use onError.
+      const taskLabel = String(action.name ?? action.taskName ?? '').trim() || 'Task'
+      const completed = { onSuccess: () => { toast.success(`${taskLabel} completed`) } }
 
       if (isRfrRecommendationTask(action)) {
         await confirmTaskMutation.mutateAsync({
@@ -221,6 +225,7 @@ export function useTaskActions({ applications, token, username, onError, applica
           ...buildRfrRecommendationCompletion(assignee, typeof result === 'string' ? result : undefined),
           rfrRecommendationUsername: assignee,
         })
+        toast.success(`${taskLabel} completed`)
         await postRfrRecommendationMessage({
           applicationId: applicationId ?? '',
           fullName: (typeof result === 'string' ? result.trim() : '') || assignee,
@@ -230,7 +235,7 @@ export function useTaskActions({ applications, token, username, onError, applica
       }
 
       if (taskType === TASK_TYPES.CONFIRM) {
-        confirmTaskMutation.mutate(baseParams)
+        confirmTaskMutation.mutate(baseParams, completed)
         return
       }
 
@@ -241,7 +246,7 @@ export function useTaskActions({ applications, token, username, onError, applica
             ...baseParams,
             result: buildInspectionFeeResult(result),
             resultData: buildInspectionFeeResult(result),
-          })
+          }, completed)
           return
         }
 
@@ -250,7 +255,7 @@ export function useTaskActions({ applications, token, username, onError, applica
           result: typeof result === 'string' ? result : undefined,
         }
 
-        confirmTaskMutation.mutate(confirmParams)
+        confirmTaskMutation.mutate(confirmParams, completed)
         return
       }
 
@@ -273,7 +278,9 @@ export function useTaskActions({ applications, token, username, onError, applica
             capacity: action.capacity ?? undefined,
           }
           if (normalizeTaskValue(action.name) !== 'assignncrc') {
-            assignTaskMutation.mutate(assignmentParams)
+            assignTaskMutation.mutate(assignmentParams, {
+              onSuccess: () => { toast.success(`Assigned ${assignee}`) },
+            })
             return
           }
 
@@ -305,7 +312,7 @@ export function useTaskActions({ applications, token, username, onError, applica
             await createApplicationMessage({
               payload: {
                 ApplicationID: appId,
-                Subject: 'NCRC assigment',
+                Subject: 'NCRC assignment',
                 MessageText: `You have been assigned to be the NCRC for a new application. Please process the application. Company: ${company}. Application link: ${applicationUrl}`,
                 isPrivate: true,
                 isRead: false,
@@ -317,6 +324,7 @@ export function useTaskActions({ applications, token, username, onError, applica
               },
               token,
             })
+            toast.success(`Assigned ${assignee} as NCRC and sent the notification`)
           } catch (error) {
             const detail = error instanceof Error ? error.message : 'Unable to send notification.'
             onError?.(`NCRC assignment saved, but the notification failed: ${detail}`)
@@ -327,7 +335,7 @@ export function useTaskActions({ applications, token, username, onError, applica
         confirmTaskMutation.mutate({
           ...baseParams,
           result: typeof result === 'string' ? result : undefined,
-        })
+        }, completed)
         return
       }
 
@@ -336,7 +344,7 @@ export function useTaskActions({ applications, token, username, onError, applica
           ...baseParams,
           result: typeof result === 'string' ? result : undefined,
           status: getProgressStatus(typeof result === 'string' ? result : ''),
-        })
+        }, completed)
       }
     },
     [applications, assignTaskMutation, confirmTaskMutation, onError, token, username],

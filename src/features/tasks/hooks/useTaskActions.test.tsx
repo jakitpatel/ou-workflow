@@ -182,7 +182,7 @@ describe('AssignNCRC notification', () => {
       token: 'token',
       payload: {
         ApplicationID: 421,
-        Subject: 'NCRC assigment',
+        Subject: 'NCRC assignment',
         MessageText: expect.stringContaining('Company: Mahanakorn Rice Co., Ltd.'),
         isPrivate: true,
         isRead: false,

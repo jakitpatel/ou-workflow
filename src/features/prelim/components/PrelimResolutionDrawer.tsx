@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { ModalSurface } from '@/components/ui/ModalSurface'
 import { useUser } from '@/context/UserContext'
 import {
   createCompanyAddressFromApplication,
@@ -458,6 +459,12 @@ export function PrelimResolutionDrawer({
 
   // The company a plant is resolved under; shown in the header and sent on Complete Task.
   const plantCompanyId = selectedMatch?.OWNSID ?? companyId
+  // Submitted values the user changed in this drawer (sent on Complete Task) that Escape must not discard.
+  const hasUnsavedEdits =
+    isEditMode ||
+    (isCompany
+      ? countUpdatedCompanyFields(cloneCompanyData(data as CompanyData), companyData)
+      : countUpdatedPlantFields(clonePlantData(data as PlantData), plantData)) > 0
 
   const handleCompleteTask = async () => {
     if (!drawerActionable || isSubmitting || isCreatingNew) return
@@ -591,7 +598,17 @@ export function PrelimResolutionDrawer({
     <>
       <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px] z-40" />
 
-      <div className="fixed right-0 top-0 h-full w-full max-w-[780px] bg-white shadow-2xl z-50 translate-x-0 transition-transform duration-300 ease-in-out overflow-hidden flex flex-col">
+      {/* A real modal: dialog role and name, focus kept inside and returned to the opener.
+          Escape closes only when nothing is being submitted and no submitted values are being
+          edited, so an edit in progress is never thrown away by a stray key press. */}
+      <ModalSurface
+        onClose={onClose}
+        label={isCompany ? 'Resolve Company' : 'Resolve Plant'}
+        dismissible={!isSubmitting && !isCreatingNew && !hasUnsavedEdits}
+        role="dialog"
+        aria-modal="true"
+        className="fixed right-0 top-0 h-full w-full max-w-[780px] bg-white shadow-2xl z-50 translate-x-0 transition-transform duration-300 ease-in-out overflow-hidden flex flex-col"
+      >
         <PrelimResolutionDrawerHeader
           isCompany={isCompany}
           type={type}
@@ -724,7 +741,7 @@ export function PrelimResolutionDrawer({
             </button>
           </div>
         </div>
-      </div>
+      </ModalSurface>
     </>
   )
 }
