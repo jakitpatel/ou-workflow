@@ -20,6 +20,7 @@ import { useUser } from '@/context/UserContext'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
 import { useContractSchedules } from '@/features/applications/hooks/useContractSchedules'
 import { isValidContractFee } from '@/features/applications/model/contractFee'
+import { resolveContractCoordinators } from '@/features/applications/model/contractCoordinators'
 import {
   useContractCommunicationMessages,
   useContractRcNotification,
@@ -32,6 +33,7 @@ import {
   MAX_EMAIL_ATTACHMENT_SIZE_MB,
 } from '@/shared/email/attachmentSizeValidation'
 import { useConfirmTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
+import { useUserListByRole } from '@/features/tasks/hooks/useTaskQueries'
 import type {
   Applicant,
   ApplicantAppVars,
@@ -39,6 +41,7 @@ import type {
   AssignedRole,
   Task,
 } from '@/types/application'
+import { useSingleFlight } from '@/features/applications/hooks/useSingleFlight'
 
 type Props = {
   open: boolean
@@ -423,20 +426,6 @@ const readRecordText = (record: Record<string, unknown>, keys: string[]) => {
   return ''
 }
 
-const getAssignedRoleValue = (assignedRoles: AssignedRole[] | undefined, roleName: string) => {
-  const target = roleName.toLowerCase()
-  for (const role of assignedRoles ?? []) {
-    const match = Object.entries(role).find(([key, value]) => {
-      if (key === 'isPrimary') return false
-      return key.toLowerCase() === target && typeof value === 'string' && value.trim()
-    })
-    if (match && typeof match[1] === 'string') {
-      return match[1].trim()
-    }
-  }
-  return ''
-}
-
 type ContactRecord = Record<string, unknown>
 
 const contactGroup = (contacts: ContactRecord, key: string): ContactRecord[] => {
@@ -524,6 +513,28 @@ const getRawTaskInstanceId = (task: unknown): string => {
     taskRecord.TaskInstanceId ?? taskRecord.taskInstanceId ?? taskRecord.id ?? '',
   ).trim()
 }
+
+type ContractSetupFields = {
+  effectiveDate?: string
+  annualFee?: string
+  certificationInvoiceComment?: string
+  includeInvoiceComment?: boolean
+  productionProcedures?: string
+  noProductionProcedures?: boolean
+  legalReviewNeeded?: boolean
+}
+
+// What the user types in the setup form; it is only saved with an action (e.g. Generate Invoice).
+const contractSetupSnapshot = (setup: ContractSetupFields = {}) =>
+  JSON.stringify([
+    setup.effectiveDate || getDefaultEffectiveDate(),
+    setup.annualFee ?? '',
+    setup.certificationInvoiceComment || '',
+    Boolean(setup.includeInvoiceComment),
+    setup.productionProcedures || '',
+    setup.noProductionProcedures ?? true,
+    Boolean(setup.legalReviewNeeded),
+  ])
 
 const findTaskById = (applicant: Applicant | undefined, taskId: string): Task | null => {
   if (!taskId) return null
@@ -959,6 +970,7 @@ export function ContractStageDrawer({
     taskInstanceId,
   })
   const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
+  const rcDirectoryQuery = useUserListByRole('api/vSelectRC', { enabled: open })
   const isNewCompanyContract = applicant?.isNewCompany !== false
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
@@ -1009,6 +1021,9 @@ export function ContractStageDrawer({
   const [extraEmailAttachments, setExtraEmailAttachments] = useState<ContractEmailAttachment[]>([])
   const [isAttachmentDragOver, setIsAttachmentDragOver] = useState(false)
   const restoredTaskKeyRef = useRef('')
+  // Setup values last saved from this drawer; null until a save (the task's saved state applies).
+  const savedSetupSnapshotRef = useRef<string | null>(null)
+  const contractActionFlight = useSingleFlight()
   const emailAttachmentInputRef = useRef<HTMLInputElement | null>(null)
 
   const invalidContractEmailTo = getInvalidEmailAddresses(contractEmailDraft?.to ?? '')
@@ -1022,6 +1037,7 @@ export function ContractStageDrawer({
   )
 
   useEffect(() => {
+    savedSetupSnapshotRef.current = null
     if (!open) {
       restoredTaskKeyRef.current = ''
       return
@@ -1115,16 +1131,18 @@ export function ContractStageDrawer({
     }
   }, [applicant, open, taskInstanceId])
 
-  const detailAssignedRoles = applicationDetail?.assignedRoles ?? assignedRoles
-  const existingRcName =
-    getAssignedRoleValue(detailAssignedRoles, 'RC') ||
-    textValue(applicant?.assignedRC) ||
-    textValue(username) ||
-    'Assigned RC'
-  const existingRcEmail = email || (username && username.includes('@') ? username : 'rc@ou.org')
-  const rcName = existingRcName
-  const rcEmail = existingRcEmail
-  const ncrcName = textValue(username) || 'Current User'
+  // RC/NCRC come from the application's assignments, never from the signed-in user.
+  const { rcName, rcEmail, ncrcName } = resolveContractCoordinators({
+    applicant,
+    applicationDetail,
+    assignedRoles,
+    rcDirectory: rcDirectoryQuery.data,
+  })
+  const rcLabel = rcName || 'Not assigned'
+  const ncrcLabel = ncrcName || 'Not assigned'
+  const missingRcMessage = rcName
+    ? ''
+    : 'No RC is assigned to this application. Assign an RC before generating or sending the contract package.'
   const detailCompany = applicationDetail?.company?.[0]
   const detailCompanyRecord = detailCompany as Record<string, unknown> | undefined
   const companyName =
@@ -1394,7 +1412,7 @@ ${packageItems.map((item, index) => `${index + 1}. ${item}`).join('\n')}
 Please review, sign where indicated, and return the signed agreement together with payment of the enclosed invoice.
 
 Sincerely,
-${rcName}
+${rcLabel}
 Rabbinic Coordinator`
 
   const contractRoundMessageCards = useMemo(
@@ -1537,9 +1555,21 @@ Rabbinic Coordinator`
       nextContractSigned ? 'Yes' : 'No'
     }, Paid:${nextInvoicePaid ? 'Yes' : 'No'}}`
 
+  const currentSetupSnapshot = () =>
+    contractSetupSnapshot({
+      effectiveDate,
+      annualFee,
+      certificationInvoiceComment,
+      includeInvoiceComment,
+      productionProcedures,
+      noProductionProcedures,
+      legalReviewNeeded,
+    })
+
   const saveCurrentContractStageState = async (
     options: Parameters<typeof buildContractSavedState>[0] = {},
   ) => {
+    const savedSnapshot = currentSetupSnapshot()
     await saveContractStageState({
       taskInstanceId,
       savedState: buildContractSavedState(options),
@@ -1551,11 +1581,31 @@ Rabbinic Coordinator`
         nextPackageGenerated: options.nextPackageGenerated,
       }),
     })
+    savedSetupSnapshotRef.current = savedSnapshot
+  }
+
+  // NEW-12: typed setup (fee, comment, dates…) is only saved by an action; don't drop it silently.
+  const requestClose = () => {
+    const contractTaskId = String(taskInstanceId ?? '').trim()
+    const task = contractTaskId ? findTaskById(applicant, contractTaskId) : null
+    const saved = getContractStageSavedState(
+      task?.StatusDetails ?? task?.statusDetails ?? task?.Result ?? task?.result,
+    )
+    const baseline = savedSetupSnapshotRef.current ?? contractSetupSnapshot(saved?.setup)
+    if (
+      currentSetupSnapshot() !== baseline &&
+      !window.confirm(
+        'You have unsaved contract details (such as the annual fee or invoice comment). They are saved only when you generate the invoice or package. Close and discard them?',
+      )
+    ) {
+      return
+    }
+    onClose()
   }
 
   if (!open) return null
 
-  const handleGenerateContractInvoice = async () => {
+  const handleGenerateContractInvoiceNow = async () => {
     const fee = Number(annualFee)
 
     try {
@@ -1605,7 +1655,11 @@ Rabbinic Coordinator`
     }
   }
 
-  const handleGenerateContractPackage = async () => {
+  const handleGenerateContractPackageNow = async () => {
+    if (missingRcMessage) {
+      toast.error(missingRcMessage)
+      return
+    }
     if (!ingredientsQuery.isSuccess || !productsQuery.isSuccess) {
       toast.error('Load Kash ingredients and products successfully before generating the contract package.')
       return
@@ -1713,6 +1767,10 @@ Rabbinic Coordinator`
 
   const generateContractCommunicationRound = () => {
     if (isWorkflowReadOnly) return
+    if (missingRcMessage) {
+      toast.error(missingRcMessage)
+      return
+    }
 
     const roundNumber = nextContractRoundNumber
     const taskSubjectPart = taskInstanceId ? `, Task: #${taskInstanceId}` : ''
@@ -1741,7 +1799,12 @@ Rabbinic Coordinator`
     window.setTimeout(() => setContractEmailCopied(false), 1500)
   }
 
-  const handleSendEmail = async () => {
+  const handleSendEmailNow = async () => {
+    if (missingRcMessage) {
+      setContractEmailSendError(missingRcMessage)
+      toast.error(missingRcMessage)
+      return
+    }
     try {
       const draft = contractEmailDraft ?? {
         roundNumber: nextContractRoundNumber,
@@ -1940,7 +2003,7 @@ Rabbinic Coordinator`
     toast.success(`${attachment?.fileName || 'Attachment'} removed`)
   }
 
-  const handleCompleteTask = async () => {
+  const handleCompleteTaskNow = async () => {
     if (!taskInstanceId) {
       toast.error('Task instance id not found')
       return
@@ -1962,6 +2025,16 @@ Rabbinic Coordinator`
     toast.success('Contract task completed')
     onClose()
   }
+
+  // Invoice/package generation, sending and completion are writes: one at a time, and repeated
+  // clicks are ignored synchronously (render-state flags like isPending update too late).
+  const handleGenerateContractInvoice = () => contractActionFlight.run(handleGenerateContractInvoiceNow)
+  const handleGenerateContractPackage = () => contractActionFlight.run(handleGenerateContractPackageNow)
+  const handleSendEmail = () => contractActionFlight.run(handleSendEmailNow)
+  const handleCompleteTask = () =>
+    contractActionFlight.run(handleCompleteTaskNow).catch(() => {
+      // useConfirmTaskMutation reports the failure through its onError handler.
+    })
 
   const previewContent =
     previewTab === 'a' ? (
@@ -2254,7 +2327,7 @@ Rabbinic Coordinator`
               <button
                 type="button"
                 onClick={generateContractCommunicationRound}
-                disabled={!packageGenerated || Boolean(contractEmailDraft)}
+                disabled={!packageGenerated || Boolean(contractEmailDraft) || Boolean(missingRcMessage)}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-[#185087] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#13406c] disabled:cursor-not-allowed disabled:bg-gray-300"
               >
                 <MessageSquare className="h-3.5 w-3.5" />
@@ -2406,7 +2479,8 @@ Rabbinic Coordinator`
                     onClick={() => void handleSendEmail()}
                     disabled={
                       sendContractCommunicationEmailMutation.isPending ||
-                      !areContractEmailRecipientsValid
+                      !areContractEmailRecipientsValid ||
+                      Boolean(missingRcMessage)
                     }
                     className="inline-flex items-center gap-1.5 rounded border border-blue-300 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -2607,7 +2681,7 @@ Rabbinic Coordinator`
                   Cc
                 </span>
                 <span>
-                  {rcName} &lt;{rcEmail}&gt;
+                  {rcEmail ? `${rcName} <${rcEmail}>` : `${rcLabel} (RC email not on file)`}
                 </span>
               </div>
               <div className="flex gap-3 border-b border-gray-100 px-3.5 py-2 text-[12.5px]">
@@ -2825,7 +2899,7 @@ Rabbinic Coordinator`
                 <button
                   type="button"
                   onClick={generateContractCommunicationRound}
-                  disabled={Boolean(contractEmailDraft)}
+                  disabled={Boolean(contractEmailDraft) || Boolean(missingRcMessage)}
                   className="inline-flex items-center gap-2 rounded-lg bg-[#185087] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#13406c] disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
                   <MessageSquare className="h-4 w-4" />
@@ -2844,7 +2918,7 @@ Rabbinic Coordinator`
               <div className="mb-2.5 flex justify-end">
                 <button
                   type="button"
-                  disabled={isGeneratingContractPackage}
+                  disabled={isGeneratingContractPackage || Boolean(missingRcMessage)}
                   onClick={handleGenerateContractPackage}
                   className="inline-flex items-center gap-2 rounded-md bg-[#185087] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#13406c] disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
@@ -3360,7 +3434,7 @@ Rabbinic Coordinator`
           <div>
             <div className="font-semibold text-gray-900">4. Signatures</div>
             <p>
-              OU Coordinator: {rcName}
+              OU Coordinator: {rcLabel}
               <br />
               Company Signer: {contact.name || 'To be confirmed'}
               {contact.title ? ` · ${contact.title}` : ''}
@@ -3534,7 +3608,7 @@ Rabbinic Coordinator`
                   For questions or comments, contact your Rabbinic Coordinator.
                 </div>
                 <div className="px-2 py-1 text-center text-[10px]">
-                  {rcName} &nbsp;&nbsp; (212) 563-4000 &nbsp;&nbsp; {rcEmail}
+                  {rcLabel} &nbsp;&nbsp; (212) 563-4000 &nbsp;&nbsp; {rcEmail}
                 </div>
                 <table className="w-full border-collapse">
                   <thead>
@@ -3683,7 +3757,7 @@ Rabbinic Coordinator`
             : 'fixed inset-0 pointer-events-auto z-50 bg-black/45'
         }
       >
-        <div
+        <ModalSurface onClose={requestClose} label="Contract" embedded={isEmbedded}
           className={
             isEmbedded
               ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f5f7fb]'
@@ -3709,14 +3783,27 @@ Rabbinic Coordinator`
                     App #{resolvedApplicationId ?? '-'}
                   </span>
                   <span className="rounded-full bg-white/10 px-2.5 py-1">Plant: {plantLabel}</span>
-                  <span className="rounded-full bg-white/10 px-2.5 py-1">RC: {rcName}</span>
-                  <span className="rounded-full bg-white/10 px-2.5 py-1">NCRC: {ncrcName}</span>
+                  <span
+                    className={`rounded-full px-2.5 py-1 ${rcName ? 'bg-white/10' : 'bg-amber-500/30 text-amber-100'}`}
+                  >
+                    RC: {rcLabel}
+                  </span>
+                  <span
+                    className={`rounded-full px-2.5 py-1 ${ncrcName ? 'bg-white/10' : 'bg-amber-500/30 text-amber-100'}`}
+                  >
+                    NCRC: {ncrcLabel}
+                  </span>
                 </div>
+                {missingRcMessage ? (
+                  <p role="alert" className="mt-2 text-xs font-medium text-amber-200">
+                    {missingRcMessage}
+                  </p>
+                ) : null}
               </div>
               {!isEmbedded ? (
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={requestClose}
                   className="rounded p-1 text-gray-300 hover:bg-white/10 hover:text-white"
                   aria-label="Close contract stage drawer"
                 >
@@ -4028,7 +4115,7 @@ Rabbinic Coordinator`
                     ) : null}
                     <button
                       type="button"
-                      disabled={!readyToAdvance || confirmTaskMutation.isPending}
+                      disabled={!readyToAdvance || confirmTaskMutation.isPending || contractActionFlight.isRunning}
                       onClick={handleCompleteTask}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-gray-300"
                     >
@@ -4156,7 +4243,7 @@ Rabbinic Coordinator`
               </p>
             </div>
           </div>
-        </div>
+        </ModalSurface>
       </div>
 
       {showEmailPreview ? (
@@ -4192,7 +4279,7 @@ Rabbinic Coordinator`
                 </div>
                 <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
                   <span className="font-medium text-gray-500">Cc</span>
-                  <span>{rcEmail || '-'}</span>
+                  <span>{rcEmail || 'RC email not on file'}</span>
                 </div>
                 <div className="grid grid-cols-[80px_1fr] border-b px-3 py-2 text-sm">
                   <span className="font-medium text-gray-500">Subject</span>
@@ -4224,7 +4311,7 @@ Rabbinic Coordinator`
               {!isWorkflowReadOnly ? (
                 <button
                   type="button"
-                  disabled={sendContractCommunicationEmailMutation.isPending}
+                  disabled={sendContractCommunicationEmailMutation.isPending || Boolean(missingRcMessage)}
                   onClick={handleSendEmail}
                   className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
