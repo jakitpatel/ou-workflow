@@ -456,6 +456,9 @@ export function PrelimResolutionDrawer({
     }
   }
 
+  // The company a plant is resolved under; shown in the header and sent on Complete Task.
+  const plantCompanyId = selectedMatch?.OWNSID ?? companyId
+
   const handleCompleteTask = async () => {
     if (!drawerActionable || isSubmitting || isCreatingNew) return
     if (!isManualSelectionReady) {
@@ -501,12 +504,10 @@ export function PrelimResolutionDrawer({
           })
         }
       } else {
-        const resolvedCompanyId = selectedMatch?.OWNSID ?? companyId
-
         const result = await resolvePlantFromApplication({
           applicationId,
           taskInstanceId,
-          companyId: resolvedCompanyId,
+          companyId: plantCompanyId,
           plantId: selectedMatch?.Id,
           plantData: omitIgnoredResolutionContacts(plantData, ignoredContacts),
           createNewPlant: selectedMatch == null,
@@ -601,6 +602,7 @@ export function PrelimResolutionDrawer({
           bestMatch={matches[0] ?? null}
           confirmedMatch={isCompany ? confirmedCompanyMatch : confirmedPlantMatch}
           applicationId={applicationId}
+          plantCompanyId={plantCompanyId}
           completedSelectedId={isTaskCompleted ? selectedId : undefined}
           completedResolveMethod={savedResolveMethod}
           onClose={onClose}

@@ -11,6 +11,8 @@ type Props = {
   bestMatch: Match | null
   confirmedMatch: Match | null
   applicationId?: string | number
+  /** Plant drawer: the company the plant is resolved under (the id sent on Complete Task). */
+  plantCompanyId?: string | number | null
   completedSelectedId?: string | number
   completedResolveMethod?: 'Created' | 'Selected'
   onClose: () => void
@@ -26,6 +28,7 @@ export function PrelimResolutionDrawerHeader({
   bestMatch,
   confirmedMatch,
   applicationId,
+  plantCompanyId,
   completedSelectedId,
   completedResolveMethod,
   onClose,
@@ -36,6 +39,8 @@ export function PrelimResolutionDrawerHeader({
       ? String(completedSelectedId)
       : ''
   const completedLabel = completedResolveMethod ?? 'Selected'
+  const plantCompanyLabel =
+    plantCompanyId != null && String(plantCompanyId).trim() !== '' ? String(plantCompanyId) : 'N/A'
 
   return (
     <div className={`${headerBgClass} text-white px-6 py-[18px]`}>
@@ -73,7 +78,7 @@ export function PrelimResolutionDrawerHeader({
             ) : (
               <>
                 <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
-                  Co #{selectedMatch?.OWNSID || '182456'}
+                  Co #{plantCompanyLabel}
                 </span>
                 {completedSelectedIdLabel ? (
                   <span className="inline-flex items-center rounded-[5px] border border-white/20 bg-white/15 px-[10px] py-1 text-xs font-semibold text-white/90">
