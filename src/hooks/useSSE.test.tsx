@@ -77,7 +77,7 @@ describe('useSSE', () => {
     unmount()
   })
 
-  it('allows delayed SSE headers beyond 30 seconds and still cancels on unmount', async () => {
+  it('allows delayed SSE headers within the connect timeout and still cancels on unmount', async () => {
     vi.useFakeTimers()
     const source = stream()
     let respond!: (response: Response) => void
@@ -92,7 +92,7 @@ describe('useSSE', () => {
     vi.stubGlobal('fetch', fetch)
     const onMessage = vi.fn()
     const { unmount } = renderHook(() => useSSE(onMessage, { token: 'access' }))
-    await act(async () => { await vi.advanceTimersByTimeAsync(60000) })
+    await act(async () => { await vi.advanceTimersByTimeAsync(14999) })
     expect(signal.aborted).toBe(false)
     expect(fetch).toHaveBeenCalledOnce()
     await act(async () => {
@@ -119,6 +119,7 @@ describe('useSSE', () => {
     const onMessage = vi.fn()
     const onError = vi.fn()
     const { unmount } = renderHook(() => useSSE(onMessage, { token: 'access', onError }))
+    await act(async () => { source.controller.enqueue(new TextEncoder().encode('data: {"type":"connected"}\n\n')) })
     await act(async () => { await vi.advanceTimersByTimeAsync(59999) })
     expect(source.cancel).not.toHaveBeenCalled()
     await act(async () => { await vi.advanceTimersByTimeAsync(1) })
@@ -149,6 +150,7 @@ describe('useSSE', () => {
       const fetch = vi.fn().mockResolvedValue(source.response)
       vi.stubGlobal('fetch', fetch)
       const { unmount } = renderHook(() => useSSE(vi.fn(), { token: 'access' }))
+      await act(async () => { source.controller.enqueue(new TextEncoder().encode('data: {"type":"connected"}\n\n')) })
       for (let index = 0; index < 4; index++) {
         await act(async () => { await vi.advanceTimersByTimeAsync(30000) })
         await act(async () => { source.controller.enqueue(new TextEncoder().encode(frame)) })
