@@ -162,6 +162,19 @@ export function InspectionInvoiceDrawer({
     return `OU Kosher - ${feeType} Invoice for ${applicant?.plant || resolvedName} [${accountNumber || 'App'}]`
   }, [accountNumber, applicant?.plant, resolvedName, state.isApplicationFeeOnly])
 
+  // RECHECK-1: the typed fee/notes are only saved by an action; don't drop them silently.
+  const requestClose = () => {
+    if (
+      state.hasUnsavedChanges() &&
+      !window.confirm(
+        'You have unsaved invoice details or an unsent email draft. Close and discard these changes?',
+      )
+    ) {
+      return
+    }
+    onClose()
+  }
+
   if (!open) return null
 
   const primaryActionLabel = state.isCompletingWithoutInspection
@@ -275,7 +288,7 @@ export function InspectionInvoiceDrawer({
     <div
       className={isEmbedded ? 'h-full min-h-0' : 'fixed inset-0 pointer-events-auto z-50 bg-black/40'}
     >
-      <div
+      <ModalSurface onClose={requestClose} label="Inspection Invoice" embedded={isEmbedded}
         className={
           isEmbedded
             ? 'flex h-full min-h-0 w-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm'
@@ -310,7 +323,7 @@ export function InspectionInvoiceDrawer({
             {!isEmbedded ? (
               <button
                 type="button"
-                onClick={onClose}
+                onClick={requestClose}
                 className="rounded p-1 text-gray-300 hover:bg-white/10 hover:text-white"
                 aria-label="Close inspection invoice drawer"
               >
@@ -807,7 +820,7 @@ export function InspectionInvoiceDrawer({
             <div className="flex shrink-0 gap-2">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={requestClose}
                 className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 Close
@@ -1069,7 +1082,7 @@ export function InspectionInvoiceDrawer({
             </ModalSurface>
           </div>
         ) : null}
-      </div>
+      </ModalSurface>
     </div>
   )
 }

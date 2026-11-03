@@ -546,6 +546,24 @@ const buildInspectionInvoiceStatusDetails = (savedState: InspectionInvoiceSavedS
   savedState,
 })
 
+// RECHECK-1: the typed setup (fee, notes, reasons…) is only saved by an action (Generate
+// Invoice / Complete). Compare against the restored or last-saved setup, with the same
+// defaults the restore uses, so closing can warn before the input is lost.
+const invoiceSetupSnapshot = (setup: InspectionInvoiceSavedState['setup'] = {}) =>
+  JSON.stringify([
+    setup.inspectionNeeded ?? true,
+    setup.feeRequired ?? true,
+    setup.awaitPayment ?? true,
+    setup.feeAmount ?? '',
+    setup.expenseAmount ?? '',
+    setup.invoiceDate ?? todayYmd(),
+    setup.internalNotes ?? '',
+    setup.noInspectionReason ?? '',
+    setup.noFeeReason ?? '',
+    setup.extraRecipientEmail ?? setup.recipientEmail ?? '',
+    setup.letterTemplate ?? INSPECTION_LETTER_TEMPLATE,
+  ])
+
 export function useInspectionInvoiceDrawerState({
   applicant,
   applicationId,
@@ -613,6 +631,7 @@ export function useInspectionInvoiceDrawerState({
   const [emailBcc, setEmailBcc] = useState('')
   const [showEmailCopies, setShowEmailCopies] = useState(false)
   const [emailBody, setEmailBody] = useState('')
+  const emailDraftBaselineRef = useRef<string | null>(null)
   const [emailAttachments, setEmailAttachments] = useState<InspectionInvoiceEmailAttachment[]>([])
   const [sentAt, setSentAt] = useState<string | null>(null)
   const [paidAt, setPaidAt] = useState<string | null>(null)
@@ -622,6 +641,7 @@ export function useInspectionInvoiceDrawerState({
   const [isMarkingPaid, setIsMarkingPaid] = useState(false)
   const [isCompletingWithoutInspection, setIsCompletingWithoutInspection] = useState(false)
   const restoredTaskKeyRef = useRef('')
+  const savedSetupSnapshotRef = useRef(invoiceSetupSnapshot())
 
   const recommendedRfrUsername = getRecommendedRfrUsername(
     applicant && 'GlobalData' in applicant ? applicant.GlobalData : applicant?.globalData,
@@ -757,9 +777,11 @@ export function useInspectionInvoiceDrawerState({
     setEmailBcc('')
     setShowEmailCopies(false)
     setEmailBody('')
+    emailDraftBaselineRef.current = null
     setEmailAttachments([])
     setSentAt(null)
     setPaidAt(null)
+    savedSetupSnapshotRef.current = invoiceSetupSnapshot()
 
     const currentTask = findTaskById(applicant, invoiceTaskId)
     const savedState = getInspectionStatusSavedState<InspectionInvoiceSavedState>(
@@ -780,6 +802,7 @@ export function useInspectionInvoiceDrawerState({
       setup.selectedRfrId ?? nextRestoredRfr?.lookupKey ?? nextRestoredRfr?.id ?? '',
     )
 
+    savedSetupSnapshotRef.current = invoiceSetupSnapshot(setup)
     setInspectionNeeded(setup.inspectionNeeded ?? true)
     setFeeRequired(setup.feeRequired ?? true)
     setAwaitPayment(setup.awaitPayment ?? true)
@@ -978,6 +1001,7 @@ export function useInspectionInvoiceDrawerState({
       guiDisplayResult,
       token,
     })
+    savedSetupSnapshotRef.current = invoiceSetupSnapshot(statusDetails.savedState.setup)
 
     return guiDisplayResult
   }
@@ -1189,8 +1213,11 @@ export function useInspectionInvoiceDrawerState({
   }
 
   const openEmailPreview = ({ messageText, toUser }: { messageText: string; toUser: string }) => {
-    setEmailTo(toUser)
-    setEmailBody(messageText)
+    if (emailDraftBaselineRef.current === null || currentEmailSnapshot() === emailDraftBaselineRef.current) {
+      setEmailTo(toUser)
+      setEmailBody(messageText)
+      emailDraftBaselineRef.current = JSON.stringify([toUser, messageText, emailCc, emailBcc, emailAttachments])
+    }
     setShowEmailPreview(true)
   }
 
@@ -1297,6 +1324,7 @@ export function useInspectionInvoiceDrawerState({
         },
         token,
       })
+      emailDraftBaselineRef.current = currentEmailSnapshot()
       const nextSentAt = new Date().toLocaleString()
       const nextStage: InspectionInvoiceStage = paidAt ? 'paid' : 'sent-captured'
       setSentAt(nextSentAt)
@@ -1419,6 +1447,25 @@ export function useInspectionInvoiceDrawerState({
     setStage(canGenerate ? 'configured' : 'setup')
   }
 
+  const currentSetupSnapshot = () =>
+    invoiceSetupSnapshot({
+      inspectionNeeded,
+      feeRequired,
+      awaitPayment,
+      feeAmount,
+      expenseAmount,
+      invoiceDate,
+      internalNotes,
+      noInspectionReason,
+      noFeeReason,
+      extraRecipientEmail,
+      letterTemplate,
+    })
+  const currentEmailSnapshot = () => JSON.stringify([emailTo, emailBody, emailCc, emailBcc, emailAttachments])
+  const hasUnsavedChanges = () =>
+    currentSetupSnapshot() !== savedSetupSnapshotRef.current ||
+    (emailDraftBaselineRef.current !== null && currentEmailSnapshot() !== emailDraftBaselineRef.current)
+
   return {
     awaitPayment,
     canGenerate,
@@ -1472,6 +1519,7 @@ export function useInspectionInvoiceDrawerState({
     changeRfr,
     completeWithoutInspection,
     generateInvoice,
+    hasUnsavedChanges,
     markPaid,
     markSent,
     sendEmail,
