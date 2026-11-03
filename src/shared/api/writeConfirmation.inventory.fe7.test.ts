@@ -24,7 +24,6 @@ const VALIDATED_BY_CALLER: Array<{ file: string; snippet: string; reason: string
   { file: 'features/applications/api/index.ts', snippet: "'/api/ScheduleProduct'", reason: 'Add Row: readWrittenRecord in useScheduleBProducts (fe6a)' },
   { file: 'features/prelim/api/index.ts', snippet: "'/resolve_company'", reason: 'PrelimResolutionDrawer requires the confirmed company_id' },
   { file: 'features/prelim/api/index.ts', snippet: "'/resolve_plant'", reason: 'PrelimResolutionDrawer requires the confirmed plant_id' },
-  { file: 'shared/utils/fileLinks.tsx', snippet: '/file_link', reason: 'read (signs a URL); requires {url}' },
   { file: 'features/profile/api/index.ts', snippet: "'/auth/exchange-cognito-token'", reason: 'read (token exchange), not a write' },
 ]
 
