@@ -3,7 +3,11 @@ import { ErrorDialog, type ErrorDialogRef } from '@/components/ErrorDialog'
 import { ActionModal } from '@/features/tasks/modals/ActionModal'
 import { ConditionalModal } from '@/features/tasks/modals/ConditionalModal'
 import { UploadNdaModal } from '@/features/tasks/modals/UploadNdaModal'
-import { resolveNcrcTaskUi, type NcrcTaskUi } from '@/features/applications/lib/ncrcTaskUiRoutes'
+import { resolveTaskUi, type TaskUi } from '@/features/tasks/lib/taskUiRoutes'
+import {
+  TaskPrelimResolutionDrawer,
+  type TaskPrelimResolutionDrawerState,
+} from '@/features/tasks/components/TaskPrelimResolutionDrawer'
 import { NcrcDashboardControls } from '@/features/applications/components/NcrcDashboardControls'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
 import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer'
@@ -122,6 +126,8 @@ export function NcrcDashboardContent() {
     applicant?: Applicant
     task?: Task
   }>({ open: false })
+  const [prelimResolutionDrawerState, setPrelimResolutionDrawerState] =
+    useState<TaskPrelimResolutionDrawerState>({ open: false })
   const [myNotesSelectedApplicationId, setMyNotesSelectedApplicationId] = useState<number | null>(
     null,
   )
@@ -248,10 +254,22 @@ export function NcrcDashboardContent() {
     }
     const actionCategory = normalizeTaskText(actionRecord.taskCategory ?? actionRecord.TaskCategory)
 
-    // Which UI a task opens is configured in NCRC_TASK_UI_ROUTES; these open each kind of UI.
-    const openTaskUi: Record<NcrcTaskUi, () => void> = {
+    // Which UI a task opens is configured in TASK_UI_ROUTES; these open each kind of UI.
+    const openTaskUi: Record<TaskUi, () => void> = {
       'certification-drawer': () => {
         setCertificationDrawerState({ open: true, applicant: application, task: action })
+      },
+      'prelim-resolution-drawer': () => {
+        setPrelimResolutionDrawerState({
+          open: true,
+          task: {
+            applicationId: application.applicationId,
+            taskInstanceId: Number(actionRecord.TaskInstanceId ?? actionRecord.taskInstanceId),
+            taskName: action.name,
+            capacity: action.capacity,
+            companyId: application.companyId,
+          },
+        })
       },
       'schedule-a-drawer': () => {
         const scheduleATask = getAllTasks(application).find(
@@ -337,7 +355,7 @@ export function NcrcDashboardContent() {
       'action-modal': () => setShowActionModal(action),
     }
 
-    const ui = resolveNcrcTaskUi(action)
+    const ui = resolveTaskUi(action)
     if (ui) openTaskUi[ui]()
   }
 
@@ -568,6 +586,10 @@ export function NcrcDashboardContent() {
         applicant={certificationDrawerState.applicant}
         task={certificationDrawerState.task}
         onClose={() => setCertificationDrawerState({ open: false })}
+      />
+      <TaskPrelimResolutionDrawer
+        {...prelimResolutionDrawerState}
+        onClose={() => setPrelimResolutionDrawerState({ open: false })}
       />
     </>
   )

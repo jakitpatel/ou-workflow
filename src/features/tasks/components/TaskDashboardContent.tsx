@@ -2,6 +2,7 @@ import { ErrorDialog } from '@/components/ErrorDialog'
 import { ActionModal } from '@/features/tasks/modals/ActionModal'
 import { ConditionalModal } from '@/features/tasks/modals/ConditionalModal'
 import { UploadNdaModal } from '@/features/tasks/modals/UploadNdaModal'
+import { CertificationStageDrawer } from '@/features/applications/components/CertificationStageDrawer'
 import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer'
 import { InspectionAssignmentDrawer } from '@/features/applications/components/InspectionAssignmentDrawer'
 import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer'
@@ -60,6 +61,8 @@ export function TaskDashboardContent() {
     setContractDrawerState,
     prelimResolutionDrawerState,
     setPrelimResolutionDrawerState,
+    certificationDrawerState,
+    setCertificationDrawerState,
     selectedAction,
     executeAction,
     completeTaskWithResult,
@@ -206,6 +209,13 @@ export function TaskDashboardContent() {
       <TaskPrelimResolutionDrawer
         {...prelimResolutionDrawerState}
         onClose={() => setPrelimResolutionDrawerState({ open: false })}
+      />
+      <CertificationStageDrawer
+        key={String(certificationDrawerState.task?.TaskInstanceId ?? 'certification-drawer')}
+        open={certificationDrawerState.open}
+        applicant={certificationDrawerState.applicant}
+        task={certificationDrawerState.task}
+        onClose={() => setCertificationDrawerState({ open: false })}
       />
     </>
   )

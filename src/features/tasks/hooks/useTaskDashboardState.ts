@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { buildRfrRecommendationCompletion, isRfrRecommendationTask, postRfrRecommendationMessage } from '../lib/rfrRecommendation'
-import { isLegalReviewTask } from '../lib/legalReview'
+import { resolveTaskUi, type TaskUi } from '../lib/taskUiRoutes'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { type ErrorDialogRef } from '@/components/ErrorDialog'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
@@ -90,6 +90,12 @@ type PrelimResolutionDrawerState = {
   open: boolean
   task?: ApplicationTask
   companyTask?: ApplicationTask
+}
+
+type CertificationDrawerState = {
+  open: boolean
+  applicant?: Applicant
+  task?: Task
 }
 
 const DEBOUNCE_DELAY = 700
@@ -211,108 +217,6 @@ const calculateTaskStats = (tasks: ApplicationTask[]) => {
   }
 }
 
-const getTaskActionPresentation = (application: TaskDashboardAction) => {
-  if (isLegalReviewTask(application)) return { type: 'upload' as const }
-  if (isRfrRecommendationTask(application)) return { type: 'assignment' as const }
-  const actionType = application.taskType?.toLowerCase()
-  const actionCategory = (application.taskCategory || application.TaskCategory)?.toLowerCase()
-  const taskName = application.taskName ?? application.name
-
-  if (
-    actionType === TASK_TYPES.ACTION &&
-    actionCategory === TASK_CATEGORIES.INPUT &&
-    (taskName === 'ResolveCompany' || /^ResolvePlant\d*$/.test(taskName ?? ''))
-  ) {
-    return { type: 'prelim-resolution' as const }
-  }
-
-  if (actionType === TASK_TYPES.CONFIRM && actionCategory === TASK_CATEGORIES.CONFIRMATION) {
-    return { type: 'execute', assignee: 'Confirmed', result: 'no' as const }
-  }
-
-  if (
-    (actionType === TASK_TYPES.CONDITION || actionType === TASK_TYPES.CONDITIONAL) &&
-    actionCategory === TASK_CATEGORIES.APPROVAL_SIGNOFF_A
-  ) {
-    return { type: 'schedule-a' as const }
-  }
-
-  if (
-    (actionType === TASK_TYPES.CONDITIONAL || actionType === TASK_TYPES.CONDITION) &&
-    [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1].includes(actionCategory as any)
-  ) {
-    return { type: 'condition' as const }
-  }
-
-  if (
-    (actionType === TASK_TYPES.CONDITION || actionType === TASK_TYPES.CONDITIONAL) &&
-    actionCategory === TASK_CATEGORIES.APPROVAL_SIGNOFF_B
-  ) {
-    return { type: 'schedule-b' as const }
-  }
-
-  if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.ASSIGNMENT) {
-    return { type: 'assignment' as const }
-  }
-
-  if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.INVOICE) {
-    return { type: 'inspection-invoice' as const }
-  }
-
-  if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.ASSIGNMENT1) {
-    return { type: 'inspection-assignment' as const }
-  }
-
-  if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.VISIT) {
-    return { type: 'inspection-visit' as const }
-  }
-
-  if (
-    actionType === TASK_TYPES.ACTION &&
-    (actionCategory === TASK_CATEGORIES.SCHEDULEA ||
-      actionCategory === TASK_CATEGORIES.SCHEDULEA_ASSIGNING ||
-      actionCategory === TASK_CATEGORIES.SCHEDULEA_START)
-  ) {
-    return { type: 'schedule-a' as const }
-  }
-
-  if (
-    actionType === TASK_TYPES.ACTION &&
-    [
-      TASK_CATEGORIES.SCHEDULEB,
-      TASK_CATEGORIES.SCHEDULEB_ASSIGNING,
-      TASK_CATEGORIES.SCHEDULEB_START,
-    ].some((value) => value === actionCategory)
-  ) {
-    return { type: 'schedule-b' as const }
-  }
-
-  if (actionType === TASK_TYPES.ACTION && actionCategory === TASK_CATEGORIES.CONTRACT) {
-    return { type: 'contract' as const }
-  }
-
-  if (
-    actionType === TASK_TYPES.ACTION &&
-    [TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].some((value) => value === actionCategory)
-  ) {
-    return { type: 'condition' as const }
-  }
-
-  if (
-    (actionType === TASK_TYPES.ACTION &&
-      [TASK_CATEGORIES.UPLOAD, TASK_CATEGORIES.EMAIL].some((value) => value === actionCategory)) ||
-    (actionType === TASK_TYPES.UPLOAD && actionCategory === TASK_CATEGORIES.UPLOAD)
-  ) {
-    return { type: 'upload' as const }
-  }
-
-  if (actionType === TASK_TYPES.PROGRESS && actionCategory === TASK_CATEGORIES.PROGRESS_TASK) {
-    return { type: 'condition' as const }
-  }
-
-  return { type: 'none' as const }
-}
-
 const resolveCapacity = (action: TaskDashboardAction, username?: string | null) => {
   const assigneeValue = action.assignee
 
@@ -367,6 +271,8 @@ export function useTaskDashboardState() {
   })
   const [prelimResolutionDrawerState, setPrelimResolutionDrawerState] =
     useState<PrelimResolutionDrawerState>({ open: false })
+  const [certificationDrawerState, setCertificationDrawerState] =
+    useState<CertificationDrawerState>({ open: false })
 
   const { username, role, roles, token } = useUser()
   const { paginationMode } = useAppPreferences()
@@ -595,10 +501,10 @@ export function useTaskDashboardState() {
         return
       }
 
-      if (
-        taskType === TASK_TYPES.ACTION &&
-        [TASK_CATEGORIES.SELECTOR, TASK_CATEGORIES.INPUT, TASK_CATEGORIES.SCHEDULING].some((value) => value === taskCategory)
-      ) {
+      // Like the Application Dashboard: any action task other than an assignment that reaches the
+      // condition modal (selector, input, scheduling, or a category without its own UI) completes
+      // with the chosen result.
+      if (taskType === TASK_TYPES.ACTION && taskCategory !== TASK_CATEGORIES.ASSIGNMENT) {
         confirmTaskMutation.mutate({
           ...mutationParams,
           result: typeof result === 'string' ? result : undefined,
@@ -682,135 +588,105 @@ export function useTaskDashboardState() {
       const nextSelectedAction = { application: action, action }
       setSelectedAction(nextSelectedAction)
 
-      const actionPresentation = getTaskActionPresentation(action)
       const inspectionApplicant = buildInspectionApplicant(application, tasks)
       const inspectionTask = mapApplicationTaskToStageTask(application)
 
-      if (actionPresentation.type === 'execute') {
-        executeAction(
-          actionPresentation.assignee,
-          action,
-          actionPresentation.result,
-          nextSelectedAction,
-        )
-        return
+      // Which UI a task opens is configured in TASK_UI_ROUTES, shared with the Application
+      // Dashboard; these open each kind of UI on this screen.
+      const openTaskUi: Record<TaskUi, () => void> = {
+        'certification-drawer': () => {
+          setCertificationDrawerState({
+            open: true,
+            applicant: inspectionApplicant,
+            // The drawer completes the task with the task's own capacity.
+            task: { ...inspectionTask, capacity: application.capacity },
+          })
+        },
+        'prelim-resolution-drawer': () => {
+          setPrelimResolutionDrawerState({ open: true, task: application })
+        },
+        'schedule-a-drawer': () => {
+          const scheduleATask = tasks.find(
+            (candidate) =>
+              String(candidate.applicationId) === String(action.applicationId) &&
+              String(candidate.taskName ?? candidate.name ?? '').trim().toLowerCase() ===
+                TASK_CATEGORIES.SCHEDULEA &&
+              String(candidate.taskCategory ?? candidate.TaskCategory ?? '').trim().toLowerCase() ===
+                TASK_CATEGORIES.SCHEDULEA &&
+              String(candidate.taskType ?? candidate.TaskType ?? '').trim().toLowerCase() ===
+                TASK_TYPES.ACTION,
+          )
+          setScheduleADrawerState({
+            open: true,
+            applicationId: action.applicationId,
+            applicationName: action.companyName ?? action.plantName,
+            taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
+            taskName: action.taskName ?? action.name,
+            taskCategory: action.taskCategory ?? action.TaskCategory,
+            scheduleATaskInstanceId:
+              scheduleATask?.taskInstanceId ?? scheduleATask?.TaskInstanceId,
+            scheduleATaskStatusDetails:
+              scheduleATask?.StatusDetails ?? scheduleATask?.statusDetails,
+          })
+        },
+        'schedule-b-drawer': () => {
+          const scheduleBTask = tasks.find(
+            (candidate) =>
+              String(candidate.applicationId) === String(action.applicationId) &&
+              String(candidate.taskName ?? candidate.name ?? '').trim().toLowerCase() ===
+                TASK_CATEGORIES.SCHEDULEB &&
+              String(candidate.taskCategory ?? candidate.TaskCategory ?? '').trim().toLowerCase() ===
+                TASK_CATEGORIES.SCHEDULEB &&
+              String(candidate.taskType ?? candidate.TaskType ?? '').trim().toLowerCase() ===
+                TASK_TYPES.ACTION,
+          )
+          setScheduleBDrawerState({
+            open: true,
+            applicationId: action.applicationId,
+            applicationName: action.companyName ?? action.plantName,
+            taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
+            taskName: action.taskName ?? action.name,
+            taskCategory: action.taskCategory ?? action.TaskCategory,
+            scheduleBTaskInstanceId:
+              scheduleBTask?.taskInstanceId ?? scheduleBTask?.TaskInstanceId,
+            scheduleBTaskStatusDetails:
+              scheduleBTask?.StatusDetails ?? scheduleBTask?.statusDetails,
+          })
+        },
+        'inspection-invoice-drawer': () => {
+          setInspectionInvoiceDrawerState({
+            open: true,
+            applicant: inspectionApplicant,
+            applicationId: action.applicationId,
+            applicationName: action.companyName ?? action.plantName,
+            taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
+            taskName: action.taskName ?? action.name,
+          })
+        },
+        'inspection-assignment-drawer': () => {
+          setInspectionAssignmentDrawerState({ open: true, applicant: inspectionApplicant, task: inspectionTask })
+        },
+        'inspection-visit-drawer': () => {
+          setInspectionVisitDateDrawerState({ open: true, applicant: inspectionApplicant, task: inspectionTask })
+        },
+        'contract-drawer': () => {
+          setContractDrawerState({
+            open: true,
+            applicant: inspectionApplicant,
+            applicationId: action.applicationId,
+            applicationName: action.companyName ?? action.plantName,
+            taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
+            taskName: action.taskName ?? action.name,
+          })
+        },
+        confirm: () => executeAction('Confirmed', action, 'yes', nextSelectedAction),
+        'condition-modal': () => setShowConditionModal(action),
+        'upload-modal': () => setShowUploadModal(action),
+        'action-modal': () => setShowActionModal(action),
       }
 
-      if (actionPresentation.type === 'condition') {
-        setShowConditionModal(action)
-        return
-      }
-
-      if (actionPresentation.type === 'prelim-resolution') {
-        setPrelimResolutionDrawerState({
-          open: true,
-          task: application,
-        })
-        return
-      }
-
-      if (actionPresentation.type === 'assignment') {
-        setShowActionModal(action)
-        return
-      }
-
-      if (actionPresentation.type === 'schedule-a') {
-        const scheduleATask = tasks.find(
-          (candidate) =>
-            String(candidate.applicationId) === String(action.applicationId) &&
-            String(candidate.taskName ?? candidate.name ?? '').trim().toLowerCase() ===
-              TASK_CATEGORIES.SCHEDULEA &&
-            String(candidate.taskCategory ?? candidate.TaskCategory ?? '').trim().toLowerCase() ===
-              TASK_CATEGORIES.SCHEDULEA &&
-            String(candidate.taskType ?? candidate.TaskType ?? '').trim().toLowerCase() ===
-              TASK_TYPES.ACTION,
-        )
-        setScheduleADrawerState({
-          open: true,
-          applicationId: action.applicationId,
-          applicationName: action.companyName ?? action.plantName,
-          taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
-          taskName: action.taskName ?? action.name,
-          taskCategory: action.taskCategory ?? action.TaskCategory,
-          scheduleATaskInstanceId:
-            scheduleATask?.taskInstanceId ?? scheduleATask?.TaskInstanceId,
-          scheduleATaskStatusDetails:
-            scheduleATask?.StatusDetails ?? scheduleATask?.statusDetails,
-        })
-        return
-      }
-
-      if (actionPresentation.type === 'schedule-b') {
-        const scheduleBTask = tasks.find(
-          (candidate) =>
-            String(candidate.applicationId) === String(action.applicationId) &&
-            String(candidate.taskName ?? candidate.name ?? '').trim().toLowerCase() ===
-              TASK_CATEGORIES.SCHEDULEB &&
-            String(candidate.taskCategory ?? candidate.TaskCategory ?? '').trim().toLowerCase() ===
-              TASK_CATEGORIES.SCHEDULEB &&
-            String(candidate.taskType ?? candidate.TaskType ?? '').trim().toLowerCase() ===
-              TASK_TYPES.ACTION,
-        )
-        setScheduleBDrawerState({
-          open: true,
-          applicationId: action.applicationId,
-          applicationName: action.companyName ?? action.plantName,
-          taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
-          taskName: action.taskName ?? action.name,
-          taskCategory: action.taskCategory ?? action.TaskCategory,
-          scheduleBTaskInstanceId:
-            scheduleBTask?.taskInstanceId ?? scheduleBTask?.TaskInstanceId,
-          scheduleBTaskStatusDetails:
-            scheduleBTask?.StatusDetails ?? scheduleBTask?.statusDetails,
-        })
-        return
-      }
-
-      if (actionPresentation.type === 'inspection-invoice') {
-        setInspectionInvoiceDrawerState({
-          open: true,
-          applicant: inspectionApplicant,
-          applicationId: action.applicationId,
-          applicationName: action.companyName ?? action.plantName,
-          taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
-          taskName: action.taskName ?? action.name,
-        })
-        return
-      }
-
-      if (actionPresentation.type === 'inspection-assignment') {
-        setInspectionAssignmentDrawerState({
-          open: true,
-          applicant: inspectionApplicant,
-          task: inspectionTask,
-        })
-        return
-      }
-
-      if (actionPresentation.type === 'inspection-visit') {
-        setInspectionVisitDateDrawerState({
-          open: true,
-          applicant: inspectionApplicant,
-          task: inspectionTask,
-        })
-        return
-      }
-
-      if (actionPresentation.type === 'contract') {
-        setContractDrawerState({
-          open: true,
-          applicant: inspectionApplicant,
-          applicationId: action.applicationId,
-          applicationName: action.companyName ?? action.plantName,
-          taskInstanceId: action.taskInstanceId ?? action.TaskInstanceId,
-          taskName: action.taskName ?? action.name,
-        })
-        return
-      }
-
-      if (actionPresentation.type === 'upload') {
-        setShowUploadModal(action)
-      }
+      const ui = resolveTaskUi(action)
+      if (ui) openTaskUi[ui]()
     },
     [executeAction, tasks],
   )
@@ -876,6 +752,8 @@ export function useTaskDashboardState() {
     setContractDrawerState,
     prelimResolutionDrawerState,
     setPrelimResolutionDrawerState,
+    certificationDrawerState,
+    setCertificationDrawerState,
     selectedAction,
     executeAction,
     completeTaskWithResult,

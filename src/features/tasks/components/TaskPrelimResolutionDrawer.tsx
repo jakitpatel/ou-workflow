@@ -16,9 +16,13 @@ import { confirmTask } from '@/features/tasks/api'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import type { ApplicationTask } from '@/types/application'
 
+/** The resolution task fields the drawer reads; a full ApplicationTask also fits. */
+export type PrelimResolutionTaskRef = Pick<ApplicationTask, 'applicationId' | 'taskInstanceId'> &
+  Partial<Pick<ApplicationTask, 'taskName' | 'capacity' | 'companyId'>>
+
 export type TaskPrelimResolutionDrawerState = {
   open: boolean
-  task?: ApplicationTask
+  task?: PrelimResolutionTaskRef
 }
 
 type Props = TaskPrelimResolutionDrawerState & {
