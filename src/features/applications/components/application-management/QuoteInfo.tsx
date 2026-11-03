@@ -1,11 +1,6 @@
 import type { ApplicationDetail, QuoteData, QuoteItem } from "@/types/application";
-//import type { Dispatch, SetStateAction } from "react";
-import { AlertTriangle } from "lucide-react";
-//type ValidationCheck = { valid: boolean; message: string };
-//type ValidationChecks = { quote?: ValidationCheck; [key: string]: ValidationCheck | undefined };
-
 export default function QuoteInfo({ application }: { application: ApplicationDetail }) {
-  const quoteData = application.quotes || [];
+  const quoteData = Array.isArray(application.quotes) ? application.quotes : undefined;
 
   function formatUSD(amount: number | string) {
     const num = Number(amount) || 0;
@@ -16,18 +11,12 @@ export default function QuoteInfo({ application }: { application: ApplicationDet
     <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-6">Quote Information</h2>
         
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start space-x-3">
-            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-            <div>
-                <h3 className="font-medium text-yellow-800">Quote Requires Verification</h3>
-                <p className="text-yellow-700 text-sm mt-1">
-                Quote found in system but needs verification before application can be marked complete.
-                </p>
-            </div>
-            </div>
-        </div>
-        {quoteData.map((quote: QuoteData, index: number) => (
+        {!quoteData ? (
+          <p className="text-gray-600">Quote information is unavailable for this application.</p>
+        ) : quoteData.length === 0 ? (
+          <p className="text-gray-600">No quotes were returned for this application.</p>
+        ) : null}
+        {quoteData?.map((quote: QuoteData, index: number) => (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" key={index}>
             <div>
                 <h3 className="font-medium text-gray-900 mb-4">Quote Details</h3>
@@ -47,7 +36,7 @@ export default function QuoteInfo({ application }: { application: ApplicationDet
                 <div className="flex justify-between">
                     <span className="text-gray-600">Status:</span>
                     <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
-                    {quote.Status}
+                    {quote.Status?.trim() || 'Unknown'}
                     </span>
                 </div>
                 </div>
@@ -67,25 +56,7 @@ export default function QuoteInfo({ application }: { application: ApplicationDet
             </div>
         ))}
 
-        {/*
-        <div className="mt-6 flex justify-between items-center">
-            <button
-            onClick={() => {
-                setValidationChecks(prev => ({
-                ...prev,
-                quote: { valid: true, message: 'Quote verified and accepted' }
-                }));
-            }}
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-            <Check className="h-4 w-4 mr-2" />
-            Verify Quote
-            </button>
-            <div className="text-sm text-gray-600">
-            Last updated: July 17, 2025
-            </div>
-        </div>
-        */}
+
         </div>
   );
 }

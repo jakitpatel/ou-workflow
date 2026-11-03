@@ -142,7 +142,7 @@ function ResolutionDrawerContent({ open, task, onClose }: Props) {
       selectedId={
         isCompany
           ? (resolverTask.companySelected?.ID ?? resolverTask.Result)
-          : (resolverTask.plantSelected?.PlantID ?? resolverTask.Result)
+          : resolverTask.Result
       }
       applicationId={task.applicationId}
       taskInstanceId={task.taskInstanceId}

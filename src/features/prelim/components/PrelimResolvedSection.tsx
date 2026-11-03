@@ -696,13 +696,21 @@ export function extractResolvedData(application?: Applicant) {
       plant: {
         plantName: task.plantSelected?.plantName || task.plantFromApplication?.plantName || '',
         plantID:
-          task.plantSelected?.PlantID || task.Result || task.plantFromApplication?.plantID || '',
+          getResolvedMasterPlantId(task),
         plantAddress: task.plantSelected?.Address || task.plantFromApplication?.Address || '',
         executedBy: task.executedBy || '',
         CompletedDate: task.CompletedDate || '',
       },
     })),
   }
+}
+
+export function getResolvedMasterPlantId(task: Task): string | number | '' {
+  if (!isTaskCompleted(task.status)) return ''
+  const resultData = task.ResultData ? parseJsonLike(task.ResultData) as Record<string, unknown> | null : null
+  const candidate = resultData?.PlantID ?? getResolveSavedState(task.StatusDetails)?.resolveId?.plantId ?? task.Result
+  return (typeof candidate === 'string' || typeof candidate === 'number') && /^\d+$/.test(String(candidate)) && Number(candidate) > 0
+    ? candidate : ''
 }
 
 function getStageTasks(application?: Applicant) {
