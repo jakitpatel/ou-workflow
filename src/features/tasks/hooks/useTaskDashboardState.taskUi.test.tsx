@@ -101,6 +101,16 @@ describe('Tasks & Notifications task actions (TASK_UI_ROUTES)', () => {
     expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({ taskId: '900', result: 'Done' }))
   })
 
+  it('Application Review (condition / APPROVALOK) opens the condition modal, and Yes completes it', () => {
+    const result = click(makeTask('CONDITION', 'APPROVALOK', 'Application Review'))
+    expect(result.current.showConditionModal).toEqual(expect.objectContaining({ taskName: 'Application Review' }))
+
+    act(() => {
+      result.current.executeAction('tester', result.current.showConditionModal as never, 'YES')
+    })
+    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({ taskId: '900', result: 'YES' }))
+  })
+
   it('does nothing for a task no row matches', () => {
     const result = click(makeTask('PROGRESS', 'OTHER', 'Something'))
     expect(result.current.showConditionModal).toBeNull()

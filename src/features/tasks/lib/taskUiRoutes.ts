@@ -58,7 +58,7 @@ export const TASK_UI_ROUTES: readonly TaskUiRoute[] = [
   // Completes the task at once with assignee "Confirmed" and result "yes".
   { ui: 'confirm', types: [CONFIRM], categories: [C.CONFIRMATION] },
 
-  { ui: 'condition-modal', types: CONDITION_TYPES, categories: [C.APPROVAL, C.APPROVAL1] },
+  { ui: 'condition-modal', types: CONDITION_TYPES, categories: [C.APPROVAL, C.APPROVAL1, C.APPROVALOK] },
 
   // NDA legal review.
   { ui: 'upload-modal', types: [ACTION], categories: ['ndareview'] },

@@ -23,6 +23,8 @@ describe('TASK_UI_ROUTES (task -> UI, both dashboards)', () => {
     ['confirm', 'confirmation', 'Confirm payment', 'confirm'],
     ['condition', 'approval', 'Approve', 'condition-modal'],
     ['conditional', 'approval1', 'Approve', 'condition-modal'],
+    ['condition', 'approvalok', 'Application Review', 'condition-modal'],
+    ['conditional', 'APPROVALOK', 'Application Review', 'condition-modal'],
     ['action', 'ndareview', 'NDA legal review', 'upload-modal'],
     ['action', 'upload', 'Upload', 'upload-modal'],
     ['action', 'email', 'Email', 'upload-modal'],

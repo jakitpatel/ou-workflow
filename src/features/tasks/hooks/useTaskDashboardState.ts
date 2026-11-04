@@ -483,7 +483,7 @@ export function useTaskDashboardState() {
 
       if (
         (taskType === TASK_TYPES.CONDITIONAL || taskType === TASK_TYPES.CONDITION) &&
-        [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1].includes(taskCategory as any)
+        [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1, TASK_CATEGORIES.APPROVALOK].some((value) => value === taskCategory)
       ) {
         if (taskCategory === TASK_CATEGORIES.APPROVAL1 && result && typeof result === 'object') {
           confirmTaskMutation.mutate({
