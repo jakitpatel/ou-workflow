@@ -13,6 +13,7 @@ import type { Task, Applicant } from '@/types/application'
 import { useUser } from '@/context/UserContext'
 import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
 import { useUndoTaskMutation } from '@/features/tasks/hooks/useTaskMutations'
+import { TASK_UNDO_ENABLED } from '@/features/tasks/model/taskUndo'
 import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
@@ -228,7 +229,7 @@ export function ApplicationExpandedStage({
                         )}
                       </div>
 
-                      {isCompleted && taskId && (
+                      {TASK_UNDO_ENABLED && isCompleted && taskId && (
                         <button
                           type="button"
                           onClick={async (e) => {
