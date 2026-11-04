@@ -222,15 +222,27 @@ function InfoRow({
   label,
   value,
   strong,
+  align = 'right',
 }: {
   label: string
   value: React.ReactNode
   strong?: boolean
+  /** 'left' lines values up after a fixed-width label, like an email header. */
+  align?: 'left' | 'right'
 }) {
+  const valueClass = strong ? 'font-semibold text-gray-900' : 'text-gray-700'
+  if (align === 'left') {
+    return (
+      <div className="flex items-start gap-4 border-b border-gray-100 py-2 last:border-b-0">
+        <span className="w-16 shrink-0 pt-0.5 text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</span>
+        <span className={`min-w-0 flex-1 break-words text-left text-sm ${valueClass}`}>{value}</span>
+      </div>
+    )
+  }
   return (
     <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-2 last:border-b-0">
       <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</span>
-      <span className={`text-right text-sm ${strong ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>{value}</span>
+      <span className={`text-right text-sm ${valueClass}`}>{value}</span>
     </div>
   )
 }
@@ -870,14 +882,15 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
               </div>
               <div className="space-y-4 px-5 py-4">
                 <div className="rounded border border-gray-200 px-3">
-                  <InfoRow label="From" value={email || '-'} />
+                  <InfoRow align="left" label="From" value={email || '-'} />
                   <InfoRow
+                    align="left"
                     label="To"
                     value={selectedRfr ? `${selectedRfr.name}${selectedRfr.email ? ` <${selectedRfr.email}>` : ''}` : '-'}
                   />
-                  {emailCc ? <InfoRow label="Cc" value={emailCc} /> : null}
-                  {emailBcc ? <InfoRow label="Bcc" value={emailBcc} /> : null}
-                  <InfoRow label="Subject" value={emailSubject} />
+                  {emailCc ? <InfoRow align="left" label="Cc" value={emailCc} /> : null}
+                  {emailBcc ? <InfoRow align="left" label="Bcc" value={emailBcc} /> : null}
+                  <InfoRow align="left" label="Subject" value={emailSubject} />
                 </div>
                 <div className="whitespace-pre-wrap rounded border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">
                   <InspectionEmailBodyPreview

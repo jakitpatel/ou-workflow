@@ -228,9 +228,11 @@ export function InspectionInvoiceDrawer({
     isValidEmailAddressList(state.emailTo, true) &&
     isValidEmailAddressList(state.emailCc) &&
     isValidEmailAddressList(state.emailBcc)
-  const canResendInvoiceEmail = Boolean(state.invoiceId && state.sentAt)
+  // Read-only views (e.g. View Application > Inspection Invoice) never send email.
+  const canResendInvoiceEmail = !readOnly && Boolean(state.invoiceId && state.sentAt)
 
   const openInvoiceEmailPreview = () => {
+    if (readOnly) return
     state.openEmailPreview({
       messageText: emailMessageText,
       toUser: recipientSendValue,
@@ -586,21 +588,12 @@ export function InspectionInvoiceDrawer({
                   title={
                     <div className="flex items-center justify-between gap-3">
                       <span>4. Invoice Details</span>
-                      {state.isLocked ? (
-                        <button
-                          type="button"
-                          onClick={state.unlockForEdit}
-                          className="rounded px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
-                        >
-                          Edit
-                        </button>
-                      ) : null}
                     </div>
                   }
                 >
                   {state.isLocked ? (
                     <div className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                      Invoice generated. Editing will invalidate the current invoice ID.
+                      Invoice generated. Invoice details can no longer be changed.
                     </div>
                   ) : null}
                   {state.isApplicationFeeOnly ? (
@@ -862,7 +855,7 @@ export function InspectionInvoiceDrawer({
           </div>
         ) : null}
 
-        {state.showEmailPreview ? (
+        {state.showEmailPreview && !readOnly ? (
           <div className="fixed inset-0 pointer-events-auto z-[60] flex items-center justify-center bg-black/50 p-4">
             <ModalSurface onClose={() => state.setShowEmailPreview(false)} label="Email preview" className="w-full max-w-3xl rounded-lg bg-white shadow-2xl">
               <div className="border-b px-5 py-4">
@@ -1057,6 +1050,7 @@ export function InspectionInvoiceDrawer({
                     !state.emailBody.trim()
                   }
                   onClick={() => sendFlight.run(async () => {
+                    if (readOnly) return
                     try {
                       await state.sendEmail({
                         attachments: emailAttachment,

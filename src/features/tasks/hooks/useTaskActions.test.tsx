@@ -233,7 +233,7 @@ describe('AssignNCRC notification', () => {
     expect(mocks.message).toHaveBeenCalledExactlyOnceWith({
       token: 'token',
       payload: {
-        ApplicationID: 421, MessageText: 'Recommanded RFR is Rabbi Test Full Name',
+        ApplicationID: 421, MessageText: 'Recommended RFR is Rabbi Test Full Name',
         isPrivate: false, isRead: false, FromUser: 'S.Benjamin', MessageType: 'Text',
         SentDate: expect.any(String), Priority: 'NORMAL',
       },

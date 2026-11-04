@@ -1438,15 +1438,6 @@ export function useInspectionInvoiceDrawerState({
     }
   }
 
-  const unlockForEdit = () => {
-    setInvoiceId(null)
-    setInvoiceDownloadLink(null)
-    setInvoicePdfUrl(null)
-    setSentAt(null)
-    setPaidAt(null)
-    setStage(canGenerate ? 'configured' : 'setup')
-  }
-
   const currentSetupSnapshot = () =>
     invoiceSetupSnapshot({
       inspectionNeeded,
@@ -1546,6 +1537,5 @@ export function useInspectionInvoiceDrawerState({
     setRfrSearch,
     setShowEmailPreview,
     setShowEmailCopies,
-    unlockForEdit,
   }
 }

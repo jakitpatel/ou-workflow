@@ -314,7 +314,7 @@ function EmailPreviewModal({
             <EmailInfoRow label="From" value={email.FromUser} />
             <EmailInfoRow label="To" value={email.ToUser} />
             <EmailInfoRow label="CC" value={email.CCUser} />
-            <EmailInfoRow label="BCC" value={email.BCCUser} />
+            {/* BCC is intentionally not shown: blind-copied recipients stay hidden in the preview. */}
             <EmailInfoRow label="Priority" value={email.Priority} />
             {attachmentText ? (
               <EmailInfoRow

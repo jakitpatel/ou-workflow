@@ -126,3 +126,30 @@ it('gives the email preview its real subject (NEW-10)', () => {
   fireEvent.click(screen.getByRole('button', { name: /preview|view/i }))
   expect(screen.getByRole('dialog', { name: 'Email preview: FIX-fe6b subject' })).toBeTruthy()
 })
+
+it('does not show BCC recipients in the email preview', () => {
+  renderWithProviders(
+    <ApplicationDetailsContent
+      application={{
+        ...application,
+        emails: [{
+          MessageID: 6,
+          Subject: 'Contract package',
+          MessageText: 'Please review the contract.',
+          FromUser: 'ncrc@ou.org',
+          ToUser: 'client@example.com',
+          CCUser: 'rc@ou.org',
+          BCCUser: 'hidden.copy@ou.org',
+        }],
+      }}
+    />,
+  )
+  fireEvent.click(screen.getByRole('tab', { name: 'Emails' }))
+  fireEvent.click(screen.getByRole('button', { name: /preview|view/i }))
+  const preview = screen.getByRole('dialog', { name: 'Email preview: Contract package' })
+  expect(preview.textContent).toContain('client@example.com')
+  expect(preview.textContent).toContain('rc@ou.org')
+  expect(preview.textContent).toContain('Please review the contract.')
+  expect(preview.textContent).not.toMatch(/BCC/i)
+  expect(preview.textContent).not.toContain('hidden.copy@ou.org')
+})

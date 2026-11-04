@@ -70,3 +70,25 @@ it('creates and notifies without a Visit Date task or status-details save', asyn
   }))
   expect(mocks.result).not.toHaveBeenCalled()
 })
+
+it('full email view lists From, To, Cc and Subject left-aligned', () => {
+  vi.stubEnv('VITE_OUDIRECT_BASE_URL', 'https://oudirect-st.ou.org')
+  const task = { TaskInstanceId: 123, name: 'Assign RFR' } as Task
+  const applicant = { applicationId: 1, company: 'Test company', plant: 'Test plant', stages: {} } as Applicant
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <InspectionAssignmentDrawer open applicant={applicant} task={task} onClose={vi.fn()} />
+    </QueryClientProvider>,
+  )
+  fireEvent.click(screen.getByRole('button', { name: /Rabbi Test Full Name/ }))
+  fireEvent.click(screen.getByRole('button', { name: /View full/ }))
+  const fullView = screen.getByText('Notification email to RFR').closest('[role="dialog"]') as HTMLElement
+  for (const label of ['From', 'To', 'Subject']) {
+    const row = Array.from(fullView.querySelectorAll('span')).find((span) => span.textContent === label)?.parentElement
+    expect(row, label).toBeTruthy()
+    expect(row!.className, label).not.toContain('justify-between')
+    expect(row!.lastElementChild!.className, label).toContain('text-left')
+    expect(row!.lastElementChild!.className, label).not.toContain('text-right')
+  }
+  expect(fullView.textContent).toContain('OU Kosher - Inspection Assignment for Test plant')
+})

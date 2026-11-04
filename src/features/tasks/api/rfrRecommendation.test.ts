@@ -24,7 +24,7 @@ it('posts the public recommendation message in the application message envelope'
   expect(fetchWithAuth).toHaveBeenCalledExactlyOnceWith({
     path: '/api/WFApplicationMessage', method: 'POST', token: 'token', expectBody: expect.any(Function),
     body: { data: { type: 'WFApplicationMessage', attributes: {
-      ApplicationID: 1548, MessageText: 'Recommanded RFR is Full Name', isPrivate: false,
+      ApplicationID: 1548, MessageText: 'Recommended RFR is Full Name', isPrivate: false,
       isRead: false, FromUser: 'S.Benjamin', MessageType: 'Text', SentDate: expect.any(String), Priority: 'NORMAL',
     } } },
   })

@@ -30,7 +30,7 @@ export async function postRfrRecommendationMessage({
       token: token ?? undefined,
       payload: {
         ApplicationID: applicationId,
-        MessageText: `Recommanded RFR is ${fullName}`,
+        MessageText: `Recommended RFR is ${fullName}`,
         isPrivate: false,
         isRead: false,
         FromUser: username || null,
