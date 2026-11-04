@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { useUser } from '@/context/UserContext'
 import { useInspectionInvoiceCc } from './useInspectionInvoiceCc'
+import { buildNoFeeInspectionResult } from '../lib/inspectionInvoiceCompletion'
 import { getRecommendedRfrUsername, useInspectionRfrSelection } from './useInspectionRfrSelection'
 import {
   createApplicationMessage,
@@ -848,7 +849,7 @@ export function useInspectionInvoiceDrawerState({
   const subtotal = fee + expenses
   const isLocked = ['generated', 'outlook-opened', 'sent-captured', 'paid'].includes(stage)
   const isApplicationFeeOnly = letterTemplate === APPLICATION_FEE_LETTER_TEMPLATE
-  const skipInvoiceWorkflow = inspectionNeeded === false && feeRequired === false
+  const skipInvoiceWorkflow = inspectionNeeded !== null && feeRequired === false
   const canGenerate =
     inspectionNeeded !== null &&
     (inspectionNeeded === false || Boolean(selectedRfrId)) &&
@@ -1400,20 +1401,21 @@ export function useInspectionInvoiceDrawerState({
       throw new Error('Invoice task instance id not found')
     }
     if (!skipInvoiceWorkflow) {
-      throw new Error('Inspection and inspection fee must both be set to No')
+      throw new Error('Inspection fee must be set to No')
     }
+    const result = buildNoFeeInspectionResult(inspectionNeeded, selectedRfr?.userName || '')
 
     setIsCompletingWithoutInspection(true)
     try {
       // Persist the setup choices before completing the task so they can be restored later.
       await saveInvoiceTaskState({
-        nextGuiDisplayResult: '{Inspection:No, Fee:No}',
+        nextGuiDisplayResult: inspectionNeeded ? result : '{Inspection:No, Fee:No}',
         nextStage: 'configured',
       })
       await confirmTask({
         taskId: invoiceTaskId,
         applicationId: resolvedApplicationId,
-        result: 'Inspection not needed',
+        result,
         capacity: 'DESIGNATED',
         includeCompletedBy: false,
         includeCompletionNotes: false,

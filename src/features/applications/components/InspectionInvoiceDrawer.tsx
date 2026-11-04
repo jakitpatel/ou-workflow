@@ -799,7 +799,9 @@ export function InspectionInvoiceDrawer({
           <div className="flex items-center justify-between gap-4 border-t bg-white px-5 py-3">
             <div className="min-w-0 text-sm text-gray-600">
               {state.skipInvoiceWorkflow
-                ? 'No inspection or inspection fee is needed. Complete the task to save these selections.'
+                ? state.inspectionNeeded
+                  ? 'No inspection fee is needed. Select an RFR and complete the task.'
+                  : 'No inspection or inspection fee is needed. Complete the task to save these selections.'
                 : state.stage === 'paid'
                   ? 'Invoice paid. Assignment can proceed when applicable.'
                   : state.canGenerate
@@ -838,6 +840,7 @@ export function InspectionInvoiceDrawer({
                     primaryFlight.isRunning ||
                     state.isMarkingPaid ||
                     state.isCompletingWithoutInspection ||
+                    (state.skipInvoiceWorkflow && state.inspectionNeeded === true && !state.selectedRfr?.userName) ||
                     (!state.skipInvoiceWorkflow &&
                       (state.stage === 'setup' || state.stage === 'configured') &&
                       !state.canGenerate) ||
