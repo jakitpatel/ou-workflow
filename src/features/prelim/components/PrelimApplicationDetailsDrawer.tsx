@@ -37,7 +37,7 @@ export function PrelimApplicationDetailsDrawer({
   return (
     <div className="fixed inset-0 pointer-events-auto z-50 bg-black/40">
       <ModalSurface onClose={onClose} label="Application Intake Detail"
-        className="fixed right-0 top-0 flex h-full w-full max-w-[96vw] flex-col overflow-hidden bg-white shadow-2xl lg:max-w-[50vw]"
+        className="fixed right-0 top-0 flex h-full w-full max-w-[96vw] flex-col overflow-hidden bg-white shadow-2xl lg:max-w-[75vw]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b bg-gray-800 px-4 py-3 text-white">

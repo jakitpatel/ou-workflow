@@ -27,7 +27,7 @@ export function ApplicationDetailsDrawer({ open, applicationId, applicant, onClo
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="fixed right-0 top-0 flex h-full w-full max-w-[96vw] flex-col overflow-hidden bg-white shadow-2xl lg:max-w-[50vw]"
+        className="fixed right-0 top-0 flex h-full w-full max-w-[96vw] flex-col overflow-hidden bg-white shadow-2xl lg:max-w-[75vw]"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b bg-gray-800 px-4 py-3 text-white">
