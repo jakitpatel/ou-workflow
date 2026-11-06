@@ -1,3 +1,4 @@
+import { useSaveScheduleProductSelection } from '../hooks/useSaveScheduleProductSelection'
 import { ModalSurface } from '@/components/ui/ModalSurface'
 import { ScheduleProductEditCells } from './ScheduleProductEditCells'
 import { ScheduleProductActionButtons } from './ScheduleProductActionButtons'
@@ -709,7 +710,7 @@ export function ScheduleBProductsDrawer({
     resolvedApplicationId,
     canonicalScheduleBTaskInstanceId,
     scheduleBTaskStatusDetails,
-    { readOnly, legacyRowKeys },
+    { readOnly, legacyRowKeys, products: data?.scheduleProducts },
   )
   const { scratchpad, buildScheduleBExportRows } = scratchpadApi
   // Closing never discards marks (they stay in this browser), but say so when the server doesn't have them.
@@ -812,7 +813,25 @@ export function ScheduleBProductsDrawer({
   const allVisibleRowsResolved =
     visibleRows.length > 0 && visibleRows.every((row) => Boolean(scratchpad.resolved[row.id]))
 
+  const saveProductSelection = useSaveScheduleProductSelection(resolvedApplicationId)
+  const persistProductSelection = (rows: ScheduleBProductRow[], selected: boolean) => {
+    if (readOnly || ingView !== 'application') return
+    saveProductSelection.mutate({ rows, selected }, {
+      onError: (error) => toast.error(
+        error instanceof Error ? error.message : 'Unable to save product selection',
+      ),
+    })
+  }
+
+  const toggleRowResolved = (row: ScheduleBProductRow) => {
+    if (saveProductSelection.isPending) return
+    persistProductSelection([row], !scratchpad.resolved[row.id])
+    scratchpadApi.toggleResolved(row.id)
+  }
+
   const toggleAllVisibleRowsResolved = () => {
+    if (saveProductSelection.isPending) return
+    persistProductSelection(visibleRows, !allVisibleRowsResolved)
     scratchpadApi.setRowsResolved(
       visibleRows.map((row) => row.id),
       !allVisibleRowsResolved,
@@ -1356,8 +1375,8 @@ export function ScheduleBProductsDrawer({
                         role="alert"
                         className="rounded-t-lg border-b border-amber-200 bg-amber-50 px-6 py-3 text-sm text-amber-800"
                       >
-                        The Schedule B task for this application could not be found, so flags, halacha
-                        questions and resolved marks are kept only in this browser and are not saved.
+                        The Schedule B task for this application could not be found. Communication and
+                        workflow progress cannot be saved until the task is available.
                       </div>
                     ) : null}
                     <div ref={productsHeaderRef} className="sticky left-0 right-0 top-0 z-20 flex flex-wrap items-center justify-between gap-3 rounded-t-lg border-b bg-gray-50 px-6 py-4 shadow-sm">
@@ -1492,7 +1511,7 @@ export function ScheduleBProductsDrawer({
                                   <span>Actions</span>
                                   <button
                                     type="button"
-                                    disabled={!visibleRows.length}
+                                    disabled={!visibleRows.length || saveProductSelection.isPending}
                                     aria-pressed={allVisibleRowsResolved}
                                     title={allVisibleRowsResolved ? 'Reopen all displayed rows' : 'Mark all displayed rows resolved'}
                                     onClick={toggleAllVisibleRowsResolved}
@@ -1688,7 +1707,7 @@ export function ScheduleBProductsDrawer({
                                           <HalachaActionButton open={Boolean(halacha?.open)} onClick={() => scratchpadApi.toggleHalacha(row.id)} />
                                         </>
                                       )}
-                                      <ResolveButton resolved={resolved} onClick={() => scratchpadApi.toggleResolved(row.id)} />
+                                      <ResolveButton resolved={resolved} onClick={() => toggleRowResolved(row)} />
                                     </div>
                                   </td>
                                 ) : null}

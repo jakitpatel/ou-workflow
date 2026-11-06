@@ -744,6 +744,11 @@ export interface ScheduleAIngredientsResponse {
 }
 
 export type ScheduleBProduct = {
+  isSelected?: boolean
+  isFlagged?: boolean
+  flaggedNote?: string
+  isHalachic?: boolean
+  halachicNote?: string
   ApplicationID?: number | string
   BrandName?: string
   Industrial?: boolean | string

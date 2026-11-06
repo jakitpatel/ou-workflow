@@ -38,13 +38,6 @@ const wrapper = ({ children }: { children: ReactNode }) => (
   </QueryClientProvider>
 )
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-const saved = (flags: Record<string, { flagged: boolean; note: string }>, extra: object = {}) =>
-  JSON.stringify({ savedState: { username: 'someone', flags, rounds: [], ...extra } })
-const lastPatchedFlags = () => {
-  const call = mocks.patchTaskStatusDetails.mock.calls.at(-1)?.[0] as { statusDetails: { savedState: { flags: object } } }
-  return call.statusDetails.savedState.flags
-}
-
 describe('NEW-2: row ids do not change when a row is edited', () => {
   it('Schedule B: same id after renaming / changing the UPC; old id kept for migration', () => {
     const before = { ApplicationID: 1356, ScheduleProductId: 188, productName: 'Bread', UPC: '123' }
@@ -111,60 +104,6 @@ describe('migrateLegacyRowKeys', () => {
   })
 })
 
-// Schedule A flags/halacha/resolved live on the ingredients in the database, so its task-state
-// cases (below) use task-owned fields; Schedule B still keeps its flags in the task.
-describe.each([
-  ['useScheduleBScratchpad', useScheduleBScratchpad],
-] as const)('%s', (_name, useScratchpad) => {
-  beforeEach(() => {
-    window.localStorage.clear()
-    mocks.fetchTaskInstance.mockReset().mockResolvedValue({ data: { attributes: { StatusDetails: '{}' } } })
-    mocks.patchTaskStatusDetails.mockReset().mockResolvedValue({})
-  })
-
-  it('NEW-2: shows server marks saved under old keys and re-saves them under the stable key on the next edit', async () => {
-    const server = saved({ 'application-15-188-Bread': { flagged: true, note: 'old key' } })
-    const { result } = renderHook(() => useScratchpad(15, 569, server), { wrapper })
-    await waitFor(() => expect(result.current.scratchpad.flags['application-15-188']?.note).toBe('old key'))
-    await wait(900)
-    expect(mocks.patchTaskStatusDetails).not.toHaveBeenCalled() // migrating alone never writes (w6b)
-
-    act(() => result.current.updateFlagNote('application-15-188', 'edited'))
-    await waitFor(() => expect(mocks.patchTaskStatusDetails).toHaveBeenCalledTimes(1), { timeout: 2000 })
-    expect(lastPatchedFlags()).toEqual({ 'application-15-188': { flagged: true, note: 'edited' } })
-  })
-
-  it('NEW-2: legacyRowKeys picks the current row when a row was renamed before (two old keys)', async () => {
-    const server = saved({
-      'application-15-188-Old': { flagged: true, note: 'stale' },
-      'application-15-188-Current': { flagged: true, note: 'visible' },
-    })
-    const legacyRowKeys = { 'application-15-188': 'application-15-188-Current' }
-    const { result } = renderHook(() => useScratchpad(15, 569, server, { legacyRowKeys }), { wrapper })
-    await waitFor(() => expect(result.current.scratchpad.flags['application-15-188']?.note).toBe('visible'))
-  })
-
-  it('an edit that was not saved is not restored from the browser on reopen', async () => {
-    const server = saved({ a: { flagged: true, note: 'server' } })
-    mocks.patchTaskStatusDetails.mockRejectedValue(Object.assign(new Error('Injected 500'), { status: 500 }))
-    const first = renderHook(() => useScratchpad(15, 569, server), { wrapper })
-    await waitFor(() => expect(first.result.current.scratchpad.flags.a?.note).toBe('server'))
-    act(() => first.result.current.toggleFlag('b'))
-    await waitFor(() => expect(first.result.current.saveFailed).toBe(true), { timeout: 2000 })
-    // The close prompt still warns while the edit is unsaved.
-    expect(first.result.current.hasUnsavedChanges()).toBe(true)
-    first.unmount()
-
-    mocks.patchTaskStatusDetails.mockReset().mockResolvedValue({})
-    const second = renderHook(() => useScratchpad(15, 569, server), { wrapper })
-    await waitFor(() => expect(second.result.current.scratchpad.flags.a?.note).toBe('server'))
-    expect(second.result.current.scratchpad.flags.b).toBeUndefined()
-    await wait(900)
-    expect(mocks.patchTaskStatusDetails).not.toHaveBeenCalled()
-    expect(window.localStorage.length).toBe(0)
-  })
-})
-
 describe('useScheduleAScratchpad (task-owned marks)', () => {
   const savedA = (savedState: object) => JSON.stringify({ savedState: { username: 'someone', rounds: [], ...savedState } })
   const lastPatchedState = () =>
@@ -212,6 +151,61 @@ describe('useScheduleAScratchpad (task-owned marks)', () => {
 
     mocks.patchTaskStatusDetails.mockReset().mockResolvedValue({})
     const second = renderHook(() => useScheduleAScratchpad(15, 569, server), { wrapper })
+    await waitFor(() => expect(second.result.current.scratchpad.eirNeedsEntry).toBe(true))
+    expect(second.result.current.scratchpad.eirReceived).toBe(false)
+    await wait(900)
+    expect(mocks.patchTaskStatusDetails).not.toHaveBeenCalled()
+    expect(window.localStorage.length).toBe(0)
+  })
+})
+
+describe('useScheduleBScratchpad (task-owned marks)', () => {
+  const savedA = (savedState: object) => JSON.stringify({ savedState: { username: 'someone', rounds: [], ...savedState } })
+  const lastPatchedState = () =>
+    (mocks.patchTaskStatusDetails.mock.calls.at(-1)?.[0] as { statusDetails: { savedState: Record<string, unknown> } })
+      .statusDetails.savedState
+
+  beforeEach(() => {
+    window.localStorage.clear()
+    mocks.fetchTaskInstance.mockReset().mockResolvedValue({ data: { attributes: { StatusDetails: '{}' } } })
+    mocks.patchTaskStatusDetails.mockReset().mockResolvedValue({})
+  })
+
+  it('NEW-2: shows server marks saved under old keys and re-saves them under the stable key on the next edit', async () => {
+    const server = savedA({ attachments: { 'application-15-188-Bread': 'old.pdf' } })
+    const { result } = renderHook(() => useScheduleBScratchpad(15, 569, server), { wrapper })
+    await waitFor(() => expect(result.current.scratchpad.attachments['application-15-188']).toBe('old.pdf'))
+    await wait(900)
+    expect(mocks.patchTaskStatusDetails).not.toHaveBeenCalled() // migrating alone never writes (w6b)
+
+    act(() => result.current.markEirReceived())
+    await waitFor(() => expect(mocks.patchTaskStatusDetails).toHaveBeenCalledTimes(1), { timeout: 2000 })
+    expect(lastPatchedState().attachments).toEqual({ 'application-15-188': 'old.pdf' })
+    expect(lastPatchedState()).not.toHaveProperty('flags')
+  })
+
+  it('NEW-2: legacyRowKeys picks the current row when a row was renamed before (two old keys)', async () => {
+    const server = savedA({
+      attachments: { 'application-15-188-Old': 'stale.pdf', 'application-15-188-Current': 'visible.pdf' },
+    })
+    const legacyRowKeys = { 'application-15-188': 'application-15-188-Current' }
+    const { result } = renderHook(() => useScheduleBScratchpad(15, 569, server, { legacyRowKeys }), { wrapper })
+    await waitFor(() => expect(result.current.scratchpad.attachments['application-15-188']).toBe('visible.pdf'))
+  })
+
+  it('an edit that was not saved is not restored from the browser on reopen', async () => {
+    const server = savedA({ eirNeedsEntry: true })
+    mocks.patchTaskStatusDetails.mockRejectedValue(Object.assign(new Error('Injected 500'), { status: 500 }))
+    const first = renderHook(() => useScheduleBScratchpad(15, 569, server), { wrapper })
+    await waitFor(() => expect(first.result.current.scratchpad.eirNeedsEntry).toBe(true))
+    act(() => first.result.current.markEirReceived())
+    await waitFor(() => expect(first.result.current.saveFailed).toBe(true), { timeout: 2000 })
+    // The close prompt still warns while the edit is unsaved.
+    expect(first.result.current.hasUnsavedChanges()).toBe(true)
+    first.unmount()
+
+    mocks.patchTaskStatusDetails.mockReset().mockResolvedValue({})
+    const second = renderHook(() => useScheduleBScratchpad(15, 569, server), { wrapper })
     await waitFor(() => expect(second.result.current.scratchpad.eirNeedsEntry).toBe(true))
     expect(second.result.current.scratchpad.eirReceived).toBe(false)
     await wait(900)

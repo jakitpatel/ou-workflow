@@ -1,3 +1,4 @@
+import { patchScheduleProductFollowUp, patchScheduleProductHalachicReview, type ScheduleProductFollowUp, type ScheduleProductHalachicReview } from '../api/scheduleProductReview'
 import { selectEmailMessages } from '@/features/applications/lib/communicationMessages'
 import { useCommunicationMessageEvents } from './useCommunicationMessageEvents'
 import { withImpliedBcc } from '@/shared/email/impliedBcc'
@@ -27,7 +28,7 @@ import {
   describeScratchpadSaveError,
   migrateLegacyRowKeys,
 } from '@/features/applications/utils/scratchpadSave'
-import type { ApplicationEmail, KashProduct, ScheduleBProduct } from '@/types/application'
+import type { ApplicationEmail, KashProduct, ScheduleBProduct, ScheduleBProductsResult } from '@/types/application'
 
 export type ScheduleBProductRow = {
   id: string
@@ -964,6 +965,8 @@ export function useSendScheduleBCommunicationEmail() {
   })
 }
 
+const comparableTaskScratchpad = (value: Partial<ScheduleBScratchpad>) => comparableScratchpad(getScheduleBTaskScratchpad(normalizeScratchpad(value)))
+
 const getTaskStatusDetails = (value: unknown): unknown => {
   if (!value || typeof value !== 'object') return undefined
   const record = value as Record<string, unknown>
@@ -974,15 +977,65 @@ const getTaskStatusDetails = (value: unknown): unknown => {
   return undefined
 }
 
+type ScheduleBTaskScratchpad = Omit<ScheduleBScratchpad, 'flags' | 'halacha' | 'resolved'>
+
+export function getScheduleBTaskScratchpad(
+  scratchpad: Partial<ScheduleBScratchpad>,
+): Partial<ScheduleBTaskScratchpad> {
+  return Object.fromEntries(Object.entries(scratchpad).filter(
+    ([key]) => key !== 'flags' && key !== 'halacha' && key !== 'resolved',
+  )) as Partial<ScheduleBTaskScratchpad>
+}
+
+export function withScheduleProductSelection(
+  scratchpad: ScheduleBScratchpad,
+  products: ScheduleBProduct[],
+): ScheduleBScratchpad {
+  const resolved = Object.fromEntries(
+    Object.entries(scratchpad.resolved).filter(([id]) => !id.startsWith('application-')),
+  )
+  products.forEach((product, index) => {
+    if (product.isSelected === true) resolved[getApplicationProductRowId(product, index)] = true
+  })
+  return { ...scratchpad, resolved }
+}
+
+export function withScheduleProductState(
+  scratchpad: ScheduleBScratchpad,
+  products: ScheduleBProduct[],
+): ScheduleBScratchpad {
+  const selectedState = withScheduleProductSelection(scratchpad, products)
+  const flags = Object.fromEntries(
+    Object.entries(scratchpad.flags).filter(([id]) => !id.startsWith('application-')),
+  )
+  const halacha = Object.fromEntries(
+    Object.entries(scratchpad.halacha).filter(([id]) => !id.startsWith('application-')),
+  )
+  products.forEach((product, index) => {
+    flags[getApplicationProductRowId(product, index)] = {
+      flagged: product.isFlagged === true,
+      note: product.flaggedNote ?? '',
+    }
+    halacha[getApplicationProductRowId(product, index)] = {
+      open: product.isHalachic === true,
+      note: product.halachicNote ?? '',
+    }
+  })
+  return { ...selectedState, flags, halacha }
+}
+
+const NO_PRODUCTS: ScheduleBProduct[] = []
+
 export function useScheduleBScratchpad(
   applicationId?: string | number,
   taskInstanceId?: string | number | null,
   initialStatusDetails?: unknown,
-  options: { readOnly?: boolean; legacyRowKeys?: Record<string, string> } = {},
+  options: { readOnly?: boolean; legacyRowKeys?: Record<string, string>; products?: ScheduleBProduct[] } = {},
 ) {
   const readOnly = Boolean(options.readOnly)
   // Stable row id -> the id its marks had before ids were stable; picks the right old key to migrate.
   const legacyRowKeys = options.legacyRowKeys
+  const products = options.products ?? NO_PRODUCTS
   const { token, username } = useUser()
   const queryClient = useQueryClient()
   const normalizedApplicationId =
@@ -994,16 +1047,48 @@ export function useScheduleBScratchpad(
   }, [])
   const [storedScratchpad, setScratchpad] = useState<ScheduleBScratchpad>(EMPTY_SCRATCHPAD)
   // Marks saved under the old name-based row keys are shown (and re-saved on the next edit) under stable ids.
-  const scratchpad = useMemo(
+  const persistableScratchpad = useMemo(
     () => migrateLegacyRowKeys(storedScratchpad, legacyRowKeys),
     [legacyRowKeys, storedScratchpad],
   )
+  const taskScratchpad = useMemo(() => getScheduleBTaskScratchpad(persistableScratchpad), [persistableScratchpad])
+  const scratchpad = useMemo(() => withScheduleProductState(persistableScratchpad, products), [persistableScratchpad, products])
   const legacyRowKeysRef = useRef(legacyRowKeys)
   useEffect(() => {
     legacyRowKeysRef.current = legacyRowKeys
   }, [legacyRowKeys])
   const [hydratedKey, setHydratedKey] = useState('')
   const [saveError, setSaveError] = useState('')
+  const [reviewSaveError, setReviewSaveError] = useState('')
+  const productQueryKey = applicationsQueryKeys.scheduleBProducts(normalizedApplicationId)
+  const reviewMutationKey = ['schedule-product-review', normalizedApplicationId]
+  const reviewMutation = useMutation({
+    mutationKey: reviewMutationKey,
+    scope: { id: `schedule-product-review:${normalizedApplicationId}` },
+    mutationFn: ({ id, attributes }: {
+      id: string; attributes: ScheduleProductFollowUp | ScheduleProductHalachicReview
+    }) => 'isHalachic' in attributes
+      ? patchScheduleProductHalachicReview(id, attributes, token)
+      : patchScheduleProductFollowUp(id, attributes, token),
+    onMutate: async ({ id, attributes }) => {
+      setReviewSaveError('')
+      await queryClient.cancelQueries({ queryKey: productQueryKey, exact: true })
+      queryClient.setQueryData<ScheduleBProductsResult>(productQueryKey, (current) => current ? {
+        ...current,
+        scheduleProducts: current.scheduleProducts.map((product) =>
+          String(product.ScheduleProductId) === id ? { ...product, ...attributes } : product),
+      } : current)
+    },
+    onError: (error: unknown) => {
+      setReviewSaveError(error instanceof Error ? error.message : 'Unable to save product review changes')
+    },
+    onSettled: () => {
+      // Reconcile only after queued note edits finish so an earlier response cannot erase newer input.
+      if (queryClient.isMutating({ mutationKey: reviewMutationKey }) === 1) {
+        return queryClient.invalidateQueries({ queryKey: productQueryKey, exact: true })
+      }
+    },
+  })
   const lastPersistedScratchpadRef = useRef('')
   const remoteUnreadableRef = useRef(false)
   // Auto-save follows a real edit only: opening or re-hydrating must never write (w6b).
@@ -1025,7 +1110,7 @@ export function useScheduleBScratchpad(
     refetchOnMount: 'always',
   })
   const saveScratchpadMutation = useMutation({
-    mutationFn: (nextScratchpad: ScheduleBScratchpad) =>
+    mutationFn: (nextScratchpad: Partial<ScheduleBTaskScratchpad>) =>
       patchTaskStatusDetails({
         taskId: normalizedTaskInstanceId,
         statusDetails: { savedState: nextScratchpad },
@@ -1076,14 +1161,14 @@ export function useScheduleBScratchpad(
       setSaveFailed(false)
       const remoteSavedState = getInspectionStatusSavedState<ScheduleBScratchpad>(parsedStatusDetails)
       // What the server holds, or the default when nothing is stored: equal state is never saved.
-      const serverBaseline = comparableScratchpad(normalizeScratchpad(remoteSavedState ?? EMPTY_SCRATCHPAD))
-      const nextScratchpad = remoteSavedState ? normalizeScratchpad(remoteSavedState) : EMPTY_SCRATCHPAD
+      const serverBaseline = comparableTaskScratchpad(remoteSavedState ?? EMPTY_SCRATCHPAD)
+      const nextScratchpad = remoteSavedState ? normalizeScratchpad(getScheduleBTaskScratchpad(remoteSavedState)) : EMPTY_SCRATCHPAD
       setScratchpad(nextScratchpad)
       lastPersistedScratchpadRef.current = serverBaseline
       setHydratedKey(hydrationKey)
     } catch {
       setScratchpad(EMPTY_SCRATCHPAD)
-      lastPersistedScratchpadRef.current = comparableScratchpad(normalizeScratchpad(EMPTY_SCRATCHPAD))
+      lastPersistedScratchpadRef.current = comparableTaskScratchpad(EMPTY_SCRATCHPAD)
       setHydratedKey(hydrationKey)
     }
   }, [
@@ -1113,11 +1198,11 @@ export function useScheduleBScratchpad(
       return
     }
 
-    const serialized = comparableScratchpad(scratchpad)
+    const serialized = comparableTaskScratchpad(taskScratchpad)
     if (serialized === lastPersistedScratchpadRef.current) return
 
     const timeoutId = window.setTimeout(() => {
-      mutateScratchpad(scratchpad, {
+      mutateScratchpad(taskScratchpad, {
         onSuccess: () => {
           lastPersistedScratchpadRef.current = serialized
         },
@@ -1132,7 +1217,7 @@ export function useScheduleBScratchpad(
     normalizedTaskInstanceId,
     readOnly,
     saveFailed,
-    scratchpad,
+    taskScratchpad,
     taskInstanceQuery.isLoading,
   ])
 
@@ -1170,35 +1255,47 @@ export function useScheduleBScratchpad(
       Boolean(normalizedTaskInstanceId) &&
       (saveFailed ||
         isSavePending ||
-        (userEditedRef.current && comparableScratchpad(scratchpad) !== lastPersistedScratchpadRef.current)),
-    [isSavePending, normalizedTaskInstanceId, readOnly, saveFailed, scratchpad],
+        (userEditedRef.current && comparableTaskScratchpad(taskScratchpad) !== lastPersistedScratchpadRef.current)),
+    [isSavePending, normalizedTaskInstanceId, readOnly, saveFailed, taskScratchpad],
   )
 
   const toggleFlag = useCallback(
     (rowId: string) => {
-      updateScratchpad((current) => {
-        const existing = current.flags[rowId] ?? { flagged: false, note: '' }
+      const existing = scratchpad.flags[rowId] ?? { flagged: false, note: '' }
+      const nextFlag = { ...existing, flagged: !existing.flagged }
+      if (!rowId.startsWith('application-')) updateScratchpad((current) => {
         return {
           ...current,
-          flags: { ...current.flags, [rowId]: { ...existing, flagged: !existing.flagged } },
+          flags: { ...current.flags, [rowId]: nextFlag },
         }
       })
+      const product = products.find((item, index) => getApplicationProductRowId(item, index) === rowId)
+      if (product && !readOnly) reviewMutation.mutate({
+        id: String(product.ScheduleProductId),
+        attributes: { isFlagged: nextFlag.flagged, flaggedNote: nextFlag.note },
+      })
     },
-    [updateScratchpad],
+    [updateScratchpad, scratchpad.flags, products, readOnly, reviewMutation],
   )
 
   const updateFlagNote = useCallback(
     (rowId: string, note: string) => {
-      updateScratchpad((current) => ({
+      if (!rowId.startsWith('application-')) updateScratchpad((current) => ({
         ...current,
         flags: { ...current.flags, [rowId]: { flagged: true, note } },
       }))
+      const product = products.find((item, index) => getApplicationProductRowId(item, index) === rowId)
+      if (product && !readOnly) reviewMutation.mutate({
+        id: String(product.ScheduleProductId),
+        attributes: { isFlagged: true, flaggedNote: note },
+      })
     },
-    [updateScratchpad],
+    [updateScratchpad, products, readOnly, reviewMutation],
   )
 
   const toggleResolved = useCallback(
     (rowId: string) => {
+      if (rowId.startsWith('application-')) return
       updateScratchpad((current) => {
         const resolved = { ...current.resolved }
         if (resolved[rowId]) {
@@ -1229,7 +1326,7 @@ export function useScheduleBScratchpad(
 
   const setRowsResolved = useCallback(
     (rowIds: string[], isResolved: boolean) => {
-      const uniqueRowIds = Array.from(new Set(rowIds.filter(Boolean)))
+      const uniqueRowIds = Array.from(new Set(rowIds.filter((id) => id && !id.startsWith('application-'))))
       if (!uniqueRowIds.length) return
 
       updateScratchpad((current) => {
@@ -1258,31 +1355,39 @@ export function useScheduleBScratchpad(
 
   const toggleHalacha = useCallback(
     (rowId: string) => {
-      updateScratchpad((current) => {
-        const existing = current.halacha[rowId]
-        const nextEntry =
-          existing?.open
-            ? { ...existing, open: false, resolvedAt: localCalendarDate() }
-            : { open: true, note: existing?.note ?? '' }
-
+      const existing = scratchpad.halacha[rowId]
+      const nextEntry = existing?.open
+        ? { ...existing, open: false, resolvedAt: localCalendarDate() }
+        : { open: true, note: existing?.note ?? '' }
+      if (!rowId.startsWith('application-')) updateScratchpad((current) => {
         return {
           ...current,
           eirNeedsEntry: nextEntry.open ? true : current.eirNeedsEntry,
           halacha: { ...current.halacha, [rowId]: nextEntry },
         }
       })
+      const product = products.find((item, index) => getApplicationProductRowId(item, index) === rowId)
+      if (product && !readOnly) reviewMutation.mutate({
+        id: String(product.ScheduleProductId),
+        attributes: { isHalachic: nextEntry.open, halachicNote: nextEntry.note },
+      })
     },
-    [updateScratchpad],
+    [updateScratchpad, scratchpad.halacha, products, readOnly, reviewMutation],
   )
 
   const updateHalachaNote = useCallback(
     (rowId: string, note: string) => {
-      updateScratchpad((current) => ({
+      if (!rowId.startsWith('application-')) updateScratchpad((current) => ({
         ...current,
         halacha: { ...current.halacha, [rowId]: { ...current.halacha[rowId], open: true, note } },
       }))
+      const product = products.find((item, index) => getApplicationProductRowId(item, index) === rowId)
+      if (product && !readOnly) reviewMutation.mutate({
+        id: String(product.ScheduleProductId),
+        attributes: { isHalachic: true, halachicNote: note },
+      })
     },
-    [updateScratchpad],
+    [updateScratchpad, products, readOnly, reviewMutation],
   )
 
   const generateRound = useCallback(
@@ -1579,7 +1684,7 @@ export function useScheduleBScratchpad(
     scratchpad,
     isLoadingSavedState: Boolean(normalizedTaskInstanceId && taskInstanceQuery.isLoading),
     isSaving: saveScratchpadMutation.isPending,
-    saveError,
+    saveError: reviewSaveError || saveError,
     saveBlockedReason,
     saveFailed,
     hasUnsavedChanges,
