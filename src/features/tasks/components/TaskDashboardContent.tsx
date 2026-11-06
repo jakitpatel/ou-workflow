@@ -3,6 +3,7 @@ import { ActionModal } from '@/features/tasks/modals/ActionModal'
 import { ConditionalModal } from '@/features/tasks/modals/ConditionalModal'
 import { UploadNdaModal } from '@/features/tasks/modals/UploadNdaModal'
 import { CertificationStageDrawer } from '@/features/applications/components/CertificationStageDrawer'
+import { ExternalVisitWaitDialog } from '@/features/applications/components/ExternalVisitWaitDialog'
 import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer'
 import { InspectionAssignmentDrawer } from '@/features/applications/components/InspectionAssignmentDrawer'
 import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer'
@@ -37,6 +38,7 @@ export function TaskDashboardContent() {
     isFetchingNextPage,
     taskStats,
     isLoading,
+    isRefreshing,
     isError,
     error,
     showPlantHistory,
@@ -63,6 +65,8 @@ export function TaskDashboardContent() {
     setPrelimResolutionDrawerState,
     certificationDrawerState,
     setCertificationDrawerState,
+    externalWaitDialogState,
+    setExternalWaitDialogState,
     selectedAction,
     executeAction,
     completeTaskWithResult,
@@ -76,19 +80,6 @@ export function TaskDashboardContent() {
     handleLast,
     errorDialogRef,
   } = useTaskDashboardState()
-
-  if (isLoading) {
-    return (
-      <PageShell>
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
-            <p className="mt-4 text-gray-600">Loading tasks...</p>
-          </div>
-        </div>
-      </PageShell>
-    )
-  }
 
   if (isError) {
     return (
@@ -134,6 +125,8 @@ export function TaskDashboardContent() {
           hasNextPage={hasNextPage}
           sentinelRef={sentinelRef}
           isFetchingNextPage={isFetchingNextPage}
+          isLoading={isLoading}
+          isRefreshing={isRefreshing}
           handleApplicationTaskAction={handleTaskAction}
           handleShowPlantHistory={handleShowPlantHistory}
         />
@@ -217,6 +210,14 @@ export function TaskDashboardContent() {
         task={certificationDrawerState.task}
         onClose={() => setCertificationDrawerState({ open: false })}
       />
+      {externalWaitDialogState.open && externalWaitDialogState.task && externalWaitDialogState.applicant ? (
+        <ExternalVisitWaitDialog
+          task={externalWaitDialogState.task}
+          stage={externalWaitDialogState.stage ?? null}
+          applicant={externalWaitDialogState.applicant}
+          onClose={() => setExternalWaitDialogState({ open: false })}
+        />
+      ) : null}
     </>
   )
 }

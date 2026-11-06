@@ -14,7 +14,8 @@ import { detectRole, getAllTasks, getProgressStatus } from '@/lib/utils/taskHelp
 import type { Applicant } from '@/types/application'
 
 type Params = {
-  applicationType?: 'WORKFLOW' | 'SUBMISSION'
+  /** Which lists to refresh after a write; 'MIXED' (e.g. Tasks & Notifications) refreshes both. */
+  applicationType?: 'WORKFLOW' | 'SUBMISSION' | 'MIXED'
   applications: Applicant[]
   token?: string
   username?: string
@@ -178,13 +179,13 @@ export function findSelectedTaskAction(
 export function useTaskActions({ applications, token, username, onError, applicationType }: Params) {
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: applicationType !== 'SUBMISSION',
-    includePrelimLists: applicationType === 'SUBMISSION',
+    includePrelimLists: applicationType === 'SUBMISSION' || applicationType === 'MIXED',
     onError: (message) => onError?.(message),
   })
 
   const assignTaskMutation = useAssignTaskMutation({
     includeApplicationLists: applicationType !== 'SUBMISSION',
-    includePrelimLists: applicationType === 'SUBMISSION',
+    includePrelimLists: applicationType === 'SUBMISSION' || applicationType === 'MIXED',
     onError: (message) => onError?.(message),
   })
 

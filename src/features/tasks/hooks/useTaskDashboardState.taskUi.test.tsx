@@ -74,7 +74,7 @@ describe('Tasks & Notifications task actions (TASK_UI_ROUTES)', () => {
 
   it('completes a confirm task at once', () => {
     click(makeTask('CONFIRM', 'CONFIRMATION', 'Confirm payment'))
-    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({ taskId: '900', applicationId: 77 }))
+    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({ taskId: '900', applicationId: 77 }), expect.anything())
   })
 
   it('opens the contract drawer for a confirm task about a contract, without completing it', () => {
@@ -98,7 +98,7 @@ describe('Tasks & Notifications task actions (TASK_UI_ROUTES)', () => {
     act(() => {
       result.current.executeAction('tester', result.current.showConditionModal as never, 'Done')
     })
-    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({ taskId: '900', result: 'Done' }))
+    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({ taskId: '900', result: 'Done' }), expect.anything())
   })
 
   it('Application Review (condition / APPROVALOK) opens the condition modal, and Yes completes it', () => {
@@ -108,7 +108,23 @@ describe('Tasks & Notifications task actions (TASK_UI_ROUTES)', () => {
     act(() => {
       result.current.executeAction('tester', result.current.showConditionModal as never, 'YES')
     })
-    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({ taskId: '900', result: 'YES' }))
+    expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({ taskId: '900', result: 'YES' }), expect.anything())
+  })
+
+  it('ResolveCompany / ResolvePlant (category RESOLVECOMPANY / RESOLVEPLANT) open the Resolve drawer, not the condition modal', () => {
+    for (const [category, name] of [['RESOLVECOMPANY', 'ResolveCompany'], ['RESOLVEPLANT', 'ResolvePlant1']]) {
+      const task = makeTask('ACTION', category, name)
+      const result = click(task)
+      expect(result.current.prelimResolutionDrawerState).toEqual(expect.objectContaining({ open: true, task }))
+      expect(result.current.showConditionModal).toBeNull()
+    }
+  })
+
+  it('an external wait task (CONFIRM / EXTERNAL) opens the wait dialog with its stage and completes nothing', () => {
+    const result = click(makeTask('CONFIRM', 'EXTERNAL', 'Receive signed contract', { stageName: 'Contract' }))
+    expect(result.current.externalWaitDialogState).toEqual(expect.objectContaining({ open: true, stage: 'Contract' }))
+    expect(result.current.externalWaitDialogState.task?.TaskInstanceId).toBe(900)
+    expect(mocks.confirm).not.toHaveBeenCalled()
   })
 
   it('does nothing for a task no row matches', () => {

@@ -13,6 +13,7 @@ export type TaskUi =
   | 'inspection-assignment-drawer'
   | 'inspection-visit-drawer'
   | 'contract-drawer'
+  | 'external-wait-dialog'
   | 'confirm'
   | 'condition-modal'
   | 'upload-modal'
@@ -43,6 +44,8 @@ export const TASK_UI_ROUTES: readonly TaskUiRoute[] = [
   { ui: 'certification-drawer', types: [ACTION], categories: [C.CERTIFICATE] },
   // Intake company / plant resolution (ResolveCompany, ResolvePlant, ResolvePlant2, ...).
   { ui: 'prelim-resolution-drawer', types: [ACTION], categories: [C.INPUT], namePattern: /^(resolvecompany|resolveplant\d*)$/ },
+  // The intake tasks as the server sends them (category ResolveCompany / ResolvePlant), as Application Intake reads them.
+  { ui: 'prelim-resolution-drawer', types: [ACTION], categories: ['resolvecompany', 'resolveplant'] },
 
   { ui: 'schedule-a-drawer', types: [ACTION], categories: [C.SCHEDULEA, C.SCHEDULEA_ASSIGNING, C.SCHEDULEA_START] },
   { ui: 'schedule-a-drawer', types: CONDITION_TYPES, categories: [C.APPROVAL_SIGNOFF_A] },
@@ -52,6 +55,9 @@ export const TASK_UI_ROUTES: readonly TaskUiRoute[] = [
   { ui: 'inspection-invoice-drawer', types: [ACTION], categories: [C.INVOICE] },
   { ui: 'inspection-assignment-drawer', types: [ACTION], categories: [C.ASSIGNMENT1] },
   { ui: 'inspection-visit-drawer', types: [ACTION], categories: [C.VISIT] },
+
+  // Waiting for an external event (e.g. the visit in OU Direct): an informational dialog, nothing to submit.
+  { ui: 'external-wait-dialog', types: [CONFIRM], categories: ['external'] },
 
   { ui: 'contract-drawer', types: [ACTION], categories: [C.CONTRACT] },
   { ui: 'contract-drawer', types: [CONFIRM], categories: [C.CONFIRMATION], nameIncludes: 'contract' },

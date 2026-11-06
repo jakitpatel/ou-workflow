@@ -1,4 +1,4 @@
-import { keepPreviousData, useInfiniteQuery, useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { fetchUserByRole } from '@/features/applications/api'
 import { fetchApplicationTasks, fetchMentionUsers, fetchTaskRoles } from '@/features/tasks/api'
 import { useUser } from '@/context/UserContext'
@@ -6,6 +6,23 @@ import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { queryOptionDefaults } from '@/shared/api/queryOptions'
 
 const DEFAULT_TASKS_PAGE_LIMIT = 50
+
+// The list filters (Pending / 7 / 30 Days, search, AppId, role, page size) without the page.
+const listFiltersOf = (queryKey: readonly unknown[] | undefined) => {
+  const params = queryKey?.[2]
+  if (!params || typeof params !== 'object') return undefined
+  return JSON.stringify({ ...(params as Record<string, unknown>), page: undefined })
+}
+
+// Keep the previous rows on screen only while paging through the same list. A different view
+// (e.g. Pending -> 7 Days) must start empty, or the last view's tasks look like part of it.
+export const isSameTaskListOtherPage = (
+  previousKey: readonly unknown[] | undefined,
+  nextKey: readonly unknown[],
+) => {
+  const previous = listFiltersOf(previousKey)
+  return previous !== undefined && previous === listFiltersOf(nextKey)
+}
 
 export const getTasksQueryOptions = ({
   applicationId,
@@ -55,18 +72,21 @@ export function useTasks(
   const { token, role } = useUser()
   const taskRole = role && role.toUpperCase() !== 'ALL' ? role : undefined
 
+  const options = getTasksQueryOptions({
+    applicationId,
+    searchTerm,
+    daysFilter,
+    role: taskRole,
+    token,
+    page,
+    limit,
+  })
+
   return useQuery({
-    ...getTasksQueryOptions({
-      applicationId,
-      searchTerm,
-      daysFilter,
-      role: taskRole,
-      token,
-      page,
-      limit,
-    }),
+    ...options,
     enabled: enabled && !!token,
-    placeholderData: keepPreviousData,
+    placeholderData: (previousData, previousQuery) =>
+      isSameTaskListOtherPage(previousQuery?.queryKey, options.queryKey) ? previousData : undefined,
     staleTime: 0,
     refetchOnMount: 'always',
   })

@@ -9,139 +9,414 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as OuWorkflowIndexRouteImport } from './routes/ou-workflow/index'
-import { Route as OuWorkflowApplicationIdIndexRouteImport } from './routes/ou-workflow/$applicationId/index'
+import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as PublicRouteImport } from './routes/_public'
+import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as AuthedProfileRouteImport } from './routes/_authed/profile'
+import { Route as AuthedStatsRouteImport } from './routes/_authed/stats'
+import { Route as PublicCognitoDirectcallbackRouteImport } from './routes/_public/cognito-directcallback'
+import { Route as PublicCognitoLogoutRouteImport } from './routes/_public/cognito-logout'
+import { Route as PublicLoginRouteImport } from './routes/_public/login'
+import { Route as AuthedOuWorkflowIndexRouteImport } from './routes/_authed/ou-workflow/index'
+import { Route as AuthedOuWorkflowTasksDashboardRouteImport } from './routes/_authed/ou-workflow/tasks-dashboard'
+import { Route as AuthedOuWorkflowNcrcDashboardIndexRouteImport } from './routes/_authed/ou-workflow/ncrc-dashboard/index'
+import { Route as AuthedOuWorkflowPrelimDashboardIndexRouteImport } from './routes/_authed/ou-workflow/prelim-dashboard/index'
+import { Route as AuthedOuWorkflowRfrDashboardApplicationIdRouteImport } from './routes/_authed/ou-workflow/rfr-dashboard/$applicationId'
+import { Route as AuthedOuWorkflowTasksDashboardIndexRouteImport } from './routes/_authed/ou-workflow/tasks-dashboard/index'
+import { Route as AuthedOuWorkflowTasksDashboardApplicationIdRouteImport } from './routes/_authed/ou-workflow/tasks-dashboard/$applicationId'
+import { Route as AuthedOuWorkflowNcrcDashboardApplicationIdIndexRouteImport } from './routes/_authed/ou-workflow/ncrc-dashboard/$applicationId/index'
 
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+const AuthedRoute = AuthedRouteImport.update({
+  id: '/_authed',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const PublicRoute = PublicRouteImport.update({
+  id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
+const AuthedIndexRoute = AuthedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthedRoute,
 } as any)
-const OuWorkflowIndexRoute = OuWorkflowIndexRouteImport.update({
+const AuthedProfileRoute = AuthedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedStatsRoute = AuthedStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const PublicCognitoDirectcallbackRoute =
+  PublicCognitoDirectcallbackRouteImport.update({
+    id: '/cognito-directcallback',
+    path: '/cognito-directcallback',
+    getParentRoute: () => PublicRoute,
+  } as any)
+const PublicCognitoLogoutRoute = PublicCognitoLogoutRouteImport.update({
+  id: '/cognito-logout',
+  path: '/cognito-logout',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicLoginRoute = PublicLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => PublicRoute,
+} as any)
+const AuthedOuWorkflowIndexRoute = AuthedOuWorkflowIndexRouteImport.update({
   id: '/ou-workflow/',
   path: '/ou-workflow/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthedRoute,
 } as any)
-const OuWorkflowApplicationIdIndexRoute =
-  OuWorkflowApplicationIdIndexRouteImport.update({
-    id: '/ou-workflow/$applicationId/',
-    path: '/ou-workflow/$applicationId/',
-    getParentRoute: () => rootRouteImport,
+const AuthedOuWorkflowTasksDashboardRoute =
+  AuthedOuWorkflowTasksDashboardRouteImport.update({
+    id: '/ou-workflow/tasks-dashboard',
+    path: '/ou-workflow/tasks-dashboard',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedOuWorkflowNcrcDashboardIndexRoute =
+  AuthedOuWorkflowNcrcDashboardIndexRouteImport.update({
+    id: '/ou-workflow/ncrc-dashboard/',
+    path: '/ou-workflow/ncrc-dashboard/',
+    getParentRoute: () => AuthedRoute,
+  } as any).lazy(() =>
+    import('./routes/_authed/ou-workflow/ncrc-dashboard/index.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+const AuthedOuWorkflowPrelimDashboardIndexRoute =
+  AuthedOuWorkflowPrelimDashboardIndexRouteImport.update({
+    id: '/ou-workflow/prelim-dashboard/',
+    path: '/ou-workflow/prelim-dashboard/',
+    getParentRoute: () => AuthedRoute,
+  } as any).lazy(() =>
+    import('./routes/_authed/ou-workflow/prelim-dashboard/index.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+const AuthedOuWorkflowRfrDashboardApplicationIdRoute =
+  AuthedOuWorkflowRfrDashboardApplicationIdRouteImport.update({
+    id: '/ou-workflow/rfr-dashboard/$applicationId',
+    path: '/ou-workflow/rfr-dashboard/$applicationId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedOuWorkflowTasksDashboardIndexRoute =
+  AuthedOuWorkflowTasksDashboardIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthedOuWorkflowTasksDashboardRoute,
+  } as any).lazy(() =>
+    import('./routes/_authed/ou-workflow/tasks-dashboard/index.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+const AuthedOuWorkflowTasksDashboardApplicationIdRoute =
+  AuthedOuWorkflowTasksDashboardApplicationIdRouteImport.update({
+    id: '/$applicationId',
+    path: '/$applicationId',
+    getParentRoute: () => AuthedOuWorkflowTasksDashboardRoute,
+  } as any)
+const AuthedOuWorkflowNcrcDashboardApplicationIdIndexRoute =
+  AuthedOuWorkflowNcrcDashboardApplicationIdIndexRouteImport.update({
+    id: '/ou-workflow/ncrc-dashboard/$applicationId/',
+    path: '/ou-workflow/ncrc-dashboard/$applicationId/',
+    getParentRoute: () => AuthedRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
-  '/ou-workflow': typeof OuWorkflowIndexRoute
-  '/ou-workflow/$applicationId': typeof OuWorkflowApplicationIdIndexRoute
+  '/': typeof AuthedIndexRoute
+  '/profile': typeof AuthedProfileRoute
+  '/stats': typeof AuthedStatsRoute
+  '/cognito-directcallback': typeof PublicCognitoDirectcallbackRoute
+  '/cognito-logout': typeof PublicCognitoLogoutRoute
+  '/login': typeof PublicLoginRoute
+  '/ou-workflow/tasks-dashboard': typeof AuthedOuWorkflowTasksDashboardRouteWithChildren
+  '/ou-workflow/': typeof AuthedOuWorkflowIndexRoute
+  '/ou-workflow/rfr-dashboard/$applicationId': typeof AuthedOuWorkflowRfrDashboardApplicationIdRoute
+  '/ou-workflow/tasks-dashboard/$applicationId': typeof AuthedOuWorkflowTasksDashboardApplicationIdRoute
+  '/ou-workflow/ncrc-dashboard/': typeof AuthedOuWorkflowNcrcDashboardIndexRoute
+  '/ou-workflow/prelim-dashboard/': typeof AuthedOuWorkflowPrelimDashboardIndexRoute
+  '/ou-workflow/tasks-dashboard/': typeof AuthedOuWorkflowTasksDashboardIndexRoute
+  '/ou-workflow/ncrc-dashboard/$applicationId/': typeof AuthedOuWorkflowNcrcDashboardApplicationIdIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
-  '/ou-workflow': typeof OuWorkflowIndexRoute
-  '/ou-workflow/$applicationId': typeof OuWorkflowApplicationIdIndexRoute
+  '/': typeof AuthedIndexRoute
+  '/profile': typeof AuthedProfileRoute
+  '/stats': typeof AuthedStatsRoute
+  '/cognito-directcallback': typeof PublicCognitoDirectcallbackRoute
+  '/cognito-logout': typeof PublicCognitoLogoutRoute
+  '/login': typeof PublicLoginRoute
+  '/ou-workflow': typeof AuthedOuWorkflowIndexRoute
+  '/ou-workflow/rfr-dashboard/$applicationId': typeof AuthedOuWorkflowRfrDashboardApplicationIdRoute
+  '/ou-workflow/tasks-dashboard/$applicationId': typeof AuthedOuWorkflowTasksDashboardApplicationIdRoute
+  '/ou-workflow/ncrc-dashboard': typeof AuthedOuWorkflowNcrcDashboardIndexRoute
+  '/ou-workflow/prelim-dashboard': typeof AuthedOuWorkflowPrelimDashboardIndexRoute
+  '/ou-workflow/tasks-dashboard': typeof AuthedOuWorkflowTasksDashboardIndexRoute
+  '/ou-workflow/ncrc-dashboard/$applicationId': typeof AuthedOuWorkflowNcrcDashboardApplicationIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
-  '/ou-workflow/': typeof OuWorkflowIndexRoute
-  '/ou-workflow/$applicationId/': typeof OuWorkflowApplicationIdIndexRoute
+  '/_authed': typeof AuthedRouteWithChildren
+  '/_public': typeof PublicRouteWithChildren
+  '/_authed/profile': typeof AuthedProfileRoute
+  '/_authed/stats': typeof AuthedStatsRoute
+  '/_public/cognito-directcallback': typeof PublicCognitoDirectcallbackRoute
+  '/_public/cognito-logout': typeof PublicCognitoLogoutRoute
+  '/_public/login': typeof PublicLoginRoute
+  '/_authed/': typeof AuthedIndexRoute
+  '/_authed/ou-workflow/tasks-dashboard': typeof AuthedOuWorkflowTasksDashboardRouteWithChildren
+  '/_authed/ou-workflow/': typeof AuthedOuWorkflowIndexRoute
+  '/_authed/ou-workflow/rfr-dashboard/$applicationId': typeof AuthedOuWorkflowRfrDashboardApplicationIdRoute
+  '/_authed/ou-workflow/tasks-dashboard/$applicationId': typeof AuthedOuWorkflowTasksDashboardApplicationIdRoute
+  '/_authed/ou-workflow/ncrc-dashboard/': typeof AuthedOuWorkflowNcrcDashboardIndexRoute
+  '/_authed/ou-workflow/prelim-dashboard/': typeof AuthedOuWorkflowPrelimDashboardIndexRoute
+  '/_authed/ou-workflow/tasks-dashboard/': typeof AuthedOuWorkflowTasksDashboardIndexRoute
+  '/_authed/ou-workflow/ncrc-dashboard/$applicationId/': typeof AuthedOuWorkflowNcrcDashboardApplicationIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/login'
     | '/profile'
-    | '/ou-workflow'
-    | '/ou-workflow/$applicationId'
+    | '/stats'
+    | '/cognito-directcallback'
+    | '/cognito-logout'
+    | '/login'
+    | '/ou-workflow/tasks-dashboard'
+    | '/ou-workflow/'
+    | '/ou-workflow/rfr-dashboard/$applicationId'
+    | '/ou-workflow/tasks-dashboard/$applicationId'
+    | '/ou-workflow/ncrc-dashboard/'
+    | '/ou-workflow/prelim-dashboard/'
+    | '/ou-workflow/tasks-dashboard/'
+    | '/ou-workflow/ncrc-dashboard/$applicationId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/login'
     | '/profile'
+    | '/stats'
+    | '/cognito-directcallback'
+    | '/cognito-logout'
+    | '/login'
     | '/ou-workflow'
-    | '/ou-workflow/$applicationId'
+    | '/ou-workflow/rfr-dashboard/$applicationId'
+    | '/ou-workflow/tasks-dashboard/$applicationId'
+    | '/ou-workflow/ncrc-dashboard'
+    | '/ou-workflow/prelim-dashboard'
+    | '/ou-workflow/tasks-dashboard'
+    | '/ou-workflow/ncrc-dashboard/$applicationId'
   id:
     | '__root__'
-    | '/'
-    | '/login'
-    | '/profile'
-    | '/ou-workflow/'
-    | '/ou-workflow/$applicationId/'
+    | '/_authed'
+    | '/_public'
+    | '/_authed/profile'
+    | '/_authed/stats'
+    | '/_public/cognito-directcallback'
+    | '/_public/cognito-logout'
+    | '/_public/login'
+    | '/_authed/'
+    | '/_authed/ou-workflow/tasks-dashboard'
+    | '/_authed/ou-workflow/'
+    | '/_authed/ou-workflow/rfr-dashboard/$applicationId'
+    | '/_authed/ou-workflow/tasks-dashboard/$applicationId'
+    | '/_authed/ou-workflow/ncrc-dashboard/'
+    | '/_authed/ou-workflow/prelim-dashboard/'
+    | '/_authed/ou-workflow/tasks-dashboard/'
+    | '/_authed/ou-workflow/ncrc-dashboard/$applicationId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  LoginRoute: typeof LoginRoute
-  ProfileRoute: typeof ProfileRoute
-  OuWorkflowIndexRoute: typeof OuWorkflowIndexRoute
-  OuWorkflowApplicationIdIndexRoute: typeof OuWorkflowApplicationIdIndexRoute
+  AuthedRoute: typeof AuthedRouteWithChildren
+  PublicRoute: typeof PublicRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
+    '/_authed': {
+      id: '/_authed'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/_public': {
+      id: '/_public'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/_authed/': {
+      id: '/_authed/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthedIndexRouteImport
+      parentRoute: typeof AuthedRoute
     }
-    '/ou-workflow/': {
-      id: '/ou-workflow/'
+    '/_authed/profile': {
+      id: '/_authed/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthedProfileRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/stats': {
+      id: '/_authed/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof AuthedStatsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_public/cognito-directcallback': {
+      id: '/_public/cognito-directcallback'
+      path: '/cognito-directcallback'
+      fullPath: '/cognito-directcallback'
+      preLoaderRoute: typeof PublicCognitoDirectcallbackRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/cognito-logout': {
+      id: '/_public/cognito-logout'
+      path: '/cognito-logout'
+      fullPath: '/cognito-logout'
+      preLoaderRoute: typeof PublicCognitoLogoutRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/login': {
+      id: '/_public/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof PublicLoginRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_authed/ou-workflow/': {
+      id: '/_authed/ou-workflow/'
       path: '/ou-workflow'
-      fullPath: '/ou-workflow'
-      preLoaderRoute: typeof OuWorkflowIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      fullPath: '/ou-workflow/'
+      preLoaderRoute: typeof AuthedOuWorkflowIndexRouteImport
+      parentRoute: typeof AuthedRoute
     }
-    '/ou-workflow/$applicationId/': {
-      id: '/ou-workflow/$applicationId/'
-      path: '/ou-workflow/$applicationId'
-      fullPath: '/ou-workflow/$applicationId'
-      preLoaderRoute: typeof OuWorkflowApplicationIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authed/ou-workflow/tasks-dashboard': {
+      id: '/_authed/ou-workflow/tasks-dashboard'
+      path: '/ou-workflow/tasks-dashboard'
+      fullPath: '/ou-workflow/tasks-dashboard'
+      preLoaderRoute: typeof AuthedOuWorkflowTasksDashboardRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/ou-workflow/ncrc-dashboard/': {
+      id: '/_authed/ou-workflow/ncrc-dashboard/'
+      path: '/ou-workflow/ncrc-dashboard'
+      fullPath: '/ou-workflow/ncrc-dashboard/'
+      preLoaderRoute: typeof AuthedOuWorkflowNcrcDashboardIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/ou-workflow/prelim-dashboard/': {
+      id: '/_authed/ou-workflow/prelim-dashboard/'
+      path: '/ou-workflow/prelim-dashboard'
+      fullPath: '/ou-workflow/prelim-dashboard/'
+      preLoaderRoute: typeof AuthedOuWorkflowPrelimDashboardIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/ou-workflow/rfr-dashboard/$applicationId': {
+      id: '/_authed/ou-workflow/rfr-dashboard/$applicationId'
+      path: '/ou-workflow/rfr-dashboard/$applicationId'
+      fullPath: '/ou-workflow/rfr-dashboard/$applicationId'
+      preLoaderRoute: typeof AuthedOuWorkflowRfrDashboardApplicationIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/ou-workflow/tasks-dashboard/': {
+      id: '/_authed/ou-workflow/tasks-dashboard/'
+      path: '/'
+      fullPath: '/ou-workflow/tasks-dashboard/'
+      preLoaderRoute: typeof AuthedOuWorkflowTasksDashboardIndexRouteImport
+      parentRoute: typeof AuthedOuWorkflowTasksDashboardRoute
+    }
+    '/_authed/ou-workflow/tasks-dashboard/$applicationId': {
+      id: '/_authed/ou-workflow/tasks-dashboard/$applicationId'
+      path: '/$applicationId'
+      fullPath: '/ou-workflow/tasks-dashboard/$applicationId'
+      preLoaderRoute: typeof AuthedOuWorkflowTasksDashboardApplicationIdRouteImport
+      parentRoute: typeof AuthedOuWorkflowTasksDashboardRoute
+    }
+    '/_authed/ou-workflow/ncrc-dashboard/$applicationId/': {
+      id: '/_authed/ou-workflow/ncrc-dashboard/$applicationId/'
+      path: '/ou-workflow/ncrc-dashboard/$applicationId'
+      fullPath: '/ou-workflow/ncrc-dashboard/$applicationId/'
+      preLoaderRoute: typeof AuthedOuWorkflowNcrcDashboardApplicationIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
     }
   }
 }
 
+interface AuthedOuWorkflowTasksDashboardRouteChildren {
+  AuthedOuWorkflowTasksDashboardApplicationIdRoute: typeof AuthedOuWorkflowTasksDashboardApplicationIdRoute
+  AuthedOuWorkflowTasksDashboardIndexRoute: typeof AuthedOuWorkflowTasksDashboardIndexRoute
+}
+
+const AuthedOuWorkflowTasksDashboardRouteChildren: AuthedOuWorkflowTasksDashboardRouteChildren =
+  {
+    AuthedOuWorkflowTasksDashboardApplicationIdRoute:
+      AuthedOuWorkflowTasksDashboardApplicationIdRoute,
+    AuthedOuWorkflowTasksDashboardIndexRoute:
+      AuthedOuWorkflowTasksDashboardIndexRoute,
+  }
+
+const AuthedOuWorkflowTasksDashboardRouteWithChildren =
+  AuthedOuWorkflowTasksDashboardRoute._addFileChildren(
+    AuthedOuWorkflowTasksDashboardRouteChildren,
+  )
+
+interface AuthedRouteChildren {
+  AuthedProfileRoute: typeof AuthedProfileRoute
+  AuthedStatsRoute: typeof AuthedStatsRoute
+  AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedOuWorkflowTasksDashboardRoute: typeof AuthedOuWorkflowTasksDashboardRouteWithChildren
+  AuthedOuWorkflowIndexRoute: typeof AuthedOuWorkflowIndexRoute
+  AuthedOuWorkflowRfrDashboardApplicationIdRoute: typeof AuthedOuWorkflowRfrDashboardApplicationIdRoute
+  AuthedOuWorkflowNcrcDashboardIndexRoute: typeof AuthedOuWorkflowNcrcDashboardIndexRoute
+  AuthedOuWorkflowPrelimDashboardIndexRoute: typeof AuthedOuWorkflowPrelimDashboardIndexRoute
+  AuthedOuWorkflowNcrcDashboardApplicationIdIndexRoute: typeof AuthedOuWorkflowNcrcDashboardApplicationIdIndexRoute
+}
+
+const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedProfileRoute: AuthedProfileRoute,
+  AuthedStatsRoute: AuthedStatsRoute,
+  AuthedIndexRoute: AuthedIndexRoute,
+  AuthedOuWorkflowTasksDashboardRoute:
+    AuthedOuWorkflowTasksDashboardRouteWithChildren,
+  AuthedOuWorkflowIndexRoute: AuthedOuWorkflowIndexRoute,
+  AuthedOuWorkflowRfrDashboardApplicationIdRoute:
+    AuthedOuWorkflowRfrDashboardApplicationIdRoute,
+  AuthedOuWorkflowNcrcDashboardIndexRoute:
+    AuthedOuWorkflowNcrcDashboardIndexRoute,
+  AuthedOuWorkflowPrelimDashboardIndexRoute:
+    AuthedOuWorkflowPrelimDashboardIndexRoute,
+  AuthedOuWorkflowNcrcDashboardApplicationIdIndexRoute:
+    AuthedOuWorkflowNcrcDashboardApplicationIdIndexRoute,
+}
+
+const AuthedRouteWithChildren =
+  AuthedRoute._addFileChildren(AuthedRouteChildren)
+
+interface PublicRouteChildren {
+  PublicCognitoDirectcallbackRoute: typeof PublicCognitoDirectcallbackRoute
+  PublicCognitoLogoutRoute: typeof PublicCognitoLogoutRoute
+  PublicLoginRoute: typeof PublicLoginRoute
+}
+
+const PublicRouteChildren: PublicRouteChildren = {
+  PublicCognitoDirectcallbackRoute: PublicCognitoDirectcallbackRoute,
+  PublicCognitoLogoutRoute: PublicCognitoLogoutRoute,
+  PublicLoginRoute: PublicLoginRoute,
+}
+
+const PublicRouteWithChildren =
+  PublicRoute._addFileChildren(PublicRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  LoginRoute: LoginRoute,
-  ProfileRoute: ProfileRoute,
-  OuWorkflowIndexRoute: OuWorkflowIndexRoute,
-  OuWorkflowApplicationIdIndexRoute: OuWorkflowApplicationIdIndexRoute,
+  AuthedRoute: AuthedRouteWithChildren,
+  PublicRoute: PublicRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -100,7 +100,7 @@ export async function confirmTask({
   username,
   status,
   capacity,
-  overwrite,
+  override,
   includeCompletedBy = true,
   includeCompletionNotes = true,
 }: {
@@ -113,7 +113,8 @@ export async function confirmTask({
   username?: string
   status?: string
   capacity?: string
-  overwrite?: string | number
+  /** Sent as `override` (like assignRole and the status update), not `overwrite`. */
+  override?: string | number
   includeCompletedBy?: boolean
   includeCompletionNotes?: boolean
 }): Promise<unknown> {
@@ -164,8 +165,8 @@ export async function confirmTask({
     body.status = status
   }
 
-  if (overwrite !== undefined) {
-    body.overwrite = overwrite
+  if (override !== undefined) {
+    body.override = override
   }
 
   if (resultData) {

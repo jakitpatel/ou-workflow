@@ -118,10 +118,11 @@ describe('stage buttons send one complete_task per triple click (N4)', () => {
 })
 
 describe('auto-save after a persistent failure (N10)', () => {
-  // Schedule A flags are saved on the ingredient in the database, so its task-state edit is "ready".
+  // Schedule A and B flags are saved on the ingredient / product in the database, so the
+  // task-state edit used here is "ready".
   it.each([
     ['Schedule A', () => scheduleA('schedulea'), 'Mark Schedule A Ready'],
-    ['Schedule B', () => scheduleB('scheduleb'), 'Flag for follow-up'],
+    ['Schedule B', () => scheduleB('scheduleb'), 'Mark Schedule B Ready'],
   ])('%s stops after the failed save and offers a manual retry', async (_label, ui, editButton) => {
     mocks.patch = () => Promise.reject(Object.assign(new Error('Injected FIX-fe4a 500'), { status: 500 }))
     mount(ui())

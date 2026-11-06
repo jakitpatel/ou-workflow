@@ -1,19 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { buildRfrRecommendationCompletion, isRfrRecommendationTask, postRfrRecommendationMessage } from '../lib/rfrRecommendation'
 import { resolveTaskUi, type TaskUi } from '../lib/taskUiRoutes'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { type ErrorDialogRef } from '@/components/ErrorDialog'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { TASK_CATEGORIES, TASK_TYPES } from '@/lib/constants/task'
-import { detectRole, getProgressStatus, normalizeStatus } from '@/lib/utils/taskHelpers'
+import { normalizeStatus } from '@/lib/utils/taskHelpers'
 import type { Applicant, ApplicationTask, Task } from '@/types/application'
 import { useInfiniteTasks, useTasks } from '@/features/tasks/hooks/useTaskQueries'
 import { normalizeTaskApplicationId } from '@/features/tasks/model/applicationIdFilter'
-import {
-  useAssignTaskMutation,
-  useConfirmTaskMutation,
-} from '@/features/tasks/hooks/useTaskMutations'
+import { useTaskActions, type SelectedTaskAction as SharedSelectedTaskAction } from '@/features/tasks/hooks/useTaskActions'
 
 type TaskSearchParams = {
   applicationId?: number
@@ -24,10 +20,6 @@ type TaskSearchParams = {
 
 type DaysFilter = string | number
 
-type InspectionFeeChoice = {
-  inspectionNeeded: 'YES' | 'NO'
-  feeNeeded: 'YES' | 'NO'
-}
 
 type TaskDashboardAction = import('@/features/tasks/model/taskAction').TaskAction & {
   id?: string | number
@@ -96,6 +88,13 @@ type CertificationDrawerState = {
   open: boolean
   applicant?: Applicant
   task?: Task
+}
+
+type ExternalWaitDialogState = {
+  open: boolean
+  applicant?: Applicant
+  task?: Task
+  stage?: string | null
 }
 
 const DEBOUNCE_DELAY = 700
@@ -193,8 +192,6 @@ const buildInspectionApplicant = (
   }
 }
 
-const buildInspectionFeeResult = (value: InspectionFeeChoice): string =>
-  `{inspectionNeeded:${value.inspectionNeeded}, feeNeeded:${value.feeNeeded}}`
 
 const calculateTaskStats = (tasks: ApplicationTask[]) => {
   const normalizedTasks = tasks.map((task) => ({
@@ -217,6 +214,8 @@ const calculateTaskStats = (tasks: ApplicationTask[]) => {
   }
 }
 
+// Task rows here do not carry the application's assigned roles, so the capacity is derived from
+// the task's assignee (as this screen always did) and passed to the shared submit code.
 const resolveCapacity = (action: TaskDashboardAction, username?: string | null) => {
   const assigneeValue = action.assignee
 
@@ -273,6 +272,8 @@ export function useTaskDashboardState() {
     useState<PrelimResolutionDrawerState>({ open: false })
   const [certificationDrawerState, setCertificationDrawerState] =
     useState<CertificationDrawerState>({ open: false })
+  const [externalWaitDialogState, setExternalWaitDialogState] =
+    useState<ExternalWaitDialogState>({ open: false })
 
   const { username, role, roles, token } = useUser()
   const { paginationMode } = useAppPreferences()
@@ -428,121 +429,51 @@ export function useTaskDashboardState() {
     paginationMode,
   ])
 
-  const confirmTaskMutation = useConfirmTaskMutation({
-    includeApplicationLists: true,
+  // Submit through the same code as the Application Dashboard and Application Intake, so a task
+  // completes the same way on every screen (request, NCRC notification, success messages, refresh).
+  const sharedActions = useTaskActions({
+    applications: [],
+    token: token ?? undefined,
+    username: username ?? undefined,
     onError: (message) => errorDialogRef.current?.open(message),
+    // This list mixes intake (submission) and workflow application tasks.
+    applicationType: 'MIXED',
   })
 
-  const assignTaskMutation = useAssignTaskMutation({
-    includeApplicationLists: true,
-    onError: (message) => errorDialogRef.current?.open(message),
-  })
+  // What the shared code reads, from a Tasks & Notifications row.
+  const toSharedAction = useCallback(
+    (action: TaskDashboardAction) => ({
+      ...action,
+      taskCategory: action.taskCategory ?? action.TaskCategory,
+      TaskInstanceId: action.TaskInstanceId ?? action.taskInstanceId ?? action.id,
+      capacity: resolveCapacity(action, username),
+    }),
+    [username],
+  )
 
   const executeAction = useCallback(
     (
       assignee: string,
       action: TaskDashboardAction,
-      result?: string | InspectionFeeChoice,
+      result?: Parameters<typeof sharedActions.executeAction>[2],
       selectedActionArg?: SelectedTaskAction | null,
     ) => {
-      const taskType = action.taskType?.toLowerCase()
-      const taskCategory = (action.taskCategory || action.TaskCategory)?.toLowerCase()
-      const taskId = action.taskInstanceId ?? action.TaskInstanceId ?? action.id
-      const capacity = resolveCapacity(action, username)
-      const resolvedApplicationId =
-        selectedActionArg?.application?.applicationId ??
-        selectedActionArg?.application?.id ??
-        action.applicationId
-
-      const mutationParams = {
-        taskId: String(taskId ?? ''),
-        applicationId: resolvedApplicationId,
-        token: token ?? undefined,
-        username: username ?? undefined,
-        capacity,
+      const sharedAction = toSharedAction(action)
+      const selected = selectedActionArg ?? selectedAction
+      // The NCRC notification names the company; rows carry it as companyName.
+      const application = {
+        ...(selected?.application ?? {}),
+        applicationId: selected?.application?.applicationId ?? action.applicationId,
+        company: (action as { companyName?: string }).companyName ?? selected?.application?.company,
       }
-
-      if (isRfrRecommendationTask(action)) {
-        return confirmTaskMutation.mutateAsync({
-          ...mutationParams,
-          ...buildRfrRecommendationCompletion(assignee, typeof result === 'string' ? result : undefined),
-          rfrRecommendationUsername: assignee,
-        }).then(() => postRfrRecommendationMessage({
-          applicationId: resolvedApplicationId ?? '',
-          fullName: (typeof result === 'string' ? result.trim() : '') || assignee,
-          username: username ?? undefined,
-          token,
-          onError: (message) => errorDialogRef.current?.open(message),
-        }))
-      }
-
-      if (taskType === TASK_TYPES.CONFIRM && taskCategory === TASK_CATEGORIES.CONFIRMATION) {
-        confirmTaskMutation.mutate(mutationParams)
-        return
-      }
-
-      if (
-        (taskType === TASK_TYPES.CONDITIONAL || taskType === TASK_TYPES.CONDITION) &&
-        [TASK_CATEGORIES.APPROVAL, TASK_CATEGORIES.APPROVAL1, TASK_CATEGORIES.APPROVALOK].some((value) => value === taskCategory)
-      ) {
-        if (taskCategory === TASK_CATEGORIES.APPROVAL1 && result && typeof result === 'object') {
-          confirmTaskMutation.mutate({
-            ...mutationParams,
-            result: buildInspectionFeeResult(result),
-            resultData: buildInspectionFeeResult(result),
-          })
-          return
-        }
-
-        confirmTaskMutation.mutate({
-          ...mutationParams,
-          result: typeof result === 'string' ? result : undefined,
-        })
-        return
-      }
-
-      // Like the Application Dashboard: any action task other than an assignment that reaches the
-      // condition modal (selector, input, scheduling, or a category without its own UI) completes
-      // with the chosen result.
-      if (taskType === TASK_TYPES.ACTION && taskCategory !== TASK_CATEGORIES.ASSIGNMENT) {
-        confirmTaskMutation.mutate({
-          ...mutationParams,
-          result: typeof result === 'string' ? result : undefined,
-        })
-        return
-      }
-
-      if (taskType === TASK_TYPES.PROGRESS && taskCategory === TASK_CATEGORIES.PROGRESS_TASK) {
-        const stringResult = typeof result === 'string' ? result : ''
-        confirmTaskMutation.mutate({
-          ...mutationParams,
-          result: stringResult || undefined,
-          status: stringResult ? getProgressStatus(stringResult) : '',
-        })
-        return
-      }
-
-      if (taskType === TASK_TYPES.ACTION && taskCategory === TASK_CATEGORIES.ASSIGNMENT) {
-        const effectiveSelectedAction = selectedActionArg ?? selectedAction
-        const rawAppId =
-          effectiveSelectedAction?.application?.applicationId ??
-          effectiveSelectedAction?.application?.id ??
-          action.applicationId
-        const appId = rawAppId == null || Number.isNaN(Number(rawAppId)) ? null : Number(rawAppId)
-        const rawLabel = action.PreScript ?? effectiveSelectedAction?.action?.PreScript
-        const roleType = detectRole(rawLabel)
-
-        assignTaskMutation.mutate({
-          appId,
-          taskId: String(taskId ?? ''),
-          role: roleType,
-          assignee,
-          token: token ?? undefined,
-          capacity,
-        })
-      }
+      return sharedActions.executeAction(
+        assignee,
+        sharedAction as never,
+        result,
+        { application, action: sharedAction } as unknown as SharedSelectedTaskAction,
+      )
     },
-    [assignTaskMutation, confirmTaskMutation, selectedAction, token, username],
+    [selectedAction, sharedActions, toSharedAction],
   )
 
   const completeTaskWithResult = useCallback(
@@ -552,24 +483,15 @@ export function useTaskDashboardState() {
       status?: string,
       completionNotes?: string,
       applicationId?: string | number | null,
-    ) => {
-      const taskId = action.taskInstanceId ?? action.TaskInstanceId ?? action.id
-      const capacity = resolveCapacity(action, username)
-      const resolvedApplicationId =
-        applicationId ?? action.applicationId ?? action.application?.applicationId
-
-      confirmTaskMutation.mutate({
-        taskId: String(taskId ?? ''),
-        applicationId: resolvedApplicationId,
-        token: token ?? undefined,
-        username: username ?? undefined,
-        capacity,
+    ) =>
+      sharedActions.completeTaskWithResult(
+        toSharedAction(action) as never,
         result,
         status,
         completionNotes,
-      })
-    },
-    [confirmTaskMutation, token, username],
+        applicationId ?? action.applicationId ?? action.application?.applicationId,
+      ),
+    [sharedActions, toSharedAction],
   )
 
   const handleTaskAction = useCallback(
@@ -679,6 +601,15 @@ export function useTaskDashboardState() {
             taskName: action.taskName ?? action.name,
           })
         },
+        // Same dialog as the Application Dashboard's stage panel.
+        'external-wait-dialog': () => {
+          setExternalWaitDialogState({
+            open: true,
+            applicant: inspectionApplicant,
+            task: inspectionTask,
+            stage: application.stageName || application.laneName || null,
+          })
+        },
         confirm: () => executeAction('Confirmed', action, 'yes', nextSelectedAction),
         'condition-modal': () => setShowConditionModal(action),
         'upload-modal': () => setShowUploadModal(action),
@@ -727,6 +658,8 @@ export function useTaskDashboardState() {
     taskStats,
     isLoading:
       paginationMode === 'paged' ? pagedTasksQuery.isLoading : infiniteTasksQuery.isLoading,
+    // The previous page stays visible (dimmed) while the next page loads.
+    isRefreshing: paginationMode === 'paged' && pagedTasksQuery.isPlaceholderData,
     isError: paginationMode === 'paged' ? pagedTasksQuery.isError : infiniteTasksQuery.isError,
     error: paginationMode === 'paged' ? pagedTasksQuery.error : infiniteTasksQuery.error,
     isFetchingNextPage: infiniteTasksQuery.isFetchingNextPage,
@@ -754,6 +687,8 @@ export function useTaskDashboardState() {
     setPrelimResolutionDrawerState,
     certificationDrawerState,
     setCertificationDrawerState,
+    externalWaitDialogState,
+    setExternalWaitDialogState,
     selectedAction,
     executeAction,
     completeTaskWithResult,

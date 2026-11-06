@@ -12,6 +12,7 @@ import { NcrcDashboardControls } from '@/features/applications/components/NcrcDa
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
 import { ContractStageDrawer } from '@/features/applications/components/ContractStageDrawer'
 import { CertificationStageDrawer } from '@/features/applications/components/CertificationStageDrawer'
+import { ExternalVisitWaitDialog } from '@/features/applications/components/ExternalVisitWaitDialog'
 import { InspectionAssignmentDrawer } from '@/features/applications/components/InspectionAssignmentDrawer'
 import { InspectionInvoiceDrawer } from '@/features/applications/components/InspectionInvoiceDrawer'
 import { InspectionVisitDateDrawer } from '@/features/applications/components/InspectionVisitDateDrawer'
@@ -125,6 +126,12 @@ export function NcrcDashboardContent() {
     open: boolean
     applicant?: Applicant
     task?: Task
+  }>({ open: false })
+  const [externalWaitDialogState, setExternalWaitDialogState] = useState<{
+    open: boolean
+    applicant?: Applicant
+    task?: Task
+    stage?: string | null
   }>({ open: false })
   const [prelimResolutionDrawerState, setPrelimResolutionDrawerState] =
     useState<TaskPrelimResolutionDrawerState>({ open: false })
@@ -348,6 +355,12 @@ export function NcrcDashboardContent() {
           appVars: application.appvars ?? null,
           assignedRoles: application.assignedRoles,
         })
+      },
+      'external-wait-dialog': () => {
+        const stage = Object.entries(application.stages ?? {}).find(([, value]) =>
+          value?.tasks?.some((task) => task === action || String(task.TaskInstanceId) === String(action.TaskInstanceId)),
+        )?.[0] ?? null
+        setExternalWaitDialogState({ open: true, applicant: application, task: action, stage })
       },
       confirm: () => executeAction('Confirmed', action, 'yes', { application, action }),
       'condition-modal': () => setShowConditionModal(action),
@@ -587,6 +600,14 @@ export function NcrcDashboardContent() {
         task={certificationDrawerState.task}
         onClose={() => setCertificationDrawerState({ open: false })}
       />
+      {externalWaitDialogState.open && externalWaitDialogState.task && externalWaitDialogState.applicant ? (
+        <ExternalVisitWaitDialog
+          task={externalWaitDialogState.task}
+          stage={externalWaitDialogState.stage ?? null}
+          applicant={externalWaitDialogState.applicant}
+          onClose={() => setExternalWaitDialogState({ open: false })}
+        />
+      ) : null}
       <TaskPrelimResolutionDrawer
         {...prelimResolutionDrawerState}
         onClose={() => setPrelimResolutionDrawerState({ open: false })}

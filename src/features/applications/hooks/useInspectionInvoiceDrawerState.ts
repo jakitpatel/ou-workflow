@@ -1184,7 +1184,7 @@ export function useInspectionInvoiceDrawerState({
         await confirmTask({
           taskId: assignmentTaskId,
           applicationId: resolvedApplicationId,
-          overwrite: '1',
+          override: '1',
           status: 'PENDING',
           result: '',
           includeCompletedBy: false,

@@ -1,5 +1,4 @@
 import React, { memo } from 'react';
-import { Clock, AlertCircle } from 'lucide-react';
 import { getStatusConfig, getPriorityBorderClass } from '@/features/tasks/lib/taskDashboardPresentation';
 import type { ApplicationTask } from '@/types/application';
 import { useNavigate } from '@tanstack/react-router';
@@ -18,28 +17,9 @@ interface TaskRowProps {
     e: React.MouseEvent<HTMLElement>,
     application: ApplicationTask
   ) => void;
+  /** Opens the Application Details drawer; without it the plant name opens the full page. */
+  onOpenApplicationDetails?: (applicationId: string | number) => void;
 }
-
-const TimeElapsedBadge = memo(
-  ({ days, isOverdue }: { days: number; isOverdue?: boolean }) => {
-    if (days <= 0) return null;
-
-    const Icon = isOverdue ? AlertCircle : Clock;
-    const textColor = isOverdue ? 'text-red-600' : 'text-gray-700';
-    const label = isOverdue ? 'days overdue' : 'days elapsed';
-
-    return (
-      <div className={`flex items-center ${isOverdue ? 'mr-0' : 'mr-3'}`}>
-        <Icon className="w-4 h-4 opacity-60 group-hover:opacity-100" aria-hidden="true" />
-        <span className={`ml-1 font-medium ${textColor}`}>
-          {days} {label}
-        </span>
-      </div>
-    );
-  }
-);
-
-TimeElapsedBadge.displayName = 'TimeElapsedBadge';
 
 const PlantNameButton = memo(
   ({
@@ -165,15 +145,20 @@ export const TaskRow = memo(
     application,
     plantInfo,
     handleApplicationTaskAction,
+    onOpenApplicationDetails,
   }: TaskRowProps) => {
     const navigate = useNavigate();
     const applicationCount = plantInfo?.applications ?? 0;
     const daysPending = application?.daysPending ?? 0;
     const daysOverdue = application?.daysOverdue ?? 0;
-    const hasDaysInfo = daysPending > 0 || daysOverdue > 0;
 
     const handleTaskApplicationClick = () => {
       if (!application.applicationId) {
+        return;
+      }
+
+      if (onOpenApplicationDetails) {
+        onOpenApplicationDetails(application.applicationId);
         return;
       }
 
@@ -223,13 +208,23 @@ export const TaskRow = memo(
               onClick={handleTaskApplicationClick}
             />
 
-            {hasDaysInfo && (
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <TimeElapsedBadge days={daysPending} />
-                <TimeElapsedBadge days={daysOverdue} isOverdue />
-              </div>
-            )}
           </div>
+        </td>
+
+        <td className="px-6 py-4 align-top text-sm tabular-nums text-gray-700">
+          {daysPending > 0 ? daysPending : <span className="text-gray-400">-</span>}
+        </td>
+
+        <td className="px-6 py-4 align-top text-sm tabular-nums">
+          {daysOverdue > 0 ? (
+            <span className="font-medium text-red-600">{daysOverdue}</span>
+          ) : (
+            <span className="text-gray-400">-</span>
+          )}
+        </td>
+
+        <td className="px-6 py-4 align-top text-sm text-gray-700 tabular-nums">
+          {application.applicationId ?? <span className="text-gray-400">-</span>}
         </td>
 
         <td className="px-6 py-4 align-top">
