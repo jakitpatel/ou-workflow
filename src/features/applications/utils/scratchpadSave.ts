@@ -16,51 +16,6 @@ export const describeScratchpadSaveError = (error: unknown, scheduleName: string
   return error instanceof Error && error.message ? error.message : `Unable to save ${scheduleName} changes`
 }
 
-/**
- * Review marks the user changed that the server has not confirmed (a failed or interrupted save).
- * Kept beside the browser copy with the server state they were made on, so reopening the drawer
- * restores them instead of the older server state, until they are saved or the server changes.
- */
-const unsavedDraftKey = (storageKey: string) => `${storageKey}:unsaved`
-
-export function writeUnsavedDraft(storageKey: string, base: string, draft: object) {
-  try {
-    window.localStorage.setItem(unsavedDraftKey(storageKey), JSON.stringify({ base, draft }))
-  } catch {
-    // Storage full or blocked: the in-memory marks and the save-failed banner still apply.
-  }
-}
-
-/** Forget the unsaved draft once the server holds it (or unconditionally when `saved` is omitted). */
-export function clearUnsavedDraft(storageKey: string, saved?: object) {
-  try {
-    const key = unsavedDraftKey(storageKey)
-    if (saved !== undefined) {
-      const pending = JSON.parse(window.localStorage.getItem(key) ?? 'null') as { draft?: object } | null
-      if (!pending?.draft || comparableScratchpad(pending.draft) !== comparableScratchpad(saved)) return
-    }
-    window.localStorage.removeItem(key)
-  } catch {
-    // Unreadable entry: leave it; a mismatching base discards it on the next open.
-  }
-}
-
-/** The unsaved draft made on `serverBaseline`, or null. A draft made on older server state is discarded. */
-export function readUnsavedDraft<T extends object>(storageKey: string, serverBaseline: string): T | null {
-  try {
-    const key = unsavedDraftKey(storageKey)
-    const pending = JSON.parse(window.localStorage.getItem(key) ?? 'null') as { base?: unknown; draft?: unknown } | null
-    if (!pending) return null
-    if (pending.base !== serverBaseline || !pending.draft || typeof pending.draft !== 'object') {
-      window.localStorage.removeItem(key)
-      return null
-    }
-    return comparableScratchpad(pending.draft) === serverBaseline ? null : (pending.draft as T)
-  } catch {
-    return null
-  }
-}
-
 type RowKeyedMarks = {
   flags: Record<string, unknown>
   halacha: Record<string, unknown>

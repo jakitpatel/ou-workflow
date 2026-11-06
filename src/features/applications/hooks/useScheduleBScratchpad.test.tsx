@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeScratchpadKey, useScheduleBScratchpad } from './useScheduleBProducts'
+import { useScheduleBScratchpad } from './useScheduleBProducts'
 
 const mocks = vi.hoisted(() => ({
   username: 'iar.one',
@@ -35,12 +35,6 @@ describe('useScheduleBScratchpad', () => {
     mocks.patchTaskStatusDetails.mockReset().mockResolvedValue({})
   })
 
-  it('scopes the browser copy per user', () => {
-    expect(makeScratchpadKey(15, 'IAR.One')).toBe('schedule-b-products-v33:iar.one:15')
-    expect(makeScratchpadKey(15, 'iar.two')).not.toBe(makeScratchpadKey(15, 'iar.one'))
-  })
-
-  // fu-followups (F8 for Schedule B): once the ScheduleB task id is known (even a NEW task), a flag reaches the server.
   it('saves a flag to the ScheduleB task StatusDetails', async () => {
     const { result } = renderHook(() => useScheduleBScratchpad(15, 575), { wrapper })
     await waitFor(() => expect(mocks.fetchTaskInstance).toHaveBeenCalledWith({ taskId: '575', token: 'token' }))
@@ -56,25 +50,23 @@ describe('useScheduleBScratchpad', () => {
         }),
       { timeout: 2000 },
     )
-    expect(JSON.parse(window.localStorage.getItem(makeScratchpadKey(15, 'iar.one'))!).flags['app-1'].flagged).toBe(true)
+    expect(window.localStorage.length).toBe(0)
   })
 
-  it("does not adopt another user's marks from the old shared browser key", async () => {
-    window.localStorage.setItem(
-      'schedule-b-products-v32:15',
-      JSON.stringify({ username: 'someone.else', flags: { 'app-1': { flagged: true, note: 'theirs' } } }),
-    )
-    const { result } = renderHook(() => useScheduleBScratchpad(15, null), { wrapper })
-    await waitFor(() => expect(result.current.scratchpad.flags).toEqual({}))
-  })
+  it('never keeps Schedule B marks in the browser, and clears copies earlier versions left', async () => {
+    window.localStorage.setItem('schedule-b-products-v33:iar.one:15', JSON.stringify({ flags: { 'app-1': { flagged: true, note: 'old' } } }))
+    window.localStorage.setItem('schedule-b-products-v33:iar.one:15:unsaved', JSON.stringify({ base: '', draft: {} }))
+    window.localStorage.setItem('schedule-b-products-v32:15', JSON.stringify({ username: 'iar.one', flags: { 'app-1': { flagged: true, note: 'mine' } } }))
+    window.localStorage.setItem('unrelated-key', 'kept')
+    const { result } = renderHook(() => useScheduleBScratchpad(15, 569), { wrapper })
+    await waitFor(() => expect(result.current.isLoadingSavedState).toBe(false))
+    // Old browser copies are neither read nor kept.
+    expect(result.current.scratchpad.flags).toEqual({})
+    expect(Object.keys(window.localStorage)).toEqual(['unrelated-key'])
 
-  it('adopts marks the same user saved under the old shared browser key', async () => {
-    window.localStorage.setItem(
-      'schedule-b-products-v32:15',
-      JSON.stringify({ username: 'iar.one', flags: { 'app-1': { flagged: true, note: 'mine' } } }),
-    )
-    const { result } = renderHook(() => useScheduleBScratchpad(15, null), { wrapper })
-    await waitFor(() => expect(result.current.scratchpad.flags['app-1']?.note).toBe('mine'))
+    act(() => result.current.toggleFlag('app-1'))
+    await waitFor(() => expect(mocks.patchTaskStatusDetails).toHaveBeenCalled(), { timeout: 2000 })
+    expect(Object.keys(window.localStorage)).toEqual(['unrelated-key'])
   })
 
   it('reads marks back from a StatusDetails Python repr containing quotes', async () => {

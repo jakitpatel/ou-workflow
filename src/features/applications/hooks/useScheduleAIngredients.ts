@@ -32,12 +32,9 @@ import { parseStatusDetailsValue } from '@/features/applications/utils/pythonLit
 import { useScheduleAApplication } from './useScheduleAApplication'
 import { localCalendarDate } from '@/shared/utils/calendarDate'
 import {
-  clearUnsavedDraft,
   comparableScratchpad,
   describeScratchpadSaveError,
   migrateLegacyRowKeys,
-  readUnsavedDraft,
-  writeUnsavedDraft,
 } from '@/features/applications/utils/scratchpadSave'
 import type { ApplicationEmail, KashIngredient, ScheduleAIngredient, ScheduleAIngredientsResult } from '@/types/application'
 
@@ -559,27 +556,22 @@ export const getAssignedRoleValue = (
   return roleValue || fallback
 }
 
-// Scoped per user so reviewers sharing a browser never see or re-save each other's marks.
-export const makeScratchpadKey = (applicationId?: string | number, username?: string | null) =>
-  `schedule-a-ingredients-v33:${valueText(username).toLowerCase() || 'anonymous'}:${applicationId ?? 'unknown'}`
+// Schedule A review marks are kept only on the server (task saved state and the ingredients),
+// never in the browser. Browser copies written by earlier versions used keys with this prefix.
+const LEGACY_SCRATCHPAD_STORAGE_PREFIX = 'schedule-a-ingredients-'
 
-const makeLegacyScratchpadKey = (applicationId?: string | number) =>
-  `schedule-a-ingredients-v32:${applicationId ?? 'unknown'}`
-
-// The pre-v33 key was shared by every user; only adopt it when the current user wrote it.
-const readLocalScratchpad = (
-  storageKey: string,
-  applicationId: string | number,
-  username?: string | null,
-): Partial<ScheduleAScratchpad> | null => {
-  const localSaved = window.localStorage.getItem(storageKey)
-  if (localSaved) return JSON.parse(localSaved) as Partial<ScheduleAScratchpad>
-
-  const legacySaved = window.localStorage.getItem(makeLegacyScratchpadKey(applicationId))
-  if (!legacySaved) return null
-  const legacy = JSON.parse(legacySaved) as Partial<ScheduleAScratchpad>
-  const currentUser = valueText(username).toLowerCase()
-  return currentUser !== '' && valueText(legacy?.username).toLowerCase() === currentUser ? legacy : null
+/** Removes Schedule A data earlier versions left in localStorage (copies and unsaved drafts). */
+export function clearLegacyScheduleAStorage() {
+  try {
+    const keys: string[] = []
+    for (let index = 0; index < window.localStorage.length; index++) {
+      const key = window.localStorage.key(index)
+      if (key?.startsWith(LEGACY_SCRATCHPAD_STORAGE_PREFIX)) keys.push(key)
+    }
+    keys.forEach((key) => window.localStorage.removeItem(key))
+  } catch {
+    // Storage blocked or unavailable: nothing to clean up.
+  }
 }
 
 const normalizeScratchpad = (value: Partial<ScheduleAScratchpad> | null | undefined): ScheduleAScratchpad => ({
@@ -961,10 +953,9 @@ export function useScheduleAScratchpad(
     applicationId === undefined || applicationId === null ? undefined : String(applicationId)
   const normalizedTaskInstanceId =
     taskInstanceId === undefined || taskInstanceId === null ? '' : String(taskInstanceId).trim()
-  const storageKey = useMemo(
-    () => makeScratchpadKey(normalizedApplicationId, username),
-    [normalizedApplicationId, username],
-  )
+  useEffect(() => {
+    clearLegacyScheduleAStorage()
+  }, [])
   const [storedScratchpad, setScratchpad] = useState<ScheduleAScratchpad>(EMPTY_SCRATCHPAD)
   // Marks saved under the old name-based row keys are shown (and re-saved on the next edit) under stable ids.
   const persistableScratchpad = useMemo(
@@ -1020,8 +1011,6 @@ export function useScheduleAScratchpad(
   const remoteUnreadableRef = useRef(false)
   // Auto-save follows a real edit only: opening or re-hydrating must never write (w6b).
   const userEditedRef = useRef(false)
-  // Marks restored from this browser that the server doesn't have; sent only when the user asks.
-  const [hasUnsavedLocalDraft, setHasUnsavedLocalDraft] = useState(false)
   // Persistent reasons auto-save is off: saved state could not be read (never overwrite it), or
   // the last save failed (wait for an explicit retry instead of re-sending in a loop).
   const [saveBlockedReason, setSaveBlockedReason] = useState('')
@@ -1049,11 +1038,9 @@ export function useScheduleAScratchpad(
       setSaveFailed(true)
       setSaveError(describeScratchpadSaveError(error, 'Schedule A'))
     },
-    onSuccess: async (_data, savedScratchpad) => {
-      clearUnsavedDraft(storageKey, savedScratchpad)
+    onSuccess: async () => {
       setSaveFailed(false)
       setSaveError('')
-      setHasUnsavedLocalDraft(false)
       await refreshApplicationInListCaches({
         applicationId: normalizedApplicationId,
         queryClient,
@@ -1065,7 +1052,6 @@ export function useScheduleAScratchpad(
   useEffect(() => {
     if (!normalizedApplicationId) {
       userEditedRef.current = false
-      setHasUnsavedLocalDraft(false)
       setScratchpad(EMPTY_SCRATCHPAD)
       setHydratedKey('')
       return
@@ -1073,7 +1059,7 @@ export function useScheduleAScratchpad(
 
     if (normalizedTaskInstanceId && taskInstanceQuery.isLoading) return
 
-    // Hydrated state is the server's (or a browser draft); it only becomes a change once edited.
+    // Hydrated state is the server's; it only becomes a change once edited.
     userEditedRef.current = false
     try {
       const rawStatusDetails = initialStatusDetails ?? getTaskStatusDetails(taskInstanceQuery.data)
@@ -1095,29 +1081,15 @@ export function useScheduleAScratchpad(
       // What the server holds, or the default when nothing is stored: equal state is never saved.
       // Database-owned marks are ignored in saved state, browser copies and drafts.
       const serverBaseline = comparableTaskScratchpad(remoteSavedState ?? EMPTY_SCRATCHPAD)
-      // Changes whose save failed or was cut short by closing are kept until saved (NEW-3), as long
-      // as the server still holds the state they were made on.
-      const unsavedDraft =
-        remoteSavedState && !readOnly && !unreadable
-          ? readUnsavedDraft<Partial<ScheduleAScratchpad>>(storageKey, serverBaseline)
-          : null
-      const localSaved = remoteSavedState
-        ? unsavedDraft
-        : readLocalScratchpad(storageKey, normalizedApplicationId, username)
-      const nextScratchpad = localSaved
-        ? normalizeScratchpad(getScheduleATaskScratchpad(localSaved))
-        : remoteSavedState
-          ? normalizeScratchpad(getScheduleATaskScratchpad(remoteSavedState))
-          : EMPTY_SCRATCHPAD
+      const nextScratchpad = remoteSavedState
+        ? normalizeScratchpad(getScheduleATaskScratchpad(remoteSavedState))
+        : EMPTY_SCRATCHPAD
       setScratchpad(nextScratchpad)
-      if (!readOnly) window.localStorage.setItem(storageKey, JSON.stringify(getScheduleATaskScratchpad(nextScratchpad)))
       lastPersistedScratchpadRef.current = serverBaseline
-      setHasUnsavedLocalDraft(!readOnly && comparableTaskScratchpad(nextScratchpad) !== serverBaseline)
       setHydratedKey(hydrationKey)
     } catch {
       setScratchpad(EMPTY_SCRATCHPAD)
       lastPersistedScratchpadRef.current = comparableTaskScratchpad(EMPTY_SCRATCHPAD)
-      setHasUnsavedLocalDraft(false)
       setHydratedKey(hydrationKey)
     }
   }, [
@@ -1126,7 +1098,6 @@ export function useScheduleAScratchpad(
     normalizedApplicationId,
     normalizedTaskInstanceId,
     readOnly,
-    storageKey,
     taskInstanceQuery.data,
     taskInstanceQuery.isError,
     taskInstanceQuery.isLoading,
@@ -1163,8 +1134,6 @@ export function useScheduleAScratchpad(
   }, [
     hydratedKey,
     hydrationKey,
-    // Re-runs the effect when "Save now" clears a restored browser draft.
-    hasUnsavedLocalDraft,
     mutateScratchpad,
     normalizedTaskInstanceId,
     readOnly,
@@ -1174,13 +1143,11 @@ export function useScheduleAScratchpad(
   ])
 
   // Retry is explicit: clearing the failure lets the auto-save effect send the latest state once.
-  // It is also how a restored browser draft is saved, so it counts as the user's change.
   const retrySave = useCallback(() => {
     if (readOnly || remoteUnreadableRef.current) return
     userEditedRef.current = true
     setSaveError('')
     setSaveFailed(false)
-    setHasUnsavedLocalDraft(false)
   }, [readOnly])
 
   const updateScratchpad = useCallback(
@@ -1201,18 +1168,10 @@ export function useScheduleAScratchpad(
         if (JSON.stringify(getScheduleATaskScratchpad(next)) !== JSON.stringify(getScheduleATaskScratchpad(current))) {
           next.username = valueText(username) || undefined
         }
-        if (normalizedApplicationId) {
-          const nextTaskScratchpad = getScheduleATaskScratchpad(next)
-          window.localStorage.setItem(storageKey, JSON.stringify(nextTaskScratchpad))
-          // Until the server confirms it, this edit survives closing the drawer.
-          if (normalizedTaskInstanceId) {
-            writeUnsavedDraft(storageKey, lastPersistedScratchpadRef.current, nextTaskScratchpad)
-          }
-        }
         return next
       })
     },
-    [ingredients, normalizedApplicationId, normalizedTaskInstanceId, readOnly, storageKey, username],
+    [ingredients, readOnly, username],
   )
 
   // For close prompts: an edit not yet confirmed by the server (failed, in flight, or still debouncing).
@@ -1652,7 +1611,6 @@ export function useScheduleAScratchpad(
     saveError: reviewSaveError || saveError,
     saveBlockedReason,
     saveFailed,
-    hasUnsavedLocalDraft,
     hasUnsavedChanges,
     retrySave,
     toggleFlag,

@@ -144,64 +144,24 @@ describe.each([
     await waitFor(() => expect(result.current.scratchpad.flags['application-15-188']?.note).toBe('visible'))
   })
 
-  it('NEW-3: a failed save survives closing; reopening restores it with "Save now" and writes nothing', async () => {
+  it('an edit that was not saved is not restored from the browser on reopen', async () => {
     const server = saved({ a: { flagged: true, note: 'server' } })
     mocks.patchTaskStatusDetails.mockRejectedValue(Object.assign(new Error('Injected 500'), { status: 500 }))
     const first = renderHook(() => useScratchpad(15, 569, server), { wrapper })
     await waitFor(() => expect(first.result.current.scratchpad.flags.a?.note).toBe('server'))
-    expect(first.result.current.hasUnsavedChanges()).toBe(false)
-
     act(() => first.result.current.toggleFlag('b'))
     await waitFor(() => expect(first.result.current.saveFailed).toBe(true), { timeout: 2000 })
+    // The close prompt still warns while the edit is unsaved.
     expect(first.result.current.hasUnsavedChanges()).toBe(true)
     first.unmount()
 
     mocks.patchTaskStatusDetails.mockReset().mockResolvedValue({})
     const second = renderHook(() => useScratchpad(15, 569, server), { wrapper })
-    await waitFor(() => expect(second.result.current.scratchpad.flags.b?.flagged).toBe(true))
-    expect(second.result.current.hasUnsavedLocalDraft).toBe(true)
+    await waitFor(() => expect(second.result.current.scratchpad.flags.a?.note).toBe('server'))
+    expect(second.result.current.scratchpad.flags.b).toBeUndefined()
     await wait(900)
     expect(mocks.patchTaskStatusDetails).not.toHaveBeenCalled()
-
-    act(() => second.result.current.retrySave())
-    await waitFor(() => expect(mocks.patchTaskStatusDetails).toHaveBeenCalledTimes(1), { timeout: 2000 })
-    expect(lastPatchedFlags()).toEqual({ a: { flagged: true, note: 'server' }, b: { flagged: true, note: '' } })
-    await waitFor(() => expect(second.result.current.hasUnsavedLocalDraft).toBe(false))
-    second.unmount()
-
-    // Saved: the server now holds it, and the browser no longer offers it as unsaved.
-    const savedNow = saved({ a: { flagged: true, note: 'server' }, b: { flagged: true, note: '' } })
-    const third = renderHook(() => useScratchpad(15, 569, savedNow), { wrapper })
-    await waitFor(() => expect(third.result.current.scratchpad.flags.b?.flagged).toBe(true))
-    expect(third.result.current.hasUnsavedLocalDraft).toBe(false)
-  }, 10000)
-
-  it('NEW-3: an edit closed before the auto-save ran is restored on reopen', async () => {
-    const server = saved({ a: { flagged: true, note: 'server' } })
-    const first = renderHook(() => useScratchpad(15, 569, server), { wrapper })
-    await waitFor(() => expect(first.result.current.scratchpad.flags.a?.note).toBe('server'))
-    act(() => first.result.current.updateFlagNote('a', 'typed, then closed'))
-    expect(first.result.current.hasUnsavedChanges()).toBe(true)
-    first.unmount() // within the 600 ms debounce: nothing was sent
-    expect(mocks.patchTaskStatusDetails).not.toHaveBeenCalled()
-
-    const second = renderHook(() => useScratchpad(15, 569, server), { wrapper })
-    await waitFor(() => expect(second.result.current.scratchpad.flags.a?.note).toBe('typed, then closed'))
-    expect(second.result.current.hasUnsavedLocalDraft).toBe(true)
-  })
-
-  it('NEW-3: an unsaved draft made on older server state is discarded once the server changed', async () => {
-    mocks.patchTaskStatusDetails.mockRejectedValue(new Error('down'))
-    const first = renderHook(() => useScratchpad(15, 569, saved({ a: { flagged: true, note: 'v1' } })), { wrapper })
-    await waitFor(() => expect(first.result.current.scratchpad.flags.a?.note).toBe('v1'))
-    act(() => first.result.current.toggleFlag('b'))
-    await waitFor(() => expect(first.result.current.saveFailed).toBe(true), { timeout: 2000 })
-    first.unmount()
-
-    const second = renderHook(() => useScratchpad(15, 569, saved({ a: { flagged: true, note: 'v2 by someone else' } })), { wrapper })
-    await waitFor(() => expect(second.result.current.scratchpad.flags.a?.note).toBe('v2 by someone else'))
-    expect(second.result.current.scratchpad.flags.b).toBeUndefined()
-    expect(second.result.current.hasUnsavedLocalDraft).toBe(false)
+    expect(window.localStorage.length).toBe(0)
   })
 })
 
@@ -239,66 +199,23 @@ describe('useScheduleAScratchpad (task-owned marks)', () => {
     await waitFor(() => expect(result.current.scratchpad.attachments['application-15-188']).toBe('visible.pdf'))
   })
 
-  it('NEW-3: a failed save survives closing; reopening restores it with "Save now" and writes nothing', async () => {
+  it('an edit that was not saved is not restored from the browser on reopen', async () => {
     const server = savedA({ eirNeedsEntry: true })
     mocks.patchTaskStatusDetails.mockRejectedValue(Object.assign(new Error('Injected 500'), { status: 500 }))
     const first = renderHook(() => useScheduleAScratchpad(15, 569, server), { wrapper })
     await waitFor(() => expect(first.result.current.scratchpad.eirNeedsEntry).toBe(true))
-    expect(first.result.current.hasUnsavedChanges()).toBe(false)
-
     act(() => first.result.current.markEirReceived())
     await waitFor(() => expect(first.result.current.saveFailed).toBe(true), { timeout: 2000 })
+    // The close prompt still warns while the edit is unsaved.
     expect(first.result.current.hasUnsavedChanges()).toBe(true)
     first.unmount()
 
     mocks.patchTaskStatusDetails.mockReset().mockResolvedValue({})
     const second = renderHook(() => useScheduleAScratchpad(15, 569, server), { wrapper })
-    await waitFor(() => expect(second.result.current.scratchpad.eirReceived).toBe(true))
-    expect(second.result.current.hasUnsavedLocalDraft).toBe(true)
+    await waitFor(() => expect(second.result.current.scratchpad.eirNeedsEntry).toBe(true))
+    expect(second.result.current.scratchpad.eirReceived).toBe(false)
     await wait(900)
     expect(mocks.patchTaskStatusDetails).not.toHaveBeenCalled()
-
-    act(() => second.result.current.retrySave())
-    await waitFor(() => expect(mocks.patchTaskStatusDetails).toHaveBeenCalledTimes(1), { timeout: 2000 })
-    expect(lastPatchedState()).toEqual(expect.objectContaining({ eirNeedsEntry: true, eirReceived: true }))
-    await waitFor(() => expect(second.result.current.hasUnsavedLocalDraft).toBe(false))
-    second.unmount()
-
-    // Saved: the server now holds it, and the browser no longer offers it as unsaved.
-    const savedNow = savedA({ eirNeedsEntry: true, eirReceived: true })
-    const third = renderHook(() => useScheduleAScratchpad(15, 569, savedNow), { wrapper })
-    await waitFor(() => expect(third.result.current.scratchpad.eirReceived).toBe(true))
-    expect(third.result.current.hasUnsavedLocalDraft).toBe(false)
-  }, 10000)
-
-  it('NEW-3: an edit closed before the auto-save ran is restored on reopen', async () => {
-    const server = savedA({ eirNeedsEntry: true })
-    const first = renderHook(() => useScheduleAScratchpad(15, 569, server), { wrapper })
-    await waitFor(() => expect(first.result.current.scratchpad.eirNeedsEntry).toBe(true))
-    act(() => first.result.current.markEirReceived())
-    expect(first.result.current.hasUnsavedChanges()).toBe(true)
-    first.unmount() // within the 600 ms debounce: nothing was sent
-    expect(mocks.patchTaskStatusDetails).not.toHaveBeenCalled()
-
-    const second = renderHook(() => useScheduleAScratchpad(15, 569, server), { wrapper })
-    await waitFor(() => expect(second.result.current.scratchpad.eirReceived).toBe(true))
-    expect(second.result.current.hasUnsavedLocalDraft).toBe(true)
-  })
-
-  it('NEW-3: an unsaved draft made on older server state is discarded once the server changed', async () => {
-    mocks.patchTaskStatusDetails.mockRejectedValue(new Error('down'))
-    const first = renderHook(() => useScheduleAScratchpad(15, 569, savedA({ scheduleAReadyBy: 'v1' })), { wrapper })
-    await waitFor(() => expect(first.result.current.scratchpad.scheduleAReadyBy).toBe('v1'))
-    act(() => first.result.current.markEirReceived())
-    await waitFor(() => expect(first.result.current.saveFailed).toBe(true), { timeout: 2000 })
-    first.unmount()
-
-    const second = renderHook(
-      () => useScheduleAScratchpad(15, 569, savedA({ scheduleAReadyBy: 'v2 by someone else' })),
-      { wrapper },
-    )
-    await waitFor(() => expect(second.result.current.scratchpad.scheduleAReadyBy).toBe('v2 by someone else'))
-    expect(second.result.current.scratchpad.eirReceived).toBe(false)
-    expect(second.result.current.hasUnsavedLocalDraft).toBe(false)
+    expect(window.localStorage.length).toBe(0)
   })
 })

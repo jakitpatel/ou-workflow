@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeScratchpadKey, useScheduleAScratchpad } from './useScheduleAIngredients'
+import { useScheduleAScratchpad } from './useScheduleAIngredients'
 
 const mocks = vi.hoisted(() => ({
   username: 'iar.one',
@@ -37,12 +37,6 @@ describe('useScheduleAScratchpad', () => {
     mocks.patchTaskStatusDetails.mockReset().mockResolvedValue({})
   })
 
-  it('scopes the browser copy per user', () => {
-    expect(makeScratchpadKey(15, 'IAR.One')).toBe('schedule-a-ingredients-v33:iar.one:15')
-    expect(makeScratchpadKey(15, 'iar.two')).not.toBe(makeScratchpadKey(15, 'iar.one'))
-  })
-
-  // Audit F8: once the ScheduleA task id is known (even a NEW task), a task-owned edit reaches the server.
   it('saves a task-owned edit to the ScheduleA task StatusDetails, without database-owned marks', async () => {
     const { result } = renderHook(() => useScheduleAScratchpad(15, 569), { wrapper })
     await waitFor(() => expect(mocks.fetchTaskInstance).toHaveBeenCalledWith({ taskId: '569', token: 'token' }))
@@ -62,30 +56,22 @@ describe('useScheduleAScratchpad', () => {
     expect(savedState).not.toHaveProperty('flags')
     expect(savedState).not.toHaveProperty('halacha')
     expect(savedState).not.toHaveProperty('resolved')
-    const browserCopy = JSON.parse(window.localStorage.getItem(makeScratchpadKey(15, 'iar.one'))!)
-    expect(browserCopy.eirReceived).toBe(true)
-    expect(browserCopy).not.toHaveProperty('flags')
   })
 
-  it("does not adopt another user's marks from the old shared browser key", async () => {
-    window.localStorage.setItem(
-      'schedule-a-ingredients-v32:15',
-      JSON.stringify({ username: 'someone.else', eirReceived: true }),
-    )
-    const { result } = renderHook(() => useScheduleAScratchpad(15, null), { wrapper })
+  it('never keeps Schedule A marks in the browser, and clears copies earlier versions left', async () => {
+    window.localStorage.setItem('schedule-a-ingredients-v33:iar.one:15', JSON.stringify({ eirReceived: true }))
+    window.localStorage.setItem('schedule-a-ingredients-v33:iar.one:15:unsaved', JSON.stringify({ base: '', draft: {} }))
+    window.localStorage.setItem('schedule-a-ingredients-v32:15', JSON.stringify({ username: 'iar.one', eirReceived: true }))
+    window.localStorage.setItem('unrelated-key', 'kept')
+    const { result } = renderHook(() => useScheduleAScratchpad(15, 569), { wrapper })
     await waitFor(() => expect(result.current.isLoadingSavedState).toBe(false))
-    await new Promise((resolve) => setTimeout(resolve, 50))
+    // Old browser copies are neither read nor kept.
     expect(result.current.scratchpad.eirReceived).toBe(false)
-  })
+    expect(Object.keys(window.localStorage)).toEqual(['unrelated-key'])
 
-  it('adopts marks the same user saved under the old shared browser key, ignoring old flags', async () => {
-    window.localStorage.setItem(
-      'schedule-a-ingredients-v32:15',
-      JSON.stringify({ username: 'iar.one', eirReceived: true, flags: { 'app-1': { flagged: true, note: 'mine' } } }),
-    )
-    const { result } = renderHook(() => useScheduleAScratchpad(15, null), { wrapper })
-    await waitFor(() => expect(result.current.scratchpad.eirReceived).toBe(true))
-    expect(result.current.scratchpad.flags).toEqual({})
+    act(() => result.current.markEirReceived())
+    await waitFor(() => expect(mocks.patchTaskStatusDetails).toHaveBeenCalled(), { timeout: 2000 })
+    expect(Object.keys(window.localStorage)).toEqual(['unrelated-key'])
   })
 
   it('reads marks back from a StatusDetails Python repr containing quotes', async () => {

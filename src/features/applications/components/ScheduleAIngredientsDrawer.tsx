@@ -1302,7 +1302,6 @@ export function ScheduleAIngredientsDrawer({
               <ScheduleSaveStatusBanner
                 blockedReason={scratchpadApi.saveBlockedReason}
                 saveFailed={scratchpadApi.saveFailed}
-                unsavedDraft={scratchpadApi.hasUnsavedLocalDraft}
                 saveError={scratchpadApi.saveError}
                 isSaving={scratchpadApi.isSaving}
                 onRetry={scratchpadApi.retrySave}
