@@ -1,3 +1,4 @@
+import { selectEmailMessages } from '@/features/applications/lib/communicationMessages'
 import { removeContractPackageFooter } from '../lib/contractCoverLetter'
 import { useCommunicationMessageEvents } from './useCommunicationMessageEvents'
 import { useState } from 'react'
@@ -211,6 +212,7 @@ export function useContractCommunicationMessages({
         taskInstanceId: normalizedTaskInstanceId,
         token: token ?? undefined,
       }),
+    select: selectEmailMessages,
     enabled: !!token && !!normalizedApplicationId,
     ...queryOptionDefaults.applicationScheduleAIngredients,
   })

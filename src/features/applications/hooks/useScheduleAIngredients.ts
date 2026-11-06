@@ -1,3 +1,4 @@
+import { selectEmailMessages } from '@/features/applications/lib/communicationMessages'
 import { useCommunicationMessageEvents } from './useCommunicationMessageEvents'
 import {
   patchScheduleIngredientFollowUp,
@@ -781,6 +782,7 @@ export function useScheduleACommunicationMessages({
         //messageType: 'Email',
         token: token ?? undefined,
       }),
+    select: selectEmailMessages,
     enabled: !!token && !!normalizedApplicationId,
     ...queryOptionDefaults.applicationScheduleAIngredients,
   })

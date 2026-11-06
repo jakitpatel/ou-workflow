@@ -11,6 +11,20 @@ const getFileExtension = (fileName?: string, filePath?: string) => {
   return value.includes('.') ? value.split('.').pop()?.toLowerCase() ?? '' : '';
 };
 
+/** When a file was uploaded, from whichever casing the backend sent; '' when unknown. */
+export const getFileUploadedDate = (file: { UploadedDate?: unknown; uploadedDate?: unknown; uploadDate?: unknown }) => {
+  const raw = file.UploadedDate ?? file.uploadedDate ?? file.uploadDate
+  const text = raw == null ? '' : String(raw).trim()
+  if (!text || text.toUpperCase() === 'NULL') return ''
+  // Backend timestamps may use a space instead of 'T'; a value without a zone is local time.
+  const parsed = new Date(/^\d{4}-\d{2}-\d{2} \d/.test(text) ? text.replace(' ', 'T') : text)
+  if (Number.isNaN(parsed.getTime())) return text
+  const hasTime = /\d{1,2}:\d{2}/.test(text)
+  return parsed.toLocaleString(undefined, hasTime
+    ? { dateStyle: 'medium', timeStyle: 'short' }
+    : { dateStyle: 'medium' })
+}
+
 const escapeHtml = (value: unknown) => String(value ?? '')
   .replaceAll('&', '&amp;')
   .replaceAll('<', '&lt;')
@@ -210,7 +224,8 @@ export default function FilesList({ application, applicationId, showProcessingSt
 
               const rightMeta = [
                 { label: 'Tag', value: file.Tag ?? file.tag },
-                { label: 'CreatedBy', value: file.CreatedBy ?? file.createdBy }
+                { label: 'CreatedBy', value: file.CreatedBy ?? file.createdBy },
+                { label: 'UploadedDate', value: getFileUploadedDate(file as Parameters<typeof getFileUploadedDate>[0]) }
               ].filter(item => hasValue(item.value));
 
               return (

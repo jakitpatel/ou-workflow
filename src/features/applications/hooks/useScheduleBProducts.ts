@@ -1,3 +1,4 @@
+import { selectEmailMessages } from '@/features/applications/lib/communicationMessages'
 import { useCommunicationMessageEvents } from './useCommunicationMessageEvents'
 import { withImpliedBcc } from '@/shared/email/impliedBcc'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
@@ -862,6 +863,7 @@ export function useScheduleBCommunicationMessages({
         //messageType: 'Email',
         token: token ?? undefined,
       }),
+    select: selectEmailMessages,
     enabled: !!token && !!normalizedApplicationId,
     ...queryOptionDefaults.applicationScheduleBProducts,
   })
