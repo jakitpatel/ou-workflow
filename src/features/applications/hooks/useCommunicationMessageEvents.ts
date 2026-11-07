@@ -5,23 +5,22 @@ import { fetchApplicationMessages } from '@/features/applications/api'
 // Drawers pass no application ID while closed, disabling their subscription.
 export function useCommunicationMessageEvents({
   applicationId,
-  taskInstanceId,
   token,
   queryKey,
 }: {
   applicationId?: string
-  taskInstanceId?: string
   token?: string | null
   queryKey: QueryKey
 }) {
   const queryClient = useQueryClient()
-  const enabled = Boolean(token && applicationId && taskInstanceId)
+  const enabled = Boolean(token && applicationId)
 
   useSSE((message) => {
     if (!enabled || message.type !== 'refresh_messages') return
     if (message.data?.application_type !== 'WORKFLOW') return
-    if (String(message.data.ApplicationId ?? '') !== applicationId ||
-        String(message.data.TaskInstanceId ?? '') !== taskInstanceId) return
+    // Any message for this application: replies may not carry the TaskInstanceId, and the tab
+    // keeps the round emails by subject format (selectRoundEmails).
+    if (String(message.data.ApplicationId ?? '') !== applicationId) return
 
     const pushSeqNum = typeof message.pushSeqNum === 'number' || typeof message.pushSeqNum === 'string'
       ? message.pushSeqNum : -1
@@ -29,7 +28,7 @@ export function useCommunicationMessageEvents({
     void queryClient.fetchQuery({
       queryKey,
       staleTime: 0,
-      queryFn: () => fetchApplicationMessages({ applicationId, taskInstanceId, token, pushSeqNum }),
+      queryFn: () => fetchApplicationMessages({ applicationId, token, pushSeqNum }),
     }).catch(() => {
       // The query exposes the error and the Communication tab already offers retry.
     })

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { NcrcDashboardControls } from './NcrcDashboardControls'
@@ -12,7 +12,7 @@ type Props = ComponentProps<typeof NcrcDashboardControls>
 
 const renderControls = (overrides: Partial<Props> = {}) => {
   const props: Props = {
-    q: '', status: 'all', priority: 'all', page: 0, myOnly: false, totalCount: 0,
+    q: '', status: 'all', page: 0, myOnly: false, totalCount: 0,
     paginationMode: 'paged', isLoading: false, isError: false, error: null,
     applicantStats: { total: 0, new: 0, inProgress: 0, withdrawn: 0, completed: 0, others: 0 },
     onOpenMyNotes: vi.fn(), onUpdateSearch: vi.fn(), onFirstPage: vi.fn(), onPrevPage: vi.fn(),
@@ -55,20 +55,13 @@ describe('NcrcDashboardControls pagination (F4)', () => {
   })
 })
 
-describe('NcrcDashboardControls priority filter (F9)', () => {
-  it('offers the WF_Priorities codes and sends the code', () => {
-    const { props } = renderControls()
-    const select = screen.getByDisplayValue('All Priorities') as HTMLSelectElement
-    expect([...select.options].map((option) => option.value)).toEqual([
-      'all', 'CRITICAL', 'HIGH', 'NORMAL', 'LOW',
-    ])
-    fireEvent.change(select, { target: { value: 'CRITICAL' } })
-    expect(props.onUpdateSearch).toHaveBeenCalledWith({ priority: 'CRITICAL', page: 0 })
-  })
-
-  it('renders priority options supplied from the API', () => {
-    renderControls({ priorityOptions: [{ value: 'CRITICAL', label: 'Critical' }, { value: 'RUSH', label: 'Rush' }] })
-    expect(screen.getByRole('option', { name: 'Rush' })).toBeTruthy()
+describe('NcrcDashboardControls priority filter', () => {
+  it('has no priority pulldown; the status pulldown is the only one', () => {
+    renderControls()
+    expect(screen.queryByDisplayValue('All Priorities')).toBeNull()
+    expect(screen.queryByRole('option', { name: 'All Priorities' })).toBeNull()
+    expect(screen.getAllByRole('combobox')).toHaveLength(1)
+    expect(screen.getByRole('combobox')).toHaveProperty('value', 'all')
   })
 })
 

@@ -10,7 +10,7 @@ describe.each(['dashboard', 'intake'] as const)('%s Application ID filter', (das
   it('applies an ID with other filters reset and clears the ID without changing filters', () => {
     const onChange = vi.fn()
     render(dashboard === 'intake' ? <PrelimDashboardFilters applicationId={123} q="company" status="REVIEW" onChange={onChange} /> :
-      <NcrcDashboardControls applicationId={123} q="company" status="NEW" priority="high" page={10} myOnly={true}
+      <NcrcDashboardControls applicationId={123} q="company" status="NEW" page={10} myOnly={true}
         totalCount={100} totalPages={20} paginationMode="paged" isLoading={false} isError={false} error={null}
         applicantStats={{ total: 0, new: 0, inProgress: 0, withdrawn: 0, completed: 0, others: 0 }}
         onOpenMyNotes={() => {}} onUpdateSearch={onChange} onFirstPage={() => {}} onPrevPage={() => {}}

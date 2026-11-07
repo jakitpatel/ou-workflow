@@ -20,7 +20,6 @@ import { NcrcDashboardListSection } from '@/features/applications/components/Ncr
 import { ScheduleAIngredientsDrawer } from '@/features/applications/components/ScheduleAIngredientsDrawer'
 import { ScheduleBProductsDrawer } from '@/features/applications/components/ScheduleBProductsDrawer'
 import { useNcrcDashboardState } from '@/features/applications/hooks/useNcrcDashboardState'
-import { usePriorityOptions } from '@/features/applications/hooks/usePriorityOptions'
 import { TaskNotesDrawer } from '@/features/tasks/notes/TaskNotesDrawer'
 import { useTaskActions } from '@/features/tasks/hooks/useTaskActions'
 import { useUser } from '@/context/UserContext'
@@ -143,7 +142,6 @@ export function NcrcDashboardContent() {
   const {
     q,
     status,
-    priority,
     page,
     myOnly,
     paginationMode,
@@ -178,7 +176,6 @@ export function NcrcDashboardContent() {
     search,
     navigate,
   })
-  const priorityOptions = usePriorityOptions()
 
   const { executeAction, completeTaskWithResult } = useTaskActions({
     applicationType: 'WORKFLOW',
@@ -421,7 +418,6 @@ export function NcrcDashboardContent() {
           applicationId={search.applicationId}
           q={q}
           status={status}
-          priority={priority}
           page={page}
           myOnly={myOnly}
           totalCount={totalCount}
@@ -429,7 +425,6 @@ export function NcrcDashboardContent() {
           paginationMode={paginationMode}
           isLoading={isLoading}
           isRefreshing={isRefreshing}
-          priorityOptions={priorityOptions}
           isError={isError}
           error={error}
           username={username}

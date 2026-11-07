@@ -1,3 +1,6 @@
+import { getReplyParentMessageId, getSubjectRefMessageId, isReplySubject } from '@/features/applications/lib/communicationMessages'
+import { CommunicationReplyCard, CommunicationRoundCard } from './CommunicationRoundCard'
+import { MessageAttachmentList } from '@/shared/email/MessageAttachmentList'
 import { useSaveScheduleProductSelection } from '../hooks/useSaveScheduleProductSelection'
 import { ModalSurface } from '@/components/ui/ModalSurface'
 import { ScheduleProductEditCells } from './ScheduleProductEditCells'
@@ -129,14 +132,14 @@ type ScheduleBRoundMessageCard = {
 
 const getEmailMessageId = (email: ApplicationEmail) => textValue(email.MessageID)
 
-const getEmailParentMessageId = (email: ApplicationEmail) => textValue(email.parentMessageId)
 
 const getEmailPreviewText = (email: ApplicationEmail) =>
   getScheduleBCommunicationMessageBody(email)
 
 const getRoundNumberFromSubject = (subject: string) => Number(subject.match(/round\s+(\d+)/i)?.[1] ?? 0)
 
-const getRefMessageIdFromSubject = (subject: string) => textValue(subject.match(/refMsgId:\s*#?(\d+)/i)?.[1])
+// Subjects carry "refMessageId: #n" (older ones "refMsgId").
+const getRefMessageIdFromSubject = (subject: string) => getSubjectRefMessageId(subject)
 
 const formatMessageDate = (date?: string | null) => {
   if (!date) return ''
@@ -149,7 +152,7 @@ const buildScheduleBRoundMessageCards = (emails: ApplicationEmail[]): ScheduleBR
   const childrenByParentId = new Map<string, ApplicationEmail[]>()
 
   emails.forEach((email) => {
-    const parentMessageId = getEmailParentMessageId(email)
+    const parentMessageId = getReplyParentMessageId(email)
     if (!parentMessageId || parentMessageId === '0') return
 
     const children = childrenByParentId.get(parentMessageId) ?? []
@@ -174,8 +177,9 @@ const buildScheduleBRoundMessageCards = (emails: ApplicationEmail[]): ScheduleBR
     .map((email): ScheduleBRoundMessageCard | null => {
       const subject = textValue(email.Subject)
       const roundNumber = getRoundNumberFromSubject(subject)
-      const parentMessageId = getEmailParentMessageId(email)
-      const isRootMessage = !parentMessageId || parentMessageId === '0'
+      const parentMessageId = getReplyParentMessageId(email)
+      // A reply (RE:/FW:) is never a new round, even when stored without a parent.
+      const isRootMessage = !parentMessageId && !isReplySubject(subject)
 
       if (!isRootMessage || roundNumber <= 0 || !/ou schedule b/i.test(subject)) return null
 
@@ -1882,26 +1886,32 @@ export function ScheduleBProductsDrawer({
                             const hasResponses = round.replies.length > 0
 
                             return (
-                              <div key={round.email.MessageID ?? round.subject} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-                                <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
-                                  <div className="flex items-center gap-2">
+                              <CommunicationRoundCard
+                                key={round.email.MessageID ?? round.subject}
+                                header={
+                                  <>
+                                    <div className="flex items-center gap-2">
                                     <p className="text-sm font-semibold text-gray-900">Round {round.roundNumber}</p>
-                                    <Pill tone={hasResponses ? 'green' : 'amber'}>{hasResponses ? 'Responded' : 'Awaiting Response'}</Pill>
+                                    <Pill tone={hasResponses ? 'green' : 'amber'}>{hasResponses ? 'Request/Reply' : 'Awaiting Response'}</Pill>
                                   </div>
                                   <span className="text-xs text-gray-400">{sentDate ? `Sent ${sentDate}` : 'Sent date unavailable'}</span>
-                                </div>
-                                <div className="space-y-3 px-4 py-3">
+                                  </>
+                                }
+                                summary={
                                   <div className="grid gap-1 text-xs text-gray-600 md:grid-cols-[70px_1fr]">
                                     <span className="font-medium text-gray-500">To</span>
                                     <span>{round.email.ToUser || '-'}</span>
                                     <span className="font-medium text-gray-500">Subject</span>
                                     <span className="break-words text-gray-900">{round.subject}</span>
                                   </div>
-                                  {messageText ? (
+                                }
+                              >
+                                {messageText ? (
                                     <div className="whitespace-pre-wrap break-words rounded-md bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-600">
                                       {messageText}
                                     </div>
                                   ) : null}
+                                  <MessageAttachmentList attachments={round.email.Attachments} />
                                   {round.replies.length ? (
                                     <div className="space-y-2 border-t border-gray-100 pt-3">
                                       {round.replies.map((reply) => {
@@ -1909,15 +1919,19 @@ export function ScheduleBProductsDrawer({
                                         const replyDate = formatMessageDate(reply.SentDate)
 
                                         return (
-                                          <div key={reply.MessageID ?? `${round.email.MessageID}-${reply.SentDate}`} className="rounded-md border border-green-100 bg-green-50/60 px-3 py-2">
-                                            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                                              <div className="flex flex-wrap items-center gap-2">
-                                                <Pill tone="green">Response</Pill>
+                                          <CommunicationReplyCard
+                                            key={reply.MessageID ?? `${round.email.MessageID}-${reply.SentDate}`}
+                                            header={
+                                              <>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                <Pill tone="red">Reply</Pill>
                                                 <span className="text-xs font-medium text-gray-700">From {reply.FromUser || '-'}</span>
                                               </div>
                                               <span className="text-xs text-gray-400">{replyDate ? `Received ${replyDate}` : 'Received date unavailable'}</span>
-                                            </div>
-                                            <div className="mb-1 grid gap-1 text-xs text-gray-600 md:grid-cols-[70px_1fr]">
+                                              </>
+                                            }
+                                            summary={
+                                              <div className="mb-1 grid gap-1 text-xs text-gray-600 md:grid-cols-[70px_1fr]">
                                               <span className="font-medium text-gray-500">To</span>
                                               <span>{reply.ToUser || '-'}</span>
                                               {reply.Subject ? (
@@ -1927,18 +1941,20 @@ export function ScheduleBProductsDrawer({
                                                 </>
                                               ) : null}
                                             </div>
+                                            }
+                                          >
                                             {replyText ? (
                                               <div className="whitespace-pre-wrap break-words rounded-md bg-white/80 px-3 py-2 text-xs leading-5 text-gray-600">
                                                 {replyText}
                                               </div>
                                             ) : null}
-                                          </div>
+                                            <MessageAttachmentList attachments={reply.Attachments} />
+                                          </CommunicationReplyCard>
                                         )
                                       })}
                                     </div>
                                   ) : null}
-                                </div>
-                              </div>
+                              </CommunicationRoundCard>
                             )
                           })}
                         </div>

@@ -55,7 +55,7 @@ export function TaskDashboardHeader({
 
   return (
     <div
-      className={`sticky z-20 bg-gray-50 pb-4 ${
+      className={`sticky z-20 shrink-0 bg-gray-50 pb-4 ${
         navigationMenuType === 'left' ? 'top-0' : 'top-16'
       }`}
     >

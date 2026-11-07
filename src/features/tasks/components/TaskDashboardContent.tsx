@@ -18,6 +18,7 @@ import { TaskDashboardHeader } from './TaskDashboardHeader'
 import { TaskDashboardTable } from './TaskDashboardTable'
 import { TaskPrelimResolutionDrawer } from './TaskPrelimResolutionDrawer'
 import { PageShell } from '@/components/layout/PageShell'
+import { useAppPreferences } from '@/context/AppPreferencesContext'
 
 export function TaskDashboardContent() {
   const {
@@ -80,10 +81,11 @@ export function TaskDashboardContent() {
     handleLast,
     errorDialogRef,
   } = useTaskDashboardState()
+  const { navigationMenuType } = useAppPreferences()
 
   if (isError) {
     return (
-      <PageShell>
+      <PageShell wide>
         <div className="rounded-lg border border-red-200 bg-red-50 p-4">
           <p className="font-medium text-red-800">Error loading tasks</p>
           <p className="mt-1 text-sm text-red-600">
@@ -96,7 +98,14 @@ export function TaskDashboardContent() {
 
   return (
     <>
-      <PageShell>
+      {/* Exactly the visible height below the navigation, so the page itself never scrolls: the
+          header stays put and only the table rows scroll, under their sticky column headings. */}
+      <PageShell
+        wide
+        fixedHeightClassName={
+          navigationMenuType === 'left' ? 'h-dvh' : 'h-[calc(100dvh-4rem)]'
+        }
+      >
         <TaskDashboardHeader
           applicationId={filteredApplicationId}
           setApplicationId={setApplicationId}

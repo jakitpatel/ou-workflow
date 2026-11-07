@@ -1,3 +1,6 @@
+import { getReplyParentMessageId, isReplySubject } from '@/features/applications/lib/communicationMessages'
+import { CommunicationReplyCard, CommunicationRoundCard } from './CommunicationRoundCard'
+import { MessageAttachmentList } from '@/shared/email/MessageAttachmentList'
 import { SignedFileLink } from '@/shared/utils/fileLinks'
 import { ModalSurface } from '@/components/ui/ModalSurface'
 import { localCalendarDate } from '@/shared/utils/calendarDate'
@@ -18,6 +21,10 @@ import {
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
+import {
+  getContractTypeLabel,
+  isNewCompanyContractDetail,
+} from '@/features/applications/model/contractType'
 import { useContractSchedules } from '@/features/applications/hooks/useContractSchedules'
 import { isValidContractFee } from '@/features/applications/model/contractFee'
 import { resolveContractCoordinators } from '@/features/applications/model/contractCoordinators'
@@ -724,7 +731,6 @@ type ContractEmailDraft = {
 
 const getEmailMessageId = (email: ApplicationEmail) => textValue(email.MessageID)
 
-const getEmailParentMessageId = (email: ApplicationEmail) => textValue(email.parentMessageId)
 
 const getRoundNumberFromSubject = (subject: string) =>
   Number(subject.match(/round\s+(\d+)/i)?.[1] ?? 0)
@@ -790,7 +796,7 @@ const buildContractRoundMessageCards = (emails: ApplicationEmail[]): ContractRou
   const childrenByParentId = new Map<string, ApplicationEmail[]>()
 
   emails.forEach((email) => {
-    const parentMessageId = getEmailParentMessageId(email)
+    const parentMessageId = getReplyParentMessageId(email)
     if (!parentMessageId || parentMessageId === '0') return
 
     const children = childrenByParentId.get(parentMessageId) ?? []
@@ -815,8 +821,9 @@ const buildContractRoundMessageCards = (emails: ApplicationEmail[]): ContractRou
     .map((email): ContractRoundMessageCard | null => {
       const subject = textValue(email.Subject)
       const roundNumber = getRoundNumberFromSubject(subject)
-      const parentMessageId = getEmailParentMessageId(email)
-      const isRootMessage = !parentMessageId || parentMessageId === '0'
+      const parentMessageId = getReplyParentMessageId(email)
+      // A reply (RE:/FW:) is never a new round, even when stored without a parent.
+      const isRootMessage = !parentMessageId && !isReplySubject(subject)
 
       if (!isRootMessage || roundNumber <= 0 || !/ou kosher.*contract package/i.test(subject))
         return null
@@ -971,7 +978,9 @@ export function ContractStageDrawer({
   })
   const { data: applicationDetail } = useApplicationDetail(open ? resolvedApplicationId : undefined)
   const rcDirectoryQuery = useUserListByRole('api/vSelectRC', { enabled: open })
-  const isNewCompanyContract = applicant?.isNewCompany !== false
+  // Set by the application detail's company.is_new ("Y" = new company; otherwise, including
+  // missing, a plant addendum). It drives the label, agreement, invoice terms and payment cycle.
+  const isNewCompanyContract = isNewCompanyContractDetail(applicationDetail)
   const confirmTaskMutation = useConfirmTaskMutation({
     includeApplicationLists: true,
     includePrelimLists: false,
@@ -1216,9 +1225,7 @@ export function ContractStageDrawer({
   const senderEmail = textValue(email) || textValue(username)
   const { contractIngredients, contractProducts, ingredientsQuery, productsQuery } =
     useContractSchedules(open ? resolvedApplicationId : undefined)
-  const contractTypeLabel = isNewCompanyContract
-    ? 'New Company Certification'
-    : 'Plant Addendum (existing company)'
+  const contractTypeLabel = getContractTypeLabel(isNewCompanyContract)
   const maxClauseVersion = Math.max(...clauseVersions.map((version) => version.n))
   const isLatestClauseVersion = activeClauseVersion === maxClauseVersion
   const visibleAgreementClauses =
@@ -2524,43 +2531,40 @@ Rabbinic Coordinator`
                 const hasResponses = round.replies.length > 0
 
                 return (
-                  <div
+                  <CommunicationRoundCard
                     key={round.email.MessageID ?? round.subject}
-                    className="overflow-hidden rounded-lg border border-gray-200 bg-white"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-gray-50 px-4 py-3">
-                      <div className="flex items-center gap-2">
+                    header={
+                      <>
+                        <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-gray-900">
                           Round {round.roundNumber}
                         </p>
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-medium ${hasResponses ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'}`}
                         >
-                          {hasResponses ? 'Responded' : 'Awaiting Response'}
+                          {hasResponses ? 'Request/Reply' : 'Awaiting Response'}
                         </span>
                       </div>
                       <span className="text-xs text-gray-400">
                         {sentDate ? `Sent ${sentDate}` : 'Sent date unavailable'}
                       </span>
-                    </div>
-                    <div className="space-y-3 px-4 py-3">
+                      </>
+                    }
+                    summary={
                       <div className="grid gap-1 text-xs text-gray-600 md:grid-cols-[82px_1fr]">
                         <span className="font-medium text-gray-500">To</span>
                         <span>{round.email.ToUser || '-'}</span>
                         <span className="font-medium text-gray-500">Subject</span>
                         <span className="break-words text-gray-900">{round.subject}</span>
-                        {round.email.Attachments ? (
-                          <>
-                            <span className="font-medium text-gray-500">Attach</span>
-                            <span className="break-words">{round.email.Attachments}</span>
-                          </>
-                        ) : null}
                       </div>
-                      {messageText ? (
+                    }
+                  >
+                    {messageText ? (
                         <div className="whitespace-pre-wrap break-words rounded-md bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-600">
                           {messageText}
                         </div>
                       ) : null}
+                      <MessageAttachmentList attachments={round.email.Attachments} />
                       {round.replies.length ? (
                         <div className="space-y-2 border-t border-gray-100 pt-3">
                           {round.replies.map((reply) => {
@@ -2568,15 +2572,14 @@ Rabbinic Coordinator`
                             const replyDate = formatMessageDate(reply.SentDate)
 
                             return (
-                              <div
+                              <CommunicationReplyCard
                                 key={
                                   reply.MessageID ?? `${round.email.MessageID}-${reply.SentDate}`
                                 }
-                                className="rounded-md border border-green-100 bg-green-50/60 px-3 py-2"
-                              >
-                                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                                header={
+                                  <>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                                       Reply
                                     </span>
                                     <span className="text-xs font-medium text-gray-700">
@@ -2588,8 +2591,10 @@ Rabbinic Coordinator`
                                       ? `Received ${replyDate}`
                                       : 'Received date unavailable'}
                                   </span>
-                                </div>
-                                <div className="mb-1 grid gap-1 text-xs text-gray-600 md:grid-cols-[82px_1fr]">
+                                  </>
+                                }
+                                summary={
+                                  <div className="mb-1 grid gap-1 text-xs text-gray-600 md:grid-cols-[82px_1fr]">
                                   <span className="font-medium text-gray-500">To</span>
                                   <span>{reply.ToUser || '-'}</span>
                                   {reply.Subject ? (
@@ -2601,18 +2606,20 @@ Rabbinic Coordinator`
                                     </>
                                   ) : null}
                                 </div>
+                                }
+                              >
                                 {replyText ? (
                                   <div className="whitespace-pre-wrap break-words rounded-md bg-white/80 px-3 py-2 text-xs leading-5 text-gray-600">
                                     {replyText}
                                   </div>
                                 ) : null}
-                              </div>
+                                <MessageAttachmentList attachments={reply.Attachments} />
+                              </CommunicationReplyCard>
                             )
                           })}
                         </div>
                       ) : null}
-                    </div>
-                  </div>
+                  </CommunicationRoundCard>
                 )
               })}
             </div>
@@ -3848,18 +3855,11 @@ Rabbinic Coordinator`
           <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden px-6 py-5 xl:grid-cols-[440px_minmax(0,1fr)]">
             <div className="min-h-0 space-y-4 overflow-y-auto pr-1">
               <Section title="Contract Type">
-                <div className="flex items-start justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                  <div className="min-w-0">
-                    <div className="text-[11.5px] font-medium text-gray-500">
-                      Determined by the system
-                    </div>
-                    <div className="mt-1 text-[13.5px] font-semibold leading-5 text-gray-900">
-                      {contractTypeLabel}
-                    </div>
-                  </div>
-                  <span className="whitespace-nowrap rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-bold text-green-700">
-                    Set
-                  </span>
+                <div
+                  className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-[13.5px] font-semibold leading-5 text-gray-900"
+                  data-testid="contract-type"
+                >
+                  {applicationDetail ? contractTypeLabel : 'Loading contract type...'}
                 </div>
                 <p className="mt-2 text-[11.5px] leading-5 text-gray-500">
                   Set from the application - a workflow is either a new-company contract or a plant

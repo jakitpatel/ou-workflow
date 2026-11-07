@@ -59,16 +59,17 @@ export function TaskDashboardTable({
 
   return (
     <>
-    <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-      <div className="relative max-h-[calc(100vh-20rem)] overflow-y-auto">
-        <table className="min-w-full table-fixed">
+    {/* Fills the space left under the page header and scrolls only the rows; the sticky
+        column headings stay visible. Keeps at least 16rem on very short windows. */}
+    <div className="mb-6 flex min-h-64 flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="relative min-h-0 flex-1 overflow-y-auto" data-testid="tasks-table-scroll">
+        {/* w-full (not just min-w-full) makes table-fixed honour the column widths, so long
+            content wraps inside its column instead of widening the table past the screen. */}
+        <table className="w-full table-fixed break-words">
           <thead className="sticky top-0 z-10 border-b bg-gray-50">
             <tr>
-              <th className="w-[18%] px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
+              <th className="w-[25%] px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
                 Task & Plant
-              </th>
-              <th className="w-[7%] px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                Days Elapsed
               </th>
               <th
                 className="w-[7%] px-6 py-3 text-left text-xs font-medium uppercase text-gray-500"

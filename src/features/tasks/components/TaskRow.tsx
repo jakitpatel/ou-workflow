@@ -1,9 +1,11 @@
-import React, { memo } from 'react';
+import React, { memo, useId } from 'react';
+import { ArrowUpRight, Info, PanelRightOpen } from 'lucide-react';
 import { getStatusConfig, getPriorityBorderClass } from '@/features/tasks/lib/taskDashboardPresentation';
 import type { ApplicationTask } from '@/types/application';
 import { useNavigate } from '@tanstack/react-router';
 import { Route as DashboardRoute } from '@/routes/_authed/ou-workflow/ncrc-dashboard';
 import { COMPLETED_STATUSES } from '@/lib/utils/taskHelpers';
+import { isIntakeStage, toLinkableApplicationId } from '@/features/tasks/model/applicationIdLink';
 
 interface PlantInfo {
   applications?: number;
@@ -34,7 +36,7 @@ const PlantNameButton = memo(
     <button
       type="button"
       onClick={onClick}
-      className="text-left group rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      className="group cursor-pointer text-left rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       title={`Click to view details for ${plantName}`}
       aria-label={
         applicationCount > 0
@@ -42,9 +44,14 @@ const PlantNameButton = memo(
           : `View details for ${plantName}`
       }
     >
-      <div className="text-base font-bold text-gray-900 transition-colors group-hover:text-blue-600">
-        {plantName}
-      </div>
+      {/* Link styling (blue, underlined, drawer icon) so it reads as clickable, like the AppId chip. */}
+      <span className="inline-flex items-start gap-1.5 text-base font-bold text-blue-700 underline decoration-blue-200 decoration-2 underline-offset-4 transition-colors group-hover:text-blue-900 group-hover:decoration-blue-500">
+        <span>{plantName}</span>
+        <PanelRightOpen
+          className="mt-1 h-4 w-4 shrink-0 text-blue-400 transition-colors group-hover:text-blue-700"
+          aria-hidden="true"
+        />
+      </span>
       {/*
       <div className="text-xs text-gray-500 mt-0.5">
         {applicationCount} {applicationCount === 1 ? 'application' : 'applications'}
@@ -132,6 +139,65 @@ function formatDateOnly(date?: string | null) {
   });
 }
 
+type StatusDetail = { label: string; value: string };
+
+/** The status cell's detail lines (shown on hover/focus of the status badge). */
+export function getStatusDetails(application: ApplicationTask): StatusDetail[] {
+  const details: StatusDetail[] = [];
+  const started = formatDateOnly(application.startedDate);
+  if (started) details.push({ label: 'Started', value: started });
+
+  if (COMPLETED_STATUSES.includes(application.status?.toLowerCase() ?? '')) {
+    const completed = formatDateOnly(application.completedDate);
+    if (completed) details.push({ label: 'Completed', value: completed });
+    if (typeof application.completedCapacity === 'string') {
+      details.push({ label: 'Capacity', value: application.completedCapacity });
+    }
+    if (typeof application.completedBy === 'string') {
+      details.push({ label: 'Completed By', value: application.completedBy });
+    }
+  }
+  return details;
+}
+
+function StatusBadgeWithDetails({
+  status,
+  daysActive,
+  details,
+}: {
+  status: string;
+  daysActive?: number;
+  details: StatusDetail[];
+}) {
+  const tooltipId = useId();
+  if (details.length === 0) {
+    return <StatusBadge status={status} daysActive={daysActive} />;
+  }
+
+  return (
+    <span
+      className="group relative inline-flex cursor-help items-center gap-1 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+      tabIndex={0}
+      aria-describedby={tooltipId}
+    >
+      <StatusBadge status={status} daysActive={daysActive} />
+      <Info className="h-3.5 w-3.5 shrink-0 text-gray-400 group-hover:text-gray-600" aria-hidden="true" />
+      <span
+        id={tooltipId}
+        role="tooltip"
+        className="invisible absolute right-full top-0 z-30 mr-2 w-max max-w-[16rem] rounded-md bg-gray-900 px-3 py-2 text-left text-xs leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100 group-focus:visible group-focus:opacity-100"
+      >
+        {details.map((detail) => (
+          <span key={detail.label} className="block whitespace-nowrap">
+            <span className="text-gray-300">{detail.label}:</span>{' '}
+            <span className="font-medium">{detail.value}</span>
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+}
+
 export function getTaskRowDisplayName(application: ApplicationTask): string {
   const name = [application.plantName, application.companyName].find(
     (value) => typeof value === 'string' && value.trim() !== ''
@@ -149,8 +215,34 @@ export const TaskRow = memo(
   }: TaskRowProps) => {
     const navigate = useNavigate();
     const applicationCount = plantInfo?.applications ?? 0;
-    const daysPending = application?.daysPending ?? 0;
     const daysOverdue = application?.daysOverdue ?? 0;
+
+    // AppId opens the dashboard that owns the application, filtered to just that id: Intake-stage
+    // tasks go to Application Intake (SUBMISSION), all others to the Application Dashboard. Status,
+    // priority and My Only are cleared so the request carries only filter[applicationId].
+    const linkableApplicationId = toLinkableApplicationId(application.applicationId);
+    const intakeStage = isIntakeStage(application.stageName);
+    const openApplicationDashboard = () => {
+      if (linkableApplicationId === undefined) return;
+      if (intakeStage) {
+        void navigate({
+          to: '/ou-workflow/prelim-dashboard',
+          search: { q: '', status: 'all', page: 0, applicationId: linkableApplicationId },
+        });
+        return;
+      }
+      void navigate({
+        to: '/ou-workflow/ncrc-dashboard',
+        search: {
+          q: '',
+          status: 'all',
+          priority: 'all',
+          page: 0,
+          myOnly: false,
+          applicationId: linkableApplicationId,
+        },
+      });
+    };
 
     const handleTaskApplicationClick = () => {
       if (!application.applicationId) {
@@ -211,10 +303,6 @@ export const TaskRow = memo(
           </div>
         </td>
 
-        <td className="px-6 py-4 align-top text-sm tabular-nums text-gray-700">
-          {daysPending > 0 ? daysPending : <span className="text-gray-400">-</span>}
-        </td>
-
         <td className="px-6 py-4 align-top text-sm tabular-nums">
           {daysOverdue > 0 ? (
             <span className="font-medium text-red-600">{daysOverdue}</span>
@@ -224,7 +312,20 @@ export const TaskRow = memo(
         </td>
 
         <td className="px-6 py-4 align-top text-sm text-gray-700 tabular-nums">
-          {application.applicationId ?? <span className="text-gray-400">-</span>}
+          {linkableApplicationId !== undefined ? (
+            <button
+              type="button"
+              onClick={openApplicationDashboard}
+              // Same chip as the My Messages "App" button, so it reads as clickable at a glance.
+              className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              title={`Open application ${linkableApplicationId} on the ${intakeStage ? 'Application Intake' : 'Application Dashboard'}`}
+            >
+              <ArrowUpRight className="h-3 w-3 shrink-0" aria-hidden="true" />
+              {linkableApplicationId}
+            </button>
+          ) : (
+            application.applicationId || <span className="text-gray-400">-</span>
+          )}
         </td>
 
         <td className="px-6 py-4 align-top">
@@ -262,48 +363,12 @@ export const TaskRow = memo(
 
         <td className="px-6 py-4 align-top">
           <div className="space-y-1">
-            <StatusBadge
+            {/* Started / Completed / Capacity / Completed By show on hover or keyboard focus. */}
+            <StatusBadgeWithDetails
               status={application.status}
               daysActive={application.daysActive}
+              details={getStatusDetails(application)}
             />
-
-            {(application.startedDate || application.completedDate) && (
-              <div className="space-y-0.5 text-xs leading-tight text-gray-500">
-                {application.startedDate && (
-                  <div>
-                    Started: {formatDateOnly(application.startedDate)}
-                  </div>
-                )}
-
-                {COMPLETED_STATUSES.includes(application.status?.toLowerCase() ?? '') && (
-                  <>
-                    {application.completedDate && (
-                      <div>
-                        Completed: {formatDateOnly(application.completedDate)}
-                      </div>
-                    )}
-
-                    {typeof application.completedCapacity === 'string' && (
-                      <div>
-                        Capacity:{' '}
-                        <span className="font-medium text-gray-700">
-                          {application.completedCapacity}
-                        </span>
-                      </div>
-                    )}
-
-                    {typeof application.completedBy === 'string' && (
-                      <div>
-                        Completed By:{' '}
-                        <span className="font-medium text-gray-700">
-                          {application.completedBy}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
           </div>
         </td>
       </tr>

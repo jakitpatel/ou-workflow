@@ -1,4 +1,4 @@
-import { selectEmailMessages } from '@/features/applications/lib/communicationMessages'
+import { selectRoundEmails } from '@/features/applications/lib/communicationMessages'
 import { useCommunicationMessageEvents } from './useCommunicationMessageEvents'
 import {
   patchScheduleIngredientFollowUp,
@@ -760,7 +760,6 @@ export function useScheduleACommunicationMessages({
 
   useCommunicationMessageEvents({
     applicationId: normalizedApplicationId,
-    taskInstanceId: normalizedTaskInstanceId,
     token,
     queryKey: applicationsQueryKeys.scheduleAMessages(normalizedApplicationId, normalizedTaskInstanceId),
   })
@@ -770,11 +769,10 @@ export function useScheduleACommunicationMessages({
     queryFn: () =>
       fetchApplicationMessages({
         applicationId: normalizedApplicationId,
-        taskInstanceId: normalizedTaskInstanceId,
         //messageType: 'Email',
         token: token ?? undefined,
       }),
-    select: selectEmailMessages,
+    select: selectRoundEmails,
     enabled: !!token && !!normalizedApplicationId,
     ...queryOptionDefaults.applicationScheduleAIngredients,
   })

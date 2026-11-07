@@ -46,16 +46,23 @@ describe.each([
     for (const ignored of [
       { ...event, type: 'reload_workflow_application' },
       { ...event, data: { ...event.data, ApplicationId: 999 } },
-      { ...event, data: { ...event.data, TaskInstanceId: 999 } },
       { ...event, data: { ...event.data, application_type: 'SUBMISSION' } },
       { ...event, data: undefined },
     ]) act(() => listener.callback(ignored))
     expect(fetchApplicationMessages).not.toHaveBeenCalled()
     act(() => listener.callback({ ...event, pushSeqNum }))
     await waitFor(() => expect(fetchApplicationMessages).toHaveBeenCalledExactlyOnceWith({
-      applicationId: '421', taskInstanceId: '14080', token: 'token', pushSeqNum: pushSeqNum ?? -1,
+      applicationId: '421', token: 'token', pushSeqNum: pushSeqNum ?? -1,
     }))
     await waitFor(() => expect(result.current.isFetching).toBe(false))
+    // Replies may arrive without (or with another) TaskInstanceId; they refresh the tab too, which
+    // keeps this task's messages by subject.
+    for (const data of [{ ...event.data, TaskInstanceId: 999 }, { application_type: 'WORKFLOW', ApplicationId: 421 }]) {
+      vi.mocked(fetchApplicationMessages).mockClear()
+      act(() => listener.callback({ ...event, data }))
+      await waitFor(() => expect(fetchApplicationMessages).toHaveBeenCalledOnce())
+      await waitFor(() => expect(result.current.isFetching).toBe(false))
+    }
     rerender({ open: false })
     expect(listener.enabled).toBe(false)
     vi.mocked(fetchApplicationMessages).mockClear()

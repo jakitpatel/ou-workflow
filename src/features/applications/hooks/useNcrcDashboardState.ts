@@ -20,15 +20,6 @@ import type { Applicant, TaskNote, TaskNoteReaction } from '@/types/application'
 const PAGE_LIMIT = NCRC_DASHBOARD_PAGE_SIZE
 const DEBOUNCE_DELAY = 1000
 
-// Older links used urgent/medium; the list API filters on WF_Priorities codes.
-const LEGACY_PRIORITY_CODES: Record<string, string> = { urgent: 'CRITICAL', medium: 'NORMAL' }
-
-const normalizePriorityFilter = (value: string) => {
-  const trimmed = value.trim()
-  if (!trimmed || trimmed.toLowerCase() === 'all') return 'all'
-  return LEGACY_PRIORITY_CODES[trimmed.toLowerCase()] ?? trimmed.toUpperCase()
-}
-
 type DashboardSearch = {
   q: string
   status: string
@@ -102,7 +93,6 @@ export function useNcrcDashboardState({
   navigate,
 }: UseNcrcDashboardStateParams) {
   const { q, status, page, applicationId, myOnly } = search
-  const priority = normalizePriorityFilter(search.priority ?? 'all')
   const { token, username } = useUser()
   const queryClient = useQueryClient()
   const { paginationMode } = useAppPreferences()
@@ -130,7 +120,6 @@ export function useNcrcDashboardState({
   const pagedQuery = usePagedApplications({
     searchTerm: q ? debouncedSearch : '',
     statusFilter: status,
-    priorityFilter: priority,
     applicationId,
     myOnly,
     page,
@@ -141,7 +130,6 @@ export function useNcrcDashboardState({
   const infiniteQuery = useInfiniteApplications({
     searchTerm: q ? debouncedSearch : '',
     statusFilter: status,
-    priorityFilter: priority,
     applicationId,
     myOnly,
     enabled: paginationMode === 'infinite',
@@ -491,7 +479,6 @@ export function useNcrcDashboardState({
   return {
     q,
     status,
-    priority,
     page,
     myOnly,
     paginationMode,

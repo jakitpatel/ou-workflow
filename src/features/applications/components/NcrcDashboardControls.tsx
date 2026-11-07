@@ -3,10 +3,6 @@ import { MessageSquareText, Search } from 'lucide-react'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { ApplicantStatsCards } from '@/features/applications/components/ApplicantStatsCards'
 import {
-  DEFAULT_PRIORITY_OPTIONS,
-  type PriorityOption,
-} from '@/features/applications/api/priorities'
-import {
   NCRC_DASHBOARD_PAGE_SIZE,
   getOffsetPagination,
 } from '@/features/applications/lib/pagination'
@@ -33,7 +29,6 @@ type NcrcDashboardControlsProps = {
   applicationId?: number
   q: string
   status: string
-  priority: string
   page: number
   myOnly: boolean
   totalCount: number
@@ -43,7 +38,6 @@ type NcrcDashboardControlsProps = {
   paginationMode: 'paged' | 'infinite'
   isLoading: boolean
   isRefreshing?: boolean
-  priorityOptions?: PriorityOption[]
   isError: boolean
   error: unknown
   username?: string | null
@@ -61,7 +55,6 @@ export function NcrcDashboardControls({
   applicationId,
   q,
   status,
-  priority,
   page,
   myOnly,
   totalCount,
@@ -69,7 +62,6 @@ export function NcrcDashboardControls({
   paginationMode,
   isLoading,
   isRefreshing = false,
-  priorityOptions = DEFAULT_PRIORITY_OPTIONS,
   isError,
   error,
   username,
@@ -146,19 +138,6 @@ export function NcrcDashboardControls({
             <option value="PAID">Invoice Payment Received</option>
             <option value="REVIEW">Under Review</option>
             <option value="WTH">Withdrawn</option>
-          </select>
-
-          <select
-            value={priority}
-            onChange={(event) => onUpdateSearch({ priority: event.target.value, page: 0 })}
-            className="min-w-[120px] rounded-lg border border-gray-300 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Priorities</option>
-            {priorityOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
           </select>
 
           <div className="ml-auto flex items-center border-gray-200">

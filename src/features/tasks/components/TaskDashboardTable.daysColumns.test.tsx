@@ -31,25 +31,26 @@ const renderTable = (tasks: ApplicationTask[]) =>
 const headerTexts = () => screen.getAllByRole('columnheader').map((header) => header.textContent?.trim())
 
 describe('Tasks & Notifications days columns', () => {
-  it('puts Days Elapsed and Days Overdue right after Task & Plant, before AppId', () => {
+  it('puts Days Overdue right after Task & Plant, before AppId, with no Days Elapsed column', () => {
     renderTable([task(900, 3, 0)])
     const headers = headerTexts()
     const taskPlant = headers.indexOf('Task & Plant')
-    expect(headers.slice(taskPlant, taskPlant + 4)).toEqual(['Task & Plant', 'Days Elapsed', 'Days Overdue', 'AppId'])
+    expect(headers.slice(taskPlant, taskPlant + 3)).toEqual(['Task & Plant', 'Days Overdue', 'AppId'])
+    expect(headers).not.toContain('Days Elapsed')
   })
 
-  it('shows the day counts in their own cells, with a dash for zero and red for overdue', () => {
+  it('shows days overdue in its own cell, with a dash for zero and red for overdue', () => {
     renderTable([task(900, 12, 4), task(901, 0, 0)])
     const headers = headerTexts()
-    const elapsed = headers.indexOf('Days Elapsed')
     const overdue = headers.indexOf('Days Overdue')
     const [first, second] = screen.getAllByRole('row').slice(1).map((row) => within(row).getAllByRole('cell'))
 
-    expect(first[elapsed].textContent?.trim()).toBe('12')
+    expect(first).toHaveLength(headers.length)
     expect(first[overdue].textContent?.trim()).toBe('4')
     expect(within(first[overdue]).getByText('4').classList.contains('text-red-600')).toBe(true)
-    expect(second[elapsed].textContent?.trim()).toBe('-')
     expect(second[overdue].textContent?.trim()).toBe('-')
+    // Days elapsed (12) is no longer shown anywhere in the row.
+    expect(first.map((cell) => cell.textContent?.trim())).not.toContain('12')
   })
 
   it('no longer writes the day counts as text inside the Task & Plant cell', () => {

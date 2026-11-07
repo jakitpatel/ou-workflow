@@ -89,16 +89,12 @@ describe('useNcrcDashboardState filters and paging', () => {
     expect(mocks.paged).toHaveBeenLastCalledWith(expect.objectContaining({ page: 50 }))
   })
 
-  it.each([
-    ['urgent', 'CRITICAL'],
-    ['medium', 'NORMAL'],
-    ['high', 'HIGH'],
-    ['CRITICAL', 'CRITICAL'],
-    ['all', 'all'],
-  ])('sends priority %s as the WF_Priorities code %s (F9)', (priority, expected) => {
+  // The priority pulldown is gone, so a priority left in an old link must not filter the list.
+  it.each(['CRITICAL', 'urgent', 'all'])('sends no priority filter for a link with priority=%s', (priority) => {
     renderState({ priority })
-    expect(mocks.paged).toHaveBeenLastCalledWith(expect.objectContaining({ priorityFilter: expected }))
-    expect(latest.priority).toBe(expected)
+    const [request] = mocks.paged.mock.lastCall as [Record<string, unknown>]
+    expect(request).not.toHaveProperty('priorityFilter')
+    expect(latest).not.toHaveProperty('priority')
   })
 
   it('flags previous results shown while a new filter loads (F11)', () => {

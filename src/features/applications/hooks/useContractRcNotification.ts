@@ -1,4 +1,4 @@
-import { selectEmailMessages } from '@/features/applications/lib/communicationMessages'
+import { selectRoundEmails } from '@/features/applications/lib/communicationMessages'
 import { removeContractPackageFooter } from '../lib/contractCoverLetter'
 import { useCommunicationMessageEvents } from './useCommunicationMessageEvents'
 import { useState } from 'react'
@@ -196,7 +196,6 @@ export function useContractCommunicationMessages({
 
   useCommunicationMessageEvents({
     applicationId: normalizedApplicationId,
-    taskInstanceId: normalizedTaskInstanceId,
     token,
     queryKey: applicationsQueryKeys.contractMessages(normalizedApplicationId, normalizedTaskInstanceId),
   })
@@ -209,10 +208,9 @@ export function useContractCommunicationMessages({
     queryFn: () =>
       fetchApplicationMessages({
         applicationId: normalizedApplicationId,
-        taskInstanceId: normalizedTaskInstanceId,
         token: token ?? undefined,
       }),
-    select: selectEmailMessages,
+    select: selectRoundEmails,
     enabled: !!token && !!normalizedApplicationId,
     ...queryOptionDefaults.applicationScheduleAIngredients,
   })

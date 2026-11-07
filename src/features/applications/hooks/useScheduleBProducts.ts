@@ -1,5 +1,5 @@
 import { patchScheduleProductFollowUp, patchScheduleProductHalachicReview, type ScheduleProductFollowUp, type ScheduleProductHalachicReview } from '../api/scheduleProductReview'
-import { selectEmailMessages } from '@/features/applications/lib/communicationMessages'
+import { selectRoundEmails } from '@/features/applications/lib/communicationMessages'
 import { useCommunicationMessageEvents } from './useCommunicationMessageEvents'
 import { withImpliedBcc } from '@/shared/email/impliedBcc'
 import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
@@ -842,7 +842,6 @@ export function useScheduleBCommunicationMessages({
 
   useCommunicationMessageEvents({
     applicationId: normalizedApplicationId,
-    taskInstanceId: normalizedTaskInstanceId,
     token,
     queryKey: scheduleBMessagesQueryKey(normalizedApplicationId, normalizedTaskInstanceId),
   })
@@ -852,11 +851,10 @@ export function useScheduleBCommunicationMessages({
     queryFn: () =>
       fetchApplicationMessages({
         applicationId: normalizedApplicationId,
-        taskInstanceId: normalizedTaskInstanceId,
         //messageType: 'Email',
         token: token ?? undefined,
       }),
-    select: selectEmailMessages,
+    select: selectRoundEmails,
     enabled: !!token && !!normalizedApplicationId,
     ...queryOptionDefaults.applicationScheduleBProducts,
   })
