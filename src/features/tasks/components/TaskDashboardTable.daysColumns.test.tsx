@@ -39,7 +39,7 @@ describe('Tasks & Notifications days columns', () => {
     expect(headers).not.toContain('Days Elapsed')
   })
 
-  it('shows days overdue in its own cell, with a dash for zero and red for overdue', () => {
+  it('shows days overdue in its own cell, 0 as 0 and red for overdue', () => {
     renderTable([task(900, 12, 4), task(901, 0, 0)])
     const headers = headerTexts()
     const overdue = headers.indexOf('Days Overdue')
@@ -48,9 +48,24 @@ describe('Tasks & Notifications days columns', () => {
     expect(first).toHaveLength(headers.length)
     expect(first[overdue].textContent?.trim()).toBe('4')
     expect(within(first[overdue]).getByText('4').classList.contains('text-red-600')).toBe(true)
-    expect(second[overdue].textContent?.trim()).toBe('-')
+    expect(second[overdue].textContent?.trim()).toBe('0')
     // Days elapsed (12) is no longer shown anywhere in the row.
     expect(first.map((cell) => cell.textContent?.trim())).not.toContain('12')
+  })
+
+  it.each([
+    [-6, '-6'],
+    ['-6', '-6'],
+    [0, '0'],
+    ['0', '0'],
+    [undefined, '0'],
+    ['n/a', '-'],
+  ])('shows daysOverdue %j as %j, in normal (not red) text', (daysOverdue, shown) => {
+    renderTable([{ ...task(900, 0, 0), daysOverdue } as unknown as ApplicationTask])
+    const overdue = headerTexts().indexOf('Days Overdue')
+    const cell = within(screen.getAllByRole('row')[1]).getAllByRole('cell')[overdue]
+    expect(cell.textContent?.trim()).toBe(shown)
+    expect(cell.querySelector('.text-red-600')).toBeNull()
   })
 
   it('no longer writes the day counts as text inside the Task & Plant cell', () => {

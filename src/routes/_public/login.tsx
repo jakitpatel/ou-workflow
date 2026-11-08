@@ -20,6 +20,7 @@ import {
   consumeAuthRedirectUrl,
   setupLocalDevSession,
 } from "@/features/auth/model/sessionManager";
+import { clearLoginNotice, readLoginNotice } from "@/features/auth/model/loginNotice";
 
 const availableServers = [getApiBaseUrl()].filter(Boolean);
 
@@ -42,6 +43,11 @@ function LoginPage() {
   const { login } = useUser();
   const { apiBaseUrl, setApiBaseUrl, stageLayout, paginationMode, navigationMenuType } = useAppPreferences();
   const [error, setError] = useState("");
+  // A one-time message left by the app before it signed the user out (e.g. user details 502).
+  const [notice] = useState(readLoginNotice);
+  useEffect(() => {
+    clearLoginNotice();
+  }, []);
   const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
@@ -151,6 +157,11 @@ function LoginPage() {
             {sso.isStartingLogin ? "Redirecting to sign-in..." : "Login"}
           </Button>
 
+          {notice && (
+            <p role="alert" className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              {notice}
+            </p>
+          )}
           {(error || sso.error) && <p role="alert" className="text-red-600 text-sm text-center">{error || sso.error}</p>}
         </form>
       </Card>

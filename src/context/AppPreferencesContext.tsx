@@ -4,9 +4,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { toast } from "sonner";
 import { useUser } from "@/context/UserContext";
 import {
   clearStoredAppPreferences,
@@ -17,6 +19,11 @@ import {
 } from "@/context/appPreferencesStorage";
 import { fetchProfileLayout, fetchUserPerson, type UserPerson } from "@/features/profile/api";
 import { registerUserContext } from "@/shared/api/httpClient";
+import { isAppError } from "@/shared/api/errors";
+import {
+  storeLoginNotice,
+  USER_DETAILS_UNAVAILABLE_NOTICE,
+} from "@/features/auth/model/loginNotice";
 import type { NavigationMenuType, PaginationMode, StageLayout } from "@/types/application";
 
 type AppPreferencesContextType = StoredAppPreferences & {
@@ -34,7 +41,12 @@ const AppPreferencesContext = createContext<AppPreferencesContextType | undefine
 
 export function AppPreferencesProvider({ children }: { children: ReactNode }) {
   const stored = loadStoredAppPreferences();
-  const { token, username } = useUser();
+  const { token, username, logout } = useUser();
+  // logout is recreated every render; keep the latest without re-running the profile load.
+  const logoutRef = useRef(logout);
+  useEffect(() => {
+    logoutRef.current = logout;
+  }, [logout]);
 
   const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(stored.apiBaseUrl);
   const [stageLayout, setStageLayout] = useState<StageLayout>(stored.stageLayout);
@@ -78,6 +90,14 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
           setUserPerson(person);
         }
       } catch (error) {
+        // PERSONTB answering 502 Bad Gateway means the user details can't be loaded: say so and
+        // send the user back to the login screen (the notice is shown there after the redirect).
+        if (!cancelled && isAppError(error) && error.status === 502) {
+          storeLoginNotice(USER_DETAILS_UNAVAILABLE_NOTICE);
+          toast.error(USER_DETAILS_UNAVAILABLE_NOTICE);
+          logoutRef.current();
+          return;
+        }
         console.warn("Failed to hydrate user person:", error);
       }
 

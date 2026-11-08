@@ -5,7 +5,12 @@ import type { ApplicationTask } from '@/types/application';
 import { useNavigate } from '@tanstack/react-router';
 import { Route as DashboardRoute } from '@/routes/_authed/ou-workflow/ncrc-dashboard';
 import { COMPLETED_STATUSES } from '@/lib/utils/taskHelpers';
-import { isIntakeStage, toLinkableApplicationId } from '@/features/tasks/model/applicationIdLink';
+import {
+  getTaskDetailsTarget,
+  isIntakeStage,
+  toLinkableApplicationId,
+  type TaskDetailsTarget,
+} from '@/features/tasks/model/applicationIdLink';
 
 interface PlantInfo {
   applications?: number;
@@ -19,8 +24,12 @@ interface TaskRowProps {
     e: React.MouseEvent<HTMLElement>,
     application: ApplicationTask
   ) => void;
-  /** Opens the Application Details drawer; without it the plant name opens the full page. */
-  onOpenApplicationDetails?: (applicationId: string | number) => void;
+  /**
+   * Opens the details drawer for the row: Intake details (by externalReferenceId) for Intake-stage
+   * tasks, otherwise Application Details (by applicationId). Without it the plant name opens the
+   * full application page.
+   */
+  onOpenApplicationDetails?: (target: TaskDetailsTarget) => void;
 }
 
 const PlantNameButton = memo(
@@ -215,7 +224,10 @@ export const TaskRow = memo(
   }: TaskRowProps) => {
     const navigate = useNavigate();
     const applicationCount = plantInfo?.applications ?? 0;
-    const daysOverdue = application?.daysOverdue ?? 0;
+    // The backend may send a number or a numeric string. Every number is shown (0 and negative
+    // values in normal text, overdue in red); only a non-numeric value shows "-".
+    const daysOverdueValue = Number(application?.daysOverdue ?? 0);
+    const daysOverdue = Number.isFinite(daysOverdueValue) ? daysOverdueValue : null;
 
     // AppId opens the dashboard that owns the application, filtered to just that id: Intake-stage
     // tasks go to Application Intake (SUBMISSION), all others to the Application Dashboard. Status,
@@ -245,12 +257,13 @@ export const TaskRow = memo(
     };
 
     const handleTaskApplicationClick = () => {
-      if (!application.applicationId) {
+      if (onOpenApplicationDetails) {
+        const target = getTaskDetailsTarget(application);
+        if (target) onOpenApplicationDetails(target);
         return;
       }
 
-      if (onOpenApplicationDetails) {
-        onOpenApplicationDetails(application.applicationId);
+      if (!application.applicationId) {
         return;
       }
 
@@ -304,10 +317,12 @@ export const TaskRow = memo(
         </td>
 
         <td className="px-6 py-4 align-top text-sm tabular-nums">
-          {daysOverdue > 0 ? (
+          {daysOverdue === null ? (
+            <span className="text-gray-400">-</span>
+          ) : daysOverdue > 0 ? (
             <span className="font-medium text-red-600">{daysOverdue}</span>
           ) : (
-            <span className="text-gray-400">-</span>
+            <span className="text-gray-700">{daysOverdue}</span>
           )}
         </td>
 

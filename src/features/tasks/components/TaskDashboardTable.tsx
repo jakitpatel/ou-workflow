@@ -1,5 +1,5 @@
 import { plantHistory } from '@/features/tasks/model/plantHistory';
-import { useState, type RefObject } from 'react';
+import { Suspense, useState, type RefObject } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import {
   nextDaysOverdueSort,
@@ -7,6 +7,8 @@ import {
   type DaysOverdueSort,
 } from '@/features/tasks/lib/sortByDaysOverdue';
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer';
+import type { TaskDetailsTarget } from '@/features/tasks/model/applicationIdLink';
+import { IntakeApplicationDetailsDrawer } from './IntakeApplicationDetailsDrawer';
 
 import { TaskRow } from './TaskRow';
 
@@ -37,9 +39,9 @@ export function TaskDashboardTable({
   handleApplicationTaskAction,
   handleShowPlantHistory,
 }: TaskDashboardTableProps) {
-  // Clicking a plant name opens the Application Details drawer over the list (as on the
-  // Application Dashboard) instead of leaving Tasks & Notifications for the full page.
-  const [detailsApplicationId, setDetailsApplicationId] = useState<string | number | null>(null);
+  // Clicking a plant name opens a details drawer over the list instead of leaving Tasks &
+  // Notifications: Intake details for Intake-stage tasks, Application Details for the rest.
+  const [detailsTarget, setDetailsTarget] = useState<TaskDetailsTarget | null>(null);
   // Sorts the rows already loaded (the current page, or everything loaded in infinite mode).
   const [daysOverdueSort, setDaysOverdueSort] = useState<DaysOverdueSort>('none');
   const visibleTasks = sortByDaysOverdue(filteredTasks, daysOverdueSort);
@@ -129,7 +131,7 @@ export function TaskDashboardTable({
                 }
                 handleApplicationTaskAction={handleApplicationTaskAction}
                 handleShowPlantHistory={handleShowPlantHistory}
-                onOpenApplicationDetails={setDetailsApplicationId}
+                onOpenApplicationDetails={setDetailsTarget}
               />
             ))}
           </tbody>
@@ -168,10 +170,19 @@ export function TaskDashboardTable({
     </div>
 
     <ApplicationDetailsDrawer
-      open={detailsApplicationId !== null}
-      applicationId={detailsApplicationId ?? undefined}
-      onClose={() => setDetailsApplicationId(null)}
+      open={detailsTarget?.kind === 'application'}
+      applicationId={detailsTarget?.kind === 'application' ? detailsTarget.applicationId : undefined}
+      onClose={() => setDetailsTarget(null)}
     />
+    {detailsTarget?.kind === 'intake' ? (
+      <Suspense fallback={null}>
+        <IntakeApplicationDetailsDrawer
+          key={detailsTarget.externalReferenceId}
+          externalReferenceId={detailsTarget.externalReferenceId}
+          onClose={() => setDetailsTarget(null)}
+        />
+      </Suspense>
+    ) : null}
     </>
   );
 }

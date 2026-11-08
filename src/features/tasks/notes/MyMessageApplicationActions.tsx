@@ -1,45 +1,10 @@
 import { ModalSurface, ModalFocusBoundary } from '@/components/ui/ModalSurface'
-import { lazy, Suspense, useState } from 'react'
+import { Suspense, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
 import { ArrowUpRight, Hash } from 'lucide-react'
-import { useUser } from '@/context/UserContext'
-import { fetchPrelimApplicationDetails } from '@/features/prelim/api'
-import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 import { ApplicationDetailsDrawer } from '@/features/applications/components/ApplicationDetailsDrawer'
-
-const PrelimApplicationDetailsDrawer = lazy(() =>
-  import('@/features/prelim/components/PrelimApplicationDetailsDrawer').then((module) => ({
-    default: module.PrelimApplicationDetailsDrawer,
-  })),
-)
-
-function SubmissionDetails({
-  applicationId,
-  onClose,
-}: {
-  applicationId: number
-  onClose: () => void
-}) {
-  const { token } = useUser()
-  const query = useQuery({
-    queryKey: prelimQueryKeys.detail(applicationId),
-    queryFn: () => fetchPrelimApplicationDetails(applicationId, token ?? undefined),
-    select: (data) => data?.[0] ?? null,
-    staleTime: 0,
-  })
-  return (
-    <PrelimApplicationDetailsDrawer
-      open
-      externalReferenceId={applicationId}
-      data={query.data}
-      isLoading={query.isLoading}
-      error={query.error}
-      onClose={onClose}
-    />
-  )
-}
+import { IntakeApplicationDetailsDrawer } from '@/features/tasks/components/IntakeApplicationDetailsDrawer'
 
 export function MyMessageApplicationActions({
   applicationId,
@@ -103,7 +68,10 @@ export function MyMessageApplicationActions({
           >
             <div className="relative z-[60]">
               {isSubmission ? (
-                <SubmissionDetails applicationId={applicationId} onClose={() => setOpen(false)} />
+                <IntakeApplicationDetailsDrawer
+                  externalReferenceId={applicationId}
+                  onClose={() => setOpen(false)}
+                />
               ) : (
                 <ApplicationDetailsDrawer
                   open
