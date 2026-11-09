@@ -180,6 +180,7 @@ export function PrelimResolvedSection({
           userRoles,
           delegated,
           taskRolesAll,
+          stageStatus: application.stages?.Intake?.status,
         })
       : undefined
   const plantActions =
@@ -193,6 +194,7 @@ export function PrelimResolvedSection({
           userRoles,
           delegated,
           taskRolesAll,
+          stageStatus: application.stages?.Intake?.status,
         }),
       ) ?? []
   const canOpenCompanyResolution =

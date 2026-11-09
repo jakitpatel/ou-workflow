@@ -340,24 +340,35 @@ const formatStatusInvoiceDate = (value: string) => {
 const getInvoiceStatusRfrValue = (rfr: InspectionInvoiceRfr | null) =>
   normalizeRfrText(rfr?.fullName || rfr?.name || rfr?.userName || rfr?.id || rfr?.lookupKey || '-')
 
-const buildInvoiceGuiDisplayResult = ({
+/** Y / N for the user's choice; "-" while it hasn't been made. */
+const yesNo = (value: boolean | null | undefined) => (value === true ? 'Y' : value === false ? 'N' : '-')
+
+export const buildInvoiceGuiDisplayResult = ({
   invoiceDate,
   invoiceId,
   paid,
   rfr,
   subtotal,
+  inspectionNeeded,
+  feeRequired,
 }: {
   invoiceDate: string
   invoiceId?: string | null
   paid?: boolean
   rfr: InspectionInvoiceRfr | null
   subtotal: number
+  /** The setup's "Inspection needed" choice. */
+  inspectionNeeded?: boolean | null
+  /** The setup's "Fee required" choice. */
+  feeRequired?: boolean | null
 }) => {
   const values = [
     `RFR:${getInvoiceStatusRfrValue(rfr)}`,
     formatStatusCurrency(subtotal),
     formatStatusInvoiceDate(invoiceDate),
     invoiceId || 'Not generated',
+    `Inspection:${yesNo(inspectionNeeded)}`,
+    `Fee:${yesNo(feeRequired)}`,
   ]
 
   if (paid) {
@@ -564,6 +575,10 @@ const invoiceSetupSnapshot = (setup: InspectionInvoiceSavedState['setup'] = {}) 
     setup.extraRecipientEmail ?? setup.recipientEmail ?? '',
     setup.letterTemplate ?? INSPECTION_LETTER_TEMPLATE,
   ])
+
+/** completeTask results for Mark Paid; the second when the setup says no inspection is needed. */
+export const MARK_PAID_RESULT = 'Mark Paid'
+export const MARK_PAID_NO_INSPECTION_RESULT = 'Mark Paid & Inspection not needed'
 
 export function useInspectionInvoiceDrawerState({
   applicant,
@@ -982,6 +997,8 @@ export function useInspectionInvoiceDrawerState({
         paid: nextPaid,
         rfr: nextRfr,
         subtotal: nextSubtotal,
+        inspectionNeeded,
+        feeRequired,
       })
     const statusDetails = buildInspectionInvoiceStatusDetails(
       buildSavedState({
@@ -1029,6 +1046,8 @@ export function useInspectionInvoiceDrawerState({
       paid: nextPaid,
       rfr: nextRfr,
       subtotal: nextSubtotal,
+      inspectionNeeded,
+      feeRequired,
     })
 
     updateCachedInvoiceTaskResult(invoiceTaskId, guiDisplayResult)
@@ -1161,36 +1180,42 @@ export function useInspectionInvoiceDrawerState({
         nextStage: 'generated',
       })
 
-      const assignmentTaskId = findInspectionAssignmentTaskId(applicant)
-      if (!assignmentTaskId) {
-        throw new Error('Invoice generated, but the Inspection Assignment task was not found.')
-      }
+      // The Inspection Assignment task only matters when an inspection is needed. Without one (a
+      // fee-only invoice) there is no RFR to record and the assignment is not re-opened.
+      if (inspectionNeeded === true) {
+        const assignmentTaskId = findInspectionAssignmentTaskId(applicant)
+        if (!assignmentTaskId) {
+          throw new Error('Invoice generated, but the Inspection Assignment task was not found.')
+        }
 
-      const rfrResultValue =
-        selectedRfr?.userName ||
-        selectedRfr?.name ||
-        selectedRfr?.id ||
-        selectedRfr?.lookupKey ||
-        ''
-      const assignmentStatusDetails = buildInspectionStatusDetails(`{RFR:${rfrResultValue}}`)
+        const rfrResultValue =
+          selectedRfr?.userName ||
+          selectedRfr?.name ||
+          selectedRfr?.id ||
+          selectedRfr?.lookupKey ||
+          ''
+        const assignmentStatusDetails = buildInspectionStatusDetails(`{RFR:${rfrResultValue}}`)
 
-      await patchTaskResult({
-        taskId: assignmentTaskId,
-        result: assignmentStatusDetails,
-        token,
-      })
-
-      if (!awaitPayment) {
-        await confirmTask({
+        await patchTaskResult({
           taskId: assignmentTaskId,
-          applicationId: resolvedApplicationId,
-          override: '1',
-          status: 'PENDING',
-          result: '',
-          includeCompletedBy: false,
-          includeCompletionNotes: false,
+          result: assignmentStatusDetails,
           token,
         })
+
+        // Start the assignment now only for inspection + fee + "don't wait for payment"; otherwise
+        // it starts when the invoice is paid.
+        if (feeRequired === true && !awaitPayment) {
+          await confirmTask({
+            taskId: assignmentTaskId,
+            applicationId: resolvedApplicationId,
+            override: '1',
+            status: 'PENDING',
+            result: '',
+            includeCompletedBy: false,
+            includeCompletionNotes: false,
+            token,
+          })
+        }
       }
       await Promise.all([
         refreshApplicationInListCaches({
@@ -1361,7 +1386,8 @@ export function useInspectionInvoiceDrawerState({
       await confirmTask({
         taskId: invoiceTaskId,
         applicationId: resolvedApplicationId,
-        result: 'Mark Paid',
+        // Tells the workflow whether an inspection follows the payment.
+        result: inspectionNeeded === false ? MARK_PAID_NO_INSPECTION_RESULT : MARK_PAID_RESULT,
         capacity: 'DESIGNATED',
         includeCompletedBy: false,
         includeCompletionNotes: false,

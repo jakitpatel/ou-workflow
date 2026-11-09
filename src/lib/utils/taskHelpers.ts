@@ -132,7 +132,12 @@ type TaskActionContext = {
   delegated?: { name: string }[] | null;
   taskRolesAll?: string[];
   disableForCompletedApplication?: boolean;
+  /** Status of the stage the task belongs to; when it is completed, no task in it is actionable. */
+  stageStatus?: string;
 };
+
+const isCompletedStage = (stageStatus?: string) =>
+  stageStatus !== undefined && COMPLETED_STATUSES.includes(normalizeStatus(stageStatus));
 
 type TaskActionResult = {
   TaskInstanceId: string;
@@ -164,6 +169,7 @@ export const mapTaskToAction = ({
   delegated,
   taskRolesAll = [],
   disableForCompletedApplication = false,
+  stageStatus,
 }: TaskActionContext): TaskActionResult => {
   const status = normalizeStatus(task.status);
   const normalizedTaskRoles = normalizeTaskRoles(task.taskRoles);
@@ -176,6 +182,9 @@ export const mapTaskToAction = ({
 
   if (COMPLETED_STATUSES.includes(status)) {
     color = 'bg-green-400';
+    disabled = true;
+  } else if (isCompletedStage(stageStatus)) {
+    // The stage is done: its remaining tasks can no longer be acted on.
     disabled = true;
   } else if (
     disableForCompletedApplication &&
@@ -270,6 +279,7 @@ export const mapTaskToUndoAction = ({
   delegated,
   taskRolesAll = [],
   disableForCompletedApplication = false,
+  stageStatus,
 }: TaskActionContext): TaskActionResult => {
   const status = normalizeStatus(task.status);
   const normalizedTaskRoles = normalizeTaskRoles(task.taskRoles);
@@ -280,7 +290,10 @@ export const mapTaskToUndoAction = ({
   let isdelegate = false;
   let capacity = 'MEMBER';
 
-  if (
+  if (isCompletedStage(stageStatus)) {
+    // No undo either once the stage is completed.
+    disabled = true;
+  } else if (
     disableForCompletedApplication &&
     COMPLETED_STATUSES.includes(applicationStatus)
   ) {

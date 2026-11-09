@@ -76,6 +76,7 @@ export function PrelimStageTasksPanel({
                   userRoles,
                   delegated,
                   taskRolesAll,
+                  stageStatus: applicant.stages[normalizedExpandedStage]?.status,
                 })
 
                 task.capacity = action.capacity

@@ -146,6 +146,7 @@ export function ApplicationExpandedStage({
                 delegated,
                 taskRolesAll,
                 disableForCompletedApplication: true,
+                stageStatus: applicant.stages[expandedStage]?.status,
               })
               const undoAction = mapTaskToUndoAction({
                 task,
@@ -155,6 +156,7 @@ export function ApplicationExpandedStage({
                 delegated,
                 taskRolesAll,
                 disableForCompletedApplication: true,
+                stageStatus: applicant.stages[expandedStage]?.status,
               })
 
               task.capacity = action.capacity
