@@ -174,3 +174,32 @@ describe('Schedule B add row', () => {
     expect(labelName.value).toBe('FIX soup')
   })
 })
+
+describe('Schedule B Kashrus tab', () => {
+  it('lists the Kashrus columns without ProducedIn1Status', async () => {
+    const defaultRequest = mocks.request.getMockImplementation()!
+    mocks.request.mockImplementation((request: Request) =>
+      request.path.startsWith('/get_products')
+        ? Promise.resolve({
+            products: {
+              schedule_products: [],
+              ou_kash_products: [{
+                ProductName: 'FIX kash soup', CompanyName: 'FIX Co', BrandName: 'FIX Brand', SYMBOL: 'OU',
+                LabelType: 'In-house', UKID: 'UKD-1', STATUS: 'Certified', ProductID: 77, ProducedIn1Status: 'FIX-produced-status',
+              }],
+            },
+          })
+        : defaultRequest(request),
+    )
+    mount(scheduleB('scheduleb'))
+    fireEvent.click(await screen.findByRole('button', { name: /Kashrus$/ }))
+
+    expect(await screen.findByText('FIX kash soup')).toBeTruthy()
+    const headers = screen.getAllByRole('columnheader').map((header) => header.textContent?.trim() ?? '')
+    for (const label of ['Product Name', 'Brand', 'Company Name', 'Type', 'Symbol', 'Product ID', 'Status']) {
+      expect(headers.some((text) => text.startsWith(label)), label).toBe(true)
+    }
+    expect(headers.some((text) => /ProducedIn1Status/i.test(text))).toBe(false)
+    expect(screen.queryByText('FIX-produced-status')).toBeNull()
+  })
+})

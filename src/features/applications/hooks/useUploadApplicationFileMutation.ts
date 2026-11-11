@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { uploadApplicationFile } from '@/features/applications/api'
 import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
+import { prelimQueryKeys } from '@/features/prelim/model/queryKeys'
 
 type UploadPayload = {
   file?: File
@@ -36,11 +37,14 @@ export const useUploadApplicationFileMutation = (options: Options = {}) => {
     mutationFn: uploadApplicationFile,
     onSuccess: async (_response, variables) => {
       const appId = (variables as UploadPayload).applicationId
-      if (appId != null && appId !== '') {
-        await queryClient.invalidateQueries({
-          queryKey: applicationsQueryKeys.detail(String(appId)),
-        })
-      }
+      if (appId == null || appId === '') return
+      await Promise.all([
+        // Application Dashboard details (get_application_detail_v2), keyed by application id.
+        queryClient.invalidateQueries({ queryKey: applicationsQueryKeys.detail(String(appId)) }),
+        // Application Intake details (get_prelim_application_details) are keyed by
+        // externalReferenceId, which the uploader does not know; only open ones refetch.
+        queryClient.invalidateQueries({ queryKey: prelimQueryKeys.details() }),
+      ])
     },
     onError: (error: unknown) => {
       options.onError?.(resolveUploadErrorMessage(error))

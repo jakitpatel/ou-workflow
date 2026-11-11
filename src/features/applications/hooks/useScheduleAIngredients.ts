@@ -610,10 +610,16 @@ export const getLegacyApplicationIngredientRowId = (ingredient: ScheduleAIngredi
     ingredient.rawMaterialCode,
   ) || valueText(ingredient.ingredientLabelName) || 'ingredient'}`
 
+/** Kashrus responses use either UPPER_SNAKE (INGREDIENT_NAME) or PascalCase (IngredientName) field names. */
+const KASH_INGREDIENT_NAME_FIELDS = ['INGREDIENT_NAME', 'IngredientName']
+const KASH_BRAND_NAME_FIELDS = ['BRAND_NAME', 'BrandName']
+
+const getKashIngredientName = (ingredient: KashIngredient) =>
+  getRecordValue(ingredient as Record<string, unknown>, KASH_INGREDIENT_NAME_FIELDS)
+
 export const getKashIngredientRowId = (ingredient: KashIngredient, index: number) =>
-  `kash-${valueText(ingredient.LABEL_ID ?? ingredient.LabelID ?? ingredient.USED_IN1_ID ?? ingredient.MERCHANDISE_ID) || index}-${valueText(
-    ingredient.INGREDIENT_NAME,
-  ) || 'ingredient'}`
+  `kash-${valueText(ingredient.LABEL_ID ?? ingredient.LabelID ?? ingredient.USED_IN1_ID ?? ingredient.MERCHANDISE_ID) || index}-${
+    getKashIngredientName(ingredient) || 'ingredient'}`
 
 export function mapApplicationIngredientRow(
   ingredient: ScheduleAIngredient,
@@ -647,10 +653,10 @@ export function mapKashIngredientRow(ingredient: KashIngredient, index: number):
   return {
     id: getKashIngredientRowId(ingredient, index),
     ingredientId: '',
-    name: valueText(ingredient.INGREDIENT_NAME),
+    name: getKashIngredientName(ingredient),
     companyName: valueText(ingredient.CompanyName) || valueText(ingredient.LABEL_COMPANY),
     source: valueText(ingredient.LABEL_COMPANY),
-    brand: valueText(ingredient.BRAND_NAME),
+    brand: getRecordValue(ingredient as Record<string, unknown>, KASH_BRAND_NAME_FIELDS),
     rmc: getRecordValue(ingredient as Record<string, unknown>, ['rawMaterialCode', 'RawMaterialCode', 'RMC', 'rmc']),
     ukd: valueText(ingredient.UKDID),
     fn: valueText(ingredient.CTA || ingredient.PlantCTA),

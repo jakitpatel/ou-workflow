@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 
 import { useUser } from '@/context/UserContext'
 import { InspectionEmailBodyPreview } from './InspectionEmailBodyPreview'
+import { EmailAttachmentsField } from './EmailAttachmentsField'
 import { buildInspectionContactLines, buildNotificationBody, formatDate, formatInspectionContactName, getOuDirectInspectionUrl, getOuDirectPlannedVisitUrl } from '@/features/applications/utils/inspectionNotification'
 import { buildRfrApplicationUrl } from '@/features/applications/utils/rfrApplicationLink'
 import { createApplicationMessage } from '@/features/applications/api'
@@ -30,6 +31,7 @@ import { assertValidEmailRecipients } from '@/shared/email/addressValidation'
 import { buildHtmlEmailFromPlainText } from '@/shared/email/htmlEmail'
 import type { Applicant, Task } from '@/types/application'
 import { useSingleFlight } from '@/features/applications/hooks/useSingleFlight'
+import { useEmailAttachmentUploads } from '@/features/applications/hooks/useEmailAttachmentUploads'
 
 type Props = {
   open: boolean
@@ -305,6 +307,13 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
   const [emailMessageBody, setEmailMessageBody] = useState('')
   const [isSendingAssignmentMessage, setIsSendingAssignmentMessage] = useState(false)
   const assignmentFlight = useSingleFlight()
+  const emailAttachments = useEmailAttachmentUploads({
+    applicationId: resolvedApplicationId,
+    taskInstanceId: getTaskInstanceId(task) || null,
+    description: 'Inspection assignment email attachment',
+    // A new drawer session (reopened, other application or task) starts without attachments.
+    resetKey: `${open}:${resolvedApplicationId ?? ''}:${getTaskInstanceId(task)}`,
+  })
 
   const selectedRfr = useMemo(
     () => rfrs.find((rfr) => rfr.lookupKey === selectedRfrId || rfr.id === selectedRfrId) ?? null,
@@ -428,6 +437,10 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
       toast.error('Enter an email subject and body before creating the assignment.')
       return
     }
+    if (emailAttachments.isUploading) {
+      toast.error('Wait for the attachments to finish uploading.')
+      return
+    }
     try {
       assertValidEmailRecipients({
         to: selectedRfr.email,
@@ -504,7 +517,7 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
           tag: null,
           CCUser: emailCc.trim() || null,
           BCCUser: withImpliedBcc(emailBcc),
-          Attachments: null,
+          Attachments: emailAttachments.attachmentsValue,
         },
         token,
       })
@@ -815,6 +828,14 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
                     className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                   />
                 </label>
+                <EmailAttachmentsField
+                  attachments={emailAttachments.attachments}
+                  isUploading={emailAttachments.isUploading}
+                  readOnly={isAssigned}
+                  disabled={!selectedRfr || assignTaskMutation.isPending || isSendingAssignmentMessage}
+                  onUpload={emailAttachments.upload}
+                  onRemove={emailAttachments.remove}
+                />
               </div>
               <div className="px-4 py-4">
                 <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">Body</label>
@@ -849,7 +870,12 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
             <button
               type="button"
               onClick={isAssigned ? resendNotification : createAssignment}
-              disabled={(!isAssigned && !selectedRfr) || assignTaskMutation.isPending || isSendingAssignmentMessage}
+              disabled={
+                (!isAssigned && !selectedRfr) ||
+                assignTaskMutation.isPending ||
+                isSendingAssignmentMessage ||
+                emailAttachments.isUploading
+              }
               className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
             >
               {assignTaskMutation.isPending || isSendingAssignmentMessage
@@ -891,6 +917,13 @@ export function InspectionAssignmentDrawer({ open, applicant, task, onClose }: P
                   {emailCc ? <InfoRow align="left" label="Cc" value={emailCc} /> : null}
                   {emailBcc ? <InfoRow align="left" label="Bcc" value={emailBcc} /> : null}
                   <InfoRow align="left" label="Subject" value={emailSubject} />
+                  {emailAttachments.attachments.length > 0 ? (
+                    <InfoRow
+                      align="left"
+                      label="Attach"
+                      value={emailAttachments.attachments.map((item) => item.fileName).join(', ')}
+                    />
+                  ) : null}
                 </div>
                 <div className="whitespace-pre-wrap rounded border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">
                   <InspectionEmailBodyPreview

@@ -1,6 +1,5 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import buildInfo from "@/build-info.json";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -12,12 +11,17 @@ export function getApiBaseUrl(): string {
 }
 
 /**
- * Returns the current app build info (version & timestamp)
- * Auto-generated at build time by scripts/write-build-info.js
+ * Returns the app build info: version and commit (from git, the same in every environment built
+ * from one commit), the build environment, and the build time. Injected at build time by
+ * vite.config.ts (scripts/buildInfo.ts).
  */
 export function getBuildInfo() {
+  const info = typeof __BUILD_INFO__ === "undefined" ? undefined : __BUILD_INFO__;
+  const builtAt = info?.buildTime ? new Date(info.buildTime) : null;
   return {
-    version: buildInfo.version,
-    buildTime: new Date(buildInfo.buildTime).toLocaleString(),
+    version: info?.version ?? "",
+    commit: info?.commit ?? "",
+    env: info?.env ?? "",
+    buildTime: builtAt && !Number.isNaN(builtAt.getTime()) ? builtAt.toLocaleString() : "",
   };
 }

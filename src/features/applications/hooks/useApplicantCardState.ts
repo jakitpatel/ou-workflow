@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useUser } from '@/context/UserContext'
 import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
 import { useTaskNotesDrawerState } from '@/features/tasks/notes/useTaskNotesDrawerState'
-import { normalizeTaskRoles } from '@/lib/utils/taskHelpers'
+import { getCancelPermission } from '@/features/applications/lib/cancelPermission'
 import { Route as TaskDashboardRoute } from '@/routes/_authed/ou-workflow/tasks-dashboard'
 import { Route as TaskDashboardWithAppRoute } from '@/routes/_authed/ou-workflow/tasks-dashboard/$applicationId'
 import type { Applicant, Task } from '@/types/application'
@@ -58,7 +58,7 @@ type Params = {
 
 export function useApplicantCardState({ applicant, handleCancelTask }: Params) {
   const navigate = useNavigate()
-  const { username, role, roles } = useUser()
+  const { username, role, roles, delegated } = useUser()
   const { data: taskRolesAll = [] } = useFetchTaskRoles()
 
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
@@ -109,28 +109,8 @@ export function useApplicantCardState({ applicant, handleCancelTask }: Params) {
     return normalized === 'withdrawn' || normalized === 'wth'
   }, [applicant.status])
 
-  const hasCancelPermission = (task: Task | null): boolean => {
-    if (!task) return false
-
-    const taskRoles = normalizeTaskRoles(task.taskRoles)
-    if (taskRoles.length === 0) return false
-
-    const hasIncludedRole = taskRolesAll.some((taskRole) => taskRoles.includes(taskRole))
-    if (hasIncludedRole) return true
-
-    const matchingRoles = userRoles.map((r) => r.toLowerCase()).filter((r) => taskRoles.includes(r))
-    if (matchingRoles.length === 0) return false
-
-    const assignedRoles = Array.isArray(applicant?.assignedRoles) ? applicant.assignedRoles : []
-
-    return assignedRoles.some((assignedRole) =>
-      matchingRoles.some(
-        (matchingRole) =>
-          typeof assignedRole?.[matchingRole.toUpperCase()] === 'string' &&
-          String(assignedRole[matchingRole.toUpperCase()]).toLowerCase() === username?.toLowerCase(),
-      ),
-    )
-  }
+  const getPermission = (task: Task | null) =>
+    getCancelPermission({ task, application: applicant, username, userRoles, delegated, taskRolesAll })
 
   const pendingCancelTask = useMemo(() => {
     const globalStageEntry = Object.entries(applicant.stages ?? {}).find(
@@ -167,9 +147,11 @@ export function useApplicantCardState({ applicant, handleCancelTask }: Params) {
     )
   }, [applicant.stages])
 
-  const canCancelApplication = hasCancelPermission(pendingCancelTask)
+  const cancelPermission = getPermission(pendingCancelTask)
+  const undoWithdrawPermission = getPermission(pendingUndoWithdrawTask)
+  const canCancelApplication = cancelPermission.allowed
 
-  const canUndoWithdrawApplication = hasCancelPermission(pendingUndoWithdrawTask)
+  const canUndoWithdrawApplication = undoWithdrawPermission.allowed
 
   const applicationNotesCount = useMemo(() => {
     const counts = applicationNotes.getCounts(applicationNotesContextKey)
@@ -239,10 +221,15 @@ export function useApplicantCardState({ applicant, handleCancelTask }: Params) {
     const selectedTask = isWithdrawn ? pendingUndoWithdrawTask : pendingCancelTask
     const canSubmitAction = isWithdrawn ? canUndoWithdrawApplication : canCancelApplication
     if (!selectedTask || !canSubmitAction || !cancelReason.trim() || isSubmittingCancel) return
+    const { isAssistant } = isWithdrawn ? undoWithdrawPermission : cancelPermission
 
     setIsSubmittingCancel(true)
     try {
-      await Promise.resolve(handleCancelTask(applicant, selectedTask, cancelReason.trim()))
+      await Promise.resolve(handleCancelTask(
+        applicant,
+        isAssistant ? { ...selectedTask, capacity: 'ASSISTANT' } : selectedTask,
+        cancelReason.trim(),
+      ))
       setShowCancelDialog(false)
       setCancelReason('')
     } finally {

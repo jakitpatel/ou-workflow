@@ -1,3 +1,4 @@
+import { formatCalendarDate } from '@/shared/utils/calendarDate'
 import { getReplyParentMessageId, getSubjectRefMessageId, isReplySubject } from '@/features/applications/lib/communicationMessages'
 import { CommunicationReplyCard, CommunicationRoundCard } from './CommunicationRoundCard'
 import { MessageAttachmentList } from '@/shared/email/MessageAttachmentList'
@@ -108,12 +109,8 @@ const EMPTY_ADD_ROW_DRAFT: ScheduleBProductDraft = {
 
 const textValue = (value: unknown) => String(value ?? '').trim()
 
-const formatDisplayDate = (value?: string | null) => {
-  if (!value) return ''
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return value
-  return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
+// Visit dates are calendar days: shown as the same day in every time zone.
+const formatDisplayDate = (value?: string | null) => formatCalendarDate(value)
 
 const getDocumentFilename = (value?: string | null) => {
   const trimmed = textValue(value)
@@ -566,7 +563,6 @@ const KASHRUS_COLUMNS: Array<{ key: ScheduleBProductSortKey; label: string; widt
   { key: 'symbol', label: 'Symbol' },
   { key: 'productDisplayId', label: 'Product ID' },
   { key: 'status', label: 'Status' },
-  { key: 'producedIn1Status', label: 'ProducedIn1Status' },
 ]
 
 const YES_NO_OPTIONS = [
@@ -1694,7 +1690,6 @@ export function ScheduleBProductsDrawer({
                                     <td className="px-3 py-3 text-gray-700">{row.symbol || '-'}</td>
                                     <td className="px-3 py-3 font-mono text-xs text-gray-700">{row.productDisplayId || '-'}</td>
                                     <td className="px-3 py-3">{renderKashrusStatus(row.status)}</td>
-                                    <td className="px-3 py-3 text-gray-700">{row.producedIn1Status || '-'}</td>
                                   </>
                                 )}
                                   {ingView === 'application' && !readOnly ? (

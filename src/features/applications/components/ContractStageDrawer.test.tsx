@@ -230,3 +230,40 @@ describe('ContractStageDrawer Communication reply without a parent', () => {
     expect(screen.getByText(`RE: ${root}`)).toBeTruthy()
   })
 })
+
+describe('ContractStageDrawer billing type (plant addendum)', () => {
+  beforeEach(() => {
+    mocks.messages = []
+  })
+
+  const billingGroup = () => screen.queryByRole('group', { name: 'Billing type' })
+  const billingValue = () => screen.getByTestId('contract-billing-type').textContent?.trim()
+
+  it.each([
+    [{ billingType: 'plant' }, 'Plant-level billing'],
+    [{ billingType: 'company' }, 'Company-level billing'],
+    [undefined, 'Company-level billing'],
+  ])('shows the server billing type %j below the payment cycle as %s', (fee, expected) => {
+    mocks.detail = { company: [{ is_new: 'N' }], ...(fee ? { Fee: fee } : {}) } as unknown as ApplicationDetail
+    renderDrawer(app16)
+    const group = billingGroup()!
+    expect(billingValue()).toBe(expected)
+    // Directly after the Company payment cycle field.
+    const cycle = screen.getByText('Company payment cycle').closest('label')!
+    expect(cycle.nextElementSibling).toBe(group)
+  })
+
+  it('cannot be switched: it is defined by the server', () => {
+    mocks.detail = { company: [{ is_new: 'N' }], Fee: { billingType: 'plant' } } as unknown as ApplicationDetail
+    renderDrawer(app16)
+    const group = billingGroup()!
+    expect(group.querySelectorAll('input, select, button')).toHaveLength(0)
+    expect(screen.queryByRole('radio', { name: /level billing/ })).toBeNull()
+  })
+
+  it('is not shown for a new company contract', () => {
+    mocks.detail = { company: [{ is_new: 'Y' }], Fee: { billingType: 'plant' } } as unknown as ApplicationDetail
+    renderDrawer(app16)
+    expect(billingGroup()).toBeNull()
+  })
+})

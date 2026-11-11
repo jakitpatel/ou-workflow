@@ -635,10 +635,28 @@ export const getLegacyApplicationProductRowId = (product: ScheduleBProduct, inde
     product.UPC,
   ) || valueText(product.productName) || valueText(product.BrandName) || 'product'}`
 
+/**
+ * Kashrus product field names. The response has used UPPER_SNAKE (PRODUCT_NAME) and now uses
+ * PascalCase (ProductName); each list is read in order and the first non-blank value wins.
+ */
+const KASH_PRODUCT_FIELDS = {
+  productName: ['ProductName', 'PRODUCT_NAME', 'MerchProductName'],
+  companyName: ['CompanyName', 'COMPANY_NAME', 'LABEL_COMPANY'],
+  brandName: ['BrandName', 'BRAND_NAME'],
+  symbol: ['SYMBOL', 'Symbol'],
+  labelType: ['LabelType', 'LABEL_TYPE'],
+  ukid: ['UKID', 'UKDID', 'UKD_ID'],
+  status: ['STATUS', 'Status'],
+  productId: ['ProductID', 'ProductId', 'PRODUCT_ID'],
+  producedIn1Status: ['ProducedIn1Status', 'PRODUCED_IN1_STATUS', 'producedIn1Status', 'PlantStatus', 'PLANT_STATUS'],
+} as const
+
+const kashValue = (product: KashProduct, field: keyof typeof KASH_PRODUCT_FIELDS) =>
+  getRecordValue(product as Record<string, unknown>, [...KASH_PRODUCT_FIELDS[field]])
+
 export const getKashProductRowId = (product: KashProduct, index: number) =>
-  `kash-${valueText(product.LABEL_ID ?? product.PRODUCED_IN1_ID ?? product.MERCHANDISE_ID) || index}-${valueText(
-    product.PRODUCT_NAME ?? product.MerchProductName ?? product.BRAND_NAME,
-  ) || 'product'}`
+  `kash-${valueText(product.LABEL_ID ?? product.PRODUCED_IN1_ID ?? product.MERCHANDISE_ID) || kashValue(product, 'productId') || index}-${
+    kashValue(product, 'productName') || kashValue(product, 'brandName') || 'product'}`
 
 export function mapApplicationProductRow(
   product: ScheduleBProduct,
@@ -697,16 +715,18 @@ export function mapApplicationProductRow(
 }
 
 export function mapKashProductRow(product: KashProduct, index: number): ScheduleBProductRow {
-  const record = product as Record<string, unknown>
   const plantStatus = valueText(product.PLANT_STATUS)
   const dpm = valueText(product.DPM)
-  const labelName = valueText(product.PRODUCT_NAME) || valueText(product.MerchProductName) || valueText(product.BRAND_NAME)
-  const labelCo = valueText(product.COMPANY_NAME) || valueText(product.LABEL_COMPANY)
-  const brand = valueText(product.BRAND_NAME)
-  const symbol = valueText(product.SYMBOL)
+  const brand = kashValue(product, 'brandName')
+  const labelName = kashValue(product, 'productName') || brand
+  const labelCo = kashValue(product, 'companyName')
+  const symbol = kashValue(product, 'symbol')
+  const ukid = kashValue(product, 'ukid')
   const merchId = valueText(product.MERCHANDISE_ID)
   const labelId = valueText(product.LABEL_ID)
-  const productDisplayId = merchId ? `PRD-${merchId}` : labelId ? `PRD-${labelId}` : ''
+  // The server's ProductID is shown as-is; older responses had no ProductID, so a display id is derived.
+  const productDisplayId =
+    kashValue(product, 'productId') || (merchId ? `PRD-${merchId}` : labelId ? `PRD-${labelId}` : '')
 
   return {
     id: getKashProductRowId(product, index),
@@ -719,7 +739,7 @@ export function mapKashProductRow(product: KashProduct, index: number): Schedule
     brand,
     rmc: valueText(product.MerchProductNumber),
     upc: valueText(product.MerchProductNumber),
-    ukd: labelId,
+    ukd: ukid || labelId,
     symbol,
     fn: [product.INDUSTRIAL, product.Consumer].filter(Boolean).map(valueText).join(' / '),
     use: [product.INDUSTRIAL, product.Consumer].filter(Boolean).map(valueText).join(' / '),
@@ -729,20 +749,13 @@ export function mapKashProductRow(product: KashProduct, index: number): Schedule
     internal: toYn(product.OUP_REQUIRED),
     passover: toYn(product.PESACH),
     artwork: '',
-    typeLabel: valueText(product.LABEL_TYPE) || (valueText(product.LABEL_COMPANY) ? 'Private label' : 'In-house'),
+    typeLabel: kashValue(product, 'labelType') || (valueText(product.LABEL_COMPANY) ? 'Private label' : 'In-house'),
     productDisplayId,
-    producedIn1Status:
-      getRecordValue(record, [
-        'ProducedIn1Status',
-        'PRODUCED_IN1_STATUS',
-        'producedIn1Status',
-        'PlantStatus',
-        'PLANT_STATUS',
-      ]) || plantStatus,
+    producedIn1Status: kashValue(product, 'producedIn1Status'),
     group: valueText(product.GRP),
     certifier: symbol,
     attachment: '',
-    status: plantStatus && dpm ? `${plantStatus}-${dpm}` : plantStatus || dpm || valueText(product.STATUS),
+    status: plantStatus && dpm ? `${plantStatus}-${dpm}` : plantStatus || dpm || kashValue(product, 'status'),
     origin: 'Kashrus',
     raw: product,
   }

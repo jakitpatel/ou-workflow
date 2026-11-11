@@ -6,10 +6,11 @@ import type { Applicant, Task } from '@/types/application'
 import { PrelimResolvedSection } from '@/features/prelim/components/PrelimResolvedSection'
 import { useUser } from '@/context/UserContext'
 import { CancelApplicationDialog } from '@/features/applications/components/CancelApplicationDialog'
+import { getCancelPermission } from '@/features/applications/lib/cancelPermission'
 import { useFetchTaskRoles } from '@/features/tasks/hooks/useTaskQueries'
 import { PrelimStageTasksPanel } from '@/features/prelim/components/PrelimStageTasksPanel'
 import { PrelimApplicationMessages } from '@/features/prelim/components/PrelimApplicationMessages'
-import { mapTaskToAction, normalizeStatus, normalizeTaskRoles } from '@/lib/utils/taskHelpers'
+import { normalizeStatus } from '@/lib/utils/taskHelpers'
 
 type Props = {
   company: Applicant
@@ -96,31 +97,13 @@ export function PrelimApplicationCard({
     return role ? [role.toLowerCase()] : []
   }, [role, roles])
 
-  const getCancelAction = useCallback((task: Task) => mapTaskToAction({
+  const getPermission = useCallback((task: Task | null) => getCancelPermission({
     task, application: company, username, userRoles, delegated, taskRolesAll,
   }), [company, username, userRoles, delegated, taskRolesAll])
-
-  const hasCancelPermission = useCallback((task: Task | null): boolean => {
-    if (!task) return false
-
-    if (getCancelAction(task).isdelegate) return true
-
-    const taskRoles = normalizeTaskRoles(task.taskRoles)
-    if (taskRoles.length === 0) return false
-
-    const hasIncludedRole = taskRolesAll.some((role) => taskRoles.includes(role))
-    if (hasIncludedRole) return true
-
-    const matchingRoles = userRoles.filter((r) => taskRoles.includes(r))
-    if (matchingRoles.length === 0) return false
-
-    const assignedRoles = Array.isArray(company?.assignedRoles) ? company.assignedRoles : []
-    return assignedRoles.some((ar) =>
-      matchingRoles.some(
-        (matchedRole) => String(ar?.[matchedRole.toUpperCase()] ?? '').toLowerCase() === username?.toLowerCase(),
-      ),
-    )
-  }, [company.assignedRoles, taskRolesAll, userRoles, username, getCancelAction])
+  const hasCancelPermission = useCallback(
+    (task: Task | null) => getPermission(task).allowed,
+    [getPermission],
+  )
 
   const pendingCancelTask = useMemo(() => {
     const globalStageEntry = Object.entries(company.stages ?? {}).find(
@@ -192,10 +175,10 @@ export function PrelimApplicationCard({
 
     setIsSubmittingCancel(true)
     try {
-      const action = getCancelAction(selectedTask)
+      const { isAssistant } = getPermission(selectedTask)
       await Promise.resolve(handleCancelTask(company, {
         ...selectedTask,
-        capacity: action.isdelegate ? 'ASSISTANT' : selectedTask.capacity,
+        capacity: isAssistant ? 'ASSISTANT' : selectedTask.capacity,
       }, cancelReason.trim()))
       setShowCancelDialog(false)
       setCancelReason('')

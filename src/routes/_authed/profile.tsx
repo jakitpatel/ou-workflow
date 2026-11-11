@@ -60,7 +60,7 @@ function ProfilePage() {
     userPerson,
   } =
     useAppPreferences()
-  const { version, buildTime } = getBuildInfo()
+  const { version, commit, env: buildEnv, buildTime } = getBuildInfo()
   const [showRoleChangeSuccess, setShowRoleChangeSuccess] = useState(false)
   const [showPrefSuccess, setShowPrefSuccess] = useState(false)
 
@@ -296,7 +296,12 @@ function ProfilePage() {
             </div>
             <dl className="px-6 py-5 space-y-4">
               <InfoCard icon={Server} label="API Base URL" value={apiBaseUrl || 'Not configured'} />
-              <InfoCard icon={Code} label="Build Version" value={`v${version || 'Unknown'}`} />
+              <InfoCard
+                icon={Code}
+                label="Build Version"
+                value={version ? `v${version}${commit ? ` (${commit})` : ''}` : 'Unknown'}
+              />
+              <InfoCard icon={Code} label="Build Environment" value={buildEnv || 'Unknown'} />
               <InfoCard icon={Code} label="Build Time" value={buildTime || 'Unknown'} />
             </dl>
           </section>

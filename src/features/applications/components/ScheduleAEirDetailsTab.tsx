@@ -1,3 +1,4 @@
+import { formatCalendarDate } from '@/shared/utils/calendarDate'
 import { AlertCircle, FileText, Plus, Check } from 'lucide-react'
 import { EirInspectionStatus } from './EirInspectionStatus'
 import { hasInspectionDate } from '../utils/inspectionDate'
@@ -19,12 +20,8 @@ type Props = {
 
 const textValue = (value: unknown) => String(value ?? '').trim()
 
-const formatDisplayDate = (value?: string | null) => {
-  if (!value) return ''
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return value
-  return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
+// Visit dates are calendar days: shown as the same day in every time zone.
+const formatDisplayDate = (value?: string | null) => formatCalendarDate(value)
 
 const getDocumentFilename = (value?: string | null) => {
   const trimmed = textValue(value)

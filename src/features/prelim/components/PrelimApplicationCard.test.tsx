@@ -51,9 +51,22 @@ describe('assistant cancellation permission', () => {
     expect(fetchWithAuth).not.toHaveBeenCalled()
   })
 
-  it.each(['unrelated delegate', 'wrong role', 'completed task'])('disables cancellation for %s', (scenario) => {
+  it('allows the assistant to cancel even when their own role is not the task role', async () => {
+    user.role = 'PROD'
+    const { company, handleCancelTask } = setup()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel Submission' }))
+    fireEvent.change(screen.getByLabelText('Withdrawal Reason'), { target: { value: 'Requested cancellation' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, Withdraw' }))
+    await waitFor(() => expect(handleCancelTask).toHaveBeenCalledWith(company,
+      expect.objectContaining({ TaskInstanceId: 123, capacity: 'ASSISTANT' }), 'Requested cancellation'))
+  })
+
+  it.each(['unrelated delegate', 'wrong role without delegation', 'completed task'])('disables cancellation for %s', (scenario) => {
     if (scenario === 'unrelated delegate') user.delegated = [{ name: 'someone.else' }]
-    if (scenario === 'wrong role') user.role = 'PROD'
+    if (scenario === 'wrong role without delegation') {
+      user.role = 'PROD'
+      user.delegated = []
+    }
     setup(scenario === 'completed task' ? 'COMPLETED' : 'PENDING')
     const button = screen.getByRole('button', { name: /cannot be canceled/ }) as HTMLButtonElement
     expect(button.disabled).toBe(true)

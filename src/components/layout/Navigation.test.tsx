@@ -25,6 +25,12 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigate,
 }))
 
+vi.mock('@/features/issueReports/components/LazyReportIssueDialog', () => ({
+  LazyReportIssueDialog: ({ onClose }: { onClose: () => void }) => (
+    <div role="dialog" aria-label="Report an Issue"><button type="button" onClick={onClose}>Close report</button></div>
+  ),
+}))
+
 beforeEach(() => {
   sessionStorage.clear()
   vi.clearAllMocks()
@@ -100,5 +106,24 @@ describe('navigation sign-out', () => {
     fireEvent.click(screen.getByRole(layout === 'top' ? 'menuitem' : 'button', { name: /sign out/i }))
     expect(logout).toHaveBeenCalledTimes(1)
     expect(navigate).not.toHaveBeenCalled()
+  })
+})
+
+describe('Report an Issue', () => {
+  it.each(['top', 'left', 'collapsed'] as const)('opens and closes the report form from the %s navigation layout', (layout) => {
+    render(layout === 'top' ? <Navigation /> : <LeftNavigation collapsed={layout === 'collapsed'} onCollapsedChange={vi.fn()} />)
+    expect(screen.queryByRole('dialog', { name: 'Report an Issue' })).toBeNull()
+    if (layout === 'top') fireEvent.click(screen.getByRole('button', { name: 'User menu' }))
+    fireEvent.click(screen.getByRole(layout === 'top' ? 'menuitem' : 'button', { name: 'Report an Issue' }))
+    expect(screen.getByRole('dialog', { name: 'Report an Issue' })).toBeTruthy()
+    if (layout === 'top') expect(screen.queryByRole('menu')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Close report' }))
+    expect(screen.queryByRole('dialog', { name: 'Report an Issue' })).toBeNull()
+  })
+
+  it('is available to RFR-only accounts too', () => {
+    session.roles = [{ name: 'RFR' }]
+    render(<LeftNavigation collapsed={false} onCollapsedChange={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Report an Issue' })).toBeTruthy()
   })
 })

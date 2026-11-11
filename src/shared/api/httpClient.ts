@@ -1,6 +1,7 @@
 import { getApiBaseUrl } from '@/lib/utils'
 import { cognitoLogout, getAccessToken, refreshAccessToken } from '@/auth/authService'
 import { createAppError, isAppError } from './errors'
+import { recordRecentError } from '@/shared/diagnostics/recentErrors'
 import type { ExpectBody, FetchOptions, UserContext } from './types'
 
 const DEFAULT_TIMEOUT_MS = 30000
@@ -209,8 +210,10 @@ export async function fetchWithAuth<T = unknown>({
   const url = `${baseUrl}${path}`
   const accessToken = token ?? getAccessToken()
 
+  // FormData (file uploads) is sent as-is so the browser sets the multipart boundary.
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
   const requestHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...headers,
   }
 
@@ -221,14 +224,14 @@ export async function fetchWithAuth<T = unknown>({
   const requestOptions: RequestInit = {
     method,
     headers: requestHeaders,
-    body: body == null ? undefined : JSON.stringify(body),
+    body: body == null ? undefined : isFormData ? body : JSON.stringify(body),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ;(requestOptions as any).timeoutMs = timeoutMs
 
-  return executeRequest<T>(url, requestOptions, accessToken, async (response) => {
+  const request = executeRequest<T>(url, requestOptions, accessToken, async (response) => {
     if (!response.ok) {
       const errorBody = await parseErrorBody(response)
       const message =
@@ -242,5 +245,11 @@ export async function fetchWithAuth<T = unknown>({
     }
 
     return readSuccessBody<T>(response, { method, path, expectBody })
+  })
+
+  return request.catch((error: unknown) => {
+    const status = isAppError(error) && error.status ? ` ${error.status}` : ''
+    recordRecentError('api', `${method} ${path.split('?')[0]}${status}: ${error instanceof Error ? error.message : String(error)}`)
+    throw error
   })
 }

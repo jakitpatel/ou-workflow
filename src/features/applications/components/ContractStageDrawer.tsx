@@ -1,3 +1,4 @@
+import { formatCalendarDate } from '@/shared/utils/calendarDate'
 import { getReplyParentMessageId, isReplySubject } from '@/features/applications/lib/communicationMessages'
 import { CommunicationReplyCard, CommunicationRoundCard } from './CommunicationRoundCard'
 import { MessageAttachmentList } from '@/shared/email/MessageAttachmentList'
@@ -21,6 +22,8 @@ import {
 import { toast } from 'sonner'
 import { useUser } from '@/context/UserContext'
 import { useApplicationDetail } from '@/features/applications/hooks/useApplicationDetail'
+import { getDetailBillingType } from '@/features/applications/lib/contractBillingType'
+import { ContractBillingTypeField } from './ContractBillingTypeField'
 import {
   getContractTypeLabel,
   isNewCompanyContractDetail,
@@ -360,16 +363,8 @@ const getDefaultEffectiveDate = () => {
   return localCalendarDate(new Date(today.getFullYear(), today.getMonth(), 1))
 }
 
-const formatDate = (value?: string | null) => {
-  if (!value) return '-'
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return value
-  return parsed.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
+// The effective date is a calendar day: the same day in every time zone.
+const formatDate = (value?: string | null) => formatCalendarDate(value, undefined, '-')
 
 const formatFullDate = (value?: string | null) => {
   if (!value) return '-'
@@ -1226,6 +1221,8 @@ export function ContractStageDrawer({
   const { contractIngredients, contractProducts, ingredientsQuery, productsQuery } =
     useContractSchedules(open ? resolvedApplicationId : undefined)
   const contractTypeLabel = getContractTypeLabel(isNewCompanyContract)
+  // Defined by the server (application detail Fee.billingType); not editable here.
+  const billingType = getDetailBillingType(applicationDetail)
   const maxClauseVersion = Math.max(...clauseVersions.map((version) => version.n))
   const isLatestClauseVersion = activeClauseVersion === maxClauseVersion
   const visibleAgreementClauses =
@@ -1740,6 +1737,7 @@ Rabbinic Coordinator`
             effectiveDate,
             paymentCycleStart: companyPaymentCycleStart,
             paymentCycleEnd: companyPaymentCycleEnd,
+            ...(isNewCompanyContract ? {} : { billingType }),
           },
           scheduleDProductionProcedures: {
             hasProductionProcedures: !noProductionProcedures,
@@ -3900,6 +3898,10 @@ Rabbinic Coordinator`
                         sync with this cycle.
                       </span>
                     </label>
+                  ) : null}
+
+                  {!isNewCompanyContract ? (
+                    <ContractBillingTypeField value={billingType} />
                   ) : null}
 
                   <label className="block text-sm">

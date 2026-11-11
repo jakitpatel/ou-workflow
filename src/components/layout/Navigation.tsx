@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Bell, User, BarChart3, ClipboardList, FileText, LogOut, Settings, Inbox, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Bell, User, BarChart3, ClipboardList, FileText, LogOut, Settings, Inbox, PanelLeftClose, PanelLeftOpen, MessageSquareWarning } from 'lucide-react'
 import { useAppPreferences } from '@/context/AppPreferencesContext'
 import { useUser } from '@/context/UserContext'
 import { Link, useRouterState } from '@tanstack/react-router'
@@ -8,6 +8,7 @@ import { applicationsQueryKeys } from '@/features/applications/model/queryKeys'
 import { tasksQueryKeys } from '@/features/tasks/model/queryKeys'
 import { isRfrApplicationPath, isRfrAccessRestricted } from '@/features/auth/model/rfrAccess'
 import { getRfrApplicationId } from '@/features/auth/model/tokenStorage'
+import { LazyReportIssueDialog } from '@/features/issueReports/components/LazyReportIssueDialog'
 
 // Navigation route constants
 const ROUTES = {
@@ -54,6 +55,7 @@ export function Navigation({ showMenu = true }: NavigationProps) {
   const { apiBaseUrl } = useAppPreferences()
   const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [reportIssueOpen, setReportIssueOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Close menu when clicking outside
@@ -239,6 +241,18 @@ export function Navigation({ showMenu = true }: NavigationProps) {
                   <Settings className="w-4 h-4 mr-2 text-gray-500" aria-hidden="true" />
                   Profile
                 </Link>
+                <button
+                  type="button"
+                  className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors"
+                  onClick={() => {
+                    closeMenu()
+                    setReportIssueOpen(true)
+                  }}
+                  role="menuitem"
+                >
+                  <MessageSquareWarning className="w-4 h-4 mr-2 text-gray-500" aria-hidden="true" />
+                  Report an Issue
+                </button>
 
                 {/* Divider */}
                 <div className="border-t border-gray-200 my-1" role="separator" />
@@ -258,6 +272,7 @@ export function Navigation({ showMenu = true }: NavigationProps) {
           </div>
         </div>
       </div>
+      {reportIssueOpen && <LazyReportIssueDialog onClose={() => setReportIssueOpen(false)} />}
     </nav>
   )
 }
@@ -267,6 +282,7 @@ export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationP
   const { username, role, roles, logout } = useUser()
   const rfrView = isRfrAccessRestricted({ role, roles }) || isRfrApplicationPath(location)
   const rfrApplicationId = rfrView ? getRfrApplicationId() : null
+  const [reportIssueOpen, setReportIssueOpen] = useState(false)
   const queryClient = useQueryClient()
 
   const handleLogout = useCallback(() => {
@@ -409,6 +425,16 @@ export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationP
           <Settings className={iconClass} aria-hidden="true" />
           {!collapsed ? <span className="truncate">Profile</span> : null}
         </Link>
+        <button
+          type="button"
+          className={`w-full ${linkClass(false)}`}
+          onClick={() => setReportIssueOpen(true)}
+          aria-label="Report an Issue"
+          title="Report an Issue"
+        >
+          <MessageSquareWarning className={iconClass} aria-hidden="true" />
+          {!collapsed ? <span className="truncate">Report an Issue</span> : null}
+        </button>
       </nav>
 
       <div className="border-t border-gray-200 p-2">
@@ -430,6 +456,7 @@ export function LeftNavigation({ collapsed, onCollapsedChange }: LeftNavigationP
           {!collapsed ? <span>Sign Out</span> : null}
         </button>
       </div>
+      {reportIssueOpen && <LazyReportIssueDialog onClose={() => setReportIssueOpen(false)} />}
     </aside>
   )
 }
